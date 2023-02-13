@@ -171,7 +171,9 @@ sealed abstract class PatternElement extends ASTNode {
 /**
  * A part of the pattern that consists of alternating nodes and relationships, starting and ending in a node.
  */
-sealed abstract class SimplePattern extends PathFactor
+sealed abstract class SimplePattern extends PathFactor {
+  def allVariablesLeftToRight: Seq[LogicalVariable]
+}
 
 case class RelationshipChain(
   element: SimplePattern,
@@ -183,6 +185,9 @@ case class RelationshipChain(
   override def variable: Option[LogicalVariable] = relationship.variable
 
   override def allVariables: Set[LogicalVariable] = element.allVariables ++ relationship.variable ++ rightNode.variable
+
+  override def allVariablesLeftToRight: Seq[LogicalVariable] =
+    element.allVariablesLeftToRight ++ relationship.variable.toSeq ++ rightNode.allVariablesLeftToRight
 
   @tailrec
   final def leftNode: NodePattern = element match {
@@ -203,6 +208,8 @@ case class NodePattern(
     extends SimplePattern with PatternAtom {
 
   override def allVariables: Set[LogicalVariable] = variable.toSet
+
+  override def allVariablesLeftToRight: Seq[LogicalVariable] = variable.toSeq
 
   override def isSingleNode = true
 }

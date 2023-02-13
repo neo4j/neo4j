@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.physicalplanning
@@ -538,6 +539,9 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan, maybeOwningPi
 
       case NilPathStep() =>
         nilProjector
+
+      case RepeatPathStep(variables, toNode, next) =>
+        throw new NotImplementedError("RepeatPathStep is not yet supported.")
     }
 
     SlottedProjectedPath(project(e.step))

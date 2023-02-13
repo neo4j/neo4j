@@ -1,5 +1,4 @@
-// path assignment is not supported yet, solved in https://trello.com/c/0U5WvGo2
-Feature "QuantifiedPathPatternAcceptance": Scenario "Solutions can be assigned to path variable"
+// path assignment is not supported yet, solved in https://trello.com/c/ufHPMj0x/
 Feature "QuantifiedPathPatternAcceptance": Scenario "Path and subpath variables"
 
 // We currently do not support QPPs nested in EXISTS/COUNT. Handled in https://trello.com/c/slWcQkHq

@@ -46,10 +46,36 @@ final case class MultiRelationshipPathStep(
   override val dependencies: Set[LogicalVariable] = next.dependencies ++ toNode + rel
 }
 
+final case class RepeatPathStep(variables: Seq[NodeRelPair], toNode: LogicalVariable, next: PathStep)(
+  val position: InputPosition
+) extends PathStep {
+  override def dependencies: Set[LogicalVariable] = next.dependencies ++ variables.flatMap(_.variables) ++ Set(toNode)
+}
+
+object RepeatPathStep {
+
+  def asRepeatPathStep(
+    variables: Seq[LogicalVariable],
+    toNode: LogicalVariable,
+    next: PathStep
+  )(position: InputPosition): RepeatPathStep = {
+    val nodeRelPairs = variables.grouped(2).toSeq.flatMap {
+      case Seq(node: LogicalVariable, rel: LogicalVariable) => Some(NodeRelPair(node, rel))
+      case _                                                => None
+    }
+
+    RepeatPathStep(nodeRelPairs, toNode, next)(position)
+  }
+}
+
 case class NilPathStep()(val position: InputPosition) extends PathStep {
   override def dependencies = Set.empty[LogicalVariable]
 }
 
 case class PathExpression(step: PathStep)(val position: InputPosition) extends Expression {
   override def isConstantForQuery: Boolean = false
+}
+
+case class NodeRelPair(node: LogicalVariable, relationship: LogicalVariable) {
+  def variables: Seq[LogicalVariable] = Seq(node, relationship)
 }

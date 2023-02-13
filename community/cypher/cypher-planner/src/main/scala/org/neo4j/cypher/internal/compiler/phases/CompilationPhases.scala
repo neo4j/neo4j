@@ -66,11 +66,13 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
+import org.neo4j.cypher.internal.rewriting.rewriters.QppsHavePaddedNodes
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
@@ -110,7 +112,12 @@ object CompilationPhases {
           EagerRewriter,
           SortPredicatesBySelectivity
         ) ++ CNFNormalizer.steps,
-        initialConditions = Set(StatementCondition(containsNoReturnAll), NoNamedPathsInPatternComprehensions)
+        initialConditions = Set(
+          StatementCondition(containsNoReturnAll),
+          NoNamedPathsInPatternComprehensions,
+          StatementCondition(noUnnamedNodesAndRelationships),
+          QppsHavePaddedNodes
+        )
       )
 
   case class ParsingConfig(

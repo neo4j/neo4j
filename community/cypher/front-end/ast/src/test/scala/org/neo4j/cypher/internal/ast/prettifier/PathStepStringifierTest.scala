@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.NodeRelPair
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -57,5 +59,38 @@ class PathStepStringifierTest extends CypherFunSuite with AstConstructionTestSup
     )(pos)
 
     assert(pathStringifier(pathStep) === "(a)-[b*]->(c)-[d]-(e)")
+  }
+
+  test("Repeat path steps") {
+    val pathStep = NodePathStep(
+      varFor("a"),
+      RepeatPathStep(
+        List(
+          NodeRelPair(varFor("n"), varFor("r")),
+          NodeRelPair(varFor("m"), varFor("q"))
+        ),
+        varFor("b"),
+        NilPathStep()(pos)
+      )(pos)
+    )(pos)
+
+    assert(pathStringifier(pathStep) === "(a) ((n)-[r]-(m)-[q]-())* (b)")
+  }
+
+  test("Repeat path steps juxtaposed qpp") {
+    val pathStep = NodePathStep(
+      varFor("a"),
+      RepeatPathStep(
+        List(NodeRelPair(varFor("n"), varFor("r")), NodeRelPair(varFor("m"), varFor("q"))),
+        varFor("  UNNAMED0"),
+        RepeatPathStep(
+          List(NodeRelPair(varFor("b"), varFor("r2"))),
+          varFor("k"),
+          NilPathStep()(pos)
+        )(pos)
+      )(pos)
+    )(pos)
+
+    assert(pathStringifier(pathStep) === "(a) ((n)-[r]-(m)-[q]-())* (  UNNAMED0) ((b)-[r2]-())* (k)")
   }
 }

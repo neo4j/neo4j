@@ -35,17 +35,21 @@ import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -57,10 +61,9 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
-
-import scala.annotation.tailrec
 
 case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTRewriterFactory {
 
@@ -104,7 +107,20 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
 
   def apply(input: AnyRef): AnyRef = instance(input)
 
-  private val instance: Rewriter = input => {
+  private val addGroupVariablesToQPPs: Rewriter = topDown(Rewriter.lift {
+    case qpp @ QuantifiedPath(EveryPath(element), _, _, _) =>
+      val allSingletonVariables = collectVar(element).toSet
+      val notYetExportedSingletonVars = allSingletonVariables -- qpp.variableGroupings.map(_.singleton)
+      val newGroupings = notYetExportedSingletonVars.map(QuantifiedPath.getGrouping(_, qpp.position))
+      qpp.copy(variableGroupings = qpp.variableGroupings ++ newGroupings)(qpp.position)
+  })
+
+  private val addGroupVariablesToQPPsInNamedPaths: Rewriter = topDown(Rewriter.lift {
+    case npp @ NamedPatternPart(_, patternPart) =>
+      npp.copy(patternPart = patternPart.endoRewrite(addGroupVariablesToQPPs))(npp.position)
+  })
+
+  private val projectNamedPathsRewriter: Rewriter = input => {
     val Projectibles(_, protectedVariables, variableRewrites, insertedWiths) = collectProjectibles(input)
     val applicator = Rewriter.lift {
 
@@ -126,6 +142,11 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
     }
     topDown(applicator)(input)
   }
+
+  private val instance = inSequence(
+    addGroupVariablesToQPPsInNamedPaths,
+    projectNamedPathsRewriter
+  )
 
   private def collectProjectibles(input: AnyRef): Projectibles = input.folder.treeFold(Projectibles.empty) {
     case aliased: AliasedReturnItem =>
@@ -217,7 +238,6 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
 
   def patternPartPathExpression(element: PatternElement): PathStep = flip(element, NilPathStep()(element.position))
 
-  @tailrec
   private def flip(element: PatternElement, step: PathStep): PathStep = {
     element match {
       case np @ NodePattern(node, _, _, _) =>
@@ -238,15 +258,40 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
             )
         }
 
+      case PathConcatenation(factors) =>
+        factors.reverse.foldLeft(step) {
+          // Remove the first NodePathStep after a QPP (list is traversed in reverse).
+          // This is needed because it will be included as the toNode of the RepeatPathStep, instead.
+          case (NodePathStep(node, innerStep), qpp @ QuantifiedPath(EveryPath(element), _, _, _)) =>
+            val qppSingletonVars = collectVar(element)
+            val groupVars =
+              qppSingletonVars.map(singletonVar => qpp.variableGroupings.find(_.singleton == singletonVar).get.group)
+            RepeatPathStep.asRepeatPathStep(groupVars, node, innerStep)(qpp.position)
+          case (prevStep, factor) => flip(factor, prevStep)
+        }
+
       case _ =>
-        throw new IllegalArgumentException("Quantified path patterns in a named path are not allowed at the moment.")
+        throw new IllegalArgumentException("Could not convert to Path Step.")
     }
   }
+
+  private def collectVar(element: PatternElement): Seq[LogicalVariable] =
+    element match {
+      case rc @ RelationshipChain(_, RelationshipPattern(_, _, _, _, _, _), _) =>
+        // Leave out last variable because it will be the same as the toNode
+        rc.allVariablesLeftToRight.init
+
+      case _ =>
+        throw new IllegalArgumentException("Only relationships allowed in QPPs.")
+    }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     // This rewriter needs to know the expanded return items
     containsNoReturnAll,
-    NoNamedPathsInPatternComprehensions
+    // RepeatPathStep assumes everything is named
+    noUnnamedNodesAndRelationships,
+    // We rely on padded nodes between QPPs
+    QppsHavePaddedNodes
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(

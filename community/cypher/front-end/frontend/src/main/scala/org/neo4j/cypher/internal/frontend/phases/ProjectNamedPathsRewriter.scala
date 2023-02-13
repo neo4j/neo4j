@@ -20,14 +20,12 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
-import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
 import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.StepSequencer
 
 /**
- * Expands `WITH *` or `RETURN *` by enumerating all columns instead of the `*`.
+ * Projects named paths to Path Expressions
  */
 case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
     with PlanPipelineTransformerFactory {
@@ -37,15 +35,14 @@ case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, Base
   def process(from: BaseState, context: BaseContext): BaseState =
     from.withStatement(from.statement().endoRewrite(projectNamedPaths))
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(
-    StatementCondition(containsNoReturnAll),
-    NoNamedPathsInPatternComprehensions,
-    AmbiguousNamesDisambiguated
-  )
+  override def preConditions: Set[StepSequencer.Condition] =
+    projectNamedPaths.preConditions.map(StatementCondition.wrap) ++ Set(
+      NoNamedPathsInPatternComprehensions,
+      AmbiguousNamesDisambiguated
+    )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(
-    StatementCondition(containsNamedPathOnlyForShortestPath)
-  )
+  override def postConditions: Set[StepSequencer.Condition] =
+    projectNamedPaths.postConditions.map(StatementCondition.wrap)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 

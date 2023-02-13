@@ -39,12 +39,16 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
+import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -53,6 +57,10 @@ import org.neo4j.cypher.internal.util.test_helpers.TestName
 class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport with TestName {
 
   private def projectionInlinedAst(queryText: String) = ast(queryText).endoRewrite(projectNamedPaths)
+
+  private def projectionInlinedQppAst(queryText: String) = ast(queryText).endoRewrite(
+    QuantifiedPathPatternNodeInsertRewriter.instance
+  ).endoRewrite(nameAllPatternElements(new AnonymousVariableNameGenerator)).endoRewrite(projectNamedPaths)
 
   private def ast(queryText: String) = {
     val parsed = parser.parse(queryText, OpenCypherExceptionFactory(None))
@@ -64,6 +72,13 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   private def parseReturnedExpr(queryText: String) = {
     val query = projectionInlinedAst(queryText).asInstanceOf[Query]
+    query.asInstanceOf[SingleQuery].clauses.last.asInstanceOf[Return].returnItems.items.collectFirst {
+      case AliasedReturnItem(expr, Variable("p")) => expr
+    }.get
+  }
+
+  private def parseReturnedQppExpr(queryText: String) = {
+    val query = projectionInlinedQppAst(queryText).asInstanceOf[Query]
     query.asInstanceOf[SingleQuery].clauses.last.asInstanceOf[Return].returnItems.items.collectFirst {
       case AliasedReturnItem(expr, Variable("p")) => expr
     }.get
@@ -1198,6 +1213,71 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     ) _
 
     returns should equal(expected: PathExpression)
+  }
+
+  test("MATCH p = (a) ((n)-[r]->(m)-[q]->(o))+ (b) RETURN p AS p") {
+    val returns = parseReturnedQppExpr(testName)
+
+    val expected = PathExpression(
+      NodePathStep(
+        Variable("a")(pos),
+        RepeatPathStep.asRepeatPathStep(
+          List(
+            Variable("n")(pos),
+            Variable("r")(pos),
+            Variable("m")(pos),
+            Variable("q")(pos)
+          ),
+          Variable("b")(pos),
+          NilPathStep()(pos)
+        )(pos)
+      )(pos)
+    )(pos)
+
+    returns should equal(expected)
+  }
+
+  test("MATCH p = ((n)-[r]->(m)-[q]->(o))+ RETURN p AS p") {
+    val returns = parseReturnedQppExpr(testName)
+
+    val expected = PathExpression(
+      NodePathStep(
+        Variable("  UNNAMED0")(pos),
+        RepeatPathStep.asRepeatPathStep(
+          List(
+            Variable("n")(pos),
+            Variable("r")(pos),
+            Variable("m")(pos),
+            Variable("q")(pos)
+          ),
+          Variable("  UNNAMED1")(pos),
+          NilPathStep()(pos)
+        )(pos)
+      )(pos)
+    )(pos)
+
+    returns should equal(expected)
+  }
+
+  test("MATCH p = (a) ((n)-[r]->(m)-[q]->(o))* ((b)-[r2]-(y))* (k) RETURN p AS p") {
+    val returns = parseReturnedQppExpr(testName)
+
+    val expected = PathExpression(
+      NodePathStep(
+        Variable("a")(pos),
+        RepeatPathStep.asRepeatPathStep(
+          List(Variable("n")(pos), Variable("r")(pos), Variable("m")(pos), Variable("q")(pos)),
+          Variable("  UNNAMED0")(pos),
+          RepeatPathStep.asRepeatPathStep(
+            List(Variable("b")(pos), Variable("r2")(pos)),
+            Variable("k")(pos),
+            NilPathStep()(pos)
+          )(pos)
+        )(pos)
+      )(pos)
+    )(pos)
+
+    returns should equal(expected)
   }
 
   test("MATCH p = (a)-[r]->(b) RETURN p, 42 as order ORDER BY order") {

@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
@@ -32,6 +34,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Projec
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiIncomingRelationshipProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiOutgoingRelationshipProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.nilProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.quantifiedPathProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleNodeProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleRelationshipWithKnownTargetProjector
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -176,6 +179,59 @@ class PathExpressionConversionTest extends CypherFunSuite {
       ProjectedPath(singleNodeProjector(
         "a",
         multiOutgoingRelationshipProjector("r1", singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector))
+      ))
+    )
+  }
+
+  test("p = (a) ((n)-[r]->(m)-[q]->(o))+ (b)") {
+    val expr = PathExpression(
+      NodePathStep(
+        varFor("a"),
+        RepeatPathStep.asRepeatPathStep(
+          List(
+            varFor("n"),
+            varFor("r"),
+            varFor("m"),
+            varFor("q")
+          ),
+          varFor("b"),
+          NilPathStep()(pos)
+        )(pos)
+      )(pos)
+    )(pos)
+
+    converters.toCommandProjectedPath(expr) should equal(
+      ProjectedPath(singleNodeProjector(
+        "a",
+        quantifiedPathProjector(List("n", "r", "m", "q"), "b", nilProjector)
+      ))
+    )
+  }
+
+  test("p = (a) ((n)-[r]-(m)-[q]-(n))* (x) ((b)-[r2]-(c))* (k)") {
+    val expr = PathExpression(
+      NodePathStep(
+        varFor("a"),
+        RepeatPathStep.asRepeatPathStep(
+          List(varFor("n"), varFor("r"), varFor("m"), varFor("q")),
+          varFor("x"),
+          RepeatPathStep.asRepeatPathStep(
+            List(varFor("b"), varFor("r2")),
+            varFor("k"),
+            NilPathStep()(pos)
+          )(pos)
+        )(pos)
+      )(pos)
+    )(pos)
+
+    converters.toCommandProjectedPath(expr) should equal(
+      ProjectedPath(singleNodeProjector(
+        "a",
+        quantifiedPathProjector(
+          List("n", "r", "m", "q"),
+          "x",
+          quantifiedPathProjector(List("b", "r2"), "k", nilProjector)
+        )
       ))
     )
   }

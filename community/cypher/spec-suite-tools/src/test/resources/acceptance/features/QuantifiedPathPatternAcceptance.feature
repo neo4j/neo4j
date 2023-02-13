@@ -406,12 +406,10 @@ Feature: QuantifiedPathPatternAcceptance
       | (:n1) | (:n2) | (:n3) | [(:n2)]        | [(:n4)]        |
       | (:n1) | (:n2) | (:n3) | [(:n2), (:n4)] | [(:n4), (:n5)] |
 
-  # path assignment is not supported yet, solved in https://trello.com/c/0U5WvGo2
-  @Fails
   Scenario: Solutions can be assigned to path variable
     And having executed:
       """
-      CREATE (:A)-[:R]->(:B)-[:R]->(:C)
+      CREATE (:A)-[:R]->(:A:B)-[:R]->(:C)
       """
     When executing query:
       """
@@ -419,9 +417,43 @@ Feature: QuantifiedPathPatternAcceptance
       RETURN p
       """
     Then the result should be, in any order:
-      | p                            |
-      | <(:A)-[:R]->(:B)>            |
-      | <(:A)-[:R]->(:B)-[:R]->(:C)> |
+      | p                              |
+      | <(:A)-[:R]->(:A:B)>            |
+      | <(:A:B)-[:R]->(:C)>            |
+      | <(:A)-[:R]->(:A:B)-[:R]->(:C)> |
+
+  Scenario: Solutions can be assigned to path variable with anonymous variable
+    And having executed:
+      """
+      CREATE (:A)-[:R]->(:A:B)-[:R]->(:C)
+      """
+    When executing query:
+      """
+      MATCH p=((:A)-[y]->(z))+
+      RETURN p
+      """
+    Then the result should be, in any order:
+      | p                              |
+      | <(:A)-[:R]->(:A:B)>            |
+      | <(:A:B)-[:R]->(:C)>            |
+      | <(:A)-[:R]->(:A:B)-[:R]->(:C)> |
+
+
+  Scenario: Solutions can be assigned to path variable with two juxtaposed quantified path patterns
+    And having executed:
+      """
+      CREATE (:A)-[:R]->(:B)-[:R]->(:C)-[:R]->(:D)
+      """
+    When executing query:
+      """
+      MATCH p = ((n)-[r]->(m)-[q]->(o))+ ((b)-[r2]->(y))*
+      RETURN p
+      """
+    Then the result should be, in any order:
+      | p                                                |
+      | <(:A)-[:R {}]->(:B)-[:R {}]->(:C)>               |
+      | <(:B)-[:R {}]->(:C)-[:R {}]->(:D)>               |
+      | <(:A)-[:R {}]->(:B)-[:R {}]->(:C)-[:R {}]->(:D)> |
 
   Scenario: Path pattern can use label expressions for nodes
     And having executed:
@@ -524,8 +556,8 @@ Feature: QuantifiedPathPatternAcceptance
       | 1      |
       | 2      |
 
-  # Solved in https://trello.com/c/0U5WvGo2/
-  # Assigning a path in a quantified path pattern is not yet supported
+  # Solved in https://trello.com/c/ufHPMj0x/
+  # Assigning a Sub-path in a quantified path pattern is not yet supported
   @Fails
   Scenario: Path and subpath variables
     And having executed:

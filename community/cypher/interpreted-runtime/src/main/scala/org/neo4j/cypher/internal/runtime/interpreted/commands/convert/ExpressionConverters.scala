@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Projec
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiOutgoingRelationshipProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiUndirectedRelationshipProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.nilProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.quantifiedPathProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleIncomingRelationshipProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleNodeProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleOutgoingRelationshipProjector
@@ -223,6 +224,9 @@ class ExpressionConverters(converters: ExpressionConverter*) {
 
       case internal.expressions.MultiRelationshipPathStep(rel: LogicalVariable, SemanticDirection.BOTH, _, next) =>
         multiUndirectedRelationshipProjector(rel.name, project(next))
+
+      case internal.expressions.RepeatPathStep(variables, toNode, next) =>
+        quantifiedPathProjector(variables.flatMap(_.variables).map(_.name), toNode.name, project(next))
 
       case internal.expressions.NilPathStep() =>
         nilProjector

@@ -102,6 +102,7 @@ import org.neo4j.cypher.internal.expressions.ReduceExpression.AccumulatorExpress
 import org.neo4j.cypher.internal.expressions.ReduceScope
 import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.StartsWith
@@ -433,6 +434,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
       case x: MultiRelationshipPathStep =>
         check(ctx, x.rel) chain
           x.toNode.foldSemanticCheck(check(ctx, _)) chain
+          check(ctx, x.next)
+
+      case x: RepeatPathStep =>
+        check(ctx, x.variables.flatMap(_.variables)) chain
+          check(ctx, x.toNode) chain
           check(ctx, x.next)
 
       case _: NilPathStep =>

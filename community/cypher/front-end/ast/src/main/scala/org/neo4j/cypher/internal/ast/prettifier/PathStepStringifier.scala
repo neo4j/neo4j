@@ -20,7 +20,9 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.PathStep
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 
@@ -43,6 +45,9 @@ private class DefaultPathStepStringifier(expr: ExpressionStringifier) extends Pa
     case MultiRelationshipPathStep(rel, direction, toNode, next) =>
       relationshipPathStep(rel, direction, toNode, next, isMultiRel = true)
 
+    case RepeatPathStep(variables, toNode, next) =>
+      repeatPathStep(variables, toNode, next)
+
     case NilPathStep() => ""
   }
 
@@ -60,5 +65,16 @@ private class DefaultPathStepStringifier(expr: ExpressionStringifier) extends Pa
     val multiRel = if (isMultiRel) "*" else ""
 
     s"$lArrow-[$stringifiedRel$multiRel]-$rArrow($stringifiedToNode)" + this(next)
+  }
+
+  private def repeatPathStep(variables: Seq[NodeRelPair], toNode: LogicalVariable, next: PathStep): String = {
+    val variableString = variables.flatMap(_.variables).map(_.name).zipWithIndex.map {
+      case (name, index) if (index % 2 == 0) =>
+        s"($name)"
+      case (name, _) =>
+        s"-[$name]-"
+    }.mkString("")
+
+    s" ($variableString())* (${toNode.name})${apply(next)}"
   }
 }

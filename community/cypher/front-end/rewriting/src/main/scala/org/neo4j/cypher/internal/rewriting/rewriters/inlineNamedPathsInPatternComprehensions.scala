@@ -22,8 +22,6 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
-import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -37,14 +35,11 @@ case object NoNamedPathsInPatternComprehensions extends StepSequencer.Condition
 
 case object inlineNamedPathsInPatternComprehensions extends Step with ASTRewriterFactory {
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(noUnnamedNodesAndRelationships)
+  override def preConditions: Set[StepSequencer.Condition] = projectNamedPaths.preConditions
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoNamedPathsInPatternComprehensions)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    SubqueryExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside Subquery Expressions.
-  )
+  override def invalidatedConditions: Set[StepSequencer.Condition] = projectNamedPaths.invalidatedConditions
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
     case expr @ PatternComprehension(Some(path), pattern, predicate, projection) =>

@@ -51,6 +51,10 @@ object SemanticFeature {
     override def name: String = "CALL IN TRANSACTIONS status report and error handling"
   }
 
+  case object QuantifiedPathPatternPathAssignment extends SemanticFeature with FeatureToString {
+    override def name: String = "Assigning Quantified Path Pattern to Paths"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
@@ -58,6 +62,7 @@ object SemanticFeature {
     ExpressionsInViewInvocations,
     QuantifiedPathPatterns,
     CallInTxsStatusAndErrorHandling,
+    QuantifiedPathPatternPathAssignment,
     ShowSetting
   )
 
