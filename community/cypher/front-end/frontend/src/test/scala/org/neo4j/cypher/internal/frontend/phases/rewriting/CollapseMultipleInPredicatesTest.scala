@@ -53,6 +53,20 @@ class CollapseMultipleInPredicatesTest extends CypherFunSuite with RewriteTest {
     )
   }
 
+  test("should collapse empty collection and non-empty collection") {
+    assertRewrite(
+      "MATCH (a) WHERE id(a) IN [] OR id(a) IN [1,2,3] RETURN a",
+      "MATCH (a) WHERE id(a) IN [1,2,3] RETURN a"
+    )
+  }
+
+  test("should collapse empty collection") {
+    assertRewrite(
+      "MATCH (a) WHERE id(a) IN [] OR a.prop > 1 RETURN a",
+      "MATCH (a) WHERE a.prop > 1 RETURN a"
+    )
+  }
+
   override protected def parseForRewriting(queryText: String): Statement =
     super.parseForRewriting(queryText).endoRewrite(inSequence(flattenBooleanOperators))
 }
