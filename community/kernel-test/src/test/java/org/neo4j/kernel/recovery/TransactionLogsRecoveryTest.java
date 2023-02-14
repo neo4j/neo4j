@@ -21,10 +21,8 @@ package org.neo4j.kernel.recovery;
 
 import static java.lang.Math.toIntExact;
 import static java.util.UUID.randomUUID;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
@@ -604,9 +602,9 @@ class TransactionLogsRecoveryTest {
         var recoveryStartupChecker = new RecoveryStartupChecker(startupController, databaseId);
         var logsTruncator = mock(CorruptedLogsTruncator.class);
 
-        var exception = assertThrows(Exception.class, () -> recovery(storeDir, recoveryStartupChecker));
-        var rootCause = getRootCause(exception);
-        assertThat(rootCause).isInstanceOf(DatabaseStartAbortedException.class);
+        assertThatThrownBy(() -> recovery(storeDir, recoveryStartupChecker))
+                .rootCause()
+                .isInstanceOf(DatabaseStartAbortedException.class);
 
         verify(logsTruncator, never()).truncate(any());
         verify(monitor, never()).recoveryCompleted(anyLong());

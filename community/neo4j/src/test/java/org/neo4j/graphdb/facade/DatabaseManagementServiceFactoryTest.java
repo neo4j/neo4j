@@ -19,9 +19,8 @@
  */
 package org.neo4j.graphdb.facade;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.RETURNS_MOCKS;
@@ -60,9 +59,7 @@ class DatabaseManagementServiceFactoryTest {
         Config config = Config.defaults(GraphDatabaseSettings.neo4j_home, testDirectory.absolutePath());
         RuntimeException startupError = new RuntimeException();
         DatabaseManagementServiceFactory factory = newFaultyGraphDatabaseFacadeFactory(startupError, null);
-        RuntimeException startException =
-                assertThrows(RuntimeException.class, () -> factory.build(config, false, deps));
-        assertEquals(startupError, getRootCause(startException));
+        assertThatThrownBy(() -> factory.build(config, false, deps)).rootCause().isEqualTo(startupError);
     }
 
     @Test

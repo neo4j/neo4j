@@ -88,7 +88,7 @@ class NeoBootstrapperTest {
         assertThatThrownBy(() -> neoBootstrapper.start(dir, Map.of("initial.dbms.default_database", "$%^&*#)@!")))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasNoSuppressedExceptions()
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(IllegalArgumentException.class);
 
         // then no exceptions are thrown on stop and logs are written

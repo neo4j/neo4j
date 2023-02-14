@@ -19,13 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
@@ -120,9 +117,9 @@ class RecordStorageEngineTest {
                 .build();
         CommandBatchToApply commandBatchToApply = mock(CommandBatchToApply.class);
 
-        var exception = assertThrows(
-                Exception.class, () -> engine.apply(commandBatchToApply, TransactionApplicationMode.INTERNAL));
-        assertSame(failure, getRootCause(exception));
+        assertThatThrownBy(() -> engine.apply(commandBatchToApply, TransactionApplicationMode.INTERNAL))
+                .rootCause()
+                .isEqualTo(failure);
 
         verify(databasePanic).panic(any(Throwable.class));
     }
@@ -221,12 +218,9 @@ class RecordStorageEngineTest {
     private static Exception executeFailingTransaction(RecordStorageEngine engine) throws IOException {
         Exception applicationError = new UnderlyingStorageException("No space left on device");
         CommandBatchToApply txToApply = newTransactionThatFailsWith(applicationError);
-        try {
-            engine.apply(txToApply, TransactionApplicationMode.INTERNAL);
-            fail("Exception expected");
-        } catch (Exception e) {
-            assertSame(applicationError, getRootCause(e));
-        }
+        assertThatThrownBy(() -> engine.apply(txToApply, TransactionApplicationMode.INTERNAL))
+                .rootCause()
+                .isSameAs(applicationError);
         return applicationError;
     }
 

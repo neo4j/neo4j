@@ -19,10 +19,8 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.CrashGenerationCleaner.MAX_BATCH_SIZE;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -65,10 +63,10 @@ class CrashGenerationCleanerCrashTest {
                     return jobHandle::get;
                 }
             };
-            Throwable exception = assertThrows(Throwable.class, () -> cleaner.clean(executor));
-            Throwable rootCause = getRootCause(exception);
-            assertTrue(rootCause instanceof IOException);
-            assertEquals(exceptionMessage, rootCause.getMessage());
+            assertThatThrownBy(() -> cleaner.clean(executor))
+                    .rootCause()
+                    .isInstanceOf(IOException.class)
+                    .hasMessage(exceptionMessage);
         } finally {
             List<Runnable> tasks = executorService.shutdownNow();
             assertEquals(0, tasks.size());

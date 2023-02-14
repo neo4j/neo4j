@@ -21,7 +21,7 @@ package org.neo4j.graphdb;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.util.Throwables.getRootCause;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -126,11 +126,11 @@ public class GraphDatabaseShutdownTest {
         });
 
         // start waiting when the trap has been triggered
-        var e = assertThrows(Exception.class, () -> secondTxResult.get(60, SECONDS));
-        assertThat(getRootCause(e)).isInstanceOf(TransactionTerminatedException.class);
+        assertThatThrownBy(() -> secondTxResult.get(60, SECONDS))
+                .rootCause()
+                .isInstanceOf(TransactionTerminatedException.class);
 
-        var terminationException = assertThrows(Exception.class, shutdownFuture::get);
-        assertThat(getRootCause(terminationException)).isInstanceOf(TransactionTerminatedException.class);
+        assertThatThrownBy(shutdownFuture::get).rootCause().isInstanceOf(TransactionTerminatedException.class);
     }
 
     private static int lockCount(Locks locks) {

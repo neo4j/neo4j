@@ -23,7 +23,6 @@ import static java.lang.String.valueOf;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -730,8 +729,9 @@ class RecoveryIT {
 
             var failure = dbStateService.causeOfFailure(restartedDb.databaseId());
             assertTrue(failure.isPresent());
-            assertThat(getRootCause(failure.get()).getMessage())
-                    .contains("Transaction logs are missing and recovery is not possible.");
+            assertThat(failure.get())
+                    .rootCause()
+                    .hasMessageContaining("Transaction logs are missing and recovery is not possible.");
         } finally {
             managementService.shutdown();
         }
@@ -1048,8 +1048,7 @@ class RecoveryIT {
             assertFalse(
                     guardExtensionFactory.getProvidedGuardConsumer().globalGuard.isAvailable());
             assertFalse(database.isAvailable());
-            var e = assertThrows(Exception.class, database::beginTx);
-            assertThat(getRootCause(e)).isInstanceOf(DatabaseStartAbortedException.class);
+            assertThatThrownBy(database::beginTx).rootCause().isInstanceOf(DatabaseStartAbortedException.class);
         } finally {
             service.shutdown();
         }

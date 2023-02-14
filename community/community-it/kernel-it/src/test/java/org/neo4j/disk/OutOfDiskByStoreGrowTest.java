@@ -94,7 +94,7 @@ class OutOfDiskByStoreGrowTest {
 
                 assertThatThrownBy(tx::commit)
                         .hasRootCauseInstanceOf(IOException.class)
-                        .getRootCause()
+                        .rootCause()
                         .hasMessageContaining("System is out of disk space for store file ");
             }
             var health = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(DatabaseHealth.class);
@@ -104,7 +104,7 @@ class OutOfDiskByStoreGrowTest {
             assertThatThrownBy(db::beginTx)
                     .isInstanceOf(TransactionFailureException.class)
                     .hasRootCauseInstanceOf(IOException.class)
-                    .getRootCause()
+                    .rootCause()
                     .hasMessageContaining("System is out of disk space for store file ");
         } finally {
             dbms.shutdown();
@@ -129,7 +129,7 @@ class OutOfDiskByStoreGrowTest {
                 @Override
                 protected GlobalModule createGlobalModule(
                         Config config, boolean daemonMode, ExternalDependencies dependencies) {
-                    GlobalModule globalModule = new GlobalModule(config, dbmsInfo, daemonMode, dependencies) {
+                    return new GlobalModule(config, dbmsInfo, daemonMode, dependencies) {
                         @Override
                         protected PageCache createPageCache(
                                 FileSystemAbstraction fileSystem,
@@ -167,7 +167,6 @@ class OutOfDiskByStoreGrowTest {
                             return fs;
                         }
                     };
-                    return globalModule;
                 }
             }.build(config, daemonMode, dependencies);
         }

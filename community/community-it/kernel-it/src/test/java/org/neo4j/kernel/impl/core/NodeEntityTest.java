@@ -341,7 +341,7 @@ public class NodeEntityTest extends EntityTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessageContaining(elementId + " not found")
                 .hasRootCauseInstanceOf(EntityNotFoundException.class)
-                .getRootCause()
+                .rootCause()
                 .hasMessageContaining("Unable to load NODE " + elementId);
     }
 

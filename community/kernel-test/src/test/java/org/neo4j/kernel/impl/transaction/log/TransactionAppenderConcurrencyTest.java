@@ -206,15 +206,15 @@ public class TransactionAppenderConcurrencyTest {
         Future<Long> failingTransaction = executor.submit(() -> appender.append(tx(), LogAppendEvent.NULL));
 
         var executionException = assertThrows(ExecutionException.class, failingTransaction::get);
-        assertThat(executionException).getRootCause().isInstanceOf(OutOfMemoryError.class);
+        assertThat(executionException).rootCause().isInstanceOf(OutOfMemoryError.class);
 
         // Try to commit one additional transaction, should fail since database has already panicked
         fs.shouldOOM = false;
         assertThatThrownBy(() -> appender.append(tx(), LogAppendEvent.NULL))
                 .isInstanceOf(RuntimeException.class)
-                .getCause()
+                .cause()
                 .hasMessageContaining("The database has encountered a critical error")
-                .getRootCause()
+                .rootCause()
                 .isInstanceOf(OutOfMemoryError.class);
 
         // Check number of transactions, should only have one

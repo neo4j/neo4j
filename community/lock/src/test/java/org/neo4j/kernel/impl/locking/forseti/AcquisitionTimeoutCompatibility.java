@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -131,7 +129,9 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
     }
 
     private static void verifyAcquisitionFailure(Future<Boolean> lockAcquisition) {
-        ExecutionException exception = assertThrows(ExecutionException.class, lockAcquisition::get);
-        assertThat(getRootCause(exception)).isInstanceOf(LockAcquisitionTimeoutException.class);
+        assertThatThrownBy(lockAcquisition::get)
+                .isInstanceOf(ExecutionException.class)
+                .rootCause()
+                .isInstanceOf(LockAcquisitionTimeoutException.class);
     }
 }

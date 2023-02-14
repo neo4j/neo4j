@@ -603,7 +603,7 @@ class RecoveryCorruptedTransactionLogIT {
             assertFalse(context.database().isStarted());
             assertTrue(context.isFailed());
             assertThat(context.failureCause())
-                    .getRootCause()
+                    .rootCause()
                     .hasMessageContaining(
                             "Checkpoint log file with version 0 has some data available after last readable log entry.");
         } finally {

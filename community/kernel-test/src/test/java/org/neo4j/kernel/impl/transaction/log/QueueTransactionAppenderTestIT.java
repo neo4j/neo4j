@@ -223,14 +223,14 @@ class QueueTransactionAppenderTestIT {
                         throw criticalException;
                     }
                 }))
-                .getRootCause()
+                .rootCause()
                 .hasMessageContaining("failure is.");
 
         assertFalse(databaseHealth.hasNoPanic());
         assertThat(databaseHealth.causeOfPanic()).isSameAs(criticalException);
 
         assertThatThrownBy(() -> transactionAppender.append(transactionToApply, LogAppendEvent.NULL))
-                .getRootCause()
+                .rootCause()
                 .hasMessageContaining("failure is.");
     }
 

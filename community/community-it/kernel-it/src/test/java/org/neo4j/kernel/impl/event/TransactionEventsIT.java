@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import static org.apache.commons.lang3.exception.ExceptionUtils.getRootCause;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -164,22 +164,21 @@ class TransactionEventsIT {
     void transactionIdNotAccessibleBeforeCommit() {
         dbms.registerTransactionEventListener(
                 DEFAULT_DATABASE_NAME, getBeforeCommitListener(TransactionData::getTransactionId));
-        Throwable rootCause = getRootCause(assertThrows(RuntimeException.class, this::runTransaction));
-        assertTrue(rootCause instanceof IllegalStateException);
-        assertEquals(
-                "Transaction id is not assigned yet. It will be assigned during transaction commit.",
-                rootCause.getMessage());
+        assertThatThrownBy(this::runTransaction)
+                .rootCause()
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Transaction id is not assigned yet. It will be assigned during transaction commit.");
     }
 
     @Test
     void commitTimeNotAccessibleBeforeCommit() {
         dbms.registerTransactionEventListener(
                 DEFAULT_DATABASE_NAME, getBeforeCommitListener(TransactionData::getCommitTime));
-        Throwable rootCause = getRootCause(assertThrows(RuntimeException.class, this::runTransaction));
-        assertTrue(rootCause instanceof IllegalStateException);
-        assertEquals(
-                "Transaction commit time is not assigned yet. It will be assigned during transaction commit.",
-                rootCause.getMessage());
+        assertThatThrownBy(this::runTransaction)
+                .rootCause()
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage(
+                        "Transaction commit time is not assigned yet. It will be assigned during transaction commit.");
     }
 
     @Test
