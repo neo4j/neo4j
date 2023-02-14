@@ -752,12 +752,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     private void dropCreatedConstraintIndexes() throws TransactionFailureException {
-        if (hasTxStateWithChanges()) {
-            Iterator<IndexDescriptor> createdIndexIds = txState().constraintIndexesCreatedInTx();
-            while (createdIndexIds.hasNext()) {
-                IndexDescriptor createdIndex = createdIndexIds.next();
-                constraintIndexCreator.dropUniquenessConstraintIndex(createdIndex);
-            }
+        Iterator<IndexDescriptor> createdIndexIds = txState().constraintIndexesCreatedInTx();
+        while (createdIndexIds.hasNext()) {
+            IndexDescriptor createdIndex = createdIndexIds.next();
+            constraintIndexCreator.dropUniquenessConstraintIndex(createdIndex);
         }
     }
 
@@ -1128,25 +1126,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private void rollback(TransactionListenersState listenersState) throws KernelException {
         try {
-            AutoCloseable constraintDropper = () -> {
-                try {
-                    dropCreatedConstraintIndexes();
-                } catch (IllegalStateException | SecurityException e) {
-                    throw new TransactionFailureException(
-                            Status.Transaction.TransactionRollbackFailed,
-                            e,
-                            "Could not drop created constraint indexes");
-                }
-            };
-            AutoCloseable storageRollback = () -> {
-                if (txState != null) {
+            if (hasTxStateWithChanges()) {
+                AutoCloseable constraintDropper = () -> {
+                    try {
+                        dropCreatedConstraintIndexes();
+                    } catch (IllegalStateException | SecurityException e) {
+                        throw new TransactionFailureException(
+                                Status.Transaction.TransactionRollbackFailed,
+                                e,
+                                "Could not drop created constraint indexes");
+                    }
+                };
+                AutoCloseable storageRollback = () -> {
                     try (var rollbackContext = contextFactory.create("transaction rollback")) {
                         storageEngine.rollback(txState, rollbackContext);
                     }
-                }
-            };
+                };
 
-            IOUtils.close((s, throwable) -> throwable, constraintDropper, storageRollback);
+                IOUtils.close((s, throwable) -> throwable, constraintDropper, storageRollback);
+            }
         } catch (KernelException | RuntimeException | Error e) {
             throw e;
         } catch (Throwable throwable) {
