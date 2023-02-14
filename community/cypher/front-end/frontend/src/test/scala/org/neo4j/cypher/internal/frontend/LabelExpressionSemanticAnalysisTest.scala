@@ -245,6 +245,10 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
     runSemanticAnalysis().errors shouldBe empty
   }
 
+  test("MATCH (IS %) RETURN count(*)") {
+    runSemanticAnalysis().errors shouldBe empty
+  }
+
   test("MATCH (n:A&B:C) RETURN n") {
     // should not allow mixing colon as label conjunction symbol with GPM label expression symbols in label expression
     runSemanticAnalysis().errorMessages shouldEqual Seq(

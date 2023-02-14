@@ -19,98 +19,115 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Statement
 
 class IsParserTest extends JavaccParserAstTestBase[Statement] {
 
   implicit private val parser: JavaccRule[Statement] = JavaccRule.Statements
 
-  private val labelExpressions = Seq(
+  private val labelExpressions = createLabelExpression("IS", containsIs = true) ++
+    createLabelExpression(":", containsIs = false)
+
+  private def createLabelExpression(keyword: String, containsIs: Boolean) = Seq(
     (
-      "A",
-      labelLeaf("A", containsIs = true),
-      labelRelTypeLeaf("A", containsIs = true),
-      labelOrRelTypeLeaf("A", containsIs = true)
+      s"$keyword A",
+      labelLeaf("A", containsIs = containsIs),
+      labelRelTypeLeaf("A", containsIs = containsIs),
+      labelOrRelTypeLeaf("A", containsIs = containsIs)
     ),
     (
-      "A&B",
-      labelConjunction(labelLeaf("A", containsIs = true), labelLeaf("B", containsIs = true), containsIs = true),
+      s"$keyword A&B",
       labelConjunction(
-        labelRelTypeLeaf("A", containsIs = true),
-        labelRelTypeLeaf("B", containsIs = true),
-        containsIs = true
+        labelLeaf("A", containsIs = containsIs),
+        labelLeaf("B", containsIs = containsIs),
+        containsIs = containsIs
       ),
       labelConjunction(
-        labelOrRelTypeLeaf("A", containsIs = true),
-        labelOrRelTypeLeaf("B", containsIs = true),
-        containsIs = true
+        labelRelTypeLeaf("A", containsIs = containsIs),
+        labelRelTypeLeaf("B", containsIs = containsIs),
+        containsIs = containsIs
+      ),
+      labelConjunction(
+        labelOrRelTypeLeaf("A", containsIs = containsIs),
+        labelOrRelTypeLeaf("B", containsIs = containsIs),
+        containsIs = containsIs
       )
     ),
     (
-      "A|B",
-      labelDisjunction(labelLeaf("A", containsIs = true), labelLeaf("B", containsIs = true), containsIs = true),
+      s"$keyword A|B",
       labelDisjunction(
-        labelRelTypeLeaf("A", containsIs = true),
-        labelRelTypeLeaf("B", containsIs = true),
-        containsIs = true
+        labelLeaf("A", containsIs = containsIs),
+        labelLeaf("B", containsIs = containsIs),
+        containsIs = containsIs
       ),
       labelDisjunction(
-        labelOrRelTypeLeaf("A", containsIs = true),
-        labelOrRelTypeLeaf("B", containsIs = true),
-        containsIs = true
+        labelRelTypeLeaf("A", containsIs = containsIs),
+        labelRelTypeLeaf("B", containsIs = containsIs),
+        containsIs = containsIs
+      ),
+      labelDisjunction(
+        labelOrRelTypeLeaf("A", containsIs = containsIs),
+        labelOrRelTypeLeaf("B", containsIs = containsIs),
+        containsIs = containsIs
       )
     ),
     (
-      "%",
-      labelWildcard(containsIs = true),
-      labelWildcard(containsIs = true),
-      labelWildcard(containsIs = true)
+      s"$keyword %",
+      labelWildcard(containsIs = containsIs),
+      labelWildcard(containsIs = containsIs),
+      labelWildcard(containsIs = containsIs)
     ),
     (
-      "!A",
-      labelNegation(labelLeaf("A", containsIs = true), containsIs = true),
-      labelNegation(labelRelTypeLeaf("A", containsIs = true), containsIs = true),
-      labelNegation(labelOrRelTypeLeaf("A", containsIs = true), containsIs = true)
+      s"$keyword !A",
+      labelNegation(labelLeaf("A", containsIs = containsIs), containsIs = containsIs),
+      labelNegation(labelRelTypeLeaf("A", containsIs = containsIs), containsIs = containsIs),
+      labelNegation(labelOrRelTypeLeaf("A", containsIs = containsIs), containsIs = containsIs)
     ),
     (
-      "!(A|B)",
+      s"$keyword !(A|B)",
       labelNegation(
-        labelDisjunction(labelLeaf("A", containsIs = true), labelLeaf("B", containsIs = true), containsIs = true),
-        containsIs = true
+        labelDisjunction(
+          labelLeaf("A", containsIs = containsIs),
+          labelLeaf("B", containsIs = containsIs),
+          containsIs = containsIs
+        ),
+        containsIs = containsIs
       ),
       labelNegation(
         labelDisjunction(
-          labelRelTypeLeaf("A", containsIs = true),
-          labelRelTypeLeaf("B", containsIs = true),
-          containsIs = true
+          labelRelTypeLeaf("A", containsIs = containsIs),
+          labelRelTypeLeaf("B", containsIs = containsIs),
+          containsIs = containsIs
         ),
-        containsIs = true
+        containsIs = containsIs
       ),
       labelNegation(
         labelDisjunction(
-          labelOrRelTypeLeaf("A", containsIs = true),
-          labelOrRelTypeLeaf("B", containsIs = true),
-          containsIs = true
+          labelOrRelTypeLeaf("A", containsIs = containsIs),
+          labelOrRelTypeLeaf("B", containsIs = containsIs),
+          containsIs = containsIs
         ),
-        containsIs = true
+        containsIs = containsIs
       )
     ),
     (
-      "A&!B",
+      s"$keyword A&!B",
       labelConjunction(
-        labelLeaf("A", containsIs = true),
-        labelNegation(labelLeaf("B", containsIs = true), containsIs = true),
-        containsIs = true
+        labelLeaf("A", containsIs = containsIs),
+        labelNegation(labelLeaf("B", containsIs = containsIs), containsIs = containsIs),
+        containsIs = containsIs
       ),
       labelConjunction(
-        labelRelTypeLeaf("A", containsIs = true),
-        labelNegation(labelRelTypeLeaf("B", containsIs = true), containsIs = true),
-        containsIs = true
+        labelRelTypeLeaf("A", containsIs = containsIs),
+        labelNegation(labelRelTypeLeaf("B", containsIs = containsIs), containsIs = containsIs),
+        containsIs = containsIs
       ),
       labelConjunction(
-        labelOrRelTypeLeaf("A", containsIs = true),
-        labelNegation(labelOrRelTypeLeaf("B", containsIs = true), containsIs = true),
-        containsIs = true
+        labelOrRelTypeLeaf("A", containsIs = containsIs),
+        labelNegation(labelOrRelTypeLeaf("B", containsIs = containsIs), containsIs = containsIs),
+        containsIs = containsIs
       )
     )
   )
@@ -131,7 +148,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
     } yield {
 
       // MATCH
-      test(s"MATCH ($maybeVariable IS $expr $maybeProperties $maybeWhere)") {
+      test(s"MATCH ($maybeVariable $expr $maybeProperties $maybeWhere)") {
         gives(
           singleQuery(
             match_(
@@ -147,7 +164,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
       }
 
       // OPTIONAL MATCH
-      test(s"OPTIONAL MATCH ($maybeVariable IS $expr $maybeProperties $maybeWhere)") {
+      test(s"OPTIONAL MATCH ($maybeVariable $expr $maybeProperties $maybeWhere)") {
         gives(
           singleQuery(
             optionalMatch(
@@ -162,10 +179,62 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
         )
       }
 
+      // EXISTS
+      test(s"MATCH () WHERE EXISTS {($maybeVariable $expr $maybeProperties $maybeWhere)}") {
+
+        val existsExpression: ExistsExpression = ExistsExpression(
+          singleQuery(
+            match_(
+              nodePat(
+                maybeVariableAst,
+                Some(exprAstNode),
+                maybePropertiesAst,
+                maybeWhereAst
+              )
+            )
+          )
+        )(pos, None, None)
+
+        gives(
+          singleQuery(
+            match_(
+              pattern = nodePat(),
+              Some(where(existsExpression))
+            )
+          )
+        )
+      }
+
+      // COUNT
+      test(s"MATCH () WHERE COUNT {($maybeVariable $expr $maybeProperties $maybeWhere)} = 1") {
+
+        val countExpression: CountExpression = CountExpression(
+          singleQuery(
+            match_(
+              nodePat(
+                maybeVariableAst,
+                Some(exprAstNode),
+                maybePropertiesAst,
+                maybeWhereAst
+              )
+            )
+          )
+        )(pos, None, None)
+
+        gives(
+          singleQuery(
+            match_(
+              pattern = nodePat(),
+              Some(where(eq(countExpression, literalInt(1))))
+            )
+          )
+        )
+      }
+
       // CREATE + MERGE, these should parse but will be disallowed in semantic checking,
       // in a similar fashion as the label expressions
 
-      test(s"CREATE ($maybeVariable IS $expr $maybeProperties $maybeWhere)") {
+      test(s"CREATE ($maybeVariable $expr $maybeProperties $maybeWhere)") {
         gives(
           singleQuery(
             create(
@@ -180,7 +249,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
         )
       }
 
-      test(s"MERGE ($maybeVariable IS $expr $maybeProperties $maybeWhere)") {
+      test(s"MERGE ($maybeVariable $expr $maybeProperties $maybeWhere)") {
         gives(
           singleQuery(
             merge(
@@ -199,7 +268,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
         (maybePathLength, maybePathLengthAst) <- pathLength
       } yield {
         // MATCH
-        test(s"MATCH ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
+        test(s"MATCH ()-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
           gives(
             singleQuery(
               match_(
@@ -221,7 +290,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
 
         // OPTIONAL MATCH
         test(
-          s"OPTIONAL MATCH ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties $maybeWhere]->()"
+          s"OPTIONAL MATCH ()-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()"
         ) {
           gives(
             singleQuery(
@@ -242,10 +311,74 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
           )
         }
 
+        // EXISTS
+        test(s"MATCH (n) WHERE EXISTS {(n)-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()}") {
+
+          val existsExpression: ExistsExpression = ExistsExpression(
+            singleQuery(
+              match_(
+                relationshipChain(
+                  nodePat(Some("n")),
+                  relPat(
+                    maybeVariableAst,
+                    Some(exprAstRel),
+                    maybePathLengthAst,
+                    maybePropertiesAst,
+                    maybeWhereAst
+                  ),
+                  nodePat()
+                )
+              )
+            )
+          )(pos, None, None)
+
+          gives(
+            singleQuery(
+              match_(
+                pattern = nodePat(Some("n")),
+                Some(where(existsExpression))
+              )
+            )
+          )
+        }
+
+        // COUNT
+        test(
+          s"MATCH (n) WHERE COUNT {(n)-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()} = 1"
+        ) {
+
+          val countExpression: CountExpression = CountExpression(
+            singleQuery(
+              match_(
+                relationshipChain(
+                  nodePat(Some("n")),
+                  relPat(
+                    maybeVariableAst,
+                    Some(exprAstRel),
+                    maybePathLengthAst,
+                    maybePropertiesAst,
+                    maybeWhereAst
+                  ),
+                  nodePat()
+                )
+              )
+            )
+          )(pos, None, None)
+
+          gives(
+            singleQuery(
+              match_(
+                pattern = nodePat(Some("n")),
+                Some(where(eq(countExpression, literalInt(1))))
+              )
+            )
+          )
+        }
+
         // CREATE + MERGE, these should parse but will be disallowed in semantic checking,
         // in a similar fashion as the label expressions
 
-        test(s"CREATE ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
+        test(s"CREATE ()-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
           gives(
             singleQuery(
               create(
@@ -265,7 +398,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
           )
         }
 
-        test(s"MERGE ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
+        test(s"MERGE ()-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()") {
           gives(
             singleQuery(
               merge(
@@ -293,7 +426,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
       (maybeVariable, maybeVariableAst) <- variable
       (maybeProperties, maybePropertiesAst) <- properties
     } yield {
-      test(s"MATCH ($maybeVariable $maybeProperties WHERE x IS $expr)") {
+      test(s"MATCH ($maybeVariable $maybeProperties WHERE x $expr)") {
         gives(
           singleQuery(
             match_(
@@ -308,7 +441,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
         )
       }
 
-      test(s"MATCH ($maybeVariable IS $expr $maybeProperties WHERE x IS $expr)") {
+      test(s"MATCH ($maybeVariable $expr $maybeProperties WHERE x $expr)") {
         gives(
           singleQuery(
             match_(
@@ -326,7 +459,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
       for {
         (maybePathLength, maybePathLengthAst) <- pathLength
       } yield {
-        test(s"MATCH ()-[$maybeVariable $maybePathLength $maybeProperties WHERE x IS $expr]->()") {
+        test(s"MATCH ()-[$maybeVariable $maybePathLength $maybeProperties WHERE x $expr]->()") {
           gives(
             singleQuery(
               match_(
@@ -346,7 +479,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
           )
         }
 
-        test(s"MATCH ()-[$maybeVariable IS $expr $maybePathLength $maybeProperties WHERE x IS $expr]->()") {
+        test(s"MATCH ()-[$maybeVariable $expr $maybePathLength $maybeProperties WHERE x $expr]->()") {
           gives(
             singleQuery(
               match_(
@@ -370,7 +503,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
 
     // WHERE
 
-    test(s"MATCH (n) WHERE n IS $expr") {
+    test(s"MATCH (n) WHERE n $expr") {
       gives(
         singleQuery(
           match_(
@@ -381,7 +514,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
       )
     }
 
-    test(s"MATCH (n) WHERE n.prop = 1 AND n IS $expr") {
+    test(s"MATCH (n) WHERE n.prop = 1 AND n $expr") {
       gives(
         singleQuery(
           match_(
@@ -397,7 +530,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
       )
     }
 
-    test(s"MATCH ()-[r]->()  WHERE r IS $expr") {
+    test(s"MATCH ()-[r]->()  WHERE r $expr") {
       gives(
         singleQuery(
           match_(
@@ -412,7 +545,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
       )
     }
 
-    test(s"MATCH ()-[r]->() WHERE r.prop = 1 AND r IS $expr") {
+    test(s"MATCH ()-[r]->() WHERE r.prop = 1 AND r $expr") {
       gives(
         singleQuery(
           match_(
@@ -434,7 +567,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
 
     // RETURN
 
-    test(s"MATCH (n) RETURN n IS $expr AS node") {
+    test(s"MATCH (n) RETURN n $expr AS node") {
       gives(
         singleQuery(
           match_(
@@ -450,7 +583,7 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
       )
     }
 
-    test(s"MATCH ()-[r]->() RETURN r IS $expr AS rel") {
+    test(s"MATCH ()-[r]->() RETURN r $expr AS rel") {
       gives(
         singleQuery(
           match_(
@@ -528,6 +661,14 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
   }
 
   // Edge cases
+
+  test("MATCH (n) WHERE n IS :A|B RETURN n") {
+    failsToParse
+  }
+
+  test("MATCH (n) WHERE n IS :A:B RETURN n") {
+    failsToParse
+  }
 
   test(s"MATCH (n IS IS)") {
     gives(
@@ -752,6 +893,15 @@ class IsParserTest extends JavaccParserAstTestBase[Statement] {
 
   test(s"MATCH ()-[r IS NOT NULL WHERE r IS NOT NULL]->()") {
     failsToParse
+  }
+
+  test("WITH [1, 2, 3] AS where RETURN [is IN where] AS IS") {
+    gives(
+      singleQuery(
+        with_(listOf(literalInt(1), literalInt(2), literalInt(3)).as("where")),
+        return_(listComprehension(varFor("is"), varFor("where"), None, None).as("IS"))
+      )
+    )
   }
 
   test("Should not allow IS for SET label") {
