@@ -226,7 +226,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
       // this is the error message that we ultimately expect
       """A quantified path pattern needs to have at least one relationship.
         |In this case, the quantified path pattern ((n) (m)){1, 5} consists of only nodes.""".stripMargin,
-      """Concatenation is currently only supported for quantified path patterns.
+      """Juxtaposition is currently only supported for quantified path patterns.
         |In this case, both (n) and (m) are single nodes.
         |That is, neither of these is a quantified path pattern.""".stripMargin
     )
@@ -350,7 +350,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
   // parenthesized path patterns
   test("MATCH ((a)-->(b)) (x) RETURN x") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      """Concatenation is currently only supported for quantified path patterns.
+      """Juxtaposition is currently only supported for quantified path patterns.
         |In this case, ((a)-->(b)) is a (non-quantified) parenthesized path pattern and (x) is a single node.
         |That is, neither of these is a quantified path pattern.""".stripMargin
     )
@@ -358,7 +358,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
 
   test("MATCH (x) ((a)-->(b)) RETURN x") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      """Concatenation is currently only supported for quantified path patterns.
+      """Juxtaposition is currently only supported for quantified path patterns.
         |In this case, (x) is a single node and ((a)-->(b)) is a (non-quantified) parenthesized path pattern.
         |That is, neither of these is a quantified path pattern.""".stripMargin
     )
@@ -366,7 +366,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
 
   test("MATCH ((a)-->(b)) (x)-->(y) RETURN x") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      """Concatenation is currently only supported for quantified path patterns.
+      """Juxtaposition is currently only supported for quantified path patterns.
         |In this case, ((a)-->(b)) is a (non-quantified) parenthesized path pattern and (x)-->(y) is a simple path pattern.
         |That is, neither of these is a quantified path pattern.""".stripMargin
     )
@@ -374,7 +374,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
 
   test("MATCH ((a)-->(b)) ((x)-->(y)) RETURN x") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      """Concatenation is currently only supported for quantified path patterns.
+      """Juxtaposition is currently only supported for quantified path patterns.
         |In this case, both ((a)-->(b)) and ((x)-->(y)) are (non-quantified) parenthesized path patterns.
         |That is, neither of these is a quantified path pattern.""".stripMargin
     )
@@ -382,7 +382,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
 
   test("MATCH (x) (y) RETURN x") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      """Concatenation is currently only supported for quantified path patterns.
+      """Juxtaposition is currently only supported for quantified path patterns.
         |In this case, both (x) and (y) are single nodes.
         |That is, neither of these is a quantified path pattern.""".stripMargin
     )

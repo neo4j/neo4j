@@ -266,7 +266,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
       case PathConcatenation(factors) =>
         factors.map(check(ctx, _)).reduce(_ chain _) chain
-          checkValidConcatenation(factors)
+          checkValidJuxtaposition(factors)
 
       case q @ QuantifiedPath(pattern, quantifier, _, _) =>
         def checkFeatureFlag: SemanticCheck =
@@ -346,7 +346,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
     case _: NodePattern       => "single node"
   }
 
-  private def checkValidConcatenation(factors: Seq[PathFactor]) = {
+  private def checkValidJuxtaposition(factors: Seq[PathFactor]) = {
     factors.sliding(2).map {
       case Seq(_, _: QuantifiedPath) => SemanticCheck.success
       case Seq(_: QuantifiedPath, _) => SemanticCheck.success
@@ -362,7 +362,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             s"In this case, $aString is a $aTypeString and $bString is a $bTypeString."
           }
         error(
-          s"""Concatenation is currently only supported for quantified path patterns.
+          s"""Juxtaposition is currently only supported for quantified path patterns.
              |$inThisCase
              |That is, neither of these is a quantified path pattern.""".stripMargin,
           b.position
