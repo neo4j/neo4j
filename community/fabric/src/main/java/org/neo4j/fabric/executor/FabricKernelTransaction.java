@@ -158,7 +158,14 @@ public class FabricKernelTransaction {
     }
 
     public void terminate(Status reason) {
-        internalTransaction.terminate(reason);
+        terminateIfPossible(reason);
+    }
+
+    public void terminateIfPossible(Status reason) {
+        if (internalTransaction.isOpen()
+                && internalTransaction.terminationReason().isEmpty()) {
+            internalTransaction.terminate(reason);
+        }
     }
 
     /**

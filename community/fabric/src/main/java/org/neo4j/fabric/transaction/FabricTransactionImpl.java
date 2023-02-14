@@ -376,6 +376,9 @@ public class FabricTransactionImpl
 
     @Override
     public void markForTermination(Status reason) {
+        if (state != State.OPEN) {
+            return;
+        }
         exclusiveLock.lock();
         try {
             if (state != State.OPEN) {
