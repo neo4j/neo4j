@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.features
+package cypher.features.acceptance
 
+import cypher.features.TestConfig
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.graphdb.config.Setting
@@ -29,7 +30,7 @@ class InterpretedAcceptanceTests extends BaseAcceptanceTest {
 
   // If you want to only run a specific feature or scenario, go to the BaseAcceptanceTest
 
-  override val config: TestConfig = InterpretedTestConfig
+  override val config: TestConfig = TestConfig.interpreted(getClass)
 
   override def dbConfigPerFeature(featureName: String): collection.Map[Setting[_], AnyRef] =
     super.dbConfigPerFeature(featureName) ++

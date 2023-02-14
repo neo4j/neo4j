@@ -17,9 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.features
+package cypher.features.tck
 
+import cypher.features.BaseFeatureTest
+import cypher.features.BaseFeatureTestHolder
 import cypher.features.Neo4jAdapter.defaultTestConfig
+import cypher.features.TestDatabaseProvider
 import org.junit.jupiter.api.Assertions.fail
 import org.junit.jupiter.api.Test
 import org.neo4j.graphdb.config.Setting

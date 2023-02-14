@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.features
+package cypher.features.tck
+
+import cypher.features.TestConfig
 
 class InterpretedTCKTests extends BaseTCKTests {
 
   // If you want to only run a specific feature or scenario, go to the BaseTCKTests
 
-  override def config: TestConfig = InterpretedTestConfig
+  override def config: TestConfig = TestConfig.interpreted(getClass)
 
   override def useBolt: Boolean = false
 }

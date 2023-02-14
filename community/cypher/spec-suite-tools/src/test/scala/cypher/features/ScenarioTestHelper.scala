@@ -166,10 +166,10 @@ object ScenarioTestHelper {
     }
   }
 
-  private def parseDenylist(denylistFile: String): Seq[DenylistEntry] = {
+  private def parseDenylist(denylistPathString: String): Seq[DenylistEntry] = {
     def validate(scenarioName: String): Unit = {
       if (scenarioName.head.isWhitespace || scenarioName.last.isWhitespace) {
-        throw new Exception(s"Invalid whitespace in scenario name $scenarioName from file $denylistFile")
+        throw new Exception(s"Invalid whitespace in scenario name $scenarioName from file $denylistPathString")
       }
     }
 
@@ -177,9 +177,8 @@ object ScenarioTestHelper {
      * Find denylist no matter if thy are in the filesystem or in the a jar.
      * The code get executed from a jar, when the TCK on a public artifact of Neo4j.
      */
-    val resourcePath = "/denylists/" + denylistFile
-    val resourceUrl: URL = getClass.getResource(resourcePath)
-    if (resourceUrl == null) throw new NoSuchFileException(s"Denylist file not found at: $resourcePath")
+    val resourceUrl: URL = getClass.getResource("/" + denylistPathString)
+    if (resourceUrl == null) throw new NoSuchFileException(s"Denylist file not found at: $denylistPathString")
     val resourceUri: URI = resourceUrl.toURI
     val fs =
       if ("jar".equalsIgnoreCase(resourceUri.getScheme)) {
@@ -192,7 +191,7 @@ object ScenarioTestHelper {
         t: Path => Files.isRegularFile(t)
       }
       val denylistPathsList: List[Path] = denylistPaths.iterator().asScala.toList
-      if (denylistPathsList.isEmpty) throw new NoSuchFileException(s"Denylist file not found at: $resourcePath")
+      if (denylistPathsList.isEmpty) throw new NoSuchFileException(s"Denylist file not found at: $denylistPathString")
       val lines = denylistPathsList.flatMap(f => Files.readAllLines(f, StandardCharsets.UTF_8).asScala.toList)
 
       val scenarios =

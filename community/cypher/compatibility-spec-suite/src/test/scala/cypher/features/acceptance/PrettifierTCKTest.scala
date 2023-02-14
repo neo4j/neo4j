@@ -17,8 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package cypher.features
+package cypher.features.acceptance
 
+import cypher.features.BaseFeatureTestHolder
 import org.junit.jupiter.api.function.Executable
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
