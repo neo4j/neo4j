@@ -58,6 +58,8 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 public class HttpCopier implements UploadCommand.Copier {
     static final int HTTP_RESUME_INCOMPLETE = 308;
@@ -72,6 +74,7 @@ public class HttpCopier implements UploadCommand.Copier {
     private final ExecutionContext ctx;
     private final Sleeper sleeper;
     private final ProgressListenerFactory progressListenerFactory;
+    private final SystemNanoClock clock;
     private final long maxResumeUploadRetries;
     private final long maximumBackoff;
 
@@ -80,6 +83,17 @@ public class HttpCopier implements UploadCommand.Copier {
                 ctx,
                 Thread::sleep,
                 (text, length) -> ProgressMonitorFactory.textual(ctx.out()).singlePart(text, length),
+                Clocks.nanoClock(),
+                DEFAULT_MAXIMUM_RETRIES,
+                DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS);
+    }
+
+    HttpCopier(ExecutionContext ctx, SystemNanoClock clock) {
+        this(
+                ctx,
+                Thread::sleep,
+                (text, length) -> ProgressMonitorFactory.textual(ctx.out()).singlePart(text, length),
+                clock,
                 DEFAULT_MAXIMUM_RETRIES,
                 DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS);
     }
@@ -89,23 +103,32 @@ public class HttpCopier implements UploadCommand.Copier {
                 ctx,
                 Thread::sleep,
                 (text, length) -> ProgressMonitorFactory.textual(ctx.out()).singlePart(text, length),
+                Clocks.nanoClock(),
                 maximumRetries,
                 maximumBackoff);
     }
 
     HttpCopier(ExecutionContext ctx, Sleeper sleeper, ProgressListenerFactory progressListenerFactory) {
-        this(ctx, sleeper, progressListenerFactory, DEFAULT_MAXIMUM_RETRIES, DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS);
+        this(
+                ctx,
+                sleeper,
+                progressListenerFactory,
+                Clocks.nanoClock(),
+                DEFAULT_MAXIMUM_RETRIES,
+                DEFAULT_MAXIMUM_RETRY_BACKOFF_MILLIS);
     }
 
     HttpCopier(
             ExecutionContext ctx,
             Sleeper sleeper,
             ProgressListenerFactory progressListenerFactory,
+            SystemNanoClock clock,
             long maxResumeUploadRetries,
             long maximumBackoff) {
         this.ctx = ctx;
         this.sleeper = sleeper;
         this.progressListenerFactory = progressListenerFactory;
+        this.clock = clock;
         this.maxResumeUploadRetries = maxResumeUploadRetries;
         this.maximumBackoff = maximumBackoff;
     }
@@ -294,6 +317,16 @@ public class HttpCopier implements UploadCommand.Copier {
         }
     }
 
+    private void throwIfImportDidNotStart(long importStartedTimeout) {
+        boolean passedStartImportTimeout = this.clock.millis() > importStartedTimeout;
+        if (passedStartImportTimeout) {
+            throw new CommandFailedException(
+                    "Timed out waiting for database load to start as the database did not enter "
+                            + "'loading' state in time. Please retry the operation. You might find more information about the "
+                            + "failure on the database status page in https://console.neo4j.io.");
+        }
+    }
+
     private void doStatusPolling(boolean verbose, String consoleURL, String bearerToken, long fileSize)
             throws InterruptedException {
         ctx.out().println("We have received your export and it is currently being loaded into your Aura instance.");
@@ -303,8 +336,8 @@ public class HttpCopier implements UploadCommand.Copier {
         String bearerTokenHeader = "Bearer " + bearerToken;
         ProgressTrackingOutputStream.Progress statusProgress = new ProgressTrackingOutputStream.Progress(
                 progressListenerFactory.create("Import progress (estimated)", 100L), 0);
-        boolean firstRunning = true;
-        long importStarted = System.currentTimeMillis();
+        boolean importHasStarted = false;
+        long importStarted = this.clock.millis();
         double importTimeEstimateMinutes = 5 + (3 * bytesToGibibytes(fileSize));
         long importTimeEstimateMillis = TimeUnit.SECONDS.toMillis((long) (importTimeEstimateMinutes * 60));
         long importStartedTimeout =
@@ -323,24 +356,25 @@ public class HttpCopier implements UploadCommand.Copier {
                     // state
                     // "running". So we need to check if this is the case and ignore the result in that case and only
                     // take this result as valid, once the status loading or restoring was seen before.
-                    if (!firstRunning) {
+                    if (importHasStarted) {
                         statusProgress.rewindTo(0);
                         statusProgress.add(100);
                         statusProgress.done();
                     } else {
-                        boolean passedStartImportTimeout = importStarted > importStartedTimeout;
-                        if (passedStartImportTimeout) {
-                            throw new CommandFailedException(
-                                    "We're sorry, it couldn't be detected that the import was started, "
-                                            + "please check the console for further details.");
-                        }
+                        throwIfImportDidNotStart(importStartedTimeout);
                     }
                     break;
                 case "loading failed":
-                    throw formatCommandFailedExceptionError(statusBody.Error.getMessage(), statusBody.Error.getUrl());
+                    if (importHasStarted) {
+                        throw formatCommandFailedExceptionError(
+                                statusBody.Error.getMessage(), statusBody.Error.getUrl());
+                    } else {
+                        throwIfImportDidNotStart(importStartedTimeout);
+                    }
+                    break;
                 default:
-                    firstRunning = false;
-                    long elapsed = System.currentTimeMillis() - importStarted;
+                    importHasStarted = true;
+                    long elapsed = this.clock.millis() - importStarted;
                     statusProgress.rewindTo(0);
                     statusProgress.add(
                             importStatusProgressEstimate(statusBody.Status, elapsed, importTimeEstimateMillis));
@@ -349,7 +383,7 @@ public class HttpCopier implements UploadCommand.Copier {
             sleeper.sleep(2000);
         }
         ctx.out().println("Your data was successfully pushed to Aura and is now running.");
-        long importDurationMillis = System.currentTimeMillis() - importStarted;
+        long importDurationMillis = this.clock.millis() - importStarted;
         debug(
                 verbose,
                 format(
