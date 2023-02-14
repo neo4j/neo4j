@@ -63,9 +63,4 @@ public class PropertyKeyTokenRecord extends TokenRecord {
     protected void additionalToString(StringBuilder buf) {
         buf.append(",propCount=").append(propCount);
     }
-
-    @Override
-    public PropertyKeyTokenRecord copy() {
-        return new PropertyKeyTokenRecord(this);
-    }
 }

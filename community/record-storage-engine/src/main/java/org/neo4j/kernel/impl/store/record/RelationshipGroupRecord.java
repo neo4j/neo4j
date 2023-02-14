@@ -195,11 +195,6 @@ public class RelationshipGroupRecord extends AbstractBaseRecord {
     }
 
     @Override
-    public RelationshipGroupRecord copy() {
-        return new RelationshipGroupRecord(this);
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;

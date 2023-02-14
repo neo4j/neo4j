@@ -20,6 +20,7 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.test.ReflectionUtil.callCopyConstructor;
 
 import java.util.Collection;
 import java.util.List;
@@ -252,7 +253,7 @@ public class RecordBuilders {
         @SuppressWarnings("unchecked")
         @Override
         public T copy(T record, MemoryTracker memoryTracker) {
-            return (T) record.copy();
+            return callCopyConstructor(record);
         }
     }
 

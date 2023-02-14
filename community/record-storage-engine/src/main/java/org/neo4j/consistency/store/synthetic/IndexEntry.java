@@ -47,11 +47,6 @@ public class IndexEntry extends AbstractBaseRecord {
     }
 
     @Override
-    public IndexEntry copy() {
-        throw new UnsupportedOperationException("Synthetic records cannot be copied.");
-    }
-
-    @Override
     public String toString() {
         return format(
                 "IndexEntry[%s=%d, index=%s]",

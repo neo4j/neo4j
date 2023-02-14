@@ -51,7 +51,7 @@ class NodeRecordTest {
         node.setInUse(true);
 
         // When
-        NodeRecord clone = node.copy();
+        NodeRecord clone = new NodeRecord(node);
 
         // Then
         assertEquals(node.inUse(), clone.inUse());

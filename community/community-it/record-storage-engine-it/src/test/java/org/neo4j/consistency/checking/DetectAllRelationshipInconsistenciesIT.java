@@ -166,7 +166,7 @@ public class DetectAllRelationshipInconsistenciesIT {
         try (var cursor = store.openPageCursorForReading(id, NULL_CONTEXT)) {
             store.getRecordByCursor(id, before, RecordLoad.NORMAL, cursor);
         }
-        RelationshipRecord after = before.copy();
+        RelationshipRecord after = new RelationshipRecord(before);
 
         boolean sabotageSourceChain = random.nextBoolean(); // otherwise target chain
         boolean sabotageNodeId = random.nextBoolean();

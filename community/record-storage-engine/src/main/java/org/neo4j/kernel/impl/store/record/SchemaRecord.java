@@ -52,11 +52,6 @@ public class SchemaRecord extends PrimitiveRecord {
     }
 
     @Override
-    public SchemaRecord copy() {
-        return new SchemaRecord(this);
-    }
-
-    @Override
     public String toString() {
         return "SchemaRecord[" + getId() + ",used=" + inUse() + ",created=" + isCreated() + ",nextProp=" + nextProp
                 + ",constraint=" + constraint + ",secondaryUnitId" + getSecondaryUnitId() + ",fixedReferences="

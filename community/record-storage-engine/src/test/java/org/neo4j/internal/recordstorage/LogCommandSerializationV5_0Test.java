@@ -74,7 +74,7 @@ public class LogCommandSerializationV5_0Test {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord(42);
-        PropertyKeyTokenRecord after = before.copy();
+        PropertyKeyTokenRecord after = new PropertyKeyTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
         new Command.PropertyKeyTokenCommand(writer(), before, after).serialize(channel);
@@ -95,7 +95,7 @@ public class LogCommandSerializationV5_0Test {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord(42);
-        PropertyKeyTokenRecord after = before.copy();
+        PropertyKeyTokenRecord after = new PropertyKeyTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
         after.setInternal(true);
@@ -117,7 +117,7 @@ public class LogCommandSerializationV5_0Test {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         LabelTokenRecord before = new LabelTokenRecord(42);
-        LabelTokenRecord after = before.copy();
+        LabelTokenRecord after = new LabelTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
         new Command.LabelTokenCommand(writer(), before, after).serialize(channel);
@@ -138,7 +138,7 @@ public class LogCommandSerializationV5_0Test {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         LabelTokenRecord before = new LabelTokenRecord(42);
-        LabelTokenRecord after = before.copy();
+        LabelTokenRecord after = new LabelTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
         after.setInternal(true);
@@ -160,7 +160,7 @@ public class LogCommandSerializationV5_0Test {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord(42);
-        RelationshipTypeTokenRecord after = before.copy();
+        RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
         new Command.RelationshipTypeTokenCommand(writer(), before, after).serialize(channel);
@@ -182,7 +182,7 @@ public class LogCommandSerializationV5_0Test {
         // Given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord(42);
-        RelationshipTypeTokenRecord after = before.copy();
+        RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
         after.setInternal(true);
@@ -469,7 +469,7 @@ public class LogCommandSerializationV5_0Test {
         // given
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         SchemaRecord before = new SchemaRecord(42);
-        SchemaRecord after = before.copy();
+        SchemaRecord after = new SchemaRecord(before);
         after.initialize(true, 353);
         after.setConstraint(true);
         after.setCreated();

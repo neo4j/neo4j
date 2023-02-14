@@ -98,7 +98,7 @@ class RecordLoading {
         int nodeLabelBlockSize =
                 context.neoStores.getNodeStore().getDynamicLabelStore().getRecordDataSize();
         if (safeLoadDynamicRecordChain(
-                record -> records.add(record.copy()),
+                record -> records.add(new DynamicRecord(record)),
                 labelReader,
                 seenRecordIds,
                 NodeLabelsField.firstDynamicLabelRecordId(labelField),
@@ -218,7 +218,7 @@ class RecordLoading {
                     String name;
                     if (!NULL_REFERENCE.is(record.getNameId())
                             && safeLoadDynamicRecordChain(
-                                    r -> nameRecords.add(r.copy()),
+                                    r -> nameRecords.add(new DynamicRecord(r)),
                                     nameReader,
                                     seenRecordIds,
                                     record.getNameId(),

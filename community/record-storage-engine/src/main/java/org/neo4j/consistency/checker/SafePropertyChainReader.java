@@ -177,7 +177,7 @@ class SafePropertyChainReader implements AutoCloseable {
                                 case STRING:
                                     dynamicRecords.clear();
                                     if (safeLoadDynamicRecordChain(
-                                            record -> dynamicRecords.add(record.copy()),
+                                            record -> dynamicRecords.add(new DynamicRecord(record)),
                                             stringReader,
                                             seenDynamicRecordIds,
                                             block.getSingleValueLong(),
@@ -200,7 +200,7 @@ class SafePropertyChainReader implements AutoCloseable {
                                 case ARRAY:
                                     dynamicRecords.clear();
                                     if (safeLoadDynamicRecordChain(
-                                            record -> dynamicRecords.add(record.copy()),
+                                            record -> dynamicRecords.add(new DynamicRecord(record)),
                                             arrayReader,
                                             seenDynamicRecordIds,
                                             block.getSingleValueLong(),

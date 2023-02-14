@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeValue;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.ReflectionUtil.callCopyConstructor;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -56,7 +57,7 @@ class AbstractBaseRecordCopyTest {
     @Inject
     private RandomSupport random;
 
-    private Map<Class<?>, Callable<Object>> dataProviders = new HashMap<>();
+    private final Map<Class<?>, Callable<Object>> dataProviders = new HashMap<>();
 
     @BeforeEach
     void setUp() {
@@ -89,7 +90,7 @@ class AbstractBaseRecordCopyTest {
     void copyAllFields(AbstractBaseRecord record, String classname) throws Exception {
         randomPopulatedRecord(record);
 
-        AbstractBaseRecord copy = record.copy();
+        AbstractBaseRecord copy = callCopyConstructor(record);
         assertTrue(reflectionEquals(record, copy));
         assertEquals(record, copy);
     }
@@ -99,7 +100,7 @@ class AbstractBaseRecordCopyTest {
         // Due to fields relying on each other we can not randomly populate all fields here.
         PropertyRecord record = getRandomPropertyRecord();
 
-        PropertyRecord copy = record.copy();
+        PropertyRecord copy = new PropertyRecord(record);
         assertTrue(reflectionEquals(record, copy));
         assertEquals(record, copy);
     }

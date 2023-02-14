@@ -54,15 +54,6 @@ public class CountsEntry extends AbstractBaseRecord {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public CountsEntry copy() {
-        throw new UnsupportedOperationException("Synthetic records cannot be copied.");
-    }
-
-    public CountsKey getCountsKey() {
-        return key;
-    }
-
     public long getCount() {
         return count;
     }

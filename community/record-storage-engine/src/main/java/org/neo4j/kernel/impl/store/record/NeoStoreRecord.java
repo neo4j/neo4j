@@ -47,9 +47,4 @@ public class NeoStoreRecord extends PrimitiveRecord {
 
     @Override
     public void setIdTo(PropertyRecord property) {}
-
-    @Override
-    public NeoStoreRecord copy() {
-        return new NeoStoreRecord(this);
-    }
 }

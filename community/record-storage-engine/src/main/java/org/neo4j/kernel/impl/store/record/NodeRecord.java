@@ -148,11 +148,6 @@ public class NodeRecord extends PrimitiveRecord {
     }
 
     @Override
-    public NodeRecord copy() {
-        return new NodeRecord(this);
-    }
-
-    @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), nextRel, labels, dense);
     }

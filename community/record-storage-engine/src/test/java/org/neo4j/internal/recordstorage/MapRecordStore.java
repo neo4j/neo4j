@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.test.ReflectionUtil;
 
 class MapRecordStore implements LockVerificationMonitor.StoreLoader {
     private final MutableLongObjectMap<NodeRecord> nodeStore = LongObjectMaps.mutable.empty();
@@ -69,7 +70,7 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader {
     }
 
     void write(RelationshipGroupRecord record) {
-        RelationshipGroupRecord copy = record.copy();
+        RelationshipGroupRecord copy = new RelationshipGroupRecord(record);
         // This is a special thing where we know that the prev pointer isn't actually persisted and so that fact is
         // mimiced here
         copy.setPrev(-1);
@@ -106,14 +107,6 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader {
         return null;
     }
 
-    Stream<NodeRecord> loadNodes() {
-        return nodeStore.values().stream();
-    }
-
-    Stream<RelationshipRecord> loadRelationships() {
-        return relationshipStore.values().stream();
-    }
-
     Stream<RelationshipGroupRecord> loadRelationshipGroups() {
         return groupStore.values().stream();
     }
@@ -127,7 +120,7 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader {
         T record = store.get(key);
         monitor.accept(record);
         assert record != null : "Record " + key + " doesn't exist";
-        return (T) record.copy();
+        return ReflectionUtil.callCopyConstructor(record);
     }
 
     private static <T extends AbstractBaseRecord, R> RecordAccess.Loader<T, R> noLoader() {
@@ -141,7 +134,7 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader {
 
     private static <T extends AbstractBaseRecord, R> RecordAccess.Loader<T, R> loader(
             MutableLongObjectMap<T> store, BiFunction<Long, R, T> factory, Consumer<T> monitor) {
-        return new RecordAccess.Loader<T, R>() {
+        return new RecordAccess.Loader<>() {
             @Override
             public T newUnused(long key, R additionalData, MemoryTracker memoryTracker) {
                 T record = factory.apply(key, additionalData);
@@ -161,7 +154,7 @@ class MapRecordStore implements LockVerificationMonitor.StoreLoader {
 
             @Override
             public T copy(T record, MemoryTracker memoryTracker) {
-                return (T) record.copy();
+                return ReflectionUtil.callCopyConstructor(record);
             }
         };
     }

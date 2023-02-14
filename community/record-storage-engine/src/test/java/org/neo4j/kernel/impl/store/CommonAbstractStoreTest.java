@@ -336,10 +336,5 @@ class CommonAbstractStoreTest {
         TheRecord(long id) {
             super(id);
         }
-
-        @Override
-        public AbstractBaseRecord copy() {
-            return super.copy();
-        }
     }
 }

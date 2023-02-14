@@ -42,9 +42,4 @@ public class LabelTokenRecord extends TokenRecord {
     protected String simpleName() {
         return "Label";
     }
-
-    @Override
-    public LabelTokenRecord copy() {
-        return new LabelTokenRecord(this);
-    }
 }

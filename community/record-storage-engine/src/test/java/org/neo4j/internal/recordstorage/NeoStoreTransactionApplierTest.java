@@ -576,7 +576,7 @@ class NeoStoreTransactionApplierTest {
         TransactionApplierFactory applier = newApplierFacade(newApplier(false), newIndexApplier());
         IndexDescriptor rule = indexRule(0, 1, 2, "K", "X.Y");
         SchemaRecord before = new SchemaRecord(rule.getId());
-        SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setCreated();
         Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
@@ -597,7 +597,7 @@ class NeoStoreTransactionApplierTest {
         // given
         TransactionApplierFactory applier = newApplierFacade(newIndexApplier(), newApplier(true));
         SchemaRecord before = new SchemaRecord(21);
-        SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setCreated();
         IndexDescriptor rule = indexRule(21, 1, 2, "K", "X.Y");
         Command.SchemaRuleCommand command =
@@ -631,7 +631,7 @@ class NeoStoreTransactionApplierTest {
                 StoreCursors.NULL);
         TransactionApplierFactory applier = newApplierFacade(newIndexApplier(), newApplier(false));
         SchemaRecord before = new SchemaRecord(21);
-        SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setConstraint(true);
         IndexDescriptor rule = constraintIndexRule(21, 1, 2, "K", "X.Y", 42L);
         Command.SchemaRuleCommand command =
@@ -664,7 +664,7 @@ class NeoStoreTransactionApplierTest {
                 StoreCursors.NULL);
         TransactionApplierFactory applier = newApplierFacade(newIndexApplier(), newApplier(true));
         SchemaRecord before = new SchemaRecord(21);
-        SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         IndexDescriptor rule = constraintIndexRule(0, 1, 2, "K", "X.Y", 42L);
         Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
@@ -747,7 +747,7 @@ class NeoStoreTransactionApplierTest {
         doThrow(runtimeException).when(indexActivator).activateIndex(any());
 
         SchemaRecord before = new SchemaRecord(21);
-        SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         IndexDescriptor rule = constraintIndexRule(0, 1, 2, "K", "X.Y", 42L);
         Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
@@ -766,7 +766,7 @@ class NeoStoreTransactionApplierTest {
         TransactionApplierFactoryChain applier = new TransactionApplierFactoryChain(
                 w -> w.newBatch(new CursorContextFactory(PageCacheTracer.NULL, EMPTY)), base, indexApplier);
         SchemaRecord before = new SchemaRecord(21).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
-        SchemaRecord after = before.copy().initialize(false, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         IndexDescriptor rule = indexRule(0, 1, 2, "K", "X.Y");
         Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
@@ -787,7 +787,7 @@ class NeoStoreTransactionApplierTest {
         // given
         TransactionApplierFactory applier = newApplierFacade(newIndexApplier(), newApplier(true));
         SchemaRecord before = new SchemaRecord(21).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
-        SchemaRecord after = before.copy().initialize(false, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         IndexDescriptor rule = indexRule(0, 1, 2, "K", "X.Y");
         Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
@@ -809,7 +809,7 @@ class NeoStoreTransactionApplierTest {
         // given
         TransactionApplierFactory applier = newApplier(false);
         SchemaRecord before = new SchemaRecord(21);
-        SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setCreated();
         after.setConstraint(true);
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
@@ -831,7 +831,7 @@ class NeoStoreTransactionApplierTest {
         // given
         TransactionApplierFactory applier = newApplier(true);
         SchemaRecord before = new SchemaRecord(21);
-        SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setCreated();
         after.setConstraint(true);
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
@@ -854,7 +854,7 @@ class NeoStoreTransactionApplierTest {
         // given
         TransactionApplierFactory applier = newApplier(false);
         SchemaRecord before = new SchemaRecord(21);
-        SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setConstraint(true);
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
         Command.SchemaRuleCommand command =
@@ -875,7 +875,7 @@ class NeoStoreTransactionApplierTest {
         // given
         TransactionApplierFactory applier = newApplier(true);
         SchemaRecord before = new SchemaRecord(21);
-        SchemaRecord after = before.copy().initialize(true, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
         after.setConstraint(true);
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
         Command.SchemaRuleCommand command =
@@ -897,7 +897,7 @@ class NeoStoreTransactionApplierTest {
         // given
         TransactionApplierFactory applier = newApplier(false);
         SchemaRecord before = new SchemaRecord(21).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
-        SchemaRecord after = before.copy().initialize(false, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
         Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);
@@ -917,7 +917,7 @@ class NeoStoreTransactionApplierTest {
         // given
         TransactionApplierFactory applier = newApplier(true);
         SchemaRecord before = new SchemaRecord(21).initialize(true, Record.NO_NEXT_PROPERTY.longValue());
-        SchemaRecord after = before.copy().initialize(false, Record.NO_NEXT_PROPERTY.longValue());
+        SchemaRecord after = new SchemaRecord(before).initialize(false, Record.NO_NEXT_PROPERTY.longValue());
         ConstraintDescriptor rule = uniquenessConstraintRule(0L, 1, 2, 3L);
         Command.SchemaRuleCommand command =
                 new Command.SchemaRuleCommand(LATEST_LOG_SERIALIZATION, before, after, rule);

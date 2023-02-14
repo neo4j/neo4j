@@ -42,11 +42,6 @@ public class TokenScanDocument extends AbstractBaseRecord {
     }
 
     @Override
-    public TokenScanDocument copy() {
-        throw new UnsupportedOperationException("Synthetic records cannot be copied.");
-    }
-
-    @Override
     public String toString() {
         return entityTokenRange != null ? entityTokenRange.toString() : "<no token scan data>";
     }

@@ -147,11 +147,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements A
     }
 
     @Override
-    public RelationshipGroupRecord copy() {
-        throw new UnsupportedOperationException("Record cursors are not copyable.");
-    }
-
-    @Override
     public String toString() {
         if (!open) {
             return "RelationshipGroupCursor[closed state]";

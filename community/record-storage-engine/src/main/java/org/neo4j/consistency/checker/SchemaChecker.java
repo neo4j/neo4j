@@ -154,7 +154,7 @@ class SchemaChecker {
 
                 SchemaRule schemaRule = schemaStorage.loadSingleSchemaRule(id, storeCursors);
                 SchemaRecord previousContentRecord =
-                        verifiedRulesWithRecords.put(SchemaRuleKey.from(schemaRule), record.copy());
+                        verifiedRulesWithRecords.put(SchemaRuleKey.from(schemaRule), new SchemaRecord(record));
                 if (previousContentRecord != null) {
                     reporter.forSchema(record).duplicateRuleContent(previousContentRecord);
                 }
@@ -163,7 +163,7 @@ class SchemaChecker {
                     if (rule.isUnique() && rule.getOwningConstraintId().isPresent()) {
                         var previousObligation = constraintObligations.put(
                                 rule.getOwningConstraintId().getAsLong(),
-                                new ConstraintObligation(record.copy(), rule.getIndexType()));
+                                new ConstraintObligation(new SchemaRecord(record), rule.getIndexType()));
                         if (previousObligation != null) {
                             reporter.forSchema(record).duplicateObligation(previousObligation.schemaRecord());
                         }
@@ -171,7 +171,7 @@ class SchemaChecker {
                 } else if (schemaRule instanceof ConstraintDescriptor rule) {
                     if (rule.enforcesUniqueness()) {
                         SchemaRecord previousObligation = indexObligations.put(
-                                rule.asIndexBackedConstraint().ownedIndexId(), record.copy());
+                                rule.asIndexBackedConstraint().ownedIndexId(), new SchemaRecord(record));
                         if (previousObligation != null) {
                             reporter.forSchema(record).duplicateObligation(previousObligation);
                         }

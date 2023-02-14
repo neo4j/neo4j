@@ -72,6 +72,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.test.RandomSupport;
+import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.extension.EphemeralNeo4jLayoutExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -607,7 +608,7 @@ class NodeLabelsFieldTest {
     }
 
     private static <T extends AbstractBaseRecord> Iterable<T> cloned(Iterable<T> items, final Class<T> itemClass) {
-        return Iterables.map(obj -> itemClass.cast(obj.copy()), items);
+        return Iterables.map(obj -> itemClass.cast(ReflectionUtil.callCopyConstructor(obj)), items);
     }
 
     private static LongSet idsOf(Set<DynamicRecord> records) {

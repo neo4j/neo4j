@@ -161,11 +161,6 @@ public class DynamicRecord extends AbstractBaseRecord {
     }
 
     @Override
-    public DynamicRecord copy() {
-        return new DynamicRecord(this);
-    }
-
-    @Override
     public int hashCode() {
         int result = Objects.hash(super.hashCode(), nextBlock, type, startRecord);
         result = 31 * result + Arrays.hashCode(data);

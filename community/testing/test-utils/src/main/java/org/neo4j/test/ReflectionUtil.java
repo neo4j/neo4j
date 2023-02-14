@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -30,6 +31,18 @@ import org.neo4j.util.Preconditions;
 
 public final class ReflectionUtil {
     private ReflectionUtil() {}
+
+    public static <T> T callCopyConstructor(T obj) {
+        try {
+            Class<T> objClass = (Class<T>) obj.getClass();
+            return objClass.getDeclaredConstructor(objClass).newInstance(obj);
+        } catch (InstantiationException
+                | IllegalAccessException
+                | InvocationTargetException
+                | NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public static void verifyMethodExists(Class<?> owner, String methodName) {
         Set<String> methods = new HashSet<>();

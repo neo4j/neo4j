@@ -42,9 +42,4 @@ public class RelationshipTypeTokenRecord extends TokenRecord {
     protected String simpleName() {
         return "RelationshipType";
     }
-
-    @Override
-    public RelationshipTypeTokenRecord copy() {
-        return new RelationshipTypeTokenRecord(this);
-    }
 }

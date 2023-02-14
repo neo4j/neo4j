@@ -94,10 +94,6 @@ public abstract class AbstractBaseRecord {
         useFixedReferences = false;
     }
 
-    public AbstractBaseRecord copy() {
-        throw new UnsupportedOperationException(getClass().getSimpleName() + " is not copyable.");
-    }
-
     public long getId() {
         return id;
     }

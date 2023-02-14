@@ -242,11 +242,6 @@ public class RelationshipRecord extends PrimitiveRecord {
     }
 
     @Override
-    public RelationshipRecord copy() {
-        return new RelationshipRecord(this);
-    }
-
-    @Override
     public void setIdTo(PropertyRecord property) {
         property.setRelId(getId());
     }

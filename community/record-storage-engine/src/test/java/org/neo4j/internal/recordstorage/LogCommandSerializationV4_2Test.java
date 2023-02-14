@@ -46,7 +46,7 @@ class LogCommandSerializationV4_2Test {
     void shouldReadPropertyKeyCommand() throws Exception {
         // Given
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord(42);
-        PropertyKeyTokenRecord after = before.copy();
+        PropertyKeyTokenRecord after = new PropertyKeyTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
 
@@ -70,7 +70,7 @@ class LogCommandSerializationV4_2Test {
     void shouldReadInternalPropertyKeyCommand() throws Exception {
         // Given
         PropertyKeyTokenRecord before = new PropertyKeyTokenRecord(42);
-        PropertyKeyTokenRecord after = before.copy();
+        PropertyKeyTokenRecord after = new PropertyKeyTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
         after.setInternal(true);
@@ -95,7 +95,7 @@ class LogCommandSerializationV4_2Test {
     void shouldReadLabelCommand() throws Exception {
         // Given
         LabelTokenRecord before = new LabelTokenRecord(42);
-        LabelTokenRecord after = before.copy();
+        LabelTokenRecord after = new LabelTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
 
@@ -117,7 +117,7 @@ class LogCommandSerializationV4_2Test {
     void shouldReadInternalLabelCommand() throws Exception {
         // Given
         LabelTokenRecord before = new LabelTokenRecord(42);
-        LabelTokenRecord after = before.copy();
+        LabelTokenRecord after = new LabelTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
         after.setInternal(true);
@@ -140,7 +140,7 @@ class LogCommandSerializationV4_2Test {
     void shouldReadRelationshipTypeCommand() throws Exception {
         // Given
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord(42);
-        RelationshipTypeTokenRecord after = before.copy();
+        RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
 
@@ -163,7 +163,7 @@ class LogCommandSerializationV4_2Test {
     void shouldReadInternalRelationshipTypeLabelCommand() throws Exception {
         // Given
         RelationshipTypeTokenRecord before = new RelationshipTypeTokenRecord(42);
-        RelationshipTypeTokenRecord after = before.copy();
+        RelationshipTypeTokenRecord after = new RelationshipTypeTokenRecord(before);
         after.initialize(true, 13);
         after.setCreated();
         after.setInternal(true);
@@ -572,7 +572,7 @@ class LogCommandSerializationV4_2Test {
     void shouldReadSchemaCommand() throws Exception {
         // given
         SchemaRecord before = new SchemaRecord(42);
-        SchemaRecord after = before.copy();
+        SchemaRecord after = new SchemaRecord(before);
         after.initialize(true, 353);
         after.setConstraint(true);
         after.setCreated();

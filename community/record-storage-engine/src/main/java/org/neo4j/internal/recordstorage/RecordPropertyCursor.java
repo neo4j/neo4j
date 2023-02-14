@@ -353,11 +353,6 @@ public class RecordPropertyCursor extends PropertyRecord implements StoragePrope
     }
 
     @Override
-    public PropertyRecord copy() {
-        throw new UnsupportedOperationException("Record cursors are not copyable.");
-    }
-
-    @Override
     public String toString() {
         if (!open) {
             return "PropertyCursor[closed state]";

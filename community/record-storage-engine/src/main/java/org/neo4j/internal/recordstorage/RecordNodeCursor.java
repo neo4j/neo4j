@@ -375,11 +375,6 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor {
     }
 
     @Override
-    public RecordNodeCursor copy() {
-        throw new UnsupportedOperationException("Record cursors are not copyable.");
-    }
-
-    @Override
     public String toString() {
         if (!open) {
             return "RecordNodeCursor[closed state]";

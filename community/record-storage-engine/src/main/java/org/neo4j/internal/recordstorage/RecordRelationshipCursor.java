@@ -117,9 +117,4 @@ abstract class RecordRelationshipCursor extends RelationshipRecord
     public void setForceLoad() {
         loadMode = RecordLoadOverride.FORCE;
     }
-
-    @Override
-    public RelationshipRecord copy() {
-        throw new UnsupportedOperationException("Record cursors are not copyable.");
-    }
 }

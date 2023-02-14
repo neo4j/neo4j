@@ -382,11 +382,6 @@ public class PropertyRecord extends AbstractBaseRecord implements Iterable<Prope
         prevProp = prev;
     }
 
-    @Override
-    public PropertyRecord copy() {
-        return new PropertyRecord(this);
-    }
-
     public long[] getBlocks() {
         return blocks;
     }

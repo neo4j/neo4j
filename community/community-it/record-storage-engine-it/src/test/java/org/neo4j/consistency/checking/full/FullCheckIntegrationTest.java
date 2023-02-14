@@ -184,6 +184,7 @@ import org.neo4j.storageengine.api.ValueIndexEntryUpdate;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.string.UTF8;
+import org.neo4j.test.ReflectionUtil;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -3461,7 +3462,7 @@ public class FullCheckIntegrationTest {
 
     @SuppressWarnings("unchecked")
     private static <T extends AbstractBaseRecord> T cloneRecord(T record) {
-        return (T) record.copy();
+        return (T) ReflectionUtil.callCopyConstructor(record);
     }
 
     private PropertyRecord newInitialisedPropertyRecord(IdGenerator next, SchemaRule rule) {
