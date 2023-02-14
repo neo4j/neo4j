@@ -2261,7 +2261,7 @@ case class LogicalPlan2PlanDescription(
       case Repetition(min, Unlimited) =>
         pretty"{${asPrettyString.raw(min.toString)}, *}"
     }
-    pretty"(${asPrettyString(start)}) (…)$repString (${asPrettyString(end)})"
+    pretty"(${asPrettyString(start)}) (...)$repString (${asPrettyString(end)})"
   }
 
   private def addPlanningAttributes(
