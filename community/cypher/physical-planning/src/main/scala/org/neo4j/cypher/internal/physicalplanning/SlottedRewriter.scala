@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
@@ -502,6 +503,12 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
             propertyExists
         } else
           e
+
+      case e: IsRepeatTrailUnique if !slotConfiguration.hasMetaDataSlot(SlotAllocation.TRAIL_STATE_METADATA_KEY) =>
+        True()(e.position)
+
+      case IsRepeatTrailUnique(Variable(name)) =>
+        ast.TrailRelationshipUniqueness(SlotAllocation.TRAIL_STATE_METADATA_KEY, Set(name))
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }

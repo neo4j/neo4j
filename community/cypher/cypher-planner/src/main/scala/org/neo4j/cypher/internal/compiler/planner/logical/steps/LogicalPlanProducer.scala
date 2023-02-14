@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.MapProjection
@@ -1085,11 +1086,15 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
 
     val innerPlanSolvedQG = solveds.get(innerPlan.id).asSinglePlannerQuery.queryGraph
-    // We added this argument in `PrecomputedQPPInnerPlans`, so for solved we have to remove it again.
-    val innerPlanSolvedQGWithFixedArgs =
-      innerPlanSolvedQG.withArgumentIds(innerPlanSolvedQG.argumentIds - startBinding.inner)
 
-    val solvedPattern = pattern.copy(pattern = innerPlanSolvedQGWithFixedArgs)
+    val innerPlanSolvedQGFixed =
+      innerPlanSolvedQG
+        // We added this argument in `PrecomputedQPPInnerPlans`, so for solved we have to remove it again.
+        .withArgumentIds(innerPlanSolvedQG.argumentIds - startBinding.inner)
+        // We added these predicates in `PrecomputedQPPInnerPlans`, so for solved we have to remove it again.
+        .withSelections(innerPlanSolvedQG.selections.filter(!_.expr.isInstanceOf[IsRepeatTrailUnique]))
+
+    val solvedPattern = pattern.copy(pattern = innerPlanSolvedQGFixed)
 
     val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
       .addQuantifiedPathPattern(solvedPattern)

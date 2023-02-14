@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
@@ -212,7 +213,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case RelationshipUniquenessPredicate(pred) if pred.isOnRelationships(semanticTable) =>
       DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
 
-    case _: Unique =>
+    case _: Unique | _: IsRepeatTrailUnique =>
       // These are currently only generated for var-length or QPP uniqueness predicates and
       // those are already included in the calculations in PatternRelationshipMultiplierCalculator.
       // We should revisit this when doing Cardinality estimation for QPPs.

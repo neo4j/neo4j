@@ -390,6 +390,13 @@ case class Unique(rhs: Expression)(val position: InputPosition) extends BooleanE
 }
 
 /**
+ * Tests whether the relationship is unique across Repeat(Trail) iterations.
+ */
+case class IsRepeatTrailUnique(variableToCheck: Variable)(val position: InputPosition) extends BooleanExpression {
+  override def isConstantForQuery: Boolean = false
+}
+
+/**
  * Implicit predicate generated for size constraints on the list of relationships matched by variable-length relationships.
  */
 abstract class VarLengthBound(val relName: Variable, val bound: Long) extends BooleanExpression {

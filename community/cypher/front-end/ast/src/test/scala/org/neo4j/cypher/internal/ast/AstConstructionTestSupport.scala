@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -865,6 +866,9 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def unique(list: Expression): Unique =
     Unique(list)(pos)
+
+  def isRepeatTrailUnique(rel: String): IsRepeatTrailUnique =
+    IsRepeatTrailUnique(varFor(rel))(pos)
 
   def disjoint(lhs: Expression, rhs: Expression): Disjoint =
     Disjoint(lhs, rhs)(pos)

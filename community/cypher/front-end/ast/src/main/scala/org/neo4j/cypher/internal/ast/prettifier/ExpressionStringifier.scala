@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
@@ -386,6 +387,9 @@ private class DefaultExpressionStringifier(
 
       case VarLengthLowerBound(Variable(relName), bound) => s"size(`$relName`) >= $bound"
       case VarLengthUpperBound(Variable(relName), bound) => s"size(`$relName`) <= $bound"
+
+      case IsRepeatTrailUnique(argument) =>
+        s"isRepeatTrailUnique(${apply(argument)})"
 
       case _ =>
         extension(this)(ast)

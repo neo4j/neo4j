@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
@@ -44,6 +45,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
+import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.immutable.ListSet
 
@@ -121,8 +123,11 @@ object expandSolverStep {
       qpp <- qg.quantifiedPathPatterns
       fromLeft <- Set(true, false)
     } yield {
-      val qppWithArguments = updateQPPArguments(qpp, fromLeft)
-      val plan = planQPPInner(qppWithArguments, context)
+      val updatedQpp = {
+        val withArguments = updateQPPArguments(qpp, fromLeft)
+        addTrailUniquePredicates(withArguments)
+      }
+      val plan = planQPPInner(updatedQpp, context)
       TrailOption(qpp, fromLeft) -> plan
     }).toMap
 
@@ -136,6 +141,17 @@ object expandSolverStep {
   private def updateQPPArguments(qpp: QuantifiedPathPattern, fromLeft: Boolean): QuantifiedPathPattern = {
     val bindingNodeArg = if (fromLeft) qpp.leftBinding.inner else qpp.rightBinding.inner
     qpp.copy(pattern = qpp.pattern.withArgumentIds(qpp.pattern.argumentIds + bindingNodeArg))
+  }
+
+  /**
+   * Add trail uniqueness predicates to the query graph inside the given [[QuantifiedPathPattern]].
+   */
+  private def addTrailUniquePredicates(qpp: QuantifiedPathPattern): QuantifiedPathPattern = {
+    val repeatTrailUniquePredicates =
+      qpp.pattern.patternRelationships.map(r =>
+        IsRepeatTrailUnique(Variable(r.name)(InputPosition.NONE))(InputPosition.NONE)
+      ).toSeq
+    qpp.copy(pattern = qpp.pattern.addPredicates(repeatTrailUniquePredicates: _*))
   }
 
   /**

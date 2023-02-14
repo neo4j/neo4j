@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.ElementIdToLongId
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -432,7 +433,8 @@ case class CommunityExpressionConverter(
         commands.expressions.ElementIdToRelationshipIdFunction(self.toCommandExpression(id, rhs))
       case ElementIdToLongId(RELATIONSHIP_TYPE, ElementIdToLongId.Mode.Many, rhs) =>
         commands.expressions.ElementIdListToRelationshipIdListFunction(self.toCommandExpression(id, rhs))
-      case _ => null
+      case _: IsRepeatTrailUnique => predicates.True()
+      case _                      => null
     }
 
     Option(result)
