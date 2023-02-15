@@ -1254,6 +1254,149 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     val Seq(n1, n2) = tx.getAllNodes.asScala.toSeq
     runtimeResult should beColumns("ns").withRows(Seq(Array(n1), Array(n1), Array(n1), Array(n2), Array(n2), Array(n2))).withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
   }
+
+  test("setNodePropertiesFromMap with fuse-over-pipelines and continuation") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .nonFuseable()
+      .unwind("[1,2,3,4,5] AS i")
+      .projection("1 AS row")
+      .setNodePropertiesFromMap("n", "{p1: 42, p2: 42}", removeOtherProps = true)
+      .merge(nodes = Seq(createNode("n")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("i").withRows(singleColumn((1 to 5))).withStatistics(
+      nodesCreated = 1,
+      propertiesSet = 2
+    )
+  }
+
+  test("setNodeProperties with fuse-over-pipelines and continuation") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .nonFuseable()
+      .unwind("[1,2,3,4,5] AS i")
+      .projection("1 AS row")
+      .setNodeProperties("n", ("p1", "1"), ("p2", "2"))
+      .merge(nodes = Seq(createNode("n")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    runtimeResult should beColumns("i").withRows(singleColumn((1 to 5))).withStatistics(
+      nodesCreated = 1,
+      propertiesSet = 2
+    )
+  }
+
+  test("setNodeProperty with fuse-over-pipelines and continuation") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .nonFuseable()
+      .unwind("[1,2,3,4,5] AS i")
+      .projection("1 AS row")
+      .setNodeProperty("n", "p", "1")
+      .merge(nodes = Seq(createNode("n")))
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    val node = Iterables.single(tx.getAllNodes)
+    runtimeResult should beColumns("i").withRows(singleColumn((1 to 5))).withStatistics(
+      nodesCreated = 1,
+      propertiesSet = 1
+    )
+  }
+
+  test("setRelationshipPropertiesFromMap with fuse-over-pipelines and continuation") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .nonFuseable()
+      .unwind("[1,2,3,4,5] AS i")
+      .projection("1 AS row")
+      .setRelationshipPropertiesFromMap("r", "{p1: 42, p2: 42}", removeOtherProps = true)
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .relationshipTypeScan("(n)-[r:R]->(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("i").withRows(singleColumn((1 to 5))).withStatistics(
+      nodesCreated = 2,
+      relationshipsCreated = 1,
+      propertiesSet = 2
+    )
+  }
+
+  test("setRelationshipProperties with fuse-over-pipelines and continuation") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .nonFuseable()
+      .unwind("[1,2,3,4,5] AS i")
+      .projection("1 AS row")
+      .setRelationshipProperties("r", ("p1", "42"), ("p2", "42"))
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .relationshipTypeScan("(n)-[r:R]->(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("i").withRows(singleColumn((1 to 5))).withStatistics(
+      nodesCreated = 2,
+      relationshipsCreated = 1,
+      propertiesSet = 2
+    )
+  }
+
+  test("setRelationshipProperty with fuse-over-pipelines and continuation") {
+    // given no nodes
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i")
+      .nonFuseable()
+      .unwind("[1,2,3,4,5] AS i")
+      .projection("1 AS row")
+      .setRelationshipProperty("r", "prop", "42")
+      .merge(nodes = Seq(createNode("n"), createNode("m")), relationships = Seq(createRelationship("r", "n", "R", "m")))
+      .relationshipTypeScan("(n)-[r:R]->(m)")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    consume(runtimeResult)
+    runtimeResult should beColumns("i").withRows(singleColumn((1 to 5))).withStatistics(
+      nodesCreated = 2,
+      relationshipsCreated = 1,
+      propertiesSet = 1
+    )
+  }
 }
 
 // Supported by pipelined only
