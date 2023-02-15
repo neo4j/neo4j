@@ -528,19 +528,19 @@ class ExecutionResultSerializerTest {
                 "{\"results\":[{\"columns\":[\"geom\"],\"data\":["
                         + "{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6],\"crs\":"
                         + "{\"srid\":4326,\"name\":\"WGS-84\",\"type\":\"link\",\"properties\":"
-                        + "{\"href\":\"http://spatialreference.org/ref/epsg/4326/ogcwkt/\",\"type\":\"ogcwkt\"}"
+                        + "{\"href\":\"https://spatialreference.org/ref/epsg/4326/ogcwkt/\",\"type\":\"ogcwkt\"}"
                         + "}}],\"meta\":[{\"type\":\"point\"}]},"
                         + "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0],\"crs\":"
                         + "{\"srid\":7203,\"name\":\"cartesian\",\"type\":\"link\",\"properties\":"
-                        + "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}"
+                        + "{\"href\":\"https://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}"
                         + "}}],\"meta\":[{\"type\":\"point\"}]},"
                         + "{\"row\":[{\"type\":\"Point\",\"coordinates\":[12.3,45.6,78.9],\"crs\":"
                         + "{\"srid\":4979,\"name\":\"WGS-84-3D\",\"type\":\"link\",\"properties\":"
-                        + "{\"href\":\"http://spatialreference.org/ref/epsg/4979/ogcwkt/\",\"type\":\"ogcwkt\"}"
+                        + "{\"href\":\"https://spatialreference.org/ref/epsg/4979/ogcwkt/\",\"type\":\"ogcwkt\"}"
                         + "}}],\"meta\":[{\"type\":\"point\"}]},"
                         + "{\"row\":[{\"type\":\"Point\",\"coordinates\":[123.0,456.0,789.0],\"crs\":"
                         + "{\"srid\":9157,\"name\":\"cartesian-3D\",\"type\":\"link\",\"properties\":"
-                        + "{\"href\":\"http://spatialreference.org/ref/sr-org/9157/ogcwkt/\",\"type\":\"ogcwkt\"}"
+                        + "{\"href\":\"https://spatialreference.org/ref/sr-org/9157/ogcwkt/\",\"type\":\"ogcwkt\"}"
                         + "}}],\"meta\":[{\"type\":\"point\"}]}"
                         + "]}],\"errors\":[]}",
                 result);
@@ -605,7 +605,7 @@ class ExecutionResultSerializerTest {
                 .startsWith("{\"results\":[{\"columns\":[\"geom\"],\"data\":["
                         + "{\"row\":[{\"type\":\"LineString\",\"coordinates\":[[1.0,2.0],[2.0,3.0]],\"crs\":"
                         + "{\"srid\":7203,\"name\":\"cartesian\",\"type\":\"link\",\"properties\":"
-                        + "{\"href\":\"http://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[]}]}],"
+                        + "{\"href\":\"https://spatialreference.org/ref/sr-org/7203/ogcwkt/\",\"type\":\"ogcwkt\"}}}],\"meta\":[]}]}],"
                         + "\"errors\":[{\"code\":\"Neo.DatabaseError.Statement.ExecutionFailed\","
                         + "\"message\":\"Unsupported Geometry type: type=MockGeometry, value=LineString\"");
     }

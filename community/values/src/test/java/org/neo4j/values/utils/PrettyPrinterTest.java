@@ -400,7 +400,7 @@ class PrettyPrinterTest {
         // Then
         assertThat(printer.value())
                 .isEqualTo("{geometry: {type: \"Point\", coordinates: [11.0, 12.0], " + "crs: {type: link, properties: "
-                        + "{href: \"http://spatialreference.org/ref/sr-org/7203/\", code: " + "7203}}}}");
+                        + "{href: \"https://spatialreference.org/ref/sr-org/7203/\", code: " + "7203}}}}");
     }
 
     @Test

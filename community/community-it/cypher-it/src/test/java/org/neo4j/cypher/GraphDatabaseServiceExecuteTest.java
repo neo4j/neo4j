@@ -92,7 +92,7 @@ public class GraphDatabaseServiceExecuteTest {
             CRS crs = point.getCRS();
             assertThat(crs.getCode()).isEqualTo(4326);
             assertThat(crs.getType()).isEqualTo("wgs-84");
-            assertThat(crs.getHref()).isEqualTo("http://spatialreference.org/ref/epsg/4326/");
+            assertThat(crs.getHref()).isEqualTo("https://spatialreference.org/ref/epsg/4326/");
             transaction.commit();
         }
     }
@@ -113,7 +113,7 @@ public class GraphDatabaseServiceExecuteTest {
             CRS crs = point.getCRS();
             assertThat(crs.getCode()).isEqualTo(7203);
             assertThat(crs.getType()).isEqualTo("cartesian");
-            assertThat(crs.getHref()).isEqualTo("http://spatialreference.org/ref/sr-org/7203/");
+            assertThat(crs.getHref()).isEqualTo("https://spatialreference.org/ref/sr-org/7203/");
             transaction.commit();
         }
     }
@@ -297,7 +297,7 @@ public class GraphDatabaseServiceExecuteTest {
     }
 
     private static CRS makeWGS84() {
-        // "WGS-84", 4326, "http://spatialreference.org/ref/epsg/4326/"
+        // "WGS-84", 4326, "https://spatialreference.org/ref/epsg/4326/"
         return new CRS() {
             @Override
             public int getCode() {
@@ -311,7 +311,7 @@ public class GraphDatabaseServiceExecuteTest {
 
             @Override
             public String getHref() {
-                return "http://spatialreference.org/ref/epsg/4326/";
+                return "https://spatialreference.org/ref/epsg/4326/";
             }
         };
     }

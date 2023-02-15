@@ -40,19 +40,19 @@ public class SpatialMocks {
     }
 
     public static CRS mockWGS84() {
-        return mockCRS(4326, "WGS-84", "http://spatialreference.org/ref/epsg/4326/");
+        return mockCRS(4326, "WGS-84", "https://spatialreference.org/ref/epsg/4326/");
     }
 
     public static CRS mockCartesian() {
-        return mockCRS(7203, "cartesian", "http://spatialreference.org/ref/sr-org/7203/");
+        return mockCRS(7203, "cartesian", "https://spatialreference.org/ref/sr-org/7203/");
     }
 
     public static CRS mockWGS84_3D() {
-        return mockCRS(4979, "WGS-84-3D", "http://spatialreference.org/ref/epsg/4979/");
+        return mockCRS(4979, "WGS-84-3D", "https://spatialreference.org/ref/epsg/4979/");
     }
 
     public static CRS mockCartesian_3D() {
-        return mockCRS(9157, "cartesian-3D", "http://spatialreference.org/ref/sr-org/9157/");
+        return mockCRS(9157, "cartesian-3D", "https://spatialreference.org/ref/sr-org/9157/");
     }
 
     private static CRS mockCRS(final int code, final String type, final String href) {

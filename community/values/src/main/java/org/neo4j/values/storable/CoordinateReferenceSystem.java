@@ -30,13 +30,15 @@ public enum CoordinateReferenceSystem implements CRS {
     WGS_84(CRSTable.EPSG, 4326, 2, true),
     WGS_84_3D(CRSTable.EPSG, 4979, 3, true);
 
+    private static final CoordinateReferenceSystem[] COORDINATE_REFERENCE_SYSTEMS = values();
+
     public static Iterable<CoordinateReferenceSystem> all() {
-        return Iterables.asIterable(values());
+        return Iterables.asIterable(COORDINATE_REFERENCE_SYSTEMS);
     }
 
     public static CoordinateReferenceSystem get(int tableId, int code) {
         final var table = CRSTable.find(tableId);
-        for (final var crs : values()) {
+        for (final var crs : COORDINATE_REFERENCE_SYSTEMS) {
             if (crs.table == table && crs.code == code) {
                 return crs;
             }
@@ -50,7 +52,7 @@ public enum CoordinateReferenceSystem implements CRS {
     }
 
     public static CoordinateReferenceSystem byName(String name) {
-        for (final var crs : values()) {
+        for (final var crs : COORDINATE_REFERENCE_SYSTEMS) {
             if (crs.name.equals(name.toLowerCase())) {
                 return crs;
             }
@@ -60,7 +62,7 @@ public enum CoordinateReferenceSystem implements CRS {
     }
 
     public static CoordinateReferenceSystem get(String href) {
-        for (final var crs : values()) {
+        for (final var crs : COORDINATE_REFERENCE_SYSTEMS) {
             if (crs.href.equals(href)) {
                 return crs;
             }
@@ -69,9 +71,9 @@ public enum CoordinateReferenceSystem implements CRS {
     }
 
     public static CoordinateReferenceSystem get(int code) {
-        for (final var table : CRSTable.values()) {
+        for (final var table : CRSTable.TYPES) {
             final var href = table.href(code);
-            for (final var crs : values()) {
+            for (final var crs : COORDINATE_REFERENCE_SYSTEMS) {
                 if (crs.href.equals(href)) {
                     return crs;
                 }

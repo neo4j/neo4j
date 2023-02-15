@@ -30,7 +30,7 @@ import org.neo4j.annotations.api.PublicApi;
  * {
  * code: 4326,
  * type: "WGS-84",
- * href: "http://spatialreference.org/ref/epsg/4326/"
+ * href: "https://spatialreference.org/ref/epsg/4326/"
  * }
  * </code>
  */
