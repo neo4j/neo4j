@@ -56,14 +56,14 @@ trait GraphStatistics {
   ): Cardinality
 
   /**
-   * Probability of any node in the index to have a given property with a particular value
+   * Probability of any node in the index to have a given property with a particular value.
    *
-   * indexSelectivity(:X, prop) = s => |MATCH (a:X)  WHERE has(x.prop)| * s = |MATCH (a:X) WHERE x.prop = '*'|
+   * uniqueValueSelectivity(:X, prop) = s => |MATCH (a:X)  WHERE x.prop IS NOT NULL| * s = |MATCH (a:X) WHERE x.prop = '*'|
    */
   def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity]
 
   /**
-   * Probability of any node or relationship with the given label or relType, to have a particular property
+   * Probability of any node or relationship with the given label or relType, to have a particular property.
    *
    * indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE x.prop IS NOT NULL|
    */
