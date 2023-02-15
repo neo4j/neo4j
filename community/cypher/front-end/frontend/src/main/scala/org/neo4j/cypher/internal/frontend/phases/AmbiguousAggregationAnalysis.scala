@@ -28,20 +28,17 @@ import org.neo4j.cypher.internal.util.StepSequencer
  * Verify aggregation expressions and make sure there are no ambiguous grouping keys.
  */
 case class AmbiguousAggregationAnalysis(features: SemanticFeature*)
-    extends Phase[BaseContext, BaseState, BaseState] {
+    extends VisitorPhase[BaseContext, BaseState] {
 
-  override def process(from: BaseState, context: BaseContext): BaseState = {
+  override def visit(from: BaseState, context: BaseContext): Unit = {
     val errors = from.folder.fold(Seq.empty[SemanticErrorDef]) {
       // If we project '*', we don't need to check ambiguity since we group on all available variables.
       case projectionClause: ProjectionClause if !projectionClause.returnItems.includeExisting =>
-        acc =>
-          acc ++
-            projectionClause.orderBy.toSeq.flatMap(_.checkIllegalOrdering(projectionClause.returnItems)) ++
+        _ ++ projectionClause.orderBy.toSeq.flatMap(_.checkIllegalOrdering(projectionClause.returnItems)) ++
             ReturnItems.checkAmbiguousGrouping(projectionClause.returnItems)
     }
 
     context.errorHandler(errors)
-    from
   }
 
   override def phase: CompilationPhaseTracer.CompilationPhase = SEMANTIC_CHECK

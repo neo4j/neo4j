@@ -46,7 +46,7 @@ import org.neo4j.cypher.internal.util.symbols.CTList
  *
  * Does not change the State, just checks for semantic errors.
  */
-case object SemanticTypeCheck extends Phase[BaseContext, BaseState, BaseState] {
+case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState] {
 
   type SemanticErrorCheck = (BaseState, BaseContext) => Seq[SemanticError]
 
@@ -56,10 +56,8 @@ case object SemanticTypeCheck extends Phase[BaseContext, BaseState, BaseState] {
     listCoercedToBooleanCheck
   )
 
-  override def process(from: BaseState, context: BaseContext): BaseState = {
+  override def visit(from: BaseState, context: BaseContext): Unit = {
     context.errorHandler(checks.flatMap(_.apply(from, context)))
-
-    from
   }
 
   override val phase = SEMANTIC_TYPE_CHECK
