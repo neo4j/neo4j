@@ -2230,6 +2230,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   test("all the tests exist") {
     val methodsWeCantTest = Set(
       "filterExpression",
+      "filterExpressionOrString",
       "appendAtCurrentIndent",
       "nestedPlanExistsExpressionProjection",
       "nestedPlanCollectExpressionProjection",

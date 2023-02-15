@@ -1088,6 +1088,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
       .distinct("u AS u")
       .optional()
       .trail(`(u)((n)-[]-(m))*`)
+      .|.filterExpression(isRepeatTrailUnique("anon_3"))
       .|.expand("(n)-[anon_3]->(m)")
       .|.argument("n")
       .allNodeScan("u")

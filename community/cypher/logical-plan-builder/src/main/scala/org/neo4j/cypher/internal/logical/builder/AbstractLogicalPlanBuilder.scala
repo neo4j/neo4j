@@ -1919,6 +1919,20 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => Selection(predicateExpressions, lp)(_)))
   }
 
+  def filterExpressionOrString(predicateExpressionsOrStrings: AnyRef*): IMPL = {
+    val predicates = predicateExpressionsOrStrings.map {
+      case s: String     => parseExpression(s)
+      case e: Expression => e
+      case other => throw new IllegalArgumentException(
+          s"Expected Expression or String, got [${other.getClass.getSimpleName}] $other}"
+        )
+    }
+    appendAtCurrentIndent(UnaryOperator(lp => {
+      val rewrittenPredicates = predicates.map(rewriteExpression)
+      Selection(rewrittenPredicates, lp)(_)
+    }))
+  }
+
   def errorPlan(e: Exception): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => ErrorPlan(lp, e)(_)))
   }
