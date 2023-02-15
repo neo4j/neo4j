@@ -104,7 +104,7 @@ object Order {
 
   def implicitGroupingExpressionInOrderColumnErrorMessage(variables: Seq[String]): String =
     s"Order by column contains implicit grouping expressions: ${variables.mkString(",")}. Implicit grouping keys are not supported. " +
-      "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b'. " +
+      "For example, in 'RETURN count(*) ORDER BY n.a' the sort expression 'n.a' includes the implicit grouping key 'n.a'. " +
       "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause. "
 
   def notProjectedAggregations(variables: Seq[String]): String =
