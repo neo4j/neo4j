@@ -160,28 +160,30 @@ object ReturnItems {
     def empty: ReturnVariables = ReturnVariables(includeExisting = false, Seq.empty)
   }
 
-  def errorMessage(variables: Seq[String]): String =
+  def implicitGroupingExpressionInAggregationColumnErrorMessage(variables: Seq[String]): String =
     "Aggregation column contains implicit grouping expressions. " +
       "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b'. " +
       "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause. " +
       s"Illegal expression(s): ${variables.mkString(", ")}"
 
   def checkAmbiguousGrouping(returnItems: ReturnItems): Option[SemanticError] = {
-    val returnItemExprs = returnItems.items.map(_.expression)
+    val returnItemExprs = returnItems.items.map(_.expression).toSet
     val aggregationExpressions = returnItemExprs.collect { case expr if expr.containsAggregate => expr }
     val newGroupingVariables = returnItemExprs.collect { case expr: LogicalVariable => expr }
     val newPropertiesUsedForGrouping = returnItemExprs.collect { case v @ LogicalProperty(LogicalVariable(_), _) => v }
 
-    val ambiguousSortItems = aggregationExpressions
+    val ambiguousAggregationExpressions = aggregationExpressions
       .flatMap(aggItem =>
         AmbiguousAggregation.ambiguousExpressions(aggItem, newGroupingVariables, newPropertiesUsedForGrouping)
       )
 
-    if (ambiguousSortItems.nonEmpty) {
-      val errorMsg = errorMessage(ambiguousSortItems.map(_.asCanonicalStringVal))
+    if (ambiguousAggregationExpressions.nonEmpty) {
+      val errorMsg = implicitGroupingExpressionInAggregationColumnErrorMessage(
+        ambiguousAggregationExpressions.map(_.asCanonicalStringVal).toSeq
+      )
       Some(SemanticError(
         errorMsg,
-        returnItems.items.head.position
+        ambiguousAggregationExpressions.head.position
       ))
     } else {
       None

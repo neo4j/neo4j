@@ -39,12 +39,12 @@ object AmbiguousAggregation {
    * @param sortOrAggregationExpr              the expression to check for ambiguous leaf expressions
    * @param variablesUsedForGrouping           the allowed variables (and aliases in case we verify a sort expression)
    * @param nonNestedPropertiesUsedForGrouping the allowed properties
-   * @return
+   * @return the ambiguous expressions
    */
   def ambiguousExpressions(
     sortOrAggregationExpr: Expression,
-    variablesUsedForGrouping: Seq[LogicalVariable],
-    nonNestedPropertiesUsedForGrouping: Seq[LogicalProperty]
+    variablesUsedForGrouping: Set[LogicalVariable],
+    nonNestedPropertiesUsedForGrouping: Set[LogicalProperty]
   ): Seq[Expression] =
     sortOrAggregationExpr.folder.treeFold(Expression.TreeAcc[Seq[Expression]](Seq.empty)) {
       case scope: ScopeExpression =>
@@ -81,14 +81,14 @@ object AmbiguousAggregation {
    *
    * @param sortExpression the expression to verify
    * @param aggregationGroupingExpressions the allowed aggregation expressions in the sort expression
-   * @return
+   * @return the aggregation expressions which are not projected
    */
   def notProjectedAggregationExpression(
     sortExpression: Expression,
-    aggregationGroupingExpressions: Seq[Expression]
+    aggregationGroupingExpressions: Set[Expression]
   ): Seq[Expression] = {
     sortExpression.folder.treeFold(Expression.TreeAcc[Seq[Expression]](Seq.empty)) {
-      case expr if aggregationGroupingExpressions.contains(expr) =>
+      case expr: Expression if aggregationGroupingExpressions.contains(expr) =>
         acc => SkipChildren(acc)
       case IsAggregate(expr: Expression) =>
         acc => SkipChildren(acc.mapData(exprs => exprs :+ expr))

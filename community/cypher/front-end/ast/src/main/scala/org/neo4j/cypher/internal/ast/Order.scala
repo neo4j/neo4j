@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.ast
 
 import org.neo4j.cypher.internal.ast.AmbiguousAggregation.ambiguousExpressions
 import org.neo4j.cypher.internal.ast.AmbiguousAggregation.notProjectedAggregationExpression
-import org.neo4j.cypher.internal.ast.Order.ambiguousAggregationMessage
+import org.neo4j.cypher.internal.ast.Order.implicitGroupingExpressionInOrderColumnErrorMessage
 import org.neo4j.cypher.internal.ast.Order.notProjectedAggregations
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
@@ -40,12 +40,16 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
     checkAmbiguousOrdering(returnItems).toSeq ++ checkAggregationInProjection(returnItems)
 
   private def checkAmbiguousOrdering(returnItems: ReturnItems): Option[SemanticError] = {
-    val (aggregationItems, groupingItems) = returnItems.items.partition(item => item.expression.containsAggregate)
-    val groupingVariablesAndAliases = groupingItems.map(_.expression).collect { case v: LogicalVariable =>
-      v
+    val (aggregationItems, groupingItems) = returnItems.items
+      .map(_.expression)
+      .toSet
+      .partition(expression => expression.containsAggregate)
+
+    val groupingVariablesAndAliases = groupingItems.collect {
+      case v: LogicalVariable => v
     } ++ returnItems.items.flatMap(_.alias)
     val propertiesUsedForGrouping =
-      groupingItems.map(_.expression).collect { case v @ LogicalProperty(LogicalVariable(_), _) => v }
+      groupingItems.collect { case v @ LogicalProperty(LogicalVariable(_), _) => v }
 
     if (aggregationItems.nonEmpty) {
       val ambiguousExprs = sortItems.flatMap(sortItem =>
@@ -58,8 +62,8 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
 
       if (ambiguousExprs.nonEmpty) {
         Some(SemanticError(
-          ambiguousAggregationMessage(ambiguousExprs.map(_.asCanonicalStringVal)),
-          sortItems.head.position
+          implicitGroupingExpressionInOrderColumnErrorMessage(ambiguousExprs.map(_.asCanonicalStringVal)),
+          ambiguousExprs.head.position
         ))
       } else {
         None
@@ -73,6 +77,7 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
     val aggregationItems = returnItems.items
       .filter(item => item.expression.containsAggregate)
       .map(_.expression)
+      .toSet
 
     if (aggregationItems.nonEmpty) {
       val illegalSortItems =
@@ -81,7 +86,7 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
       if (illegalSortItems.nonEmpty) {
         Some(SemanticError(
           notProjectedAggregations(illegalSortItems.map(_.asCanonicalStringVal)),
-          sortItems.head.position
+          illegalSortItems.head.position
         ))
       } else {
         None
@@ -97,7 +102,7 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
 
 object Order {
 
-  def ambiguousAggregationMessage(variables: Seq[String]): String =
+  def implicitGroupingExpressionInOrderColumnErrorMessage(variables: Seq[String]): String =
     s"Order by column contains implicit grouping expressions: ${variables.mkString(",")}. Implicit grouping keys are not supported. " +
       "For example, in 'RETURN n.a, n.a + n.b + count(*)' the aggregation expression 'n.a + n.b + count(*)' includes the implicit grouping key 'n.b'. " +
       "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause. "

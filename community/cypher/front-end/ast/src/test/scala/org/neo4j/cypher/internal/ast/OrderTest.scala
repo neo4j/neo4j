@@ -16,9 +16,11 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.Order.ambiguousAggregationMessage
+import org.neo4j.cypher.internal.ast.Order.implicitGroupingExpressionInOrderColumnErrorMessage
 import org.neo4j.cypher.internal.ast.Order.notProjectedAggregations
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -260,7 +262,7 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
       val result = orderBy.checkIllegalOrdering(
         ReturnItems(includeExisting = false, test.returnItems)(InputPosition.NONE)
       )(SemanticState.clean)
-      val expectedErrorMessage = ambiguousAggregationMessage(test.invalidGroupingKeys)
+      val expectedErrorMessage = implicitGroupingExpressionInOrderColumnErrorMessage(test.invalidGroupingKeys)
 
       withClue(
         s"orderBy expressions [${test.sortItems.map(_.asCanonicalStringVal).mkString(",")}] " +
@@ -270,6 +272,46 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
         result.errors.head.msg shouldBe expectedErrorMessage
       }
     }
+  }
+
+  test("ambiguous aggregation expressions: should use correct position if there are multiple order items") {
+    val returnItems = Seq(
+      autoAliasedReturnItem(prop("n", "x")),
+      aliasedReturnItem(countStar(), "cnt")
+    )
+    val sortItems = Seq(
+      sortItem(prop("n", "x", InputPosition(1, 2, 3)), position = InputPosition(2, 3, 4)),
+      sortItem(prop("n", "y", InputPosition(3, 4, 5)), position = InputPosition(5, 6, 7))
+    )
+    val orderBy = OrderBy(sortItems)(InputPosition.NONE)
+    val result = orderBy.checkIllegalOrdering(
+      ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE)
+    )(SemanticState.clean)
+    result.errors should equal(Seq(
+      // Reports all offending sort items.
+      // Uses position of the first offending sort item.
+      SemanticError(implicitGroupingExpressionInOrderColumnErrorMessage(Seq("n.y")), InputPosition(3, 4, 5))
+    ))
+  }
+
+  test("not projected aggregations: should use correct position if there are multiple order items") {
+    val sortItems = Seq(
+      sortItem(prop("n", "prop", InputPosition(1, 2, 3)), position = InputPosition(2, 3, 4)),
+      sortItem(add(literalInt(1), CountStar()(InputPosition(3, 4, 5))), ascending = false, position = InputPosition(5, 6, 7))
+    )
+    val returnItems = Seq(
+      autoAliasedReturnItem(prop("n", "prop")),
+      autoAliasedReturnItem(add(countStar(), literalInt(1)))
+    )
+    val orderBy = OrderBy(sortItems)(InputPosition.NONE)
+    val result = orderBy.checkIllegalOrdering(ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE))(
+      SemanticState.clean
+    )
+    result.errors should equal(Seq(
+      // Reports all offending sort items.
+      // Uses position of the first offending sort item.
+      SemanticError(notProjectedAggregations(Seq("count(*)")), InputPosition(3, 4, 5))
+    ))
   }
 
   test("should report both ambiguous expression and aggregation not in preceding with/return clause") {
@@ -286,7 +328,7 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
     val result = orderBy.checkIllegalOrdering(ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE))(
       SemanticState.clean
     )
-    val expectedErrorMessage1 = ambiguousAggregationMessage(Seq("n.prop2"))
+    val expectedErrorMessage1 = implicitGroupingExpressionInOrderColumnErrorMessage(Seq("n.prop2"))
     val expectedErrorMessage2 = notProjectedAggregations(Seq("count(*)"))
 
     withClue(s"orderBy expressions [${sortItems.map(_.asCanonicalStringVal).mkString(",")}] " +

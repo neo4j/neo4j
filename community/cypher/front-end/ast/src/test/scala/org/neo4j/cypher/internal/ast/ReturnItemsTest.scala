@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.util.InputPosition
@@ -295,7 +296,7 @@ class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
       val result = ReturnItems.checkAmbiguousGrouping(
         ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE)
       )(SemanticState.clean)
-      val expectedErrorMessage = ReturnItems.errorMessage(invalidExpr)
+      val expectedErrorMessage = ReturnItems.implicitGroupingExpressionInAggregationColumnErrorMessage(invalidExpr)
 
       withClue(
         s"returnItems [${returnItems.map(_.asCanonicalStringVal).mkString(", ")}] did not throw expected error. "
@@ -304,5 +305,20 @@ class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
         result.errors.head.msg shouldBe expectedErrorMessage
       }
     }
+  }
+
+  test("ambiguous aggregation expressions: should use correct position if there are multiple return items") {
+    val returnItems = Seq(
+      autoAliasedReturnItem(varFor("nx", InputPosition(1, 2, 3))),
+      autoAliasedReturnItem(add(count(varFor("nx")), varFor("ny", InputPosition(2, 3, 4)), InputPosition(3, 4, 5)))
+    )
+    val result = ReturnItems.checkAmbiguousGrouping(
+      ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE)
+    )(SemanticState.clean)
+    result.errors should equal(Seq(
+      // Reports all offending return items.
+      // Uses position of the first offending return item.
+      SemanticError(ReturnItems.implicitGroupingExpressionInAggregationColumnErrorMessage(Seq("ny")), InputPosition(2, 3, 4))
+    ))
   }
 }

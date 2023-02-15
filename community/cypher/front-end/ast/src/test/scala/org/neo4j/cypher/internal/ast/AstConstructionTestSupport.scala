@@ -460,7 +460,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   ): ListComprehension =
     ListComprehension(variable, collection, predicate, extractExpression)(pos)
 
-  def add(lhs: Expression, rhs: Expression): Add = Add(lhs, rhs)(pos)
+  def add(lhs: Expression, rhs: Expression, position: InputPosition = pos): Add = Add(lhs, rhs)(position)
 
   def unaryAdd(source: Expression): UnaryAdd = UnaryAdd(source)(pos)
 
@@ -738,11 +738,11 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def limit(value: Long, position: InputPosition = pos): Limit =
     Limit(literalInt(value, increasePos(position, 6)))(position)
 
-  def sortItem(e: Expression, ascending: Boolean = true): SortItem = {
+  def sortItem(e: Expression, ascending: Boolean = true, position: InputPosition = pos): SortItem = {
     if (ascending) {
-      AscSortItem(e)(pos)
+      AscSortItem(e)(position)
     } else {
-      DescSortItem(e)(pos)
+      DescSortItem(e)(position)
     }
   }
 
