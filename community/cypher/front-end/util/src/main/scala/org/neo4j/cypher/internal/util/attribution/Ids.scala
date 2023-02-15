@@ -16,7 +16,16 @@
  */
 package org.neo4j.cypher.internal.util.attribution
 
-case class Id(x: Int) extends AnyVal
+import org.neo4j.cypher.internal.util.RewritableUniversal
+
+case class Id(x: Int) extends AnyVal with RewritableUniversal {
+
+  override def dup(children: Seq[AnyRef]): this.type = {
+    val newId = children.head.asInstanceOf[Int]
+    if (newId != x) Id(newId).asInstanceOf[this.type]
+    else this
+  }
+}
 
 object Id {
   val INVALID_ID: Id = Id(-1)

@@ -28,8 +28,15 @@ object EagernessReason {
 
   case class Conflict(first: Id, second: Id) extends Rewritable {
 
-    override def dup(children: Seq[AnyRef]): this.type =
-      Conflict(children(0).asInstanceOf[Id], children(1).asInstanceOf[Id]).asInstanceOf[this.type]
+    override def dup(children: Seq[AnyRef]): this.type = {
+      val a = children(0).asInstanceOf[Id]
+      val b = children(1).asInstanceOf[Id]
+      if (a != first || b != second) {
+        Conflict(a, b).asInstanceOf[this.type]
+      } else {
+        this
+      }
+    }
   }
 
   sealed trait Reason {

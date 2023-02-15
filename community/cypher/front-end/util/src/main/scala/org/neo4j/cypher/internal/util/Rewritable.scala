@@ -82,7 +82,7 @@ object Rewritable {
         that
       } else {
         that match {
-          case a: Rewritable =>
+          case a: RewritableUniversal =>
             a.dup(children)
           case _: collection.IndexedSeq[_] =>
             children.toIndexedSeq
@@ -139,9 +139,17 @@ case class TypedRewriter[T <: Rewritable](rewriter: Rewriter) extends (T => T) {
   def narrowed[S <: T]: TypedRewriter[S] = TypedRewriter[S](rewriter)
 }
 
-trait Rewritable {
+/**
+ * Mix into value classes to provide a custom copy constructor.
+ */
+trait RewritableUniversal extends Any {
   def dup(children: Seq[AnyRef]): this.type
 }
+
+/**
+ * Mix into non-value classes to provide a custom copy constructor.
+ */
+trait Rewritable extends AnyRef with RewritableUniversal
 
 object inSequence {
 
