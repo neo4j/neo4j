@@ -79,7 +79,7 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
   override def phase: CompilationPhaseTracer.CompilationPhase = SEMANTIC_CHECK
 
-  override def postConditions =
+  override def postConditions: Set[StepSequencer.Condition] =
     Set(BaseContains[SemanticState], StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
 }
 

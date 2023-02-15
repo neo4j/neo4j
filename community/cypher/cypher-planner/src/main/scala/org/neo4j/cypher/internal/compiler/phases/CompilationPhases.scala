@@ -81,7 +81,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 object CompilationPhases {
 
-  val defaultSemanticFeatures = Seq(
+  val defaultSemanticFeatures: Seq[SemanticFeature.MultipleDatabases.type] = Seq(
     MultipleDatabases
   )
 
@@ -142,13 +142,13 @@ object CompilationPhases {
   def parsingBase(config: ParsingConfig): Transformer[BaseContext, BaseState, BaseState] = {
     Parse andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.syntacticallyDeprecatedFeatures) andThen
-      AmbiguousAggregationAnalysis(config.semanticFeatures: _*) andThen
       PreparatoryRewriting andThen
       If((_: BaseState) => config.obfuscateLiterals)(
         extractSensitiveLiterals
       ) andThen
       SemanticAnalysis(warn = true, config.semanticFeatures: _*) andThen
       SemanticTypeCheck andThen
+      AmbiguousAggregationAnalysis(config.semanticFeatures: _*) andThen
       SyntaxDeprecationWarningsAndReplacements(Deprecations.semanticallyDeprecatedFeatures)
   }
 

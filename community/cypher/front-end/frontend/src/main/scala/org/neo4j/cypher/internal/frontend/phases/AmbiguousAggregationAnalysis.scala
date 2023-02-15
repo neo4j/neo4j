@@ -21,7 +21,6 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
-import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.StepSequencer
 
 /**
@@ -31,7 +30,7 @@ case class AmbiguousAggregationAnalysis(features: SemanticFeature*)
     extends VisitorPhase[BaseContext, BaseState] {
 
   override def visit(from: BaseState, context: BaseContext): Unit = {
-    val errors = from.folder.fold(Seq.empty[SemanticErrorDef]) {
+    val errors = from.statement().folder.fold(Seq.empty[SemanticErrorDef]) {
       // If we project '*', we don't need to check ambiguity since we group on all available variables.
       case projectionClause: ProjectionClause if !projectionClause.returnItems.includeExisting =>
         _ ++ projectionClause.orderBy.toSeq.flatMap(_.checkIllegalOrdering(projectionClause.returnItems)) ++
@@ -44,4 +43,11 @@ case class AmbiguousAggregationAnalysis(features: SemanticFeature*)
   override def phase: CompilationPhaseTracer.CompilationPhase = SEMANTIC_CHECK
 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
+
+  // preConditions:
+  // * computeDependenciesForExpressions needs to have run, which is part of SemanticAnalysis.
+  //   (There is currently no Condition to capture this).
+  //   This is needed, because ExpressionWithComputedDependencies will otherwise have an incorrect
+  //   `.introducedVariables`, which is called in this Phase.
+
 }

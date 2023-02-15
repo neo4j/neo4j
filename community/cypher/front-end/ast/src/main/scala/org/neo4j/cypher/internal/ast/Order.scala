@@ -16,9 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.AmbiguousAggregation.ambiguousExpressions
 import org.neo4j.cypher.internal.ast.AmbiguousAggregation.notProjectedAggregationExpression
-import org.neo4j.cypher.internal.ast.Order.implicitGroupingExpressionInOrderColumnErrorMessage
 import org.neo4j.cypher.internal.ast.Order.notProjectedAggregations
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
@@ -27,7 +25,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.util.ASTNode
@@ -36,44 +33,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck: SemanticCheck = sortItems.semanticCheck
 
-  def checkIllegalOrdering(returnItems: ReturnItems): Seq[SemanticError] =
-    checkAmbiguousOrdering(returnItems).toSeq ++ checkAggregationInProjection(returnItems)
-
-  private def checkAmbiguousOrdering(returnItems: ReturnItems): Option[SemanticError] = {
-    val (aggregationItems, groupingItems) = returnItems.items
-      .map(_.expression)
-      .toSet
-      .partition(expression => expression.containsAggregate)
-
-    val groupingVariablesAndAliases = groupingItems.collect {
-      case v: LogicalVariable => v
-    } ++ returnItems.items.flatMap(_.alias)
-    val propertiesUsedForGrouping =
-      groupingItems.collect { case v @ LogicalProperty(LogicalVariable(_), _) => v }
-
-    if (aggregationItems.nonEmpty) {
-      val ambiguousExprs = sortItems.flatMap(sortItem =>
-        ambiguousExpressions(
-          sortItem.expression,
-          groupingVariablesAndAliases,
-          propertiesUsedForGrouping
-        )
-      )
-
-      if (ambiguousExprs.nonEmpty) {
-        Some(SemanticError(
-          implicitGroupingExpressionInOrderColumnErrorMessage(ambiguousExprs.map(_.asCanonicalStringVal)),
-          ambiguousExprs.head.position
-        ))
-      } else {
-        None
-      }
-    } else {
-      None
-    }
-  }
-
-  private def checkAggregationInProjection(returnItems: ReturnItems): Option[SemanticError] = {
+  def checkIllegalOrdering(returnItems: ReturnItems): Option[SemanticError] = {
     val aggregationItems = returnItems.items
       .filter(item => item.expression.containsAggregate)
       .map(_.expression)
