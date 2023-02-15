@@ -354,4 +354,8 @@ public interface AccessMode {
     default boolean isOverridden() {
         return false;
     }
+
+    default boolean isCacheable() {
+        return false;
+    }
 }

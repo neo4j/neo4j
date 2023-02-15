@@ -24,6 +24,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 
 import java.util.Objects;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+import org.neo4j.token.api.TokenConstants;
 
 /**
  * The LoginContext hold the executing authenticated user (subject).
@@ -100,20 +101,22 @@ public abstract class LoginContext {
 
         int[] getAggregatingFunctionIds(String functionGlobbing);
 
+        boolean isCachableLookup();
+
         IdLookup EMPTY = new IdLookup() {
             @Override
             public int getPropertyKeyId(String name) {
-                return -1;
+                return TokenConstants.NO_TOKEN;
             }
 
             @Override
             public int getLabelId(String name) {
-                return -1;
+                return TokenConstants.NO_TOKEN;
             }
 
             @Override
             public int getRelTypeId(String name) {
-                return -1;
+                return TokenConstants.NO_TOKEN;
             }
 
             @Override
@@ -134,6 +137,11 @@ public abstract class LoginContext {
             @Override
             public int[] getAggregatingFunctionIds(String functionGlobbing) {
                 return NO_SUCH_PROCEDURE;
+            }
+
+            @Override
+            public boolean isCachableLookup() {
+                return false;
             }
         };
     }

@@ -98,4 +98,9 @@ class TokenHoldersIdLookup implements LoginContext.IdLookup {
         aggregationFunctionsLookupCache.put(functionGlobbing, data);
         return data;
     }
+
+    @Override
+    public boolean isCachableLookup() {
+        return true;
+    }
 }
