@@ -20,7 +20,6 @@
 package org.neo4j.graphdb.impl.notification;
 
 import java.util.Objects;
-
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;

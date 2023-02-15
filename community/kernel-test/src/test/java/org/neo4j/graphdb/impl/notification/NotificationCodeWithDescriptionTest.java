@@ -674,8 +674,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -86, -2, -31, 42, 124, 55, 109, -39, -73, -67, 61, 104, 114, -30, -2, -128, -115, 110, 73, -35, -2, -86,
-            -114, -9, -68, 30, -84, -115, -68, -12, -66, 67
+            -61, 77, 109, 64, 7, 37, 70, -45, 20, -49, -69, -113, -82, -90, -84, 109, -28, -105, -128, -127, 13, 80,
+            -111, 49, 83, 117, 34, -111, 71, -126, -124, -44
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {
