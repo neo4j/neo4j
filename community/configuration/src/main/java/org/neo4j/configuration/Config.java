@@ -21,17 +21,13 @@ package org.neo4j.configuration;
 
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
-import static org.apache.commons.lang3.StringUtils.chomp;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_command_evaluation_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
-import static org.neo4j.string.EncodingUtils.getNativeCharset;
+import static org.neo4j.internal.helpers.ProcessUtils.executeCommand;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
-import java.io.UncheckedIOException;
 import java.lang.reflect.Constructor;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
@@ -62,14 +58,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.commons.text.StringTokenizer;
-import org.apache.commons.text.matcher.StringMatcherFactory;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.Exceptions;
@@ -869,59 +862,6 @@ public class Config implements Configuration {
     private static boolean isCommand(String entry) {
         String str = entry.trim();
         return str.length() > 3 && str.charAt(0) == '$' && str.charAt(1) == '(' && str.charAt(str.length() - 1) == ')';
-    }
-
-    private static String executeCommand(String command, Duration timeout) {
-        Process process = null;
-        try {
-            String[] commands = new StringTokenizer(
-                            command,
-                            StringMatcherFactory.INSTANCE.splitMatcher(),
-                            StringMatcherFactory.INSTANCE.quoteMatcher())
-                    .getTokenArray();
-            process = new ProcessBuilder(commands).start();
-
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            Thread outGobbler = streamGobbler(process.getInputStream(), out);
-            ByteArrayOutputStream err = new ByteArrayOutputStream();
-            Thread errGobbler = streamGobbler(process.getErrorStream(), err);
-            if (!process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS)) {
-                throw new IllegalArgumentException(format("Timed out executing command `%s`", command));
-            }
-
-            outGobbler.join();
-            errGobbler.join();
-            String output = chomp(out.toString(getNativeCharset()));
-
-            int exitCode = process.exitValue();
-            if (exitCode != 0) {
-                throw new IllegalArgumentException(format(
-                        "Command `%s` failed with exit code %s.%n%s%n%s",
-                        command, exitCode, output, chomp(err.toString(getNativeCharset()))));
-            }
-            return output;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalArgumentException("Interrupted while executing command", e);
-        } catch (IOException e) {
-            throw new IllegalArgumentException(e);
-        } finally {
-            if (process != null && process.isAlive()) {
-                process.destroyForcibly();
-            }
-        }
-    }
-
-    private static Thread streamGobbler(InputStream from, OutputStream to) {
-        Thread thread = new Thread(() -> {
-            try {
-                from.transferTo(to);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        });
-        thread.start();
-        return thread;
     }
 
     @SuppressWarnings("unchecked")
