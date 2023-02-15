@@ -426,7 +426,6 @@ class TransactionBoundPlanContext(
 
   override val statistics: InstrumentedGraphStatistics = graphStatistics
 
-  // TODO: graph
   override val lastCommittedTxIdProvider: LastCommittedTxIdProvider = LastCommittedTxIdProvider(tc.graph)
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature =
