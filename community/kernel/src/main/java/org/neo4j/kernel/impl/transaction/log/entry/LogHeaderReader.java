@@ -19,28 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_VERSION_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_BITS;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_MASK;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_3_5;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_4_0;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_5_0;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_3_5;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_4_0;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_5_0;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.HeapScopedBuffer;
+import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.StoreIdSerialization;
 
 public final class LogHeaderReader {
     private LogHeaderReader() {}
@@ -78,7 +70,7 @@ public final class LogHeaderReader {
             throws IOException {
         // log header has big-endian byte order
         try (var scopedBuffer =
-                new HeapScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, memoryTracker)) {
+                new NativeScopedBuffer(CURRENT_FORMAT_LOG_HEADER_SIZE, ByteOrder.BIG_ENDIAN, memoryTracker)) {
             var order = scopedBuffer.getBuffer();
             return readLogHeader(order, channel, strict, additionalErrorInformation);
         }
@@ -90,95 +82,20 @@ public final class LogHeaderReader {
             boolean strict,
             Path fileForAdditionalErrorInformationOrNull)
             throws IOException {
-        // Decode first part of the header that contains the version
-        if (!safeRead(buffer, channel, LOG_HEADER_VERSION_SIZE, strict, fileForAdditionalErrorInformationOrNull)) {
-            return null;
-        }
-
-        long encodedLogVersions = buffer.getLong();
-        if (encodedLogVersions == 0) {
-            // Since the format version is a non-zero number, we know we are reading a pre-allocated file
-            return null;
-        }
-
-        byte logFormatVersion = decodeLogFormatVersion(encodedLogVersions);
-        long logVersion = decodeLogVersion(encodedLogVersions);
-
-        // The header's total length differs from versions
-        switch (logFormatVersion) {
-            case LOG_VERSION_3_5 -> {
-                if (!safeRead(buffer, channel, Long.BYTES, strict, fileForAdditionalErrorInformationOrNull)) {
-                    return null;
-                }
-                long previousCommittedTx = buffer.getLong();
-                return new LogHeader(logFormatVersion, logVersion, previousCommittedTx, null, LOG_HEADER_SIZE_3_5);
-            }
-            case LOG_VERSION_4_0 -> {
-                if (!safeRead(
-                        buffer,
-                        channel,
-                        LOG_HEADER_SIZE_4_0 - LOG_HEADER_VERSION_SIZE,
-                        strict,
-                        fileForAdditionalErrorInformationOrNull)) {
-                    return null;
-                }
-                long previousCommittedTx = buffer.getLong();
-                buffer.getLong(); // legacy creation time
-                buffer.getLong(); // legacy random
-                buffer.getLong(); // legacy store version
-                buffer.getLong(); // legacy upgrade time
-                buffer.getLong(); // legacy upgrade tx id
-                buffer.getLong(); // reserved
-                return new LogHeader(logFormatVersion, logVersion, previousCommittedTx, null, LOG_HEADER_SIZE_4_0);
-            }
-            case LOG_VERSION_5_0 -> {
-                if (!safeRead(
-                        buffer,
-                        channel,
-                        LOG_HEADER_SIZE_5_0 - LOG_HEADER_VERSION_SIZE,
-                        strict,
-                        fileForAdditionalErrorInformationOrNull)) {
-                    return null;
-                }
-                long previousCommittedTx = buffer.getLong();
-                StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(buffer);
-                buffer.getLong(); // reserved
-                buffer.getLong(); // reserved
-                buffer.getLong(); // reserved
-                buffer.getLong(); // reserved
-                buffer.getLong(); // reserved
-                buffer.getLong(); // reserved
-                return new LogHeader(logFormatVersion, logVersion, previousCommittedTx, storeId, LOG_HEADER_SIZE_5_0);
-            }
-            default -> throw new IOException("Unrecognized transaction log format version: " + logFormatVersion);
-        }
-    }
-
-    /**
-     * Try to read the {@code size} of bytes, and throw if {@code strict} is true.
-     * @return true if all of the bytes were successfully read.
-     */
-    private static boolean safeRead(
-            ByteBuffer buffer,
-            ReadableByteChannel channel,
-            int size,
-            boolean strict,
-            Path fileForAdditionalErrorInformationOrNull)
-            throws IOException {
         buffer.clear();
-        buffer.limit(size);
-        int read = channel.read(buffer);
-        if (read != size) {
-            if (strict) {
-                if (fileForAdditionalErrorInformationOrNull != null) {
-                    throw new IncompleteLogHeaderException(fileForAdditionalErrorInformationOrNull, read, size);
-                }
-                throw new IncompleteLogHeaderException(read, size);
-            }
-            return false;
-        }
+        buffer.limit(LogFormat.BIGGEST_HEADER);
+        channel.read(buffer);
         buffer.flip();
-        return true;
+
+        LogHeader logHeader = LogFormat.parseHeader(buffer, strict, fileForAdditionalErrorInformationOrNull);
+
+        if (logHeader != null) {
+            if (channel instanceof SeekableByteChannel seekableByteChannel) {
+                seekableByteChannel.position(logHeader.getStartPosition().getByteOffset());
+            }
+        }
+
+        return logHeader;
     }
 
     static long decodeLogVersion(long encLogVersion) {

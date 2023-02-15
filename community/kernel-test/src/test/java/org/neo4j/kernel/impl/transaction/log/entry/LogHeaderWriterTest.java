@@ -20,24 +20,23 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.V8;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogFormatVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.decodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.LOG_VERSION_MASK;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.test.RandomSupport;
@@ -61,7 +60,8 @@ class LogHeaderWriterTest {
     private long expectedLogVersion;
     private long expectedTxId;
     private StoreId expectedStoreId;
-    private LogHeader logHeader;
+    private int expectedBlockSize;
+    private int expectedChecksum;
 
     @BeforeEach
     void setUp() {
@@ -74,14 +74,25 @@ class LogHeaderWriterTest {
                 "format-" + random.nextInt(0, 255),
                 random.nextInt(0, 127),
                 random.nextInt(0, 127));
-        logHeader = new LogHeader(expectedLogVersion, expectedTxId, expectedStoreId);
+        expectedBlockSize = 1 << random.nextInt(7, 10);
+        expectedChecksum = random.nextInt();
     }
 
-    @Test
-    void shouldWriteALogHeaderInAStoreChannel() throws IOException {
+    @ParameterizedTest
+    @EnumSource(
+            mode = EXCLUDE,
+            names = {"V6", "V7"}) // We don't support writing v6 and v7
+    void shouldWriteALogHeaderInAStoreChannel(LogFormat logFormat) throws IOException {
         // given
-        final Path file = testDirectory.file("WriteLogHeader");
-        final StoreChannel channel = fileSystem.write(file);
+        final var file = testDirectory.file("WriteLogHeader");
+        final var channel = fileSystem.write(file);
+        LogHeader logHeader = new LogHeader(
+                logFormat.getVersionByte(),
+                new LogPosition(expectedLogVersion, logFormat.getHeaderSize()),
+                expectedTxId,
+                expectedStoreId,
+                expectedBlockSize,
+                expectedChecksum);
 
         // when
         writeLogHeader(channel, logHeader, INSTANCE);
@@ -89,26 +100,25 @@ class LogHeaderWriterTest {
         channel.close();
 
         // then
-        final byte[] array = new byte[CURRENT_FORMAT_LOG_HEADER_SIZE];
-        try (InputStream stream = fileSystem.openAsInputStream(file)) {
-            int read = stream.read(array);
-            assertEquals(CURRENT_FORMAT_LOG_HEADER_SIZE, read);
+        final var array = new byte[logFormat.getHeaderSize()];
+        try (var stream = fileSystem.openAsInputStream(file)) {
+            assertEquals(logFormat.getHeaderSize(), stream.read(array));
         }
-        final ByteBuffer result = ByteBuffer.wrap(array);
+        final var result = ByteBuffer.wrap(array);
 
-        long encodedLogVersions = result.getLong();
-        assertEquals(encodeLogVersion(expectedLogVersion, CURRENT_LOG_FORMAT_VERSION), encodedLogVersions);
-
-        byte logFormatVersion = decodeLogFormatVersion(encodedLogVersions);
-        assertEquals(CURRENT_LOG_FORMAT_VERSION, logFormatVersion);
-
-        long logVersion = decodeLogVersion(encodedLogVersions);
-        assertEquals(expectedLogVersion, logVersion);
-
-        long txId = result.getLong();
-        assertEquals(expectedTxId, txId);
-
+        final var encodedLogVersions = result.getLong();
+        final var txId = result.getLong();
         StoreId storeId = StoreIdSerialization.deserializeWithFixedSize(result);
+
+        assertEquals(encodeLogVersion(expectedLogVersion, logFormat.getVersionByte()), encodedLogVersions);
+        assertEquals(logFormat.getVersionByte(), decodeLogFormatVersion(encodedLogVersions));
+        assertEquals(expectedLogVersion, decodeLogVersion(encodedLogVersions));
+        assertEquals(expectedTxId, txId);
         assertEquals(expectedStoreId, storeId);
+
+        if (logFormat != V8) {
+            assertEquals(expectedBlockSize, result.getInt());
+            assertEquals(expectedChecksum, result.getInt());
+        }
     }
 }

@@ -17,23 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel.impl.transaction.log.entry;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
+public final class LogSegments {
+    private LogSegments() {}
 
-public class InMemoryVersionableReadableClosablePositionAwareChannel extends InMemoryClosableChannel
-        implements ReadableLogChannel {
-    public InMemoryVersionableReadableClosablePositionAwareChannel() {
-        super(true);
-    }
-
-    @Override
-    public long getVersion() {
-        return 0;
-    }
-
-    @Override
-    public byte getLogFormatVersion() {
-        return CURRENT_LOG_FORMAT_VERSION;
-    }
+    public static final int UNKNOWN_LOG_SEGMENT_SIZE = -1;
 }

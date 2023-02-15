@@ -24,9 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_HEADER_SIZE_3_5;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.LOG_VERSION_3_5;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.CHECKPOINT_FILE_PREFIX;
 import static org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper.DEFAULT_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -47,6 +45,7 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.entry.LogFormat;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Neo4jLayoutExtension;
@@ -83,12 +82,14 @@ class TransactionLogFilesTest {
 
         LogFile logFile = files.getLogFile();
         var logHeader = logFile.extractHeader(0);
-        assertEquals(LOG_HEADER_SIZE_3_5, logHeader.getStartPosition().getByteOffset());
-        assertEquals(LOG_VERSION_3_5, logHeader.getLogFormatVersion());
+        assertEquals(LogFormat.V6.getHeaderSize(), logHeader.getStartPosition().getByteOffset());
+        assertEquals(LogFormat.V6.getVersionByte(), logHeader.getLogFormatVersion());
         assertEquals(
-                LOG_HEADER_SIZE_3_5, logFile.extractHeader(1).getStartPosition().getByteOffset());
+                LogFormat.V6.getHeaderSize(),
+                logFile.extractHeader(1).getStartPosition().getByteOffset());
         assertEquals(
-                LOG_HEADER_SIZE_3_5, logFile.extractHeader(2).getStartPosition().getByteOffset());
+                LogFormat.V6.getHeaderSize(),
+                logFile.extractHeader(2).getStartPosition().getByteOffset());
     }
 
     @Test
@@ -267,9 +268,9 @@ class TransactionLogFilesTest {
         try (StoreChannel storeChannel =
                 fileSystem.write(createTransactionLogFile(databaseLayout, getVersionedLogFileName(version)))) {
             ByteBuffer byteBuffer =
-                    ByteBuffers.allocate(LOG_HEADER_SIZE_3_5 + bytesOfData, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+                    ByteBuffers.allocate(LogFormat.V6.getHeaderSize() + bytesOfData, ByteOrder.LITTLE_ENDIAN, INSTANCE);
             while (byteBuffer.hasRemaining()) {
-                byteBuffer.put(LOG_VERSION_3_5);
+                byteBuffer.put(LogFormat.V6.getVersionByte());
             }
             byteBuffer.flip();
             storeChannel.writeAll(byteBuffer);

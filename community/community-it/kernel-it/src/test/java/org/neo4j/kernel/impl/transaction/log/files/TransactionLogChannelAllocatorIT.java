@@ -24,9 +24,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.dynamic_read_only_failover;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -95,7 +96,16 @@ class TransactionLogChannelAllocatorIT {
     void rawChannelDoesNotTryToAdviseOnFileContent() throws IOException {
         Path path = fileHelper.getLogFileForVersion(1);
         try (var storeChannel = fileSystem.write(path)) {
-            writeLogHeader(storeChannel, new LogHeader(CURRENT_LOG_FORMAT_VERSION, 1, 1, STORE_ID, 1), INSTANCE);
+            writeLogHeader(
+                    storeChannel,
+                    new LogHeader(
+                            CURRENT_LOG_FORMAT_VERSION,
+                            new LogPosition(1, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                            1,
+                            STORE_ID,
+                            UNKNOWN_LOG_SEGMENT_SIZE,
+                            1),
+                    INSTANCE);
         }
 
         var logHeaderCache = new LogHeaderCache(10);
@@ -112,7 +122,16 @@ class TransactionLogChannelAllocatorIT {
     void defaultChannelTryToAdviseOnFileContent() throws IOException {
         Path path = fileHelper.getLogFileForVersion(1);
         try (StoreChannel storeChannel = fileSystem.write(path)) {
-            writeLogHeader(storeChannel, new LogHeader(CURRENT_LOG_FORMAT_VERSION, 1, 1, STORE_ID, 1), INSTANCE);
+            writeLogHeader(
+                    storeChannel,
+                    new LogHeader(
+                            CURRENT_LOG_FORMAT_VERSION,
+                            new LogPosition(1, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                            1,
+                            STORE_ID,
+                            UNKNOWN_LOG_SEGMENT_SIZE,
+                            1),
+                    INSTANCE);
         }
 
         var logHeaderCache = new LogHeaderCache(10);

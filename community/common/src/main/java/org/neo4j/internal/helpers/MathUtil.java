@@ -176,4 +176,14 @@ public final class MathUtil {
             return MathUtil.compare(x, y, epsilon);
         }
     }
+
+    /**
+     * Round up to the next multiple of a specified number.
+     * @param value to round up.
+     * @param multiplier
+     * @return rounded up value.
+     */
+    public static long roundUp(long value, long multiplier) {
+        return (value + multiplier - 1) / multiplier * multiplier;
+    }
 }

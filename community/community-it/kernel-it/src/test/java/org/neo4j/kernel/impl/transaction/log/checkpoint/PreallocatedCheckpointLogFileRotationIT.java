@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryWriterV5_6.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent.NULL;
 

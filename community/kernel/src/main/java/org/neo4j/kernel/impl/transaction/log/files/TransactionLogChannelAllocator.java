@@ -20,8 +20,11 @@
 package org.neo4j.kernel.impl.transaction.log.files;
 
 import static java.lang.String.format;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
@@ -30,6 +33,7 @@ import java.util.function.LongSupplier;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
@@ -68,7 +72,13 @@ public class TransactionLogChannelAllocator {
                 // we always write file header from the beginning of the file
                 storeChannel.position(0);
                 long lastTxId = lastCommittedTransactionId.getAsLong();
-                LogHeader logHeader = new LogHeader(version, lastTxId, logFilesContext.getStoreId());
+                LogHeader logHeader = new LogHeader(
+                        CURRENT_LOG_FORMAT_VERSION,
+                        new LogPosition(version, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                        lastTxId,
+                        logFilesContext.getStoreId(),
+                        UNKNOWN_LOG_SEGMENT_SIZE,
+                        BASE_TX_CHECKSUM);
                 LogHeaderWriter.writeLogHeader(storeChannel, logHeader, logFilesContext.getMemoryTracker());
                 logHeaderCache.putHeader(version, logHeader);
             }

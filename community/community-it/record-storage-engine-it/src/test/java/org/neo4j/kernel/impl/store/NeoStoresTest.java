@@ -33,7 +33,7 @@ import static org.neo4j.internal.recordstorage.StoreTokens.createReadOnlyTokenHo
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.lock.LockTracer.NONE;
 import static org.neo4j.lock.ResourceLocker.IGNORE;

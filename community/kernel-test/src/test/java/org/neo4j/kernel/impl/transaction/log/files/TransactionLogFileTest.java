@@ -30,9 +30,12 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
@@ -699,7 +702,16 @@ class TransactionLogFileTest {
     private void createFile(Path filePath, long version, long lastCommittedTxId) throws IOException {
         var filesHelper = new TransactionLogFilesHelper(fileSystem, filePath);
         try (StoreChannel storeChannel = fileSystem.write(filesHelper.getLogFileForVersion(version))) {
-            LogHeaderWriter.writeLogHeader(storeChannel, new LogHeader(version, lastCommittedTxId, STORE_ID), INSTANCE);
+            LogHeaderWriter.writeLogHeader(
+                    storeChannel,
+                    new LogHeader(
+                            CURRENT_LOG_FORMAT_VERSION,
+                            new LogPosition(version, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                            lastCommittedTxId,
+                            STORE_ID,
+                            UNKNOWN_LOG_SEGMENT_SIZE,
+                            BASE_TX_CHECKSUM),
+                    INSTANCE);
         }
     }
 

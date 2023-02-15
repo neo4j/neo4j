@@ -26,7 +26,7 @@ import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor.UNKNOWN;
 
 import java.io.IOException;

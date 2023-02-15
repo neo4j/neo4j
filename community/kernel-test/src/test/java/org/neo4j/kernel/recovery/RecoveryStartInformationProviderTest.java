@@ -28,8 +28,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.KernelVersion.LATEST;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.MISSING_LOGS;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,7 +59,13 @@ class RecoveryStartInformationProviderTest {
 
     @BeforeEach
     void setUp() throws IOException {
-        var logHeader = new LogHeader(0, 1, null);
+        var logHeader = new LogHeader(
+                CURRENT_LOG_FORMAT_VERSION,
+                new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                1,
+                null,
+                UNKNOWN_LOG_SEGMENT_SIZE,
+                BASE_TX_CHECKSUM);
         when(logFile.extractHeader(0)).thenReturn(logHeader);
         when(logFiles.getLogFile()).thenReturn(logFile);
     }

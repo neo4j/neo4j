@@ -36,9 +36,10 @@ import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryWriterV5_6.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
@@ -680,7 +681,16 @@ class TransactionLogsRecoveryTest {
                 var writableLogChannel = new PositionAwarePhysicalFlushableChecksumChannel(
                         versionedStoreChannel,
                         new HeapScopedBuffer(toIntExact(KibiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
-            writeLogHeader(versionedStoreChannel, new LogHeader(logVersion, 2L, storeId), INSTANCE);
+            writeLogHeader(
+                    versionedStoreChannel,
+                    new LogHeader(
+                            CURRENT_LOG_FORMAT_VERSION,
+                            new LogPosition(logVersion, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                            2L,
+                            storeId,
+                            UNKNOWN_LOG_SEGMENT_SIZE,
+                            BASE_TX_CHECKSUM),
+                    INSTANCE);
             writableLogChannel.beginChecksum();
             LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel);
             visitor.visit(new DataWriters(first, writableLogChannel));

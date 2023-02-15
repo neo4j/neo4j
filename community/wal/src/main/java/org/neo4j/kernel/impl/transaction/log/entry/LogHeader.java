@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static java.util.Objects.requireNonNull;
 
 import java.util.Objects;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -37,26 +36,33 @@ public class LogHeader {
     private final long lastCommittedTxId;
     private final StoreId storeId;
     private final LogPosition startPosition;
+    private final int segmentBlockSize;
+    private final int previousLogFileChecksum;
 
-    public LogHeader(long logVersion, long lastCommittedTxId, StoreId storeId) {
-        this(CURRENT_LOG_FORMAT_VERSION, logVersion, lastCommittedTxId, storeId, CURRENT_FORMAT_LOG_HEADER_SIZE);
-    }
-
-    public LogHeader(byte logFormatVersion, long logVersion, long lastCommittedTxId, StoreId storeId, long headerSize) {
+    public LogHeader(
+            byte logFormatVersion,
+            LogPosition startPosition,
+            long lastCommittedTxId,
+            StoreId storeId,
+            int segmentBlockSize,
+            int previousLogFileChecksum) {
         this.logFormatVersion = logFormatVersion;
-        this.logVersion = logVersion;
+        this.startPosition = requireNonNull(startPosition);
+        this.logVersion = startPosition.getLogVersion();
         this.lastCommittedTxId = lastCommittedTxId;
         this.storeId = storeId;
-        this.startPosition = new LogPosition(logVersion, headerSize);
+        this.segmentBlockSize = segmentBlockSize;
+        this.previousLogFileChecksum = previousLogFileChecksum;
     }
 
     public LogHeader(LogHeader logHeader, long version) {
         this(
                 logHeader.getLogFormatVersion(),
-                version,
+                new LogPosition(version, logHeader.getStartPosition().getByteOffset()),
                 logHeader.getLastCommittedTxId(),
                 logHeader.getStoreId(),
-                logHeader.getStartPosition().getByteOffset());
+                logHeader.getSegmentBlockSize(),
+                logHeader.getPreviousLogFileChecksum());
     }
 
     public LogPosition getStartPosition() {
@@ -79,6 +85,14 @@ public class LogHeader {
         return storeId;
     }
 
+    public int getSegmentBlockSize() {
+        return segmentBlockSize;
+    }
+
+    public int getPreviousLogFileChecksum() {
+        return previousLogFileChecksum;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -92,12 +106,21 @@ public class LogHeader {
                 && logVersion == logHeader.logVersion
                 && lastCommittedTxId == logHeader.lastCommittedTxId
                 && Objects.equals(storeId, logHeader.storeId)
-                && Objects.equals(startPosition, logHeader.startPosition);
+                && Objects.equals(startPosition, logHeader.startPosition)
+                && segmentBlockSize == logHeader.segmentBlockSize
+                && previousLogFileChecksum == logHeader.previousLogFileChecksum;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(logFormatVersion, logVersion, lastCommittedTxId, storeId, startPosition);
+        return Objects.hash(
+                logFormatVersion,
+                logVersion,
+                lastCommittedTxId,
+                storeId,
+                startPosition,
+                segmentBlockSize,
+                previousLogFileChecksum);
     }
 
     @Override
@@ -107,6 +130,8 @@ public class LogHeader {
                 + logVersion + ", lastCommittedTxId="
                 + lastCommittedTxId + ", storeId="
                 + storeId + ", startPosition="
-                + startPosition + '}';
+                + startPosition + ", segmentBlockSize="
+                + segmentBlockSize + ", previousLogFileChecksum="
+                + previousLogFileChecksum + '}';
     }
 }

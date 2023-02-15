@@ -25,9 +25,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.encodeLogVersion;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,15 +41,17 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter;
 import org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -80,30 +83,26 @@ class ReaderLogVersionBridgeTest {
         when(fs.fileExists(any(Path.class))).thenReturn(true);
         when(fs.read(any(Path.class))).thenReturn(newStoreChannel);
 
-        byte[] serializedStoreId = getSerializedStoreId();
+        var storeId = new StoreId(1, 1, "engine-1", "format-1", 1, 1);
         when(newStoreChannel.read(ArgumentMatchers.<ByteBuffer>any())).then(new Answer<>() {
             private int count;
 
             @Override
-            public Integer answer(InvocationOnMock invocation) {
-                count++;
+            public Integer answer(InvocationOnMock invocation) throws IOException {
+                if (count++ == 1) {
+                    throw new AssertionError("Should only be called twice.");
+                }
                 ByteBuffer buffer = invocation.getArgument(0);
-                if (count == 1) {
-                    buffer.putLong(encodeLogVersion(version + 1, CURRENT_LOG_FORMAT_VERSION));
-                    return Long.BYTES;
-                }
-                if (count == 2) {
-                    buffer.putLong(42);
-                    buffer.put(serializedStoreId);
-                    buffer.putLong(0); // reserved
-                    buffer.putLong(0); // reserved
-                    buffer.putLong(0); // reserved
-                    buffer.putLong(0); // reserved
-                    buffer.putLong(0); // reserved
-                    buffer.putLong(0); // reserved
-                    return Long.BYTES * 15;
-                }
-                throw new AssertionError("Should only be called twice.");
+
+                LogHeader logHeader = new LogHeader(
+                        CURRENT_LOG_FORMAT_VERSION,
+                        new LogPosition(version + 1, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                        -1L,
+                        storeId,
+                        UNKNOWN_LOG_SEGMENT_SIZE,
+                        BASE_TX_CHECKSUM);
+                LogHeaderWriter.putHeader(buffer, logHeader);
+                return CURRENT_FORMAT_LOG_HEADER_SIZE;
             }
         });
 
@@ -156,13 +155,6 @@ class ReaderLogVersionBridgeTest {
         // then
         assertEquals(channel, result);
         verify(channel, never()).close();
-    }
-
-    private byte[] getSerializedStoreId() throws IOException {
-        var storeId = new StoreId(1, 1, "engine-1", "format-1", 1, 1);
-        ByteBuffer buffer = ByteBuffer.allocate(StoreIdSerialization.MAX_STORE_ID_LENGTH);
-        StoreIdSerialization.serializeWithFixedSize(storeId, buffer);
-        return buffer.array();
     }
 
     private LogFiles prepareLogFiles() throws IOException {

@@ -21,9 +21,14 @@ package org.neo4j.kernel.impl.transaction;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.storageengine.api.StoreId;
 
@@ -46,7 +51,15 @@ class LogHeaderCacheTest {
         final LogHeaderCache cache = new LogHeaderCache(2);
 
         // when
-        cache.putHeader(5, new LogHeader(1, 3, new StoreId(1, 2, "engine-1", "format-1", 3, 4)));
+        cache.putHeader(
+                5,
+                new LogHeader(
+                        CURRENT_LOG_FORMAT_VERSION,
+                        new LogPosition(1, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                        3,
+                        new StoreId(1, 2, "engine-1", "format-1", 3, 4),
+                        UNKNOWN_LOG_SEGMENT_SIZE,
+                        BASE_TX_CHECKSUM));
         final LogHeader logHeader = cache.getLogHeader(5);
 
         // then
@@ -59,7 +72,15 @@ class LogHeaderCacheTest {
         final LogHeaderCache cache = new LogHeaderCache(2);
 
         // when
-        cache.putHeader(5, new LogHeader(1, 3, new StoreId(1, 2, "engine-1", "format-1", 3, 4)));
+        cache.putHeader(
+                5,
+                new LogHeader(
+                        CURRENT_LOG_FORMAT_VERSION,
+                        new LogPosition(1, CURRENT_FORMAT_LOG_HEADER_SIZE),
+                        3,
+                        new StoreId(1, 2, "engine-1", "format-1", 3, 4),
+                        UNKNOWN_LOG_SEGMENT_SIZE,
+                        BASE_TX_CHECKSUM));
         cache.clear();
         final LogHeader logHeader = cache.getLogHeader(5);
 
