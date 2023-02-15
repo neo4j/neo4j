@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.http.cypher.format.output.eventsource;
 
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_FORMAT;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FORMAT;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.message;
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.COMMITTED;
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.OPEN;

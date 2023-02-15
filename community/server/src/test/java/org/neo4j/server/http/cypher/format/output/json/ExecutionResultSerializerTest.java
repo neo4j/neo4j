@@ -83,7 +83,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.QueryExecutionType;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
 import org.neo4j.graphdb.spatial.Coordinate;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -970,7 +970,8 @@ class ExecutionResultSerializerTest {
     @Test
     void shouldReturnNotifications() {
         // given
-        Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification(new InputPosition(1, 2, 3));
+        Notification notification =
+                NotificationCodeWithDescription.CARTESIAN_PRODUCT.notification(new InputPosition(1, 2, 3));
         List<Notification> notifications = Collections.singletonList(notification);
 
         var row = Map.of(
@@ -1029,7 +1030,7 @@ class ExecutionResultSerializerTest {
                 "column1", "value1",
                 "column2", "value2");
 
-        Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification(InputPosition.empty);
+        Notification notification = NotificationCodeWithDescription.CARTESIAN_PRODUCT.notification(InputPosition.empty);
 
         List<Notification> notifications = Collections.singletonList(notification);
 

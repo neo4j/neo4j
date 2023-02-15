@@ -76,7 +76,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Notification;
-import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -719,7 +719,8 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
     @Test
     void shouldReturnNotifications() {
         // given
-        Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification(new InputPosition(1, 2, 3));
+        Notification notification =
+                NotificationCodeWithDescription.CARTESIAN_PRODUCT.notification(new InputPosition(1, 2, 3));
         List<Notification> notifications = Collections.singletonList(notification);
 
         var row = Map.of(
@@ -814,7 +815,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
                 "column1", "value1",
                 "column2", "value2");
 
-        Notification notification = NotificationCode.CARTESIAN_PRODUCT.notification(InputPosition.empty);
+        Notification notification = NotificationCodeWithDescription.CARTESIAN_PRODUCT.notification(InputPosition.empty);
 
         List<Notification> notifications = Collections.singletonList(notification);
 

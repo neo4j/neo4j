@@ -30,7 +30,7 @@ import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.impl.notification.NotificationCode;
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Procedure;
@@ -94,12 +94,12 @@ public class NotificationTestSupport {
                 "an iterable not containing " + condition.description());
     }
 
-    void shouldNotifyInStream(String query, InputPosition pos, NotificationCode code) {
+    void shouldNotifyInStream(String query, InputPosition pos, NotificationCodeWithDescription code) {
         try (Transaction transaction = db.beginTx()) {
             // when
             try (Result result = transaction.execute(query)) {
                 // then
-                NotificationCode.Notification notification = code.notification(pos);
+                NotificationCodeWithDescription.Notification notification = code.notification(pos);
                 assertThat(result.getNotifications()).contains(notification);
             }
             transaction.commit();
@@ -107,12 +107,12 @@ public class NotificationTestSupport {
     }
 
     void shouldNotifyInStreamWithDetail(
-            String query, InputPosition pos, NotificationCode code, NotificationDetail detail) {
+            String query, InputPosition pos, NotificationCodeWithDescription code, NotificationDetail detail) {
         try (Transaction transaction = db.beginTx()) {
             // when
             try (Result result = transaction.execute(query)) {
                 // then
-                NotificationCode.Notification notification = code.notification(pos, detail);
+                NotificationCodeWithDescription.Notification notification = code.notification(pos, detail);
                 assertThat(result.getNotifications()).contains(notification);
             }
             transaction.commit();

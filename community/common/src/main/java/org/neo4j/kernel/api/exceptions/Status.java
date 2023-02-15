@@ -88,7 +88,11 @@ public interface Status {
         InvalidUsage(
                 ClientError, // TODO: see above
                 "The client made a request but did not consume outgoing buffers in a timely fashion."),
-        DeprecatedFormat(ClientNotification, "The client made a request for a format which has been deprecated."),
+        DeprecatedFormat(
+                ClientNotification,
+                "The client made a request for a format which has been deprecated.",
+                SeverityLevel.WARNING,
+                NotificationCategory.DEPRECATION),
         NoThreadsAvailable(
                 TransientError, // TODO: see above
                 "There are no available threads to serve this request at the moment. You can retry at a later time "
@@ -102,6 +106,14 @@ public interface Status {
 
         Request(Classification classification, String description) {
             this.code = new Code(classification, this, description);
+        }
+
+        Request(
+                Classification classification,
+                String description,
+                SeverityLevel severity,
+                NotificationCategory category) {
+            this.code = new NotificationCode(classification, this, description, severity, category);
         }
     }
 
@@ -194,7 +206,10 @@ public interface Status {
                 "The statement is syntactically valid, but expresses something that the database cannot do."),
         ParameterMissing(ClientError, "The statement refers to a parameter that was not provided in the request."),
         ParameterNotProvided(
-                ClientNotification, "The statement refers to a parameter that was not provided in the request."),
+                ClientNotification,
+                "The statement refers to a parameter that was not provided in the request.",
+                SeverityLevel.WARNING,
+                NotificationCategory.GENERIC),
         ConstraintVerificationFailed(
                 ClientError, "A constraint imposed by the statement is violated by the data in the database."),
         EntityNotFound(ClientError, "The statement refers to a non-existent entity."),
@@ -214,9 +229,15 @@ public interface Status {
                 ClientError, "This query preformed an operation that is not supported in this context."),
         ExternalResourceFailed(ClientError, "Access to an external resource failed"),
         UnsatisfiableRelationshipTypeExpression(
-                ClientNotification, "The query contains a relationship type expression that cannot be satisfied."),
+                ClientNotification,
+                "The query contains a relationship type expression that cannot be satisfied.",
+                SeverityLevel.WARNING,
+                NotificationCategory.GENERIC),
         RepeatedRelationshipReference(
-                ClientNotification, "The query returns no results due to repeated references to a relationship."),
+                ClientNotification,
+                "The query returns no results due to repeated references to a relationship.",
+                SeverityLevel.WARNING,
+                NotificationCategory.GENERIC),
         RemoteExecutionClientError(
                 ClientError,
                 "The database was unable to execute a remote part of the statement due to a client error."),
@@ -225,7 +246,9 @@ public interface Status {
         ExecutionFailed(DatabaseError, "The database was unable to execute the statement."),
         CodeGenerationFailed(
                 ClientNotification,
-                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log."),
+                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.PERFORMANCE),
         RemoteExecutionFailed(DatabaseError, "The database was unable to execute a remote part of the statement."),
 
         // transient errors
@@ -235,42 +258,90 @@ public interface Status {
                 "The database was unable to execute a remote part of the statement due to a transient failure."),
 
         // client notifications (performance)
-        CartesianProduct(ClientNotification, "This query builds a cartesian product between disconnected patterns."),
+        CartesianProduct(
+                ClientNotification,
+                "This query builds a cartesian product between disconnected patterns.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.PERFORMANCE),
         DynamicProperty(
                 ClientNotification,
-                "Queries using dynamic properties will use neither index seeks nor index scans for those properties"),
+                "Queries using dynamic properties will use neither index seeks nor index scans for those properties",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.PERFORMANCE),
         EagerOperator(
                 ClientNotification,
                 "The execution plan for this query contains the Eager operator, which forces all dependent data to "
-                        + "be materialized in main memory before proceeding"),
-        JoinHintUnfulfillableWarning(ClientNotification, "The database was unable to plan a hinted join."),
-        NoApplicableIndex(ClientNotification, "Adding a schema index may speed up this query."),
-        SuboptimalIndexForWildcardQuery(ClientNotification, "Index cannot execute wildcard query efficiently"),
+                        + "be materialized in main memory before proceeding",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.PERFORMANCE),
+        JoinHintUnfulfillableWarning(
+                ClientNotification,
+                "The database was unable to plan a hinted join.",
+                SeverityLevel.WARNING,
+                NotificationCategory.HINT),
+        NoApplicableIndex(
+                ClientNotification,
+                "Adding a schema index may speed up this query.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.PERFORMANCE),
+        SuboptimalIndexForWildcardQuery(
+                ClientNotification,
+                "Index cannot execute wildcard query efficiently",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.PERFORMANCE),
         UnboundedVariableLengthPattern(
                 ClientNotification,
-                "The provided pattern is unbounded, consider adding an upper limit to the number of node hops."),
+                "The provided pattern is unbounded, consider adding an upper limit to the number of node hops.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.PERFORMANCE),
         ExhaustiveShortestPath(
                 ClientNotification,
                 "Exhaustive shortest path has been planned for your query that means that shortest path graph "
                         + "algorithm might not be used to find the shortest path. Hence an exhaustive enumeration of all paths "
-                        + "might be used in order to find the requested shortest path."),
+                        + "might be used in order to find the requested shortest path.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.PERFORMANCE),
 
         // client notifications (not supported/deprecated)
-        RuntimeUnsupportedWarning(ClientNotification, "This query is not supported by the chosen runtime."),
+        RuntimeUnsupportedWarning(
+                ClientNotification,
+                "This query is not supported by the chosen runtime.",
+                SeverityLevel.WARNING,
+                NotificationCategory.UNSUPPORTED),
         FeatureDeprecationWarning(
-                ClientNotification, "This feature is deprecated and will be removed in future versions."),
+                ClientNotification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                NotificationCategory.DEPRECATION),
         RuntimeExperimental(
-                ClientNotification, "This feature is experimental and should not be used in production systems."),
+                ClientNotification,
+                "This feature is experimental and should not be used in production systems.",
+                SeverityLevel.WARNING,
+                NotificationCategory.UNSUPPORTED),
         UnsupportedAdministrationCommand(ClientError, "This administration command is not supported."),
 
         // client notifications (unknown tokens)
-        UnknownLabelWarning(ClientNotification, "The provided label is not in the database."),
-        UnknownRelationshipTypeWarning(ClientNotification, "The provided relationship type is not in the database."),
-        UnknownPropertyKeyWarning(ClientNotification, "The provided property key is not in the database"),
+        UnknownLabelWarning(
+                ClientNotification,
+                "The provided label is not in the database.",
+                SeverityLevel.WARNING,
+                NotificationCategory.UNRECOGNIZED),
+        UnknownRelationshipTypeWarning(
+                ClientNotification,
+                "The provided relationship type is not in the database.",
+                SeverityLevel.WARNING,
+                NotificationCategory.UNRECOGNIZED),
+        UnknownPropertyKeyWarning(
+                ClientNotification,
+                "The provided property key is not in the database",
+                SeverityLevel.WARNING,
+                NotificationCategory.UNRECOGNIZED),
 
         SubqueryVariableShadowing(
                 ClientNotification,
-                "Variable in subquery is shadowing a variable with the same name from the outer scope.");
+                "Variable in subquery is shadowing a variable with the same name from the outer scope.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.GENERIC);
 
         private final Code code;
 
@@ -281,6 +352,14 @@ public interface Status {
 
         Statement(Classification classification, String description) {
             this.code = new Code(classification, this, description);
+        }
+
+        Statement(
+                Classification classification,
+                String description,
+                SeverityLevel severity,
+                NotificationCategory category) {
+            this.code = new NotificationCode(classification, this, description, severity, category);
         }
     }
 
@@ -303,7 +382,10 @@ public interface Status {
                 ClientError, "Unable to perform operation because it would clash with a pre-existing index."),
         IndexNotFound(ClientError, "The request (directly or indirectly) referred to an index that does not exist."),
         HintedIndexNotFound(
-                ClientNotification, "The request (directly or indirectly) referred to an index that does not exist."),
+                ClientNotification,
+                "The request (directly or indirectly) referred to an index that does not exist.",
+                SeverityLevel.WARNING,
+                NotificationCategory.HINT),
         IndexMultipleFound(
                 ClientError,
                 "The request referenced an index by its schema, and multiple matching indexes were found."),
@@ -346,6 +428,14 @@ public interface Status {
         Schema(Classification classification, String description) {
             this.code = new Code(classification, this, description);
         }
+
+        Schema(
+                Classification classification,
+                String description,
+                SeverityLevel severity,
+                NotificationCategory category) {
+            this.code = new NotificationCode(classification, this, description, severity, category);
+        }
     }
 
     enum Procedure implements Status {
@@ -364,7 +454,11 @@ public interface Status {
                 ClientError,
                 "The procedure has not completed within the specified timeout. You may want to retry with a longer "
                         + "timeout."),
-        ProcedureWarning(ClientNotification, "The query used a procedure that generated a warning.");
+        ProcedureWarning(
+                ClientNotification,
+                "The query used a procedure that generated a warning.",
+                SeverityLevel.WARNING,
+                NotificationCategory.GENERIC);
 
         private final Code code;
 
@@ -375,6 +469,14 @@ public interface Status {
 
         Procedure(Classification classification, String description) {
             this.code = new Code(classification, this, description);
+        }
+
+        Procedure(
+                Classification classification,
+                String description,
+                SeverityLevel severity,
+                NotificationCategory category) {
+            this.code = new NotificationCode(classification, this, description, severity, category);
         }
     }
 
@@ -476,7 +578,11 @@ public interface Status {
 
     enum Database implements Status {
         DatabaseNotFound(ClientError, "The request referred to a database that does not exist."),
-        HomeDatabaseNotFound(ClientNotification, "The request referred to a home database that does not exist."),
+        HomeDatabaseNotFound(
+                ClientNotification,
+                "The request referred to a home database that does not exist.",
+                SeverityLevel.INFORMATION,
+                NotificationCategory.UNRECOGNIZED),
         ExistingAliasFound(ClientError, "The request referred to a database with an alias."),
         ExistingDatabaseFound(ClientError, "The request referred to a database that already exists."),
         DatabaseLimitReached(DatabaseError, "The limit to number of databases has been reached."),
@@ -492,6 +598,14 @@ public interface Status {
 
         Database(Classification classification, String description) {
             this.code = new Code(classification, this, description);
+        }
+
+        Database(
+                Classification classification,
+                String description,
+                SeverityLevel severity,
+                NotificationCategory category) {
+            this.code = new NotificationCode(classification, this, description, severity, category);
         }
     }
 
@@ -606,6 +720,65 @@ public interface Status {
             int result = classification.hashCode();
             result = 31 * result + category.hashCode();
             result = 31 * result + title.hashCode();
+            return result;
+        }
+    }
+
+    class NotificationCode extends Code {
+
+        private final SeverityLevel severity;
+        private final NotificationCategory notificationCategory;
+        private final Classification classification;
+        private final String category;
+        private final String title;
+
+        <C extends Enum<C> & Status> NotificationCode(
+                Classification classification,
+                C categoryAndTitle,
+                String description,
+                SeverityLevel severity,
+                NotificationCategory notificationCategory) {
+            super(classification, categoryAndTitle, description);
+            this.severity = severity;
+            this.classification = classification;
+            this.category = categoryAndTitle.getDeclaringClass().getSimpleName();
+            this.notificationCategory = notificationCategory;
+            this.title = categoryAndTitle.name();
+        }
+
+        public String getSeverity() {
+            return severity.name();
+        }
+
+        public String getNotificationCategory() {
+            return notificationCategory.name();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            NotificationCode code = (NotificationCode) o;
+
+            return category.equals(code.category)
+                    && classification == code.classification
+                    && title.equals(code.title)
+                    && severity == code.severity
+                    && notificationCategory == code.notificationCategory;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = classification.hashCode();
+            result = 31 * result + category.hashCode();
+            result = 31 * result + title.hashCode();
+            result = 31 * result + severity.hashCode();
+            result = 31 * result + notificationCategory.hashCode();
             return result;
         }
     }

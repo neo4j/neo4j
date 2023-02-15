@@ -60,6 +60,11 @@ org.neo4j.kernel.api.exceptions.Status.General::valueOf(java.lang.String) org.ne
 org.neo4j.kernel.api.exceptions.Status.General::values() org.neo4j.kernel.api.exceptions.Status.General[] public static
 org.neo4j.kernel.api.exceptions.Status.HasStatus public abstract static interface
 org.neo4j.kernel.api.exceptions.Status.HasStatus::status() org.neo4j.kernel.api.exceptions.Status public abstract
+org.neo4j.kernel.api.exceptions.Status.NotificationCode public static class extends org.neo4j.kernel.api.exceptions.Status.Code
+org.neo4j.kernel.api.exceptions.Status.NotificationCode::equals(java.lang.Object) boolean public
+org.neo4j.kernel.api.exceptions.Status.NotificationCode::getNotificationCategory() java.lang.String public
+org.neo4j.kernel.api.exceptions.Status.NotificationCode::getSeverity() java.lang.String public
+org.neo4j.kernel.api.exceptions.Status.NotificationCode::hashCode() int public
 org.neo4j.kernel.api.exceptions.Status.Procedure public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Procedure> implements org.neo4j.kernel.api.exceptions.Status
 org.neo4j.kernel.api.exceptions.Status.Procedure::ProcedureCallFailed org.neo4j.kernel.api.exceptions.Status.Procedure public static final
 org.neo4j.kernel.api.exceptions.Status.Procedure::ProcedureNotFound org.neo4j.kernel.api.exceptions.Status.Procedure public static final

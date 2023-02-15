@@ -23,7 +23,7 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.graphdb.InputPosition
-import org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_UNSUPPORTED
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 
 import java.lang.Boolean.TRUE

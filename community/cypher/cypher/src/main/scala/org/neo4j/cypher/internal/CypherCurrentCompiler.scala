@@ -68,7 +68,7 @@ import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.ExecutionPlanDescription
-import org.neo4j.graphdb.impl.notification.NotificationCode
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.query.LookupIndexUsage
 import org.neo4j.kernel.api.query.QueryObfuscator
@@ -464,7 +464,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     }
 
     private def filterNotifications(
-      notification: NotificationCode#Notification,
+      notification: NotificationCodeWithDescription#Notification,
       notificationConfig: NotificationConfiguration
     ): Boolean =
       notificationConfig.includes(notification)

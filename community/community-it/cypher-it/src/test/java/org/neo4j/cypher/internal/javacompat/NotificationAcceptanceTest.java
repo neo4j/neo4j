@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.javacompat;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RUNTIME_OPTION;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CSV;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.UNBOUNDED_SHORTEST_PATH;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RUNTIME_OPTION;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.EAGER_LOAD_CSV;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.INDEX_HINT_UNFULFILLABLE;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_UNSUPPORTED;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNBOUNDED_SHORTEST_PATH;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.nodeAnyIndex;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.nodeTextIndex;
 

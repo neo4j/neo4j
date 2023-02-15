@@ -21,38 +21,38 @@ package org.neo4j.graphdb.impl.notification;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.CARTESIAN_PRODUCT;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.CODE_GENERATION_FAILED;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_DATABASE_NAME;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_FORMAT;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_FUNCTION;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_RUNTIME_OPTION;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CSV;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.EXHAUSTIVE_SHORTEST_PATH;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.HOME_DATABASE_NOT_PRESENT;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.JOIN_HINT_UNFULFILLABLE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.LARGE_LABEL_LOAD_CSV;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.MISSING_LABEL;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.MISSING_PARAMETERS_FOR_EXPLAIN;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.MISSING_PROPERTY_NAME;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.MISSING_REL_TYPE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.PROCEDURE_WARNING;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.REPEATED_RELATIONSHIP_REFERENCE;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_EXPERIMENTAL;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.SUBQUERY_VARIABLE_SHADOWING;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.UNBOUNDED_SHORTEST_PATH;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.UNION_RETURN_ORDER;
-import static org.neo4j.graphdb.impl.notification.NotificationCode.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CARTESIAN_PRODUCT;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CODE_GENERATION_FAILED;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_DATABASE_NAME;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FORMAT;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FUNCTION;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE_RETURN_FIELD;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RUNTIME_OPTION;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.EAGER_LOAD_CSV;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.EXHAUSTIVE_SHORTEST_PATH;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.HOME_DATABASE_NOT_PRESENT;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.INDEX_HINT_UNFULFILLABLE;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.JOIN_HINT_UNFULFILLABLE;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.LARGE_LABEL_LOAD_CSV;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.MISSING_LABEL;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.MISSING_PARAMETERS_FOR_EXPLAIN;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.MISSING_PROPERTY_NAME;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.MISSING_REL_TYPE;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.PROCEDURE_WARNING;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.REPEATED_RELATIONSHIP_REFERENCE;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_EXPERIMENTAL;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_UNSUPPORTED;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SUBQUERY_VARIABLE_SHADOWING;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNBOUNDED_SHORTEST_PATH;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNION_RETURN_ORDER;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.repeatedRelationship;
 import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.unsatisfiableRelTypeExpression;
 
@@ -68,7 +68,7 @@ import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
 
-class NotificationCodeTest {
+class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_index() {
         NotificationDetail indexDetail = NotificationDetail.Factory.nodeAnyIndex("person", "Person", "name");
@@ -624,14 +624,14 @@ class NotificationCodeTest {
     @Test
     void allNotificationsShouldBeAClientNotification() {
 
-        Arrays.stream(NotificationCode.values()).forEach(notification -> assertThat(
+        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> assertThat(
                         notification.notification(InputPosition.empty).getCode())
                 .contains("ClientNotification"));
     }
 
     @Test
     void noNotificationShouldHaveUnknownCategory() {
-        Arrays.stream(NotificationCode.values()).forEach(notification -> assertThat(
+        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notification -> assertThat(
                         notification.notification(InputPosition.empty).getCategory())
                 .isNotEqualTo(NotificationCategory.UNKNOWN));
     }
@@ -645,7 +645,7 @@ class NotificationCodeTest {
     @Test
     void verifyNotificationsHaveNotChanged() {
         StringBuilder notificationBuilder = new StringBuilder();
-        Arrays.stream(NotificationCode.values()).forEach(notificationCode -> {
+        Arrays.stream(NotificationCodeWithDescription.values()).forEach(notificationCode -> {
             Notification notification = notificationCode.notification(InputPosition.empty);
 
             // Covers all notification information except NotificationDetail and position, which are query dependent

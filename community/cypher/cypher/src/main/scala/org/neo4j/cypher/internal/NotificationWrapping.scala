@@ -61,7 +61,7 @@ import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
 import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
 import org.neo4j.graphdb
-import org.neo4j.graphdb.impl.notification.NotificationCode
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
@@ -70,14 +70,14 @@ import scala.jdk.CollectionConverters.SetHasAsJava
 object NotificationWrapping {
 
   def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification)
-    : NotificationCode#Notification = notification match {
+    : NotificationCodeWithDescription#Notification = notification match {
     case CartesianProductNotification(pos, variables) =>
-      NotificationCode.CARTESIAN_PRODUCT.notification(
+      NotificationCodeWithDescription.CARTESIAN_PRODUCT.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.cartesianProduct(variables.asJava)
       )
     case RuntimeUnsupportedNotification(msg) =>
-      NotificationCode.RUNTIME_UNSUPPORTED.notification(
+      NotificationCodeWithDescription.RUNTIME_UNSUPPORTED.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message("Runtime unsupported", msg)
       )
@@ -100,81 +100,81 @@ object NotificationWrapping {
               NotificationDetail.Factory.relationshipPointIndex(variableName, label, propertyKeys: _*)
           }
       }
-      NotificationCode.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, detail)
+      NotificationCodeWithDescription.INDEX_HINT_UNFULFILLABLE.notification(graphdb.InputPosition.empty, detail)
     case JoinHintUnfulfillableNotification(variables) =>
-      NotificationCode.JOIN_HINT_UNFULFILLABLE.notification(
+      NotificationCodeWithDescription.JOIN_HINT_UNFULFILLABLE.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.joinKey(variables.asJava)
       )
     case NodeIndexLookupUnfulfillableNotification(labels) =>
-      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(
+      NotificationCodeWithDescription.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.nodeIndexSeekOrScan(labels.asJava)
       )
     case RelationshipIndexLookupUnfulfillableNotification(relTypes) =>
-      NotificationCode.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(
+      NotificationCodeWithDescription.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.relationshipIndexSeekOrScan(relTypes.asJava)
       )
     case EagerLoadCsvNotification =>
-      NotificationCode.EAGER_LOAD_CSV.notification(graphdb.InputPosition.empty)
+      NotificationCodeWithDescription.EAGER_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case LargeLabelWithLoadCsvNotification =>
-      NotificationCode.LARGE_LABEL_LOAD_CSV.notification(graphdb.InputPosition.empty)
+      NotificationCodeWithDescription.LARGE_LABEL_LOAD_CSV.notification(graphdb.InputPosition.empty)
     case MissingLabelNotification(pos, label) =>
-      NotificationCode.MISSING_LABEL.notification(
+      NotificationCodeWithDescription.MISSING_LABEL.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.label(label)
       )
     case MissingRelTypeNotification(pos, relType) =>
-      NotificationCode.MISSING_REL_TYPE.notification(
+      NotificationCodeWithDescription.MISSING_REL_TYPE.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.relationshipType(relType)
       )
     case MissingPropertyNameNotification(pos, name) =>
-      NotificationCode.MISSING_PROPERTY_NAME.notification(
+      NotificationCodeWithDescription.MISSING_PROPERTY_NAME.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.propertyName(name)
       )
     case UnboundedShortestPathNotification(pos) =>
-      NotificationCode.UNBOUNDED_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
+      NotificationCodeWithDescription.UNBOUNDED_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case ExhaustiveShortestPathForbiddenNotification(pos) =>
-      NotificationCode.EXHAUSTIVE_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
+      NotificationCodeWithDescription.EXHAUSTIVE_SHORTEST_PATH.notification(pos.withOffset(offset).asInputPosition)
     case DeprecatedFunctionNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_FUNCTION.notification(
+      NotificationCodeWithDescription.DEPRECATED_FUNCTION.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.deprecatedName(oldName, newName)
       )
     case DeprecatedProcedureNotification(pos, oldName, newName) =>
-      NotificationCode.DEPRECATED_PROCEDURE.notification(
+      NotificationCodeWithDescription.DEPRECATED_PROCEDURE.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.deprecatedName(oldName, newName)
       )
     case DeprecatedFieldNotification(pos, procedure, field) =>
-      NotificationCode.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(
+      NotificationCodeWithDescription.DEPRECATED_PROCEDURE_RETURN_FIELD.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.deprecatedField(procedure, field)
       )
     case DeprecatedRelTypeSeparatorNotification(pos, rewrittenExpression) =>
-      NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(
+      NotificationCodeWithDescription.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.deprecationNotificationDetail(rewrittenExpression)
       )
     case DeprecatedRepeatedVarLengthRelationshipNotification(pos, relName) =>
-      NotificationCode.DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP.notification(
+      NotificationCodeWithDescription.DEPRECATED_REPEATED_VAR_LENGTH_RELATIONSHIP.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.repeatedVarLengthRel(relName)
       )
     case DeprecatedNodesOrRelationshipsInSetClauseNotification(pos) =>
-      NotificationCode.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(
+      NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(
         pos.withOffset(offset).asInputPosition
       )
     case ProcedureWarningNotification(pos, name, warning) =>
-      NotificationCode.PROCEDURE_WARNING.notification(
+      NotificationCodeWithDescription.PROCEDURE_WARNING.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.procedureWarning(name, warning)
       )
     case ExperimentalFeatureNotification(msg) =>
-      NotificationCode.RUNTIME_EXPERIMENTAL.notification(
+      NotificationCodeWithDescription.RUNTIME_EXPERIMENTAL.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message("PARALLEL", msg)
       )
@@ -184,16 +184,22 @@ object NotificationWrapping {
         case EntityType.RELATIONSHIP =>
           NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
       }
-      NotificationCode.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(graphdb.InputPosition.empty, detail)
+      NotificationCodeWithDescription.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(
+        graphdb.InputPosition.empty,
+        detail
+      )
     case SuboptimalIndexForEndsWithQueryNotification(variableName, label, propertyKeys, entityType) =>
       val detail = entityType match {
         case EntityType.NODE => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
         case EntityType.RELATIONSHIP =>
           NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
       }
-      NotificationCode.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(graphdb.InputPosition.empty, detail)
+      NotificationCodeWithDescription.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(
+        graphdb.InputPosition.empty,
+        detail
+      )
     case MissingParametersNotification(names) =>
-      NotificationCode.MISSING_PARAMETERS_FOR_EXPLAIN.notification(
+      NotificationCodeWithDescription.MISSING_PARAMETERS_FOR_EXPLAIN.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message(
           "Explain with missing parameters",
@@ -201,52 +207,53 @@ object NotificationWrapping {
         )
       )
     case CodeGenerationFailedNotification(msg) =>
-      NotificationCode.CODE_GENERATION_FAILED.notification(
+      NotificationCodeWithDescription.CODE_GENERATION_FAILED.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message("Error from code generation", msg)
       )
     case SubqueryVariableShadowing(pos, varName) =>
-      NotificationCode.SUBQUERY_VARIABLE_SHADOWING.notification(
+      NotificationCodeWithDescription.SUBQUERY_VARIABLE_SHADOWING.notification(
         pos.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.shadowingVariable(varName)
       )
     case UnionReturnItemsInDifferentOrder(pos) =>
-      NotificationCode.UNION_RETURN_ORDER.notification(
+      NotificationCodeWithDescription.UNION_RETURN_ORDER.notification(
         pos.withOffset(offset).asInputPosition
       )
-    case HomeDatabaseNotPresent(name) => NotificationCode.HOME_DATABASE_NOT_PRESENT.notification(
+    case HomeDatabaseNotPresent(name) => NotificationCodeWithDescription.HOME_DATABASE_NOT_PRESENT.notification(
         InputPosition.NONE.asInputPosition,
         NotificationDetail.Factory.message("Not Found", s"HOME DATABASE: $name")
       )
     case FixedLengthRelationshipInShortestPath(pos) =>
-      NotificationCode.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notification(
+      NotificationCodeWithDescription.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP.notification(
         pos.withOffset(offset).asInputPosition
       )
 
     case DeprecatedTextIndexProvider(pos) =>
-      NotificationCode.DEPRECATED_TEXT_INDEX_PROVIDER.notification(
+      NotificationCodeWithDescription.DEPRECATED_TEXT_INDEX_PROVIDER.notification(
         pos.withOffset(offset).asInputPosition
       )
 
-    case DeprecatedDatabaseNameNotification(name, pos) => NotificationCode.DEPRECATED_DATABASE_NAME.notification(
+    case DeprecatedDatabaseNameNotification(name, pos) =>
+      NotificationCodeWithDescription.DEPRECATED_DATABASE_NAME.notification(
         pos.map(_.withOffset(offset).asInputPosition).getOrElse(graphdb.InputPosition.empty),
         NotificationDetail.Factory.message("Deprecated name", s"Name: $name")
       )
 
     case DeprecatedRuntimeNotification(msg) =>
-      NotificationCode.DEPRECATED_RUNTIME_OPTION.notification(
+      NotificationCodeWithDescription.DEPRECATED_RUNTIME_OPTION.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message("Deprecated runtime option", msg)
       )
 
     case UnsatisfiableRelationshipTypeExpression(position, relTypeExpression) =>
-      NotificationCode.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notification(
+      NotificationCodeWithDescription.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION.notification(
         position.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.unsatisfiableRelTypeExpression(relTypeExpression)
       )
 
     case RepeatedRelationshipReference(position, relName) =>
-      NotificationCode.REPEATED_RELATIONSHIP_REFERENCE.notification(
+      NotificationCodeWithDescription.REPEATED_RELATIONSHIP_REFERENCE.notification(
         position.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.repeatedRelationship(relName)
       )

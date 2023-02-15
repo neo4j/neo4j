@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
-import org.neo4j.graphdb.impl.notification.NotificationCode
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription
 import org.neo4j.graphdb.impl.notification.NotificationDetail
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
@@ -34,7 +34,7 @@ trait DeprecationTestSupport extends Suite with Matchers {
   def assertNotification(
     queries: Seq[String],
     shouldContainNotification: Boolean,
-    notificationCode: NotificationCode,
+    notificationCode: NotificationCodeWithDescription,
     details: NotificationDetail*
   ): Unit = {
     queries.foreach(query => {
@@ -84,7 +84,7 @@ trait DeprecationTestSupport extends Suite with Matchers {
 
   private def matchesCode(
     notification: Notification,
-    notificationCode: NotificationCode,
+    notificationCode: NotificationCodeWithDescription,
     details: NotificationDetail*
   ): Boolean = {
     // In this test class we are not interested in the exact input position
