@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting.SemanticAnalysisPossible
 import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
+import org.neo4j.cypher.internal.frontend.phases.RemoveUnusedNamedGroupVariablesPhase
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
 import org.neo4j.cypher.internal.frontend.phases.StatementCondition
@@ -77,6 +78,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
 import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.QppsHavePaddedNodes
+import org.neo4j.cypher.internal.rewriting.rewriters.RelationshipUniquenessPredicatesInMatchAndMerge
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
@@ -116,7 +118,8 @@ object CompilationPhases {
           CompressPlanIDs,
           CheckForUnresolvedTokens,
           EagerRewriter,
-          SortPredicatesBySelectivity
+          SortPredicatesBySelectivity,
+          RemoveUnusedNamedGroupVariablesPhase
         ) ++ CNFNormalizer.steps,
         initialConditions = Set(
           BaseContains[Statement],
@@ -124,7 +127,8 @@ object CompilationPhases {
           StatementCondition(containsNoReturnAll),
           NoNamedPathsInPatternComprehensions,
           StatementCondition(noUnnamedNodesAndRelationships),
-          QppsHavePaddedNodes
+          QppsHavePaddedNodes,
+          RelationshipUniquenessPredicatesInMatchAndMerge
         )
       )
 

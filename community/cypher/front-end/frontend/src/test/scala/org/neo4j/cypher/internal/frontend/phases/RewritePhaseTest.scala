@@ -40,6 +40,9 @@ trait RewritePhaseTest {
 
   def astRewriteAndAnalyze: Boolean = true
 
+  def preProcessPhase(features: SemanticFeature*): Transformer[BaseContext, BaseState, BaseState] =
+    SemanticAnalysis(false, features: _*)
+
   def rewriterPhaseForExpected: Transformer[BaseContext, BaseState, BaseState] =
     new Transformer[BaseContext, BaseState, BaseState] {
       override def transform(from: BaseState, context: BaseContext): BaseState = from
@@ -124,7 +127,7 @@ trait RewritePhaseTest {
       InitialState(from, None, plannerName, new AnonymousVariableNameGenerator, maybeStatement = Some(fromAst))
     val fromInState =
       if (astRewriteAndAnalyze) {
-        SemanticAnalysis(warn = false, features: _*).process(initialState, TestContext())
+        preProcessPhase(features: _*).transform(initialState, TestContext())
       } else {
         initialState
       }

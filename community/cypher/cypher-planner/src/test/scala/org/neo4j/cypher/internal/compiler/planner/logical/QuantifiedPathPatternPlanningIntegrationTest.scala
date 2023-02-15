@@ -1613,4 +1613,17 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .allNodeScan("b")
       .build()
   }
+
+  test(
+    "Should plan VarExpand instead of Trail on Quantified path patterns where unnecessary group variables have been removed"
+  ) {
+    val query = "MATCH ((a)-[r]->(b))+ RETURN 1"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .projection(project = Seq("1 AS 1"), discard = Set("anon_0", "r", "anon_1"))
+      .expandAll("(anon_0)-[r*1..]->(anon_1)")
+      .allNodeScan("anon_0")
+      .build()
+  }
 }
