@@ -195,9 +195,10 @@ object expandSolverStep {
     plan: LogicalPlan,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val (start, end) = patternRel.inOrder
+    val (start, end) = patternRel.nodes
     val isStartInScope = plan.availableSymbols(start)
     val isEndInScope = plan.availableSymbols(end)
+
     context.staticComponents.logicalPlanProducer.planProjectEndpoints(
       plan,
       start,

@@ -146,14 +146,8 @@ object SlottedProjectedPath {
     override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder =
       rel.apply(ctx, state) match {
         case list: ListValue if list.nonEmpty() =>
-          if (builder.correctDirection(list.head().asInstanceOf[VirtualRelationshipValue], builder.previousNode)) {
-            val aggregated = addAllExceptLast(builder, list, (b, v) => b.addUndirectedRelationship(v))
-            tailProjector(ctx, state, aggregated.addRelationship(list.last()).addNode(node.apply(ctx, state)))
-          } else {
-            val reversed = list.reverse()
-            val aggregated = addAllExceptLast(builder, reversed, (b, v) => b.addUndirectedRelationship(v))
-            tailProjector(ctx, state, aggregated.addRelationship(reversed.last()).addNode(node.apply(ctx, state)))
-          }
+          val aggregated = addAllExceptLast(builder, list, (b, v) => b.addUndirectedRelationship(v))
+          tailProjector(ctx, state, aggregated.addRelationship(list.last()).addNode(node.apply(ctx, state)))
 
         case _: ListValue       => tailProjector(ctx, state, builder)
         case x if x eq NO_VALUE => tailProjector(ctx, state, builder.addNoValue())

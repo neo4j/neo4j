@@ -181,7 +181,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
     /**
      * Adds multiple incoming relationships to the path
      *
-     * @param value the incoming relationships to add
+     * @param value  the incoming relationships to add
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
@@ -195,7 +195,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      * Adds multiple incoming relationships to the path
      *
      * @param relationships the incoming relationships to add
-     * @param target the final target node of the path
+     * @param target        the final target node of the path
      */
     @CalledFromGeneratedCode
     public void addMultipleIncoming(ListValue relationships, VirtualNodeValue target) {
@@ -250,7 +250,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
     /**
      * Adds multiple outgoing relationships to the path
      *
-     * @param value the outgoing relationships to add
+     * @param value  the outgoing relationships to add
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
@@ -264,7 +264,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      * Adds multiple outgoing relationships to the path
      *
      * @param relationships the outgoing relationships to add
-     * @param target the final target node of the path
+     * @param target        the final target node of the path
      */
     @CalledFromGeneratedCode
     public void addMultipleOutgoing(ListValue relationships, VirtualNodeValue target) {
@@ -320,7 +320,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
     /**
      * Adds multiple undirected relationships to the path
      *
-     * @param value the undirected relationships to add
+     * @param value  the undirected relationships to add
      * @param target the final target node of the path
      */
     @CalledFromGeneratedCode
@@ -334,7 +334,7 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
      * Adds multiple undirected relationships to the path
      *
      * @param relationships the undirected relationships to add
-     * @param target the final target node of the path
+     * @param target        the final target node of the path
      */
     @CalledFromGeneratedCode
     public void addMultipleUndirected(ListValue relationships, VirtualNodeValue target) {
@@ -342,27 +342,15 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
             // nothing to add
             return;
         }
-        long previous = nodes.get(nodes.size() - 1);
-        VirtualRelationshipValue first = (VirtualRelationshipValue) relationships.head();
-        boolean correctDirection = first.startNodeId(this) == previous || first.endNodeId(this) == previous;
 
-        int i;
-        if (correctDirection) {
-            for (i = 0; i < relationships.size() - 1; i++) {
-                AnyValue value = relationships.value(i);
-                if (notNoValue(value)) {
-                    addUndirected((VirtualRelationshipValue) value);
-                }
-            }
-        } else {
-            for (i = relationships.size() - 1; i > 0; i--) {
-                AnyValue value = relationships.value(i);
-                if (notNoValue(value)) {
-                    addUndirected((VirtualRelationshipValue) relationships.value(i));
-                }
+        for (int i = 0; i < relationships.size() - 1; i++) {
+            AnyValue value = relationships.value(i);
+            if (notNoValue(value)) {
+                addUndirected((VirtualRelationshipValue) value);
             }
         }
-        AnyValue last = relationships.value(i);
+
+        AnyValue last = relationships.value(relationships.size() - 1);
         if (notNoValue(last)) {
             rels.add(((VirtualRelationshipValue) last).id());
             nodes.add(target.id());

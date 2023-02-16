@@ -490,8 +490,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           startInScope = false,
           "b",
           endInScope = false,
-          None,
-          directed = true,
+          Seq.empty,
+          SemanticDirection.OUTGOING,
           SimplePatternLength
         )
       )
@@ -541,8 +541,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             startInScope = false,
             "b",
             endInScope = false,
-            None,
-            directed = true,
+            Seq.empty,
+            SemanticDirection.OUTGOING,
             SimplePatternLength
           ),
           "b",
@@ -1020,8 +1020,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
             startInScope = false,
             "c",
             endInScope = false,
-            None,
-            directed = true,
+            Seq.empty,
+            SemanticDirection.OUTGOING,
             SimplePatternLength
           ),
           "r1",
@@ -1029,8 +1029,8 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
           startInScope = false,
           "b",
           endInScope = true,
-          None,
-          directed = true,
+          Seq.empty,
+          SemanticDirection.OUTGOING,
           SimplePatternLength
         )
       )

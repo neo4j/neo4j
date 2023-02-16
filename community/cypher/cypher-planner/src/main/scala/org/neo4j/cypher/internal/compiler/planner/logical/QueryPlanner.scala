@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.phases.AttributeFullyAssigned
 import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.compiler.planner.logical.EmptyRelationshipListEndpointProjection.InScopeZeroLengthRelationshipsHaveBeenExtracted
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -154,6 +155,7 @@ case object QueryPlanner
     UnnecessaryOptionalMatchesRemoved,
     ExpressionsRewrittenToGetDegree,
     UnfulfillableQueryGraphsRemoved,
+    InScopeZeroLengthRelationshipsHaveBeenExtracted,
     VarLengthQuantifierMerged,
     TokensResolved,
     QuantifiedPathPatternPredicatesMovedToConnectedNodes

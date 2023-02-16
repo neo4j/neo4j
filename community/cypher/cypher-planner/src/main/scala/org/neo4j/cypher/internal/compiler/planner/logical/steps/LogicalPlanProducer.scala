@@ -2260,8 +2260,6 @@ case class LogicalPlanProducer(
     patternRel: PatternRelationship,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val relTypes = patternRel.types.asNonEmptyOption
-    val directed = patternRel.dir != SemanticDirection.BOTH
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addPatternRelationship(patternRel))
     annotate(
       ProjectEndpoints(
@@ -2271,8 +2269,8 @@ case class LogicalPlanProducer(
         startInScope,
         end,
         endInScope,
-        relTypes,
-        directed,
+        patternRel.types,
+        patternRel.dir,
         patternRel.length
       ),
       solved,

@@ -1592,10 +1592,10 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case ProjectEndpoints(_, relName, start, _, end, _, relTypes, directed, patternLength) =>
-        val name = if (directed) "ProjectEndpoints" else "ProjectEndpoints(BOTH)"
-        val direction = if (directed) SemanticDirection.OUTGOING else SemanticDirection.BOTH
-        val relTypeNames = relTypes.toSeq.flatten.map(_.name)
+      case ProjectEndpoints(_, relName, start, _, end, _, relTypes, direction, patternLength) =>
+        val name = s"ProjectEndpoints"
+        val relTypeNames = relTypes.map(_.name)
+
         val details = expandExpressionDescription(start, Some(relName), relTypeNames, end, direction, patternLength)
         PlanDescriptionImpl(id, name, children, Seq(Details(details)), variables, withRawCardinalities)
 

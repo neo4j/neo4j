@@ -72,6 +72,27 @@ trait PlannerQueryRewriterTest {
     )
   }
 
+  protected def assertRewriteMultiple(originalQuery: String, expectedQueries: String*): Unit = {
+    val expected =
+      expectedQueries.map { query =>
+        val expectedGen = new AnonymousVariableNameGenerator()
+        removeGeneratedNamesAndParamsOnTree(getTheWholePlannerQueryFrom(query.stripMargin, expectedGen))
+      }
+    val actualGen = new AnonymousVariableNameGenerator()
+    val original = getTheWholePlannerQueryFrom(originalQuery.stripMargin, actualGen)
+
+    val result = removeGeneratedNamesAndParamsOnTree(original.endoRewrite(fixedPoint(rewriter(actualGen))))
+    assert(
+      expected.exists(_ === result),
+      s"""$originalQuery
+         |Was not rewritten correctly:
+         |  Expected any of:
+         |${expected.mkString("\n")}
+         |  But got:
+         |$result""".stripMargin
+    )
+  }
+
   protected def assertIsNotRewritten(query: String): Unit = {
     val actualGen = new AnonymousVariableNameGenerator()
     val plannerQuery = getTheWholePlannerQueryFrom(query.stripMargin, actualGen)

@@ -670,14 +670,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def projectEndpoints(pattern: String, startInScope: Boolean, endInScope: Boolean): IMPL = {
     val p = patternParser.parse(pattern)
-    val relTypesAsNonEmptyOption = if (p.relTypes.isEmpty) None else Some(p.relTypes)
-    val directed = p.dir match {
-      case SemanticDirection.INCOMING => throw new IllegalArgumentException(
-          "Please turn your pattern around. ProjectEndpoints does not accept INCOMING."
-        )
-      case SemanticDirection.OUTGOING => true
-      case SemanticDirection.BOTH     => false
-    }
     newNode(varFor(p.from))
     newNode(varFor(p.to))
     appendAtCurrentIndent(UnaryOperator(lp =>
@@ -688,8 +680,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         startInScope,
         p.to,
         endInScope,
-        relTypesAsNonEmptyOption,
-        directed,
+        p.relTypes,
+        p.dir,
         p.length
       )(_)
     ))

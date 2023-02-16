@@ -286,36 +286,24 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
   }
 
   test("should build optional ProjectEndpoints") {
-    planFor("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2")._1 match {
-      case Apply(
-          Limit(
-            DirectedAllRelationshipsScan(
-              _,
-              _,
-              _,
-              _
-            ),
-            _
-          ),
-          Optional(
-            ProjectEndpoints(
-              Argument(args),
-              "r",
-              "b2",
-              false,
-              "a1",
-              true,
-              None,
-              true,
-              SimplePatternLength
-            ),
-            _
-          ),
-          _
-        ) =>
-        args should equal(Set("r", "a1"))
-      case plan => throw new IllegalArgumentException(s"Unexpected plan: $plan")
-    }
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(10)
+      .build()
+
+    val query = "MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a1)<-[r]-(b2) RETURN a1, r, b2"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .apply()
+        .|.optional("r", "a1")
+        .|.projectEndpoints("(a1)<-[r]-(b2)", startInScope = true, endInScope = false)
+        .|.argument("r", "a1")
+        .limit(1)
+        .allRelationshipsScan("(a1)-[r]->(b1)")
+        .build()
+    )
   }
 
   test("should build optional ProjectEndpoints with extra predicates") {
@@ -330,12 +318,12 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
               ProjectEndpoints(
                 Argument(args),
                 "r",
-                "b2",
-                false,
                 "a2",
                 false,
-                None,
-                true,
+                "b2",
+                false,
+                Seq(),
+                SemanticDirection.INCOMING,
                 SimplePatternLength
               )
             ),
@@ -362,8 +350,8 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
               false,
               "b2",
               false,
-              None,
-              true,
+              Seq(),
+              SemanticDirection.OUTGOING,
               SimplePatternLength
             ),
             _
@@ -1081,7 +1069,6 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
 
     val query = "OPTIONAL MATCH (u)((n)-[]->(m))* RETURN DISTINCT u"
     val plan = planner.plan(query).stripProduceResults
-    plan.printLogicalPlanBuilderString()
     val `(u)((n)-[]-(m))*` = TrailParameters(
       min = 0,
       max = Unlimited,

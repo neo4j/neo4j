@@ -19,12 +19,23 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.runtime.ClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.OptionAsClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.ScalaSeqAsClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.DbAccess
 import org.neo4j.cypher.internal.runtime.ListSupport
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.EndNodes
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.genTypeCheck
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.validateRel
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.validateRelUndirectedNothingInScope
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.validateRels
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectEndpoints.validateRelsUndirectedNothingInScope
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.exceptions.CypherTypeException
+import org.neo4j.internal.kernel.api.Read.NO_ID
+import org.neo4j.internal.kernel.api.RelationshipDataAccessor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -38,7 +49,7 @@ case class ProjectEndpointsPipe(
   end: String,
   endInScope: Boolean,
   relTypes: RelationshipTypes,
-  directed: Boolean,
+  direction: SemanticDirection,
   simpleLength: Boolean
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(source)
     with ListSupport {
@@ -53,135 +64,352 @@ case class ProjectEndpointsPipe(
   private def projector(state: QueryState): Projector =
     if (simpleLength) project(state) else projectVarLength(state)
 
-  private def projectVarLength(state: QueryState): Projector = (context: CypherRow) => {
-    findVarLengthRelEndpoints(context, state) match {
-      case Some((InScopeReversed(startNode, endNode), rels)) if !directed =>
-        context.set(start, endNode, end, startNode, relName, rels.reverse())
-        ClosingIterator.single(context)
-      case Some((NotInScope(startNode, endNode), rels)) if !directed =>
-        ClosingIterator(
-          rowFactory.copyWith(context, start, startNode, end, endNode),
-          rowFactory.copyWith(context, start, endNode, end, startNode, relName, rels.reverse())
-        )
-      case Some((startAndEnd, rels)) =>
-        context.set(start, startAndEnd.start, end, startAndEnd.end)
-        ClosingIterator.single(context)
-      case None =>
-        ClosingIterator.empty
-    }
-  }
+  private def projectVarLength(state: QueryState)(row: CypherRow): ClosingIterator[CypherRow] = {
+    val rels = makeTraversable(row.getByName(relName))
+    if (startInScope || endInScope || direction != SemanticDirection.BOTH) {
+      validateRels(
+        rels,
+        direction,
+        Option.when(startInScope)(row.getByName(start).asInstanceOf[VirtualNodeValue].id()),
+        Option.when(endInScope)(row.getByName(end).asInstanceOf[VirtualNodeValue].id()),
+        state.query,
+        state.cursors.relationshipScanCursor,
+        genTypeCheck(relTypes.types(state.query))
+      ).map(setInRow(row, _)).asClosingIterator
 
-  private def project(state: QueryState): Projector = (context: CypherRow) => {
-    findSimpleLengthRelEndpoints(context, state) match {
-      case Some(InScopeReversed(startNode, endNode)) if !directed =>
-        context.set(start, endNode, end, startNode)
-        ClosingIterator.single(context)
-      case Some(NotInScope(startNode, endNode)) if !directed =>
-        ClosingIterator(
-          rowFactory.copyWith(context, start, startNode, end, endNode),
-          rowFactory.copyWith(context, start, endNode, end, startNode)
-        )
-      case Some(startAndEnd) =>
-        context.set(start, startAndEnd.start, end, startAndEnd.end)
-        ClosingIterator.single(context)
-      case None =>
-        ClosingIterator.empty
-    }
-  }
-
-  private def findSimpleLengthRelEndpoints(context: CypherRow, state: QueryState): Option[StartAndEnd] = {
-
-    val relValue = context.getByName(relName) match {
-      case relValue: VirtualRelationshipValue => relValue
-      case _                                  => return None
-    }
-    val qtx = state.query
-    val internalCursor = state.cursors.relationshipScanCursor
-    state.query.singleRelationship(relValue.id(), internalCursor)
-    if (internalCursor.next()) {
-      if (!isAllowedType(internalCursor.`type`(), qtx)) {
-        None
-      } else {
-        val start = qtx.nodeById(internalCursor.sourceNodeReference())
-        val end = qtx.nodeById(internalCursor.targetNodeReference())
-        pickStartAndEnd(start, end, context)
+    } else {
+      validateRelsUndirectedNothingInScope(
+        rels,
+        state.query,
+        state.cursors.relationshipScanCursor,
+        genTypeCheck(relTypes.types(state.query))
+      ) match {
+        case Seq() =>
+          ClosingIterator.empty
+        case Seq(endNodes) =>
+          ClosingIterator.single(setInRow(row, endNodes))
+        case endNodesSeq =>
+          endNodesSeq.map(setInRow(rowFactory.copyWith(row), _)).asClosingIterator
       }
-    } else None
+    }
   }
 
-  private def findVarLengthRelEndpoints(context: CypherRow, state: QueryState): Option[(StartAndEnd, ListValue)] = {
-    val rels = makeTraversable(context.getByName(relName))
-    if (rels.nonEmpty && allHasAllowedType(rels, state)) {
-      val internalCursor = state.cursors.relationshipScanCursor
-      val firstRel = rels.head match {
-        case relValue: VirtualRelationshipValue => relValue
-        case _ => throw new CypherTypeException(s"${rels.head()} is not a relationship")
-      }
-      state.query.singleRelationship(firstRel.id(), internalCursor)
-      if (internalCursor.next()) {
-        val start = VirtualValues.node(internalCursor.sourceNodeReference())
-        val lastRel = rels.last match {
-          case relValue: VirtualRelationshipValue => relValue
-          case _ => throw new CypherTypeException(s"${rels.last()} is not a relationship")
+  private def project(state: QueryState)(row: CypherRow): ClosingIterator[CypherRow] = {
+    row.getByName(relName) match {
+      case relValue: VirtualRelationshipValue =>
+        if (direction != SemanticDirection.BOTH || startInScope || endInScope) {
+          validateRel(
+            relValue.id(),
+            direction,
+            Option.when(startInScope)(row.getByName(start).asInstanceOf[VirtualNodeValue].id()),
+            Option.when(endInScope)(row.getByName(end).asInstanceOf[VirtualNodeValue].id()),
+            state.query,
+            state.cursors.relationshipScanCursor,
+            genTypeCheck(relTypes.types(state.query))
+          ).map(setInRow(row, _)).asClosingIterator
+        } else {
+          validateRelUndirectedNothingInScope(
+            relValue.id(),
+            state.query,
+            state.cursors.relationshipScanCursor,
+            genTypeCheck(relTypes.types(state.query))
+          ) match {
+            case Seq() =>
+              ClosingIterator.empty
+            case Seq(endNodes) =>
+              ClosingIterator.single(setInRow(row, endNodes))
+            case endNodesSeq =>
+              endNodesSeq.map(setInRow(rowFactory.copyWith(row), _)).asClosingIterator
+          }
+
         }
-        state.query.singleRelationship(lastRel.id(), internalCursor)
-        if (internalCursor.next()) {
-          val end = VirtualValues.node(internalCursor.targetNodeReference())
-          return pickStartAndEnd(start, end, context).map(startAndEnd => (startAndEnd, rels))
+      case _ => ClosingIterator.empty
+    }
+  }
+
+  private def setInRow(row: CypherRow, endNodes: EndNodes): CypherRow = {
+    if (!startInScope) {
+      row.set(start, VirtualValues.node(endNodes.left))
+    }
+    if (!endInScope) {
+      row.set(end, VirtualValues.node(endNodes.right))
+    }
+    row
+  }
+}
+
+case object ProjectEndpoints {
+
+  abstract class RelationshipScanCursorPredicate {
+    def test(rc: RelationshipDataAccessor): Boolean
+  }
+
+  def genTypeCheck(typesToCheck: Array[Int]): RelationshipScanCursorPredicate = {
+
+    if (typesToCheck == null) {
+      (_: RelationshipDataAccessor) => true
+    } else {
+      (t: RelationshipDataAccessor) =>
+        {
+          typesToCheck.contains(t.`type`())
         }
-      }
-      None
+    }
+  }
+
+  def validateRel(
+    relId: Long,
+    direction: SemanticDirection,
+    startIfInScope: Option[Long],
+    endIfInScope: Option[Long],
+    dbAccess: DbAccess,
+    scanCursor: RelationshipScanCursor,
+    typeCheck: RelationshipScanCursorPredicate
+  ): Option[EndNodes] = {
+    dbAccess.singleRelationship(relId, scanCursor)
+    if (scanCursor.next()) {
+      validateRel(
+        direction,
+        startIfInScope,
+        endIfInScope,
+        scanCursor,
+        typeCheck
+      )
     } else {
       None
     }
   }
 
-  private def allHasAllowedType(rels: ListValue, state: QueryState): Boolean = {
-    val iterator = rels.iterator()
-    val qtx = state.query
+  /**
+   * This method assumes that [[scanCursor]] is already pointing at the correct
+   * relationship. This method is used in fused pipelines where previous operators already
+   * have produced correctly positioned cursors
+   */
+  def validateRel(
+    direction: SemanticDirection,
+    startIfInScope: Option[Long],
+    endIfInScope: Option[Long],
+    scanCursor: RelationshipDataAccessor,
+    typeCheck: RelationshipScanCursorPredicate
+  ): Option[EndNodes] = {
+
+    def matchScope(left: Long, right: Long): Option[EndNodes] = {
+      if (
+        startIfInScope.forall(_ == left) &&
+        endIfInScope.forall(_ == right)
+      ) {
+        Some(EndNodes(left, right))
+      } else {
+        None
+      }
+    }
+
+    if (!typeCheck.test(scanCursor)) {
+      None
+    } else {
+      val source = scanCursor.sourceNodeReference()
+      val target = scanCursor.targetNodeReference()
+
+      direction match {
+        case SemanticDirection.OUTGOING => matchScope(source, target)
+        case SemanticDirection.INCOMING => matchScope(target, source)
+        case SemanticDirection.BOTH     => matchScope(source, target).orElse(matchScope(target, source))
+      }
+    }
+  }
+
+  def validateRels(
+    rels: ListValue,
+    direction: SemanticDirection,
+    startIfInScope: Option[Long],
+    endIfInScope: Option[Long],
+    dbAccess: DbAccess,
+    scanCursor: RelationshipScanCursor,
+    typeCheck: RelationshipScanCursorPredicate
+  ): Option[EndNodes] = {
+
+    val (iterator, start, end, effectiveDirection, reversed) = (startIfInScope, endIfInScope) match {
+      // If end is in scope but not start, reverse the order of iteration to fail fast
+      case (None, Some(end)) =>
+        (rels.reverse().iterator(), end, NO_ID, direction.reversed, true)
+      case _ =>
+        (rels.iterator(), startIfInScope.getOrElse(NO_ID), endIfInScope.getOrElse(NO_ID), direction, false)
+    }
+
+    // Check that the path starts with startNode (if startNode is in scope)
+    var prevNode = start
+    var firstNode: Long = start
+
     while (iterator.hasNext) {
       val next: VirtualRelationshipValue = iterator.next() match {
         case relValue: VirtualRelationshipValue => relValue
-        case _                                  => return false
+        case _                                  => return None
       }
-      val internalCursor = state.cursors.relationshipScanCursor
-      state.query.singleRelationship(next.id(), internalCursor)
-      if (internalCursor.next() && (!isAllowedType(internalCursor.`type`(), qtx))) {
-        return false
+      dbAccess.singleRelationship(next.id(), scanCursor)
+      if (!scanCursor.next()) {
+        return None
+      }
+      if (!typeCheck.test(scanCursor)) {
+        return None
+      }
+
+      val source = scanCursor.sourceNodeReference()
+      val target = scanCursor.targetNodeReference()
+
+      effectiveDirection match {
+
+        case SemanticDirection.OUTGOING =>
+          if (prevNode != NO_ID && prevNode != source) {
+            return None
+          }
+          if (firstNode == NO_ID) {
+            firstNode = source
+          }
+          prevNode = target
+
+        case SemanticDirection.INCOMING =>
+          if (prevNode != NO_ID && prevNode != target) {
+            return None
+          }
+          if (firstNode == NO_ID) {
+            firstNode = target
+          }
+          prevNode = source
+
+        case SemanticDirection.BOTH =>
+          // As something is in scope when we have BOTH here, and we iterate in reverse if it's the end node,
+          // we know that prevNode and firstNode != NO_ID
+          prevNode = prevNode match {
+            case `source` => target
+            case `target` => source
+            case _ =>
+              return None
+          }
       }
     }
-    true
+
+    // Check that the path ends with endNode (if endNode is in scope)
+    if (end == NO_ID || end == prevNode) {
+      if (!reversed) {
+        Some(EndNodes(firstNode, prevNode))
+      } else {
+        // re-reverse start and end
+        Some(EndNodes(prevNode, firstNode))
+      }
+    } else {
+      None
+    }
   }
 
-  private def isAllowedType(rel: Int, qtx: QueryContext): Boolean = {
-    val types = relTypes.types(qtx)
-    types == null || types.contains(rel)
+  def validateRelUndirectedNothingInScope(
+    relId: Long,
+    dbAccess: DbAccess,
+    scanCursor: RelationshipScanCursor,
+    typeCheck: RelationshipScanCursorPredicate
+  ): Seq[EndNodes] = {
+    dbAccess.singleRelationship(relId, scanCursor)
+    if (scanCursor.next()) {
+      validateRelUndirectedNothingInScope(
+        scanCursor,
+        typeCheck
+      )
+    } else {
+      Seq.empty
+    }
   }
 
-  private def pickStartAndEnd(
-    startNode: VirtualNodeValue,
-    endNode: VirtualNodeValue,
-    context: CypherRow
-  ): Option[StartAndEnd] = {
-    if (!startInScope && !endInScope) Some(NotInScope(startNode, endNode))
-    else if (
-      (!startInScope || context.getByName(start) == startNode) && (!endInScope || context.getByName(end) == endNode)
-    )
-      Some(InScope(startNode, endNode))
-    else if (
-      !directed && (!startInScope || context.getByName(start) == endNode) && (!endInScope || context.getByName(
-        end
-      ) == startNode)
-    )
-      Some(InScopeReversed(startNode, endNode))
-    else None
+  /**
+   * This method assumes that [[scanCursor]] is already pointing at the correct
+   * relationship. This method is used in fused pipelines where previous operators already
+   * have produced correctly positioned cursors
+   */
+  def validateRelUndirectedNothingInScope(
+    scanCursor: RelationshipDataAccessor,
+    typeCheck: RelationshipScanCursorPredicate
+  ): Seq[EndNodes] = {
+
+    if (!typeCheck.test(scanCursor)) {
+      Seq.empty
+    } else {
+      val source = scanCursor.sourceNodeReference()
+      val target = scanCursor.targetNodeReference()
+      if (source != target) {
+        Seq(
+          EndNodes(source, target),
+          EndNodes(target, source)
+        )
+      } else {
+        Seq(
+          EndNodes(source, target)
+        )
+      }
+    }
   }
 
-  sealed trait StartAndEnd {
-    def start: VirtualNodeValue
-    def end: VirtualNodeValue
+  def validateRelsUndirectedNothingInScope(
+    rels: ListValue,
+    dbAccess: DbAccess,
+    scanCursor: RelationshipScanCursor,
+    typeCheck: RelationshipScanCursorPredicate
+  ): Seq[EndNodes] = {
+
+    val iterator = rels.iterator()
+
+    val DISQUALIFIED = -2L
+    var prevNode1 = NO_ID
+    var prevNode2 = NO_ID
+
+    var start1 = NO_ID
+    var start2 = NO_ID
+
+    while (iterator.hasNext) {
+      val next: VirtualRelationshipValue = iterator.next() match {
+        case relValue: VirtualRelationshipValue => relValue
+        case _                                  => return Seq.empty
+      }
+      dbAccess.singleRelationship(next.id(), scanCursor)
+      if (!scanCursor.next()) {
+        return Seq.empty
+      }
+      if (!typeCheck.test(scanCursor)) {
+        return Seq.empty
+      }
+
+      val source = scanCursor.sourceNodeReference()
+      val target = scanCursor.targetNodeReference()
+
+      if (prevNode1 == NO_ID) {
+        start1 = source
+        start2 = target
+        prevNode1 = target
+        prevNode2 = source
+      } else {
+        prevNode1 = prevNode1 match {
+          case `source` => target
+          case `target` => source
+          case _        => DISQUALIFIED
+        }
+        prevNode2 = prevNode2 match {
+          case `source` => target
+          case `target` => source
+          case _        => DISQUALIFIED
+        }
+      }
+
+      if (prevNode1 == DISQUALIFIED && prevNode2 == DISQUALIFIED) {
+        return Seq.empty
+      }
+    }
+
+    // Check that the path ends with endNode (if endNode is in scope)
+    (prevNode1, prevNode2) match {
+      case (end1, `DISQUALIFIED`) => Seq(EndNodes(start1, end1))
+      case (`DISQUALIFIED`, end2) => Seq(EndNodes(start2, end2))
+      case (end1, end2) => Seq(
+          EndNodes(start1, end1),
+          EndNodes(start2, end2)
+        )
+    }
   }
-  case class NotInScope(start: VirtualNodeValue, end: VirtualNodeValue) extends StartAndEnd
-  case class InScope(start: VirtualNodeValue, end: VirtualNodeValue) extends StartAndEnd
-  case class InScopeReversed(start: VirtualNodeValue, end: VirtualNodeValue) extends StartAndEnd
+
+  case class EndNodes(left: Long, right: Long)
 }

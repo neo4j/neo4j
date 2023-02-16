@@ -873,7 +873,7 @@ case class InterpretedPipeMapper(
           id = id
         )
 
-      case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, directed, length) =>
+      case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, direction, length) =>
         ProjectEndpointsPipe(
           source,
           rel,
@@ -881,8 +881,8 @@ case class InterpretedPipeMapper(
           startInScope,
           end,
           endInScope,
-          types.map(_.toArray).map(RelationshipTypes.apply).getOrElse(RelationshipTypes.empty),
-          directed,
+          RelationshipTypes(types.toArray),
+          direction,
           length.isSimple
         )(id = id)
 

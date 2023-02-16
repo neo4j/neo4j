@@ -157,15 +157,6 @@ class PathValueBuilderTest extends CypherFunSuite {
     builder.result() should equal(pathReference(Array(C.id(), B.id(), A.id()), Array(rel2.id(), rel1.id())))
   }
 
-  test("p = (b)-[r:X*]-(a) reversed") {
-    val builder = new PathValueBuilder(state)
-
-    builder.addNode(C)
-      .addUndirectedRelationships(VirtualValues.list(rel1, rel2))
-
-    builder.result() should equal(pathReference(Array(C.id(), B.id(), A.id()), Array(rel2.id(), rel1.id())))
-  }
-
   test("p = (a)-[r1*]-()-[r2*]-()") {
     val builder = new PathValueBuilder(state)
 
@@ -179,43 +170,13 @@ class PathValueBuilderTest extends CypherFunSuite {
     ))
   }
 
-  test("p = (a)-[r1*]-()-[r2*]-() reversed r1") {
+  test("Invalid relationship order - addUndirectedRelationships") {
     val builder = new PathValueBuilder(state)
 
-    builder.addNode(A)
-      .addUndirectedRelationships(VirtualValues.list(rel2, rel1))
-      .addUndirectedRelationships(VirtualValues.list(rel3, rel4))
-
-    builder.result() should equal(pathReference(
-      Array(A.id(), B.id(), C.id(), D.id(), E.id()),
-      Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())
-    ))
-  }
-
-  test("p = (a)-[r1*]-()-[r2*]-() reversed r2") {
-    val builder = new PathValueBuilder(state)
-
-    builder.addNode(A)
-      .addUndirectedRelationships(VirtualValues.list(rel1, rel2))
-      .addUndirectedRelationships(VirtualValues.list(rel4, rel3))
-
-    builder.result() should equal(pathReference(
-      Array(A.id(), B.id(), C.id(), D.id(), E.id()),
-      Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())
-    ))
-  }
-
-  test("p = (a)-[r1*]-()-[r2*]-() reversed r1 && r2") {
-    val builder = new PathValueBuilder(state)
-
-    builder.addNode(A)
-      .addUndirectedRelationships(VirtualValues.list(rel2, rel1))
-      .addUndirectedRelationships(VirtualValues.list(rel4, rel3))
-
-    builder.result() should equal(pathReference(
-      Array(A.id(), B.id(), C.id(), D.id(), E.id()),
-      Array(rel1.id(), rel2.id(), rel3.id(), rel4.id())
-    ))
+    an[IllegalArgumentException] shouldBe thrownBy {
+      builder.addNode(A)
+        .addUndirectedRelationships(VirtualValues.list(rel2, rel1))
+    }
   }
 
   test("p = (b)-[r:X*0]-(a)") {

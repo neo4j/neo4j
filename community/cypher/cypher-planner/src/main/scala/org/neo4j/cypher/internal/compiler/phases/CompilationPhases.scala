@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.SchemaCommandPlanBuilder
 import org.neo4j.cypher.internal.compiler.UnsupportedSystemCommand
 import org.neo4j.cypher.internal.compiler.planner.CheckForUnresolvedTokens
 import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
+import org.neo4j.cypher.internal.compiler.planner.logical.EmptyRelationshipListEndpointProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.GetDegreeRewriterStep
 import org.neo4j.cypher.internal.compiler.planner.logical.MoveQuantifiedPathPatternPredicatesToConnectedNodes
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
@@ -101,6 +102,7 @@ object CompilationPhases {
           ResolveTokens,
           CreatePlannerQuery,
           OptionalMatchRemover,
+          EmptyRelationshipListEndpointProjection,
           GetDegreeRewriterStep,
           MoveQuantifiedPathPatternPredicatesToConnectedNodes,
           UnfulfillableQueryRewriter,

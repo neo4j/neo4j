@@ -119,22 +119,10 @@ final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVis
 
     if (relIterator.hasNext) {
       val first = relIterator.next().asInstanceOf[VirtualRelationshipValue]
-      val previousNode = nodes.getLast
-      if (correctDirection(first, previousNode)) {
-        addUndirectedRelationship(first)
-        consumeIterator(relIterator.asScala)
-      } else {
-        consumeIterator(relIterator.asScala.toIndexedSeq.reverseIterator)
-        addUndirectedRelationship(first)
-      }
+      addUndirectedRelationship(first)
+      consumeIterator(relIterator.asScala)
     }
     this
-  }
-
-  def correctDirection(rel: VirtualRelationshipValue, prevId: Long): Boolean = {
-    val start = rel.startNodeId(this)
-    val end = rel.endNodeId(this)
-    start == prevId || end == prevId
   }
 
   override def accept(t: RelationshipVisitor): Unit = {

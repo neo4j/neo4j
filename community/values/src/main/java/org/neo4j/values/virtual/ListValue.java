@@ -312,6 +312,16 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         }
 
         @Override
+        public ListValue reverse() {
+            return this.inner;
+        }
+
+        @Override
+        public boolean reversed() {
+            return true;
+        }
+
+        @Override
         public IterationPreference iterationPreference() {
             return inner.iterationPreference();
         }
@@ -816,6 +826,10 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
 
     public ListValue reverse() {
         return new ReversedList(this);
+    }
+
+    public boolean reversed() {
+        return false;
     }
 
     public AppendList append(AnyValue value) {

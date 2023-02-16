@@ -35,8 +35,6 @@ import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
@@ -436,9 +434,9 @@ object LogicalPlanToPlanBuilderString {
           )})$yielding" """.trim
       case ProduceResult(_, columns) =>
         wrapInQuotationsAndMkString(columns.map(escapeIdentifier))
-      case ProjectEndpoints(_, relName, start, startInScope, end, endInScope, types, directed, length) =>
-        val (dirStrA, dirStrB) = arrows(if (directed) OUTGOING else BOTH)
-        val typeStr = relTypeStr(types.getOrElse(Seq.empty))
+      case ProjectEndpoints(_, relName, start, startInScope, end, endInScope, types, direction, length) =>
+        val (dirStrA, dirStrB) = arrows(direction)
+        val typeStr = relTypeStr(types)
         val lenStr = length match {
           case SimplePatternLength        => ""
           case VarPatternLength(min, max) => s"*$min..${max.getOrElse("")}"

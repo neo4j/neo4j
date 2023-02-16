@@ -4594,8 +4594,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           startInScope = true,
           "end",
           endInScope = true,
-          None,
-          directed = true,
+          Seq.empty,
+          direction = SemanticDirection.OUTGOING,
           VarPatternLength(1, Some(1))
         ),
         234.2
@@ -4618,8 +4618,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           startInScope = true,
           "end",
           endInScope = true,
-          None,
-          directed = true,
+          Seq.empty,
+          direction = SemanticDirection.OUTGOING,
           SimplePatternLength
         ),
         234.2
@@ -4642,8 +4642,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           startInScope = true,
           "end",
           endInScope = true,
-          None,
-          directed = true,
+          Seq.empty,
+          direction = SemanticDirection.INCOMING,
           VarPatternLength(1, None)
         ),
         234.2
@@ -4652,7 +4652,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "ProjectEndpoints",
         SingleChild(lhsPD),
-        Seq(details("(start)-[r*]->(end)")),
+        Seq(details("(start)<-[r*]-(end)")),
         Set("a", "start", "r", "end")
       )
     )
@@ -4666,15 +4666,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           startInScope = true,
           "end",
           endInScope = true,
-          Some(Seq(relType("R"))),
-          directed = false,
+          Seq(relType("R")),
+          direction = SemanticDirection.BOTH,
           VarPatternLength(1, Some(3))
         ),
         234.2
       ),
       planDescription(
         id,
-        "ProjectEndpoints(BOTH)",
+        "ProjectEndpoints",
         SingleChild(lhsPD),
         Seq(details("(start)-[r:R*..3]-(end)")),
         Set("a", "start", "r", "end")
