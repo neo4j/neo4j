@@ -158,6 +158,7 @@ import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 
 import java.nio.charset.StandardCharsets
+
 import scala.annotation.tailrec
 import scala.language.implicitConversions
 
@@ -348,8 +349,8 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def avg(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Avg.name)(pos))
 
-  def collect(expression: Expression): FunctionInvocation =
-    FunctionInvocation(expression, FunctionName(Collect.name)(pos))
+  def collect(expression: Expression, distinct: Boolean = false): FunctionInvocation =
+    FunctionInvocation(FunctionName(Collect.name)(pos), distinct, IndexedSeq(expression))(pos)
 
   def max(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Max.name)(pos))

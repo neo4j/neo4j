@@ -80,7 +80,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
           otherAttributes.withAlso(effectiveCardinalities, providedOrders)
         ),
         removeIdenticalPlans(otherAttributes.withAlso(cardinalities, effectiveCardinalities, solveds, providedOrders)),
-        pruningVarExpander,
+        pruningVarExpander(anonymousVariableNameGenerator),
         useTop,
         skipInPartialSort,
         simplifySelections,

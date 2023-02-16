@@ -227,7 +227,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(before)
   }
 
-  test("Double var expand with distinct result") {
+  test("Double var expand with distinct result to both pruning") {
     // Simplest query:
     // match (a)-[:R*2..3]-(b)-[:T*2..3]-(c) return distinct c
 
@@ -248,7 +248,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("Double var expand with distinct result with BFSPruningVarExpand") {
+  test("Double var expand with distinct result to both BFSPruningVarExpand") {
     // Simplest query:
     // match (a)-[:R*1..3]->(b)-[:T*1..3]->(c) return distinct c
 
@@ -269,7 +269,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("var expand followed by normal expand") {
+  test("var expand followed by normal expand to first pruning") {
     // Simplest query:
     // match (a)-[:R*2..3]-(b)-[:T]-(c) return distinct c
 
@@ -290,7 +290,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("var expand followed by normal expand with BFSPruningVarExpand") {
+  test("var expand followed by normal expand to first BFSPruningVarExpand") {
     // Simplest query:
     // match (a)<-[:R*..3]-(b)<-[:T]-(c) return distinct c
 
@@ -309,6 +309,128 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .build()
 
     rewrite(before) should equal(after)
+  }
+
+  test("double var expand with grouping aggregation to one pruning") {
+    // Simplest query:
+    // match (a)-[r*2..]-(b) match (b)-[*2..3]-(c) return c, min(size(r))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("c AS c"), Seq("min(size(r)) AS distance"))
+      .expand("(b)-[*2..3]-(c)")
+      .expand("(a)-[r*2..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("c AS c"), Seq("min(size(r)) AS distance"))
+      .pruningVarExpand("(b)-[*2..3]-(c)")
+      .expand("(a)-[r*2..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("double var expand with grouping aggregation to one bfs") {
+    // Simplest query:
+    // match (a)-[r1*1..]-(b) match (b)-[r2*1..3]-(c) return size(r2), min(size(r1))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("size(r2) AS group"), Seq("min(size(r1)) AS distance"))
+      .expand("(b)-[r2*1..3]-(c)")
+      .expand("(a)-[r1*1..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val depthNameStr = "  depth0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("size(r2) AS group"), Seq(s"min(`${depthNameStr}`) AS distance"))
+      .expand("(b)-[r2*1..3]-(c)")
+      .bfsPruningVarExpand("(a)-[r1*1..]-(b)", depthName = Some(depthNameStr))
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before, names = Seq(depthNameStr)) should equal(after)
+  }
+
+  test("double var expand with grouping aggregation to bfs and pruning") {
+    // Simplest query:
+    // match (a)-[r*1..]-(b) match (b)-[*2..3]-(c) return c, min(size(r))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("c AS c"), Seq("min(size(r)) AS distance"))
+      .expand("(b)-[*2..3]-(c)")
+      .expand("(a)-[r*1..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val depthNameStr = "  depth0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("c AS c"), Seq(s"min(`${depthNameStr}`) AS distance"))
+      .pruningVarExpand("(b)-[*2..3]-(c)")
+      .bfsPruningVarExpand("(a)-[r*1..]-(b)", depthName = Some(depthNameStr))
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before, names = Seq(depthNameStr)) should equal(after)
+  }
+
+  test("double var expand with grouping aggregation to both pruning") {
+    // Simplest query:
+    // match (a)-[r*2..]-(b) match (b)-[*2..3]-(c) return c, min(size(r))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("a AS a"), Seq("collect(distinct b) AS aggB", "collect(distinct c) AS aggC"))
+      .expand("(b)-[*2..3]-(c)")
+      .expand("(a)-[*2..2]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("a AS a"), Seq("collect(distinct b) AS aggB", "collect(distinct c) AS aggC"))
+      .pruningVarExpand("(b)-[*2..3]-(c)")
+      .pruningVarExpand("(a)-[*2..2]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("double var expand with grouping aggregation to both bfs") {
+    // Simplest query:
+    // match path=(a)-[*1..]-(b) match (b)-[r*1..3]-(c) return a, min(size(r)), min(length(path)), min(length(path))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Map("a" -> varFor("a")),
+        Map(
+          "agg1" -> min(size(varFor("r2"))),
+          "agg2" -> min(length(path(varFor("a"), varFor("r1"), varFor("b")))),
+          "agg3" -> min(length(path(varFor("a"), varFor("r1"), varFor("b"))))
+        )
+      )
+      .expand("(b)-[r2*1..3]-(c)")
+      .expand("(a)-[r1*1..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val r1DepthNameStr = "  depth0"
+    val r2DepthNameStr = "  depth1"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Seq("a AS a"),
+        Seq(s"min(`$r1DepthNameStr`) AS agg1", s"min(`$r2DepthNameStr`) AS agg2", s"min(`$r2DepthNameStr`) AS agg3")
+      )
+      .bfsPruningVarExpand("(b)-[*1..3]-(c)", depthName = Some(r1DepthNameStr))
+      .bfsPruningVarExpand("(a)-[*1..]-(b)", depthName = Some(r2DepthNameStr))
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before, names = Seq(r1DepthNameStr, r2DepthNameStr)) should equal(after)
   }
 
   test("optional match can be solved with PruningVarExpand") {
@@ -477,10 +599,196 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(plan)
   }
 
+  test("do not use pruning when upper limit is not specified") {
+    // Simplest query:
+    // match (a)-[*2..]-(b) return distinct b
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .expand("(a)-[*2..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("use bfs pruning even when upper limit is not specified") {
+    // Simplest query:
+    // match (a)-[*2..]-(b) return distinct b
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .expand("(a)-[*1..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .bfsPruningVarExpand("(a)-[*1..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("use bfs pruning with aggregation when aggregation function is min(length(path))") {
+    // Simplest query:
+    // match path=(a)-[*1..]-(b) return min(length(path))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Map.empty[String, Expression],
+        Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b")))))
+      )
+      .expand("(a)-[r*1..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val depthNameStr = "  depth0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq(s"min(`$depthNameStr`) AS distance"))
+      .bfsPruningVarExpand("(a)-[r*1..]-(b)", depthName = Some(depthNameStr))
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before, names = Seq(depthNameStr)) should equal(after)
+  }
+
+  test("do not use pruning with aggregation when aggregation function is min(length(path))") {
+    // Simplest query:
+    // match path=(a)-[*2..]-(b) return min(length(path))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Map.empty[String, Expression],
+        Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b")))))
+      )
+      .expand("(a)-[r*2..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("use bfs pruning with aggregation when grouping aggregation function is min(length(path))") {
+    // Simplest query:
+    // match path=(a)-[*1..]-(b) return a, min(length(path))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Map("a" -> varFor("a")), Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b"))))))
+      .expand("(a)-[r*1..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val depthNameStr = "  depth0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("a AS a"), Seq(s"min(`$depthNameStr`) AS distance"))
+      .bfsPruningVarExpand("(a)-[*1..]-(b)", depthName = Some(depthNameStr))
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before, names = Seq(depthNameStr)) should equal(after)
+  }
+
+  test("do not use pruning with aggregation when grouping aggregation function is min(length(path))") {
+    // Simplest query:
+    // match path=(a)-[*2..]-(b) return a, min(length(path))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Map("a" -> varFor("a")), Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b"))))))
+      .expand("(a)-[r*2..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("use bfs pruning with aggregation when grouping aggregation function is min(size(r))") {
+    // Simplest query:
+    // match path=(a)-[*1..]-(b) return a, min(size(r))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("a AS a"), Seq("min(size(r)) AS distance"))
+      .expand("(a)-[r*1..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val depthNameStr = "  depth0"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("a AS a"), Seq(s"min(`$depthNameStr`) AS distance"))
+      .bfsPruningVarExpand("(a)-[r*1..]-(b)", depthName = Some(depthNameStr))
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before, names = Seq(depthNameStr)) should equal(after)
+  }
+
+  test("do not use pruning with aggregation when grouping aggregation function is min(size(r))") {
+    // Simplest query:
+    // match path=(a)-[*2..]-(b) return a, min(size(r))
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("a AS a"), Seq("min(size(r)) AS distance"))
+      .expand("(a)-[r*2..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("should not rewrite when relationship is used in distinct") {
+    // Should not be rewritten since it's asking for a count of all paths leading to a node
+    // match (a)-[r:R*1..3]->(b) return distinct r
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("r AS r")
+      .expand("(from)-[r:R*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("should not rewrite when relationship used safely in some aggregations but unsafely in others") {
+    // Should not be rewritten since it's asking for a count of all paths leading to a node
+    // match (a)-[r:R*1..3]->(b) return a, min(size(r)), min(length(path)), collect(distinct b), collect(distinct r)
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Map("from" -> varFor("from")),
+        Map(
+          "valid1" -> min(length(path(varFor("a"), varFor("r"), varFor("b")))),
+          "valid2" -> min(size(varFor("r"))),
+          "valid3" -> collect(varFor("to"), distinct = true),
+          "invalid" -> collect(varFor("r"), distinct = true)
+        )
+      )
+      .expand("(from)-[r:R*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
   private def assertNotRewritten(p: LogicalPlan): Unit = {
     rewrite(p) should equal(p)
   }
 
-  private def rewrite(p: LogicalPlan): LogicalPlan =
-    p.endoRewrite(pruningVarExpander)
+  private def rewrite(p: LogicalPlan, names: Seq[String] = Seq.empty): LogicalPlan =
+    p.endoRewrite(pruningVarExpander(new VariableNameGenerator(names)))
+
+  class VariableNameGenerator(names: Seq[String]) extends AnonymousVariableNameGenerator {
+    private val namesIterator = names.iterator
+
+    override def nextName: String = {
+      if (namesIterator.hasNext) {
+        namesIterator.next()
+      } else {
+        super.nextName
+      }
+    }
+  }
 }

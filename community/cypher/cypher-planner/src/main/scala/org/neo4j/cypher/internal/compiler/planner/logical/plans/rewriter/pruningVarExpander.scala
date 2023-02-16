@@ -22,83 +22,253 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
+import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
 
-case object pruningVarExpander extends Rewriter {
+case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
 
-  private def findDistinctSet(plan: LogicalPlan): Set[VarExpand] = {
-    val distinctSet = mutable.Set[VarExpand]()
+  private case class DistinctHorizon(dependencies: Set[String], aggregatingPlan: AggregatingPlan) {
 
-    def variablesInTheDistinctSet(aggPlan: AggregatingPlan): Set[String] =
-      (aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)) ++
-        aggPlan.aggregationExpressions.values.flatMap(_.dependencies.map(_.name))).toSet
+    private val (
+      allDependenciesMinusMinPath: Set[String],
+      allDependencies: Set[String],
+      minPathExpressions: Map[String, Expression]
+    ) = {
+      if (aggregatingPlan == null) {
+        (null, null, null)
+      } else {
+        val (_minPathExpressions, _rest) =
+          aggregatingPlan.aggregationExpressions.partition(x => DistinctHorizon.isMinPathLength(x._2))
+        val _aggregatingDependenciesMinusMinPath = _rest.values.flatMap(_.dependencies.map(_.name)).toSet
+        val _minPathDependencies = _minPathExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
+        (
+          dependencies ++ _aggregatingDependenciesMinusMinPath,
+          dependencies ++ _aggregatingDependenciesMinusMinPath ++ _minPathDependencies,
+          _minPathExpressions
+        )
+      }
+    }
 
-    def collectDistinctSet(plan: LogicalPlan, dependencies: Option[Set[String]]): Option[Set[String]] = {
+    private val rewrittenMinPathExpressions: mutable.Map[String, Expression] = mutable.Map.empty
+    private val bfsExpandDistanceNames: mutable.Map[VarExpand, String] = mutable.Map.empty
 
-      val lowerDistinctLand: Option[Set[String]] = plan match {
+    def isInDistinctHorizon: Boolean = aggregatingPlan != null
 
-        case aggPlan: AggregatingPlan if aggPlan.aggregationExpressions.values.forall(isDistinct) =>
-          Some(variablesInTheDistinctSet(aggPlan))
+    /**
+     * @return true if it is safe to rewrite this [[VarExpand]] to a [[BFSPruningVarExpand]]
+     */
+    def canReplaceWithBfsPruning(expand: VarExpand): Boolean = {
+      if (
+        aggregatingPlan != null &&
+        expand.length.min <= 1 &&
+        validMaxLength(expand, requireMaxLength = false) &&
+        !allDependenciesMinusMinPath(expand.relName)
+      ) {
+        val distanceName = anonymousVariableNameGenerator.nextName
+        minPathExpressions.foreach { case (key, value) =>
+          replaceMinPathLength(distanceName, value, expand) match {
+            case Some(rewrittenExpression) =>
+              rewrittenMinPathExpressions.put(key, rewrittenExpression)
+              bfsExpandDistanceNames.put(expand, distanceName)
+            case None =>
+            // do nothing
+          }
+        }
+        true
+      } else {
+        false
+      }
+    }
 
-        case expand: VarExpand
-          if dependencies.nonEmpty && !distinctNeedsRelsFromExpand(dependencies, expand) && validLength(expand) =>
-          distinctSet += expand
-          dependencies
+    /**
+     * @return true if it is safe to rewrite this [[VarExpand]] to a [[PruningVarExpand]]
+     */
+    def canReplaceWithPruning(expand: VarExpand): Boolean = {
+      aggregatingPlan != null &&
+      validMaxLength(expand, requireMaxLength = true) &&
+      !allDependencies(expand.relName)
+    }
 
-        case Projection(_, _, expressions) =>
-          dependencies.map(_ ++ expressions.values.flatMap(_.dependencies.map(_.name)))
+    /**
+     * [[BFSPruningVarExpand]] can also emit (shortest path) depth with every node, which makes it possible to rewrite certain [[Aggregation]] plans.
+     *
+     * For example,
+     * MATCH path=(a)-[*1..2]-(b) RETURN min(length(path))
+     * Can be rewritten to,
+     * MATCH path=(a)-[*1..2]-(b) RETURN min(depth)
+     * Where 'depth' is emitted by [[BFSPruningVarExpand]].
+     *
+     * @return rewritten aggregation expressions, if any were rewritten.
+     */
+    def replacementAggregationExpressions(expand: VarExpand)
+      : Option[(String, AggregatingPlan, Map[String, Expression])] = {
+      if (bfsExpandDistanceNames.contains(expand)) {
+        Some(
+          bfsExpandDistanceNames(expand),
+          aggregatingPlan,
+          aggregatingPlan.aggregationExpressions ++ rewrittenMinPathExpressions
+        )
+      } else {
+        None
+      }
+    }
 
-        case Selection(Ands(predicates), _) =>
-          dependencies.map(_ ++ predicates.flatMap(_.dependencies.map(_.name)))
+    private def replaceMinPathLength(
+      distanceName: String,
+      expression: Expression,
+      varExpand: VarExpand
+    ): Option[Expression] = expression match {
+      case minLength @ FunctionInvocation(
+          _,
+          FunctionName("min"),
+          _,
+          Seq(length @ FunctionInvocation(_, FunctionName("length"), _, Seq(PathExpression(step))))
+        ) if step.dependencies.map(_.name).contains(varExpand.relName) =>
+        Some(minLength.copy(distinct = false, args = IndexedSeq(Variable(distanceName)(length.position)))(
+          minLength.position
+        ))
+      case minSize @ FunctionInvocation(
+          _,
+          FunctionName("min"),
+          _,
+          Seq(size @ FunctionInvocation(_, FunctionName("size"), _, Seq(variable: Variable)))
+        ) if variable.name == varExpand.relName =>
+        Some(minSize.copy(distinct = false, args = IndexedSeq(Variable(distanceName)(size.position)))(minSize.position))
+      case _ =>
+        None
+    }
+
+    private def validMaxLength(expand: VarExpand, requireMaxLength: Boolean): Boolean = expand.length.max match {
+      case Some(max) => max > 1 && expand.length.min <= max
+      case _         => !requireMaxLength
+    }
+  }
+
+  private object DistinctHorizon {
+    val empty: DistinctHorizon = DistinctHorizon(Set.empty, null)
+
+    def isDistinct(e: Expression): Boolean = e match {
+      case f: FunctionInvocation => f.distinct
+      case _                     => false
+    }
+
+    def isMinPathLength(e: Expression): Boolean = e match {
+      case FunctionInvocation(
+          _,
+          FunctionName("min"),
+          _,
+          Seq(FunctionInvocation(_, FunctionName("length"), _, Seq(_: PathExpression)))
+        ) =>
+        true
+      case FunctionInvocation(
+          _,
+          FunctionName("min"),
+          _,
+          Seq(FunctionInvocation(_, FunctionName("size"), _, Seq(_: Variable)))
+        ) =>
+        true
+      case _ =>
+        false
+    }
+  }
+
+  private case class ReplacementPlans(
+    pruningExpands: Set[VarExpand],
+    bfsPruningExpands: Map[VarExpand, Option[String]],
+    aggregatingPlans: Map[AggregatingPlan, Map[String, Expression]]
+  )
+
+  private def findReplacementPlans(plan: LogicalPlan): ReplacementPlans = {
+    val pruningExpands = mutable.Set[VarExpand]()
+    val bfsPruningExpands = mutable.Map[VarExpand, Option[String]]()
+    val replacementAggregatingPlans = mutable.Map[AggregatingPlan, Map[String, Expression]]()
+
+    def collectDistinctSet(plan: LogicalPlan, distinctHorizon: DistinctHorizon): DistinctHorizon = {
+      plan match {
+        case aggPlan: AggregatingPlan
+          if aggPlan.aggregationExpressions.values.forall(e =>
+            DistinctHorizon.isDistinct(e) || DistinctHorizon.isMinPathLength(e)
+          ) =>
+          val groupingDependencies = aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
+          DistinctHorizon(groupingDependencies, aggPlan)
+
+        case expand: VarExpand if distinctHorizon.canReplaceWithBfsPruning(expand) =>
+          distinctHorizon.replacementAggregationExpressions(expand) match {
+            case None =>
+              bfsPruningExpands.put(expand, None)
+            case Some((distanceName, aggregatingPlan, newAggregationExpressions)) =>
+              bfsPruningExpands.put(expand, Some(distanceName))
+              replacementAggregatingPlans.put(aggregatingPlan, newAggregationExpressions)
+          }
+          distinctHorizon
+
+        case expand: VarExpand if distinctHorizon.canReplaceWithPruning(expand) =>
+          pruningExpands += expand
+          distinctHorizon
+
+        case Projection(_, _, expressions) if distinctHorizon.isInDistinctHorizon =>
+          distinctHorizon.copy(dependencies =
+            distinctHorizon.dependencies ++ expressions.values.flatMap(_.dependencies.map(_.name))
+          )
+
+        case Selection(Ands(predicates), _) if distinctHorizon.isInDistinctHorizon =>
+          distinctHorizon.copy(dependencies =
+            distinctHorizon.dependencies ++ predicates.flatMap(_.dependencies.map(_.name))
+          )
 
         case _: Expand |
           _: VarExpand |
           _: Apply |
           _: CartesianProduct |
+          _: Eager |
           _: Optional =>
-          dependencies
+          distinctHorizon
 
         case _ =>
-          None
+          DistinctHorizon.empty
       }
-
-      lowerDistinctLand
     }
 
-    val planStack = new mutable.Stack[(LogicalPlan, Option[Set[String]])]()
-    planStack.push((plan, None))
+    val planStack = new mutable.Stack[(LogicalPlan, DistinctHorizon)]()
+    planStack.push((plan, DistinctHorizon.empty))
 
     while (planStack.nonEmpty) {
-      val (plan: LogicalPlan, deps: Option[Set[String]]) = planStack.pop()
-      val newDeps = collectDistinctSet(plan, deps)
+      val (plan: LogicalPlan, distinctHorizon: DistinctHorizon) = planStack.pop()
+      val newDistinctHorizon = collectDistinctSet(plan, distinctHorizon)
 
-      plan.lhs.foreach(p => planStack.push((p, newDeps)))
-      plan.rhs.foreach(p => planStack.push((p, newDeps)))
+      plan.lhs.foreach(p => planStack.push((p, newDistinctHorizon)))
+      plan.rhs.foreach(p => planStack.push((p, newDistinctHorizon)))
     }
 
-    distinctSet.toSet
+    ReplacementPlans(pruningExpands.toSet, bfsPruningExpands.toMap, replacementAggregatingPlans.toMap)
   }
 
   override def apply(input: AnyRef): AnyRef = {
     input match {
       case plan: LogicalPlan =>
-        val distinctSet = findDistinctSet(plan)
+        val replacementPlans = findReplacementPlans(plan)
 
         val innerRewriter = topDown(Rewriter.lift {
           case expand @ VarExpand(
@@ -113,8 +283,8 @@ case object pruningVarExpander extends Rewriter {
               ExpandAll,
               nodePredicate,
               relationshipPredicate
-            ) if distinctSet(expand) =>
-            if (isDistinctVarExpand(expand)) {
+            ) =>
+            if (replacementPlans.bfsPruningExpands.contains(expand)) {
               BFSPruningVarExpand(
                 lhs,
                 fromId,
@@ -122,11 +292,12 @@ case object pruningVarExpander extends Rewriter {
                 relTypes,
                 toId,
                 length.min == 0,
-                length.max.get,
+                length.max.getOrElse(Int.MaxValue),
+                depthName = replacementPlans.bfsPruningExpands(expand),
                 nodePredicate,
                 relationshipPredicate
               )(SameId(expand.id))
-            } else {
+            } else if (replacementPlans.pruningExpands(expand)) {
               PruningVarExpand(
                 lhs,
                 fromId,
@@ -138,30 +309,23 @@ case object pruningVarExpander extends Rewriter {
                 nodePredicate,
                 relationshipPredicate
               )(SameId(expand.id))
-
+            } else {
+              expand
             }
+
+          case aggregation: Aggregation if replacementPlans.aggregatingPlans.contains(aggregation) =>
+            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(aggregation))(
+              SameId(aggregation.id)
+            )
+
+          case aggregation: OrderedAggregation if replacementPlans.aggregatingPlans.contains(aggregation) =>
+            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(aggregation))(
+              SameId(aggregation.id)
+            )
         })
         plan.endoRewrite(innerRewriter)
 
       case _ => input
     }
   }
-
-  // When the distinct horizon needs the path that includes the var length relationship,
-  // we can't use DistinctVarExpand - we need all the paths
-  private def distinctNeedsRelsFromExpand(inDistinctLand: Option[Set[String]], expand: VarExpand): Boolean = {
-    inDistinctLand.forall(vars => vars(expand.relName))
-  }
-
-  private def validLength(expand: VarExpand): Boolean = expand.length.max match {
-    case Some(i) => i > 1 && i >= expand.length.min
-    case _       => false
-  }
-
-  private def isDistinct(e: Expression) = e match {
-    case f: FunctionInvocation => f.distinct
-    case _                     => false
-  }
-
-  private def isDistinctVarExpand(expand: VarExpand): Boolean = expand.length.min <= 1
 }
