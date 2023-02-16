@@ -1672,11 +1672,12 @@ case class LogicalPlan2PlanDescription(
         )
         val (expandDescriptionPrefix, predicatesDescription) =
           varExpandPredicateDescriptions(nodePredicates, relationshipPredicates)
+        val depthString = depthName.map(d => asPrettyString(s"$d")).getOrElse(asPrettyString(""))
         PlanDescriptionImpl(
           id,
           s"VarLengthExpand(Pruning,BFS)",
           children,
-          Seq(Details(pretty"$expandDescriptionPrefix$expandInfo$predicatesDescription")),
+          Seq(Details(pretty"$expandDescriptionPrefix$expandInfo$predicatesDescription $depthString")),
           variables,
           withRawCardinalities
         )
