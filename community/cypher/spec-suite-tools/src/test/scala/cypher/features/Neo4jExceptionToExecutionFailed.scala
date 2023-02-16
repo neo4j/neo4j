@@ -332,8 +332,6 @@ object Neo4jExceptionToExecutionFailed {
       )
     )
       UNDEFINED_VARIABLE
-    else if (msg.startsWith("Order by column contains implicit grouping expressions"))
-      AMBIGUOUS_AGGREGATION_EXPRESSION
     else if (msg.startsWith("Illegal aggregation expression(s) in order by"))
       AMBIGUOUS_AGGREGATION_EXPRESSION
     else if (msg.startsWith("Procedure call inside a query does not support passing arguments implicitly"))

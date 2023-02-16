@@ -7,3 +7,18 @@ Feature "List11 - Create a list from a range": Scenario "Create list from `range
 
 // We now allow re-using relationships while openCypher disallows this
 Feature "Match3 - Match fixed length patterns": Scenario "Fail when re-using a relationship in the same pattern"
+
+// Re reintroduced allowing this, while planning to deprecate in 5.X and remove the support in 6.0
+// Trello: XbSERLex
+Feature "ReturnOrderBy6 - Aggregation expressions in order by": Scenario "Fail if more complex expressions, even if returned, are used inside an order by item which contains an aggregation expression"
+
+// Wrong error detail. Should now be VariableNotFound
+Feature "ReturnOrderBy6 - Aggregation expressions in order by": Scenario "Fail if not returned variables are used inside an order by item which contains an aggregation expression"
+Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail on sorting by a non-projected aggregation on a variable"
+Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail on sorting by a non-projected aggregation on an expression"
+Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail if not projected variables are used inside an order by item which contains an aggregation expression"
+
+// Query is faulty and missing an `AS` in the `WITH`. If that gets added:
+// Re reintroduced allowing this, while planning to deprecate in 5.X and remove the support in 6.0
+// Trello: XbSERLex
+Feature "WithOrderBy4 - Order by in combination with projection and aliasing": Scenario "Fail if more complex expressions, even if projected, are used inside an order by item which contains an aggregation expression"
