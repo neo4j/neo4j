@@ -336,8 +336,8 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
       s"EXISTS { MATCH $pattern$whereString }"
     )(
       InputPosition.NONE,
-      Set.empty, // There is no reasonable way of calculating introduced variables, so IRExpressions should not be accessing it and it can be left blank
-      arguments.map(Variable(_)(InputPosition.NONE))
+      None, // There is no reasonable way of calculating introduced variables, so IRExpressions should not be accessing it and it can be left blank
+      Some(arguments.map(Variable(_)(InputPosition.NONE)))
     )
   }
 

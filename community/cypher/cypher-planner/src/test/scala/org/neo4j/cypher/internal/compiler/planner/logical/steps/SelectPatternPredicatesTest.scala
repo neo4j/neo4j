@@ -78,7 +78,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     ),
     "",
     s"exists((a)-[`$relName`]->(`$nodeName`))"
-  )(pos, Set(varFor(nodeName)), Set(varFor(argName)))
+  )(pos, Some(Set(varFor(nodeName))), Some(Set(varFor(argName))))
 
   private val subqueryExp2 = ExistsIRExpression(
     RegularSinglePlannerQuery(
@@ -91,7 +91,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     ),
     "",
     s"exists((a)-[`$relName2`]->(`$nodeName2`))"
-  )(pos, Set(varFor(relName2), varFor(nodeName2)), Set(varFor(argName)))
+  )(pos, Some(Set(varFor(relName2), varFor(nodeName2))), Some(Set(varFor(argName))))
 
   private val pattern: Pattern = Pattern(Seq(EveryPath(relChain))) _
 

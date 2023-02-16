@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.helpers.TestContext
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeWithAndReturnClauses
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 trait RewritePhaseTest {
@@ -99,11 +99,12 @@ trait RewritePhaseTest {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val nameGenerator = new AnonymousVariableNameGenerator
     val parsedAst = JavaCCParser.parse(queryText, exceptionFactory)
-    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
+    val cleanedAst = parsedAst.endoRewrite(normalizeWithAndReturnClauses(exceptionFactory))
     if (astRewriteAndAnalyze) {
+      val semanticState = cleanedAst.semanticState(features: _*)
       ASTRewriter.rewrite(
-        cleanedAst,
-        cleanedAst.semanticState(features: _*),
+        cleanedAst.endoRewrite(computeDependenciesForExpressions(semanticState)),
+        semanticState,
         Map.empty,
         exceptionFactory,
         nameGenerator

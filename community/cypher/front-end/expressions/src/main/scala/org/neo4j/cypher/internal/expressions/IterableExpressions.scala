@@ -66,17 +66,17 @@ case class PatternComprehension(
   projection: Expression
 )(
   val position: InputPosition,
-  val introducedVariables: Set[LogicalVariable],
-  val scopeDependencies: Set[LogicalVariable]
+  override val computedIntroducedVariables: Option[Set[LogicalVariable]],
+  override val computedScopeDependencies: Option[Set[LogicalVariable]]
 ) extends ScopeExpression with ExpressionWithComputedDependencies with SubqueryExpression {
 
   self =>
 
-  override def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
-    copy()(position, introducedVariables = introducedVariables, scopeDependencies)
+  override def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, computedIntroducedVariables = Some(computedIntroducedVariables), computedScopeDependencies)
 
-  override def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
-    copy()(position, introducedVariables, scopeDependencies = scopeDependencies)
+  override def withComputedScopeDependencies(computedScopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, computedIntroducedVariables, computedScopeDependencies = Some(computedScopeDependencies))
 
   override def subqueryAstNode: ASTNode = pattern
 
@@ -86,7 +86,7 @@ case class PatternComprehension(
       children(1).asInstanceOf[RelationshipsPattern],
       children(2).asInstanceOf[Option[Expression]],
       children(3).asInstanceOf[Expression]
-    )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
+    )(position, computedIntroducedVariables, computedScopeDependencies).asInstanceOf[this.type]
   }
 }
 

@@ -170,7 +170,7 @@ case object Namespacer extends Phase[BaseContext, BaseState, BaseState] with Ste
             case None              => v
           }
         })
-        e.withIntroducedVariables(newIntroducedVariables).withScopeDependencies(newScopeDependencies)
+        e.withComputedIntroducedVariables(newIntroducedVariables).withComputedScopeDependencies(newScopeDependencies)
     })
   )
 

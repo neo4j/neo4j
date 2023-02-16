@@ -174,7 +174,7 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
       "anon_0",
       "anon_1",
       "ListIRExpression"
-    )(pos, Set.empty, argumentIds.map(name => varFor(name)))
+    )(pos, None, Some(argumentIds.map(name => varFor(name))))
   }
 
   private def newExistsIrExpression(argumentIds: Set[String], patternNodes: Set[String]): ExistsIRExpression = {
@@ -187,6 +187,6 @@ class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSu
       ),
       "anon_0",
       "ExistsIRExpression"
-    )(pos, Set.empty, argumentIds.map(name => varFor(name)))
+    )(pos, None, Some(argumentIds.map(name => varFor(name))))
   }
 }

@@ -141,8 +141,8 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     PatternExpression(
       pattern = relPattern(from, to, relationships, fromPropertyPredicate)
     )(
-      introducedVariables = introducedVariables,
-      scopeDependencies = scopeDependencies
+      computedIntroducedVariables = Some(introducedVariables),
+      computedScopeDependencies = Some(scopeDependencies)
     )
   }
 }
@@ -188,8 +188,8 @@ class GetDegreeRewriterSizeOfPatternComprehensionTest extends GetDegreeRewriterC
         projection = literalInt(1)
       )(
         position = pos,
-        introducedVariables = introducedVariables,
-        scopeDependencies = scopeDependencies
+        computedIntroducedVariables = Some(introducedVariables),
+        computedScopeDependencies = Some(scopeDependencies)
       )
     )(pos)
   }

@@ -86,7 +86,7 @@ case class normalizePredicates(normalizer: PredicateNormalizer) extends Rewriter
       p.copy(
         pattern = normalizer.replaceAllIn(p.pattern),
         predicate = newPredicate
-      )(p.position, p.introducedVariables, p.scopeDependencies)
+      )(p.position, p.computedIntroducedVariables, p.computedScopeDependencies)
 
     case qp @ QuantifiedPath(patternPart, _, optionalWhereExpression, _) =>
       val predicates = normalizer.extractAllFrom(patternPart)

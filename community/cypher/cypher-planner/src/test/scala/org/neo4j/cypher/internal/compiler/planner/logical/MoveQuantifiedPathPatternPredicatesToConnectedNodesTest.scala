@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.nameAllPatternElements
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeHasLabelsAndHasType
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
@@ -56,6 +57,7 @@ class MoveQuantifiedPathPatternPredicatesToConnectedNodesTest extends CypherFunS
   ): Statement = {
     val orgAstState = SemanticChecker.check(astOriginal).state
     astOriginal.endoRewrite(inSequence(
+      computeDependenciesForExpressions(orgAstState),
       LabelExpressionPredicateNormalizer.instance,
       normalizeHasLabelsAndHasType(orgAstState),
       QuantifiedPathPatternNodeInsertRewriter.instance,

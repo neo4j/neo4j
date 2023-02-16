@@ -58,7 +58,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           )
         )
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -83,7 +83,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           )
         )
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -104,7 +104,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           nodePat(Some("m"), namePos = InputPosition(25, 2, 16), position = InputPosition(24, 2, 15))
         )
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -127,7 +127,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           Some(where(propEquality("m", "prop", 3)))
         )
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -152,7 +152,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           )
         )
       )
-    )(InputPosition(17, 2, 8), Set.empty, Set.empty)
+    )(InputPosition(17, 2, 8), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -178,7 +178,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           )
         )
       )
-    )(InputPosition(26, 2, 17), Set.empty, Set.empty)
+    )(InputPosition(26, 2, 17), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -204,7 +204,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           )
         )
       )
-    )(InputPosition(27, 2, 18), Set.empty, Set.empty)
+    )(InputPosition(27, 2, 18), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -231,7 +231,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           )
         )
       )
-    )(InputPosition(5, 1, 6), Set.empty, Set.empty)
+    )(InputPosition(5, 1, 6), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -253,7 +253,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           )
         )
       )
-    )(InputPosition(16, 1, 17), Set.empty, Set.empty)
+    )(InputPosition(16, 1, 17), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -270,7 +270,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           nodePat(Some("a"), namePos = InputPosition(31, 1, 32), position = InputPosition(30, 1, 31))
         )
       )
-    )(InputPosition(17, 1, 18), Set.empty, Set.empty)
+    )(InputPosition(17, 1, 18), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -304,7 +304,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           None
         )
       )
-    )(InputPosition(21, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(21, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -335,7 +335,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           None
         )(pos)
       )
-    )(InputPosition(16, 1, 17), Set.empty, Set.empty)
+    )(InputPosition(16, 1, 17), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -361,7 +361,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
         ),
         return_(variableReturnItem("p"))
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -387,7 +387,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           return_(variableReturnItem("p"))
         )
       )(InputPosition(43, 2, 34))
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -407,7 +407,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
         create(nodePat(name = Some("n"), namePos = InputPosition(32, 2, 23), position = InputPosition(31, 2, 22))),
         InputPosition(24, 2, 15)
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -442,7 +442,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
         ),
         return_(variableReturnItem("n"))
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(

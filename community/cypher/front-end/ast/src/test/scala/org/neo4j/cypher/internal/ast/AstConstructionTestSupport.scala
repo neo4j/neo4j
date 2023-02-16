@@ -620,7 +620,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       NodePattern(Some(nodeVar1), None, None, None)(pos),
       RelationshipPattern(None, None, None, None, None, BOTH)(pos),
       NodePattern(Some(nodeVar2), None, None, None)(pos)
-    )(pos))(pos))(Set.empty, Set.empty)
+    )(pos))(pos))(None, None)
 
   def nodes(p: PathExpression): FunctionInvocation = {
     FunctionInvocation(FunctionName(Nodes.name)(p.position), p)(p.position)
@@ -812,7 +812,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       Match(optional = false, pattern, Seq(), maybeWhere)(pos)
     )
 
-    ExistsExpression(simpleMatchQuery)(pos, introducedVariables, scopeDependencies)
+    ExistsExpression(simpleMatchQuery)(pos, Some(introducedVariables), Some(scopeDependencies))
   }
 
   def simpleCountExpression(
@@ -826,7 +826,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       Match(optional = false, pattern, Seq(), maybeWhere)(pos)
     )
 
-    CountExpression(simpleMatchQuery)(pos, introducedVariables, scopeDependencies)
+    CountExpression(simpleMatchQuery)(pos, Some(introducedVariables), Some(scopeDependencies))
   }
 
   def unique(list: Expression): Unique =

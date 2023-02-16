@@ -147,7 +147,7 @@ class SelectorTest extends CypherFunSuite with LogicalPlanningTestSupport {
       ),
       "",
       ""
-    )(pos, Set.empty, Set(varFor("a")))
+    )(pos, None, Some(Set(varFor("a"))))
 
     val predicate = Predicate(Set("a"), subqueryExpression)
     val selections = Selections(Set(predicate))

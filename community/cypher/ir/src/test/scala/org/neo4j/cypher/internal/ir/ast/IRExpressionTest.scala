@@ -40,7 +40,7 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       "anon_0",
       "anon_1",
       "ListIRExpression"
-    )(pos, Set(varFor("b")), Set(varFor("a")))
+    )(pos, Some(Set(varFor("b"))), Some(Set(varFor("a"))))
 
     e.dependencies should equal(Set(varFor("a")))
   }
@@ -57,7 +57,7 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       ),
       "anon_0",
       "ExistsIRExpression"
-    )(pos, Set(varFor("b")), Set(varFor("a")))
+    )(pos, Some(Set(varFor("b"))), Some(Set(varFor("a"))))
 
     e.dependencies should equal(Set(varFor("a")))
   }
@@ -75,7 +75,7 @@ class IRExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
       "anon_0",
       "anon_1",
       "ListIRExpression"
-    )(pos, Set(varFor("b")), Set(varFor("a"))))
+    )(pos, Some(Set(varFor("b"))), Some(Set(varFor("a")))))
 
     e.dependencies should equal(Set(varFor("a")))
   }

@@ -1141,7 +1141,7 @@ class Neo4jASTFactory(query: String)
       RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(relationshipPatternPosition),
       Option(where),
       projection
-    )(p, Set.empty, Set.empty)
+    )(p, None, None)
 
   override def reduceExpression(
     p: InputPosition,
@@ -1171,8 +1171,8 @@ class Neo4jASTFactory(query: String)
         ShortestPathExpression(paths)
       case _ =>
         PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p))(
-          Set.empty,
-          Set.empty
+          None,
+          None
         )
     }
 
@@ -1202,7 +1202,7 @@ class Neo4jASTFactory(query: String)
     query: Query,
     where: Where
   ): Expression = {
-    ExistsExpression(convertExistsAndCountToUnifiedExpression(patterns, query, where))(p, Set.empty, Set.empty)
+    ExistsExpression(convertExistsAndCountToUnifiedExpression(patterns, query, where))(p, None, None)
   }
 
   override def countExpression(
@@ -1211,7 +1211,7 @@ class Neo4jASTFactory(query: String)
     query: Query,
     where: Where
   ): Expression = {
-    CountExpression(convertExistsAndCountToUnifiedExpression(patterns, query, where))(p, Set.empty, Set.empty)
+    CountExpression(convertExistsAndCountToUnifiedExpression(patterns, query, where))(p, None, None)
   }
 
   override def mapProjection(p: InputPosition, v: Variable, items: util.List[MapProjectionElement]): Expression =

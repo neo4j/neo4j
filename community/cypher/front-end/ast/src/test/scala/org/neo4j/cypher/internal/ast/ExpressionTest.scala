@@ -47,7 +47,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     ) _
     val expr: Expression = listComprehension(
       varFor("x"),
-      PatternExpression(pat)(Set(varFor("x")), Set(varFor("n"), varFor("k"))),
+      PatternExpression(pat)(Some(Set(varFor("x"))), Some(Set(varFor("n"), varFor("k")))),
       None,
       Some(function("head", function("nodes", varFor("x"))))
     )
@@ -72,7 +72,7 @@ class ExpressionTest extends CypherFunSuite with AstConstructionTestSupport {
     )
     val expr: Expression = listComprehension(
       varFor("x"),
-      PatternExpression(pat)(Set(varFor("x"), varFor("y")), Set(varFor("n"), varFor("k"))),
+      PatternExpression(pat)(Some(Set(varFor("x"), varFor("y"))), Some(Set(varFor("n"), varFor("k")))),
       None,
       Some(innerExpr)
     )

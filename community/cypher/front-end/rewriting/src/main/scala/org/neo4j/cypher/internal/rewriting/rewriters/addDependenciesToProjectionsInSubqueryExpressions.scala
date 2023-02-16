@@ -65,12 +65,12 @@ case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequen
     case e: ExistsExpression =>
       val scopeDependencies = e.scopeDependencies
       val newQuery = rewriteQuery(e.query, scopeDependencies)
-      e.copy(query = newQuery)(e.position, e.introducedVariables, scopeDependencies)
+      e.copy(query = newQuery)(e.position, e.computedIntroducedVariables, Some(scopeDependencies))
 
     case e: CountExpression =>
       val scopeDependencies = e.scopeDependencies
       val newQuery = rewriteQuery(e.query, scopeDependencies)
-      e.copy(query = newQuery)(e.position, e.introducedVariables, scopeDependencies)
+      e.copy(query = newQuery)(e.position, e.computedIntroducedVariables, Some(scopeDependencies))
   })
 
   private def rewriteQuery(query: Query, scopeDependencies: Set[LogicalVariable]): Query =

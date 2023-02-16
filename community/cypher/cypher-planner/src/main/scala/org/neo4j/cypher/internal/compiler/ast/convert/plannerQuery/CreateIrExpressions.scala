@@ -153,8 +153,8 @@ case class CreateIrExpressions(
       val query = getPlannerQuery(pattern, pe.dependencies.map(_.name), None, RegularQueryProjection())
       ExistsIRExpression(query, existsVariableName, stringifier(exists))(
         exists.position,
-        pe.introducedVariables,
-        pe.scopeDependencies
+        pe.computedIntroducedVariables,
+        pe.computedScopeDependencies
       )
 
     /**
@@ -173,8 +173,8 @@ case class CreateIrExpressions(
       )
       ExistsIRExpression(plannerQuery, existsVariableName, stringifier(existsExpression))(
         existsExpression.position,
-        existsExpression.introducedVariables,
-        existsExpression.scopeDependencies
+        existsExpression.computedIntroducedVariables,
+        existsExpression.computedScopeDependencies
       )
 
     /**
@@ -194,8 +194,8 @@ case class CreateIrExpressions(
       )
       ListIRExpression(query, variableToCollectName, collectionName, stringifier(pe))(
         pe.position,
-        pe.introducedVariables,
-        pe.scopeDependencies
+        pe.computedIntroducedVariables,
+        pe.computedScopeDependencies
       )
 
     /**
@@ -215,8 +215,8 @@ case class CreateIrExpressions(
       )
       ListIRExpression(query, variableToCollectName, collectionName, stringifier(pc))(
         pc.position,
-        pc.introducedVariables,
-        pc.scopeDependencies
+        pc.computedIntroducedVariables,
+        pc.computedScopeDependencies
       )
 
     /**
@@ -266,8 +266,8 @@ case class CreateIrExpressions(
 
       CountIRExpression(finalizedQuery, countVariableName, stringifier(countExpression))(
         countExpression.position,
-        countExpression.introducedVariables,
-        countExpression.scopeDependencies
+        countExpression.computedIntroducedVariables,
+        countExpression.computedScopeDependencies
       )
 
     case PatternComprehension(Some(_), _, _, _) =>

@@ -77,11 +77,20 @@ case class ReduceScope(accumulator: LogicalVariable, variable: LogicalVariable, 
 trait ExpressionWithComputedDependencies extends Expression {
   self: ScopeExpression =>
 
-  override val introducedVariables: Set[LogicalVariable]
-  override val scopeDependencies: Set[LogicalVariable]
+  val computedIntroducedVariables: Option[Set[LogicalVariable]]
+  val computedScopeDependencies: Option[Set[LogicalVariable]]
 
   def subqueryAstNode: ASTNode
 
-  def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies
-  def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies
+  def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies
+  def withComputedScopeDependencies(computedScopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies
+
+  final override def introducedVariables: Set[LogicalVariable] = computedIntroducedVariables.getOrElse(
+    throw new IllegalStateException("Introduced variables have not been computed yet")
+  )
+
+  final override def scopeDependencies: Set[LogicalVariable] = computedScopeDependencies.getOrElse(
+    throw new IllegalStateException("Scope dependencies have not been computed yet")
+  )
+
 }

@@ -848,7 +848,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _patternExpr: Gen[PatternExpression] = for {
     pattern <- _relationshipsPattern
-  } yield PatternExpression(pattern)(Set.empty, Set.empty)
+  } yield PatternExpression(pattern)(None, None)
 
   def _shortestPaths: Gen[ShortestPaths] = for {
     element <- _patternElement
@@ -863,13 +863,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     query <- _query
     introducedVariables <- zeroOrMore(_variable)
     scopeDependencies <- zeroOrMore(_variable)
-  } yield ExistsExpression(query)(pos, introducedVariables.toSet, scopeDependencies.toSet)
+  } yield ExistsExpression(query)(pos, Some(introducedVariables.toSet), Some(scopeDependencies.toSet))
 
   def _countExpression: Gen[CountExpression] = for {
     query <- _query
     introducedVariables <- zeroOrMore(_variable)
     scopeDependencies <- zeroOrMore(_variable)
-  } yield CountExpression(query)(pos, introducedVariables.toSet, scopeDependencies.toSet)
+  } yield CountExpression(query)(pos, Some(introducedVariables.toSet), Some(scopeDependencies.toSet))
 
   def _patternComprehension: Gen[PatternComprehension] = for {
     namedPath <- option(_variable)
@@ -878,7 +878,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     projection <- _expression
     introducedVariables <- zeroOrMore(_variable)
     scopeDependencies <- zeroOrMore(_variable)
-  } yield PatternComprehension(namedPath, pattern, predicate, projection)(pos, introducedVariables.toSet, scopeDependencies.toSet)
+  } yield PatternComprehension(namedPath, pattern, predicate, projection)(pos, Some(introducedVariables.toSet), Some(scopeDependencies.toSet))
 
   // Expression
   // ----------------------------------

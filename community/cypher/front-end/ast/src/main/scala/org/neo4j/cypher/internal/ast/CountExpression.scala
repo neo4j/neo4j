@@ -25,23 +25,23 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 case class CountExpression(query: Query)(
   val position: InputPosition,
-  val introducedVariables: Set[LogicalVariable],
-  val scopeDependencies: Set[LogicalVariable]
+  override val computedIntroducedVariables: Option[Set[LogicalVariable]],
+  override val computedScopeDependencies: Option[Set[LogicalVariable]]
 ) extends ScopeExpression with SubqueryExpression with ExpressionWithComputedDependencies {
 
   self =>
 
-  override def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
-    copy()(position, introducedVariables = introducedVariables, scopeDependencies)
+  override def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, computedIntroducedVariables = Some(computedIntroducedVariables), computedScopeDependencies)
 
-  override def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
-    copy()(position, introducedVariables, scopeDependencies = scopeDependencies)
+  override def withComputedScopeDependencies(computedScopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, computedIntroducedVariables, computedScopeDependencies = Some(computedScopeDependencies))
 
   override def subqueryAstNode: ASTNode = query
 
   override def dup(children: Seq[AnyRef]): this.type = {
     CountExpression(
       children.head.asInstanceOf[Query]
-    )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
+    )(position, computedIntroducedVariables, computedScopeDependencies).asInstanceOf[this.type]
   }
 }

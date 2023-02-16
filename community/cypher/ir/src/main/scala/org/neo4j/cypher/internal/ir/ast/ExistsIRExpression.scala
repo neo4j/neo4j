@@ -33,24 +33,24 @@ case class ExistsIRExpression(
   solvedExpressionAsString: String
 )(
   val position: InputPosition,
-  override val introducedVariables: Set[LogicalVariable],
-  override val scopeDependencies: Set[LogicalVariable]
-) extends IRExpression(query, solvedExpressionAsString)(introducedVariables, scopeDependencies) {
+  override val computedIntroducedVariables: Option[Set[LogicalVariable]],
+  override val computedScopeDependencies: Option[Set[LogicalVariable]]
+) extends IRExpression(query, solvedExpressionAsString)(computedIntroducedVariables, computedScopeDependencies) {
 
   self =>
 
-  override def withIntroducedVariables(introducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
-    copy()(position, introducedVariables = introducedVariables, scopeDependencies)
+  override def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, computedIntroducedVariables = Some(computedIntroducedVariables), computedScopeDependencies)
 
-  override def withScopeDependencies(scopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
-    copy()(position, introducedVariables, scopeDependencies = scopeDependencies)
+  override def withComputedScopeDependencies(computedScopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+    copy()(position, computedIntroducedVariables, computedScopeDependencies = Some(computedScopeDependencies))
 
   override def dup(children: Seq[AnyRef]): this.type = {
     ExistsIRExpression(
       children.head.asInstanceOf[PlannerQuery],
       children(1).asInstanceOf[String],
       children(2).asInstanceOf[String]
-    )(position, introducedVariables, scopeDependencies).asInstanceOf[this.type]
+    )(position, computedIntroducedVariables, computedScopeDependencies).asInstanceOf[this.type]
   }
 
   /**

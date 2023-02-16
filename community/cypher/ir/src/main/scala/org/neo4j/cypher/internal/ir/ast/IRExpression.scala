@@ -34,8 +34,10 @@ import org.neo4j.cypher.internal.util.ASTNode
 abstract class IRExpression(
   val query: PlannerQuery,
   solvedExpressionAsString: String
-)(val introducedVariables: Set[LogicalVariable], val scopeDependencies: Set[LogicalVariable])
-    extends ScopeExpression with ExpressionWithComputedDependencies {
+)(
+  override val computedIntroducedVariables: Option[Set[LogicalVariable]],
+  override val computedScopeDependencies: Option[Set[LogicalVariable]]
+) extends ScopeExpression with ExpressionWithComputedDependencies {
 
   override def asCanonicalStringVal: String = solvedExpressionAsString
 

@@ -797,7 +797,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
-    )(pos, Set.empty, Set.empty)
+    )(pos, None, None)
     val predicate = Predicate(Set("a"), exp)
     val selections = Selections(Set(predicate))
 
@@ -858,7 +858,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
-    )(pos, Set.empty, Set.empty)
+    )(pos, None, None)
 
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
@@ -888,7 +888,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
-    )(pos, Set.empty, Set.empty)
+    )(pos, None, None)
 
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val orPredicate = Predicate(Set("a"), ors(exp1, exp2))
@@ -918,7 +918,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (a)-[`$relName`]->(`$nodeName`) }"
-    )(pos, Set.empty, Set.empty)
+    )(pos, None, None)
 
     val exp2 = in(prop("a", "prop"), listOfInt(42))
     val exp3 = in(prop("a", "prop2"), listOfInt(21))
@@ -1290,7 +1290,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       ),
       existsVariableName,
       s"EXISTS { MATCH (owner)-[`$relName`]-(`$nodeName`) }"
-    )(pos, Set(varFor(nodeName), varFor(relName)), Set(varFor("owner")))
+    )(pos, Some(Set(varFor(nodeName), varFor(relName))), Some(Set(varFor("owner"))))
 
     val expectation = RegularSinglePlannerQuery(
       queryGraph = QueryGraph(patternNodes = Set("owner")),

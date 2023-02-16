@@ -78,8 +78,8 @@ case class normalizeExistsPatternExpressions(
         p.position
       ))(
         p.position,
-        p.introducedVariables,
-        p.scopeDependencies
+        p.computedIntroducedVariables,
+        p.computedScopeDependencies
       )
     case Exists(p: PatternExpression) =>
       ExistsExpression(PatternToQueryConverter.convertPatternToQuery(
@@ -88,8 +88,8 @@ case class normalizeExistsPatternExpressions(
         p.position
       ))(
         p.position,
-        p.introducedVariables,
-        p.scopeDependencies
+        p.computedIntroducedVariables,
+        p.computedScopeDependencies
       )
 
     case GreaterThan(CountLikeToExistsConverter(exists), SignedDecimalIntegerLiteral("0")) => exists
@@ -137,16 +137,16 @@ case object CountLikeToExistsConverter {
         )
       )(
         p.position,
-        p.introducedVariables,
-        p.scopeDependencies
+        p.computedIntroducedVariables,
+        p.computedScopeDependencies
       ))
 
     // COUNT { (n)--(m) }
     case ce @ CountExpression(query) =>
       Some(ExistsExpression(query)(
         ce.position,
-        ce.introducedVariables,
-        ce.scopeDependencies
+        ce.computedIntroducedVariables,
+        ce.computedScopeDependencies
       ))
 
     case _ =>

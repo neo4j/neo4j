@@ -118,7 +118,7 @@ class ExpressionParserTest extends JavaccParserAstTestBase[Expression] {
           labelOrRelTypeLeaf("End")
         )(pos)),
         projection = varFor("p")
-      )(pos, Set.empty, Set.empty)
+      )(pos, None, None)
     }
   }
 }

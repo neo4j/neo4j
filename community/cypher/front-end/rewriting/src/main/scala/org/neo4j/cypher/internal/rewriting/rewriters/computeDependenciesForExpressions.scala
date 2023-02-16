@@ -30,7 +30,7 @@ case class computeDependenciesForExpressions(semanticState: SemanticState) exten
     case x: ExpressionWithComputedDependencies =>
       val DeclarationsAndDependencies(declarations, dependencies) = semanticState.recordedScopes(x.subqueryAstNode)
         .declarationsAndDependencies
-      x.withIntroducedVariables(declarations.map(_.asVariable))
-        .withScopeDependencies(dependencies.map(_.asVariable))
+      x.withComputedIntroducedVariables(declarations.map(_.asVariable))
+        .withComputedScopeDependencies(dependencies.map(_.asVariable))
   })
 }

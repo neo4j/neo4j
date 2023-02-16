@@ -188,15 +188,15 @@ case class normalizeWithAndReturnClauses(
     case exists @ ExistsExpression(query) =>
       exists.copy(query = rewriteTopLevelQuery(query))(
         exists.position,
-        exists.introducedVariables,
-        exists.scopeDependencies
+        exists.computedIntroducedVariables,
+        exists.computedScopeDependencies
       )
 
     case count @ CountExpression(query) =>
       count.copy(query = rewriteTopLevelQuery(query))(
         count.position,
-        count.introducedVariables,
-        count.scopeDependencies
+        count.computedIntroducedVariables,
+        count.computedScopeDependencies
       )
 
     // Alias return items and rewrite ORDER BY and WHERE

@@ -55,7 +55,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           )(pos)
         )
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -83,7 +83,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           Some(where(greaterThan(prop(Variable("p")(pos), "a"), literal(5))))
         )
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -110,7 +110,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           )(pos)
         )
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -138,7 +138,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
         ),
         return_(variableReturnItem("p"))
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -164,7 +164,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           return_(variableReturnItem("p"))
         )
       )(InputPosition(44, 2, 35))
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -184,7 +184,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
         create(nodePat(name = Some("n"))),
         InputPosition(25, 2, 16)
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
@@ -219,7 +219,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
         ),
         return_(variableReturnItem("n"))
       )
-    )(InputPosition(16, 2, 7), Set.empty, Set.empty)
+    )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
