@@ -4831,7 +4831,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = false,
           maxLength = 4,
-          depthName = None,
+          depthName = Some("depth"),
           nodePredicates = Seq(nodePredicate),
           relationshipPredicates = Seq(relationshipPredicate)
         ),
@@ -4842,7 +4842,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "VarLengthExpand(Pruning,BFS)",
         SingleChild(lhsPD),
         Seq(details(
-          "p = (a)-[:R*..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) AND all(r IN relationships(p) WHERE r.prop = $autodouble_1)"
+          // TODO reviewer: this format is obviously very bad, but I didn't want to spend time thinking of something better before review. suggestions?
+          "p = (a)-[:R*..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) AND all(r IN relationships(p) WHERE r.prop = $autodouble_1) depth"
         )),
         Set("a", "y")
       )
@@ -4859,7 +4860,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = true,
           4,
-          depthName = None,
+          depthName = Some("depth"),
           Seq(nodePredicate),
           Seq()
         ),
@@ -4869,7 +4870,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(Pruning,BFS)",
         SingleChild(lhsPD),
-        Seq(details("p = (a)-[:R*0..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1)")),
+        Seq(details("p = (a)-[:R*0..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) depth")),
         Set("a", "y")
       )
     )
@@ -4885,7 +4886,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = false,
           4,
-          depthName = None,
+          depthName = Some("depth"),
           Seq(),
           Seq()
         ),
@@ -4895,7 +4896,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(Pruning,BFS)",
         SingleChild(lhsPD),
-        Seq(details("(a)-[*..4]->(y)")),
+        Seq(details("(a)-[*..4]->(y) depth")),
         Set("a", "y")
       )
     )
