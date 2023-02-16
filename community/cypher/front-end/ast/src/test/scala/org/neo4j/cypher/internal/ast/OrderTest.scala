@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast
 
-import org.neo4j.cypher.internal.ast.Order.implicitGroupingExpressionInOrderColumnErrorMessage
 import org.neo4j.cypher.internal.ast.Order.notProjectedAggregations
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
@@ -190,7 +189,7 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
     ))
   }
 
-  test("should report both ambiguous expression and aggregation not in preceding with/return clause") {
+  test("should report aggregation not in preceding with/return clause") {
     // RETURN n.prop1, 1 + count(*)     AS cnt ORDER BY n.prop2, count(*) + 1
     val sortItems = Seq(
       sortItem(prop("n", "prop2")),
@@ -204,15 +203,11 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
     val result = orderBy.checkIllegalOrdering(ReturnItems(includeExisting = false, returnItems)(InputPosition.NONE))(
       SemanticState.clean
     )
-    val expectedErrorMessage1 = implicitGroupingExpressionInOrderColumnErrorMessage(Seq("n.prop2"))
-    val expectedErrorMessage2 = notProjectedAggregations(Seq("count(*)"))
+    val expectedErrorMessage = notProjectedAggregations(Seq("count(*)"))
 
     withClue(s"orderBy expressions [${sortItems.map(_.asCanonicalStringVal).mkString(",")}] " +
       s"with returnItems [${returnItems.map(_.asCanonicalStringVal).mkString(", ")}] did not throw expected error. ") {
-      result.errors should have size 2
-      val msgs = result.errors.map(_.msg)
-      assert(msgs.contains(expectedErrorMessage1))
-      assert(msgs.contains(expectedErrorMessage2))
+      result.errors.map(_.msg) should equal(Seq(expectedErrorMessage))
     }
   }
 }

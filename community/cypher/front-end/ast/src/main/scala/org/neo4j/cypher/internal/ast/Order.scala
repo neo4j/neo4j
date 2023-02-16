@@ -62,11 +62,6 @@ case class OrderBy(sortItems: Seq[SortItem])(val position: InputPosition) extend
 
 object Order {
 
-  def implicitGroupingExpressionInOrderColumnErrorMessage(variables: Seq[String]): String =
-    s"Order by column contains implicit grouping expressions: ${variables.mkString(",")}. Implicit grouping keys are not supported. " +
-      "For example, in 'RETURN count(*) ORDER BY n.a' the sort expression 'n.a' includes the implicit grouping key 'n.a'. " +
-      "It may be possible to rewrite the query by extracting these grouping/aggregation expressions into a preceding WITH clause. "
-
   def notProjectedAggregations(variables: Seq[String]): String =
     s"Illegal aggregation expression(s) in order by: ${variables.mkString(", ")}. " +
       "If an aggregation expression is used in order by, it also needs to be a projection item on it's own. " +
