@@ -21,86 +21,69 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.expressions.CountStar
-import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
-import org.neo4j.cypher.internal.expressions.NilPathStep
-import org.neo4j.cypher.internal.expressions.NodePathStep
-import org.neo4j.cypher.internal.expressions.PathExpression
-import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.logical.plans.Aggregation
-import org.neo4j.cypher.internal.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
-import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.Distinct
-import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.Optional
-import org.neo4j.cypher.internal.logical.plans.Projection
-import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("simplest possible query that can use PruningVarExpand") {
     // Simplest query:
-    // match (a)-[*2..3]->(b) return distinct b
+    // match (a)-[*2..3]-(b) return distinct b
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(2, Some(3))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val input = Distinct(originalExpand, Map("to" -> varFor("to")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expand("(from)-[*2..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 2, 3)
-    val expectedOutput = Distinct(rewrittenExpand, Map("to" -> varFor("to")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .pruningVarExpand("(from)-[*2..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("simplest possible query that can use BFSPruningVarExpand") {
     // Simplest query:
     // match (a)-[*1..3]->(b) return distinct b
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.OUTGOING
-    val length = VarPatternLength(1, Some(3))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val input = Distinct(originalExpand, Map("to" -> varFor("to")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expand("(from)-[*1..3]->(to)")
+      .allNodeScan("from")
+      .build()
 
-    val rewrittenExpand = BFSPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, includeStartNode = false, 3)
-    val expectedOutput = Distinct(rewrittenExpand, Map("to" -> varFor("to")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .bfsPruningVarExpand("(from)-[*1..3]->(to)")
+      .allNodeScan("from")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("do use BFSPruningVarExpand for undirected search") {
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(1, Some(3))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val input = Distinct(originalExpand, Map("to" -> varFor("to")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expand("(from)-[*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    val rewrittenExpand = BFSPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, includeStartNode = false, 3)
-    val expectedOutput = Distinct(rewrittenExpand, Map("to" -> varFor("to")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("ordered distinct with pruningVarExpand") {
@@ -137,42 +120,40 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("query with distinct aggregation") {
     // Simplest query:
-    // match (from)-[2..3]->(to) return count(distinct to)
+    // match (from)-[2..3]-(to) return count(distinct to)
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(2, Some(3))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val aggregatingExpression = distinctFunction("count", varFor("to"))
-    val input = Aggregation(originalExpand, Map.empty, Map("x" -> aggregatingExpression))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
+      .expand("(from)-[*2..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 2, 3)
-    val expectedOutput = Aggregation(rewrittenExpand, Map.empty, Map("x" -> aggregatingExpression))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
+      .pruningVarExpand("(from)-[*2..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("query with distinct aggregation and BFSPruningVarExpand") {
     // Simplest query:
-    // match (from)-[1..3]->(to) return count(distinct to)
+    // match (from)<-[1..3]-(to) return count(distinct to)
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.INCOMING
-    val length = VarPatternLength(1, Some(3))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val aggregatingExpression = distinctFunction("count", varFor("to"))
-    val input = Aggregation(originalExpand, Map.empty, Map("x" -> aggregatingExpression))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
+      .expand("(from)<-[*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    val rewrittenExpand = BFSPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, includeStartNode = false, 3)
-    val expectedOutput = Aggregation(rewrittenExpand, Map.empty, Map("x" -> aggregatingExpression))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
+      .bfsPruningVarExpand("(from)<-[*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("ordered grouping aggregation") {
@@ -195,323 +176,262 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     // Simplest query:
     // match (a)-[*2..3]->(b:X) return distinct b
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(2, Some(3))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val predicate = hasLabels("to", "X")
-    val filter = Selection(Seq(predicate), originalExpand)
-    val input = Distinct(filter, Map("to" -> varFor("to")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .filter("to:X")
+      .expand("(from)-[*2..3]->(to)")
+      .allNodeScan("from")
+      .build()
 
-    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 2, 3)
-    val filterAfterRewrite = Selection(Seq(predicate), rewrittenExpand)
-    val expectedOutput = Distinct(filterAfterRewrite, Map("to" -> varFor("to")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .filter("to:X")
+      .pruningVarExpand("(from)-[*2..3]->(to)")
+      .allNodeScan("from")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("Simple query that filters between expand and distinct and BFSPruningVarExpand") {
     // Simplest query:
     // match (a)-[*1..3]->(b:X) return distinct b
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.OUTGOING
-    val length = VarPatternLength(0, Some(3))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val predicate = hasLabels("to", "X")
-    val filter = Selection(Seq(predicate), originalExpand)
-    val input = Distinct(filter, Map("to" -> varFor("to")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .filter("to:X")
+      .expand("(from)-[*1..3]->(to)")
+      .allNodeScan("from")
+      .build()
 
-    val rewrittenExpand = BFSPruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, includeStartNode = true, 3)
-    val filterAfterRewrite = Selection(Seq(predicate), rewrittenExpand)
-    val expectedOutput = Distinct(filterAfterRewrite, Map("to" -> varFor("to")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .filter("to:X")
+      .bfsPruningVarExpand("(from)-[*1..3]->(to)")
+      .allNodeScan("from")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("Query that aggregates before making the result DISTINCT") {
     // Simplest query:
-    // match (a)-[:R*1..3]->(b) with count(*) as count return distinct count
+    // match (a)-[:R*1..3]-(b) with count(*) as count return distinct count
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(1, Some(3))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val aggregate = Aggregation(originalExpand, Map.empty, Map("count" -> CountStar()(pos)))
-    val input = Distinct(aggregate, Map("to" -> varFor("to")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .expand("(from)-[*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    assertNotRewritten(input)
+    assertNotRewritten(before)
   }
 
   test("Double var expand with distinct result") {
     // Simplest query:
-    // match (a)-[:R*2..3]->(b)-[:T*2..3]->(c) return distinct c
+    // match (a)-[:R*2..3]-(b)-[:T*2..3]-(c) return distinct c
 
-    val aId = "a"
-    val relRId = "r"
-    val bId = "b"
-    val relTId = "t"
-    val cId = "c"
-    val allNodes = AllNodesScan(aId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(2, Some(3))
-    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
-    val originalExpand2 =
-      VarExpand(originalExpand, bId, dir, dir, Seq(RelTypeName("T")(pos)), cId, relTId, length, ExpandAll)
-    val input = Distinct(originalExpand2, Map("c" -> varFor("c")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .expand("(b)-[:T*2..3]-(c)")
+      .expand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
 
-    val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 2, 3)
-    val rewrittenExpand2 = PruningVarExpand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, 2, 3)
-    val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> varFor("c")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .pruningVarExpand("(b)-[:T*2..3]-(c)")
+      .pruningVarExpand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("Double var expand with distinct result with BFSPruningVarExpand") {
     // Simplest query:
     // match (a)-[:R*1..3]->(b)-[:T*1..3]->(c) return distinct c
 
-    val aId = "a"
-    val relRId = "r"
-    val bId = "b"
-    val relTId = "t"
-    val cId = "c"
-    val allNodes = AllNodesScan(aId, Set.empty)
-    val dir = SemanticDirection.OUTGOING
-    val length = VarPatternLength(1, Some(3))
-    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
-    val originalExpand2 =
-      VarExpand(originalExpand, bId, dir, dir, Seq(RelTypeName("T")(pos)), cId, relTId, length, ExpandAll)
-    val input = Distinct(originalExpand2, Map("c" -> varFor("c")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .expand("(b)-[:T*1..3]->(c)")
+      .expand("(a)-[:R*1..3]->(b)")
+      .allNodeScan("a")
+      .build()
 
-    val rewrittenExpand =
-      BFSPruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, includeStartNode = false, 3)
-    val rewrittenExpand2 =
-      BFSPruningVarExpand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, includeStartNode = false, 3)
-    val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> varFor("c")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .bfsPruningVarExpand("(b)-[:T*1..3]->(c)")
+      .bfsPruningVarExpand("(a)-[:R*1..3]->(b)")
+      .allNodeScan("a")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("var expand followed by normal expand") {
     // Simplest query:
-    // match (a)-[:R*2..3]->(b)-[:T]->(c) return distinct c
+    // match (a)-[:R*2..3]-(b)-[:T]-(c) return distinct c
 
-    val aId = "a"
-    val relRId = "r"
-    val bId = "b"
-    val relTId = "t"
-    val cId = "c"
-    val allNodes = AllNodesScan(aId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(2, Some(3))
-    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
-    val originalExpand2 = Expand(originalExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)
-    val input = Distinct(originalExpand2, Map("c" -> varFor("c")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .expand("(b)-[:T]-(c)")
+      .expand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
 
-    val rewrittenExpand = PruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, 2, 3)
-    val rewrittenExpand2 = Expand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)
-    val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> varFor("c")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .expand("(b)-[:T]-(c)")
+      .pruningVarExpand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("var expand followed by normal expand with BFSPruningVarExpand") {
     // Simplest query:
-    // match (a)-[:R*..3]->(b)-[:T]->(c) return distinct c
+    // match (a)<-[:R*..3]-(b)<-[:T]-(c) return distinct c
 
-    val aId = "a"
-    val relRId = "r"
-    val bId = "b"
-    val relTId = "t"
-    val cId = "c"
-    val allNodes = AllNodesScan(aId, Set.empty)
-    val dir = SemanticDirection.INCOMING
-    val length = VarPatternLength(1, Some(3))
-    val originalExpand = VarExpand(allNodes, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
-    val originalExpand2 = Expand(originalExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)
-    val input = Distinct(originalExpand2, Map("c" -> varFor("c")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .expand("(b)<-[:T]-(c)")
+      .expand("(a)<-[:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
 
-    val rewrittenExpand =
-      BFSPruningVarExpand(allNodes, aId, dir, Seq(RelTypeName("R")(pos)), bId, includeStartNode = false, 3)
-    val rewrittenExpand2 = Expand(rewrittenExpand, bId, dir, Seq(RelTypeName("T")(pos)), cId, relTId)
-    val expectedOutput = Distinct(rewrittenExpand2, Map("c" -> varFor("c")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .expand("(b)<-[:T]-(c)")
+      .bfsPruningVarExpand("(a)<-[:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("optional match can be solved with PruningVarExpand") {
-    /* Simplest query:
-       match (a) optional match (a)-[:R*1..3]->(b)-[:T]->(c) return distinct c
-       in logical plans:
+    // Simplest query:
+    // match (a) optional match (a)-[:R*2..3]-(b) return distinct b
 
-              distinct1                            distinct2
-                 |                                    |
-               apply1                               apply2
-               /   \                                /   \
-       all-nodes   optional1      ===>       all-nodes  optional2
-                     \                                    \
-                     var-length-expand                   pruning-var-expand
-                       \                                    \
-                       argument                            argument
-     */
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .apply()
+      .|.optional("a")
+      .|.expand("(a)-[:R*2..3]-(b)")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
 
-    val aId = "a"
-    val relRId = "r"
-    val bId = "b"
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(2, Some(3))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .apply()
+      .|.optional("a")
+      .|.pruningVarExpand("(a)-[:R*2..3]-(b)")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
 
-    val allNodes = AllNodesScan(aId, Set.empty)
-    val argument = Argument(Set(aId))
-    val originalExpand = VarExpand(argument, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
-    val optional1 = Optional(originalExpand, Set(aId))
-    val apply1 = Apply(allNodes, optional1)
-    val distinct1 = Distinct(apply1, Map("c" -> varFor("c")))
-
-    val rewrittenExpand = PruningVarExpand(argument, aId, dir, Seq(RelTypeName("R")(pos)), bId, 2, 3)
-    val optional2 = Optional(rewrittenExpand, Set(aId))
-    val apply2 = Apply(allNodes, optional2)
-    val distinct2 = Distinct(apply2, Map("c" -> varFor("c")))
-
-    rewrite(distinct1) should equal(distinct2)
+    rewrite(before) should equal(after)
   }
 
   test("optional match can be solved with PruningVarExpand with BFSPruningVarExpand") {
-    /* Simplest query:
-       match (a) optional match (a)-[:R*1..3]->(b)-[:T]->(c) return distinct c
-       in logical plans:
+    // Simplest query:
+    // match (a) optional match (a)-[:R*1..3]->(b) return distinct b
 
-              distinct1                            distinct2
-                 |                                    |
-               apply1                               apply2
-               /   \                                /   \
-       all-nodes   optional1      ===>       all-nodes  optional2
-                     \                                    \
-                     var-length-expand               bfs-pruning-var-expand
-                       \                                    \
-                       argument                            argument
-     */
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .apply()
+      .|.optional("a")
+      .|.expand("(a)-[:R*1..3]->(b)")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
 
-    val aId = "a"
-    val relRId = "r"
-    val bId = "b"
-    val dir = SemanticDirection.OUTGOING
-    val length = VarPatternLength(1, Some(3))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .apply()
+      .|.optional("a")
+      .|.bfsPruningVarExpand("(a)-[:R*1..3]->(b)")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
 
-    val allNodes = AllNodesScan(aId, Set.empty)
-    val argument = Argument(Set(aId))
-    val originalExpand = VarExpand(argument, aId, dir, dir, Seq(RelTypeName("R")(pos)), bId, relRId, length, ExpandAll)
-    val optional1 = Optional(originalExpand, Set(aId))
-    val apply1 = Apply(allNodes, optional1)
-    val distinct1 = Distinct(apply1, Map("c" -> varFor("c")))
-
-    val rewrittenExpand =
-      BFSPruningVarExpand(argument, aId, dir, Seq(RelTypeName("R")(pos)), bId, includeStartNode = false, 3)
-    val optional2 = Optional(rewrittenExpand, Set(aId))
-    val apply2 = Apply(allNodes, optional2)
-    val distinct2 = Distinct(apply2, Map("c" -> varFor("c")))
-
-    rewrite(distinct1) should equal(distinct2)
+    rewrite(before) should equal(after)
   }
 
   test("should not rewrite when doing non-distinct aggregation") {
     // Should not be rewritten since it's asking for a count of all paths leading to a node
-    // match (a)-[*1..3]->(b) return b, count(*)
+    // match (a)-[*1..3]-(b) return b, count(*)
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(1, Some(3))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val input = Aggregation(originalExpand, Map("r" -> varFor("r")), Map.empty)
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("to AS to"), Seq("count(*) AS count"))
+      .expand("(from)-[*1..3]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    assertNotRewritten(input)
+    assertNotRewritten(before)
   }
 
   test("on longer var-lengths, we also use PruningVarExpand") {
     // Simplest query:
-    // match (a)-[*4..5]->(b) return distinct b
+    // match (a)-[*4..5]-(b) return distinct b
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(4, Some(5))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val input = Distinct(originalExpand, Map("to" -> varFor("to")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expand("(from)-[*4..5]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    val rewrittenExpand = PruningVarExpand(allNodes, fromId, dir, Seq.empty, toId, 4, 5)
-    val expectedOutput = Distinct(rewrittenExpand, Map("to" -> varFor("to")))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .pruningVarExpand("(from)-[*4..5]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    rewrite(input) should equal(expectedOutput)
+    rewrite(before) should equal(after)
   }
 
   test("do not use pruning for length=1") {
     // Simplest query:
-    // match (a)-[*1..1]->(b) return distinct b
+    // match (a)-[*1..1]-(b) return distinct b
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(1, Some(1))
-    val toId = "to"
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val input = Distinct(originalExpand, Map("to" -> varFor("to")))
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expand("(from)-[*1..1]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    assertNotRewritten(input)
+    assertNotRewritten(before)
   }
 
   test("do not use pruning for pathExpressions when path is needed") {
     // Simplest query:
-    // match p=(from)-[r*0..1]->(to) with nodes(p) as d return distinct d
+    // match p=(from)-[r*0..2]-(to) with nodes(p) as d return distinct d
 
-    val fromId = "from"
-    val allNodes = AllNodesScan(fromId, Set.empty)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(0, Some(2))
-    val toId = "to"
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("d AS d")
+      .projection("nodes(path) AS d")
+      .projection(Map("path" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .expand("(from)-[r*0..2]-(to)")
+      .allNodeScan("from")
+      .build()
 
-    val relId = "r"
-    val originalExpand = VarExpand(allNodes, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandAll)
-    val pathProjector = NodePathStep(
-      varFor("from"),
-      MultiRelationshipPathStep(varFor("r"), SemanticDirection.BOTH, Some(varFor("to")), NilPathStep()(pos))(pos)
-    )(pos)
-
-    val func = function("nodes", PathExpression(pathProjector)(pos))
-    val projection = Projection(originalExpand, Set.empty, Map("d" -> func))
-    val distinct = Distinct(projection, Map("d" -> varFor("d")))
-
-    assertNotRewritten(distinct)
+    assertNotRewritten(before)
   }
 
   test("do not use pruning-varexpand when both sides of the var-length-relationship are already known") {
-    val fromId = "from"
-    val toId = "to"
-    val fromPlan = AllNodesScan(fromId, Set.empty)
-    val toPlan = AllNodesScan(toId, Set.empty)
-    val xJoin = CartesianProduct(fromPlan, toPlan)
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(1, Some(3))
-    val relId = "r"
-    val originalExpand = VarExpand(xJoin, fromId, dir, dir, Seq.empty, toId, relId, length, ExpandInto)
-    val input = Aggregation(originalExpand, Map("to" -> varFor("to")), Map.empty)
 
-    assertNotRewritten(input)
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expand("(from)-[*1..3]-(to)", expandMode = ExpandInto)
+      .cartesianProduct()
+      .|.allNodeScan("to")
+      .allNodeScan("from")
+      .build()
+
+    assertNotRewritten(before)
   }
 
   test("should handle insanely long logical plans without running out of stack") {
@@ -525,63 +445,26 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("cartesian product can be solved with BFSPruningVarExpand") {
-    /* Simplest query:
-       match (a) match (b)-[:R*1..3]->(c) return distinct c
-       in logical plans:
+    // Simplest query:
+    // match (a) match (b)-[:R*1..3]-(c) return distinct c
 
-                               distinct
-                                  |
-                              cartesian
-                                /   \
-                 var-length-expand  all-nodes
-                              /       \
-                         all-nodes      arg
-     */
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*1..3]-(c)")
+      .allNodeScan("b")
+      .build()
 
-    val aId = "a"
-    val relRId = "r"
-    val bId = "b"
-    val cId = "c"
-    val dir = SemanticDirection.BOTH
-    val length = VarPatternLength(1, Some(3))
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .bfsPruningVarExpand("(b)-[:R*1..3]-(c)")
+      .allNodeScan("b")
+      .build()
 
-    val original =
-      Distinct(
-        CartesianProduct(
-          VarExpand(
-            AllNodesScan(bId, Set.empty),
-            bId,
-            dir,
-            dir,
-            Seq(RelTypeName("R")(pos)),
-            cId,
-            relRId,
-            length,
-            ExpandAll
-          ),
-          AllNodesScan(aId, Set(bId, cId))
-        ),
-        Map(cId -> varFor(cId))
-      )
-
-    val rewritten =
-      Distinct(
-        CartesianProduct(
-          BFSPruningVarExpand(
-            AllNodesScan(bId, Set.empty),
-            bId,
-            dir,
-            Seq(RelTypeName("R")(pos)),
-            cId,
-            includeStartNode = false,
-            3
-          ),
-          AllNodesScan(aId, Set(bId, cId))
-        ),
-        Map(cId -> varFor(cId))
-      )
-
-    rewrite(original) should equal(rewritten)
+    rewrite(before) should equal(after)
   }
 
   test("do not use pruning-varexpand when upper bound < lower bound") {
