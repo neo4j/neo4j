@@ -318,7 +318,10 @@ class ReturnItemsTest extends CypherFunSuite with AstConstructionTestSupport {
     result.errors should equal(Seq(
       // Reports all offending return items.
       // Uses position of the first offending return item.
-      SemanticError(ReturnItems.implicitGroupingExpressionInAggregationColumnErrorMessage(Seq("ny")), InputPosition(2, 3, 4))
+      SemanticError(
+        ReturnItems.implicitGroupingExpressionInAggregationColumnErrorMessage(Seq("ny")),
+        InputPosition(2, 3, 4)
+      )
     ))
   }
 }

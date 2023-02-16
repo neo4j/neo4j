@@ -34,7 +34,7 @@ case class AmbiguousAggregationAnalysis(features: SemanticFeature*)
       // If we project '*', we don't need to check ambiguity since we group on all available variables.
       case projectionClause: ProjectionClause if !projectionClause.returnItems.includeExisting =>
         _ ++ projectionClause.orderBy.toSeq.flatMap(_.checkIllegalOrdering(projectionClause.returnItems)) ++
-            ReturnItems.checkAmbiguousGrouping(projectionClause.returnItems)
+          ReturnItems.checkAmbiguousGrouping(projectionClause.returnItems)
     }
 
     context.errorHandler(errors)

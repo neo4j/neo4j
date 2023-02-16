@@ -40,10 +40,12 @@ case class ListIRExpression(
 
   self =>
 
-  override def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+  override def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable])
+    : ExpressionWithComputedDependencies =
     copy()(position, computedIntroducedVariables = Some(computedIntroducedVariables), computedScopeDependencies)
 
-  override def withComputedScopeDependencies(computedScopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+  override def withComputedScopeDependencies(computedScopeDependencies: Set[LogicalVariable])
+    : ExpressionWithComputedDependencies =
     copy()(position, computedIntroducedVariables, computedScopeDependencies = Some(computedScopeDependencies))
 
   override def dup(children: Seq[AnyRef]): this.type = {

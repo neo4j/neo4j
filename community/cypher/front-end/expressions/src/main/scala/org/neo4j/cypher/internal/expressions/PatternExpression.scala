@@ -26,10 +26,12 @@ case class PatternExpression(pattern: RelationshipsPattern)(
 
   override def position: InputPosition = pattern.position
 
-  override def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+  override def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable])
+    : ExpressionWithComputedDependencies =
     copy()(computedIntroducedVariables = Some(computedIntroducedVariables), computedScopeDependencies)
 
-  override def withComputedScopeDependencies(computedScopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies =
+  override def withComputedScopeDependencies(computedScopeDependencies: Set[LogicalVariable])
+    : ExpressionWithComputedDependencies =
     copy()(computedIntroducedVariables, computedScopeDependencies = Some(computedScopeDependencies))
 
   override def subqueryAstNode: ASTNode = pattern

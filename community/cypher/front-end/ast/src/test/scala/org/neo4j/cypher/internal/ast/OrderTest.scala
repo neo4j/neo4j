@@ -169,7 +169,11 @@ class OrderTest extends CypherFunSuite with AstConstructionTestSupport {
   test("not projected aggregations: should use correct position if there are multiple order items") {
     val sortItems = Seq(
       sortItem(prop("n", "prop", InputPosition(1, 2, 3)), position = InputPosition(2, 3, 4)),
-      sortItem(add(literalInt(1), CountStar()(InputPosition(3, 4, 5))), ascending = false, position = InputPosition(5, 6, 7))
+      sortItem(
+        add(literalInt(1), CountStar()(InputPosition(3, 4, 5))),
+        ascending = false,
+        position = InputPosition(5, 6, 7)
+      )
     )
     val returnItems = Seq(
       autoAliasedReturnItem(prop("n", "prop")),

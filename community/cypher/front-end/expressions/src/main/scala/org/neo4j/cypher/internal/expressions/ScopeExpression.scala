@@ -82,7 +82,8 @@ trait ExpressionWithComputedDependencies extends Expression {
 
   def subqueryAstNode: ASTNode
 
-  def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable]): ExpressionWithComputedDependencies
+  def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable])
+    : ExpressionWithComputedDependencies
   def withComputedScopeDependencies(computedScopeDependencies: Set[LogicalVariable]): ExpressionWithComputedDependencies
 
   final override def introducedVariables: Set[LogicalVariable] = computedIntroducedVariables.getOrElse(
