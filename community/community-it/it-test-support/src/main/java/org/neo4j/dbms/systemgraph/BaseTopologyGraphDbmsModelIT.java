@@ -86,7 +86,6 @@ import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -165,7 +164,13 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             TopologyGraphDbmsModel.HostedOnMode mode,
             boolean bootstrapper,
             boolean wasHostedOn) {
-        connect(databaseId, serverId, mode, bootstrapper, wasHostedOn, UUID::randomUUID);
+        connect(
+                databaseId,
+                serverId,
+                mode,
+                bootstrapper,
+                wasHostedOn,
+                mode == HostedOnMode.RAFT ? UUID.randomUUID() : null);
     }
 
     protected void connect(
@@ -174,7 +179,7 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             TopologyGraphDbmsModel.HostedOnMode mode,
             boolean bootstrapper,
             boolean wasHostedOn,
-            Supplier<UUID> uuid) {
+            UUID raftMemberId) {
         try (var tx = db.beginTx()) {
             var database = findDatabase(databaseId, tx);
             var instance = findInstance(serverId, tx);
@@ -183,9 +188,8 @@ public abstract class BaseTopologyGraphDbmsModelIT {
             if (bootstrapper) {
                 relationship.setProperty(HOSTED_ON_BOOTSTRAPPER_PROPERTY, true);
             }
-            if (mode == HostedOnMode.RAFT) {
-                relationship.setProperty(
-                        HOSTED_ON_RAFT_MEMBER_ID_PROPERTY, uuid.get().toString());
+            if (mode == HostedOnMode.RAFT && raftMemberId != null) {
+                relationship.setProperty(HOSTED_ON_RAFT_MEMBER_ID_PROPERTY, raftMemberId.toString());
             }
             tx.commit();
         }
