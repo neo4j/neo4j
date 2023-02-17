@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec
 
+import org.neo4j.cypher.internal.result.AsyncCleanupOnClose
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.result.QueryProfile
@@ -64,7 +65,20 @@ class ClosingRuntimeTestResult(
 
   override def close(): Unit = {
     inner.close()
-    closeResources()
+    // TODO: Consider sharing implementation with StandardInternalExecutionResult
+    inner match {
+      case result: AsyncCleanupOnClose =>
+        val onFinishedCallback = () => {
+          closeResources()
+        }
+        result.registerOnFinishedCallback(onFinishedCallback)
+        inner.cancel()
+        inner.awaitCleanup()
+
+      case _ =>
+        inner.cancel()
+        closeResources()
+    }
   }
 
   override def request(numberOfRecords: Long): Unit = {
@@ -78,7 +92,9 @@ class ClosingRuntimeTestResult(
           close()
         } catch {
           case t2: Throwable =>
-            t.addSuppressed(t2)
+            if (!(t eq t2)) {
+              t.addSuppressed(t2)
+            }
             throw t
         }
 
@@ -95,16 +111,18 @@ class ClosingRuntimeTestResult(
     try {
       val moreData = inner.await()
       if (!moreData) {
-        closeResources()
+        close()
       }
       moreData
     } catch {
       case t: Throwable =>
         try {
-          closeResources()
+          close()
         } catch {
           case t2: Throwable =>
-            t.addSuppressed(t2)
+            if (!(t eq t2)) {
+              t.addSuppressed(t2)
+            }
         }
         throw t
     }
