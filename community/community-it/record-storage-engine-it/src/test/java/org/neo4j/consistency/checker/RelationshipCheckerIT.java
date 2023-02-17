@@ -134,9 +134,9 @@ class RelationshipCheckerIT {
 
         relationshipChecker.check(LongRange.range(0, relationshipId + 1), true, false);
 
-        assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(3);
-        assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(3);
-        assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(3);
+        assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(6);
+        assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(6);
+        assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(6);
     }
 
     private void prepareContext() throws Exception {
