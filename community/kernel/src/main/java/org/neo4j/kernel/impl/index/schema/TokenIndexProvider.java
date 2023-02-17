@@ -106,9 +106,15 @@ public class TokenIndexProvider extends IndexProvider {
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
         return new TokenIndexAccessor(
-                databaseIndexContext, indexFiles(descriptor), descriptor, recoveryCleanupWorkCollector, openOptions);
+                databaseIndexContext,
+                indexFiles(descriptor),
+                descriptor,
+                recoveryCleanupWorkCollector,
+                openOptions,
+                readOnly);
     }
 
     @Override

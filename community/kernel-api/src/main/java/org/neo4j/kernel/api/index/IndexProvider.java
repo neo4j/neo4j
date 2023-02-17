@@ -140,7 +140,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                         IndexDescriptor descriptor,
                         IndexSamplingConfig samplingConfig,
                         TokenNameLookup tokenNameLookup,
-                        ImmutableSet<OpenOption> openOptions) {
+                        ImmutableSet<OpenOption> openOptions,
+                        boolean readOnly) {
                     return singleWriter;
                 }
 
@@ -223,11 +224,24 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor(
+    public final IndexAccessor getOnlineAccessor(
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions)
+            throws IOException {
+        return getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions, false);
+    }
+
+    /**
+     * Used for updating an index once initial population has completed.
+     */
+    public abstract IndexAccessor getOnlineAccessor(
+            IndexDescriptor descriptor,
+            IndexSamplingConfig samplingConfig,
+            TokenNameLookup tokenNameLookup,
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly)
             throws IOException;
 
     /**
@@ -334,7 +348,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 IndexDescriptor descriptor,
                 IndexSamplingConfig samplingConfig,
                 TokenNameLookup tokenNameLookup,
-                ImmutableSet<OpenOption> openOptions) {
+                ImmutableSet<OpenOption> openOptions,
+                boolean readOnly) {
             return null;
         }
 
@@ -405,9 +420,10 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 IndexDescriptor descriptor,
                 IndexSamplingConfig samplingConfig,
                 TokenNameLookup tokenNameLookup,
-                ImmutableSet<OpenOption> openOptions)
+                ImmutableSet<OpenOption> openOptions,
+                boolean readOnly)
                 throws IOException {
-            return provider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions);
+            return provider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions, readOnly);
         }
 
         @Override

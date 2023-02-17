@@ -59,8 +59,9 @@ public class TokenIndexAccessor extends TokenIndex implements IndexAccessor {
             IndexFiles indexFiles,
             IndexDescriptor descriptor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-            ImmutableSet<OpenOption> openOptions) {
-        super(databaseIndexContext, indexFiles, descriptor, openOptions);
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
+        super(databaseIndexContext, indexFiles, descriptor, openOptions, readOnly);
 
         entityType = descriptor.schema().entityType();
         instantiateTree(recoveryCleanupWorkCollector);

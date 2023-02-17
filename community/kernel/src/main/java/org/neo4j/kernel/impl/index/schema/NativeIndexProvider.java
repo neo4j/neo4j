@@ -119,9 +119,10 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
         IndexFiles indexFiles = indexFiles(descriptor);
-        return newIndexAccessor(indexFiles, layout(descriptor), descriptor, tokenNameLookup, openOptions);
+        return newIndexAccessor(indexFiles, layout(descriptor), descriptor, tokenNameLookup, openOptions, readOnly);
     }
 
     protected abstract IndexAccessor newIndexAccessor(
@@ -129,7 +130,8 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
             LAYOUT layout,
             IndexDescriptor descriptor,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions);
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly);
 
     @Override
     public String getPopulationFailure(

@@ -71,7 +71,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> exte
             IndexLayout<KEY> layout,
             IndexDescriptor descriptor,
             ImmutableSet<OpenOption> openOptions) {
-        super(databaseIndexContext, layout, indexFiles, descriptor, openOptions);
+        super(databaseIndexContext, layout, indexFiles, descriptor, openOptions, false);
         this.treeKey = layout.newKey();
         this.uniqueSampler = descriptor.isUnique() ? new UniqueIndexSampler() : null;
         this.ignoreStrategy = indexUpdateIgnoreStrategy();

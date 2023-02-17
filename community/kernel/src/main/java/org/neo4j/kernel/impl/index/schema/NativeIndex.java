@@ -54,6 +54,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
     final String databaseName;
     private final CursorContextFactory contextFactory;
     private final ImmutableSet<OpenOption> openOptions;
+    private final boolean readOnly;
     final PageCacheTracer pageCacheTracer;
     private final DependencyResolver dependencyResolver;
 
@@ -64,7 +65,8 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
             IndexLayout<KEY> layout,
             IndexFiles indexFiles,
             IndexDescriptor descriptor,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
         this.pageCache = databaseIndexContext.pageCache;
         this.fileSystem = databaseIndexContext.fileSystem;
         this.monitors = databaseIndexContext.monitors;
@@ -78,6 +80,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
         this.layout = layout;
         this.descriptor = descriptor;
         this.openOptions = openOptions;
+        this.readOnly = readOnly;
     }
 
     void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
@@ -92,7 +95,7 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
                 monitor,
                 NO_HEADER_READER,
                 recoveryCleanupWorkCollector,
-                false,
+                readOnly,
                 openOptions,
                 databaseName,
                 descriptor.getName(),

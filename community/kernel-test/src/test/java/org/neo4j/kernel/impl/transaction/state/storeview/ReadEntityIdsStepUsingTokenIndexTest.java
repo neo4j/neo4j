@@ -201,6 +201,7 @@ class ReadEntityIdsStepUsingTokenIndexTest {
                 indexFiles,
                 INDEX_DESCRIPTOR,
                 immediate(),
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                false);
     }
 }

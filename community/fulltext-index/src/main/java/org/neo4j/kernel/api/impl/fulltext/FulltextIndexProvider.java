@@ -254,7 +254,8 @@ public class FulltextIndexProvider extends IndexProvider {
             IndexDescriptor index,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions)
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly)
             throws IOException {
         PartitionedIndexStorage indexStorage = getIndexStorage(index.getId());
         Analyzer analyzer = FulltextIndexAnalyzerLoader.INSTANCE.createAnalyzer(index, tokenHolders);

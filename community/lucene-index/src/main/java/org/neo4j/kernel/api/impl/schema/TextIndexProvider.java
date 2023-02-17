@@ -102,7 +102,8 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions)
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly)
             throws IOException {
         var index = TextIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withSamplingConfig(samplingConfig)

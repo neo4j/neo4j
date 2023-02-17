@@ -100,7 +100,8 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions)
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly)
             throws IOException {
         var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withSamplingConfig(samplingConfig)

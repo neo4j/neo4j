@@ -236,7 +236,8 @@ public class PointBlockBasedIndexPopulatorUpdatesTest extends BlockBasedIndexPop
                 INDEX_DESCRIPTOR,
                 SPATIAL_SETTINGS,
                 CONFIGURATION,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                false);
     }
 
     private enum ScanUpdateOrder {

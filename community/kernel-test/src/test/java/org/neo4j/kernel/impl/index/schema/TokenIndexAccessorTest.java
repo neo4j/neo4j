@@ -84,7 +84,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
                         pageCache, fs, contextFactory, pageCacheTracer, DEFAULT_DATABASE_NAME)
                 .withReadOnlyChecker(writable())
                 .build();
-        return new TokenIndexAccessor(context, indexFiles, indexDescriptor, cleanup, Sets.immutable.empty());
+        return new TokenIndexAccessor(context, indexFiles, indexDescriptor, cleanup, Sets.immutable.empty(), false);
     }
 
     @Override

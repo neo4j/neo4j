@@ -68,7 +68,7 @@ class RangeIndexAccessorTest extends GenericNativeIndexAccessorTests<RangeKey> {
                 .withReadOnlyChecker(writable())
                 .build();
         return new RangeIndexAccessor(
-                context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, tokenNameLookup, Sets.immutable.empty());
+                context, indexFiles, layout, cleanup, INDEX_DESCRIPTOR, tokenNameLookup, Sets.immutable.empty(), false);
     }
 
     @Override

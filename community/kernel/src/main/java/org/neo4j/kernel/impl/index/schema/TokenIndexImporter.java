@@ -107,6 +107,6 @@ public class TokenIndexImporter implements IndexImporter {
                         layout.databaseDirectory())
                 .forProvider(TokenIndexProvider.DESCRIPTOR);
         IndexFiles indexFiles = TokenIndexProvider.indexFiles(index, fs, indexDirectoryStructure);
-        return new TokenIndexAccessor(context, indexFiles, index, immediate(), openOptions);
+        return new TokenIndexAccessor(context, indexFiles, index, immediate(), openOptions, false);
     }
 }

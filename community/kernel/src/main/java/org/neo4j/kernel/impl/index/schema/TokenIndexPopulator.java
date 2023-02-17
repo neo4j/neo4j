@@ -48,7 +48,7 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
             IndexFiles indexFiles,
             IndexDescriptor descriptor,
             ImmutableSet<OpenOption> openOptions) {
-        super(databaseIndexContext, indexFiles, descriptor, openOptions);
+        super(databaseIndexContext, indexFiles, descriptor, openOptions, false);
     }
 
     @Override

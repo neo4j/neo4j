@@ -109,6 +109,7 @@ public class TokenIndex implements ConsistencyCheckable {
     private final String databaseName;
     private final CursorContextFactory contextFactory;
     private final ImmutableSet<OpenOption> openOptions;
+    private final boolean readOnly;
     private final DependencyResolver dependencyResolver;
     /**
      * The actual index which backs this token index.
@@ -144,7 +145,8 @@ public class TokenIndex implements ConsistencyCheckable {
             DatabaseIndexContext databaseIndexContext,
             IndexFiles indexFiles,
             IndexDescriptor descriptor,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
         this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
         this.monitors = databaseIndexContext.monitors;
         this.monitorTag = databaseIndexContext.monitorTag;
@@ -158,6 +160,7 @@ public class TokenIndex implements ConsistencyCheckable {
         this.tokenStoreName = descriptor.getName();
         this.monitoringDescriptor = descriptor;
         this.openOptions = openOptions;
+        this.readOnly = readOnly;
     }
 
     void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
@@ -171,7 +174,7 @@ public class TokenIndex implements ConsistencyCheckable {
                 monitor,
                 NO_HEADER_READER,
                 recoveryCleanupWorkCollector,
-                false,
+                readOnly,
                 openOptions,
                 databaseName,
                 tokenStoreName,

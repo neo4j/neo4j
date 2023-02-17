@@ -59,6 +59,7 @@ class PointAccessorTilesTest extends BaseAccessorTilesTest<PointKey> {
                 descriptor,
                 indexSettings,
                 configuration,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                false);
     }
 }

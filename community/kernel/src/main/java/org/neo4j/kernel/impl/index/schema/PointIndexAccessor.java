@@ -44,8 +44,9 @@ class PointIndexAccessor extends NativeIndexAccessor<PointKey> {
             IndexDescriptor descriptor,
             IndexSpecificSpaceFillingCurveSettings spaceFillingCurveSettings,
             SpaceFillingCurveConfiguration configuration,
-            ImmutableSet<OpenOption> openOptions) {
-        super(databaseIndexContext, indexFiles, layout, descriptor, openOptions);
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
+        super(databaseIndexContext, indexFiles, layout, descriptor, openOptions, readOnly);
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
         this.configuration = configuration;
         instantiateTree(recoveryCleanupWorkCollector);

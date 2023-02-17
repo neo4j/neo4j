@@ -75,8 +75,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>> exten
             IndexFiles indexFiles,
             IndexLayout<KEY> layout,
             IndexDescriptor descriptor,
-            ImmutableSet<OpenOption> openOptions) {
-        super(databaseIndexContext, layout, indexFiles, descriptor, openOptions);
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
+        super(databaseIndexContext, layout, indexFiles, descriptor, openOptions, readOnly);
         singleUpdater = new NativeIndexUpdater<>(
                 layout.newKey(),
                 indexUpdateIgnoreStrategy(),

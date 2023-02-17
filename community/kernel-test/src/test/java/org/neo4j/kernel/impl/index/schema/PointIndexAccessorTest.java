@@ -98,7 +98,8 @@ class PointIndexAccessorTest extends NativeIndexAccessorTests<PointKey> {
                 INDEX_DESCRIPTOR,
                 SPACE_FILLING_CURVE_SETTINGS,
                 CONFIGURATION,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                false);
     }
 
     @Override

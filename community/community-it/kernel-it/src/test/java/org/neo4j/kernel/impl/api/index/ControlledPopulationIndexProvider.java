@@ -110,7 +110,8 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor {
             IndexDescriptor indexConfig,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();
         return mockedWriter;

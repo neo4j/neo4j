@@ -163,7 +163,8 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
             RangeLayout layout,
             IndexDescriptor descriptor,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
         return new RangeIndexAccessor(
                 databaseIndexContext,
                 indexFiles,
@@ -171,7 +172,8 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
                 recoveryCleanupWorkCollector,
                 descriptor,
                 tokenNameLookup,
-                openOptions);
+                openOptions,
+                readOnly);
     }
 
     @Override

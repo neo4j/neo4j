@@ -235,7 +235,8 @@ public class IndexPopulationMissConcurrentUpdateIT {
                         IndexDescriptor descriptor,
                         IndexSamplingConfig samplingConfig,
                         TokenNameLookup tokenNameLookup,
-                        ImmutableSet<OpenOption> openOptions) {
+                        ImmutableSet<OpenOption> openOptions,
+                        boolean readOnly) {
                     return mock(IndexAccessor.class);
                 }
 

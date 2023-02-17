@@ -41,9 +41,10 @@ public class TrackingReadersIndexProvider extends IndexProvider.Delegating {
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions)
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly)
             throws IOException {
         return new TrackingReadersIndexAccessor(
-                indexProvider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions));
+                indexProvider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions, readOnly));
     }
 }

@@ -113,10 +113,11 @@ public class FailingNativeIndexProviderFactory extends BuiltInDelegatingIndexPro
                     IndexDescriptor descriptor,
                     IndexSamplingConfig samplingConfig,
                     TokenNameLookup tokenNameLookup,
-                    ImmutableSet<OpenOption> openOptions)
+                    ImmutableSet<OpenOption> openOptions,
+                    boolean readOnly)
                     throws IOException {
-                IndexAccessor actualAccessor =
-                        actualProvider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions);
+                IndexAccessor actualAccessor = actualProvider.getOnlineAccessor(
+                        descriptor, samplingConfig, tokenNameLookup, openOptions, readOnly);
                 return new IndexAccessor.Delegating(actualAccessor) {
                     @Override
                     public IndexUpdater newUpdater(

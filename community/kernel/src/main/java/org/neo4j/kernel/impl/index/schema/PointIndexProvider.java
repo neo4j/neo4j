@@ -122,7 +122,8 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
             PointLayout layout,
             IndexDescriptor descriptor,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
         return new PointIndexAccessor(
                 databaseIndexContext,
                 indexFiles,
@@ -131,7 +132,8 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
                 descriptor,
                 layout.getSpaceFillingCurveSettings(),
                 configuration,
-                openOptions);
+                openOptions,
+                readOnly);
     }
 
     @Override

@@ -160,6 +160,7 @@ public class PointBlockBasedIndexPopulatorTest extends BlockBasedIndexPopulatorT
                 INDEX_DESCRIPTOR,
                 SPATIAL_SETTINGS,
                 CONFIGURATION,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                false);
     }
 }

@@ -40,8 +40,9 @@ public class RangeIndexAccessor extends NativeIndexAccessor<RangeKey> {
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             IndexDescriptor descriptor,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
-        super(databaseIndexContext, indexFiles, layout, descriptor, openOptions);
+            ImmutableSet<OpenOption> openOptions,
+            boolean readOnly) {
+        super(databaseIndexContext, indexFiles, layout, descriptor, openOptions, readOnly);
         this.tokenNameLookup = tokenNameLookup;
         instantiateTree(recoveryCleanupWorkCollector);
     }
