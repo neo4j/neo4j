@@ -1069,28 +1069,11 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
 
     val query = "OPTIONAL MATCH (u)((n)-[]->(m))* RETURN DISTINCT u"
     val plan = planner.plan(query).stripProduceResults
-    val `(u)((n)-[]-(m))*` = TrailParameters(
-      min = 0,
-      max = Unlimited,
-      start = "u",
-      end = "anon_1",
-      innerStart = "n",
-      innerEnd = "m",
-      groupNodes = Set(("n", "n"), ("m", "m")),
-      groupRelationships = Set(("anon_3", "anon_7")),
-      innerRelationships = Set("anon_3"),
-      previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty,
-      reverseGroupVariableProjections = false
-    )
 
     plan shouldEqual planner.subPlanBuilder()
       .distinct("u AS u")
       .optional()
-      .trail(`(u)((n)-[]-(m))*`)
-      .|.filterExpression(isRepeatTrailUnique("anon_3"))
-      .|.expand("(n)-[anon_3]->(m)")
-      .|.argument("n")
+      .bfsPruningVarExpand("(u)-[anon_7*0..]->(anon_1)")
       .allNodeScan("u")
       .build()
   }

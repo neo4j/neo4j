@@ -360,7 +360,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       end = "anon_0",
       innerStart = "o",
       innerEnd = "n",
-      groupNodes = Set(("n", "n"), ("m", "m"), ("o", "o")),
+      groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
       innerRelationships = Set("r1", "r2"),
       previouslyBoundRelationships = Set("r3", "r4"),
@@ -397,7 +397,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       end = "anon_0",
       innerStart = "o",
       innerEnd = "n",
-      groupNodes = Set(("n", "n"), ("m", "m"), ("o", "o")),
+      groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
       innerRelationships = Set("r1", "r2"),
       previouslyBoundRelationships = Set("r3", "r4"),
@@ -439,27 +439,11 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       previouslyBoundRelationshipGroups = Set.empty,
       reverseGroupVariableProjections = false
     )
-    val `((a)--(b))+` = TrailParameters(
-      min = 1,
-      max = Unlimited,
-      start = "anon_1",
-      end = "anon_3",
-      innerStart = "a",
-      innerEnd = "b",
-      groupNodes = Set(("a", "a"), ("b", "b")),
-      groupRelationships = Set(("anon_11", "anon_15")),
-      innerRelationships = Set("anon_11"),
-      previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set("anon_9"),
-      reverseGroupVariableProjections = false
-    )
 
     plan should equal(
       planner.subPlanBuilder()
-        .trail(`((a)--(b))+`)
-        .|.filterExpression(isRepeatTrailUnique("anon_11"))
-        .|.expandAll("(a)-[anon_11]-(b)")
-        .|.argument("a")
+        .filter("none(anon_22 IN anon_9 WHERE anon_22 IN anon_15)")
+        .expand("(anon_1)-[anon_15*1..]-(anon_3)")
         .trail(`(u) ((n)-[]->(m))+`)
         .|.filterExpression(isRepeatTrailUnique("anon_5"))
         .|.expandAll("(n)-[anon_5]->(m)")
@@ -487,29 +471,12 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       previouslyBoundRelationshipGroups = Set.empty,
       reverseGroupVariableProjections = false
     )
-    val `(x) ((a)-[r2]-(b))+ (v)` = TrailParameters(
-      min = 1,
-      max = Unlimited,
-      start = "v",
-      end = "x",
-      innerStart = "b",
-      innerEnd = "a",
-      groupNodes = Set(("a", "a"), ("b", "b")),
-      groupRelationships = Set(("r2", "r2")),
-      innerRelationships = Set("r2"),
-      previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty,
-      reverseGroupVariableProjections = true
-    )
 
     plan should equal(
       planner.subPlanBuilder()
-        .filter(disjoint("r", "r2", 20))
+        .filter(disjoint("r", "r2", 18))
         .nodeHashJoin("x")
-        .|.trail(`(x) ((a)-[r2]-(b))+ (v)`)
-        .|.|.filterExpression(isRepeatTrailUnique("r2"))
-        .|.|.expandAll("(b)-[r2]-(a)")
-        .|.|.argument("b")
+        .|.expand("(v)-[r2*1..]-(x)", projectedDir = INCOMING)
         .|.nodeByLabelScan("v", "User")
         .trail(`(u) ((n)-[r]->(m))+ (x)`)
         .|.filterExpression(isRepeatTrailUnique("r"))
@@ -538,27 +505,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       previouslyBoundRelationshipGroups = Set.empty,
       reverseGroupVariableProjections = false
     )
-    val `((a)-[]->(b))+` = TrailParameters(
-      min = 1,
-      max = Unlimited,
-      start = "anon_1",
-      end = "anon_3",
-      innerStart = "a",
-      innerEnd = "b",
-      groupNodes = Set(("a", "a"), ("b", "b")),
-      groupRelationships = Set(("anon_11", "anon_15")),
-      innerRelationships = Set("anon_11"),
-      previouslyBoundRelationships = Set.empty,
-      previouslyBoundRelationshipGroups = Set.empty,
-      reverseGroupVariableProjections = false
-    )
 
     plan should equal(
       planner.subPlanBuilder()
-        .trail(`((a)-[]->(b))+`)
-        .|.filterExpression(isRepeatTrailUnique("anon_11"))
-        .|.expandAll("(a)-[anon_11:T]-(b)")
-        .|.argument("a")
+        .expand("(anon_1)-[anon_15:T*1..]-(anon_3)")
         .trail(`(u) ((n)-[]->(m))+`)
         .|.filterExpression(isRepeatTrailUnique("anon_5"))
         .|.expandAll("(n)-[anon_5:R]->(m)")
@@ -578,7 +528,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       end = "anon_0",
       innerStart = "o",
       innerEnd = "n",
-      groupNodes = Set(("n", "n"), ("m", "m"), ("o", "o")),
+      groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
       innerRelationships = Set("r1", "r2"),
       previouslyBoundRelationships = Set.empty,
@@ -592,7 +542,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       end = "anon_1",
       innerStart = "c",
       innerEnd = "a",
-      groupNodes = Set(("a", "a"), ("b", "b"), ("c", "c")),
+      groupNodes = Set(),
       groupRelationships = Set(("r3", "r3"), ("r4", "r4")),
       innerRelationships = Set("r4", "r3"),
       previouslyBoundRelationships = Set.empty,
@@ -630,7 +580,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       end = "anon_0",
       innerStart = "o",
       innerEnd = "n",
-      groupNodes = Set(("n", "n"), ("m", "m"), ("o", "o")),
+      groupNodes = Set(("n", "n"), ("m", "m")),
       groupRelationships = Set(("r2", "r2"), ("r1", "r1")),
       innerRelationships = Set("r1", "r2"),
       previouslyBoundRelationships = Set.empty,
@@ -644,7 +594,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       end = "anon_1",
       innerStart = "c",
       innerEnd = "a",
-      groupNodes = Set(("a", "a"), ("b", "b"), ("c", "c")),
+      groupNodes = Set(),
       groupRelationships = Set(("r3", "r3"), ("r4", "r4")),
       innerRelationships = Set("r4", "r3"),
       previouslyBoundRelationships = Set.empty,
@@ -816,7 +766,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
          |MATCH (n), (m)
          |WITH * SKIP 1
          |MATCH (n)((n_inner)-[r_inner]->(m_inner))+ (m)
-         |RETURN n, m
+         |RETURN *
          |""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
@@ -1253,7 +1203,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         end = "end",
         innerStart = "a",
         innerEnd = "b",
-        groupNodes = Set(("a", "a"), ("b", "b")),
+        groupNodes = Set(),
         groupRelationships = Set(("r", "r")),
         innerRelationships = Set("r"),
         previouslyBoundRelationships = Set.empty,
@@ -1353,7 +1303,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         end = "end",
         innerStart = "a",
         innerEnd = "b",
-        groupNodes = Set(("a", "a"), ("b", "b")),
+        groupNodes = Set(),
         groupRelationships = Set(("r", "r")),
         innerRelationships = Set("r"),
         previouslyBoundRelationships = Set.empty,
