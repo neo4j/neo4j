@@ -51,7 +51,7 @@ case object mergeDuplicateBooleanOperators extends ASTRewriterFactory with CnfPh
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter = mergeDuplicateBooleanOperators(semanticState)
 
-  override def getRewriter(from: BaseState, context: BaseContext): Rewriter =
+  override def instance(from: BaseState, context: BaseContext): Rewriter =
     mergeDuplicateBooleanOperators(from.semantics())
 }
 

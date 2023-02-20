@@ -58,7 +58,7 @@ case object flattenBooleanOperators extends Rewriter with CnfPhase {
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
-  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = this
+  override def instance(from: BaseState, context: BaseContext): Rewriter = this
 
   override def toString = "flattenBooleanOperators"
 }

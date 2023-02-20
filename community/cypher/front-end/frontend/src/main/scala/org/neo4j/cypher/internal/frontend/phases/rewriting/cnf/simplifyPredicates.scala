@@ -106,7 +106,7 @@ case object simplifyPredicates extends StepSequencer.Step with PlanPipelineTrans
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
-  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = this(from.semantics())
+  override def instance(from: BaseState, context: BaseContext): Rewriter = this(from.semantics())
 
   def coerceInnerExpressionToBooleanIfNecessary(
     semanticState: SemanticState,

@@ -75,7 +75,7 @@ case object distributeLawsRewriter extends CnfPhase {
   // see https://en.wikipedia.org/wiki/Conjunctive_normal_form#Conversion_into_CNF
   val DNF_CONVERSION_LIMIT = 8
 
-  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = {
+  override def instance(from: BaseState, context: BaseContext): Rewriter = {
     implicit val monitor: AstRewritingMonitor = context.monitors.newMonitor[AstRewritingMonitor]()
     distributeLawsRewriter()
   }

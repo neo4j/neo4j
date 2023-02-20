@@ -55,7 +55,7 @@ case object normalizeInequalities extends Rewriter with CnfPhase {
 
   override def toString: String = "normalizeInequalities"
 
-  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = this
+  override def instance(from: BaseState, context: BaseContext): Rewriter = this
 
   override def preConditions: Set[StepSequencer.Condition] = Set(!AndRewrittenToAnds)
 

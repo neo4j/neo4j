@@ -51,7 +51,7 @@ case class deMorganRewriter()(implicit monitor: AstRewritingMonitor) extends Rew
 
 case object deMorganRewriter extends CnfPhase {
 
-  override def getRewriter(from: BaseState, context: BaseContext): Rewriter = {
+  override def instance(from: BaseState, context: BaseContext): Rewriter = {
     implicit val monitor: AstRewritingMonitor = context.monitors.newMonitor[AstRewritingMonitor]()
     deMorganRewriter()
   }

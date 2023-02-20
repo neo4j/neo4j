@@ -17,34 +17,21 @@
 package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.frontend.phases.BaseContext
-import org.neo4j.cypher.internal.frontend.phases.BaseState
-import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
-import org.neo4j.cypher.internal.frontend.phases.Phase
+import org.neo4j.cypher.internal.frontend.phases.StatementRewriter
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 
 /**
  * Helper trait to embed a rewriter as transformation phase in the scope of the normalisation towards CNF.
  */
-trait CnfPhase extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
+trait CnfPhase extends StatementRewriter with StepSequencer.Step
     with PlanPipelineTransformerFactory {
   self: Product =>
 
   override def getTransformer(
     pushdownPropertyReads: Boolean,
     semanticFeatures: Seq[SemanticFeature]
-  ): CnfPhase with Product = this
-
-  override def phase: CompilationPhase = CompilationPhase.AST_REWRITE
-
-  override def process(from: BaseState, context: BaseContext): BaseState = {
-    val rewritten = from.statement().endoRewrite(getRewriter(from, context))
-    from.withStatement(rewritten)
-  }
-
-  def getRewriter(from: BaseState, context: BaseContext): Rewriter
+  ): CnfPhase = this
 }
 
 /**
