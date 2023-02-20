@@ -536,18 +536,3 @@ case class LogicalPlanResult(
   queryObfuscator: QueryObfuscator
 )
 
-trait CypherCacheFlushingMonitor {
-  def cacheFlushDetected(sizeBeforeFlush: Long): Unit = {}
-}
-
-trait CypherCacheHitMonitor[T] {
-  def cacheHit(key: T): Unit = {}
-
-  def cacheMiss(key: T): Unit = {}
-
-  def cacheDiscard(key: T, userKey: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit = {}
-
-  def cacheCompile(key: T): Unit = {}
-
-  def cacheCompileWithExpressionCodeGen(key: T): Unit = {}
-}
