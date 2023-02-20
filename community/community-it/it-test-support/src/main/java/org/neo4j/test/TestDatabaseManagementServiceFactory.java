@@ -20,7 +20,11 @@
 package org.neo4j.test;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.duplication_user_messages;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
@@ -39,6 +43,8 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
+import org.neo4j.logging.log4j.Log4jLogProvider;
+import org.neo4j.logging.log4j.LogConfig;
 import org.neo4j.time.SystemNanoClock;
 
 public class TestDatabaseManagementServiceFactory extends DatabaseManagementServiceFactory {
@@ -85,6 +91,12 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
             if (internalLogProvider == null) {
                 if (fileSystem.isPersistent()) {
                     return super.createLogService(userLogProvider, daemonMode);
+                } else if (getGlobalConfig().get(GraphDatabaseSettings.debug_log_enabled)) {
+                    try {
+                        return specialLoggingForEphemeral(userLogProvider);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException("Failed to set up logging for EphemeralFilesystem", e);
+                    }
                 }
                 internalLogProvider = NullLogProvider.getInstance();
             }
@@ -92,6 +104,19 @@ public class TestDatabaseManagementServiceFactory extends DatabaseManagementServ
             // Some tests appear to (inadvertently?) depend on log user log messages being duplicated to the debug log
             // because they assert on the debug log.
             return new SimpleLogService(userLogProvider, internalLogProvider, true);
+        }
+
+        private SimpleLogService specialLoggingForEphemeral(InternalLogProvider userLogProvider) throws IOException {
+            Config config = getGlobalConfig();
+            Path logDir = config.get(GraphDatabaseSettings.logs_directory);
+            fileSystem.mkdirs(logDir);
+            internalLogProvider =
+                    new Log4jLogProvider(fileSystem.openAsOutputStream(logDir.resolve(LogConfig.DEBUG_LOG), true));
+            return getGlobalLife()
+                    .add(new SimpleLogService(
+                            userLogProvider == null ? NullLogProvider.getInstance() : userLogProvider,
+                            internalLogProvider,
+                            config.get(duplication_user_messages)));
         }
 
         @Override

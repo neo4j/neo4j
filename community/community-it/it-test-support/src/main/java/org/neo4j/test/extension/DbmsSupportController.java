@@ -48,6 +48,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.testdirectory.TestDirectorySupportExtension;
@@ -146,7 +147,12 @@ public class DbmsSupportController {
     protected DatabaseManagementService buildDbms(
             TestConfiguration testConfiguration, UnaryOperator<TestDatabaseManagementServiceBuilder> callback) {
         var testDir = getTestDirectory();
-        var builder = createBuilder(testDir.homePath(), testDir.getFileSystem());
+        // Make sure we don't close an ephemeral filesystem before we have been able
+        // to save state from failing tests. Dbms shutdown is before TestDirectory does the saving.
+        FileSystemAbstraction fileSystem = testDir.getFileSystem();
+        fileSystem =
+                fileSystem.isPersistent() ? fileSystem : new UncloseableDelegatingFileSystemAbstraction(fileSystem);
+        var builder = createBuilder(testDir.homePath(), fileSystem);
         testConfiguration.implicitConfigurationCallback.accept(builder);
         maybeInvokeCallback(testInstances.getInnermostInstance(), builder, testConfiguration.configurationCallback);
         builder = callback.apply(builder);
