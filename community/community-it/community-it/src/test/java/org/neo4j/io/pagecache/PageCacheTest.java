@@ -88,6 +88,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.adversaries.RandomAdversary;
 import org.neo4j.adversaries.fs.AdversarialFileSystemAbstraction;
 import org.neo4j.function.ThrowingConsumer;
@@ -4656,6 +4658,31 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertThat(cursorA.copyTo(0, cursorB, 0, largePagePayload)).isEqualTo(smallPagePayload);
             for (int i = 0; i < smallPagePayload; i++) {
                 assertThat(cursorB.getByte()).isEqualTo((byte) (i + 1));
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {8, 16, 32, 64, 17, 42, 37})
+    void mustCopyOverlappingSourceAndDestination(int payload) throws Exception {
+        configureStandardPageCache();
+
+        verifySameCursorCopy(payload, 0, payload / 2);
+        verifySameCursorCopy(payload, payload / 2, 0);
+    }
+
+    private void verifySameCursorCopy(int payload, int sourceOffset, int targetOffset) throws IOException {
+        int pageSize = payload * 2 + reservedBytes;
+        try (var pf = map(existingFile("a"), pageSize);
+                var cursor = pf.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
+            assertTrue(cursor.next());
+            for (int i = 0; i < payload; i++) {
+                cursor.putByte(sourceOffset + i, (byte) (i + 1));
+            }
+            assertThat(cursor.copyTo(sourceOffset, cursor, targetOffset, payload))
+                    .isEqualTo(payload);
+            for (int i = 0; i < payload; i++) {
+                assertThat(cursor.getByte(targetOffset + i)).isEqualTo((byte) (i + 1));
             }
         }
     }

@@ -24,7 +24,8 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.io.pagecache.PageCursor;
 
-public class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong, MutableLong> {
+public class TreeNodeFixedSizeTest
+        extends TreeNodeTestBase<MutableLong, MutableLong, TreeNodeFixedSize<MutableLong, MutableLong>> {
     private final SimpleLongLayout layout = longLayout().build();
 
     @Override
@@ -33,7 +34,7 @@ public class TreeNodeFixedSizeTest extends TreeNodeTestBase<MutableLong, Mutable
     }
 
     @Override
-    protected TreeNode<MutableLong, MutableLong> getNode(
+    protected TreeNodeFixedSize<MutableLong, MutableLong> getNode(
             int pageSize,
             Layout<MutableLong, MutableLong> layout,
             OffloadStore<MutableLong, MutableLong> offloadStore) {

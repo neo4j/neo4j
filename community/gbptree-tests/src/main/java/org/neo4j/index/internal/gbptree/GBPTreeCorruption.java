@@ -139,7 +139,7 @@ public final class GBPTreeCorruption {
             int firstKeyPos, int secondKeyPos, int keyCount) {
         return (cursor, layout, node, treeState) -> {
             // Remove key from higher position and insert into lower position
-            int lowerKeyPos = firstKeyPos < secondKeyPos ? firstKeyPos : secondKeyPos;
+            int lowerKeyPos = Math.min(firstKeyPos, secondKeyPos);
             int higherKeyPos = firstKeyPos == lowerKeyPos ? secondKeyPos : firstKeyPos;
 
             // Record key and value on higher position
@@ -149,13 +149,14 @@ public final class GBPTreeCorruption {
             node.valueAt(cursor, new TreeNode.ValueHolder<>(value), higherKeyPos, NULL_CONTEXT);
 
             // Remove key and value, may need to defragment node to make sure we have room for insert later
-            node.removeKeyValueAt(
+            var newCount = node.removeKeyValueAt(
                     cursor,
                     higherKeyPos,
                     keyCount,
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
+            TreeNode.setKeyCount(cursor, newCount);
             node.defragmentLeaf(cursor);
 
             // Insert key and value in lower position
@@ -164,7 +165,7 @@ public final class GBPTreeCorruption {
                     key,
                     value,
                     lowerKeyPos,
-                    keyCount - 1,
+                    newCount,
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
@@ -197,7 +198,8 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
-            node.defragmentLeaf(cursor);
+            TreeNode.setKeyCount(cursor, keyCount - 1);
+            node.defragmentInternal(cursor);
 
             // Insert key and right child in lower position
             node.insertKeyAndRightChildAt(
@@ -209,6 +211,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
+            TreeNode.setKeyCount(cursor, keyCount);
 
             // Overwrite the newly inserted child to reset the generation
             final int childOffset = node.childOffset(lowerKeyPos + 1);

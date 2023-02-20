@@ -19,6 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.TreeNode.DATA_LAYER_FLAG;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -27,7 +28,8 @@ import java.io.IOException;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.pagecache.PageCursor;
 
-public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes, RawBytes> {
+public class TreeNodeDynamicSizeTest
+        extends TreeNodeTestBase<RawBytes, RawBytes, TreeNodeDynamicSize<RawBytes, RawBytes>> {
     private static final long STABLE_GENERATION = 3;
     private static final long UNSTABLE_GENERATION = 4;
 
@@ -85,5 +87,15 @@ public class TreeNodeDynamicSizeTest extends TreeNodeTestBase<RawBytes, RawBytes
         node.insertKeyValueAt(cursor, key, value, 0, 0, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
         int allocOffsetAfter = node.getAllocOffset(cursor);
         assertEquals(allocOffsetBefore - keySize - valueSize - expectedOverhead, allocOffsetAfter);
+    }
+
+    @Override
+    protected void defragmentLeaf(TreeNodeDynamicSize<RawBytes, RawBytes> treeNode, PageAwareByteArrayCursor cursor) {
+        var allocOffsetBefore = treeNode.getAllocOffset(cursor);
+        treeNode.defragmentLeaf(cursor);
+        var allocOffsetAfter = treeNode.getAllocOffset(cursor);
+        assertThat(allocOffsetAfter).isGreaterThan(allocOffsetBefore);
+        var deadSpaceAfter = treeNode.getDeadSpace(cursor);
+        assertThat(deadSpaceAfter).isEqualTo(0);
     }
 }

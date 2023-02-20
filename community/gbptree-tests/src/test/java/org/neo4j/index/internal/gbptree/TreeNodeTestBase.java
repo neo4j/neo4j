@@ -47,7 +47,7 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 
 @ExtendWith(RandomExtension.class)
-public abstract class TreeNodeTestBase<KEY, VALUE> {
+public abstract class TreeNodeTestBase<KEY, VALUE, NODE extends TreeNode<KEY, VALUE>> {
     static final int STABLE_GENERATION = 1;
     static final int UNSTABLE_GENERATION = 3;
     private static final int HIGH_GENERATION = 4;
@@ -56,7 +56,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
     PageAwareByteArrayCursor cursor;
 
     private TestLayout<KEY, VALUE> layout;
-    TreeNode<KEY, VALUE> node;
+    NODE node;
     private final GenerationKeeper generationTarget = new GenerationKeeper();
 
     @Inject
@@ -80,8 +80,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
 
     protected abstract TestLayout<KEY, VALUE> getLayout();
 
-    protected abstract TreeNode<KEY, VALUE> getNode(
-            int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore);
+    protected abstract NODE getNode(int pageSize, Layout<KEY, VALUE> layout, OffloadStore<KEY, VALUE> offloadStore);
 
     abstract void assertAdditionalHeader(PageCursor cursor, TreeNode<KEY, VALUE> node, int pageSize);
 
@@ -369,6 +368,10 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         assertEquals(123, successor(cursor, STABLE_GENERATION, UNSTABLE_GENERATION));
     }
 
+    protected void defragmentLeaf(NODE treeNode, PageAwareByteArrayCursor cursor) {
+        treeNode.defragmentLeaf(cursor);
+    }
+
     @Test
     void shouldDefragLeafWithTombstoneOnLast() throws IOException {
         // GIVEN
@@ -385,7 +388,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         TreeNode.setKeyCount(cursor, 1);
 
         // WHEN
-        node.defragmentLeaf(cursor);
+        defragmentLeaf(node, cursor);
 
         // THEN
         assertKeyEquals(key(1), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
@@ -407,7 +410,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         TreeNode.setKeyCount(cursor, 1);
 
         // WHEN
-        node.defragmentLeaf(cursor);
+        defragmentLeaf(node, cursor);
 
         // THEN
         assertKeyEquals(key(2), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
@@ -432,7 +435,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         TreeNode.setKeyCount(cursor, 2);
 
         // WHEN
-        node.defragmentLeaf(cursor);
+        defragmentLeaf(node, cursor);
 
         // THEN
         assertKeyEquals(key(1), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
@@ -465,7 +468,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         TreeNode.setKeyCount(cursor, 3);
 
         // WHEN
-        node.defragmentLeaf(cursor);
+        defragmentLeaf(node, cursor);
 
         // THEN
         assertKeyEquals(key(1), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
@@ -500,7 +503,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         TreeNode.setKeyCount(cursor, 2);
 
         // WHEN
-        node.defragmentLeaf(cursor);
+        defragmentLeaf(node, cursor);
 
         // THEN
         assertKeyEquals(key(2), node.keyAt(cursor, layout.newKey(), 0, LEAF, NULL_CONTEXT));
@@ -517,8 +520,6 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
         List<KEY> expectedKeys = new ArrayList<>();
         List<VALUE> expectedValues = new ArrayList<>();
         int expectedKeyCount = 0;
-        KEY readKey = layout.newKey();
-        VALUE readValue = layout.newValue();
 
         // WHEN/THEN
         for (int i = 0; i < 1000; i++) {
@@ -532,6 +533,7 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
                 Overflow overflow = node.leafOverflow(cursor, expectedKeyCount, newKey, newValue);
                 if (overflow == NO_NEED_DEFRAG) {
                     node.defragmentLeaf(cursor);
+                    assertContent(expectedKeys, expectedValues, expectedKeyCount);
                 }
                 if (overflow != YES) { // there's room
                     int position = expectedKeyCount == 0 ? 0 : random.nextInt(expectedKeyCount);
@@ -553,6 +555,8 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
             } else { // 30% remove
                 if (expectedKeyCount > 0) { // there are things to remove
                     int position = random.nextInt(expectedKeyCount);
+                    var readKey = layout.newKey();
+                    var readValue = layout.newValue();
                     node.keyAt(cursor, readKey, position, LEAF, NULL_CONTEXT);
                     node.valueAt(cursor, new TreeNode.ValueHolder<>(readValue), position, NULL_CONTEXT);
                     node.removeKeyValueAt(
@@ -568,7 +572,8 @@ public abstract class TreeNodeTestBase<KEY, VALUE> {
                     assertEquals(
                             0,
                             layout.compareValue(expectedValue, readValue),
-                            "Value differ with expected, value=" + readValue + ", expectedValue=" + expectedValue);
+                            "Value differ with expected, value=" + readValue + ", expectedValue=" + expectedValue
+                                    + ", at position=" + position);
 
                     TreeNode.setKeyCount(cursor, --expectedKeyCount);
                 }

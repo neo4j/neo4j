@@ -114,9 +114,11 @@ class PageAwareByteArrayCursor extends PageCursor {
                         current.getPagedFile().payloadSize() - sourceOffset,
                         targetCursor.getPagedFile().payloadSize() - targetOffset));
 
-        for (int i = 0; i < bytesToCopy; i++) {
-            targetCursor.putByte(targetOffset + i, getByte(sourceOffset + i));
-        }
+        var bytes = new byte[bytesToCopy];
+        setOffset(sourceOffset);
+        getBytes(bytes);
+        targetCursor.setOffset(targetOffset);
+        targetCursor.putBytes(bytes);
         return bytesToCopy;
     }
 

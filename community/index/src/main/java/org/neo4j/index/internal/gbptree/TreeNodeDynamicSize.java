@@ -42,9 +42,7 @@ import static org.neo4j.io.pagecache.PageCursorUtil.putUnsignedShort;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.StringJoiner;
-import org.eclipse.collections.api.stack.primitive.IntStack;
-import org.eclipse.collections.api.stack.primitive.MutableIntStack;
-import org.eclipse.collections.impl.stack.mutable.primitive.IntArrayStack;
+import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.util.VisibleForTesting;
@@ -591,15 +589,15 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
 
     @Override
     void defragmentLeaf(PageCursor cursor) {
-        doDefragment(cursor, LEAF);
+        doDefragment(cursor, LEAF, keyCount(cursor));
     }
 
     @Override
     void defragmentInternal(PageCursor cursor) {
-        doDefragment(cursor, INTERNAL);
+        doDefragment(cursor, INTERNAL, keyCount(cursor));
     }
 
-    private void doDefragment(PageCursor cursor, Type type) {
+    private void doDefragment(PageCursor cursor, Type type, int keyCount) {
         /*
         The goal is to compact all alive keys in the node
         by reusing the space occupied by dead keys.
@@ -611,125 +609,79 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         .........[8][1][3][2][7][5]
             ^ Reclaimed space
 
-        It works like this:
-        Work from right to left.
-        For each dead space of size X (can be multiple consecutive dead keys)
-        Move all neighbouring alive keys to the left of that dead space X bytes to the right.
-        Can only move in blocks of size X at the time.
-
-        Step by step:
-        [8][X][1][3][X][2][X][7][5]
-        [8][X][1][3][X][X][2][7][5]
-        [8][X][X][X][1][3][2][7][5]
-        [X][X][X][8][1][3][2][7][5]
-
-        Here is how the offsets work
-        BEFORE MOVE
-                          v       aliveRangeOffset
-        [X][_][_][X][_][X][_][_]
-                   ^   ^          deadRangeOffset
-                   |_____________ moveRangeOffset
-
-        AFTER MOVE
-                       v          aliveRangeOffset
-        [X][_][_][X][X][_][_][_]
-                 ^                 deadRangeOffset
+        It works in 3 simple steps:
+        1. collect all alive blocks with their sizes
+        2. move all alive blocks to the rightmost position
+        3. update offsets in offsets array
         */
 
-        // Mark all offsets
-        MutableIntStack deadKeysOffset = new IntArrayStack();
-        MutableIntStack aliveKeysOffset = new IntArrayStack();
-        int[] oldOffset = new int[maxKeyCount];
-        int[] newOffset = new int[maxKeyCount];
-        if (type == INTERNAL) {
-            recordDeadAndAliveInternal(cursor, deadKeysOffset, aliveKeysOffset);
-        } else {
-            recordDeadAndAliveLeaf(cursor, deadKeysOffset, aliveKeysOffset);
-        }
-
-        // Cursors into field byte arrays
-        int oldOffsetCursor = 0;
-        int newOffsetCursor = 0;
-
-        int aliveRangeOffset = pageSize; // Everything after this point is alive
-        int deadRangeOffset; // Everything between this point and aliveRangeOffset is dead space
-
-        // Rightmost alive keys does not need to move
-        while (peek(deadKeysOffset) < peek(aliveKeysOffset)) {
-            aliveRangeOffset = poll(aliveKeysOffset);
-        }
-
-        do {
-            // Locate next range of dead keys
-            deadRangeOffset = aliveRangeOffset;
-            while (peek(aliveKeysOffset) < peek(deadKeysOffset)) {
-                deadRangeOffset = poll(deadKeysOffset);
-            }
-
-            // Locate next range of alive keys
-            int moveOffset = deadRangeOffset;
-            while (peek(deadKeysOffset) < peek(aliveKeysOffset)) {
-                int moveKey = poll(aliveKeysOffset);
-                oldOffset[oldOffsetCursor++] = moveKey;
-                moveOffset = moveKey;
-            }
-
-            // Update offset mapping
-            int deadRangeSize = aliveRangeOffset - deadRangeOffset;
-            while (oldOffsetCursor > newOffsetCursor) {
-                newOffset[newOffsetCursor] = oldOffset[newOffsetCursor] + deadRangeSize;
-                newOffsetCursor++;
-            }
-
-            // Do move
-            while (moveOffset < (deadRangeOffset - deadRangeSize)) {
-                // Move one block
-                deadRangeOffset -= deadRangeSize;
-                aliveRangeOffset -= deadRangeSize;
-                cursor.copyTo(deadRangeOffset, cursor, aliveRangeOffset, deadRangeSize);
-            }
-            // Move the last piece
-            int lastBlockSize = deadRangeOffset - moveOffset;
-            if (lastBlockSize > 0) {
-                deadRangeOffset -= lastBlockSize;
-                aliveRangeOffset -= lastBlockSize;
-                cursor.copyTo(deadRangeOffset, cursor, aliveRangeOffset, lastBlockSize);
-            }
-        } while (!aliveKeysOffset.isEmpty());
-        // Update allocOffset
-        int prevAllocOffset = getAllocOffset(cursor);
-        setAllocOffset(cursor, aliveRangeOffset);
-
-        // Zero pad reclaimed area
-        zeroPad(cursor, prevAllocOffset, aliveRangeOffset - prevAllocOffset);
-
+        var offsets = new int[keyCount];
+        var sizes = new int[keyCount];
+        // collect alive offsets and sizes
+        recordAliveBlocks(cursor, keyCount, offsets, sizes);
+        var remappedOffsets = compactRight(cursor, keyCount, offsets, sizes);
         // Update offset array
-        int keyCount = keyCount(cursor);
-        keyPos:
-        for (int pos = 0; pos < keyCount; pos++) {
-            int keyPosOffset = keyPosOffset(pos, type);
-            cursor.setOffset(keyPosOffset);
-            int keyOffset = getUnsignedShort(cursor);
-            for (int index = 0; index < oldOffsetCursor; index++) {
-                if (keyOffset == oldOffset[index]) {
-                    // Overwrite with new offset
-                    cursor.setOffset(keyPosOffset);
-                    putUnsignedShort(cursor, newOffset[index]);
-                    continue keyPos;
-                }
-            }
-        }
-
+        remapOffsets(cursor, keyCount, remappedOffsets, type);
         // Update dead space
         setDeadSpace(cursor, 0);
     }
 
-    private static int peek(IntStack stack) {
-        return stack.isEmpty() ? -1 : stack.peek();
+    private void recordAliveBlocks(PageCursor cursor, int keyCount, int[] offsets, int[] sizes) {
+        int index = 0;
+        int currentOffset = getAllocOffset(cursor);
+        while (currentOffset < pageSize && index < keyCount) {
+            cursor.setOffset(currentOffset);
+            long keyValueSize = readKeyValueSize(cursor);
+            int keySize = extractKeySize(keyValueSize);
+            int valueSize = extractValueSize(keyValueSize);
+            boolean offload = extractOffload(keyValueSize);
+            boolean dead = extractTombstone(keyValueSize);
+
+            var entrySize = keySize + valueSize + getOverhead(keySize, valueSize, offload);
+            if (!dead) {
+                offsets[index] = currentOffset;
+                sizes[index] = entrySize;
+                index++;
+            }
+            currentOffset += entrySize;
+        }
+        assert index == keyCount : "expected " + keyCount + " alive blocks, found only " + index;
     }
 
-    private static int poll(MutableIntStack stack) {
-        return stack.isEmpty() ? -1 : stack.pop();
+    private void remapOffsets(PageCursor cursor, int keyCount, IntIntHashMap remappedOffsets, Type type) {
+        for (int pos = 0; pos < keyCount; pos++) {
+            int keyPosOffset = keyPosOffset(pos, type);
+            cursor.setOffset(keyPosOffset);
+            int keyOffset = getUnsignedShort(cursor);
+            cursor.setOffset(keyPosOffset);
+            assert remappedOffsets.containsKey(keyOffset)
+                    : "missing mapping for offset " + keyOffset + " at pos " + pos + " key count " + keyCount
+                            + " all mappings " + remappedOffsets;
+            putUnsignedShort(cursor, remappedOffsets.get(keyOffset));
+        }
+    }
+
+    private IntIntHashMap compactRight(PageCursor cursor, int keyCount, int[] offsets, int[] sizes) {
+        int targetOffset = pageSize;
+        var remappedOffsets = new IntIntHashMap();
+        for (int index = keyCount - 1; index >= 0; index--) {
+            // move sizes[index] bytes from offsets[index] to the right so the end of the entry is at the targetOffset
+            var entrySize = sizes[index];
+            var sourceOffset = offsets[index];
+            targetOffset -= entrySize;
+            if (sourceOffset != targetOffset) {
+                cursor.copyTo(sourceOffset, cursor, targetOffset, entrySize);
+            }
+            remappedOffsets.put(sourceOffset, targetOffset);
+        }
+
+        // Update allocOffset¸
+        int prevAllocOffset = getAllocOffset(cursor);
+        setAllocOffset(cursor, targetOffset);
+
+        // Zero pad reclaimed area
+        zeroPad(cursor, prevAllocOffset, targetOffset - prevAllocOffset);
+        return remappedOffsets;
     }
 
     @Override
@@ -916,7 +868,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
             // Rightmost key in left is the one we send up to parent, remove it from here.
             removeKeyAndRightChildAt(
                     leftCursor, splitPos - 1, splitPos, stableGeneration, unstableGeneration, cursorContext);
-            defragmentInternal(leftCursor);
+            doDefragment(leftCursor, INTERNAL, splitPos - 1);
             insertKeyAndRightChildAt(
                     leftCursor,
                     newKey,
@@ -950,7 +902,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
                 int copyFrom = splitPos;
                 int copyCount = leftKeyCount - copyFrom;
                 moveKeysAndChildren(leftCursor, copyFrom, rightCursor, 0, copyCount, false);
-                defragmentInternal(leftCursor);
+                doDefragment(leftCursor, INTERNAL, splitPos);
                 setChildAt(rightCursor, newRightChild, 0, stableGeneration, unstableGeneration);
             } else {
                 int copyFrom = splitPos + 1;
@@ -959,7 +911,7 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
                 // Rightmost key in left is the one we send up to parent, remove it from here.
                 removeKeyAndRightChildAt(
                         leftCursor, splitPos, splitPos + 1, stableGeneration, unstableGeneration, cursorContext);
-                defragmentInternal(leftCursor);
+                doDefragment(leftCursor, INTERNAL, splitPos);
                 insertKeyAndRightChildAt(
                         rightCursor,
                         newKey,
@@ -1086,45 +1038,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
         int allocOffset = getAllocOffset(cursor);
         int endOfOffsetArray = type == LEAF ? keyPosOffsetLeaf(keyCount) : keyPosOffsetInternal(keyCount);
         return allocOffset - endOfOffsetArray;
-    }
-
-    private void recordDeadAndAliveLeaf(
-            PageCursor cursor, MutableIntStack deadKeysOffset, MutableIntStack aliveKeysOffset) {
-        int currentOffset = getAllocOffset(cursor);
-        while (currentOffset < pageSize) {
-            cursor.setOffset(currentOffset);
-            long keyValueSize = readKeyValueSize(cursor);
-            int keySize = extractKeySize(keyValueSize);
-            int valueSize = extractValueSize(keyValueSize);
-            boolean offload = extractOffload(keyValueSize);
-            boolean dead = extractTombstone(keyValueSize);
-
-            if (dead) {
-                deadKeysOffset.push(currentOffset);
-            } else {
-                aliveKeysOffset.push(currentOffset);
-            }
-            currentOffset += keySize + valueSize + getOverhead(keySize, valueSize, offload);
-        }
-    }
-
-    private void recordDeadAndAliveInternal(
-            PageCursor cursor, MutableIntStack deadKeysOffset, MutableIntStack aliveKeysOffset) {
-        int currentOffset = getAllocOffset(cursor);
-        while (currentOffset < pageSize) {
-            cursor.setOffset(currentOffset);
-            long keyValueSize = readKeyValueSize(cursor);
-            int keySize = extractKeySize(keyValueSize);
-            boolean offload = extractOffload(keyValueSize);
-            boolean dead = extractTombstone(keyValueSize);
-
-            if (dead) {
-                deadKeysOffset.push(currentOffset);
-            } else {
-                aliveKeysOffset.push(currentOffset);
-            }
-            currentOffset += keySize + getOverhead(keySize, 0, offload);
-        }
     }
 
     // NOTE: Does NOT update keyCount
