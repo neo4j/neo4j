@@ -168,7 +168,7 @@ public class DumpCommand extends AbstractAdminCommand {
                         }
 
                         try (Closeable ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
-                            checkDbState(ctx.fs(), databaseLayout, config, memoryTracker, databaseName);
+                            checkDbState(ctx.fs(), databaseLayout, config, memoryTracker, databaseName, log);
                             dump(databaseLayout, databaseName);
                         } catch (FileLockException e) {
                             throw new CommandFailedException(
@@ -298,7 +298,8 @@ public class DumpCommand extends AbstractAdminCommand {
             DatabaseLayout databaseLayout,
             Config additionalConfiguration,
             MemoryTracker memoryTracker,
-            String databaseName) {
+            String databaseName,
+            InternalLog log) {
         if (checkRecoveryState(fs, databaseLayout, additionalConfiguration, memoryTracker)) {
             throw new CommandFailedException(joinAsLines(
                     "Active logical log detected, this might be a source of inconsistencies.",
