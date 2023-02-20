@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -56,8 +57,11 @@ object ASTSlicingPhrase extends SemanticAnalysisTooling {
    * @return a SemanticCheck
    */
   def checkExpressionIsStaticInt(expression: Expression, name: String, acceptsZero: Boolean): SemanticCheck =
-    containsNoVariables(expression, name) chain
-      doesNotTouchTheGraph(expression, name) chain
+    // We need to check doesNotTouchTheGraph first. If we find a SubqueryExpression we already have an error,
+    // and it would not be safe to run containsNoVariables, since these SubqueryExpression haven't computed their
+    // scopeDependencies yet. Therefore we use `ifOkChain`.
+    doesNotTouchTheGraph(expression, name) ifOkChain
+      containsNoVariables(expression, name) chain
       literalShouldBeUnsignedInteger(expression, name, acceptsZero) chain
       SemanticExpressionCheck.simple(expression) chain
       expectType(CTInteger.covariant, expression)
@@ -72,8 +76,7 @@ object ASTSlicingPhrase extends SemanticAnalysisTooling {
 
   private def doesNotTouchTheGraph(expression: Expression, name: String): SemanticCheck = {
     val badExpressionFound = expression.folder.treeExists {
-      case _: PatternComprehension |
-        _: PatternExpression |
+      case _: SubqueryExpression |
         _: PathExpression =>
         true
     }
