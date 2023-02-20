@@ -180,11 +180,10 @@ public class CheckpointInfoFactory {
         try (var fallbackReader = new ReadAheadLogChannel(
                 new UnclosableChannel(fallbackChannel), NO_MORE_CHANNELS, context.getMemoryTracker())) {
             byte versionCode = fallbackReader.get();
-            if (versionCode
-                    > KernelVersion.getLatestVersion(context.getConfig()).version()) {
+            if (KernelVersion.getLatestVersion(context.getConfig()).isLessThan(versionCode)) {
                 return Optional.empty();
             }
-            var kernelVersion = (versionCode < KernelVersion.EARLIEST.version())
+            var kernelVersion = KernelVersion.EARLIEST.isGreaterThan(versionCode)
                     ? KernelVersion.EARLIEST
                     : KernelVersion.getForVersion(versionCode);
             var reverseBytes = kernelVersion.isLessThan(KernelVersion.VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED);

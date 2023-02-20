@@ -84,7 +84,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
                             KernelVersion.getForVersion(versionCode), latestRecognizedKernelVersion);
                 } catch (IllegalArgumentException e) {
                     String msg;
-                    if (versionCode > latestRecognizedKernelVersion.version()) {
+                    if (latestRecognizedKernelVersion.isLessThan(versionCode)) {
                         msg = String.format(
                                 "Log file contains entries with prefix %d, and the highest supported prefix is %s. This "
                                         + "indicates that the log files originates from an newer version of neo4j, which we don't support "
