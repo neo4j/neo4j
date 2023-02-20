@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.simplifyPredicates.coerceInnerExpressionToBooleanIfNecessary
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.rewriting.conditions.PredicatesSimplified
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
@@ -95,11 +94,30 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
 
   private def simplifyToInnerExpression(outerExpression: BooleanExpression, innerExpression: Expression) = {
     val newExpression = computeReplacement(innerExpression)
-    coerceInnerExpressionToBooleanIfNecessary(semanticState, outerExpression, newExpression)
+    if (needsToBeExplicitlyCoercedToBoolean(outerExpression, newExpression)) {
+      CoerceToPredicate(newExpression)
+    } else {
+      newExpression
+    }
+  }
+
+  /**
+   * We intend to remove `outerExpression` from the AST and replace it with `innerExpression`.
+   *
+   * While `outerExpression` would have converted the value to boolean, we check here whether that information would be lost.
+   */
+  private def needsToBeExplicitlyCoercedToBoolean(outerExpression: BooleanExpression, innerExpression: Expression) = {
+    val expectedToBeBoolean = semanticState.expressionType(outerExpression).expected.exists(_.contains(CTBoolean))
+    val specifiedToBeBoolean = semanticState.expressionType(innerExpression).specified.contains(CTBoolean)
+    !expectedToBeBoolean && !specifiedToBeBoolean
   }
 }
 
 case object simplifyPredicates extends StepSequencer.Step with PlanPipelineTransformerFactory with CnfPhase {
+
+  object SetExtractor {
+    def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
+  }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(AndRewrittenToAnds) ++ SemanticInfoAvailable
 
@@ -109,30 +127,4 @@ case object simplifyPredicates extends StepSequencer.Step with PlanPipelineTrans
 
   override def instance(from: BaseState, context: BaseContext): Rewriter = this(from.semantics())
 
-  def coerceInnerExpressionToBooleanIfNecessary(
-    semanticState: SemanticState,
-    outerExpression: BooleanExpression,
-    innerExpression: Expression
-  ): Expression = {
-    if (needsToBeExplicitlyCoercedToBoolean(semanticState, outerExpression, innerExpression)) {
-      CoerceToPredicate(innerExpression)
-    } else {
-      innerExpression
-    }
-  }
-
-  /**
-   * We intend to remove `outerExpression` from the AST and replace it with `innerExpression`.
-   *
-   * While `outerExpression` would have converted the value to boolean, we check here whether that information would be lost.
-   */
-  private def needsToBeExplicitlyCoercedToBoolean(
-    semanticState: SemanticState,
-    outerExpression: BooleanExpression,
-    innerExpression: Expression
-  ) = {
-    val expectedToBeBoolean = semanticState.expressionType(outerExpression).expected.exists(_.contains(CTBoolean))
-    val specifiedToBeBoolean = semanticState.expressionType(innerExpression).specified.contains(CTBoolean)
-    !expectedToBeBoolean && !specifiedToBeBoolean
-  }
 }

@@ -24,8 +24,10 @@ import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.False
+import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Ors
@@ -102,6 +104,22 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     assertRewrittenMatches("$n.a AND NOT true", { case False() => () })
   }
 
+  test("Simplify AND that contains only True") {
+    assertRewrittenMatches("true AND true", { case True() => () })
+  }
+
+  test("Simplify OR that contains only False") {
+    assertRewrittenMatches("false OR false", { case False() => () })
+  }
+
+  test("double negation around AND that contains only True") {
+    assertRewrittenMatches("NOT NOT (true AND true)", { case True() => () })
+  }
+
+  test("double negation around AND that contains only False") {
+    assertRewrittenMatches("NOT NOT (false AND false)", { case False() => () })
+  }
+
   test("Do not simplify expressions with different auto extracted parameters") {
     val position = InputPosition(0, 0, 0)
     // AST for $n = 2 OR $n = 3
@@ -131,6 +149,56 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     assertRewrittenMatches("null = null", { case Equals(_, _) => () })
     assertRewrittenMatches("NaN = NaN", { case Equals(_, _) => () })
     assertRewrittenMatches("$param = $param", { case Equals(_, _) => () })
+  }
+
+  test("Simplify AND of identical value") {
+    // and(eq($n, 2), eq($n, 2)) => eq($n, 2)
+    assertRewrittenMatches("$n = 2 AND $n = 2", { case Equals(_, _) => () })
+  }
+
+  test("Simplify OR of identical value") {
+    // or(eq($n, 2), eq($n, 2)) => eq($n, 2)
+    assertRewrittenMatches("$n = 2 OR $n = 2", { case Equals(_, _) => () })
+  }
+
+  test("Do not simplify OR of different value") {
+    // or(eq($n, 2), eq($n, 3)) => or(eq($n, 2), eq($n, 3))
+    assertRewrittenMatches("$n = 2 OR $n = 3", { case Ors(SetExtractor(Equals(_, _), Equals(_, _))) => () })
+  }
+
+  ignore("Simplify AND of identical value spread apart") {
+    assertRewrittenMatches(
+      "$n = 2 AND $m = 3 AND $n = 2",
+      { case Ands(SetExtractor(Equals(_, _), Equals(_, _))) => () }
+    )
+  }
+
+  ignore("Simplify OR of identical value spread apart") {
+    assertRewrittenMatches("$n = 2 OR $m = 3 OR $n = 2", { case Ors(SetExtractor(Equals(_, _), Equals(_, _))) => () })
+  }
+
+  ignore("Simplify AND of identical value with parenthesis") {
+    assertRewrittenMatches(
+      "$n = 2 AND ($n = 2 AND $m = 3)",
+      { case Ands(SetExtractor(Equals(_, _), Equals(_, _))) => () }
+    )
+  }
+
+  test("Simplify AND of lists") {
+    assertRewrittenMatches("[] AND [] AND []", { case CoerceToPredicate(ListLiteral(List())) => () })
+  }
+
+  test("Simplify AND of different data types") {
+    assertRewrittenMatches("$n = 2 AND $n = 2.0", { case Ands(SetExtractor(Equals(_, _), Equals(_, _))) => () })
+  }
+
+  test("Simplify AND of identical value with greater than") {
+    assertRewrittenMatches("$n > 2 AND $n > 2", { case GreaterThan(_, _) => () })
+  }
+
+  test("Simplify AND of identical expressions with function") {
+    // For expressions that are non-idempotent (or not referentially transparent) like rand(), this rewrite can affect semantics
+    assertRewrittenMatches("rand() = 1 AND rand() = 1", { case Equals(_, _) => () })
   }
 
   private val exceptionFactory = new OpenCypherExceptionFactory(None)

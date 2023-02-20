@@ -52,12 +52,10 @@ import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
-import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting.SemanticAnalysisPossible
 import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
 import org.neo4j.cypher.internal.frontend.phases.RemoveUnusedNamedGroupVariablesPhase
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
-import org.neo4j.cypher.internal.frontend.phases.StatementCondition
 import org.neo4j.cypher.internal.frontend.phases.SyntaxDeprecationWarningsAndReplacements
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
@@ -70,15 +68,11 @@ import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
-import org.neo4j.cypher.internal.rewriting.conditions.containsNoReturnAll
-import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
 import org.neo4j.cypher.internal.rewriting.rewriters.IfNoParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.Never
-import org.neo4j.cypher.internal.rewriting.rewriters.NoNamedPathsInPatternComprehensions
-import org.neo4j.cypher.internal.rewriting.rewriters.QppsHavePaddedNodes
-import org.neo4j.cypher.internal.rewriting.rewriters.RelationshipUniquenessPredicatesInMatchAndMerge
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
@@ -121,15 +115,13 @@ object CompilationPhases {
           SortPredicatesBySelectivity,
           RemoveUnusedNamedGroupVariablesPhase
         ) ++ CNFNormalizer.steps,
-        initialConditions = Set(
-          BaseContains[Statement],
-          SemanticAnalysisPossible,
-          StatementCondition(containsNoReturnAll),
-          NoNamedPathsInPatternComprehensions,
-          StatementCondition(noUnnamedNodesAndRelationships),
-          QppsHavePaddedNodes,
-          RelationshipUniquenessPredicatesInMatchAndMerge
-        )
+        initialConditions =
+          Set(BaseContains[Statement])
+            ++ PreparatoryRewriting.postConditions
+            ++ AstRewriting.postConditions
+            // ExpressionsHaveComputedDependencies is introduced by SemanticAnalysis.
+            // It is currently not allowed to then also have it as an initial condition
+            - ExpressionsHaveComputedDependencies
       )
 
   case class ParsingConfig(

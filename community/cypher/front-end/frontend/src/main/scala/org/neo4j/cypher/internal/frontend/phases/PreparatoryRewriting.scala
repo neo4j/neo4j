@@ -43,7 +43,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
     with ParsePipelineTransformerFactory {
 
-  val AccumulatedSteps(orderedSteps, _) =
+  val AccumulatedSteps(orderedSteps, _postConditions) =
     new StepSequencer(ListStepAccumulator[StepSequencer.Step with PreparatoryRewritingRewriterFactory]()).orderSteps(
       Set(
         normalizeWithAndReturnClauses,
@@ -77,7 +77,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(SemanticAnalysisPossible)
+  override def postConditions: Set[StepSequencer.Condition] = _postConditions + SemanticAnalysisPossible
 
   override def getTransformer(
     literalExtractionStrategy: LiteralExtractionStrategy,
