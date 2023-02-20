@@ -82,6 +82,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         removeIdenticalPlans(otherAttributes.withAlso(cardinalities, effectiveCardinalities, solveds, providedOrders)),
         pruningVarExpander(anonymousVariableNameGenerator),
         bfsAggregationRemover,
+        if (context.executionModel.providedOrderPreserving) bfsDepthOrderer else identity,
         useTop,
         skipInPartialSort,
         simplifySelections,
