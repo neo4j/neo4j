@@ -51,7 +51,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
 
   private case class DistinctHorizon(dependencies: Set[String], aggregatingPlan: AggregatingPlan) {
 
-    private val (
+    private lazy val (
       allDependenciesMinusMinPath: Set[String],
       allDependencies: Set[String],
       minPathExpressions: Map[String, Expression]
@@ -59,80 +59,71 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
       if (aggregatingPlan == null) {
         (null, null, null)
       } else {
-        val (_minPathExpressions, _rest) =
+        val (_minPath, _rest) =
           aggregatingPlan.aggregationExpressions.partition(x => DistinctHorizon.isMinPathLength(x._2))
         val _aggregatingDependenciesMinusMinPath = _rest.values.flatMap(_.dependencies.map(_.name)).toSet
-        val _minPathDependencies = _minPathExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
         (
           dependencies ++ _aggregatingDependenciesMinusMinPath,
-          dependencies ++ _aggregatingDependenciesMinusMinPath ++ _minPathDependencies,
-          _minPathExpressions
+          dependencies ++ aggregatingPlan.aggregationExpressions.values.flatMap(_.dependencies.map(_.name)).toSet,
+          _minPath
         )
       }
     }
 
-    private val rewrittenMinPathExpressions: mutable.Map[String, Expression] = mutable.Map.empty
-    private val bfsExpandDistanceNames: mutable.Map[VarExpand, String] = mutable.Map.empty
-
     def isInDistinctHorizon: Boolean = aggregatingPlan != null
 
-    /**
-     * @return true if it is safe to rewrite this [[VarExpand]] to a [[BFSPruningVarExpand]]
-     */
-    def canReplaceWithBfsPruning(expand: VarExpand): Boolean = {
-      if (
-        aggregatingPlan != null &&
-        expand.length.min <= 1 &&
-        validMaxLength(expand, requireMaxLength = false) &&
-        !allDependenciesMinusMinPath(expand.relName)
-      ) {
+    def getRewrite(expand: VarExpand): VarExpandRewrite = {
+      if (canReplaceWithBfsPruning(expand)) {
+
+        /**
+         * [[BFSPruningVarExpand]] can also emit (shortest path) depth with every node, which makes it possible to rewrite certain [[Aggregation]] plans.
+         *
+         * For example,
+         * MATCH path=(a)-[*1..2]-(b) RETURN min(length(path))
+         * Can be rewritten to,
+         * MATCH (a)-[*1..2]-(b) RETURN min(depth)
+         * Where 'depth' is emitted by [[BFSPruningVarExpand]].
+         */
+        val rewrittenMinPathExpressions: mutable.Map[String, Expression] = mutable.Map.empty
         val distanceName = anonymousVariableNameGenerator.nextName
         minPathExpressions.foreach { case (key, value) =>
           replaceMinPathLength(distanceName, value, expand) match {
             case Some(rewrittenExpression) =>
               rewrittenMinPathExpressions.put(key, rewrittenExpression)
-              bfsExpandDistanceNames.put(expand, distanceName)
             case None =>
             // do nothing
           }
         }
-        true
+
+        if (rewrittenMinPathExpressions.nonEmpty) {
+          RewriteToBfsWithDepth(distanceName, rewrittenMinPathExpressions.toMap)
+        } else {
+          RewriteToBfs
+        }
+      } else if (canReplaceWithPruning(expand)) {
+        RewriteToPruning
       } else {
-        false
+        NoRewrite
       }
+    }
+
+    /**
+     * @return true if it is safe to rewrite this [[VarExpand]] to a [[BFSPruningVarExpand]]
+     */
+    private def canReplaceWithBfsPruning(expand: VarExpand): Boolean = {
+      aggregatingPlan != null &&
+      expand.length.min <= 1 &&
+      validMaxLength(expand, requireMaxLength = false) &&
+      !allDependenciesMinusMinPath(expand.relName)
     }
 
     /**
      * @return true if it is safe to rewrite this [[VarExpand]] to a [[PruningVarExpand]]
      */
-    def canReplaceWithPruning(expand: VarExpand): Boolean = {
+    private def canReplaceWithPruning(expand: VarExpand): Boolean = {
       aggregatingPlan != null &&
       validMaxLength(expand, requireMaxLength = true) &&
       !allDependencies(expand.relName)
-    }
-
-    /**
-     * [[BFSPruningVarExpand]] can also emit (shortest path) depth with every node, which makes it possible to rewrite certain [[Aggregation]] plans.
-     *
-     * For example,
-     * MATCH path=(a)-[*1..2]-(b) RETURN min(length(path))
-     * Can be rewritten to,
-     * MATCH path=(a)-[*1..2]-(b) RETURN min(depth)
-     * Where 'depth' is emitted by [[BFSPruningVarExpand]].
-     *
-     * @return rewritten aggregation expressions, if any were rewritten.
-     */
-    def replacementAggregationExpressions(expand: VarExpand)
-      : Option[(String, AggregatingPlan, Map[String, Expression])] = {
-      if (bfsExpandDistanceNames.contains(expand)) {
-        Some(
-          bfsExpandDistanceNames(expand),
-          aggregatingPlan,
-          aggregatingPlan.aggregationExpressions ++ rewrittenMinPathExpressions
-        )
-      } else {
-        None
-      }
     }
 
     private def replaceMinPathLength(
@@ -194,6 +185,17 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
     }
   }
 
+  sealed trait VarExpandRewrite
+
+  case object RewriteToPruning extends VarExpandRewrite
+
+  case object RewriteToBfs extends VarExpandRewrite
+
+  case class RewriteToBfsWithDepth(distanceName: String, newAggregationExpressions: Map[String, Expression])
+      extends VarExpandRewrite
+
+  case object NoRewrite extends VarExpandRewrite
+
   private case class ReplacementPlans(
     pruningExpands: Set[VarExpand],
     bfsPruningExpands: Map[VarExpand, Option[String]],
@@ -214,19 +216,24 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           val groupingDependencies = aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
           DistinctHorizon(groupingDependencies, aggPlan)
 
-        case expand: VarExpand if distinctHorizon.canReplaceWithBfsPruning(expand) =>
-          distinctHorizon.replacementAggregationExpressions(expand) match {
-            case None =>
+        case expand: VarExpand =>
+          distinctHorizon.getRewrite(expand) match {
+            case RewriteToPruning =>
+              pruningExpands += expand
+              distinctHorizon
+            case RewriteToBfs =>
               bfsPruningExpands.put(expand, None)
-            case Some((distanceName, aggregatingPlan, newAggregationExpressions)) =>
+              distinctHorizon
+            case RewriteToBfsWithDepth(distanceName, newAggregationExpressions) =>
               bfsPruningExpands.put(expand, Some(distanceName))
-              replacementAggregatingPlans.put(aggregatingPlan, newAggregationExpressions)
+              replacementAggregatingPlans.updateWith(distinctHorizon.aggregatingPlan)({
+                case Some(aggregationExpressions) => Some(aggregationExpressions ++ newAggregationExpressions)
+                case None => Some(distinctHorizon.aggregatingPlan.aggregationExpressions ++ newAggregationExpressions)
+              })
+              distinctHorizon
+            case NoRewrite =>
+              distinctHorizon
           }
-          distinctHorizon
-
-        case expand: VarExpand if distinctHorizon.canReplaceWithPruning(expand) =>
-          pruningExpands += expand
-          distinctHorizon
 
         case Projection(_, _, expressions) if distinctHorizon.isInDistinctHorizon =>
           distinctHorizon.copy(dependencies =
@@ -239,7 +246,6 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           )
 
         case _: Expand |
-          _: VarExpand |
           _: Apply |
           _: CartesianProduct |
           _: Eager |
