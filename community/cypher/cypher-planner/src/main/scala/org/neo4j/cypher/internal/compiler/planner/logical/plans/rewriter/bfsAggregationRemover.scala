@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -38,12 +38,16 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
 
+/**
+ * Removes [[Distinct]] and [[Aggregation]] plans that are no longer necessary after rewriting [[VarExpand]] into [[BFSPruningVarExpand]].
+ */
 case object bfsAggregationRemover extends Rewriter {
 
   private case class DistinctHorizon(
@@ -93,13 +97,7 @@ case object bfsAggregationRemover extends Rewriter {
 
     def convertAggregationExpressionToProjectionExpressions: Map[String, Expression] = {
       aggregatingPlan.aggregationExpressions.map {
-        case key -> FunctionInvocation(
-            _,
-            FunctionName("min"),
-            _,
-            Seq(variable: Variable)
-          ) =>
-          key -> variable
+        case key -> Min(variable: Variable) => key -> variable
         case e =>
           throw new IllegalStateException(
             s"Unexpectedly encountered an aggregation expression that is not min(depth): $e"
@@ -109,15 +107,8 @@ case object bfsAggregationRemover extends Rewriter {
 
     def relaxAggregationExpressions: Map[String, Expression] = {
       aggregatingPlan.aggregationExpressions.map {
-        case (
-            key,
-            fun @ FunctionInvocation(
-              _,
-              _,
-              true,
-              Seq(variable: Variable)
-            )
-          ) if variable.name == bfsPruningVarExpand.to =>
+        case (key, fun @ FunctionInvocation(_, _, true, Seq(variable: Variable)))
+          if variable.name == bfsPruningVarExpand.to =>
           key -> fun.copy(distinct = false)(fun.position)
         case k -> v =>
           k -> v
@@ -165,25 +156,15 @@ case object bfsAggregationRemover extends Rewriter {
       )
 
     def isDistinct(e: Expression, name: String = null): Boolean = e match {
-      case FunctionInvocation(
-          _,
-          _,
-          true,
-          Seq(variable: Variable)
-        ) => name == null || name == variable.name
+      case FunctionInvocation(_, _, true, Seq(variable: Variable)) =>
+        name == null || name == variable.name
       case _ =>
         false
     }
 
     def isMin(e: Expression, name: String = null): Boolean = e match {
-      case FunctionInvocation(
-          _,
-          FunctionName("min"),
-          _,
-          Seq(variable: Variable)
-        ) => name == null || name == variable.name
-      case _ =>
-        false
+      case Min(variable: Variable) => name == null || name == variable.name
+      case _                       => false
     }
   }
 

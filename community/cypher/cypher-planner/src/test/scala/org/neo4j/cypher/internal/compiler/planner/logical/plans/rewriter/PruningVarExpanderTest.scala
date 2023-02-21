@@ -174,19 +174,19 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
   test("Simple query that filters between expand and distinct") {
     // Simplest query:
-    // match (a)-[*2..3]->(b:X) return distinct b
+    // match (a)-[*2..3]-(b:X) return distinct b
 
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .filter("to:X")
-      .expand("(from)-[*2..3]->(to)")
+      .expand("(from)-[*2..3]-(to)")
       .allNodeScan("from")
       .build()
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .filter("to:X")
-      .pruningVarExpand("(from)-[*2..3]->(to)")
+      .pruningVarExpand("(from)-[*2..3]-(to)")
       .allNodeScan("from")
       .build()
 

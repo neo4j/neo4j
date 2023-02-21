@@ -46,6 +46,9 @@ import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
 
+/**
+ * Removes [[Sort]] plans (or relaxes them to [[PartialSort]]) that are no longer necessary after rewriting [[VarExpand]] into [[BFSPruningVarExpand]].
+ */
 case object bfsDepthOrderer extends Rewriter {
 
   private case class SortHorizon(
@@ -66,13 +69,33 @@ case object bfsDepthOrderer extends Rewriter {
     val makePartialSorts: mutable.Map[LogicalPlan, String] = mutable.Map.empty
     val removeSorts: mutable.Map[LogicalPlan, String] = mutable.Map.empty
 
+    def recordSortPlanForRewriting(sortHorizon: SortHorizon, depthName: String): Unit = {
+      sortHorizon.sortPlan match {
+        case Some(sort @ Sort(_, sortItems))
+          if sortHorizon.dependencies.contains(depthName) && sortItems.head.isAscending =>
+          if (sortItems.size == 1) {
+            removeSorts.put(sort, depthName)
+          } else {
+            makePartialSorts.put(sort, depthName)
+          }
+        case Some(top @ Top(_, sortItems, _))
+          if sortHorizon.dependencies.contains(depthName) && sortItems.head.isAscending =>
+          if (sortItems.size == 1) {
+            removeSorts.put(top, depthName)
+          } else {
+            makePartialSorts.put(top, depthName)
+          }
+        case _ => // do nothing
+      }
+    }
+
     def collectSortPlans(plan: LogicalPlan, sortHorizon: SortHorizon): SortHorizon = {
       plan match {
         case sort: Sort =>
-          SortHorizon(Some(sort), lastCardinalityIncreasingPlan = None, Set(sort.sortItems.head.id))
+          SortHorizon(Some(sort), lastCardinalityIncreasingPlan = None, dependencies = Set(sort.sortItems.head.id))
 
         case top: Top =>
-          SortHorizon(Some(top), lastCardinalityIncreasingPlan = None, Set(top.sortItems.head.id))
+          SortHorizon(Some(top), lastCardinalityIncreasingPlan = None, dependencies = Set(top.sortItems.head.id))
 
         case _: BFSPruningVarExpand |
           _: PruningVarExpand |
@@ -101,23 +124,7 @@ case object bfsDepthOrderer extends Rewriter {
           _: NodeUniqueIndexSeek =>
           sortHorizon.lastCardinalityIncreasingPlan match {
             case Some(BFSPruningVarExpand(_, _, _, _, _, _, _, Some(depthName), _, _)) =>
-              sortHorizon.sortPlan match {
-                case Some(sort @ Sort(_, sortItems))
-                  if sortHorizon.dependencies.contains(depthName) && sortItems.head.isAscending =>
-                  if (sortItems.size == 1) {
-                    removeSorts.put(sort, depthName)
-                  } else {
-                    makePartialSorts.put(sort, depthName)
-                  }
-                case Some(top @ Top(_, sortItems, _))
-                  if sortHorizon.dependencies.contains(depthName) && sortItems.head.isAscending =>
-                  if (sortItems.size == 1) {
-                    removeSorts.put(top, depthName)
-                  } else {
-                    makePartialSorts.put(top, depthName)
-                  }
-                case _ => // do nothing
-              }
+              recordSortPlanForRewriting(sortHorizon, depthName)
             case _ => // do nothing
           }
 
