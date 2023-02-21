@@ -110,6 +110,7 @@ class BfsOrdererTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should not rewrite to partial sort when depth is not first sort column") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .sort(Seq(Ascending("to"), Ascending("depth")))
+      .projection("depth AS depthAlias", "to AS toAlias")
       .bfsPruningVarExpand("(from)-[*1..3]-(to)", depthName = Some("depth"))
       .argument("from")
       .build()

@@ -22,9 +22,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.functions.Length
+import org.neo4j.cypher.internal.expressions.functions.Min
+import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -131,22 +133,11 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
       expression: Expression,
       varExpand: VarExpand
     ): Option[Expression] = expression match {
-      case minLength @ FunctionInvocation(
-          _,
-          FunctionName("min"),
-          _,
-          Seq(length @ FunctionInvocation(_, FunctionName("length"), _, Seq(PathExpression(step))))
-        ) if step.dependencies.map(_.name).contains(varExpand.relName) =>
-        Some(minLength.copy(distinct = false, args = IndexedSeq(Variable(distanceName)(length.position)))(
-          minLength.position
-        ))
-      case minSize @ FunctionInvocation(
-          _,
-          FunctionName("min"),
-          _,
-          Seq(size @ FunctionInvocation(_, FunctionName("size"), _, Seq(variable: Variable)))
-        ) if variable.name == varExpand.relName =>
-        Some(minSize.copy(distinct = false, args = IndexedSeq(Variable(distanceName)(size.position)))(minSize.position))
+      case minLength @ Min(length @ Length(PathExpression(step)))
+        if step.dependencies.map(_.name).contains(varExpand.relName) =>
+        Some(Min(Variable(distanceName)(length.position))(minLength.position))
+      case minSize @ Min(size @ Size(variable: Variable)) if variable.name == varExpand.relName =>
+        Some(Min(Variable(distanceName)(size.position))(minSize.position))
       case _ =>
         None
     }
@@ -166,22 +157,9 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
     }
 
     def isMinPathLength(e: Expression): Boolean = e match {
-      case FunctionInvocation(
-          _,
-          FunctionName("min"),
-          _,
-          Seq(FunctionInvocation(_, FunctionName("length"), _, Seq(_: PathExpression)))
-        ) =>
-        true
-      case FunctionInvocation(
-          _,
-          FunctionName("min"),
-          _,
-          Seq(FunctionInvocation(_, FunctionName("size"), _, Seq(_: Variable)))
-        ) =>
-        true
-      case _ =>
-        false
+      case Min(Length(_: PathExpression)) => true
+      case Min(Size(_: Variable))         => true
+      case _                              => false
     }
   }
 
