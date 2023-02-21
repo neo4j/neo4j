@@ -279,41 +279,12 @@ TOKEN_MGR_DECLS :
     }
 }
 
-/*
- * Whitespaces are skipped, and function as a deliminiter.
- * This includes all unicode characters in the categories Zp, Zs, Zl and more selected unicodes as defined in CIP-44 and the GQL standard.
- */
 SKIP :
 {
-
-    "\u0009"
-    | "\n" //can't parse this in unicode
-    | "\u000B"
-    | "\u000C"
-    | "\r" //can't parse this in unicode
-    | "\u001C"
-    | "\u001D"
-    | "\u001E"
-    | "\u001F"
-    | "\u0020"
-    | "\u00A0"
-    | "\u1680"
-    | "\u2000"
-    | "\u2001"
-    | "\u2002"
-    | "\u2003"
-    | "\u2004"
-    | "\u2005"
-    | "\u2006"
-    | "\u2007"
-    | "\u2008"
-    | "\u2009"
-    | "\u200A"
-    | "\u2028"
-    | "\u2029"
-    | "\u202F"
-    | "\u205F"
-    | "\u3000"
+    " "
+    | "\t"
+    | "\n"
+    | "\r"
 }
 
 /* COMMENTS */
