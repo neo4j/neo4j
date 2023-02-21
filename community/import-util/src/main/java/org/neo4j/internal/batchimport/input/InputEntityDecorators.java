@@ -33,7 +33,7 @@ public class InputEntityDecorators {
     /**
      * Ensures that all input nodes will at least have the given set of labels.
      */
-    public static Decorator additiveLabels(final String[] labelNamesToAdd) {
+    public static Decorator additiveLabels(final String... labelNamesToAdd) {
         if (labelNamesToAdd == null || labelNamesToAdd.length == 0) {
             return NO_DECORATOR;
         }
