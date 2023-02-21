@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemant
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.ReturnItemsAreAliased
 import org.neo4j.cypher.internal.rewriting.rewriters.addDependenciesToProjectionsInSubqueryExpressions
+import org.neo4j.cypher.internal.rewriting.rewriters.combineSetProperty
 import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
-import org.neo4j.cypher.internal.rewriting.rewriters.factories.combineSetProperty
 import org.neo4j.cypher.internal.rewriting.rewriters.foldConstants
 import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternComprehensions
 import org.neo4j.cypher.internal.rewriting.rewriters.moveWithPastMatch
