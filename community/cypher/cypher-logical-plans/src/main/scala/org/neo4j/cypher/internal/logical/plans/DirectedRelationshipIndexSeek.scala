@@ -64,6 +64,8 @@ case class DirectedRelationshipIndexSeek(
   override def unique: Boolean = false
 
   override def directed: Boolean = true
+
+  override def withNewLeftAndRightNodes(leftNode: String, rightNode: String): RelationshipIndexSeekLeafPlan = copy(startNode = leftNode, endNode = rightNode)
 }
 
 object DirectedRelationshipIndexSeek extends IndexSeekNames {
