@@ -44,7 +44,7 @@ import org.neo4j.monitoring.Monitors
 
 class ExistsScopedDependenciesTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  private val parsing = CompilationPhases.parsingBase(ParsingConfig()) andThen Namespacer
+  private val parsing = CompilationPhases.parsing(ParsingConfig()) andThen Namespacer
 
   class DummyException() extends Exception
 
