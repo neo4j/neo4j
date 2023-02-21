@@ -76,4 +76,6 @@ case class AssertingMultiRelationshipIndexSeek(
 
   override def idNames: Set[String] =
     relIndexSeeks.map(_.idName).toSet
+
+  override def idName: String = relationship
 }

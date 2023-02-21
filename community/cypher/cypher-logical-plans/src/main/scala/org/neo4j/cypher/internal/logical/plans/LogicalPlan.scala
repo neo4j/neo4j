@@ -39,7 +39,6 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Method
-
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -289,7 +288,7 @@ abstract class RelationshipLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan
   def directed: Boolean
 }
 
-abstract class MultiEntityLogicalLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen) {
+trait MultiEntityLogicalLeafPlan {
   def idNames: Set[String]
 }
 
@@ -341,8 +340,9 @@ abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogic
   def indexType: IndexType
 }
 
-abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends MultiEntityLogicalLeafPlan(idGen)
-    with IndexedPropertyProvidingPlan {}
+abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen)
+                                                    with MultiEntityLogicalLeafPlan
+                                                    with IndexedPropertyProvidingPlan {}
 
 abstract class NodeIndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
 
@@ -355,8 +355,9 @@ abstract class NodeIndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idG
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): NodeIndexSeekLeafPlan
 }
 
-abstract class MultiRelationshipIndexLeafPlan(idGen: IdGen) extends MultiEntityLogicalLeafPlan(idGen)
-    with IndexedPropertyProvidingPlan {}
+abstract class MultiRelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogicalLeafPlan(idGen)
+    with MultiEntityLogicalLeafPlan
+    with IndexedPropertyProvidingPlan{}
 
 abstract class RelationshipIndexSeekLeafPlan(idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
 
@@ -367,6 +368,8 @@ abstract class RelationshipIndexSeekLeafPlan(idGen: IdGen) extends RelationshipI
   def indexOrder: IndexOrder
 
   def unique: Boolean
+
+  def withNewLeftAndRightNodes(leftNode: String, rightNode: String): RelationshipIndexSeekLeafPlan
 
   override def withMappedProperties(f: IndexedProperty => IndexedProperty): RelationshipIndexSeekLeafPlan
 }
