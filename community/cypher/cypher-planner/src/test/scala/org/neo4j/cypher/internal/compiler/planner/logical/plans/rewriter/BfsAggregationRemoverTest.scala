@@ -46,6 +46,24 @@ class BfsAggregationRemoverTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(before) should equal(after)
   }
 
+  test("should remove distinct on aliased to node") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("tutu AS tutu")
+      .projection("to AS tutu")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)")
+      .argument("from")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection("tutu AS tutu")
+      .projection("to AS tutu")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)")
+      .argument("from")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
   test("should remove distinct on from and to nodes") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("from AS from", "to AS to")
@@ -55,6 +73,24 @@ class BfsAggregationRemoverTest extends CypherFunSuite with LogicalPlanningTestS
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .projection("from AS from", "to AS to")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)")
+      .argument("from")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("should remove distinct on aliased from and to nodes") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("from AS morf", "tutu AS tutu")
+      .projection("from AS morf", "to AS tutu")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)")
+      .argument("from")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection("from AS morf", "tutu AS tutu")
+      .projection("from AS morf", "to AS tutu")
       .bfsPruningVarExpand("(from)-[*1..3]-(to)")
       .argument("from")
       .build()
@@ -442,6 +478,24 @@ class BfsAggregationRemoverTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(before) should equal(after)
   }
 
+  test("should relax aliased from, collect(DISTINCT to) on aggregation") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("morf AS morf"), Seq("count(DISTINCT to) AS x"))
+      .projection("from AS morf")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)")
+      .argument("from")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("morf AS morf"), Seq("count(to) AS x"))
+      .projection("from AS morf")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)")
+      .argument("from")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
   test("should relax from,other collect(DISTINCT to) on aggregation") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("from AS from", "1 AS one"), Seq("count(DISTINCT to) AS x"))
@@ -474,6 +528,24 @@ class BfsAggregationRemoverTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(before) should equal(after)
   }
 
+  test("should remove grouping aggregation when group=aliased to and aggregate=min(depth)") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("tutu AS tutu"), Seq("min(depth) AS min"))
+      .projection("to AS tutu")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)", depthName = Some("depth"))
+      .argument("from")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection("tutu AS tutu", "depth AS min")
+      .projection("to AS tutu")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)", depthName = Some("depth"))
+      .argument("from")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
   test("should remove grouping aggregation when group=from,to and aggregate=min(depth)") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("from AS from", "to AS to"), Seq("min(depth) AS min"))
@@ -483,6 +555,24 @@ class BfsAggregationRemoverTest extends CypherFunSuite with LogicalPlanningTestS
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .projection("from AS from", "to AS to", "depth AS min")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)", depthName = Some("depth"))
+      .argument("from")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("should remove grouping aggregation when group=aliased from, aliased to and aggregate=min(depth)") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("morf AS morf", "tutu AS tutu"), Seq("min(depth) AS min"))
+      .projection("from AS morf", "to AS tutu")
+      .bfsPruningVarExpand("(from)-[*1..3]-(to)", depthName = Some("depth"))
+      .argument("from")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .projection("morf AS morf", "tutu AS tutu", "depth AS min")
+      .projection("from AS morf", "to AS tutu")
       .bfsPruningVarExpand("(from)-[*1..3]-(to)", depthName = Some("depth"))
       .argument("from")
       .build()

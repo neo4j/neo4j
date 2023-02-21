@@ -49,7 +49,8 @@ case object bfsAggregationRemover extends Rewriter {
   private case class DistinctHorizon(
     aggregatingPlan: AggregatingPlan,
     hasCardinalityIncrease: Boolean,
-    bfsPruningVarExpand: Option[BFSPruningVarExpand]
+    bfsPruningVarExpand: BFSPruningVarExpand,
+    groupingDependencies: Set[String]
   ) {
 
     /**
@@ -57,20 +58,12 @@ case object bfsAggregationRemover extends Rewriter {
      *
      * @return true, iff the plan can not be rewritten to a [[Projection]], but some aggregating functions can be modified to not be distinct.
      */
-    def isRelaxableAggregation: Boolean = bfsPruningVarExpand match {
-      case Some(bfs) =>
-        !hasCardinalityIncrease &&
-        aggregatingPlan.aggregationExpressions.nonEmpty &&
-        (
-          aggregatingPlan.groupingExpressions.isEmpty ||
-            aggregatingPlan.groupingExpressions.values.exists {
-              case variable: Variable => bfs.from == variable.name
-              case _                  => false
-            }
-        ) &&
-        aggregatingPlan.aggregationExpressions.values.exists(DistinctHorizon.isDistinct(_, bfs.to))
-      case None =>
-        false
+    def isRelaxableAggregation: Boolean = {
+      bfsPruningVarExpand != null &&
+      !hasCardinalityIncrease &&
+      aggregatingPlan.aggregationExpressions.nonEmpty &&
+      (aggregatingPlan.groupingExpressions.isEmpty || groupingDependencies.contains(bfsPruningVarExpand.from)) &&
+      aggregatingPlan.aggregationExpressions.values.exists(DistinctHorizon.isDistinct(_, bfsPruningVarExpand.to))
     }
 
     /**
@@ -78,14 +71,12 @@ case object bfsAggregationRemover extends Rewriter {
      *
      * @return true, iff the plan can be rewritten to a [[Projection]].
      */
-    def isRemovableAggregation: Boolean = bfsPruningVarExpand match {
-      case Some(bfs) =>
-        !hasCardinalityIncrease &&
-        aggregatingPlan.aggregationExpressions.nonEmpty &&
-        groupingsAreSafeToRemove(bfs) &&
-        aggregationsAreSafeToRemove(bfs)
-      case None =>
-        false
+    def isRemovableAggregation: Boolean = {
+      bfsPruningVarExpand != null &&
+      !hasCardinalityIncrease &&
+      aggregatingPlan.aggregationExpressions.nonEmpty &&
+      groupingsAreSafeToRemove(bfsPruningVarExpand) &&
+      aggregationsAreSafeToRemove(bfsPruningVarExpand)
     }
 
     /**
@@ -93,13 +84,11 @@ case object bfsAggregationRemover extends Rewriter {
      *
      * @return true, iff the plan can be rewritten to a [[Projection]].
      */
-    def isRemovableDistinct: Boolean = bfsPruningVarExpand match {
-      case Some(bfs) =>
-        !hasCardinalityIncrease &&
-        aggregatingPlan.aggregationExpressions.isEmpty &&
-        groupingsAreSafeToRemove(bfs)
-      case None =>
-        false
+    def isRemovableDistinct: Boolean = {
+      bfsPruningVarExpand != null &&
+      !hasCardinalityIncrease &&
+      aggregatingPlan.aggregationExpressions.isEmpty &&
+      groupingsAreSafeToRemove(bfsPruningVarExpand)
     }
 
     def convertAggregationExpressionToProjectionExpressions: Map[String, Expression] = {
@@ -128,7 +117,7 @@ case object bfsAggregationRemover extends Rewriter {
               true,
               Seq(variable: Variable)
             )
-          ) if variable.name == bfsPruningVarExpand.get.to =>
+          ) if variable.name == bfsPruningVarExpand.to =>
           key -> fun.copy(distinct = false)(fun.position)
         case k -> v =>
           k -> v
@@ -143,18 +132,11 @@ case object bfsAggregationRemover extends Rewriter {
      * @return true, iff it safe to rewrite the grouping expressions of this [[AggregatingPlan]] into a [[Projection]]
      */
     private def groupingsAreSafeToRemove(bfs: BFSPruningVarExpand): Boolean = {
-      val allDistinctColumnsAreBfsNodeVariables = aggregatingPlan.groupingExpressions.values.forall(e =>
-        e match {
-          case Variable(name) => name == bfs.from || name == bfs.to
-          case _              => false
-        }
-      )
-      val distinctKeys = aggregatingPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
-      val isToOnly = distinctKeys.size == 1 && (distinctKeys - bfs.to).isEmpty
-      val isFromAndTo = distinctKeys.size == 2 && (distinctKeys - bfs.from - bfs.to).isEmpty
-      aggregatingPlan.groupingExpressions.nonEmpty &&
-      allDistinctColumnsAreBfsNodeVariables &&
-      (isToOnly || isFromAndTo)
+      val isToOnly = aggregatingPlan.groupingExpressions.size == 1 &&
+        groupingDependencies.contains(bfs.to)
+      val isFromAndToOnly = aggregatingPlan.groupingExpressions.size == 2 &&
+        groupingDependencies.contains(bfs.from) && groupingDependencies.contains(bfs.to)
+      aggregatingPlan.groupingExpressions.nonEmpty && (isToOnly || isFromAndToOnly)
     }
 
     /**
@@ -175,7 +157,12 @@ case object bfsAggregationRemover extends Rewriter {
   private object DistinctHorizon {
 
     val empty: DistinctHorizon =
-      DistinctHorizon(aggregatingPlan = null, hasCardinalityIncrease = true, bfsPruningVarExpand = None)
+      DistinctHorizon(
+        aggregatingPlan = null,
+        hasCardinalityIncrease = true,
+        bfsPruningVarExpand = null,
+        groupingDependencies = Set.empty
+      )
 
     def isDistinct(e: Expression, name: String = null): Boolean = e match {
       case FunctionInvocation(
@@ -202,13 +189,11 @@ case object bfsAggregationRemover extends Rewriter {
 
   private case class ReplacementPlans(
     aggregatingPlansToRemove: Map[AggregatingPlan, Map[String, Expression]],
-    distinctsToRemove: Map[AggregatingPlan, Map[String, Expression]],
     aggregatingPlansToRelax: Map[AggregatingPlan, Map[String, Expression]]
   )
 
   private def findReplacementPlans(plan: LogicalPlan): ReplacementPlans = {
     val aggregatingPlansToRemove: mutable.Map[AggregatingPlan, Map[String, Expression]] = mutable.Map.empty
-    val distinctsToRemove: mutable.Map[AggregatingPlan, Map[String, Expression]] = mutable.Map.empty
     val aggregatingPlansToRelax: mutable.Map[AggregatingPlan, Map[String, Expression]] = mutable.Map.empty
 
     def collectDistinctSet(plan: LogicalPlan, distinctHorizon: DistinctHorizon): DistinctHorizon = {
@@ -217,16 +202,23 @@ case object bfsAggregationRemover extends Rewriter {
           if aggPlan.aggregationExpressions.values.forall(e =>
             DistinctHorizon.isMin(e) || DistinctHorizon.isDistinct(e)
           ) =>
-          DistinctHorizon(aggPlan, hasCardinalityIncrease = false, bfsPruningVarExpand = None)
+          val groupingDependencies = aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
+          DistinctHorizon(aggPlan, hasCardinalityIncrease = false, bfsPruningVarExpand = null, groupingDependencies)
 
         case bfs: BFSPruningVarExpand if !distinctHorizon.hasCardinalityIncrease =>
-          distinctHorizon.bfsPruningVarExpand match {
-            case Some(_) => distinctHorizon.copy(hasCardinalityIncrease = true)
-            case None    => distinctHorizon.copy(bfsPruningVarExpand = Some(bfs))
+          if (distinctHorizon.bfsPruningVarExpand != null) {
+            distinctHorizon.copy(hasCardinalityIncrease = true)
+          } else {
+            distinctHorizon.copy(bfsPruningVarExpand = bfs)
           }
 
-        case _: Projection |
-          _: Selection |
+        case projection: Projection if !distinctHorizon.hasCardinalityIncrease =>
+          val newGroupingDependencies = distinctHorizon.groupingDependencies ++ projection.projectExpressions.collect {
+            case (key, Variable(name)) if distinctHorizon.groupingDependencies.contains(key) => name
+          }
+          distinctHorizon.copy(groupingDependencies = newGroupingDependencies)
+
+        case _: Selection |
           _: Eager |
           _: CacheProperties =>
           distinctHorizon
@@ -236,7 +228,7 @@ case object bfsAggregationRemover extends Rewriter {
           _: UndirectedRelationshipUniqueIndexSeek |
           _: NodeUniqueIndexSeek =>
           if (distinctHorizon.isRemovableDistinct) {
-            distinctsToRemove.put(
+            aggregatingPlansToRemove.put(
               distinctHorizon.aggregatingPlan,
               distinctHorizon.aggregatingPlan.groupingExpressions
             )
@@ -269,7 +261,7 @@ case object bfsAggregationRemover extends Rewriter {
       plan.rhs.foreach(p => planStack.push((p, newDistinctHorizon)))
     }
 
-    ReplacementPlans(aggregatingPlansToRemove.toMap, distinctsToRemove.toMap, aggregatingPlansToRelax.toMap)
+    ReplacementPlans(aggregatingPlansToRemove.toMap, aggregatingPlansToRelax.toMap)
   }
 
   override def apply(input: AnyRef): AnyRef = {
@@ -303,14 +295,14 @@ case object bfsAggregationRemover extends Rewriter {
               SameId(aggregation.id)
             )
 
-          case distinct: Distinct if replacementPlans.distinctsToRemove.contains(distinct) =>
+          case distinct: Distinct if replacementPlans.aggregatingPlansToRemove.contains(distinct) =>
             Projection(
               distinct.source,
               discardSymbols = Set.empty,
               projectExpressions = distinct.groupingExpressions
             )(SameId(distinct.id))
 
-          case distinct: OrderedDistinct if replacementPlans.distinctsToRemove.contains(distinct) =>
+          case distinct: OrderedDistinct if replacementPlans.aggregatingPlansToRemove.contains(distinct) =>
             Projection(
               distinct.source,
               discardSymbols = Set.empty,
