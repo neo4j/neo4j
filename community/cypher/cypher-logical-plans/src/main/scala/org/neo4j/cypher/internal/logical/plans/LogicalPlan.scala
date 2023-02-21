@@ -39,6 +39,7 @@ import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
 
 import java.lang.reflect.Method
+
 import scala.annotation.tailrec
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -341,8 +342,8 @@ abstract class RelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogic
 }
 
 abstract class MultiNodeIndexLeafPlan(idGen: IdGen) extends LogicalLeafPlan(idGen)
-                                                    with MultiEntityLogicalLeafPlan
-                                                    with IndexedPropertyProvidingPlan {}
+    with MultiEntityLogicalLeafPlan
+    with IndexedPropertyProvidingPlan {}
 
 abstract class NodeIndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idGen) {
 
@@ -357,7 +358,7 @@ abstract class NodeIndexSeekLeafPlan(idGen: IdGen) extends NodeIndexLeafPlan(idG
 
 abstract class MultiRelationshipIndexLeafPlan(idGen: IdGen) extends RelationshipLogicalLeafPlan(idGen)
     with MultiEntityLogicalLeafPlan
-    with IndexedPropertyProvidingPlan{}
+    with IndexedPropertyProvidingPlan {}
 
 abstract class RelationshipIndexSeekLeafPlan(idGen: IdGen) extends RelationshipIndexLeafPlan(idGen) {
 

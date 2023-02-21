@@ -67,6 +67,7 @@ case class DirectedRelationshipUniqueIndexSeek(
 
   override def directed: Boolean = true
 
-  override def withNewLeftAndRightNodes(leftNode: String, rightNode: String): RelationshipIndexSeekLeafPlan = copy(startNode = leftNode, endNode = rightNode)
+  override def withNewLeftAndRightNodes(leftNode: String, rightNode: String): RelationshipIndexSeekLeafPlan =
+    copy(startNode = leftNode, endNode = rightNode)
 
 }
