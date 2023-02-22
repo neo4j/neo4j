@@ -168,8 +168,9 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
     val AccumulatedSteps(sortedSteps, postConditions) =
       StepSequencer.sort(graph, introducingStepsNotByInitial, steps.toSeq, initialConditions, fixedSeed)
 
-    if (printGraph)
-      println(sortedSteps)
+    if (printGraph) {
+      println(sortedSteps.mkString("\n---\n", "\n", "\n---\n"))
+    }
 
     // Put steps together
     AccumulatedSteps(sortedSteps.foldLeft(stepAccumulator.empty)(stepAccumulator.addNext), postConditions)
