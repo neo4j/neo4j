@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.helpers.MathUtil.ceil;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
@@ -38,7 +39,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.neo4j.common.Primitive;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -164,7 +164,7 @@ class RecordNodeCursorIT {
             final var found = LongSets.mutable.withInitialCapacity(ids.size());
 
             // scan a quarter of the nodes
-            assertThat(nodes.scanBatch(scan, Primitive.ceil(ids.size(), 4))).isTrue();
+            assertThat(nodes.scanBatch(scan, ceil(ids.size(), 4))).isTrue();
             while (nodes.next()) {
                 assertThat(found.add(nodes.entityReference())).isTrue();
             }

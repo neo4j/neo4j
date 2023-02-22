@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.helpers.MathUtil.ceil;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
 import static org.neo4j.kernel.impl.newapi.TestUtils.concat;
@@ -43,7 +44,6 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.Primitive;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -124,7 +124,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
             // scan a quarter
             assertTrue(scan.reserveBatch(
                     relationships,
-                    Primitive.ceil(NUMBER_OF_RELATIONSHIPS, 4),
+                    ceil(NUMBER_OF_RELATIONSHIPS, 4),
                     cursorContext,
                     tx.securityContext().mode()));
 

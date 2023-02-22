@@ -23,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.helpers.MathUtil.ceil;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.newapi.TestUtils.assertDistinct;
 import static org.neo4j.kernel.impl.newapi.TestUtils.closeWorkContexts;
@@ -43,7 +44,6 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
-import org.neo4j.common.Primitive;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -116,7 +116,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
             // scan a quarter
             assertTrue(scan.reserveBatch(
                     nodes,
-                    Primitive.ceil(NUMBER_OF_NODES, 4),
+                    ceil(NUMBER_OF_NODES, 4),
                     NULL_CONTEXT,
                     tx.securityContext().mode()));
 

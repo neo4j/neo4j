@@ -135,19 +135,12 @@ public final class MathUtil {
         return Double.compare(lhs, rhs);
     }
 
-    /**
-     * Return an integer one less than the given integer, or throw {@link ArithmeticException} if the given integer is
-     * zero.
-     *
-     * @param value integer to decrement
-     * @return the provided integer minus one
-     * @throws ArithmeticException if the resulting integer would be less than zero
-     */
-    public static int decrementExactNotPastZero(int value) {
-        if (value == 0) {
-            throw new ArithmeticException("integer underflow past zero");
-        }
-        return value - 1;
+    public static int ceil(int dividend, int divisor) {
+        return ((dividend - 1) / divisor) + 1;
+    }
+
+    public static long ceil(long dividend, long divisor) {
+        return ((dividend - 1) / divisor) + 1;
     }
 
     /**
