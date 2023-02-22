@@ -49,8 +49,6 @@ import org.apache.commons.text.StringEscapeUtils;
 import org.neo4j.configuration.helpers.DatabaseNameValidator;
 import org.neo4j.configuration.helpers.DurationRange;
 import org.neo4j.configuration.helpers.GlobbingPattern;
-import org.neo4j.configuration.helpers.GraphNameValidator;
-import org.neo4j.configuration.helpers.NormalizedGraphName;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
 import org.neo4j.internal.helpers.HostnamePort;
@@ -116,7 +114,7 @@ public final class SettingValueParsers {
 
         @Override
         public String getDescription() {
-            return "an ip with subnet in CDIR format. e.g. 127.168.0.1/8";
+            return "an ip with subnet in CIDR format. e.g. 127.168.0.1/8";
         }
 
         @Override
@@ -722,34 +720,6 @@ public final class SettingValueParsers {
         }
     };
 
-    public static final SettingValueParser<NormalizedGraphName> GRAPHNAME = new SettingValueParser<>() {
-        @Override
-        public NormalizedGraphName parse(String name) {
-            if (name == null) {
-                return null;
-            } else {
-                NormalizedGraphName normalizedGraphName = new NormalizedGraphName(name);
-                validate(normalizedGraphName);
-                return normalizedGraphName;
-            }
-        }
-
-        @Override
-        public void validate(NormalizedGraphName value) {
-            GraphNameValidator.assertValidGraphName(value);
-        }
-
-        @Override
-        public String getDescription() {
-            return "A valid graph name. " + GraphNameValidator.DESCRIPTION;
-        }
-
-        @Override
-        public Class<NormalizedGraphName> getType() {
-            return NormalizedGraphName.class;
-        }
-    };
-
     public static final SettingValueParser<GlobbingPattern> GLOBBING_PATTERN = new SettingValueParser<>() {
         @Override
         public GlobbingPattern parse(String value) {
@@ -829,7 +799,6 @@ public final class SettingValueParsers {
             return (Class<Map<String, String>>) (Class) Map.class;
         }
     }
-    ;
 
     public static final SettingValueParser<Map<String, String>> MAP_PATTERN = new MapPattern();
 
