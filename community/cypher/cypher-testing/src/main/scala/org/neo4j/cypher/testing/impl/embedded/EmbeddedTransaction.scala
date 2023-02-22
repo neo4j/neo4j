@@ -40,4 +40,5 @@ case class EmbeddedTransaction(private val embeddedTransaction: Transaction) ext
   override def rollback(): Unit = convertExceptions {
     embeddedTransaction.rollback()
   }
+  override def close(): Unit = embeddedTransaction.close()
 }

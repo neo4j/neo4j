@@ -36,10 +36,13 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
+import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
 import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.impl.api.KernelTransactions
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade
 import org.neo4j.kernel.impl.query.QueryExecutionEngine
+
+import scala.util.Using
 
 object FeatureDatabaseManagementService {
 
@@ -100,7 +103,7 @@ object FeatureDatabaseManagementService {
 
 case class FeatureDatabaseManagementService(
   private val databaseManagementService: DatabaseManagementService,
-  private val executorFactory: CypherExecutorFactory,
+  val executorFactory: CypherExecutorFactory,
   private val databaseName: Option[String] = None
 ) {
 
@@ -115,18 +118,23 @@ case class FeatureDatabaseManagementService(
   private val database: GraphDatabaseFacade =
     databaseManagementService.database(databaseName.getOrElse(DEFAULT_DATABASE_NAME)).asInstanceOf[GraphDatabaseFacade]
 
-  private val cypherExecutor = databaseName match {
-    case Some(name) => executorFactory.executor(name)
-    case None       => executorFactory.executor()
-  }
+  private val cypherExecutor = createExecutor()
 
   private lazy val kernel = database.getDependencyResolver.resolveDependency(classOf[Kernel])
   private lazy val globalProcedures = database.getDependencyResolver.provideDependency(classOf[GlobalProcedures]).get()
   private lazy val executionEngine = database.getDependencyResolver.resolveDependency(classOf[QueryExecutionEngine])
 
+  private def createExecutor() = databaseName match {
+    case Some(name) => executorFactory.executor(name)
+    case None       => executorFactory.executor()
+  }
+
   def registerProcedure(procedure: BasicProcedure): Unit = kernel.registerProcedure(procedure)
 
   def registerProcedure(procedure: Class[_]): Unit = globalProcedures.registerProcedure(procedure)
+
+  def registerUserAggregation(function: CallableUserAggregationFunction): Unit =
+    kernel.registerUserAggregationFunction(function)
 
   def clearQueryCaches(): Unit = executionEngine.clearQueryCaches()
 
@@ -161,10 +169,20 @@ case class FeatureDatabaseManagementService(
   def execute[T](statement: String, parameters: Map[String, Object], converter: StatementResult => T): T =
     cypherExecutor.execute(statement, parameters, converter)
 
+  def execute[T](statement: String, converter: StatementResult => T): T =
+    execute(statement, Map.empty, converter)
+
+  def executeInNewSession[T](statement: String, converter: StatementResult => T): T = {
+    if (cypherExecutor.sessionBased) {
+      Using.resource(createExecutor())(e => e.execute(statement, Map.empty, converter))
+    } else {
+      execute(statement, converter)
+    }
+  }
+
   def shutdown(): Unit = {
     cypherExecutor.close()
     executorFactory.close()
     databaseManagementService.shutdown()
   }
-
 }

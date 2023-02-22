@@ -44,4 +44,5 @@ case class EmbeddedCypherExecutor(private val graph: GraphDatabaseService) exten
   }
 
   override def close(): Unit = {}
+  override def sessionBased: Boolean = false
 }

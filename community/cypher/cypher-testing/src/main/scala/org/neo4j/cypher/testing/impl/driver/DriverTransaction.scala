@@ -37,5 +37,5 @@ case class DriverTransaction(private val driverTransaction: Transaction) extends
   override def rollback(): Unit = convertExceptions {
     driverTransaction.rollback()
   }
-
+  override def close(): Unit = driverTransaction.close()
 }

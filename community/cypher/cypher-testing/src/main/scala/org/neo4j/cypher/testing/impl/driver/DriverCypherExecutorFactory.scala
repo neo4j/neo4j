@@ -41,7 +41,7 @@ case class DriverCypherExecutorFactory(
   token: Option[AuthToken] = None
 ) extends CypherExecutorFactory {
 
-  private val driver: Driver = {
+  val driver: Driver = {
     val connectorPortRegister =
       databaseManagementService.database(config.get(GraphDatabaseSettings.initial_default_database)).asInstanceOf[
         GraphDatabaseAPI

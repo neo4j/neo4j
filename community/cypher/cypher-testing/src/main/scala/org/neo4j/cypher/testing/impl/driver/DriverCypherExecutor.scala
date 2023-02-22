@@ -40,4 +40,5 @@ case class DriverCypherExecutor(private val session: Session) extends CypherExec
   }
 
   override def close(): Unit = session.close()
+  override def sessionBased: Boolean = true
 }

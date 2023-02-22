@@ -59,6 +59,8 @@ case class HttpStatementResult(result: Result, notifications: Seq[Notification])
         )
       )
       .toList
+  override def iterator(): Iterator[Map[String, AnyRef]] = ???
+  override def close(): Unit = {}
 }
 
 object HttpStatementResult {

@@ -38,5 +38,5 @@ case class HttpCypherExecutor(private val dbHttp: HTTP.Builder) extends CypherEx
   }
 
   override def close(): Unit = ()
-
+  override def sessionBased: Boolean = false
 }

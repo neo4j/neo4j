@@ -40,6 +40,7 @@ case class HttpTransaction(txHttp: HTTP.Builder, commitHttp: HTTP.Builder) exten
   override def rollback(): Unit = convertExceptions {
     txHttp.DELETE("")
   }
+  override def close(): Unit = ???
 }
 
 object HttpTransaction {

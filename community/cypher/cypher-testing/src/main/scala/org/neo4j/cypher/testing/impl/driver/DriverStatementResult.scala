@@ -21,20 +21,24 @@ package org.neo4j.cypher.testing.impl.driver
 
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.shared.NotificationImpl
+import org.neo4j.driver
 import org.neo4j.driver.Result
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.NotificationCategory
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 case class DriverStatementResult(private val driverResult: Result) extends StatementResult {
 
   override def columns(): Seq[String] = driverResult.keys().asScala.toList
 
-  override def records(): Seq[Record] = driverResult.list().asScala.toList
-    .map(record => record.asMap[AnyRef](DriverRecordConverter.convertValue).asScala.toMap)
+  override def records(): Seq[Record] = driverResult.list().asScala.toList.map(toValue)
+
+  private def toValue(record: driver.Record): Map[String, AnyRef] =
+    record.asMap[AnyRef](DriverRecordConverter.convertValue).asScala.toMap
 
   override def consume(): Unit = driverResult.consume()
 
@@ -52,4 +56,7 @@ case class DriverStatementResult(private val driverResult: Result) extends State
           NotificationCategory.UNKNOWN.name()
         )
       )
+
+  override def iterator(): Iterator[Map[String, AnyRef]] = driverResult.asScala.map(toValue)
+  override def close(): Unit = {}
 }
