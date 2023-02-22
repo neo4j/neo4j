@@ -191,6 +191,21 @@ class StepSequencerTest extends CypherFunSuite {
     postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
+  test("should not produce illegal sequence if a not yet enabled condition gets invalidated") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condA), Set(condC)),
+      new TestStep("1", Set(condA), Set(condB), Set()),
+      new TestStep("2", Set(condB), Set(condC), Set(condD))
+    )
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should equal(Seq(
+      steps(0),
+      steps(1),
+      steps(2)
+    ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
+  }
+
   test("orders independent steps correctly if conditions get invalidated") {
     val steps = Seq(
       new TestStep("0", Set(), Set(condA), Set()),

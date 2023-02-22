@@ -359,7 +359,7 @@ object StepSequencer {
     val allPostConditions: Set[Condition] = allSteps.iterator.flatMap(_.postConditions).to(Set)
 
     val numberOfTimesEachStepIsInvalidated = allSteps
-      .flatMap(_.invalidatedConditions.collect { case s if introducingSteps.contains(s) => introducingSteps(s) })
+      .flatMap(_.invalidatedConditions.collect { case c if introducingSteps.contains(c) => introducingSteps(c) })
       .groupBy(identity)
       .view
       .mapValues(_.size)
@@ -374,13 +374,18 @@ object StepSequencer {
 
     def dealWithInvalidatedConditions(nextStep: S, startPoints: mutable.Set[S]): Unit = {
       currentConditions ++= nextStep.postConditions
-      currentConditions --= nextStep.invalidatedConditions
       if (nextStep.invalidatedConditions.nonEmpty) {
         // We need to reinsert parts of the graph for the work that n is undoing.
         val cannotStartFrom = mutable.Set.empty[S]
-        val stepsThatHaveTheirWorkUndone = nextStep.invalidatedConditions.collect {
-          case s if introducingSteps.contains(s) => introducingSteps(s)
-        }
+
+        // All steps which introduce a condition that gets invalidated
+        val stepsThatHaveTheirWorkUndone: Set[S] =
+          nextStep.invalidatedConditions
+            .filter(currentConditions)
+            .flatMap(introducingSteps.get)
+
+        currentConditions --= nextStep.invalidatedConditions
+
         for (r <- stepsThatHaveTheirWorkUndone) {
           // All steps that depend on r ...
           graph.outgoing(r)
