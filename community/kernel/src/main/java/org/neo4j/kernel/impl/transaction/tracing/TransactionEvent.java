@@ -25,10 +25,10 @@ package org.neo4j.kernel.impl.transaction.tracing;
 public interface TransactionEvent extends AutoCloseable {
     TransactionEvent NULL = new TransactionEvent() {
         @Override
-        public void setSuccess(boolean success) {}
+        public void setCommit(boolean commit) {}
 
         @Override
-        public void setFailure(boolean failure) {}
+        public void setRollback(boolean rollback) {}
 
         @Override
         public CommitEvent beginCommitEvent() {
@@ -48,12 +48,12 @@ public interface TransactionEvent extends AutoCloseable {
     /**
      * The transaction was marked as successful.
      */
-    void setSuccess(boolean success);
+    void setCommit(boolean commit);
 
     /**
      * The transaction was marked as failed.
      */
-    void setFailure(boolean failure);
+    void setRollback(boolean rollback);
 
     /**
      * Begin the process of committing the transaction.

@@ -200,7 +200,6 @@ class FulltextIndexProviderTest {
         try (KernelTransactionImplementation transaction = getKernelTransaction()) {
             IndexDescriptor descriptor = transaction.schemaRead().indexGetForName(NAME);
             assertEquals(descriptor.schema(), fulltextIndex.schema());
-            transaction.success();
         }
     }
 
@@ -246,7 +245,7 @@ class FulltextIndexProviderTest {
                     .withIndexType(FULLTEXT)
                     .withName("fulltext");
             indexReference = transaction.schemaWrite().indexCreate(prototype);
-            transaction.success();
+            transaction.commit();
         }
         await(indexReference);
         controller.restartDbms();
@@ -278,7 +277,7 @@ class FulltextIndexProviderTest {
                     .withIndexType(FULLTEXT)
                     .withName("fulltext");
             indexReference = transaction.schemaWrite().indexCreate(prototype);
-            transaction.success();
+            transaction.commit();
         }
         await(indexReference);
         String secondRelId;
@@ -507,16 +506,13 @@ class FulltextIndexProviderTest {
             SchemaWrite schemaWrite = transaction.schemaWrite();
             var e = assertThrows(IllegalArgumentException.class, () -> schemaWrite.indexCreate(prototype));
             assertThat(e.getMessage()).contains("schema is not a full-text index schema");
-            transaction.success();
         }
     }
 
     @Test
     void indexWithUnknownAnalyzerWillBeMarkedAsFailedOnStartup() throws Exception {
-        assumeThat(
-                        db.getDependencyResolver().resolveDependency(StorageEngineFactory.class)
-                                instanceof RecordStorageEngineFactory)
-                .isTrue();
+        assumeThat(db.getDependencyResolver().resolveDependency(StorageEngineFactory.class))
+                .isInstanceOf(RecordStorageEngineFactory.class);
 
         // Create a full-text index.
         long indexId;
@@ -528,7 +524,7 @@ class FulltextIndexProviderTest {
             SchemaWrite schemaWrite = transaction.schemaWrite();
             IndexDescriptor index = schemaWrite.indexCreate(prototype);
             indexId = index.getId();
-            transaction.success();
+            transaction.commit();
         }
 
         // Modify the full-text index such that it has an analyzer configured that does not exist.
@@ -850,7 +846,7 @@ class FulltextIndexProviderTest {
                     .withName(NAME)
                     .withIndexConfig(config);
             fulltext = transaction.schemaWrite().indexCreate(prototype);
-            transaction.success();
+            transaction.commit();
         }
         return fulltext;
     }
@@ -861,7 +857,6 @@ class FulltextIndexProviderTest {
             IndexDescriptor descriptor = transaction.schemaRead().indexGetForName(NAME);
             assertEquals(fulltextIndexDescriptor.schema(), descriptor.schema());
             assertEquals(fulltextIndexDescriptor.isUnique(), descriptor.isUnique());
-            transaction.success();
         }
     }
 

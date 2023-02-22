@@ -158,7 +158,7 @@ class DetachedLogTailScannerTest {
 
         var e = assertThrows(RuntimeException.class, testTogFiles::getTailMetadata);
         assertThat(e)
-                .getRootCause()
+                .rootCause()
                 .hasMessageContaining("LogPosition{logVersion=8,")
                 .hasMessageContaining("checkpoint does not point to a valid location in transaction logs.");
     }

@@ -211,8 +211,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private LeaseClient leaseClient;
     private volatile boolean closing;
     private volatile boolean closed;
-    private boolean failure;
-    private boolean success;
+    private boolean rollback;
 
     private volatile TerminationMark terminationMark;
     private long startTimeMillis;
@@ -409,8 +408,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.terminationMark = null;
         this.closing = false;
         this.closed = false;
-        this.failure = false;
-        this.success = false;
+        this.rollback = true;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clocks.systemClock().millis();
         this.startTimeNanos = clocks.systemClock().nanos();
@@ -525,21 +523,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return timeoutMillis;
     }
 
-    public void success() {
-        this.success = true;
-    }
-
-    boolean isSuccess() {
-        return success;
-    }
-
     @Override
     public boolean canCommit() {
-        return success && !failure && terminationMark == null;
-    }
-
-    public void failure() {
-        failure = true;
+        return !rollback && terminationMark == null;
     }
 
     @Override
@@ -648,7 +634,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             if (innerTransactionHandler != null) {
                 innerTransactionHandler.terminateInnerTransactions(reason);
             }
-            failure = true;
             terminationMark = new TerminationMark(reason, clocks.systemClock().nanos());
             if (lockClient != null) {
                 lockClient.stop();
@@ -821,7 +806,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public long commit(KernelTransactionMonitor kernelTransactionMonitor) throws TransactionFailureException {
-        success();
+        rollback = false;
         this.kernelTransactionMonitor = kernelTransactionMonitor;
         return closeTransaction();
     }
@@ -833,10 +818,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         // and will throw exception. For cases when users will do rollback as result of that as well we need to support
         // chain of rollback calls but
         // still fail on rollback, commit
-        if (!isOpen() && failure) {
+        if (!isOpen()) {
             return;
         }
-        failure();
         closeTransaction();
     }
 
@@ -896,8 +880,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void closed() {
         closed = true;
         closing = false;
-        transactionEvent.setSuccess(success);
-        transactionEvent.setFailure(failure);
+        transactionEvent.setCommit(!rollback);
+        transactionEvent.setRollback(rollback);
         transactionEvent.setTransactionWriteState(writeState.name());
         transactionEvent.setReadOnly(txState == null || !txState.hasChanges());
         transactionEvent.close();
@@ -924,13 +908,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     /**
-     * Throws exception if this transaction was marked as successful but failure flag has also been set to true.
+     * Throws exception if this transaction was attempted to be committed but failed or was terminated.
      * <p>
      * This could happen when:
      * <ul>
-     * <li>caller explicitly calls both {@link #success()} and {@link #failure()}</li>
-     * <li>caller explicitly calls {@link #success()} but transaction execution fails</li>
-     * <li>caller explicitly calls {@link #success()} but transaction is terminated</li>
+     * <li>caller explicitly calls {@link #commit()} but transaction execution fails</li>
+     * <li>caller explicitly calls {@link #commit()} but transaction is terminated</li>
      * </ul>
      * <p>
      *
@@ -938,13 +921,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * @throws TransactionTerminatedException when transaction was terminated
      */
     private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException {
-        if (success && isTerminated()) {
+        if (!rollback && isTerminated()) {
             throw new TransactionTerminatedException(terminationMark.getReason());
         }
-        if (success) {
-            // Success was called, but also failure which means that the client code using this
-            // transaction passed through a happy path, but the transaction was still marked as
-            // failed for one or more reasons. Tell the user that although it looked happy it
+        if (!rollback) {
+            // Commit was called, but also failed which means that the client code using this
+            // transaction passed through a happy path, but the transaction was rolled back
+            // for one or more reasons. Tell the user that although it looked happy it
             // wasn't committed, but was instead rolled back.
             throw new TransactionFailureException(
                     Status.Transaction.TransactionMarkedAsFailed,
@@ -1593,6 +1576,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             waitingTimeNanos = 0;
             transactionThreadId = -1;
         }
+    }
+
+    public boolean isRollback() {
+        return rollback;
     }
 
     @Override

@@ -211,7 +211,7 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
             int leakedStatements = referenceCount;
             referenceCount = 0;
             cleanupResources();
-            if (trackStatementClose && transaction.isSuccess()) {
+            if (trackStatementClose && !transaction.isRollback()) {
                 String message = getStatementNotClosedMessage(leakedStatements);
                 throw new StatementNotClosedException(message, statementOpenCloseCalls);
             }

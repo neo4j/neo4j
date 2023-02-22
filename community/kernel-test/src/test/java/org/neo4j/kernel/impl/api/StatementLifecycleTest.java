@@ -61,7 +61,7 @@ class StatementLifecycleTest {
     void shouldReleaseStoreStatementWhenForceClosingStatements() {
         // given
         KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
-        when(transaction.isSuccess()).thenReturn(true);
+        when(transaction.isRollback()).thenReturn(false);
         KernelStatement statement = createStatement(transaction);
         statement.acquire();
 

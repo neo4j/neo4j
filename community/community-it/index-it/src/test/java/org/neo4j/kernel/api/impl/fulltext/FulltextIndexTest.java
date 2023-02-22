@@ -611,7 +611,6 @@ class FulltextIndexTest extends LuceneFulltextTestSupport {
         try (KernelTransactionImplementation tx = getKernelTransaction()) {
             label = tx.tokenRead().nodeLabel(LABEL.name());
             propertyKey = tx.tokenRead().propertyKey(PROP);
-            tx.success();
         }
 
         IndexConfig indexConfig = IndexConfig.with(EVENTUALLY_CONSISTENT, Values.booleanValue(true));

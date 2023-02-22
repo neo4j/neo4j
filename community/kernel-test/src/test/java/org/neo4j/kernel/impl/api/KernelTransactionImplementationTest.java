@@ -93,7 +93,6 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryLimitExceededException;
@@ -126,7 +125,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             // WHEN
             transactionInitializer.accept(transaction);
             assertSame(TransactionInitializationTrace.NONE, transaction.getInitializationTrace());
-            transaction.success();
         }
         config.setDynamic(
                 GraphDatabaseSettings.transaction_tracing_level,
@@ -136,7 +134,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             // WHEN
             transactionInitializer.accept(transaction);
             assertNotSame(TransactionInitializationTrace.NONE, transaction.getInitializationTrace());
-            transaction.success();
         }
     }
 
@@ -418,7 +415,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             clock.forward(5, MILLISECONDS);
             // ...and simulating some other transaction being committed
             when(metadataProvider.getLastCommittedTransactionId()).thenReturn(7L);
-            transaction.success();
+            transaction.commit();
         }
 
         // THEN start time and last tx when started should have been taken from when the transaction started
@@ -433,7 +430,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) throws Exception {
         KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
 
-        tx.success();
         tx.close();
 
         verify(txPool).release(tx);
@@ -445,7 +441,6 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) throws Exception {
         KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
 
-        tx.failure();
         tx.close();
 
         verify(txPool).release(tx);
@@ -501,27 +496,13 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
     @ParameterizedTest
     @MethodSource("parameters")
-    void terminatedTxMarkedNeitherSuccessNorFailureClosesWithoutThrowing(
-            String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) throws Exception {
-        KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
-        transactionInitializer.accept(tx);
-        tx.markForTermination(Status.General.UnknownError);
-
-        tx.close();
-        verify(locksClient).stop();
-        verify(transactionMonitor).transactionTerminated(isWriteTx);
-    }
-
-    @ParameterizedTest
-    @MethodSource("parameters")
-    void terminatedTxMarkedForSuccessThrowsOnClose(
+    void terminatedTxThrowsOnCommit(
             String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) {
         KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
         transactionInitializer.accept(tx);
-        tx.success();
         tx.markForTermination(Status.General.UnknownError);
 
-        assertThrows(TransactionTerminatedException.class, tx::close);
+        assertThrows(TransactionTerminatedException.class, tx::commit);
     }
 
     @ParameterizedTest
@@ -530,39 +511,12 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) throws Exception {
         KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
         transactionInitializer.accept(tx);
-        tx.failure();
         tx.markForTermination(Status.General.UnknownError);
 
         tx.close();
 
         verify(locksClient).stop();
         verify(transactionMonitor).transactionTerminated(isWriteTx);
-    }
-
-    @ParameterizedTest
-    @MethodSource("parameters")
-    void terminatedTxMarkedForBothSuccessAndFailureThrowsOnClose(
-            String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) {
-        Locks.Client locksClient = mock(Locks.Client.class);
-        KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
-        transactionInitializer.accept(tx);
-        tx.success();
-        tx.failure();
-        tx.markForTermination(Status.General.UnknownError);
-
-        assertThrows(TransactionTerminatedException.class, tx::close);
-    }
-
-    @ParameterizedTest
-    @MethodSource("parameters")
-    void txMarkedForBothSuccessAndFailureThrowsOnClose(
-            String name, boolean isWriteTx, Consumer<KernelTransaction> transactionInitializer) {
-        Locks.Client locksClient = mock(Locks.Client.class);
-        KernelTransactionImplementation tx = newTransaction(loginContext(isWriteTx));
-        tx.success();
-        tx.failure();
-
-        assertThrows(TransactionFailureException.class, tx::close);
     }
 
     @ParameterizedTest

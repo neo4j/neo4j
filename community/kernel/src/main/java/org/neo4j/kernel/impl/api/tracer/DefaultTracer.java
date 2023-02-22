@@ -171,10 +171,10 @@ public class DefaultTracer implements DatabaseTracer {
     private class DefaultTransactionEvent implements TransactionEvent {
 
         @Override
-        public void setSuccess(boolean success) {}
+        public void setCommit(boolean commit) {}
 
         @Override
-        public void setFailure(boolean failure) {}
+        public void setRollback(boolean rollback) {}
 
         @Override
         public CommitEvent beginCommitEvent() {
