@@ -1228,6 +1228,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try {
             markAsClosed();
             eventListeners.afterCommit(listenersState);
+            kernelTransactionMonitor.afterCommit(this);
         } finally {
             transactionMonitor.transactionFinished(true, hasTxState());
             transactionExecutionMonitor.commit(this);

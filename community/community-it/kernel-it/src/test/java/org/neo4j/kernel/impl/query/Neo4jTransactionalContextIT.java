@@ -130,6 +130,14 @@ class Neo4jTransactionalContextIT {
                 .isGreaterThan(previousCacheHits);
     }
 
+    /**
+     * Generate some page cache hits/faults on commit; returns expected hits
+     */
+    private long generatePageCacheHitsOnCommit(TransactionalContext ctx) {
+        ctx.transaction().createNode();
+        return 1;
+    }
+
     private void getLocks(TransactionalContext ctx, String label) {
         try (ResourceIterator<Node> nodes = ctx.transaction().findNodes(Label.label(label))) {
             nodes.stream().forEach(Node::delete);
@@ -271,11 +279,13 @@ class Neo4jTransactionalContextIT {
 
         var closedInnerHits = 0L;
         var closedInnerFaults = 0L;
+        var expectedInnerCommitHits = 0L;
         for (int i = 0; i < 10; i++) {
             var innerCtx = outerCtx.contextWithNewTransaction();
             //  Generate page cache hits/faults for half of the executions
             if (i % 2 == 0) {
                 generatePageCacheHits(innerCtx);
+                expectedInnerCommitHits += generatePageCacheHitsOnCommit(innerCtx);
             }
             closedInnerHits += getPageCacheHits(innerCtx);
             closedInnerFaults += getPageCacheFaults(innerCtx);
@@ -291,13 +301,14 @@ class Neo4jTransactionalContextIT {
         // Then
         var snapshot = executingQuery.snapshot();
         // Actual assertion
-        assertThat(snapshot.pageHits()).isEqualTo(outerHits + closedInnerHits + openInnerHits);
+        assertThat(snapshot.pageHits())
+                .isEqualTo(outerHits + closedInnerHits + openInnerHits + expectedInnerCommitHits);
         assertThat(snapshot.pageFaults()).isEqualTo(outerFaults + closedInnerFaults + openInnerFaults);
     }
 
     @Test
     void
-            contextWithNewTransactionKernelStatisticsProviderShouldOnlySeePageHitsFaultsFromCurrentTransactionsInPROFILE() {
+            contextWithNewTransactionKernelStatisticsProviderShouldOnlySeePageHitsFaultsFromCurrentTransactionsAndInnerTransactionCommitsInPROFILE() {
         // Given
 
         // Add data to database so that we get page hits/faults
@@ -311,12 +322,14 @@ class Neo4jTransactionalContextIT {
         generatePageCacheHits(outerCtx);
         var outerHits = getPageCacheHits(outerCtx);
         var outerFaults = getPageCacheFaults(outerCtx);
+        var expectedInnerCommitHits = 0L;
 
         for (int i = 0; i < 10; i++) {
             var innerCtx = outerCtx.contextWithNewTransaction();
             //  Generate page cache hits/faults for half of the executions
             if (i % 2 == 0) {
                 generatePageCacheHits(innerCtx);
+                expectedInnerCommitHits += generatePageCacheHitsOnCommit(innerCtx);
             }
             innerCtx.commit();
         }
@@ -331,9 +344,13 @@ class Neo4jTransactionalContextIT {
         var outerProfileStatisticsProvider = outerCtx.kernelStatisticProvider();
         var innerProfileStatisticsProvider = openInnerCtx.kernelStatisticProvider();
         // Actual assertion
-        assertThat(outerProfileStatisticsProvider.getPageCacheHits()).isEqualTo(outerHits);
+        assertThat(outerProfileStatisticsProvider.getPageCacheHits()).isEqualTo(outerHits + expectedInnerCommitHits);
         assertThat(outerProfileStatisticsProvider.getPageCacheMisses()).isEqualTo(outerFaults);
-        assertThat(innerProfileStatisticsProvider.getPageCacheHits()).isEqualTo(openInnerHits);
+
+        // getPageCacheHits/Misses should include statistics from the commit phase from previously closed transactions.
+        // That's a little bit weird, but it works for profiling.
+        assertThat(innerProfileStatisticsProvider.getPageCacheHits())
+                .isEqualTo(openInnerHits + expectedInnerCommitHits);
         assertThat(innerProfileStatisticsProvider.getPageCacheMisses()).isEqualTo(openInnerFaults);
     }
 

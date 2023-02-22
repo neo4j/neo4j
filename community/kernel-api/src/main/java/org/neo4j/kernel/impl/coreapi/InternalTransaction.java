@@ -66,4 +66,6 @@ public interface InternalTransaction extends Transaction, TransactionalEntityFac
     Entity validateSameDB(Entity entity);
 
     ElementIdMapper elementIdMapper();
+
+    void commit(KernelTransaction.KernelTransactionMonitor monitor);
 }

@@ -34,6 +34,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -107,7 +108,7 @@ class RelationshipGroupStoreIT {
             Future<Object> t2Future = t2.executeDontWait(() -> {
                 try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
                     tx.getNodeById(nodeId).createRelationshipTo(tx.createNode(), typeB);
-                    tx.commit(barrier::reached);
+                    tx.commit(KernelTransaction.KernelTransactionMonitor.withBeforeApply(barrier::reached));
                 }
                 return null;
             });
@@ -161,7 +162,7 @@ class RelationshipGroupStoreIT {
             Future<Object> t2Future = t2.executeDontWait(() -> {
                 try (TransactionImpl tx = (TransactionImpl) db.beginTx()) {
                     tx.getNodeById(nodeId).createRelationshipTo(tx.createNode(), typeA);
-                    tx.commit(barrier::reached);
+                    tx.commit(KernelTransaction.KernelTransactionMonitor.withBeforeApply(barrier::reached));
                 }
                 return null;
             });

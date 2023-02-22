@@ -62,6 +62,11 @@ public class ProcedureTransactionImpl implements InternalTransaction {
     }
 
     @Override
+    public void commit(KernelTransaction.KernelTransactionMonitor monitor) {
+        commit();
+    }
+
+    @Override
     public void commit() {
         throw new UnsupportedOperationException("Commit of ongoing transaction inside of procedure is unsupported.");
     }

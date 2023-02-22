@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -102,7 +103,13 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
      */
     long READ_ONLY_ID = 0;
 
-    KernelTransactionMonitor NO_MONITOR = () -> {};
+    KernelTransactionMonitor NO_MONITOR = new KernelTransactionMonitor() {
+        @Override
+        public void beforeApply() {}
+
+        @Override
+        public void afterCommit(ExecutionStatistics statistics) {}
+    };
 
     /**
      * Commit and any changes introduced as part of this transaction.
@@ -475,5 +482,36 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
          * but before the commands have been applied to the transaction log and store.
          */
         void beforeApply();
+
+        /**
+         * Called after the transaction has been committed, when its execution statistics are still available.
+         */
+        void afterCommit(ExecutionStatistics statistics);
+
+        static KernelTransactionMonitor withBeforeApply(Runnable beforeApply) {
+            return new KernelTransactionMonitor() {
+
+                @Override
+                public void beforeApply() {
+                    beforeApply.run();
+                }
+
+                @Override
+                public void afterCommit(ExecutionStatistics statistics) {}
+            };
+        }
+
+        static KernelTransactionMonitor withAfterCommit(Consumer<ExecutionStatistics> onFinalStatistics) {
+            return new KernelTransactionMonitor() {
+
+                @Override
+                public void beforeApply() {}
+
+                @Override
+                public void afterCommit(ExecutionStatistics statistics) {
+                    onFinalStatistics.accept(statistics);
+                }
+            };
+        }
     }
 }

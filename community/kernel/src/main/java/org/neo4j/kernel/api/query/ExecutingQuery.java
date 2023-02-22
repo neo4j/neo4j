@@ -33,6 +33,7 @@ import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.neo4j.graphdb.ExecutionPlanDescription;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.lock.ActiveLock;
@@ -43,6 +44,7 @@ import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.HeapHighWaterMarkTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.virtual.MapValue;
 
 /**
@@ -87,9 +89,14 @@ public class ExecutingQuery {
     private HeapHighWaterMarkTracker memoryTracker;
 
     // Accumulated statistics of transactions that have executed this query but are already committed
-    private volatile long pageHitsOfClosedTransactions;
-    // faults piggy-back on the write-barrier of the volatile hits
-    private long pageFaultsOfClosedTransactions;
+    private volatile long pageHitsOfClosedTransactionsExcludingCommits;
+    private volatile long pageFaultsOfClosedTransactionsExcludingCommits;
+
+    private volatile long pageHitsOfClosedTransactionsIncludingCommits;
+    private volatile long pageFaultsOfClosedTransactionsIncludingCommits;
+
+    private volatile long pageHitsOfClosedTransactionCommits;
+    private volatile long pageFaultsOfClosedTransactionCommits;
 
     /**
      * List of all transactions that are active executing this query.
@@ -241,15 +248,38 @@ public class ExecutingQuery {
                 .findFirst()
                 .ifPresentOrElse(
                         foundBinding -> {
-                            pageFaultsOfClosedTransactions += foundBinding.faultsSupplier.getAsLong();
-                            // Write volatile field last (we only have one thread which writes to this field)
-                            //noinspection NonAtomicOperationOnVolatileField
-                            pageHitsOfClosedTransactions += foundBinding.hitsSupplier.getAsLong();
+                            recordStatisticsOfTransactionAboutToClose(
+                                    foundBinding.hitsSupplier.getAsLong(), foundBinding.faultsSupplier.getAsLong());
                         },
                         () -> {
                             throw new IllegalStateException(
                                     "Unbound a transaction that was never bound. ID: " + userTransactionId);
                         });
+    }
+
+    @VisibleForTesting
+    void recordStatisticsOfTransactionAboutToClose(long hits, long faults) {
+        // We only have one thread writing to these fields
+        //noinspection NonAtomicOperationOnVolatileField
+        pageHitsOfClosedTransactionsExcludingCommits += hits;
+        //noinspection NonAtomicOperationOnVolatileField
+        pageFaultsOfClosedTransactionsExcludingCommits += faults;
+    }
+
+    /**
+     * A transaction executing part of this query is closing; record its page cache statistics (including commit).
+     */
+    public void recordStatisticsOfClosedTransaction(ExecutionStatistics statistics) {
+        // We only have one thread writing to these fields
+        //noinspection NonAtomicOperationOnVolatileField
+        pageHitsOfClosedTransactionsIncludingCommits += statistics.pageHits();
+        //noinspection NonAtomicOperationOnVolatileField
+        pageFaultsOfClosedTransactionsIncludingCommits += statistics.pageFaults();
+
+        pageHitsOfClosedTransactionCommits =
+                (pageHitsOfClosedTransactionsIncludingCommits - pageHitsOfClosedTransactionsExcludingCommits);
+        pageFaultsOfClosedTransactionCommits =
+                (pageFaultsOfClosedTransactionsIncludingCommits - pageFaultsOfClosedTransactionsExcludingCommits);
     }
 
     public void onObfuscatorReady(QueryObfuscator queryObfuscator) {
@@ -328,9 +358,8 @@ public class ExecutingQuery {
 
         // activeLockCount is not atomic to capture, so we capture it after the most sensitive part.
         long activeLocks = 0;
-        // Read volatile field first
-        long hits = pageHitsOfClosedTransactions;
-        long faults = pageFaultsOfClosedTransactions;
+        long hits = pageHitsOfClosedTransactions();
+        long faults = pageFaultsOfClosedTransactions();
         for (TransactionBinding tx : openTransactionBindings) {
             activeLocks += tx.getActiveLocks();
             hits += tx.hitsSupplier.getAsLong();
@@ -487,10 +516,18 @@ public class ExecutingQuery {
     }
 
     public long pageHitsOfClosedTransactions() {
-        return pageHitsOfClosedTransactions;
+        return pageHitsOfClosedTransactionsExcludingCommits + pageHitsOfClosedTransactionCommits;
     }
 
     public long pageFaultsOfClosedTransactions() {
-        return pageFaultsOfClosedTransactions;
+        return pageFaultsOfClosedTransactionsExcludingCommits + pageFaultsOfClosedTransactionCommits;
+    }
+
+    public long pageHitsOfClosedTransactionCommits() {
+        return pageHitsOfClosedTransactionCommits;
+    }
+
+    public long pageFaultsOfClosedTransactionCommits() {
+        return pageFaultsOfClosedTransactionCommits;
     }
 }

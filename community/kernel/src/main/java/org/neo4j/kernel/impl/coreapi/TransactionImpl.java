@@ -170,6 +170,7 @@ public class TransactionImpl extends DataLookup implements InternalTransaction {
         commit(KernelTransaction.NO_MONITOR);
     }
 
+    @Override
     public void commit(KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor) {
         safeTerminalOperation(transaction -> transaction.commit(kernelTransactionMonitor));
     }

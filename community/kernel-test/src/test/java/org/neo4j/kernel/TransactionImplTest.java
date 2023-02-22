@@ -322,13 +322,10 @@ class TransactionImplTest {
 
         // and a monitor that simulates a tx-failure + rollback inside of commit
         var monitorCalled = new MutableBoolean();
-        var monitor = new KernelTransactionMonitor() {
-            @Override
-            public void beforeApply() {
-                monitorCalled.setTrue();
-                transaction.rollback();
-            }
-        };
+        var monitor = KernelTransactionMonitor.withBeforeApply(() -> {
+            monitorCalled.setTrue();
+            transaction.rollback();
+        });
 
         // WHEN
         transaction.commit(monitor);

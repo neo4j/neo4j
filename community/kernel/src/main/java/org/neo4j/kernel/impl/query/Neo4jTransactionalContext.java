@@ -172,9 +172,18 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         }
     }
 
+    private KernelTransaction.KernelTransactionMonitor statisticsMonitor() {
+        return KernelTransaction.KernelTransactionMonitor.withAfterCommit(
+                statistics -> executingQuery.recordStatisticsOfClosedTransaction(statistics));
+    }
+
     @Override
     public void commit() {
-        safeTxOperation(Transaction::commit);
+        safeTxOperation(this::commitOperation);
+    }
+
+    private void commitOperation(InternalTransaction tx) {
+        tx.commit(statisticsMonitor());
     }
 
     private void safeTxOperation(Consumer<InternalTransaction> operation) {
@@ -249,7 +258,7 @@ public class Neo4jTransactionalContext implements TransactionalContext {
         try {
             oldStatement.close();
             try (oldKernelTx) {
-                return oldKernelTx.commit();
+                return oldKernelTx.commit(statisticsMonitor());
             }
         } catch (Throwable t) {
             // Corner case: The old transaction might have been terminated by the user. Now we also need to
@@ -396,9 +405,10 @@ public class Neo4jTransactionalContext implements TransactionalContext {
     }
 
     /**
-     * Provide statistics using only the page hits/misses of the current transaction.
+     * Provide statistics using the page hits/misses of the current transaction plus the hits/misses caused by
+     * the commits of already closed transactions.
      */
-    private static class TransactionalContextStatisticProvider implements StatisticProvider {
+    private class TransactionalContextStatisticProvider implements StatisticProvider {
         private final ExecutionStatistics executionStatistics;
 
         private TransactionalContextStatisticProvider(ExecutionStatistics executionStatistics) {
@@ -407,12 +417,12 @@ public class Neo4jTransactionalContext implements TransactionalContext {
 
         @Override
         public long getPageCacheHits() {
-            return executionStatistics.pageHits();
+            return executionStatistics.pageHits() + executingQuery.pageHitsOfClosedTransactionCommits();
         }
 
         @Override
         public long getPageCacheMisses() {
-            return executionStatistics.pageFaults();
+            return executionStatistics.pageFaults() + executingQuery.pageFaultsOfClosedTransactionCommits();
         }
     }
 

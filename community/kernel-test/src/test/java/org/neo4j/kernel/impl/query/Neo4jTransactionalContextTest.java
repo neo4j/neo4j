@@ -121,7 +121,7 @@ class Neo4jTransactionalContextTest {
         when(transactionFactory.beginKernelTransaction(transactionType, securityContext, connectionInfo, null))
                 .thenReturn(secondKTX);
         when(executingQuery.databaseId()).thenReturn(Optional.of(namedDatabaseId));
-        Mockito.doThrow(RuntimeException.class).when(initialKTX).commit();
+        Mockito.doThrow(RuntimeException.class).when(initialKTX).commit(any());
         when(initialStatement.queryRegistry()).thenReturn(initialQueryRegistry);
         when(userTransaction.kernelTransaction()).thenReturn(initialKTX, initialKTX, secondKTX);
         when(secondStatement.queryRegistry()).thenReturn(secondQueryRegistry);
@@ -299,7 +299,7 @@ class Neo4jTransactionalContextTest {
         // Then
         InOrder inOrder = inOrder(statement, tx, queryRegistry);
         inOrder.verify(statement).close();
-        inOrder.verify(tx).commit();
+        inOrder.verify(tx).commit(any());
         inOrder.verify(queryRegistry).unbindExecutingQuery(any(), anyLong());
     }
 

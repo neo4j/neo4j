@@ -37,6 +37,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.MathUtil;
+import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -317,6 +318,65 @@ class ExecutingQueryTest {
         query.onObfuscatorReady(null);
         query.onCompilationCompleted(null, null);
         assertThatIllegalStateException().isThrownBy(query::onRetryAttempted);
+    }
+
+    @Test
+    void shouldCorrectlySumPageCacheStatisticsOfClosedTransactions() {
+        // Transaction 1:
+        // Before commit:
+        query.recordStatisticsOfTransactionAboutToClose(1, 2);
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(1);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(2);
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(0);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(0);
+
+        // After commit:
+        query.recordStatisticsOfClosedTransaction(new ExecutionStatistics() {
+            @Override
+            public long pageHits() {
+                return 3;
+            }
+
+            @Override
+            public long pageFaults() {
+                return 4;
+            }
+        });
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(3);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(4);
+        // Should be the difference before and after commit
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(2);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(2);
+
+        // Transaction 2:
+        // Before commit:
+        query.recordStatisticsOfTransactionAboutToClose(5, 6);
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(8);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(10);
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(2);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(2);
+
+        // After commit:
+        query.recordStatisticsOfClosedTransaction(new ExecutionStatistics() {
+            @Override
+            public long pageHits() {
+                return 7;
+            }
+
+            @Override
+            public long pageFaults() {
+                return 8;
+            }
+        });
+
+        assertThat(query.pageHitsOfClosedTransactions()).isEqualTo(10);
+        assertThat(query.pageFaultsOfClosedTransactions()).isEqualTo(12);
+        // Should be the difference before and after commit
+        assertThat(query.pageHitsOfClosedTransactionCommits()).isEqualTo(4);
+        assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(4);
     }
 
     private LockWaitEvent lock(String resourceType, long resourceId) {

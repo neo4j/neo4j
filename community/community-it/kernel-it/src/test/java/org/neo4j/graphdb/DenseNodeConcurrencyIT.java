@@ -83,6 +83,7 @@ import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.io.fs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.api.KernelTransaction.KernelTransactionMonitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.NodeEntity;
@@ -786,7 +787,7 @@ class DenseNodeConcurrencyIT {
                 t2Future = t2.executeDontWait(command(() -> {
                     try (Transaction tx = database.beginTx()) {
                         tx1.accept(tx);
-                        ((TransactionImpl) tx).commit(barrier::reached);
+                        ((TransactionImpl) tx).commit(KernelTransactionMonitor.withBeforeApply(barrier::reached));
                     }
                 }));
                 barrier.await();
@@ -821,7 +822,7 @@ class DenseNodeConcurrencyIT {
                     try (Transaction tx = database.beginTx()) {
                         tx1.accept(tx);
                         tx.createNode(); // ensure we upgrade to a write transaction to reach the barrier
-                        ((TransactionImpl) tx).commit(barrier::reached);
+                        ((TransactionImpl) tx).commit(KernelTransactionMonitor.withBeforeApply(barrier::reached));
                     }
                 }));
                 barrier.await();

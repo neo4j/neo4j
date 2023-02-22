@@ -170,10 +170,12 @@ class DetachDeleteIT {
         try (Transaction tx = db.beginTx()) {
             Write write = getWrite(tx);
             write.nodeDetachDelete(nodeId);
-            ((TransactionImpl) tx).kernelTransaction().commit(() -> {
-                sequencer.release(Phases.DETACH_DELETE_HAS_FINISHED);
-                sequencer.await(Phases.LOCK_VERIFICATION_FINISHED);
-            });
+            ((TransactionImpl) tx)
+                    .kernelTransaction()
+                    .commit(KernelTransaction.KernelTransactionMonitor.withBeforeApply(() -> {
+                        sequencer.release(Phases.DETACH_DELETE_HAS_FINISHED);
+                        sequencer.await(Phases.LOCK_VERIFICATION_FINISHED);
+                    }));
         }
         relationshipAdder.get();
         lockVerifier.get();
