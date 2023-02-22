@@ -397,15 +397,31 @@ object StepSequencer {
             .filterNot(step =>
               step.preConditions.subsetOf(currentConditions)
             )
-            .foreach { rDep =>
+            .foreach { stepAfterR =>
               // Restore the edges to those steps ...
-              workingGraph.connect(r, rDep)
+              workingGraph.connect(r, stepAfterR)
               // ... and make sure to remove them from startPoints, since they now have incoming edges again.
-              cannotStartFrom += rDep
+              cannotStartFrom += stepAfterR
             }
+
+          if (!r.preConditions.subsetOf(currentConditions)) {
+            // r depends on some other steps that have had their work undone previously.
+            // We need to restore incoming edges to those.
+            val missingPreConditions = r.preConditions -- currentConditions
+            graph.incoming(r)
+              .filter(_.postConditions.intersect(missingPreConditions).nonEmpty)
+              .foreach { stepBeforeR =>
+                // Restore the edges to those steps ...
+                workingGraph.connect(stepBeforeR, r)
+                // ... and make sure to remove r from startPoints, since it now has incoming edges again.
+                cannotStartFrom += r
+              }
+          }
         }
-        // re-insert rs into the working graph for re-processing
+        // Re-insert rs into the working graph for re-processing ...
         startPoints ++= stepsThatHaveTheirWorkUndone
+        // And remove all starting points which got incoming edges re-created.
+        // This might overlap with stepsThatHaveTheirWorkUndone, so it's important this gets done 2nd.
         startPoints --= cannotStartFrom
       }
     }
