@@ -169,6 +169,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
+            TreeNode.setKeyCount(cursor, keyCount);
         };
     }
 
