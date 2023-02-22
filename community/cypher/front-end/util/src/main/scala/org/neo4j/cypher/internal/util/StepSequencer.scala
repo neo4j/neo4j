@@ -379,14 +379,20 @@ object StepSequencer {
           case s if introducingSteps.contains(s) => introducingSteps(s)
         }
         for (r <- stepsThatHaveTheirWorkUndone) {
-          // Go through the original outgoing edges of r and restore them
+          // All steps that depend on r ...
           graph.outgoing(r)
+            // ... which either haven't run or need to re-run ...
             .filterNot(step =>
               step.postConditions.subsetOf(currentConditions)
-            ) // All things which either haven't run or need to re-run
+            )
+            // ... and which cannot run without having run r again first.
+            .filterNot(step =>
+              step.preConditions.subsetOf(currentConditions)
+            )
             .foreach { rDep =>
+              // Restore the edges to those steps ...
               workingGraph.connect(r, rDep)
-              // make sure to remove all dependencies of r from startPoints, since they now have incoming edges again
+              // ... and make sure to remove them from startPoints, since they now have incoming edges again.
               cannotStartFrom += rDep
             }
         }

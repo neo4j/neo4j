@@ -350,6 +350,32 @@ class StepSequencerTest extends CypherFunSuite {
     postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
+  test("should find order where step that introduces frequently invalidated condition is not repeated too often 2") {
+    // condA is invalidated often, but most steps do not depend on that post-condition of step 0,
+    // but on condB instead. We want to get the optimal sequence where step 0 is only repeated twice.
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condA, condB), Set()),
+      new TestStep("1", Set(condA, condB), Set(condC), Set(condA)),
+      new TestStep("2", Set(condB, condC), Set(condD), Set(condA)),
+      new TestStep("3", Set(condB, condC), Set(condE), Set(condA))
+    )
+    val AccumulatedSteps(orderedSteps, postConditions) = sequencer.orderSteps(steps.toSet)
+    orderedSteps should (equal(Seq(
+      steps(0),
+      steps(1),
+      steps(2),
+      steps(3),
+      steps(0)
+    )) or equal(Seq(
+      steps(0),
+      steps(1),
+      steps(3),
+      steps(2),
+      steps(0)
+    )))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
+  }
+
   test("should order steps with initial condition appearing as pre-condition") {
     val steps = Seq(
       new TestStep("0", Set(condA), Set(condB), Set()),
