@@ -112,7 +112,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private static final String INDEX_SERVICE_INDEX_CLOSING_TAG = "indexServiceIndexClosing";
     private static final String INIT_TAG = "Initialize IndexingService";
     private static final String START_TAG = "Start index population";
-    static final int USAGE_REPORT_FREQUENCY_SECONDS = 10;
+    public static final int USAGE_REPORT_FREQUENCY_SECONDS = 10;
 
     private final IndexSamplingController samplingController;
     private final IndexProxyCreator indexProxyCreator;

@@ -30,20 +30,23 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexUsageStats;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
+import org.neo4j.test.assertion.Assert;
 import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.time.FakeClock;
 
 @ImpermanentDbmsExtension(configurationCallback = "configuration")
 class IndexUsageStatsIT {
@@ -52,22 +55,21 @@ class IndexUsageStatsIT {
     private static final String INDEX_NAME = "myIndex";
 
     @Inject
-    private DatabaseManagementService dbms;
-
-    @Inject
     private GraphDatabaseAPI db;
 
     private long beforeCreateTime;
     private long beforeQueryTime;
+    private FakeClock fakeClock = new FakeClock(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 
     @ExtensionCallback
     void configuration(TestDatabaseManagementServiceBuilder builder) {
+        builder.setClock(fakeClock);
         builder.setConfig(GraphDatabaseInternalSettings.enable_index_usage_statistics, true);
     }
 
     @BeforeEach
     void createIndex() {
-        beforeCreateTime = System.currentTimeMillis();
+        beforeCreateTime = fakeClock.millis();
         try (var tx = db.beginTx()) {
             tx.schema()
                     .indexFor(Label.label(LABEL))
@@ -79,7 +81,8 @@ class IndexUsageStatsIT {
         try (var tx = db.beginTx()) {
             tx.schema().awaitIndexesOnline(1, TimeUnit.MINUTES);
         }
-        beforeQueryTime = System.currentTimeMillis();
+        fakeClock.forward(100, TimeUnit.MILLISECONDS);
+        beforeQueryTime = fakeClock.millis();
     }
 
     @Test
@@ -108,7 +111,7 @@ class IndexUsageStatsIT {
     }
 
     @Test
-    void shouldGatherUsageStatsWhenUsingCypher() {
+    void shouldGatherUsageStatsWhenUsingCypher() throws IndexNotFoundKernelException {
         // when
         try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
             try (var result = tx.execute(format("MATCH (n:%s) WHERE n.%s='hello' RETURN n", LABEL, KEY))) {
@@ -128,18 +131,80 @@ class IndexUsageStatsIT {
         });
     }
 
+    @Test
+    void shouldHaveRealValueForNotUsedYetIndex() throws IndexNotFoundKernelException {
+        // then
+        triggerReportUsageStatistics();
+        assertIndexUsageStats(stats -> {
+            assertThat(stats.trackedSinceTime()).isGreaterThanOrEqualTo(beforeCreateTime);
+            assertThat(stats.lastUsedTime()).isEqualTo(0);
+            assertThat(stats.queryCount()).isEqualTo(0);
+        });
+    }
+
+    @Test
+    void shouldHaveDefaultValueForNonExistingIndex() throws IndexNotFoundKernelException {
+        // then
+        triggerReportUsageStatistics();
+        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            var ktx = tx.kernelTransaction();
+            var nonExistingIndex = TestIndexDescriptorFactory.forLabel(1, 42);
+            var stats = ktx.schemaRead().indexUsageStats(nonExistingIndex);
+            assertThat(stats.trackedSinceTime()).isEqualTo(0);
+            assertThat(stats.lastUsedTime()).isEqualTo(0);
+            assertThat(stats.queryCount()).isEqualTo(0);
+        }
+    }
+
+    @Test
+    void shouldHaveDefaultValueIfNoPeriodicUpdateYet() throws IndexNotFoundKernelException {
+        // when
+        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            try (var result = tx.execute(format("MATCH (n:%s) WHERE n.%s='hello' RETURN n", LABEL, KEY))) {
+                while (result.hasNext()) {
+                    result.next();
+                }
+            }
+            tx.commit();
+        }
+
+        // Don't trigger report and don't forward clock
+
+        // then
+        assertIndexUsageStats(stats -> {
+            assertThat(stats.trackedSinceTime()).isEqualTo(0);
+            assertThat(stats.lastUsedTime()).isEqualTo(0);
+            assertThat(stats.queryCount()).isEqualTo(0);
+        });
+    }
+
+    @Test
+    void shouldRunPeriodicUpdateWhenClockIsForwarded() {
+        // when
+        fakeClock.forward(IndexingService.USAGE_REPORT_FREQUENCY_SECONDS, TimeUnit.SECONDS);
+
+        // then
+        assertEventuallyIndexUsageStats(stats -> stats.trackedSinceTime() >= beforeCreateTime);
+    }
+
     private void triggerReportUsageStatistics() {
         db.getDependencyResolver().resolveDependency(IndexingService.class).reportUsageStatistics();
     }
 
-    private void assertIndexUsageStats(Consumer<IndexUsageStats> asserter) {
+    private void assertIndexUsageStats(Consumer<IndexUsageStats> asserter) throws IndexNotFoundKernelException {
         try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
             var ktx = tx.kernelTransaction();
             var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
-            var usageStats = db.getDependencyResolver()
-                    .resolveDependency(IndexStatisticsStore.class)
-                    .usageStats(index.getId());
+            var usageStats = ktx.schemaRead().indexUsageStats(index);
             asserter.accept(usageStats);
+        }
+    }
+
+    private void assertEventuallyIndexUsageStats(Predicate<IndexUsageStats> asserter) {
+        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            var ktx = tx.kernelTransaction();
+            var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+            Assert.assertEventually(() -> ktx.schemaRead().indexUsageStats(index), asserter, 1, TimeUnit.MINUTES);
         }
     }
 }

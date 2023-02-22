@@ -182,6 +182,9 @@ public class IndexStatisticsStore extends LifecycleAdapter
         });
     }
 
+    /**
+     * If there is no recorded value for the given index, return empty IndexUsageStats (all values are 0).
+     */
     public IndexUsageStats usageStats(long indexId) {
         return get(
                 indexId,
