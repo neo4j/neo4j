@@ -404,6 +404,35 @@ class StepSequencerTest extends CypherFunSuite {
     postConditions should equal(steps.flatMap(_.postConditions).toSet)
   }
 
+  test("should allow a step to invalidate its own precondition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condA), Set()),
+      new TestStep("1", Set(condA), Set(condB), Set(condA))
+    )
+    val AccumulatedSteps(orderedSteps, postConditions) =
+      sequencer.orderSteps(steps.toSet)
+    orderedSteps should equal(Seq(
+      steps(0),
+      steps(1),
+      steps(0)
+    ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
+  }
+
+  test("should allow a step to invalidate its own precondition, if it is an initial condition") {
+    val steps = Seq(
+      new TestStep("0", Set(), Set(condA), Set()),
+      new TestStep("1", Set(condA, condC), Set(condB), Set(condC))
+    )
+    val AccumulatedSteps(orderedSteps, postConditions) =
+      sequencer.orderSteps(steps.toSet, initialConditions = Set(condC))
+    orderedSteps should equal(Seq(
+      steps(0),
+      steps(1)
+    ))
+    postConditions should equal(steps.flatMap(_.postConditions).toSet)
+  }
+
   test("should order steps with initial condition appearing as pre-condition and invalidated condition") {
     val steps = Seq(
       new TestStep("0", Set(), Set(condB), Set(condA)),

@@ -148,7 +148,9 @@ case class StepSequencer[S <: Step, ACC](stepAccumulator: StepAccumulator[S, ACC
             case Left(ByInitialCondition) =>
               // Initial conditions cannot be re-enabled by any step.
               // Therefore, there is hard requirement that a step that has an initial condition as a pre-condition runs before any steps that invalidate it.
-              invalidatingSteps(condition).foreach(graph.connect(step, _))
+              invalidatingSteps(condition)
+                .filterNot(_ == step)
+                .foreach(graph.connect(step, _))
             case Right(introducingStep) =>
               // The introducing step needs to happen before the one that has it as a pre-condition.
               graph.connect(introducingStep, step)
