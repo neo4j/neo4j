@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveDependenciesInWithClauses
-import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -108,10 +108,7 @@ case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequen
 
   override def postConditions: Set[Condition] = Set(SubqueryExpressionsHaveDependenciesInWithClauses)
 
-  override def invalidatedConditions: Set[Condition] = Set(
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH.
-    SubqueryExpressionsHaveSemanticInfo
-  )
+  override def invalidatedConditions: Set[Condition] = SemanticInfoAvailable
 
   override def getRewriter(
     semanticState: SemanticState,

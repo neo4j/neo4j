@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
-import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -36,10 +36,7 @@ case object normalizeNotEquals extends StepSequencer.Step with ASTRewriterFactor
 
   override def postConditions: Set[StepSequencer.Condition] = Set(containsNoNodesOfType[NotEquals]())
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    SubqueryExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside Subquery Expressions.
-  )
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   val instance: Rewriter = topDown(Rewriter.lift {
     case p @ NotEquals(lhs, rhs) =>

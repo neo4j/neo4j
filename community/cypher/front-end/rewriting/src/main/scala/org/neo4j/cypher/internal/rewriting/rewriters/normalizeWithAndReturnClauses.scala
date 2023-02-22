@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.ScopeExpression
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -263,8 +264,10 @@ case object normalizeWithAndReturnClauses extends Step with PreparatoryRewriting
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def postConditions: Set[StepSequencer.Condition] =
-    Set(ReturnItemsAreAliased, ExpressionsInOrderByAndWhereUseAliases)
+  override def postConditions: Set[StepSequencer.Condition] = Set(
+    ReturnItemsAreAliased,
+    ExpressionsInOrderByAndWhereUseAliases
+  )
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 }

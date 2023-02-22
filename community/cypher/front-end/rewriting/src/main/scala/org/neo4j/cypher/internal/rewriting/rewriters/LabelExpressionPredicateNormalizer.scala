@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
-import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoMatchingNodes
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -70,8 +70,6 @@ case object LabelExpressionPredicateNormalizer extends StepSequencer.Step with A
    * @return the conditions that this step invalidates as a side-effect of its work.
    */
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    HasLabelsOrTypesReplacedIfPossible,
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    SubqueryExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside Subquery Expressions.
-  )
+    HasLabelsOrTypesReplacedIfPossible
+  ) ++ SemanticInfoAvailable
 }

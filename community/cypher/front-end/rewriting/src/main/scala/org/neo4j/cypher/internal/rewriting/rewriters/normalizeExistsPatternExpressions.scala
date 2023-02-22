@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionAreWrappedInExists
 import org.neo4j.cypher.internal.rewriting.conditions.PredicatesSimplified
-import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -106,7 +106,7 @@ case class normalizeExistsPatternExpressions(
 case object normalizeExistsPatternExpressions extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[Condition] = Set(
-    SubqueryExpressionsHaveSemanticInfo // Looks up type of subquery expressions
+    PatternExpressionsHaveSemanticInfo // Looks up type of pattern expressions
   )
 
   override def postConditions: Set[Condition] = Set(PatternExpressionAreWrappedInExists)

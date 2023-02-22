@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.NotEquals
-import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNamedPathOnlyForShortestPath
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -57,10 +57,7 @@ case object normalizeComparisons extends StepSequencer.Step with ASTRewriterFact
   override def postConditions: Set[StepSequencer.Condition] =
     Set(OnlySingleHasLabels, noReferenceEqualityAmongVariables)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
-    ProjectionClausesHaveSemanticInfo, // It can invalidate this condition by rewriting things inside WITH/RETURN.
-    SubqueryExpressionsHaveSemanticInfo // It can invalidate this condition by rewriting things inside Subquery Expressions.
-  )
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   val instance: Rewriter = topDown(Rewriter.lift {
     case c @ NotEquals(lhs, rhs) =>

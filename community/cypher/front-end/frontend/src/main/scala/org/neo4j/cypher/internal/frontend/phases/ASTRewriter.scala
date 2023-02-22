@@ -20,11 +20,10 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.RewriterStep
-import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
-import org.neo4j.cypher.internal.rewriting.rewriters.ProjectionClausesHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.ReturnItemsAreAliased
 import org.neo4j.cypher.internal.rewriting.rewriters.addDependenciesToProjectionsInSubqueryExpressions
@@ -84,10 +83,7 @@ object ASTRewriter {
         QuantifiedPathPatternNodeInsertRewriter,
         addDependenciesToProjectionsInSubqueryExpressions
       ),
-      initialConditions =
-        Set(
-          ProjectionClausesHaveSemanticInfo,
-          SubqueryExpressionsHaveSemanticInfo,
+      initialConditions = SemanticInfoAvailable ++ Set(
           ReturnItemsAreAliased,
           ExpressionsHaveComputedDependencies
         )

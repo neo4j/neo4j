@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.ast.ShowUsers
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.YieldOrWhere
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
@@ -46,7 +47,7 @@ case object expandShowWhere extends Step with PreparatoryRewritingRewriterFactor
 
   override def postConditions: Set[StepSequencer.Condition] = Set(WithBetweenShowAndWhereInserted)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   val instance: Rewriter = bottomUp(Rewriter.lift {
     // move freestanding WHERE to YIELD * WHERE and add default columns to the YIELD

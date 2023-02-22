@@ -102,7 +102,9 @@ case object expandStar extends StepSequencer.Step with ASTRewriterFactory {
 
   override def postConditions: Set[StepSequencer.Condition] = Set(containsNoReturnAll)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
+    ProjectionClausesHaveSemanticInfo
+  )
 
   override def getRewriter(
     semanticState: SemanticState,

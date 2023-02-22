@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.topDown
 
 /**
- * This rewriter copies predicates from the start and end nodes of a QPP to the connected adjecent nodes.
+ * This rewriter copies predicates from the start and end nodes of a QPP to the connected adjacent nodes.
  * This will allow to reduce cardinality before the Trail plan.
  * Especially for bare QPP MATCH clauses, this can also enable index and label scan usage.
  */

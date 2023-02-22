@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPaths
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.InputPosition
@@ -58,7 +59,7 @@ case object rewriteShortestPathWithFixedLengthRelationship extends Step with Pre
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoShortestPathWithFixedLength)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set()
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
   override def getRewriter(cypherExceptionFactory: CypherExceptionFactory): Rewriter =
     rewriteShortestPathWithFixedLengthRel
