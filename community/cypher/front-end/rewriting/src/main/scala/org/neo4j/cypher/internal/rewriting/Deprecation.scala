@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunct
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
+import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
@@ -121,6 +122,12 @@ object Deprecations {
         Deprecation(
           None,
           Some(DeprecatedTextIndexProvider(c.position))
+        )
+      case f @ FunctionInvocation(namespace, FunctionName(name), _, _)
+        if namespace.parts.isEmpty && name.equalsIgnoreCase("id") =>
+        Deprecation(
+          None,
+          Some(DeprecatedFunctionNotification(f.position, "id", null))
         )
     }
 

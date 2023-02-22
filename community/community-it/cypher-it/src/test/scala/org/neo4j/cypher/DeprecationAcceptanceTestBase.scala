@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FUNCTION
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE_RETURN_FIELD
@@ -217,5 +218,24 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "MATCH (a)-[]-(b) RETURN * UNION ALL MATCH (a)-[]-(b) RETURN *"
     )
     assertNoDeprecations(queries)
+  }
+
+  test("deprecate using a function id()") {
+    val queries = Seq(
+      "MATCH (a) RETURN id(a)",
+      "MATCH (a) RETURN iD(a)",
+      "MATCH (a) RETURN Id(a)",
+      "MATCH (a) RETURN ID(a)",
+      "RETURN id(null)",
+      "MATCH ()-[r]->() RETURN id(r)"
+    )
+    val detail = NotificationDetail.Factory.deprecatedName("id", null)
+
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      DEPRECATED_FUNCTION,
+      detail
+    )
   }
 }
