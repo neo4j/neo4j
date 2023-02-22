@@ -327,6 +327,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowPrivileges
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.ShowRoles
 import org.neo4j.cypher.internal.logical.plans.ShowServers
+import org.neo4j.cypher.internal.logical.plans.ShowSettings
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
@@ -3335,6 +3336,42 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         NoChildren,
         Seq(details("userDefinedFunctions, functionsForUser(foo), defaultColumns")),
         Set.empty
+      )
+    )
+  }
+
+  test("ShowSettings") {
+    val defaultColumns = List("xxx", "yyy").map(s => ShowColumn(s)(pos))
+    assertGood(
+      attach(ShowSettings(Left(List.empty[String]), verbose = true, defaultColumns), 1.0),
+      planDescription(
+        id,
+        "ShowSettings",
+        NoChildren,
+        Seq(details("allSettings, allColumns")),
+        Set("xxx", "yyy")
+      )
+    )
+
+    assertGood(
+      attach(ShowSettings(Left(List("Foo", "Bar")), verbose = false, defaultColumns), 1.0),
+      planDescription(
+        id,
+        "ShowSettings",
+        NoChildren,
+        Seq(details("settings(Foo, Bar), defaultColumns")),
+        Set("xxx", "yyy")
+      )
+    )
+
+    assertGood(
+      attach(ShowSettings(Right(stringLiteral("foo.*")), verbose = true, defaultColumns), 1.0),
+      planDescription(
+        id,
+        "ShowSettings",
+        NoChildren,
+        Seq(details("settings(foo.*), allColumns")),
+        Set("xxx", "yyy")
       )
     )
   }

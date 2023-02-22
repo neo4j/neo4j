@@ -20,24 +20,17 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.neo4j.configuration.helpers.DatabaseNameValidator
-import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.dbms.database.DatabaseContext
-import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.internal.kernel.api.security.AdminActionOnResource
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.api.KernelTransactionHandle
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.impl.api.TransactionRegistry
-import org.neo4j.values.storable.StringValue
-import org.neo4j.values.virtual.ListValue
 
 import java.util.Objects
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 case object TransactionCommandHelper {
 
@@ -53,25 +46,6 @@ case object TransactionCommandHelper {
     if (dependencies != null)
       dependencies.resolveDependency(classOf[TransactionRegistry]).executingTransactions.asScala.toSet
     else Set.empty
-  }
-
-  def extractIds(ids: Either[List[String], Expression], state: QueryState, baseRow: CypherRow): List[String] = {
-    // Get the id string values and make sure we don't have duplicates
-    ids match {
-      case Left(ls) => ls.toSet.toList
-      case Right(e) =>
-        e(baseRow, state) match {
-          case s: StringValue => List(s.stringValue())
-          case l: ListValue =>
-            val list = l.iterator().asScala
-            list.map {
-              case s: StringValue => s.stringValue()
-              case x              => throw new ParameterWrongTypeException(s"Expected a string, but got: ${x.toString}")
-            }.toSet.toList
-          case x =>
-            throw new ParameterWrongTypeException(s"Expected a string or a list of strings, but got: ${x.toString}")
-        }
-    }
   }
 }
 

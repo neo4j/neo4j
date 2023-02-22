@@ -162,6 +162,11 @@ public class TestAccessMode implements AccessMode {
     }
 
     @Override
+    public PermissionState allowsShowSetting(String setting) {
+        return PermissionState.EXPLICIT_GRANT;
+    }
+
+    @Override
     public boolean allowsSetLabel(long labelId) {
         return allowWrite;
     }

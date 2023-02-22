@@ -62,7 +62,7 @@ case class ShowTransactionsCommand(
 ) extends TransactionCommand(defaultColumns, yieldColumns) {
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
-    val ids = TransactionCommandHelper.extractIds(givenIds, state, baseRow)
+    val ids = Command.extractNames(givenIds, state, baseRow)
     val ctx = state.query
     val securityContext = ctx.transactionalContext.securityContext
 

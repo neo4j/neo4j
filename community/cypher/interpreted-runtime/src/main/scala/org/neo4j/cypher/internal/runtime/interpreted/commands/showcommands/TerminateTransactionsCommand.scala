@@ -44,7 +44,7 @@ case class TerminateTransactionsCommand(
 ) extends TransactionCommand(columns, yieldColumns) {
 
   override def originalNameRows(state: QueryState, baseRow: CypherRow): ClosingIterator[Map[String, AnyValue]] = {
-    val ids = TransactionCommandHelper.extractIds(givenIds, state, baseRow)
+    val ids = Command.extractNames(givenIds, state, baseRow)
     if (ids.isEmpty) throw new InvalidSemanticsException(
       "Missing transaction id to terminate, the transaction id can be found using `SHOW TRANSACTIONS`."
     )

@@ -25,25 +25,43 @@ import java.util.function.Supplier;
 import org.neo4j.internal.kernel.api.RelTypeSupplier;
 import org.neo4j.internal.kernel.api.TokenSet;
 
-/** Controls the capabilities of a KernelTransaction. */
+/**
+ * Controls the capabilities of a KernelTransaction.
+ */
 public interface AccessMode {
     enum Static implements AccessMode {
-        /** No reading or writing allowed. */
+        /**
+         * No reading or writing allowed.
+         */
         ACCESS(false, false, false, false, false),
-        /** No reading or writing allowed because of expired credentials. */
+        /**
+         * No reading or writing allowed because of expired credentials.
+         */
         CREDENTIALS_EXPIRED(false, false, false, false, false),
 
-        /** Allows reading data and schema, but not writing. */
+        /**
+         * Allows reading data and schema, but not writing.
+         */
         READ(true, false, false, false, false),
-        /** Allows writing data */
+        /**
+         * Allows writing data
+         */
         WRITE_ONLY(false, true, false, false, false),
-        /** Allows reading and writing data, but not schema. */
+        /**
+         * Allows reading and writing data, but not schema.
+         */
         WRITE(true, true, false, false, false),
-        /** Allows reading and writing data and creating new tokens, but not schema. */
+        /**
+         * Allows reading and writing data and creating new tokens, but not schema.
+         */
         TOKEN_WRITE(true, true, true, false, false),
-        /** Allows reading and writing data and creating new tokens and changing schema. */
+        /**
+         * Allows reading and writing data and creating new tokens and changing schema.
+         */
         SCHEMA(true, true, true, true, false),
-        /** Allows all operations. */
+        /**
+         * Allows all operations.
+         */
         FULL(true, true, true, true, true);
 
         private final boolean read;
@@ -186,6 +204,11 @@ public interface AccessMode {
         }
 
         @Override
+        public PermissionState allowsShowSetting(String setting) {
+            return PermissionState.EXPLICIT_GRANT;
+        }
+
+        @Override
         public boolean allowsSetLabel(long labelId) {
             return write;
         }
@@ -238,33 +261,45 @@ public interface AccessMode {
 
     boolean allowsShowConstraint();
 
-    /** true if all nodes can be traversed */
+    /**
+     * true if all nodes can be traversed
+     */
     boolean allowsTraverseAllLabels();
 
-    /** true if all nodes with this label always can be traversed */
+    /**
+     * true if all nodes with this label always can be traversed
+     */
     boolean allowsTraverseAllNodesWithLabel(long label);
 
-    /** true if this label is blacklisted for traversal */
+    /**
+     * true if this label is blacklisted for traversal
+     */
     boolean disallowsTraverseLabel(long label);
 
-    /** true if a particular node with exactly these labels can be traversed.
+    /**
+     * true if a particular node with exactly these labels can be traversed.
+     *
      * @param labels the labels on the node to be checked. If labels only contains {@link org.neo4j.token.api.TokenConstants#ANY_LABEL} it will work
      *               the same as {@link #allowsTraverseAllLabels}
      */
     boolean allowsTraverseNode(long... labels);
 
-    /** true if all relationships can be traversed */
+    /**
+     * true if all relationships can be traversed
+     */
     boolean allowsTraverseAllRelTypes();
 
     /**
      * true if the relType can be traversed.
+     *
      * @param relType the relationship type to check access for. If relType is {@link org.neo4j.token.api.TokenConstants#ANY_RELATIONSHIP_TYPE} it will work
-     *               the same as {@link #allowsTraverseAllRelTypes}
+     *                the same as {@link #allowsTraverseAllRelTypes}
      */
     boolean allowsTraverseRelType(int relType);
 
     /**
      * true if the relType is blacklisted for traversal.
+     *
      * @param relType the relationship type to check access for.
      */
     boolean disallowsTraverseRelType(int relType);
@@ -283,6 +318,7 @@ public interface AccessMode {
 
     /**
      * Check if execution of a procedure is allowed
+     *
      * @param procedureId id of the procedure
      * @return true if the procedure with this id is allowed to be executed
      */
@@ -292,6 +328,7 @@ public interface AccessMode {
      * Check if execution of a procedure should be done with boosted privileges.
      * <p>
      * <strong>Note: this does not check if execution is allowed</strong>
+     *
      * @param procedureId id of the procedure
      * @return true if the procedure with this id should be executed with boosted privileges
      */
@@ -299,6 +336,7 @@ public interface AccessMode {
 
     /**
      * Check if execution of a user defined function is allowed
+     *
      * @param id id of the function
      * @return true if the function with this id is allowed to be executed
      */
@@ -308,6 +346,7 @@ public interface AccessMode {
      * Check if execution of a user defined function should be done with boosted privileges.
      * <p>
      * <strong>Note: this does not check if execution is allowed</strong>
+     *
      * @param id id of the function
      * @return true if the function with this id should be executed with boosted privileges
      */
@@ -315,6 +354,7 @@ public interface AccessMode {
 
     /**
      * Check if execution of a aggregating user defined function is allowed
+     *
      * @param id id of the function
      * @return true if the function with this id is allowed to be executed
      */
@@ -324,10 +364,19 @@ public interface AccessMode {
      * Check if execution of a aggregating user defined function should be done with boosted privileges.
      * <p>
      * <strong>Note: this does not check if execution is allowed</strong>
+     *
      * @param id id of the function
      * @return true if the function with this id should be executed with boosted privileges
      */
     PermissionState shouldBoostAggregatingFunction(int id);
+
+    /**
+     * Check if a given setting is available to the executing user
+     *
+     * @param setting name of the setting
+     * @return true if the setting is available to user
+     */
+    PermissionState allowsShowSetting(String setting);
 
     boolean allowsSetLabel(long labelId);
 

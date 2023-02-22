@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.ShowConstraintsClause
 import org.neo4j.cypher.internal.ast.ShowFunctionsClause
 import org.neo4j.cypher.internal.ast.ShowIndexesClause
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
+import org.neo4j.cypher.internal.ast.ShowSettingsClause
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsErrorParameters
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
@@ -219,6 +220,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
+import org.neo4j.cypher.internal.logical.plans.ShowSettings
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -1999,6 +2001,8 @@ case class LogicalPlanProducer(
         )
       case s: TerminateTransactionsClause =>
         TerminateTransactions(s.ids, s.unfilteredColumns.columns, s.yieldItems, s.yieldAll)
+      case s: ShowSettingsClause =>
+        ShowSettings(s.names, s.unfilteredColumns.useAllColumns, s.unfilteredColumns.columns)
     }
     val annotatedPlan = annotate(plan, solved, ProvidedOrder.empty, context)
 

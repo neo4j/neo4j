@@ -1184,12 +1184,17 @@ case class ShowSettingsClause(
 
   override def moveWhereToYield: CommandClause = copy(where = None, hasYield = true)(position)
 
+  private def expressionCheck: SemanticCheck = names match {
+    case Right(e) => SemanticExpressionCheck.simple(e)
+    case _        => SemanticCheck.success
+  }
+
   override def clauseSpecificSemanticCheck: SemanticCheck = {
     requireFeatureSupport(
       s"The `$name` clause",
       SemanticFeature.ShowSetting,
       position
-    ) chain super.clauseSpecificSemanticCheck
+    ) chain expressionCheck chain super.clauseSpecificSemanticCheck
   }
 }
 

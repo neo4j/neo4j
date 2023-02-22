@@ -136,6 +136,11 @@ public class RestrictedAccessMode extends WrappedAccessMode {
     }
 
     @Override
+    public PermissionState allowsShowSetting(String setting) {
+        return original.allowsShowSetting(setting).restrict(wrapping.allowsShowSetting(setting));
+    }
+
+    @Override
     public boolean allowsSetLabel(long labelId) {
         return original.allowsSetLabel(labelId) && wrapping.allowsSetLabel(labelId);
     }

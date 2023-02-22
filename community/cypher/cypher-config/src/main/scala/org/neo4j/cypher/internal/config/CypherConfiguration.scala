@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherParallelRuntimeSupportOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.graphdb.config.Setting
 
 import java.io.File
 
@@ -106,9 +107,6 @@ class CypherConfiguration private (val config: Config) {
   val enableExtraSemanticFeatures: Set[String] =
     config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
 
-  val showSettingFeatureEnabled: Boolean =
-    config.get(GraphDatabaseInternalSettings.show_setting)
-
   val planningIntersectionScansEnabled: Boolean =
     config.get(GraphDatabaseInternalSettings.planning_intersection_scans_enabled)
 
@@ -166,6 +164,9 @@ class CypherConfiguration private (val config: Config) {
     GraphDatabaseSettings.cypher_render_plan_descriptions,
     (_: java.lang.Boolean, newValue: java.lang.Boolean) => _renderPlanDescription = newValue
   )
+
+  def toggledFeatures(features: Map[Setting[java.lang.Boolean], String]): Set[String] =
+    features.filter(s => config.get(s._1)).values.toSet
 
   def obfuscateLiterals: Boolean = _obfuscateLiterals
   def useLegacyShortestPath: Boolean = _legacyShortestPath

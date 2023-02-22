@@ -143,6 +143,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
+import org.neo4j.cypher.internal.logical.plans.ShowSettings
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -193,6 +194,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowC
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowFunctionsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowIndexesCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowProceduresCommand
+import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowSettingsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.ShowTransactionsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands.TerminateTransactionsCommand
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.AggregationPipe
@@ -742,6 +744,13 @@ case class InterpretedPipeMapper(
           case Left(l)  => Left(l)
         }
         CommandPipe(TerminateTransactionsCommand(newIds, columns, yields))(id)
+
+      case ShowSettings(names, verbose, columns) =>
+        val newNames = names match {
+          case Right(e) => Right(buildExpression(e))
+          case Left(l)  => Left(l)
+        }
+        CommandPipe(ShowSettingsCommand(newNames, verbose, columns))(id)
 
       // Currently used for testing only
       case MultiNodeIndexSeek(indexLeafPlans) =>

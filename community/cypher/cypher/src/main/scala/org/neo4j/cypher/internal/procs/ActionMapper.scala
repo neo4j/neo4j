@@ -87,6 +87,7 @@ import org.neo4j.cypher.internal.ast.ShowIndexAction
 import org.neo4j.cypher.internal.ast.ShowPrivilegeAction
 import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowServerAction
+import org.neo4j.cypher.internal.ast.ShowSettingAction
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.StartDatabaseAction
@@ -189,6 +190,8 @@ object ActionMapper {
 
     case ShowServerAction       => security.PrivilegeAction.SHOW_SERVER
     case ServerManagementAction => security.PrivilegeAction.SERVER_MANAGEMENT
+
+    case ShowSettingAction => security.PrivilegeAction.SHOW_SETTING
 
     case AllDbmsAction => security.PrivilegeAction.DBMS_ACTIONS
 

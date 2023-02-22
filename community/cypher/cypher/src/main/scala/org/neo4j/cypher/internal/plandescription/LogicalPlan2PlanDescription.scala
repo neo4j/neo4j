@@ -222,6 +222,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowConstraints
 import org.neo4j.cypher.internal.logical.plans.ShowFunctions
 import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
+import org.neo4j.cypher.internal.logical.plans.ShowSettings
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Skip
@@ -1198,6 +1199,22 @@ case class LogicalPlan2PlanDescription(
           "TerminateTransactions",
           NoChildren,
           Seq(Details(pretty"$colsDescription, transactions($idsDescription)")),
+          variables,
+          withRawCardinalities
+        )
+
+      case s: ShowSettings =>
+        val namesDescription = s.names match {
+          case Left(Seq()) => asPrettyString.raw("allSettings")
+          case Left(names) => asPrettyString.raw(s"settings(${names.mkString(", ")})")
+          case Right(e)    => asPrettyString.raw(s"settings(${e.asCanonicalStringVal})")
+        }
+        val colsDescription = if (s.verbose) pretty"allColumns" else pretty"defaultColumns"
+        PlanDescriptionImpl(
+          id,
+          "ShowSettings",
+          NoChildren,
+          Seq(Details(pretty"$namesDescription, $colsDescription")),
           variables,
           withRawCardinalities
         )

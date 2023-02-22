@@ -23,8 +23,14 @@ import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.StringValue
+import org.neo4j.values.virtual.ListValue
+
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 abstract class Command(columns: List[ShowColumn]) {
 
@@ -35,6 +41,28 @@ abstract class Command(columns: List[ShowColumn]) {
       columns.map {
         case ShowColumn(lv, _, originalName) => lv.name -> map(originalName)
       }.toMap
+    }
+  }
+}
+
+object Command {
+
+  def extractNames(names: Either[List[String], Expression], state: QueryState, baseRow: CypherRow): List[String] = {
+    // Get the string values and make sure we don't have duplicates
+    names match {
+      case Left(ls) => ls.toSet.toList
+      case Right(e) =>
+        e(baseRow, state) match {
+          case s: StringValue => List(s.stringValue())
+          case l: ListValue =>
+            val list = l.iterator().asScala
+            list.map {
+              case s: StringValue => s.stringValue()
+              case x              => throw new ParameterWrongTypeException(s"Expected a string, but got: ${x.toString}")
+            }.toSet.toList
+          case x =>
+            throw new ParameterWrongTypeException(s"Expected a string or a list of strings, but got: ${x.toString}")
+        }
     }
   }
 }

@@ -68,3 +68,9 @@ case class TerminateTransactions(
   yieldColumns: List[CommandResultItem],
   yieldAll: Boolean
 )(implicit idGen: IdGen) extends TransactionCommandLogicalPlan(idGen)
+
+case class ShowSettings(
+  names: Either[List[String], Expression],
+  verbose: Boolean,
+  defaultColumns: List[ShowColumn]
+)(implicit idGen: IdGen) extends CommandLogicalPlan(idGen)

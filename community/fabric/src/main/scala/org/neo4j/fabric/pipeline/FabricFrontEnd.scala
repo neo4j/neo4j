@@ -19,11 +19,13 @@
  */
 package org.neo4j.fabric.pipeline
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.NotificationWrapping
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.ExpressionsInViewInvocations
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleGraphs
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.UseGraphSelector
@@ -123,7 +125,11 @@ case class FabricFrontEnd(
       extractLiterals = cypherConfig.extractLiterals,
       parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params, cypherConfig.useParameterSizeHint),
       semanticFeatures =
-        CompilationPhases.enabledSemanticFeatures(cypherConfig.enableExtraSemanticFeatures) ++ semanticFeatures,
+        CompilationPhases.enabledSemanticFeatures(
+          cypherConfig.enableExtraSemanticFeatures ++ cypherConfig.toggledFeatures(Map(
+            GraphDatabaseInternalSettings.show_setting -> SemanticFeature.ShowSetting.productPrefix
+          ))
+        ) ++ semanticFeatures,
       obfuscateLiterals = cypherConfig.obfuscateLiterals
     )
 

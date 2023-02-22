@@ -24,16 +24,24 @@ import java.util.Objects;
 
 public enum PrivilegeAction {
     // Database actions
-    /** ACCESS database */
+    /**
+     * ACCESS database
+     */
     ACCESS,
 
-    /** MATCH element and read labels */
+    /**
+     * MATCH element and read labels
+     */
     TRAVERSE,
 
-    /** Read properties of element */
+    /**
+     * Read properties of element
+     */
     READ,
 
-    /** Set and remove labels from nodes */
+    /**
+     * Set and remove labels from nodes
+     */
     SET_LABEL,
     REMOVE_LABEL,
 
@@ -97,14 +105,22 @@ public enum PrivilegeAction {
     ASSIGN_IMMUTABLE_PRIVILEGE,
     REMOVE_IMMUTABLE_PRIVILEGE,
 
-    /** Execute procedure or user defined function */
+    /**
+     * Execute procedure or user defined function
+     */
     EXECUTE,
-    /** Execute procedure or user defined function with elevated access */
+    /**
+     * Execute procedure or user defined function with elevated access
+     */
     EXECUTE_BOOSTED,
-    /** Execute @Admin procedure with elevated access */
+    /**
+     * Execute @Admin procedure with elevated access
+     */
     EXECUTE_ADMIN,
 
     SHOW_SERVER,
+
+    SHOW_SETTING,
 
     // Some grouping actions that represent super-sets of other actions
 
@@ -241,7 +257,9 @@ public enum PrivilegeAction {
         }
     },
 
-    /** MATCH element and read labels and properties */
+    /**
+     * MATCH element and read labels and properties
+     */
     MATCH {
         @Override
         public boolean satisfies(PrivilegeAction action) {
@@ -252,7 +270,9 @@ public enum PrivilegeAction {
         }
     },
 
-    /** Create, update and delete elements and properties */
+    /**
+     * Create, update and delete elements and properties
+     */
     WRITE {
         @Override
         public boolean satisfies(PrivilegeAction action) {
@@ -309,7 +329,9 @@ public enum PrivilegeAction {
         }
     },
 
-    /** Privileges for enabling/deallocating/dropping/showing servers in a cluster */
+    /**
+     * Privileges for enabling/deallocating/dropping/showing servers in a cluster
+     */
     SERVER_MANAGEMENT {
         @Override
         public boolean satisfies(PrivilegeAction action) {
