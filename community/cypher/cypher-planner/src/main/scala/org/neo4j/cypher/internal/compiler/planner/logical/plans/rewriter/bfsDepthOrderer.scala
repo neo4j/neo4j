@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CacheProperties
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSeek
@@ -71,20 +72,18 @@ case object bfsDepthOrderer extends Rewriter {
 
     def recordSortPlanForRewriting(sortHorizon: SortHorizon, depthName: String): Unit = {
       sortHorizon.sortPlan match {
-        case Some(sort @ Sort(_, sortItems))
-          if sortHorizon.dependencies.contains(depthName) && sortItems.head.isAscending =>
-          if (sortItems.size == 1) {
-            removeSorts.put(sort, depthName)
-          } else {
-            makePartialSorts.put(sort, depthName)
-          }
-        case Some(top @ Top(_, sortItems, _))
-          if sortHorizon.dependencies.contains(depthName) && sortItems.head.isAscending =>
-          if (sortItems.size == 1) {
-            removeSorts.put(top, depthName)
-          } else {
-            makePartialSorts.put(top, depthName)
-          }
+        case Some(sort @ Sort(_, Seq(Ascending(_)))) if sortHorizon.dependencies.contains(depthName) =>
+          removeSorts.put(sort, depthName)
+
+        case Some(sort @ Sort(_, Ascending(_) :: _)) if sortHorizon.dependencies.contains(depthName) =>
+          makePartialSorts.put(sort, depthName)
+
+        case Some(top @ Top(_, Seq(Ascending(_)), _)) if sortHorizon.dependencies.contains(depthName) =>
+          removeSorts.put(top, depthName)
+
+        case Some(top @ Top(_, Ascending(_) :: _, _)) if sortHorizon.dependencies.contains(depthName) =>
+          makePartialSorts.put(top, depthName)
+
         case _ => // do nothing
       }
     }
