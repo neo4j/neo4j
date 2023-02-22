@@ -366,7 +366,6 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val runtimeResult = profile(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     val lhsRows = for {

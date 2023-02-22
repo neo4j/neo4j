@@ -23,15 +23,12 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Prober
 import org.neo4j.cypher.internal.runtime.BufferInputStream
 import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
-import org.neo4j.cypher.internal.runtime.spec.RecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.RecordingRowsProbe
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.runtime.spec.ThreadSafeRecordingProbe
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.storable.LongValue
@@ -508,7 +505,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val result = execute(logicalQuery, runtime, inputStream)
-    consume(result)
     result should beColumns().withNoRows()
   }
 
@@ -530,7 +526,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val result = execute(logicalQuery, runtime, inputStream)
-    consume(result)
     result should beColumns().withNoRows().withStatistics(nodesCreated = nBatches * batchSize)
   }
 
@@ -552,7 +547,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
         .build()
 
       val result = execute(logicalQuery, runtime, inputStream)
-      consume(result)
       result should beColumns("x").withRows(expected)
     }
 
@@ -568,7 +562,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
         .build()
 
       val result = execute(logicalQuery, runtime, inputStream)
-      consume(result)
       result should beColumns("x").withRows(expected)
     }
 
@@ -585,7 +578,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
         .build()
 
       val result = execute(logicalQuery, runtime, inputStream)
-      consume(result)
       result should beColumns("x").withRows(expected)
     }
 
@@ -602,7 +594,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
         .build()
 
       val result = execute(logicalQuery, runtime, inputStream)
-      consume(result)
       result should beColumns("x").withRows(expected)
     }
 
@@ -620,7 +611,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
         .build()
 
       val result = execute(logicalQuery, runtime, inputStream)
-      consume(result)
       result should beColumns("x").withRows(expected)
     }
 
@@ -638,7 +628,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
         .build()
 
       val result = execute(logicalQuery, runtime, inputStream)
-      consume(result)
       result should beColumns("x").withRows(expected)
     }
 
@@ -659,7 +648,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
         .build()
 
       val result = execute(logicalQuery, runtime, inputStream)
-      consume(result)
       result should beColumns("x").withRows(expected)
     }
 
@@ -684,7 +672,6 @@ abstract class EagerTestBase[CONTEXT <: RuntimeContext](
         .build()
 
       val result = execute(logicalQuery, runtime, inputStream)
-      consume(result)
       result should beColumns("x").withRows(expected)
     }
   }

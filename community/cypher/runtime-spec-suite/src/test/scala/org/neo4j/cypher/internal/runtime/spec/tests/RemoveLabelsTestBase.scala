@@ -92,7 +92,6 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     runtimeResult should beColumns("n")
       .withStatistics(labelsRemoved = 2 * nodeCount)
@@ -120,7 +119,6 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes.map(node => Array(node, util.Arrays.asList("KeepMe")))
 
@@ -145,7 +143,6 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
       .withStatistics(labelsRemoved = sizeHint)
@@ -161,7 +158,6 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     runtimeResult should beColumns("n")
       .withStatistics(labelsRemoved = expectedLabelsRemoved)

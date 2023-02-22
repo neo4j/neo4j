@@ -61,7 +61,6 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = chainCount * 4, relationshipsDeleted = chainCount * 3)
     Iterables.count(tx.getAllNodes) shouldBe 0
@@ -97,7 +96,6 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = 2, relationshipsDeleted = 8 + (8 * (nodeCount - 2)))
     Iterables.count(tx.getAllNodes) shouldBe 2
@@ -125,7 +123,6 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = chainCount * 4, relationshipsDeleted = chainCount * 3)
     Iterables.count(tx.getAllNodes) shouldBe 0
@@ -153,7 +150,6 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = chainCount * 4, relationshipsDeleted = chainCount * 3)
     Iterables.count(tx.getAllNodes) shouldBe 0
@@ -177,7 +173,6 @@ abstract class DeleteDetachPathTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = 1)
     Iterables.count(tx.getAllNodes) shouldBe (nodeCount - 1)

@@ -370,7 +370,6 @@ abstract class SubqueryForeachTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     val expected = for {

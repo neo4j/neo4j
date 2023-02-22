@@ -88,7 +88,6 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
       .map(m => Array(m))
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("map")
       .withRows(expectedRows)
       .withStatistics(nodesDeleted = nodeCount)
@@ -115,7 +114,6 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("map")
       .withRows(expectedRows)
       .withStatistics(relationshipsDeleted = 3 * 3)
@@ -139,7 +137,6 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("map")
       .withStatistics(nodesDeleted = nodeCount)
     Iterables.count(tx.getAllNodes) shouldBe 0
@@ -188,7 +185,6 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r2")
       .withRows(singleColumn((1 to 10).flatMap(i => Seq.fill(10)(i))))
       .withStatistics(nodesDeleted = 10)

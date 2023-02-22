@@ -195,7 +195,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(1 to 10))
       .withStatistics(
@@ -221,7 +220,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("c")
       .withSingleRow(10)
       .withStatistics(
@@ -247,7 +245,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("c")
       .withRows(singleColumn(1 to 10))
       .withStatistics(
@@ -273,7 +270,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("c")
       .withRows(singleColumn(1 to 10))
       .withStatistics(
@@ -299,7 +295,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("i")
       .withRows(singleColumn(Seq(1, 2, 1, 3, 2, 4, 3, 5, 4, 6, 5, 7, 6, 8, 7, 9, 8, 10, 9)))
       .withStatistics(
@@ -340,7 +335,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     val expectedCount = (nodeCountB + nodeCountC) * (Math.pow(2, nodeCountA).toInt - 1)
@@ -390,7 +384,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(2 to 11))
       .withStatistics(
@@ -585,7 +578,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(1 to 10))
       .withStatistics(
@@ -610,7 +602,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(1 to 10))
       .withStatistics(
@@ -635,7 +626,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(1, 2)))
       .withStatistics(
@@ -672,7 +662,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = inputValsToPassThrough
     val expectedTxCommitted = inputValsToPassThrough.length / batchSize + 1
@@ -711,7 +700,6 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = inputValsToPassThrough.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
     val expectedTxCommitted = inputValsToPassThrough.length / batchSize + 1
@@ -1530,7 +1518,6 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
         statsAfter shouldBe expectedStats
       } else {
         val runtimeResult = execute(query, runtime, input)
-        consume(runtimeResult)
 
         val expected = setup.input
           .flatMap(row => row.rhsUnwind.map(rhs => Array(row.i, row.i + 1, true, true, null)))
@@ -1593,7 +1580,6 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
         statsAfter shouldBe expectedStats
       } else {
         val runtimeResult = execute(query, runtime, input)
-        consume(runtimeResult)
 
         val expected = setup.input
           .flatMap(row => row.rhsUnwind.map(rhs => Array(row.i, row.i + 1)))
@@ -1660,7 +1646,6 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
       val expectedFailedInnerTxs = if (setup.shouldFail) 1 else 0
 
       val runtimeResult = execute(query, runtime, input)
-      consume(runtimeResult)
 
       val expected = setup.batches().flatMap {
         var hasFailed = false
@@ -1743,7 +1728,6 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
       val expectedFailedInnerTxs = setup.batches().size - expectedCommittedInnerTxs
 
       val runtimeResult = execute(query, runtime, input)
-      consume(runtimeResult)
 
       val expected = setup.batches().flatMap {
         case batch if batch.exists(_.shouldFail) =>

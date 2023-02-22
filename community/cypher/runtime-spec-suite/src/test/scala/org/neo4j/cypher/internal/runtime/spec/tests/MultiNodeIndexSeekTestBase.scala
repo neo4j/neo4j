@@ -400,7 +400,6 @@ abstract class MultiNodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     } yield Array(m)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("m").withRows(expected).withStatistics(nodesDeleted = size / 10)
     Iterables.count(tx.getAllNodes) shouldBe size * 0.9
   }

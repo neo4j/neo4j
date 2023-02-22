@@ -59,8 +59,7 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
       .map(n => ValueUtils.asMapValue(Map("node" -> n).asJava))
       .map(m => Array(m))
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
+    val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("map")
       .withRows(expectedRows)
       .withStatistics(nodesDeleted = 3 * 4, relationshipsDeleted = 3 * 3)
@@ -88,7 +87,6 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("map")
       .withRows(expectedRows)
       .withStatistics(relationshipsDeleted = 3 * 3)
@@ -118,7 +116,6 @@ abstract class DeleteDetachExpressionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("map")
       .withStatistics(nodesDeleted = 3 * 4, relationshipsDeleted = 3 * 3)
     Iterables.count(tx.getAllNodes) shouldBe 0

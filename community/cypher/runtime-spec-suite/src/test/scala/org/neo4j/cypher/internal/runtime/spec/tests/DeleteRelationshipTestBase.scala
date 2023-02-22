@@ -63,7 +63,6 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withStatistics(relationshipsDeleted = 3)
     Iterables.count(tx.getAllNodes) shouldBe 4
     Iterables.count(tx.getAllRelationships) shouldBe 0
@@ -84,7 +83,6 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withStatistics(relationshipsDeleted = 4)
     Iterables.count(tx.getAllRelationships) shouldBe 4
   }
@@ -104,7 +102,6 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withStatistics(relationshipsDeleted = 3)
     Iterables.count(tx.getAllRelationships) shouldBe 0
   }
@@ -125,7 +122,6 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withStatistics(relationshipsDeleted = 6)
     Iterables.count(tx.getAllRelationships) shouldBe 0
   }
@@ -146,7 +142,6 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
 
       // then
       val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-      consume(runtimeResult)
       runtimeResult should beColumns("r")
         .withRows(relationshipsArray, listInAnyOrder = true)
         .withStatistics(relationshipsDeleted = relationshipCount)

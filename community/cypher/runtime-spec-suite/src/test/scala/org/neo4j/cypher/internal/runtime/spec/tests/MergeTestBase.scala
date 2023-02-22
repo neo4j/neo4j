@@ -148,7 +148,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withNoUpdates()
   }
 
@@ -185,7 +184,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withNoUpdates()
   }
 
@@ -210,7 +208,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withRows(singleColumn(nodes)).withNoUpdates()
   }
 
@@ -259,7 +256,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withSingleRow(nodes(42)).withNoUpdates()
   }
 
@@ -315,7 +311,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withSingleRow(rels(42)).withNoUpdates()
   }
 
@@ -369,7 +364,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withRows(singleColumn(rels)).withNoUpdates()
   }
 
@@ -868,7 +862,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult =
       execute(logicalQuery, runtime, inputValues(rels.map(r => Array[Any](r)): _*))
-    consume(runtimeResult)
     runtimeResult should beColumns("n", "r", "m").withRows(
       rels.map(r => Array(r.getStartNode, r, r.getEndNode))
     ).withNoUpdates()
@@ -962,7 +955,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult =
       execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)): _*))
-    consume(runtimeResult)
     runtimeResult should beColumns("res").withRows(singleColumn(1 to 10)).withStatistics(
       nodesCreated = 5,
       labelsAdded = 5,
@@ -1082,7 +1074,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("x").withRows(singleColumn(nodes)).withNoUpdates()
   }
 
@@ -1105,7 +1096,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
 
-    consume(runtimeResult)
     val expected = for {
       i <- 0 until size
       j <- 0 until size
@@ -1131,7 +1121,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-
     consume(runtimeResult)
     val y = Iterators.single(tx.findNodes(label("N")))
     val expected = for { x <- nodes } yield Array[Any](x, null, y)
@@ -1159,7 +1148,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
 
-    consume(runtimeResult)
     runtimeResult should beColumns("count").withSingleRow(size).withNoUpdates()
   }
 
@@ -1183,7 +1171,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
 
-    consume(runtimeResult)
     runtimeResult should beColumns("count").withSingleRow(size).withStatistics(nodesCreated = 1, labelsAdded = 1)
   }
 
@@ -1207,7 +1194,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
 
-    consume(runtimeResult)
     runtimeResult should beColumns("x").withRows(rowCount(5)).withNoUpdates()
   }
 
@@ -1232,7 +1218,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
 
-    consume(runtimeResult)
     runtimeResult should beColumns("x").withRows(rowCount(5)).withNoUpdates()
   }
 
@@ -1287,7 +1272,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(nodes.map(Array(_)))
       .withStatistics(nodesCreated = sizeHint, relationshipsCreated = sizeHint)
@@ -1315,7 +1299,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(nodes.map(Array(_)))
       .withNoUpdates()
@@ -1344,7 +1327,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("xRef")
       .withRows(nodes.map(Array(_)))
       .withStatistics(nodesCreated = sizeHint, relationshipsCreated = sizeHint)
@@ -1404,7 +1386,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("idB").withRows(
       Seq(Array(1), Array(2), Array(3), Array(1), Array(2), Array(3))
     ).withStatistics(nodesCreated = 2, labelsAdded = 2, propertiesSet = 2)
@@ -1687,7 +1668,6 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     runtimeResult should beColumns("d", "c").withSingleRow(drunkNodes(42), childNodes(42)).withNoUpdates()
   }
@@ -1833,7 +1813,6 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withRows(singleColumn(rels.flatMap(r => Seq(r, r)))).withNoUpdates()
   }
 
@@ -1876,7 +1855,6 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withRows(singleColumn(rels.flatMap(r => Seq(r, r)))).withNoUpdates()
   }
 
@@ -1936,7 +1914,6 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withRows(Seq(Array(rels(42)), Array(rels(42)))).withNoUpdates()
   }
 
@@ -1982,7 +1959,6 @@ trait PipelinedMergeTestBase[CONTEXT <: RuntimeContext] {
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r").withRows(Seq(Array(rels(42)), Array(rels(42)))).withNoUpdates()
   }
 }

@@ -582,7 +582,6 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
       .withStatistics(propertiesSet = sizeHint)
@@ -609,7 +608,6 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withSingleRow(nodes.head)
       .withStatistics(propertiesSet = 2)
@@ -635,7 +633,6 @@ abstract class SetPropertiesFromMapNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withSingleRow(nodes.head)
       .withStatistics(propertiesSet = 2)

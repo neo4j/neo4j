@@ -95,7 +95,6 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withStatistics(nodesDeleted = 1, relationshipsDeleted = nodeCount * 2 + (nodeCount - 1) * 2)
     Iterables.count(tx.getAllNodes) shouldBe (nodeCount - 1)
@@ -118,7 +117,6 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = nodeCount)
     Iterables.count(tx.getAllNodes) shouldBe 0
   }
@@ -138,8 +136,7 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
+    val runtimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = 14, relationshipsDeleted = 33)
     Iterables.count(tx.getAllNodes) shouldBe 0
     Iterables.count(tx.getAllRelationships) shouldBe 0
@@ -158,7 +155,6 @@ abstract class DeleteDetachNodeTestBase[CONTEXT <: RuntimeContext](
       val nodeArray = allNodes.iterator().asScala.toIndexedSeq.map(n => Array(n))
       // then
       val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-      consume(runtimeResult)
       runtimeResult should beColumns("n")
         .withRows(nodeArray, listInAnyOrder = true)
         .withStatistics(nodesDeleted = nodeCount, relationshipsDeleted = relationshipCount)

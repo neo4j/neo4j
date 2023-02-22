@@ -542,13 +542,13 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then I
     intercept[CypherTypeException] {
       val input = inputValues(NUMBER, DURATION)
-      consume(execute(logicalQuery, runtime, input))
+      execute(logicalQuery, runtime, input).awaitAll()
     }
 
     // then II
     intercept[CypherTypeException] {
       val input = inputValues(DURATION, NUMBER)
-      consume(execute(logicalQuery, runtime, input))
+      execute(logicalQuery, runtime, input).awaitAll()
     }
 
     val batchSize =
@@ -560,14 +560,14 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     intercept[CypherTypeException] {
       val batches: Seq[Array[Any]] = numberBatches ++ durationBatches
       val input = batchedInputValues(batchSize, batches: _*)
-      consume(execute(logicalQuery, runtime, input))
+      execute(logicalQuery, runtime, input).awaitAll()
     }
 
     // then IV
     intercept[CypherTypeException] {
       val batches: Seq[Array[Any]] = durationBatches ++ numberBatches
       val input = batchedInputValues(batchSize, batches: _*)
-      consume(execute(logicalQuery, runtime, input))
+      execute(logicalQuery, runtime, input).awaitAll()
     }
   }
 

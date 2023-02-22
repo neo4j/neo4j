@@ -55,7 +55,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
 
@@ -87,7 +86,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = inputValsToPassThrough
 
@@ -120,7 +118,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = inputValsToPassThrough.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
 
@@ -158,7 +155,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = inputValsToPassThrough.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
 
@@ -187,7 +183,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes
 
@@ -217,7 +212,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i)).length
 
@@ -244,7 +238,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes.length
 
@@ -275,7 +268,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i))
 
@@ -303,7 +295,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes
 
@@ -337,7 +328,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = inputVals.flatMap(i => (0 until Math.pow(2, i).toInt).map(_ => i)).length
 
@@ -368,7 +358,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes.length
 
@@ -400,7 +389,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -438,7 +426,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes.flatMap(node => Seq(node, node))
 
@@ -473,7 +460,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -514,7 +500,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes.length * 2
 
@@ -550,7 +535,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     val expectedCount = (nodeCountB + nodeCountC) * (Math.pow(2, nodeCountA).toInt - 1)
@@ -583,7 +567,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -621,7 +604,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes
 
@@ -656,7 +638,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -697,7 +678,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes.length
 
@@ -732,7 +712,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -773,7 +752,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes.flatMap(node => Seq(node, node, node))
 
@@ -811,7 +789,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
 
     val expected = {
       var nodeCount = initialNodeCount
@@ -855,7 +832,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     val expected = nodes.length * 3
 
@@ -897,7 +873,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("n")
@@ -927,7 +902,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("n")
@@ -956,7 +930,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("xmax", "xmin")
@@ -985,7 +958,6 @@ abstract class WritingSubqueryApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("n")

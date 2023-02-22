@@ -59,8 +59,8 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     // then
-    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult.awaitAll()
     val node = Iterables.single(tx.getAllNodes)
     runtimeResult should beColumns("n").withSingleRow(node).withStatistics(nodesCreated = 1, labelsAdded = 3)
     node.getLabels.asScala.map(_.name()).toList should equal(List("A", "B", "C"))
@@ -145,7 +145,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("mprop", "nprop").withSingleRow(1, 2).withStatistics(
       nodesCreated = 2,
       labelsAdded = 2,
@@ -373,7 +372,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r1prop", "r2prop").withSingleRow(1, 2).withStatistics(
       nodesCreated = 2,
       labelsAdded = 2,
@@ -551,7 +549,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
@@ -575,7 +572,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes))
       .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
@@ -597,7 +593,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(1 to size))
       .withStatistics(nodesCreated = 2, relationshipsCreated = 1)
@@ -653,7 +648,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
       .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
@@ -706,7 +700,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels.flatMap(r => Seq.fill(2 * 10)(r))))
       .withStatistics(nodesCreated = 2 * size, labelsAdded = 2 * 3 * size)
@@ -730,7 +723,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(Seq.fill(10)(nodes.head)))
       .withStatistics(nodesCreated = 1, labelsAdded = 3)
@@ -754,7 +746,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
       .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
@@ -778,7 +769,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(Seq.fill(10)(rels.head)))
       .withStatistics(nodesCreated = 1, labelsAdded = 3)
@@ -802,7 +792,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels.flatMap(r => Seq.fill(10)(r))))
       .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
@@ -826,7 +815,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(Seq.fill(20)(rels.head)))
       .withStatistics(nodesCreated = 2, labelsAdded = 6)
@@ -850,7 +838,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels.flatMap(r => Seq.fill(20)(r))))
       .withStatistics(nodesCreated = 2 * size, labelsAdded = 2 * 3 * size)
@@ -875,7 +862,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(r => Seq.fill(10)(r))))
       .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
@@ -902,7 +888,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn((1 to size).flatMap(_ => Seq.fill(10)(startNode))))
       .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
@@ -931,7 +916,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn((1 to size).flatMap(_ => Seq.fill(10)(startNode))))
       .withStatistics(nodesCreated = size, labelsAdded = 3 * size)
@@ -952,7 +936,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r1")
       .withRows(singleColumn((1 to sizeHint).flatMap(i => Seq.fill(10)(i))))
       .withStatistics(nodesCreated = sizeHint)
@@ -975,7 +958,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r1")
       .withRows(singleColumn((1 to size).flatMap(i => Seq.fill(10)(i))))
       .withStatistics(nodesCreated = size)
@@ -998,7 +980,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn(Seq.fill(10)("left") ++ Seq.fill(10)("right")))
       .withStatistics(nodesCreated = 2)
@@ -1024,7 +1005,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn((1 to size).flatMap(i => Seq.fill(20)(i))))
       .withStatistics(nodesCreated = 2 * size)
@@ -1044,7 +1024,6 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withNoRows().withStatistics(nodesCreated = 1)
   }
 }
@@ -1070,7 +1049,6 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
-    consume(results)
     results should beColumns("r").withSingleRow(null).withNoUpdates()
   }
 
@@ -1085,7 +1063,6 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
-    consume(results)
     results should beColumns("r").withSingleRow(null).withStatistics(nodesCreated = 1, labelsAdded = 1)
   }
 
@@ -1100,7 +1077,6 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val results = execute(logicalQuery, runtime, inputValues(Array[Any](null)))
-    consume(results)
     results should beColumns("r").withSingleRow(null).withStatistics(nodesCreated = 1, labelsAdded = 1)
   }
 }

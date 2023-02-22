@@ -66,7 +66,6 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = nodeCount)
     Iterables.count(tx.getAllNodes) shouldBe 0
     Iterables.count(tx.getAllRelationships) shouldBe 0
@@ -90,7 +89,6 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = deleteNodeCount)
     Iterables.count(tx.getAllNodes) shouldBe (nodeCount - deleteNodeCount)
   }
@@ -111,7 +109,6 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = nodeCount)
     Iterables.count(tx.getAllNodes) shouldBe 0
   }
@@ -133,7 +130,6 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n").withStatistics(nodesDeleted = nodeCount)
     Iterables.count(tx.getAllNodes) shouldBe 0
   }
@@ -182,7 +178,6 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
       .withStatistics(nodesDeleted = sizeHint)
@@ -204,7 +199,6 @@ abstract class DeleteNodeTestBase[CONTEXT <: RuntimeContext](
 
       // then
       val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-      consume(runtimeResult)
       runtimeResult should beColumns("n")
         .withRows(nodesArray)
         .withStatistics(nodesDeleted = nodeCount)

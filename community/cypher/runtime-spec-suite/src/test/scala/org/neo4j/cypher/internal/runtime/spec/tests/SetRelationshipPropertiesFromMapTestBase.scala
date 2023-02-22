@@ -636,7 +636,6 @@ abstract class SetRelationshipPropertiesFromMapTestBase[CONTEXT <: RuntimeContex
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("r")
       .withRows(singleColumn(rels.flatMap(r => Seq.fill(10)(r))))
       .withStatistics(propertiesSet = sizeHint)

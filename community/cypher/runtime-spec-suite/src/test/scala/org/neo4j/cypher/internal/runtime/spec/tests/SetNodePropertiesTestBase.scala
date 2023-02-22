@@ -122,7 +122,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2").withSingleRow(1, 1).withStatistics(propertiesSet = 2)
   }
 
@@ -143,7 +142,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2")
       .withRows((0 to Math.min(5 - 1, sizeHint)).map(n => Array(n + 1, n + 1)))
       .withStatistics(propertiesSet = 2 * Math.min(5, sizeHint))
@@ -168,7 +166,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2")
       .withRows((0 to Math.min(5 - 1, sizeHint)).map(n => Array(n + 1, n + 1)))
       .withStatistics(propertiesSet = 2 * Math.min(5, sizeHint))
@@ -192,7 +189,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2")
       .withRows((0 to Math.min(3 - 1, sizeHint)).map(n => Array(n + 1, n + 1)))
       .withStatistics(propertiesSet = 2 * Math.min(3, sizeHint))
@@ -218,7 +214,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2")
       .withRows((0 to Math.min(5 - 1, sizeHint)).map(n => Array(n + 2, n + 2)))
       .withStatistics(propertiesSet = 2 * Math.min(5, sizeHint) * 2)
@@ -242,7 +237,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2").withSingleRow(2, 2).withStatistics(propertiesSet = 4)
   }
 
@@ -285,7 +279,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime, input)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2").withRows(Seq(Array(3, 3), Array(null, null))).withStatistics(
       propertiesSet = 2
     )
@@ -307,7 +300,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2").withSingleRow(null, null).withNoUpdates()
     tx.getAllPropertyKeys.iterator().hasNext shouldBe false
   }
@@ -328,7 +320,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2").withRows(n.map(_ => Array(100, 100))).withStatistics(propertiesSet = 2)
   }
 
@@ -348,7 +339,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2").withSingleRow(1, 1).withStatistics(propertiesSet = 2).withLockedNodes(
       Set(n.getId)
     )
@@ -370,7 +360,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
       .withStatistics(propertiesSet = 2 * sizeHint)
@@ -398,7 +387,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withSingleRow(nodes.head)
       .withStatistics(propertiesSet = 2)
@@ -421,7 +409,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2")
       .withSingleRow(1, 1)
       .withStatistics(propertiesSet = 2)
@@ -445,7 +432,6 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2")
       .withSingleRow(2, 2)
       .withStatistics(propertiesSet = 2)

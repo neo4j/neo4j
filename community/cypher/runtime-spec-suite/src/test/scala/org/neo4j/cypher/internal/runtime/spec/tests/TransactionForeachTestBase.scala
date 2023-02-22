@@ -199,7 +199,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     val expectedRhsCount = (nodeCountB + nodeCountC) * (Math.pow(2, nodeCountA).toInt - 1)
@@ -593,7 +592,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn(1 to 10))
       .withStatistics(nodesCreated = 10, labelsAdded = 10, transactionsCommitted = 11, transactionsStarted = 11)
@@ -614,7 +612,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     val expectedTransactionCount = Math.ceil(rangeSize / batchSize.toDouble).toInt
     runtimeResult should beColumns("x")
       .withRows(singleColumn(1 to rangeSize))
@@ -639,7 +636,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = profile(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn(Seq(1, 2)))
       .withStatistics(nodesCreated = 2, labelsAdded = 2, transactionsCommitted = 2, transactionsStarted = 2)
@@ -703,7 +699,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns().withNoRows
     val nNodes = tx.findNodes(label("N")).asScala.toList
     nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (0 until (10 + 3))
@@ -732,7 +727,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns().withNoRows
     val nNodes = tx.findNodes(label("N")).asScala.toList
     nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (
@@ -761,7 +755,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns().withNoRows
     val nNodes = tx.findNodes(label("N")).asScala.toList
     nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (0 until (10 + 3))
@@ -789,7 +782,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns().withNoRows
     val nNodes = tx.findNodes(label("N")).asScala.toList
     nNodes.map(_.getProperty("prop")) should contain theSameElementsAs (
@@ -822,7 +814,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns().withNoRows
     val nRels = tx.findRelationships(RelationshipType.withName("R")).asScala.toList
     nRels.map(_.getProperty("prop")) should contain theSameElementsAs (0 until (10 + 3))
@@ -857,7 +848,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns().withNoRows
     val nRels = tx.findRelationships(RelationshipType.withName("R")).asScala.toList
     nRels.map(_.getProperty("prop")) should contain theSameElementsAs (
@@ -903,7 +893,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(query, runtime, inputStream = inputValues(nodes.map(n => Array[Any](n)): _*).stream())
 
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
@@ -947,7 +936,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult =
       execute(query, runtime, inputStream = inputValues(relationships.map(r => Array[Any](r)): _*).stream())
 
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
@@ -991,7 +979,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(query, runtime, inputStream = inputValues(paths.map(p => Array[Any](p)): _*).stream())
 
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
@@ -1033,7 +1020,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(query, runtime, inputStream = inputValues(nodeRows: _*).stream())
 
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
@@ -1079,7 +1065,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       inputStream = inputValues(nodes.map(n => Array[Any](java.util.Map.of("n", n))): _*).stream()
     )
 
-    consume(runtimeResult)
     runtimeResult should beColumns("prop")
       .withRows(singleColumn(Seq(2L, 2L, 2L, 2L)))
   }
@@ -1098,7 +1083,6 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(query, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("x")
       .withRows(singleColumn(1 to 10))
       .withStatistics(
@@ -1502,7 +1486,6 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
         statsAfter shouldBe expectedStats
       } else {
         val runtimeResult = execute(query, runtime, input)
-        consume(runtimeResult)
 
         val expected = setup.input.map(row => Array(row.i))
 
@@ -1567,7 +1550,6 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
       val expectedFailedInnerTxs = if (setup.shouldFail) 1 else 0
 
       val runtimeResult = execute(query, runtime, input)
-      consume(runtimeResult)
 
       val expected = setup.batches().flatMap {
         var hasFailed = false
@@ -1648,7 +1630,6 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
       val expectedFailedInnerTxs = setup.batches().size - expectedCommittedInnerTxs
 
       val runtimeResult = execute(query, runtime, input)
-      consume(runtimeResult)
 
       val expected = setup.batches().flatMap {
         case batch if batch.exists(_.shouldFail) => batch.map(r => Array[Any](r.i, true, false))

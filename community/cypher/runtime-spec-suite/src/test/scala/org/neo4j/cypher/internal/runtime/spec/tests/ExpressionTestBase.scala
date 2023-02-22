@@ -809,7 +809,6 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .build()
 
     val result = execute(logicalQuery, runtime)
-    consume(result)
 
     // then
     val expected = nodes.filter(n => n.hasLabel(label("C")) || n.hasLabel(label("B")))
@@ -839,7 +838,6 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .build()
 
     val result = execute(logicalQuery, runtime, input)
-    consume(result)
 
     // then
     val expected = nodes.filter(n => n.hasLabel(label("C")) || n.hasLabel(label("B")))

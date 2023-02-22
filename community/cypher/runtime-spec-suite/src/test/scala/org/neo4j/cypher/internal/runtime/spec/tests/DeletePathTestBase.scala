@@ -58,7 +58,6 @@ abstract class DeletePathTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p")
       .withStatistics(nodesDeleted = 1)
     Iterables.count(tx.getAllNodes) shouldBe (nodeCount - 1)

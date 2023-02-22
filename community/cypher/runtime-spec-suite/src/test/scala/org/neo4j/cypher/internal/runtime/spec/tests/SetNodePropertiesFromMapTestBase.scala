@@ -566,7 +566,6 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p").withSingleRow(1).withStatistics(propertiesSet = 1).withLockedNodes(Set(n.getId))
   }
 
@@ -586,7 +585,6 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withRows(singleColumn(nodes.flatMap(n => Seq.fill(10)(n))))
       .withStatistics(propertiesSet = sizeHint)
@@ -613,7 +611,6 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withSingleRow(nodes.head)
       .withStatistics(propertiesSet = 3)
@@ -641,7 +638,6 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("n")
       .withSingleRow(nodes.head)
       .withStatistics(propertiesSet = 2)
@@ -664,7 +660,6 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2")
       .withSingleRow(1, 1)
       .withStatistics(propertiesSet = 2)
@@ -688,7 +683,6 @@ abstract class SetNodePropertiesFromMapTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
     runtimeResult should beColumns("p1", "p2")
       .withSingleRow(2, 2)
       .withStatistics(propertiesSet = 2)

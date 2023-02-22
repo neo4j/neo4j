@@ -50,7 +50,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x").withNoRows().withNoUpdates()
@@ -70,7 +69,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x")
@@ -102,7 +100,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x")
@@ -130,7 +127,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x")
@@ -152,7 +148,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x")
@@ -182,7 +177,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x")
@@ -210,7 +204,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("res")
@@ -234,7 +227,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x")
@@ -271,7 +263,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x")
@@ -296,7 +287,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x")
@@ -324,7 +314,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x")
@@ -346,7 +335,6 @@ abstract class ForeachApplyTestBase[CONTEXT <: RuntimeContext](
       .build(readOnly = false)
 
     val runtimeResult = execute(logicalQuery, runtime, lhsRows)
-    consume(runtimeResult)
 
     // then
     runtimeResult should beColumns("x").withSingleRow(1).withStatistics(nodesCreated = 1)
