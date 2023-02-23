@@ -535,4 +535,3 @@ case class LogicalPlanResult(
   shouldBeCached: Boolean,
   queryObfuscator: QueryObfuscator
 )
-
