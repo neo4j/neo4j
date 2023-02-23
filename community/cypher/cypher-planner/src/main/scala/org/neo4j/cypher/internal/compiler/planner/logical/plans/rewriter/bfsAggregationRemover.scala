@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
@@ -204,10 +203,7 @@ case object bfsAggregationRemover extends Rewriter {
           _: CacheProperties =>
           distinctHorizon
 
-        case _: Argument |
-          _: DirectedRelationshipUniqueIndexSeek |
-          _: UndirectedRelationshipUniqueIndexSeek |
-          _: NodeUniqueIndexSeek =>
+        case SingleRowLeaf(_) =>
           if (distinctHorizon.isRemovableDistinct) {
             aggregatingPlansToRemove.put(
               distinctHorizon.aggregatingPlan,
@@ -243,6 +239,18 @@ case object bfsAggregationRemover extends Rewriter {
     }
 
     ReplacementPlans(aggregatingPlansToRemove.toMap, aggregatingPlansToRelax.toMap)
+  }
+
+  object SingleRowLeaf {
+
+    def unapply(plan: LogicalPlan): Option[LogicalPlan] = plan match {
+      case _: Argument |
+        _: DirectedRelationshipUniqueIndexSeek |
+        _: NodeUniqueIndexSeek =>
+        Some(plan)
+      case _ =>
+        None
+    }
   }
 
   override def apply(input: AnyRef): AnyRef = {
