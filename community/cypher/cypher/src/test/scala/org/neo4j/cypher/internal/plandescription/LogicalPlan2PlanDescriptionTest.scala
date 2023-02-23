@@ -4842,7 +4842,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "VarLengthExpand(Pruning,BFS)",
         SingleChild(lhsPD),
         Seq(details(
-          // TODO reviewer: this format is obviously very bad, but I didn't want to spend time thinking of something better before review. suggestions?
           "p = (a)-[:R*..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) AND all(r IN relationships(p) WHERE r.prop = $autodouble_1) depth"
         )),
         Set("a", "y")
