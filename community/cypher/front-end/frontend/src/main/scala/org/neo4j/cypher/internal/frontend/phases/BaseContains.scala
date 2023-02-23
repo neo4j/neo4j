@@ -22,18 +22,18 @@ import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
 import scala.reflect.ClassTag
 
-case class BaseContains[T: ClassTag]()(implicit manifest: Manifest[T]) extends ValidatingCondition {
+case class BaseContains[T]()(implicit val tag: ClassTag[T]) extends ValidatingCondition {
 
   private val acceptableTypes: Set[Class[_]] = Set(
     classOf[Statement],
     classOf[SemanticState]
   )
 
-  assert(acceptableTypes.contains(manifest.runtimeClass))
+  assert(acceptableTypes.contains(tag.runtimeClass))
 
   override def apply(in: Any): Seq[String] = in match {
     case state: BaseState =>
-      manifest.runtimeClass match {
+      tag.runtimeClass match {
         case x if classOf[Statement] == x && state.maybeStatement.isEmpty     => Seq("Statement missing")
         case x if classOf[SemanticState] == x && state.maybeSemantics.isEmpty => Seq("Semantic State missing")
         case _                                                                => Seq.empty
@@ -41,5 +41,12 @@ case class BaseContains[T: ClassTag]()(implicit manifest: Manifest[T]) extends V
     case x => throw new IllegalStateException(s"Unknown state: $x")
   }
 
-  override def name: String = s"$productPrefix[${manifest.runtimeClass.getSimpleName}]"
+  override def name: String = s"$productPrefix[${tag.runtimeClass.getSimpleName}]"
+
+  override def hashCode(): Int = tag.hashCode()
+
+  override def equals(obj: Any): Boolean = obj match {
+    case bc: BaseContains[_] => tag.equals(bc.tag)
+    case _ => false
+  }
 }
