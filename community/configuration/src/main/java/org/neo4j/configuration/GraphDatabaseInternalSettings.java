@@ -1075,7 +1075,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("A feature toggle behind which show setting feature is developed")
     public static final Setting<Boolean> show_setting =
-            newBuilder("internal.dbms.show_setting", BOOL, false).build();
+            newBuilder("internal.dbms.show_setting", BOOL, true).build();
 
     @Internal
     @Description("A feature toggle behind which out of disk space protection feature is developed")
