@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeIn
 import org.neo4j.cypher.internal.rewriting.rewriters.ReturnItemsAreAliased
 import org.neo4j.cypher.internal.rewriting.rewriters.addDependenciesToProjectionsInSubqueryExpressions
 import org.neo4j.cypher.internal.rewriting.rewriters.combineSetProperty
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.rewriting.rewriters.desugarMapProjection
 import org.neo4j.cypher.internal.rewriting.rewriters.expandStar
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -86,7 +87,12 @@ object ASTRewriter {
         addDependenciesToProjectionsInSubqueryExpressions
       ),
       initialConditions =
-        Set(ProjectionClausesHaveSemanticInfo, SubqueryExpressionsHaveSemanticInfo, ReturnItemsAreAliased)
+        Set(
+          ProjectionClausesHaveSemanticInfo,
+          SubqueryExpressionsHaveSemanticInfo,
+          ReturnItemsAreAliased,
+          ExpressionsHaveComputedDependencies
+        )
     )
 
   def rewrite(

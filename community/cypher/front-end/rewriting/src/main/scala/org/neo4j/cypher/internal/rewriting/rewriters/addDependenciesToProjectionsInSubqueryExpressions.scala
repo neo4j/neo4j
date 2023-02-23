@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveDependenciesInWithClauses
 import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -101,7 +102,8 @@ case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequen
   }
 
   override def preConditions: Set[Condition] = Set(
-    ReturnItemsAreAliased
+    ReturnItemsAreAliased,
+    ExpressionsHaveComputedDependencies
   )
 
   override def postConditions: Set[Condition] = Set(SubqueryExpressionsHaveDependenciesInWithClauses)
