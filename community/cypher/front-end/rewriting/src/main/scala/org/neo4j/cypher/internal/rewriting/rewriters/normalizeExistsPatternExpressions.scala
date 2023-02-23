@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionAreWrappedInExists
+import org.neo4j.cypher.internal.rewriting.conditions.PredicatesSimplified
 import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -110,9 +111,11 @@ case object normalizeExistsPatternExpressions extends StepSequencer.Step with AS
 
   override def postConditions: Set[Condition] = Set(PatternExpressionAreWrappedInExists)
 
-  // TODO capture the dependency with simplifyPredicates
   override def invalidatedConditions: Set[Condition] = Set(
-    ProjectionClausesHaveSemanticInfo // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    // It can invalidate this condition by rewriting things inside WITH/RETURN.
+    ProjectionClausesHaveSemanticInfo,
+    // This can introduce Not(Not(...))
+    PredicatesSimplified
   )
 
   override def getRewriter(

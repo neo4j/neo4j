@@ -66,6 +66,4 @@ case object NoDuplicateNeighbouringOr extends StepSequencer.Condition
 
 case object AndRewrittenToAnds extends StepSequencer.Condition
 
-case object PredicatesSimplified extends StepSequencer.Condition
-
 case object NoInequalityInsideNot extends StepSequencer.Condition

@@ -26,6 +26,7 @@ package object conditions {
   case object SubqueryExpressionsHaveDependenciesInWithClauses extends Condition
   case object SensitiveLiteralsExtracted extends StepSequencer.Condition
   case object LiteralsExtracted extends StepSequencer.Condition
+  case object PredicatesSimplified extends StepSequencer.Condition
 
   /**
    * A collection of all conditions that require semantic info available for some AST nodes
