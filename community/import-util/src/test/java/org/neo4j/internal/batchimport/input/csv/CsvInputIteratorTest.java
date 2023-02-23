@@ -47,7 +47,7 @@ class CsvInputIteratorTest {
         CharReadable stream = readableOverFiles(List.of(
                 List.of(":ID,:LABEL", "1,foo", "2,bar"),
                 List.of(":ID,:LABEL,prop", "3,foo", "4,bar"),
-                List.of(":ID,prop", "5,foo", "6,bar")));
+                List.of(":ID,prop:int", "5,1", "6,2")));
         Configuration config = COMMAS;
         try (CsvInputIterator iterator = new CsvInputIterator(
                 stream,

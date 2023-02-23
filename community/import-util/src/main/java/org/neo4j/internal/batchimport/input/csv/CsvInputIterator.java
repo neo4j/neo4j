@@ -27,7 +27,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.function.Supplier;
+import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.impl.factory.Lists;
 import org.neo4j.csv.reader.BufferedCharSeeker;
 import org.neo4j.csv.reader.CharReadable;
 import org.neo4j.csv.reader.CharReadableChunker.ChunkImpl;
@@ -50,6 +53,10 @@ import org.neo4j.internal.batchimport.input.csv.Header.Monitor;
  * Typically created from {@link CsvGroupInputIterator}.
  */
 class CsvInputIterator implements SourceTraceability, Closeable {
+
+    private static final ImmutableMap<String, Type> TYPES =
+            Lists.immutable.of(Type.values()).toMap(Enum::name, t -> t).toImmutable();
+
     private final CharReadable stream;
     private final Chunker chunker;
     private final int groupId;
@@ -168,7 +175,7 @@ class CsvInputIterator implements SourceTraceability, Closeable {
                                     new Header.Entry(
                                             spec.rawEntry(),
                                             spec.name(),
-                                            spec.type() == null ? Type.PROPERTY : Type.valueOf(spec.type()),
+                                            typeFromSpec(spec.type()),
                                             null,
                                             extractors.string()),
                             Header.NO_MONITOR);
@@ -183,6 +190,17 @@ class CsvInputIterator implements SourceTraceability, Closeable {
             }
             return 0;
         };
+    }
+
+    private static Type typeFromSpec(String specType) {
+        var type = Type.PROPERTY;
+        if (specType != null) {
+            // catch the case when the header spec has come from something like `field_name:int`
+            // the specType in this case would be `int` which isn't a valid Type
+            type = TYPES.getIfAbsentValue(specType.toUpperCase(Locale.ROOT), type);
+        }
+
+        return type;
     }
 
     public boolean next(CsvInputChunkProxy proxy) throws IOException {

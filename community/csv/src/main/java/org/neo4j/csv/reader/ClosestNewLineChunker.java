@@ -52,15 +52,16 @@ public class ClosestNewLineChunker extends CharReadableChunker {
         int offset = fillFromBackBuffer(into.buffer);
         int leftToRead = chunkSize - offset;
         int read = reader.read(into.buffer, offset, leftToRead);
-        if (read
-                == leftToRead) { // Read from reader. We read data into the whole buffer and there seems to be more data
-            // left in reader.
+        if (read == leftToRead) {
+            // Read from reader. We read data into the whole buffer and there seems to be more data left in reader.
             // This means we're most likely not at the end so seek backwards to the last newline character and
             // put the characters after the newline character(s) into the back buffer.
             int newlineOffset = offsetOfLastNewline(into.buffer);
-            if (newlineOffset > -1) { // We found a newline character some characters back
+            if (newlineOffset > -1) {
+                // We found a newline character some characters back
                 read -= storeInBackBuffer(into.data(), newlineOffset + 1, chunkSize - (newlineOffset + 1));
-            } else { // There was no newline character, isn't that weird?
+            } else {
+                // There was no newline character, isn't that weird?
                 throw new IllegalStateException("Weird input data, no newline character in the whole buffer "
                         + chunkSize + ", not supported a.t.m.");
             }
@@ -71,7 +72,7 @@ public class ClosestNewLineChunker extends CharReadableChunker {
         if (read > 0) {
             offset += read;
             position += read;
-            int skipped = newSource && fileIndex > 0 ? headerSkip.skipHeader(into.buffer, 0, offset) : 0;
+            int skipped = newSource && fileIndex >= 0 ? headerSkip.skipHeader(into.buffer, 0, offset) : 0;
             into.initialize(skipped, offset - skipped, lastSeenSourceDescription);
             return true;
         }

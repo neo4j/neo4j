@@ -86,6 +86,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.factory.Maps;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -615,7 +616,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldFailIfHeaderHasLessColumnsThanData() throws Exception {
+    void shouldFailIfHeaderHasLessColumnsThanData() {
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.TABS;
@@ -1198,7 +1199,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldDisallowImportWithoutNodesInput() throws Exception {
+    void shouldDisallowImportWithoutNodesInput() {
         // GIVEN
         List<String> nodeIds = nodeIds();
 
@@ -1464,7 +1465,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldReportBadDelimiterConfiguration() throws Exception {
+    void shouldReportBadDelimiterConfiguration() {
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.TABS;
@@ -1487,7 +1488,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldFailAndReportStartingLineForUnbalancedQuoteInMiddle() throws Exception {
+    void shouldFailAndReportStartingLineForUnbalancedQuoteInMiddle() {
         // GIVEN
         int unbalancedStartLine = 10;
 
@@ -1532,7 +1533,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldFailAndReportStartingLineForUnbalancedQuoteAtEnd() throws Exception {
+    void shouldFailAndReportStartingLineForUnbalancedQuoteAtEnd() {
         // GIVEN
         int unbalancedStartLine = 10;
 
@@ -1563,9 +1564,8 @@ class ImportCommandTest {
                 "--nodes", data.toAbsolutePath().toString(),
                 "--quote", weirdStringDelimiter);
 
-        assertEquals("~", "" + weirdDelimiter);
         // THEN
-        assertEquals("~".charAt(0), weirdDelimiter);
+        assertEquals('~', weirdDelimiter);
 
         Set<String> names = asSet("Weird", name2);
         GraphDatabaseService db = getDatabaseApi();
@@ -1581,7 +1581,7 @@ class ImportCommandTest {
     }
 
     @Test
-    void shouldFailOnUnbalancedQuoteWithMultilinesEnabled() throws Exception {
+    void shouldFailOnUnbalancedQuoteWithMultilinesEnabled() {
         // GIVEN
         int unbalancedStartLine = 10;
 
@@ -1676,6 +1676,7 @@ class ImportCommandTest {
         // THEN
         final var db = assumeAlignedFormat(getDatabaseApi());
 
+        //noinspection resource
         final var stores = db.getDependencyResolver()
                 .resolveDependency(RecordStorageEngine.class)
                 .testAccessNeoStores();
@@ -2067,6 +2068,88 @@ class ImportCommandTest {
                 assertThat(actualGameIds).isEqualTo(expectedGameIds);
             }
         }
+    }
+
+    @Test
+    void autoSkipSubsequentHeadersShouldWorkAcrossMultipleFiles() throws Exception {
+        // GIVEN
+        final var header = ":LABEL,node_id:ID,counter:int";
+        var nodeData1 = createAndWriteFile("part0.csv", Charset.defaultCharset(), writer -> {
+            writer.println(header);
+            writer.println("A,1,2");
+        });
+        var nodeData2 = createAndWriteFile("part1.csv", Charset.defaultCharset(), writer -> {
+            writer.println(header);
+            writer.println("A,2,3");
+        });
+
+        final var expectedNodes = Maps.immutable.of("1", 2, "2", 3);
+
+        // WHEN
+        runImport(
+                "--auto-skip-subsequent-headers",
+                "true",
+                "--normalize-types",
+                "false",
+                "--nodes",
+                nodeData1.toAbsolutePath() + "," + nodeData2.toAbsolutePath());
+
+        // THEN
+        var actualNodes = Maps.mutable.empty();
+        try (var tx = getDatabaseApi().beginTx()) {
+            try (var nodes = tx.findNodes(label("A"))) {
+                while (nodes.hasNext()) {
+                    var node = nodes.next();
+                    var counter = node.getProperty("counter");
+                    assertThat(counter).isInstanceOf(Integer.class);
+                    actualNodes.put(node.getProperty("node_id"), counter);
+                }
+            }
+        }
+
+        assertThat(actualNodes.toImmutable()).isEqualTo(expectedNodes);
+    }
+
+    @Test
+    void autoSkipSubsequentHeadersShouldWorkAcrossMultipleIndividuallyListedFiles() throws Exception {
+        // GIVEN
+        final var header = ":LABEL,node_id:ID,counter:int";
+        var nodeData1 = createAndWriteFile("group1.csv", Charset.defaultCharset(), writer -> {
+            writer.println(header);
+            writer.println("A,1,3");
+        });
+        var nodeData2 = createAndWriteFile("group2.csv", Charset.defaultCharset(), writer -> {
+            writer.println(header);
+            writer.println("A,2,4");
+        });
+
+        final var expectedNodes = Maps.immutable.of("1", 3, "2", 4);
+
+        // WHEN
+        runImport(
+                "--auto-skip-subsequent-headers",
+                "true",
+                "--normalize-types",
+                "false",
+                "--nodes",
+                nodeData1.toAbsolutePath().toString(),
+                "--nodes",
+                nodeData2.toAbsolutePath().toString());
+
+        // THEN
+        var actualNodes = Maps.mutable.empty();
+        try (var tx = getDatabaseApi().beginTx()) {
+            try (var nodes = tx.findNodes(label("A"))) {
+                while (nodes.hasNext()) {
+                    var node = nodes.next();
+                    var counter = node.getProperty("counter");
+                    assertThat(counter).isInstanceOf(Integer.class);
+                    actualNodes.put(node.getProperty("node_id"), counter);
+                }
+            }
+        }
+
+        assertThat(actualNodes.toImmutable()).isEqualTo(expectedNodes);
     }
 
     private static void assertContains(String linesType, List<String> lines, String string) {
@@ -2493,7 +2576,7 @@ class ImportCommandTest {
     }
 
     private Iterator<RelationshipDataLine> randomRelationships(final List<String> nodeIds) {
-        return new PrefetchingIterator<RelationshipDataLine>() {
+        return new PrefetchingIterator<>() {
             @Override
             protected RelationshipDataLine fetchNextOrNull() {
                 return new RelationshipDataLine(
