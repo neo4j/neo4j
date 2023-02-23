@@ -82,5 +82,3 @@ public class ConcurrentLongProbeTable<V extends Measurable> extends DefaultClose
         return map == null;
     }
 }
-
-// TODO: try replacing bag here!
