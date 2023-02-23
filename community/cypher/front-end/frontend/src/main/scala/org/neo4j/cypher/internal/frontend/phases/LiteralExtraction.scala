@@ -18,20 +18,25 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.SchemaCommand
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.rewriting.conditions.LiteralsExtracted
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralsAreAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.StepSequencer.Step
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Replace literals with parameters.
  */
 case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy)
-    extends Phase[BaseContext, BaseState, BaseState] with Step {
+    extends Phase[BaseContext, BaseState, BaseState]{
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
     val statement = in.statement()
@@ -46,9 +51,25 @@ case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy)
 
   override def phase = AST_REWRITE
 
-  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+  override def postConditions: Set[StepSequencer.Condition] = LiteralExtraction.postConditions
+}
 
-  override def postConditions: Set[StepSequencer.Condition] = Set.empty
+case object LiteralExtraction extends StepSequencer.Step with ParsePipelineTransformerFactory {
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = Set(LiteralsAreAvailable)
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    BaseContains[Statement],
+    BaseContains[SemanticState]
+  )
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(LiteralsExtracted)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+
+  override def getTransformer(
+    literalExtractionStrategy: LiteralExtractionStrategy,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    semanticFeatures: Seq[SemanticFeature],
+    obfuscateLiterals: Boolean
+  ): Transformer[BaseContext, BaseState, BaseState] = LiteralExtraction(literalExtractionStrategy)
 }

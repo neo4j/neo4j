@@ -16,10 +16,13 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.RewriterStep
-import org.neo4j.cypher.internal.rewriting.rewriters.LiteralsAreAvailable
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.expandCallWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.expandShowWhere
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
@@ -32,11 +35,13 @@ import org.neo4j.cypher.internal.rewriting.rewriters.timestampRewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.AccumulatedSteps
 import org.neo4j.cypher.internal.util.inSequence
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Rewrite the AST into a shape that semantic analysis can be performed on.
  */
-case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
+case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step
+    with ParsePipelineTransformerFactory {
 
   val AccumulatedSteps(orderedSteps, _) =
     new StepSequencer(ListStepAccumulator[StepSequencer.Step with PreparatoryRewritingRewriterFactory]()).orderSteps(
@@ -49,8 +54,7 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
         mergeInPredicates,
         timestampRewriter,
         rewriteShortestPathWithFixedLengthRelationship
-      ),
-      initialConditions = Set(LiteralsAreAvailable)
+      )
     )
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
@@ -67,5 +71,18 @@ case object PreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState
 
   override val phase = AST_REWRITE
 
-  override def postConditions: Set[StepSequencer.Condition] = Set.empty
+  case object SemanticAnalysisPossible extends StepSequencer.Condition
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(BaseContains[Statement])
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(SemanticAnalysisPossible)
+
+  override def getTransformer(
+    literalExtractionStrategy: LiteralExtractionStrategy,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    semanticFeatures: Seq[SemanticFeature],
+    obfuscateLiterals: Boolean
+  ): Transformer[BaseContext, BaseState, BaseState] = this
 }

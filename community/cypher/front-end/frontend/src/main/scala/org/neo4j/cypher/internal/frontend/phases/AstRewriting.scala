@@ -16,8 +16,14 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
@@ -40,10 +46,28 @@ case class AstRewriting(parameterTypeMapping: Map[String, ParameterTypeInfo] = M
 
   override def phase = AST_REWRITE
 
-  override def postConditions: Set[StepSequencer.Condition] = {
-    // noReferenceEqualityAmongVariables is broken by later phases, e.g. Namespacer.
-    // This can be fixed in a subsequent investigation.
+  override def postConditions: Set[StepSequencer.Condition] = AstRewriting.postConditions
+}
+
+case object AstRewriting extends StepSequencer.Step with ParsePipelineTransformerFactory {
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    BaseContains[Statement],
+    BaseContains[SemanticState]
+  )
+
+  // noReferenceEqualityAmongVariables is broken by later phases, e.g. Namespacer.
+  // This can be fixed in a subsequent investigation.
+  override def postConditions: Set[StepSequencer.Condition] =
     (ASTRewriter.postConditions - noReferenceEqualityAmongVariables)
       .map(StatementCondition.wrap)
-  }
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+
+  override def getTransformer(
+    literalExtractionStrategy: LiteralExtractionStrategy,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    semanticFeatures: Seq[SemanticFeature],
+    obfuscateLiterals: Boolean
+  ): Transformer[BaseContext, BaseState, BaseState] = AstRewriting(parameterTypeMapping)
 }

@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckContext
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
@@ -24,12 +25,17 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
+import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting.SemanticAnalysisPossible
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
+import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions.ExpressionsHaveComputedDependencies
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 case object TokensResolved extends StepSequencer.Condition
 
@@ -78,17 +84,38 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
   override def phase: CompilationPhaseTracer.CompilationPhase = SEMANTIC_CHECK
 
-  override def postConditions: Set[StepSequencer.Condition] =
-    Set(BaseContains[SemanticState], StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]))
+  override def postConditions: Set[StepSequencer.Condition] = SemanticAnalysis.postConditions
 }
 
-case object SemanticAnalysis extends StepSequencer.Step with PlanPipelineTransformerFactory {
-  override def preConditions: Set[StepSequencer.Condition] = Set.empty
+case object SemanticAnalysis extends StepSequencer.Step with ParsePipelineTransformerFactory
+    with PlanPipelineTransformerFactory {
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    BaseContains[Statement],
+    SemanticAnalysisPossible
+  )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(BaseContains[SemanticTable]) ++ SemanticInfoAvailable
+  override def postConditions: Set[StepSequencer.Condition] = Set(
+    BaseContains[SemanticState],
+    StatementCondition(containsNoNodesOfType[UnaliasedReturnItem]),
+    BaseContains[SemanticTable],
+    ExpressionsHaveComputedDependencies
+  ) ++ SemanticInfoAvailable
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
+  /**
+   * Transformer for the parse pipeline
+   */
+  override def getTransformer(
+    literalExtractionStrategy: LiteralExtractionStrategy,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    semanticFeatures: Seq[SemanticFeature],
+    obfuscateLiterals: Boolean
+  ): Transformer[BaseContext, BaseState, BaseState] = SemanticAnalysis(warn = true, semanticFeatures: _*)
+
+  /**
+   * Transformer for the plan pipeline
+   */
   override def getTransformer(
     pushdownPropertyReads: Boolean,
     semanticFeatures: Seq[SemanticFeature]

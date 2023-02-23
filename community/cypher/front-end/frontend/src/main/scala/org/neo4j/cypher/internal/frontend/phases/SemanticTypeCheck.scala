@@ -17,7 +17,9 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Create
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -31,6 +33,9 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.ListCoercedToBooleanCheck.listCoercedToBooleanCheck
 import org.neo4j.cypher.internal.frontend.phases.PatternExpressionInNonExistenceCheck.patternExpressionInNonExistenceCheck
 import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck.SemanticErrorCheck
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -40,13 +45,15 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 /**
  * Checks for semantic errors when semantic table has been initialized.
  *
  * Does not change the State, just checks for semantic errors.
  */
-case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState] {
+case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState] with StepSequencer.Step
+    with ParsePipelineTransformerFactory {
 
   type SemanticErrorCheck = (BaseState, BaseContext) => Seq[SemanticError]
 
@@ -62,7 +69,23 @@ case object SemanticTypeCheck extends VisitorPhase[BaseContext, BaseState] {
 
   override val phase = SEMANTIC_TYPE_CHECK
 
-  override def postConditions: Set[StepSequencer.Condition] = Set.empty
+  case object AdditionalSemanticTypeChecksPerformed extends StepSequencer.Condition
+
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    BaseContains[Statement],
+    BaseContains[SemanticTable]
+  ) ++ SemanticInfoAvailable
+
+  override def postConditions: Set[StepSequencer.Condition] = Set(AdditionalSemanticTypeChecksPerformed)
+
+  override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
+
+  override def getTransformer(
+    literalExtractionStrategy: LiteralExtractionStrategy,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    semanticFeatures: Seq[SemanticFeature],
+    obfuscateLiterals: Boolean
+  ): Transformer[BaseContext, BaseState, BaseState] = this
 
 }
 

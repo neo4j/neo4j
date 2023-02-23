@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
+import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.MultipleDatabases
 import org.neo4j.cypher.internal.compiler.AdministrationCommandPlanBuilder
@@ -42,6 +43,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.InsertCachedProp
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SortPredicatesBySelectivity
 import org.neo4j.cypher.internal.frontend.phases.AmbiguousAggregationAnalysis
 import org.neo4j.cypher.internal.frontend.phases.AstRewriting
+import org.neo4j.cypher.internal.frontend.phases.BaseContains
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.ExpandStarRewriter
@@ -50,6 +52,7 @@ import org.neo4j.cypher.internal.frontend.phases.LiteralExtraction
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting
+import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting.SemanticAnalysisPossible
 import org.neo4j.cypher.internal.frontend.phases.ProjectNamedPathsRewriter
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.SemanticTypeCheck
@@ -116,6 +119,8 @@ object CompilationPhases {
           SortPredicatesBySelectivity
         ) ++ CNFNormalizer.steps,
         initialConditions = Set(
+          BaseContains[Statement],
+          SemanticAnalysisPossible,
           StatementCondition(containsNoReturnAll),
           NoNamedPathsInPatternComprehensions,
           StatementCondition(noUnnamedNodesAndRelationships),

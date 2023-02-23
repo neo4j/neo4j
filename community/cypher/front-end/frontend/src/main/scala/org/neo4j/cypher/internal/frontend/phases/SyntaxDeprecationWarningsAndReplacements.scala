@@ -16,25 +16,33 @@
  */
 package org.neo4j.cypher.internal.frontend.phases
 
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
+import org.neo4j.cypher.internal.frontend.phases.factories.ParsePipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.Deprecation
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.SemanticDeprecations
 import org.neo4j.cypher.internal.rewriting.SyntacticDeprecations
+import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.rewriters.LiteralExtractionStrategy
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 case object DeprecatedSyntaxReplaced extends Condition
+case object DeprecatedSemanticsReplaced extends Condition
 
 /**
  * Find deprecated Cypher constructs, generate warnings for them, and replace deprecated syntax with currently accepted syntax.
  */
 case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations)
-    extends Phase[BaseContext, BaseState, BaseState] {
+    extends Phase[BaseContext, BaseState, BaseState] with StepSequencer.Step with ParsePipelineTransformerFactory {
 
   override def process(state: BaseState, context: BaseContext): BaseState = {
     val allDeprecations = deprecations match {
@@ -70,7 +78,29 @@ case class SyntaxDeprecationWarningsAndReplacements(deprecations: Deprecations)
     state.withStatement(newStatement)
   }
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(DeprecatedSyntaxReplaced)
+  override def preConditions: Set[Condition] = deprecations match {
+    case _: SyntacticDeprecations => Set(
+      BaseContains[Statement]
+    )
+    case _: SemanticDeprecations => Set(
+      BaseContains[Statement],
+      BaseContains[SemanticTable]
+    )
+  }
+
+  override def invalidatedConditions: Set[Condition] = SemanticInfoAvailable
+
+  override def postConditions: Set[StepSequencer.Condition] = deprecations match {
+    case _: SyntacticDeprecations => Set(DeprecatedSyntaxReplaced)
+    case _: SemanticDeprecations  => Set(DeprecatedSemanticsReplaced)
+  }
+
+  override def getTransformer(
+    literalExtractionStrategy: LiteralExtractionStrategy,
+    parameterTypeMapping: Map[String, ParameterTypeInfo],
+    semanticFeatures: Seq[SemanticFeature],
+    obfuscateLiterals: Boolean = false
+  ): Transformer[BaseContext, BaseState, BaseState] = this
 
   override def phase = DEPRECATION_WARNINGS
 }

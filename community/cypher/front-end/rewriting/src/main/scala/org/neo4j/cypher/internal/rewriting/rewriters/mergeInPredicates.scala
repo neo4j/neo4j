@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.ScopeExpression
+import org.neo4j.cypher.internal.rewriting.conditions.LiteralsExtracted
+import org.neo4j.cypher.internal.rewriting.conditions.SensitiveLiteralsExtracted
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -34,7 +36,6 @@ import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.StepSequencer.Step
 import org.neo4j.cypher.internal.util.bottomUp
 
-case object LiteralsAreAvailable extends Condition
 case object MultipleInPredicatesAreMerged extends Condition
 
 /**
@@ -55,7 +56,10 @@ case object MultipleInPredicatesAreMerged extends Condition
  */
 case object mergeInPredicates extends Step with PreparatoryRewritingRewriterFactory {
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(LiteralsAreAvailable)
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    !LiteralsExtracted,
+    !SensitiveLiteralsExtracted
+  )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(MultipleInPredicatesAreMerged)
 
