@@ -514,4 +514,8 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
             };
         }
     }
+
+    default boolean isVirtualTransaction() {
+        return false;
+    }
 }

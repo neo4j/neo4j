@@ -51,7 +51,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
@@ -565,7 +564,7 @@ public class Database extends AbstractDatabase {
 
     @Override
     protected void specificStop() {
-        // no specific actions
+        databaseConfig.removeListener(GraphDatabaseSettings.track_query_cpu_time, cpuChangeListener);
     }
 
     @Override
@@ -989,20 +988,6 @@ public class Database extends AbstractDatabase {
 
         return new DatabaseKernelModule(
                 transactionCommitProcess, kernel, kernelTransactions, fileListing, transactionIdGenerator);
-    }
-
-    private AtomicReference<CpuClock> setupCpuClockAtomicReference() {
-        AtomicReference<CpuClock> cpuClock = new AtomicReference<>(CpuClock.NOT_AVAILABLE);
-        SettingChangeListener<Boolean> cpuClockUpdater = (before, after) -> {
-            if (after) {
-                cpuClock.set(CpuClock.CPU_CLOCK);
-            } else {
-                cpuClock.set(CpuClock.NOT_AVAILABLE);
-            }
-        };
-        cpuClockUpdater.accept(null, databaseConfig.get(GraphDatabaseSettings.track_query_cpu_time));
-        databaseConfig.addListener(GraphDatabaseSettings.track_query_cpu_time, cpuClockUpdater);
-        return cpuClock;
     }
 
     private void buildTransactionMonitor(KernelTransactions kernelTransactions, Config config) {

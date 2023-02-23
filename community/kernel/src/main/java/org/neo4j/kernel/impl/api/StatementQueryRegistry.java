@@ -28,10 +28,11 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
 
 public class StatementQueryRegistry implements QueryRegistry {
-    private final KernelStatement statement;
+    private final QueryStatement statement;
     private final ExecutingQueryFactory factory;
 
-    StatementQueryRegistry(KernelStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef) {
+    public StatementQueryRegistry(
+            QueryStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef) {
         this.statement = statement;
         this.factory = new ExecutingQueryFactory(clock, cpuClockRef);
     }

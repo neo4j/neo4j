@@ -68,7 +68,7 @@ import org.neo4j.resources.CpuClock;
  * instance again, when it's initialized.</li>
  * </ol>
  */
-public class KernelStatement extends CloseableResourceManager implements AssertOpen, Statement, StatementInfo {
+public class KernelStatement extends QueryStatement implements AssertOpen, StatementInfo {
     private static final int EMPTY_COUNTER = 0;
     private static final int STATEMENT_TRACK_HISTORY_MAX_SIZE = 100;
     private static final Deque<StackTraceElement[]> EMPTY_STATEMENT_HISTORY = new ArrayDeque<>(0);
@@ -81,7 +81,6 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
     private Locks.Client lockClient;
     private CursorContext cursorContext;
     private int referenceCount;
-    private volatile ExecutingQuery executingQuery;
     private final LockTracer systemLockTracer;
     private final Deque<StackTraceElement[]> statementOpenCloseCalls;
     private final TransactionClockContext clockContext;
@@ -105,6 +104,7 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
         this.namedDatabaseId = namedDatabaseId;
     }
 
+    @Override
     public QueryRegistry queryRegistry() {
         return queryRegistry;
     }
@@ -150,7 +150,7 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
         this.lockClient = lockClient;
         this.cursorContext = cursorContext;
         this.clockContext.initializeTransaction(startTimeMillis);
-        this.executingQuery = null;
+        this.clearQueryExecution();
     }
 
     public Locks.Client locks() {
@@ -158,7 +158,8 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
     }
 
     public LockTracer lockTracer() {
-        LockTracer tracer = executingQuery != null ? executingQuery.lockTracer() : null;
+        LockTracer tracer =
+                this.executingQuery().map(ExecutingQuery::lockTracer).orElse(null);
         return tracer == null ? systemLockTracer : systemLockTracer.combine(tracer);
     }
 
@@ -216,7 +217,7 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
                 throw new StatementNotClosedException(message, statementOpenCloseCalls);
             }
         }
-        this.executingQuery = null;
+        this.clearQueryExecution();
     }
 
     private String getStatementNotClosedMessage(int leakedStatements) {
@@ -245,17 +246,9 @@ public class KernelStatement extends CloseableResourceManager implements AssertO
         return transaction.getTransactionSequenceNumber();
     }
 
-    final Optional<ExecutingQuery> executingQuery() {
-        return Optional.ofNullable(executingQuery);
-    }
-
-    final void startQueryExecution(ExecutingQuery query) {
-        query.setPreviousQuery(executingQuery);
-        this.executingQuery = query;
-    }
-
+    @Override
     final void stopQueryExecution(ExecutingQuery executingQuery) {
-        this.executingQuery = executingQuery.getPreviousQuery();
+        super.stopQueryExecution(executingQuery);
         transaction.getStatistics().addWaitingTime(executingQuery.reportedWaitingTimeNanos());
     }
 

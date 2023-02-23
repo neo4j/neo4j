@@ -67,6 +67,16 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
     }
 
     @Override
+    public TransactionalContext newContext(
+            InternalTransaction tx,
+            String queryText,
+            ExecutingQuery parentQuery,
+            MapValue queryParameters,
+            QueryExecutionConfiguration queryExecutionConfiguration) {
+        return newContext(tx, queryText, queryParameters, queryExecutionConfiguration);
+    }
+
+    @Override
     public final Neo4jTransactionalContext newContext(
             InternalTransaction tx,
             String queryText,

@@ -21,6 +21,7 @@ package org.neo4j.kernel.database;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.LongFunction;
 import org.neo4j.collection.Dependencies;
@@ -28,6 +29,8 @@ import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.DatabaseConfig;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.ResourceIterator;
@@ -51,6 +54,7 @@ import org.neo4j.logging.internal.DatabaseLogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -80,6 +84,7 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
     protected DatabaseHealth databaseHealth;
     protected Dependencies databaseDependencies;
     protected LifeSupport life;
+    protected SettingChangeListener<Boolean> cpuChangeListener;
     protected Monitors databaseMonitors;
 
     protected AbstractDatabase(
@@ -221,6 +226,20 @@ public abstract class AbstractDatabase extends LifecycleAdapter implements Lifec
             LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
         }
         internalLog.info("All transactions are closed.");
+    }
+
+    protected AtomicReference<CpuClock> setupCpuClockAtomicReference() {
+        AtomicReference<CpuClock> cpuClock = new AtomicReference<>(CpuClock.NOT_AVAILABLE);
+        cpuChangeListener = (before, after) -> {
+            if (after) {
+                cpuClock.set(CpuClock.CPU_CLOCK);
+            } else {
+                cpuClock.set(CpuClock.NOT_AVAILABLE);
+            }
+        };
+        cpuChangeListener.accept(null, databaseConfig.get(GraphDatabaseSettings.track_query_cpu_time));
+        databaseConfig.addListener(GraphDatabaseSettings.track_query_cpu_time, cpuChangeListener);
+        return cpuClock;
     }
 
     public Config getConfig() {

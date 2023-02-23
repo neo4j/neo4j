@@ -27,6 +27,13 @@ public interface TransactionalContextFactory {
     TransactionalContext newContext(
             InternalTransaction tx,
             String queryText,
+            ExecutingQuery parentQuery,
+            MapValue queryParameters,
+            QueryExecutionConfiguration queryExecutionConfiguration);
+
+    TransactionalContext newContext(
+            InternalTransaction tx,
+            String queryText,
             MapValue queryParameters,
             QueryExecutionConfiguration queryExecutionConfiguration);
 

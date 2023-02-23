@@ -122,7 +122,7 @@ public class FabricKernelTransaction {
             String queryText = "Internal query for parent query id: " + parentQuery.id();
             MapValue params = MapValue.EMPTY;
             return transactionalContextFactory.newContext(
-                    internalTransaction, queryText, params, queryExecutionConfiguration);
+                    internalTransaction, queryText, parentQuery, params, queryExecutionConfiguration);
         } else {
             // Cypher engine reports directly to parent query
             return transactionalContextFactory.newContextForQuery(

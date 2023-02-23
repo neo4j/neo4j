@@ -19,33 +19,26 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Map;
-import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.kernel.api.QueryRegistry;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.database.NamedDatabaseId;
+import java.util.Optional;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 
-/**
- * Exposes select information from the transaction in which this statement is executing
- */
-public interface StatementInfo extends Statement {
-    NamedDatabaseId namedDatabaseId();
+public abstract class QueryStatement extends CloseableResourceManager implements StatementInfo {
+    private volatile ExecutingQuery executingQuery;
 
-    ClientConnectionInfo clientInfo();
+    protected Optional<ExecutingQuery> executingQuery() {
+        return Optional.ofNullable(executingQuery);
+    }
 
-    String authenticatedUser();
+    void clearQueryExecution() {
+        this.executingQuery = null;
+    }
 
-    String executingUser();
+    void startQueryExecution(ExecutingQuery executingQuery) {
+        executingQuery.setPreviousQuery(this.executingQuery);
+        this.executingQuery = executingQuery;
+    }
 
-    long getTransactionSequenceNumber();
-
-    long getHits();
-
-    long getFaults();
-
-    long activeLockCount();
-
-    Map<String, Object> getMetaData();
-
-    QueryRegistry queryRegistry();
+    void stopQueryExecution(ExecutingQuery executingQuery) {
+        this.executingQuery = executingQuery.getPreviousQuery();
+    }
 }
