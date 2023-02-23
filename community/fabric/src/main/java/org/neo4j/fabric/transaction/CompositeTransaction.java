@@ -21,7 +21,6 @@ package org.neo4j.fabric.transaction;
 
 import java.util.function.Supplier;
 import org.neo4j.fabric.executor.FabricException;
-import org.neo4j.fabric.executor.FabricKernelTransaction;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.SingleDbTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -40,19 +39,17 @@ public interface CompositeTransaction {
      * Starts and registers a transaction that is so far known to do only reads. Such transaction can be later upgraded to a writing
      * one using {@link #upgradeToWritingTransaction(SingleDbTransaction)}
      */
-    <TX extends SingleDbTransaction> TX startReadingTransaction(
-            Location location, Supplier<TX> readingTransactionSupplier) throws FabricException;
+    <TX extends SingleDbTransaction> TX startReadingTransaction(Supplier<TX> readingTransactionSupplier)
+            throws FabricException;
 
     /**
      * Starts and registers a transaction that will do only reads. Such transaction cannot be later upgraded to a writing
      * one using {@link #upgradeToWritingTransaction(SingleDbTransaction)}
      */
-    <TX extends SingleDbTransaction> TX startReadingOnlyTransaction(
-            Location location, Supplier<TX> readingTransactionSupplier) throws FabricException;
+    <TX extends SingleDbTransaction> TX startReadingOnlyTransaction(Supplier<TX> readingTransactionSupplier)
+            throws FabricException;
 
     <TX extends SingleDbTransaction> void upgradeToWritingTransaction(TX writingTransaction) throws FabricException;
 
     void childTransactionTerminated(Status reason);
-
-    FabricKernelTransaction kernelTransaction();
 }

@@ -87,22 +87,14 @@ public class FabricStatementLifecycles {
         return new StatementLifecycle(executingQuery);
     }
 
-    public enum StatementPhase {
-        FABRIC,
-        CYPHER,
-        ENDED
-    }
-
     public class StatementLifecycle {
         private final ExecutingQuery executingQuery;
 
         private QueryExecutionMonitor dbMonitor;
-        private StatementPhase phase;
         private MonitoringMode monitoringMode;
 
         private StatementLifecycle(ExecutingQuery executingQuery) {
             this.executingQuery = executingQuery;
-            this.phase = StatementPhase.FABRIC;
         }
 
         void startProcessing() {
@@ -123,19 +115,13 @@ public class FabricStatementLifecycles {
             monitoringMode.startExecution(shouldLogIfSingleQuery);
         }
 
-        void doneFabricPhase() {
-            phase = StatementPhase.CYPHER;
-        }
-
         void endSuccess() {
-            phase = StatementPhase.ENDED;
             QueryExecutionMonitor monitor = getQueryExecutionMonitor();
             monitor.beforeEnd(executingQuery, true);
             monitor.endSuccess(executingQuery);
         }
 
         void endFailure(Throwable failure) {
-            phase = StatementPhase.ENDED;
             QueryExecutionMonitor monitor = getQueryExecutionMonitor();
             monitor.beforeEnd(executingQuery, false);
             monitor.endFailure(executingQuery, failure.getMessage());
@@ -156,10 +142,6 @@ public class FabricStatementLifecycles {
             }
 
             return Optional.ofNullable(dbMonitor);
-        }
-
-        public boolean inFabricPhase() {
-            return phase == StatementPhase.FABRIC;
         }
 
         public ExecutingQuery getMonitoredQuery() {

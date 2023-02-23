@@ -108,8 +108,6 @@ public class FabricExecutor {
 
         lifecycle.startProcessing();
 
-        fabricTransaction.setLastSubmittedStatement(lifecycle);
-
         try {
             var defaultGraphName = fabricTransaction
                     .getTransactionInfo()

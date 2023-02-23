@@ -43,7 +43,6 @@ import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.fabric.executor.FabricKernelTransaction;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
-import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.executor.SingleDbTransaction;
 import org.neo4j.fabric.planning.StatementType;
@@ -82,7 +81,6 @@ public class FabricTransactionImpl
     private final AtomicReference<StatementType> statementType = new AtomicReference<>();
     private State state = State.OPEN;
     private TerminationMark terminationMark;
-    private StatementLifecycle lastSubmittedStatement;
 
     private SingleDbTransaction writingTransaction;
     private final LocationCache locationCache;
@@ -367,16 +365,6 @@ public class FabricTransactionImpl
         }
     }
 
-    @Override
-    public void setLastSubmittedStatement(StatementLifecycle statement) {
-        lastSubmittedStatement = statement;
-    }
-
-    @Override
-    public Optional<StatementLifecycle> getLastSubmittedStatement() {
-        return Optional.ofNullable(lastSubmittedStatement);
-    }
-
     public boolean isLocal() {
         return remoteTransactionContext.isEmptyContext();
     }
@@ -441,15 +429,15 @@ public class FabricTransactionImpl
     }
 
     @Override
-    public <TX extends SingleDbTransaction> TX startReadingTransaction(
-            Location location, Supplier<TX> readingTransactionSupplier) throws FabricException {
-        return startReadingTransaction(location, false, readingTransactionSupplier);
+    public <TX extends SingleDbTransaction> TX startReadingTransaction(Supplier<TX> readingTransactionSupplier)
+            throws FabricException {
+        return startReadingTransaction(false, readingTransactionSupplier);
     }
 
     @Override
-    public <TX extends SingleDbTransaction> TX startReadingOnlyTransaction(
-            Location location, Supplier<TX> readingTransactionSupplier) throws FabricException {
-        return startReadingTransaction(location, true, readingTransactionSupplier);
+    public <TX extends SingleDbTransaction> TX startReadingOnlyTransaction(Supplier<TX> readingTransactionSupplier)
+            throws FabricException {
+        return startReadingTransaction(true, readingTransactionSupplier);
     }
 
     public ExecutingQuery.TransactionBinding transactionBinding() throws FabricException {
@@ -465,7 +453,7 @@ public class FabricTransactionImpl
     }
 
     private <TX extends SingleDbTransaction> TX startReadingTransaction(
-            Location location, boolean readOnly, Supplier<TX> readingTransactionSupplier) throws FabricException {
+            boolean readOnly, Supplier<TX> readingTransactionSupplier) throws FabricException {
         nonExclusiveLock.lock();
         try {
             checkTransactionOpenForStatementExecution();
@@ -566,11 +554,6 @@ public class FabricTransactionImpl
         OPEN,
         CLOSED,
         TERMINATED
-    }
-
-    @Override
-    public FabricKernelTransaction kernelTransaction() {
-        return this.kernelTransaction;
     }
 
     private record ErrorRecord(String message, Throwable error) {}

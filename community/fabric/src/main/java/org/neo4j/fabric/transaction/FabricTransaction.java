@@ -27,7 +27,6 @@ import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
-import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
@@ -47,7 +46,7 @@ public interface FabricTransaction {
     void markForTermination(Status reason);
 
     default Optional<Status> getReasonIfTerminated() {
-        return getTerminationMark().map(info -> info.getReason());
+        return getTerminationMark().map(TerminationMark::getReason);
     }
 
     Optional<TerminationMark> getTerminationMark();
@@ -55,10 +54,6 @@ public interface FabricTransaction {
     FabricTransactionInfo getTransactionInfo();
 
     TransactionBookmarkManager getBookmarkManager();
-
-    void setLastSubmittedStatement(StatementLifecycle statement);
-
-    Optional<StatementLifecycle> getLastSubmittedStatement();
 
     void setMetaData(Map<String, Object> txMeta);
 

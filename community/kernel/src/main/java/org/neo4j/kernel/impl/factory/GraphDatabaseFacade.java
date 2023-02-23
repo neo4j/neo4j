@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.factory;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper.INSTANCE;
 
 import java.util.concurrent.TimeUnit;
@@ -54,7 +53,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 public class GraphDatabaseFacade extends GraphDatabaseTransactions implements GraphDatabaseAPI {
     private final Database database;
     protected final TransactionalContextFactory contextFactory;
-    private final Config config;
     private final DatabaseAvailabilityGuard availabilityGuard;
     private final HostedOnMode mode;
     private final DbmsInfo dbmsInfo;
@@ -67,7 +65,6 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
             DatabaseAvailabilityGuard availabilityGuard) {
         super(config);
         this.database = requireNonNull(database);
-        this.config = requireNonNull(config);
         this.availabilityGuard = requireNonNull(availabilityGuard);
         this.dbmsInfo = requireNonNull(dbmsInfo);
         this.mode = requireNonNull(mode);
@@ -90,21 +87,6 @@ public class GraphDatabaseFacade extends GraphDatabaseTransactions implements Gr
     public InternalTransaction beginTransaction(
             Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout, TimeUnit unit) {
         return beginTransactionInternal(type, loginContext, clientInfo, unit.toMillis(timeout), null, INSTANCE);
-    }
-
-    public InternalTransaction beginTransaction(
-            Type type,
-            LoginContext loginContext,
-            ClientConnectionInfo clientInfo,
-            Consumer<Status> terminationCallback,
-            TransactionExceptionMapper transactionExceptionMapper) {
-        return beginTransactionInternal(
-                type,
-                loginContext,
-                clientInfo,
-                config.get(transaction_timeout).toMillis(),
-                terminationCallback,
-                transactionExceptionMapper);
     }
 
     @Override

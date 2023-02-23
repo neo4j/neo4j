@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.fabric.FabricDatabaseManager;
@@ -51,12 +50,10 @@ import reactor.core.publisher.Mono;
 public class FabricLocalExecutor {
     private final FabricConfig config;
     private final FabricDatabaseManager dbms;
-    private final FabricDatabaseAccess databaseAccess;
 
-    public FabricLocalExecutor(FabricConfig config, FabricDatabaseManager dbms, FabricDatabaseAccess databaseAccess) {
+    public FabricLocalExecutor(FabricConfig config, FabricDatabaseManager dbms) {
         this.config = config;
         this.dbms = dbms;
-        this.databaseAccess = databaseAccess;
     }
 
     public LocalTransactionContext startTransactionContext(
@@ -120,19 +117,19 @@ public class FabricLocalExecutor {
                         switch (transactionMode) {
                             case DEFINITELY_WRITE:
                                 return compositeTransaction.startWritingTransaction(location, () -> {
-                                    var tx = beginKernelTx(databaseFacade, AccessMode.WRITE);
+                                    var tx = beginKernelTx(databaseFacade);
                                     return new KernelTxWrapper(tx, bookmarkManager, location);
                                 });
 
                             case MAYBE_WRITE:
-                                return compositeTransaction.startReadingTransaction(location, () -> {
-                                    var tx = beginKernelTx(databaseFacade, AccessMode.WRITE);
+                                return compositeTransaction.startReadingTransaction(() -> {
+                                    var tx = beginKernelTx(databaseFacade);
                                     return new KernelTxWrapper(tx, bookmarkManager, location);
                                 });
 
                             case DEFINITELY_READ:
-                                return compositeTransaction.startReadingOnlyTransaction(location, () -> {
-                                    var tx = beginKernelTx(databaseFacade, AccessMode.READ);
+                                return compositeTransaction.startReadingOnlyTransaction(() -> {
+                                    var tx = beginKernelTx(databaseFacade);
                                     return new KernelTxWrapper(tx, bookmarkManager, location);
                                 });
                             default:
@@ -148,7 +145,7 @@ public class FabricLocalExecutor {
             }
         }
 
-        private FabricKernelTransaction beginKernelTx(GraphDatabaseAPI databaseFacade, AccessMode accessMode) {
+        private FabricKernelTransaction beginKernelTx(GraphDatabaseAPI databaseFacade) {
             var dependencyResolver = databaseFacade.getDependencyResolver();
             var executionEngine = dependencyResolver.resolveDependency(ExecutionEngine.class);
 

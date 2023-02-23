@@ -49,7 +49,6 @@ import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.eval.CommunityCatalogManager;
 import org.neo4j.fabric.eval.DatabaseLookup;
 import org.neo4j.fabric.eval.UseEvaluation;
-import org.neo4j.fabric.executor.FabricDatabaseAccess;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
@@ -128,11 +127,9 @@ public abstract class FabricServicesBootstrap {
         var jobScheduler = resolve(JobScheduler.class);
         var monitors = resolve(Monitors.class);
 
-        var databaseAccess = createFabricDatabaseAccess();
         var remoteExecutor = bootstrapRemoteStack();
-        var localExecutor = register(
-                new FabricLocalExecutor(fabricConfig, fabricDatabaseManager, databaseAccess),
-                FabricLocalExecutor.class);
+        var localExecutor =
+                register(new FabricLocalExecutor(fabricConfig, fabricDatabaseManager), FabricLocalExecutor.class);
 
         var systemNanoClock = resolve(SystemNanoClock.class);
         var transactionMonitor = register(
@@ -236,8 +233,6 @@ public abstract class FabricServicesBootstrap {
 
     protected abstract CatalogManager createCatalogManger(FabricDatabaseManager fabricDatabaseManager);
 
-    protected abstract FabricDatabaseAccess createFabricDatabaseAccess();
-
     protected abstract FabricRemoteExecutor bootstrapRemoteStack();
 
     protected abstract FabricConfig bootstrapFabricConfig();
@@ -269,11 +264,6 @@ public abstract class FabricServicesBootstrap {
             resolve(GlobalTransactionEventListeners.class)
                     .registerTransactionEventListener(SYSTEM_DATABASE_NAME, catalogManager.catalogInvalidator());
             return catalogManager;
-        }
-
-        @Override
-        protected FabricDatabaseAccess createFabricDatabaseAccess() {
-            return FabricDatabaseAccess.NO_RESTRICTION;
         }
 
         @Override
