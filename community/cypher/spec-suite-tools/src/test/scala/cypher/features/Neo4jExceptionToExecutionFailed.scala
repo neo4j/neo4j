@@ -284,7 +284,7 @@ object Neo4jExceptionToExecutionFailed {
     )
       NO_SINGLE_RELATIONSHIP_TYPE
     else if (
-      msg.matches(s"${DOTALL}Invalid input '.*': expected.*\\].*or.*\\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*")
+      msg.matches(s"${DOTALL}Invalid input '.*': expected.*\\].*\\{.*\\(line \\d+, column \\d+ \\(offset: \\d+\\)\\).*")
     )
       INVALID_RELATIONSHIP_PATTERN
     else if (

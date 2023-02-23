@@ -2323,17 +2323,112 @@ PATTERN EveryPathPatternNonEmpty() throws Exception:
 NODE_PATTERN NodePattern() throws Exception:
 {
     Token t;
+    NODE_PATTERN n;
+}
+{
+    t=<LPAREN>
+    (
+        // Shortcuts for node patterns not containing IS keyword or ambigious inlined WHERE
+        LOOKAHEAD(<RPAREN>) n=NodePatternEmpty(t)
+        | LOOKAHEAD(Variable() <RPAREN>) n=NodePatternOnlyVariable(t)
+        | LOOKAHEAD(":") n=NodePatternColon(t)
+        | LOOKAHEAD(Variable() ":") n=NodePatternVariableColon(t)
+        | LOOKAHEAD(<LCURLY>|<DOLLAR>) n=NodePatternProperties(t)
+        | n=NodePatternComplex(t)
+    )
+    { return n; }
+}
+
+
+NODE_PATTERN NodePatternEmpty(Token t) throws Exception:
+{}
+{
+    <RPAREN>
+    {
+        return astFactory.nodePattern( pos( t ), null, null, null, null );
+    }
+}
+
+
+NODE_PATTERN NodePatternOnlyVariable(Token t) throws Exception:
+{
+    VARIABLE v = null;
+}
+{
+    v = Variable()
+    <RPAREN>
+    {
+        return astFactory.nodePattern( pos( t ), v, null, null, null );
+    }
+}
+
+NODE_PATTERN NodePatternColon(Token t) throws Exception:
+{
+    LABEL_EXPRESSION labelExpression = null;
+    EXPRESSION properties = null;
+    EXPRESSION predicate = null;
+}
+{
+    // From the LOOKAHEAD outside, we know this node pattern started with a colon,
+    // so it must be of the form (labelExpression properties? WHERE?).
+    labelExpression = LabelExpression(astFactory.nodeType())
+    ( properties=Properties() )?
+    ( <WHERE> predicate=Expression() )?
+    <RPAREN>
+    {
+        return astFactory.nodePattern( pos( t ), null, labelExpression, properties, predicate );
+    }
+}
+
+NODE_PATTERN NodePatternVariableColon(Token t) throws Exception:
+{
     VARIABLE v = null;
     LABEL_EXPRESSION labelExpression = null;
     EXPRESSION properties = null;
     EXPRESSION predicate = null;
 }
 {
-    t=<LPAREN>
+    // From the LOOKAHEAD outside, we know this node pattern started with variable followed by a colon,
+    // so it must be of the form (variable labelExpression properties? WHERE?).
+    v = Variable()
+    labelExpression = LabelExpression(astFactory.nodeType())
+    ( properties=Properties() )?
+    ( <WHERE> predicate=Expression() )?
+    <RPAREN>
+    {
+        return astFactory.nodePattern( pos( t ), v, labelExpression, properties, predicate );
+    }
+}
+
+NODE_PATTERN NodePatternProperties(Token t) throws Exception:
+{
+    EXPRESSION properties = null;
+    EXPRESSION predicate = null;
+}
+{
+    // From the LOOKAHEAD outside, we know this node pattern started with a {,
+    // so it must be of the form (properties WHERE?).
+    properties=Properties()
+    ( <WHERE> predicate=Expression() )?
+    <RPAREN>
+    {
+        return astFactory.nodePattern( pos( t ), null, null, properties, predicate );
+    }
+}
+
+NODE_PATTERN NodePatternComplex(Token t) throws Exception:
+{
+    VARIABLE v = null;
+    LABEL_EXPRESSION labelExpression = null;
+    EXPRESSION properties = null;
+    EXPRESSION predicate = null;
+}
+{
     (
        // The general node pattern is  (variable? labelExpression? properties? WHERE?),
        // but since 'IS' and 'WHERE' can be both node variables, labels and keywords,
-       // we must check the 2^4 combinations in a certain order to avoid ambiguity.
+       // we must check all of the 2^4 combinations that has not been covered earlier
+       // in a certain order to avoid ambiguity.
        // The below is a trial and error solution to make all tests in IsWhereNodePatternParserTest work
        // while also have each combination in exactly one branch below.
        (
@@ -2351,10 +2446,7 @@ NODE_PATTERN NodePattern() throws Exception:
         labelExpression = LabelExpression(astFactory.nodeType())
             properties=Properties()
             ( <WHERE> predicate=Expression() )?
-        |LOOKAHEAD(LabelExpression(astFactory.nodeType()))
-            labelExpression = LabelExpression(astFactory.nodeType())
-       | properties=Properties() ( <WHERE> predicate=Expression() )?
-       | ( v=Variable() )?
+        |labelExpression = LabelExpression(astFactory.nodeType())
        )
     )
     <RPAREN>
@@ -2442,23 +2534,185 @@ EXPRESSION Properties() throws Exception:
 REL_PATTERN RelationshipPattern() throws Exception:
 {
     Token firstToken = token;
-    Token t;
     boolean left = false;
+    REL_PATTERN r;
+}
+{
+    ( LeftArrow() { left = true; })? ArrowLine()
+    (
+        // Shortcuts for rel patterns not containing IS keyword or ambigious inlined WHERE
+        LOOKAHEAD(ArrowLine()) r=RelationshipPatternDoubleDash(firstToken, left)
+        | <LBRACKET>
+        (
+            LOOKAHEAD(<RBRACKET>) r=RelationshipPatternEmpty(firstToken, left)
+            | LOOKAHEAD(Variable() <RBRACKET>) r=RelationshipPatternOnlyVariable(firstToken, left)
+            | LOOKAHEAD(":") r=RelationshipPatternColon(firstToken, left)
+            | LOOKAHEAD(Variable() ":") r=RelationshipPatternVariableColon(firstToken, left)
+            | LOOKAHEAD(<LCURLY>|<DOLLAR>) r=RelationshipPatternProperties(firstToken, left)
+            | LOOKAHEAD(PathLength()) r=RelationshipPatternPathLength(firstToken, left)
+            | LOOKAHEAD(Variable() PathLength() <RBRACKET>)
+                r=RelationshipPatternOnlyVariablePathLength(firstToken, left)
+            | r=RelationshipPatternComplex(firstToken, left)
+        )
+    )
+    {
+        return r;
+    }
+}
+
+REL_PATTERN RelationshipPatternDoubleDash(Token firstToken, boolean left) throws Exception:
+{
+    boolean right = false;
+}
+{
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, null, null, null, null, null );
+    }
+}
+
+REL_PATTERN RelationshipPatternEmpty(Token firstToken, boolean left) throws Exception:
+{
+    boolean right = false;
+}
+{
+    <RBRACKET>
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, null, null, null, null, null );
+    }
+}
+
+
+REL_PATTERN RelationshipPatternOnlyVariable(Token firstToken, boolean left) throws Exception:
+{
     boolean right = false;
     VARIABLE v = null;
+}
+{
+    v=Variable()
+    <RBRACKET>
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, v, null, null, null, null );
+    }
+}
+
+REL_PATTERN RelationshipPatternColon(Token firstToken, boolean left) throws Exception:
+{
+    boolean right = false;
     LABEL_EXPRESSION labelExpression = null;
-    boolean legacyTypeSeparator = false;
     PATH_LENGTH pathLength = null;
     EXPRESSION properties = null;
     EXPRESSION predicate = null;
 }
 {
-    ( LeftArrow() { left = true; })? ArrowLine()
-    ( <LBRACKET>
+    // From the LOOKAHEAD outside, we know this rel pattern started with a colon,
+    // so it must be of the form [labelExpression pathLength? properties? WHERE?].
+    labelExpression = LabelExpression(astFactory.relationshipType())
+    ( pathLength=PathLength() )?
+    ( properties=Properties() )?
+    ( <WHERE> predicate=Expression() )?
+    <RBRACKET>
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, null, labelExpression, pathLength, properties, predicate );
+    }
+}
+
+REL_PATTERN RelationshipPatternVariableColon(Token firstToken, boolean left) throws Exception:
+{
+    boolean right = false;
+    VARIABLE v = null;
+    LABEL_EXPRESSION labelExpression = null;
+    PATH_LENGTH pathLength = null;
+    EXPRESSION properties = null;
+    EXPRESSION predicate = null;
+}
+{
+    // From the LOOKAHEAD outside, we know this rel pattern started with variable followed by a colon,
+    // so it must be of the form [variable labelExpression pathLength? properties? WHERE?].
+    v = Variable()
+    labelExpression = LabelExpression(astFactory.relationshipType())
+    ( pathLength=PathLength() )?
+    ( properties=Properties() )?
+    ( <WHERE> predicate=Expression() )?
+    <RBRACKET>
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, v, labelExpression, pathLength, properties, predicate );
+    }
+}
+
+REL_PATTERN RelationshipPatternProperties(Token firstToken, boolean left) throws Exception:
+{
+    boolean right = false;
+    EXPRESSION properties = null;
+    EXPRESSION predicate = null;
+}
+{
+    // From the LOOKAHEAD outside, we know this rel pattern started with  a {,
+    // so it must be of the form [properties WHERE?].
+    properties=Properties()
+    ( <WHERE> predicate=Expression() )?
+    <RBRACKET>
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, null, null, null, properties, predicate );
+    }
+}
+
+REL_PATTERN RelationshipPatternPathLength(Token firstToken, boolean left) throws Exception:
+{
+    boolean right = false;
+    PATH_LENGTH pathLength = null;
+    EXPRESSION properties = null;
+    EXPRESSION predicate = null;
+}
+{
+    // From the LOOKAHEAD outside, we know this rel pattern started with  a pathLength,
+    // so it must be of the form [pathLength properties? WHERE?].
+    pathLength=PathLength()
+    ( properties=Properties() )?
+    ( <WHERE> predicate=Expression() )?
+    <RBRACKET>
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, null, null, pathLength, properties, predicate );
+    }
+}
+
+REL_PATTERN RelationshipPatternOnlyVariablePathLength(Token firstToken, boolean left) throws Exception:
+{
+    boolean right = false;
+    VARIABLE v = null;
+    PATH_LENGTH pathLength = null;
+}
+{
+    // From the LOOKAHEAD outside, we know this rel pattern must be of the form [variable pathLength].
+    v=Variable()
+    pathLength=PathLength()
+    <RBRACKET>
+    ArrowLine() ( RightArrow() { right = true; } )?
+    {
+        return astFactory.relationshipPattern( pos( firstToken.next ), left, right, v, null, pathLength, null, null );
+    }
+}
+
+REL_PATTERN RelationshipPatternComplex(Token firstToken, boolean left) throws Exception:
+{
+    boolean right = false;
+    VARIABLE v = null;
+    LABEL_EXPRESSION labelExpression = null;
+    PATH_LENGTH pathLength = null;
+    EXPRESSION properties = null;
+    EXPRESSION predicate = null;
+}
+{
     (
        // The general relationship pattern is  [variable? labelExpression? pathLength? properties? WHERE?],
        // but since 'IS' and 'WHERE' can be both relationship variables, types and keywords,
-       // we must check the 2^5 combinations in a certain order to avoid ambiguity.
+       // we must check all of the 2^5 combinations that has not been covered earlier in a certain order to avoid ambiguity.
        // The below is a trial and error solution to make all tests in IsWhereRelationshipPatternParserTest work
        // while also have each combination in exactly one branch below.
        (
@@ -2471,7 +2725,7 @@ REL_PATTERN RelationshipPattern() throws Exception:
             properties=Properties()
             ( <WHERE> predicate=Expression() )?
        | LOOKAHEAD(Variable() ( PathLength() )? <WHERE> Expression() <RBRACKET>) v=Variable() ( pathLength=PathLength() )? <WHERE> predicate=Expression()
-       | LOOKAHEAD((PathLength())? <WHERE> Expression() <RBRACKET>) ( pathLength=PathLength() )? <WHERE> predicate=Expression()
+       | LOOKAHEAD(<WHERE> Expression() <RBRACKET>) <WHERE> predicate=Expression()
        | LOOKAHEAD(3) v=Variable()
             labelExpression = LabelExpression(astFactory.relationshipType())
             ( pathLength=PathLength() )?
@@ -2482,17 +2736,10 @@ REL_PATTERN RelationshipPattern() throws Exception:
             ( pathLength=PathLength() )?
             properties=Properties()
             ( <WHERE> predicate=Expression() )?
-       | LOOKAHEAD(LabelExpression(astFactory.relationshipType()) (PathLength() )?)
-            labelExpression = LabelExpression(astFactory.relationshipType()) ( pathLength=PathLength() )?
-       | LOOKAHEAD(( PathLength() )? properties=Properties())( pathLength=PathLength() )? properties=Properties() ( <WHERE> predicate=Expression() )?
-       | pathLength=PathLength()
-       | LOOKAHEAD(2) v=Variable() pathLength=PathLength()
-       | ( v=Variable() )?
+       | labelExpression = LabelExpression(astFactory.relationshipType()) ( pathLength=PathLength() )?
        )
     )
-
-        <RBRACKET>
-    )?
+    <RBRACKET>
     ArrowLine() ( RightArrow() { right = true; } )?
     {
         return astFactory.relationshipPattern( pos( firstToken.next ), left, right, v, labelExpression, pathLength, properties, predicate );
