@@ -89,6 +89,7 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 
 case object SemanticAnalysis extends StepSequencer.Step with ParsePipelineTransformerFactory
     with PlanPipelineTransformerFactory {
+
   override def preConditions: Set[StepSequencer.Condition] = Set(
     BaseContains[Statement],
     SemanticAnalysisPossible

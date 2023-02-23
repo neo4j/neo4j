@@ -53,7 +53,7 @@ case object Parse extends Phase[BaseContext, BaseState, BaseState] with StepSequ
   override def postConditions: Set[StepSequencer.Condition] =
     Set(
       BaseContains[Statement],
-      ValidSymbolicNamesInLabelExpressions,
+      ValidSymbolicNamesInLabelExpressions
     )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty

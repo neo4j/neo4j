@@ -50,6 +50,6 @@ case class BaseContains[T]()(implicit val tag: ClassTag[T]) extends ValidatingCo
 
   override def equals(obj: Any): Boolean = obj match {
     case bc: BaseContains[_] => tag.equals(bc.tag)
-    case _ => false
+    case _                   => false
   }
 }

@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
  * Replace literals with parameters.
  */
 case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy)
-    extends Phase[BaseContext, BaseState, BaseState]{
+    extends Phase[BaseContext, BaseState, BaseState] {
 
   override def process(in: BaseState, context: BaseContext): BaseState = {
     val statement = in.statement()
@@ -55,7 +55,6 @@ case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy)
 }
 
 case object LiteralExtraction extends StepSequencer.Step with ParsePipelineTransformerFactory {
-
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
     BaseContains[Statement],
