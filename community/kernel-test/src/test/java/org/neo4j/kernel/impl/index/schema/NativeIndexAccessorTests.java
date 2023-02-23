@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -383,13 +384,21 @@ abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>>
         processAll(updates);
 
         // when
-        Set<Long> ids = asUniqueSet(accessor.newAllEntriesValueReader(NULL_CONTEXT));
+        try (var cursorContext = contextFactory.create("test")) {
+            Set<Long> ids;
+            try (var reader = accessor.newAllEntriesValueReader(cursorContext)) {
+                ids = asUniqueSet(reader);
+            }
 
-        // then
-        Set<Long> expectedIds = Stream.of(updates)
-                .map(ValueIndexEntryUpdate::getEntityId)
-                .collect(Collectors.toCollection(HashSet::new));
-        assertEquals(expectedIds, ids);
+            // then
+            Set<Long> expectedIds = Stream.of(updates)
+                    .map(ValueIndexEntryUpdate::getEntityId)
+                    .collect(Collectors.toCollection(HashSet::new));
+            assertEquals(expectedIds, ids);
+            assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(1);
+            assertThat(cursorContext.getCursorTracer().unpins()).isEqualTo(1);
+            assertThat(cursorContext.getCursorTracer().faults()).isEqualTo(0);
+        }
     }
 
     @Test
