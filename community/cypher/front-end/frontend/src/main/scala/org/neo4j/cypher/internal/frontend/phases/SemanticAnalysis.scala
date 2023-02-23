@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.SEMANTIC_CHECK
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
-import org.neo4j.cypher.internal.rewriting.conditions.StateContainsSemanticTable
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.rewriters.computeDependenciesForExpressions
 import org.neo4j.cypher.internal.util.ErrorMessageProvider
@@ -86,7 +85,7 @@ case class SemanticAnalysis(warn: Boolean, features: SemanticFeature*)
 case object SemanticAnalysis extends StepSequencer.Step with PlanPipelineTransformerFactory {
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(StateContainsSemanticTable) ++ SemanticInfoAvailable
+  override def postConditions: Set[StepSequencer.Condition] = Set(BaseContains[SemanticTable]) ++ SemanticInfoAvailable
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 

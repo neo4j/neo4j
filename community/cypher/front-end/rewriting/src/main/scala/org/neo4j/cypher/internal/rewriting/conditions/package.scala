@@ -24,8 +24,6 @@ package object conditions {
   case object SubqueryExpressionsHaveSemanticInfo extends Condition
   case object PatternExpressionAreWrappedInExists extends Condition
   case object SubqueryExpressionsHaveDependenciesInWithClauses extends Condition
-  // This means that there is a SemanticTable, not that it is up to date
-  case object StateContainsSemanticTable extends Condition
 
   /**
    * A collection of all conditions that require semantic info available for some AST nodes
