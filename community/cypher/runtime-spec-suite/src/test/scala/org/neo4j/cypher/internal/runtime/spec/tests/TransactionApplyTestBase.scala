@@ -826,6 +826,7 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .|.|.|.filter("end:LOOP")
       .|.|.|.apply()
       .|.|.|.|.trail(TrailTestBase.`(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)`).withLeveragedOrder()
+      .|.|.|.|.|.filter("r2_inner IS NOT NULL")
       .|.|.|.|.|.optional("middle")
       .|.|.|.|.|.filter("d_inner:LOOP")
       .|.|.|.|.|.nodeHashJoin("d_inner")
@@ -885,7 +886,8 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .|.|.|.argument("start", "anon_start_inner")
       .|.|.nodeByLabelScan("start", "START", IndexOrderNone)
 
-      // Join LHS (identical to RHS)
+    // Join LHS (identical to RHS)
+    planBuilder
       .|.projection("[start, middle, end, a, b, r1, c, d, r2] AS left")
       .|.filter("end:LOOP")
       .|.apply()
