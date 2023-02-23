@@ -61,5 +61,10 @@ case object deMorganRewriter extends CnfPhase {
   override def postConditions: Set[StepSequencer.Condition] = Set(NotsBelowBooleanOperators, NoXorOperators)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] =
-    SemanticInfoAvailable ++ Set(AndsAboveOrs, NoInequalityInsideNot)
+    SemanticInfoAvailable ++ Set(
+      AndsAboveOrs,
+      NoInequalityInsideNot,
+      NoDuplicateNeighbouringAnd,
+      NoDuplicateNeighbouringOr
+    )
 }

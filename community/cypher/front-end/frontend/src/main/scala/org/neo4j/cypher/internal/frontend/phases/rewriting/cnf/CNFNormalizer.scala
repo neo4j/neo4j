@@ -55,7 +55,7 @@ object CNFNormalizer {
   val steps: Set[CnfPhase] = {
     Set(
       deMorganRewriter,
-      mergeDuplicateBooleanOperators(Set(NoXorOperators)),
+      mergeDuplicateBooleanOperators,
       distributeLawsRewriter,
       normalizeInequalities,
       simplifyPredicates,
@@ -73,7 +73,9 @@ case object NoXorOperators extends StepSequencer.Condition
 
 case object AndsAboveOrs extends StepSequencer.Condition
 
-case object NoDuplicateNeighbouringBooleanOperands extends StepSequencer.Condition
+case object NoDuplicateNeighbouringAnd extends StepSequencer.Condition
+
+case object NoDuplicateNeighbouringOr extends StepSequencer.Condition
 
 case object AndRewrittenToAnds extends StepSequencer.Condition
 

@@ -32,13 +32,15 @@ import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 import org.neo4j.cypher.internal.util.topDown
 
-case class mergeDuplicateBooleanOperators(additionalPreConditions: Set[StepSequencer.Condition] = Set.empty)
-    extends ASTRewriterFactory with CnfPhase {
+case object mergeDuplicateBooleanOperators extends ASTRewriterFactory with CnfPhase {
 
   override def preConditions: Set[StepSequencer.Condition] =
-    SemanticInfoAvailable ++ Set(!AndRewrittenToAnds) ++ additionalPreConditions
+    SemanticInfoAvailable ++ Set(!AndRewrittenToAnds)
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(NoDuplicateNeighbouringBooleanOperands)
+  override def postConditions: Set[StepSequencer.Condition] = Set(
+    NoDuplicateNeighbouringAnd,
+    NoDuplicateNeighbouringOr
+  )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set.empty
 
@@ -47,17 +49,17 @@ case class mergeDuplicateBooleanOperators(additionalPreConditions: Set[StepSeque
     parameterTypeMapping: Map[String, ParameterTypeInfo],
     cypherExceptionFactory: CypherExceptionFactory,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
-  ): Rewriter = mergeDuplicateBooleanOperatorsRewriter(semanticState)
+  ): Rewriter = mergeDuplicateBooleanOperators(semanticState)
 
   override def getRewriter(from: BaseState, context: BaseContext): Rewriter =
-    mergeDuplicateBooleanOperatorsRewriter(from.semantics())
+    mergeDuplicateBooleanOperators(from.semantics())
 }
 
-case class mergeDuplicateBooleanOperatorsRewriter(semanticState: SemanticState) extends Rewriter {
+case class mergeDuplicateBooleanOperators(semanticState: SemanticState) extends Rewriter {
 
   private def instance(semanticState: SemanticState) = fixedPoint(topDown(Rewriter.lift {
-    case p @ And(lhs, rhs) if (lhs == rhs) => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
-    case p @ Or(lhs, rhs) if (lhs == rhs)  => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
+    case p @ And(lhs, rhs) if lhs == rhs => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
+    case p @ Or(lhs, rhs) if lhs == rhs  => coerceInnerExpressionToBooleanIfNecessary(semanticState, p, lhs)
   }))
 
   def apply(that: AnyRef): AnyRef = instance(semanticState).apply(that)
