@@ -1493,8 +1493,7 @@ class IndexPlanningIntegrationTest
           plan shouldEqual cfg.subPlanBuilder()
             .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
             .filter(s"cacheRFromStore[r.prop] $op $arg")
-            .expandAll("(a)-[r:R]->(b)")
-            .allNodeScan("a")
+            .relationshipTypeScan("(a)-[r:R]->(b)")
             .build()
         }
       }

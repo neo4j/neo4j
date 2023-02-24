@@ -1293,7 +1293,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   private val relationshipTypeScanConfig: StatisticsBackedLogicalPlanningConfiguration = plannerBuilder()
     .setAllNodesCardinality(100)
-    .setRelationshipCardinality("()-[:REL]->()", 10)
+    .setRelationshipCardinality("()-[:REL]->()", 10000)
     .build()
 
   private val expandConfig: StatisticsBackedLogicalPlanningConfiguration = plannerBuilder()
@@ -1533,12 +1533,15 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   test("should plan relationship type scan with filter for self loop with few relationships") {
     val query = "MATCH (a)-[r:REL]-(a) RETURN r"
 
-    val plan = relationshipTypeScanConfig
-      .plan(query)
-      .stripProduceResults
+    val config = plannerBuilder()
+      .setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]->()", 10)
+      .build()
+
+    val plan = config.plan(query).stripProduceResults
 
     plan should equal(
-      relationshipTypeScanConfig.subPlanBuilder()
+      config.subPlanBuilder()
         .filter("a = anon_0")
         .relationshipTypeScan("(a)-[r:REL]-(anon_0)")
         .build()

@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.P
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.costPerRow
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.effectiveCardinalities
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.getEffectiveBatchSize
+import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel.hackyRelTypeScanCost
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CostModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.qppRangeForEstimations
@@ -46,6 +47,7 @@ import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.plans.AbstractLetSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
@@ -304,11 +306,18 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     // NOTE: Expand generally gets underestimated since they are treated as a middle operator
     // like Selection which doesn't reflect that for each row it creates it will read data from
     // the relationship store. This particular special case is just for making it more likely to plan
-    // AllRelationshipsScan since we know they are always faster than doing AllNodes + Expan
-    case Expand(_: AllNodesScan, _, _, types, _, _, mode) if types.isEmpty && mode == ExpandAll =>
+    // AllRelationshipsScan since we know they are always faster than doing AllNodes + Expand
+    case Expand(_: AllNodesScan, _, _, types, _, _, ExpandAll) if types.isEmpty =>
       // AllNodes + Expand is more expensive than scanning the relationship directly
       val rowCost = CostPerRow(ALL_SCAN_COST_PER_ROW * 1.1)
       // Note: we use the outputCardinality to compute the cost
+      val costForThisPlan = effectiveCardinalities.outputCardinality * rowCost
+      costForThisPlan + lhsCost + rhsCost
+
+    // Always consider AllNodesScan + Expand more expensive than RelationshipTypeScan
+    case exp @ Expand(_: AllNodesScan, _, _, types, _, _, ExpandAll) if types.size == 1 =>
+      val rowCost =
+        CostPerRow(1.1 * hackyRelTypeScanCost(propertyAccess, exp.relName, exp.dir != SemanticDirection.BOTH))
       val costForThisPlan = effectiveCardinalities.outputCardinality * rowCost
       costForThisPlan + lhsCost + rhsCost
 
@@ -382,16 +391,16 @@ object CardinalityCostModel {
 
   def hackyRelTypeScanCost(
     propertyAccess: Set[PropertyAccess],
-    plan: RelationshipLogicalLeafPlan,
-    directed: Boolean,
-    allNodeScanCostMultiplier: Double
+    relVariableName: String,
+    directed: Boolean
   ): Double = {
     // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
-    if (propertyAccess.exists(_.variableName == plan.idName)) {
+    if (propertyAccess.exists(_.variableName == relVariableName)) {
       // If undirected only every second row needs to access the index and the store
       val multiplier = if (directed) 1.0 else 0.5
       DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW * multiplier
     } else {
+      val allNodeScanCostMultiplier = if (directed) 2.2 else 1.3
       ALL_SCAN_COST_PER_ROW * allNodeScanCostMultiplier
     }
   }
@@ -465,16 +474,16 @@ object CardinalityCostModel {
       case _: UndirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW / 2
 
       case plan: DirectedRelationshipTypeScan =>
-        hackyRelTypeScanCost(propertyAccess, plan, directed = true, 2.2)
+        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
 
       case plan: UndirectedRelationshipTypeScan =>
-        hackyRelTypeScanCost(propertyAccess, plan, directed = false, 1.3)
+        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
 
       case plan: DirectedUnionRelationshipTypesScan =>
-        hackyRelTypeScanCost(propertyAccess, plan, directed = true, 2.2)
+        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
 
       case plan: UndirectedUnionRelationshipTypesScan =>
-        hackyRelTypeScanCost(propertyAccess, plan, directed = false, 1.3)
+        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
 
       case _: DirectedRelationshipIndexScan => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
 
