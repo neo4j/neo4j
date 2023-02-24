@@ -41,7 +41,6 @@ import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogVersions.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.files.RangeLogVersionVisitor.UNKNOWN;
 
 public class DetachedLogTailScanner extends AbstractLogTailScanner
@@ -106,7 +105,8 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
     private LogTailInformation validCheckpointLogTail( LogFile logFile, long highestLogVersion, long lowestLogVersion, CheckpointInfo checkpoint )
             throws IOException
     {
-        var entries = getFirstTransactionIdAfterCheckpoint( logFile, checkpoint.getTransactionLogPosition() );
+        var transactionLogPosition = checkpoint.getTransactionLogPosition();
+        var entries = getFirstTransactionIdAfterCheckpoint( logFile, transactionLogPosition.getLogVersion(), transactionLogPosition );
         return new LogTailInformation( checkpoint, entries.isPresent(), entries.getCommitId(), lowestLogVersion == UNKNOWN, highestLogVersion,
                 entries.getEntryVersion(), checkpoint.storeId() );
     }
@@ -120,9 +120,7 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
 
     private StartCommitEntries getFirstTransactionId( LogFile logFile, long lowestLogVersion ) throws IOException
     {
-        var logPosition = logFile.versionExists( lowestLogVersion ) ? logFile.extractHeader( lowestLogVersion ).getStartPosition()
-                                                                    : new LogPosition( lowestLogVersion, CURRENT_FORMAT_LOG_HEADER_SIZE );
-        return getFirstTransactionIdAfterCheckpoint( logFile, logPosition );
+        return getFirstTransactionIdAfterCheckpoint( logFile, lowestLogVersion, null );
     }
 
     /**
@@ -147,18 +145,21 @@ public class DetachedLogTailScanner extends AbstractLogTailScanner
         return StoreId.UNKNOWN.equals( headerStoreId ) || headerStoreId.equalsIgnoringVersion( checkpointInfo.storeId() );
     }
 
-    private StartCommitEntries getFirstTransactionIdAfterCheckpoint( LogFile logFile, LogPosition logPosition ) throws IOException
+    private StartCommitEntries getFirstTransactionIdAfterCheckpoint( LogFile logFile, long initialLogVersion, LogPosition initialLogPosition )
+            throws IOException
     {
         boolean corruptedTransactionLogs = false;
         LogEntryStart start = null;
         LogEntryCommit commit = null;
         LogPosition lookupPosition = null;
-        long logVersion = logPosition.getLogVersion();
+        long logVersion = initialLogVersion;
         try
         {
             while ( logFile.versionExists( logVersion ) )
             {
-                lookupPosition = lookupPosition == null ? logPosition : logFile.extractHeader( logVersion ).getStartPosition();
+                lookupPosition = lookupPosition == null && initialLogPosition != null
+                        ? initialLogPosition
+                        : logFile.extractHeader(logVersion).getStartPosition();
 
                 try ( var reader = logFile.getReader( lookupPosition, NO_MORE_CHANNELS );
                       var cursor = new LogEntryCursor( logEntryReader, reader ) )

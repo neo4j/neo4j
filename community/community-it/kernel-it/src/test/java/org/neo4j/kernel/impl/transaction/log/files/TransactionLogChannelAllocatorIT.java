@@ -27,6 +27,7 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.parallel.Isolated;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -184,7 +185,10 @@ class TransactionLogChannelAllocatorIT
     void openExistingFileDoesNotPerformAnyAllocations() throws IOException
     {
         Path file = fileHelper.getLogFileForVersion( 11 );
-        fileSystem.write( file ).close();
+        try ( var fileWrite = fileSystem.write( file ) )
+        {
+            fileWrite.writeAll( ByteBuffer.wrap( new byte[1] ) );
+        }
 
         TransactionLogChannelAllocator fileAllocator = createLogFileAllocator();
         try ( PhysicalLogVersionedStoreChannel channel = fileAllocator.createLogChannel( 11, () -> 1L ) )

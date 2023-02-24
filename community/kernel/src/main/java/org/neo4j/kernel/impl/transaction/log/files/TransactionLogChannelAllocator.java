@@ -149,7 +149,7 @@ public class TransactionLogChannelAllocator
         Path file = fileHelper.getLogFileForVersion( version );
         boolean fileExist = fileSystem.fileExists( file );
         StoreChannel storeChannel = fileSystem.write( file );
-        if ( fileExist )
+        if ( fileExist && fileSystem.getFileSize( file ) > 0 )
         {
             nativeChannelAccessor.adviseSequentialAccessAndKeepInCache( storeChannel, version );
         }
