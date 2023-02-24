@@ -37,31 +37,10 @@ case class TrailRelationshipsUniqueExpression(trailStateMetadataSlotOffset: Int,
     innerRelationships.map(s => makeGetPrimitiveRelationshipFromSlotFunctionFor(s)).toArray
 
   override def apply(row: ReadableRow, state: QueryState): BooleanValue = {
-    val allInnerUnique = allInnerRelationshipsUnique(row)
-    booleanValue(allInnerUnique && allRelationshipsSeenUnique(row))
+    booleanValue(allRelationshipsSeenUnique(row))
   }
 
   override def children: collection.Seq[AstNode[_]] = Seq.empty
-
-  private def allInnerRelationshipsUnique(row: ReadableRow): Boolean = {
-    if (innerRelGetters.length <= 1) true
-    else if (innerRelGetters.length == 2) {
-      innerRelGetters(0).applyAsLong(row) != innerRelGetters(1).applyAsLong(row)
-    } else {
-      val innerRelationships = innerRelGetters.map(g => g.applyAsLong(row))
-      var i = 0
-      var allRelationshipsUnique = true
-      while (allRelationshipsUnique && i < innerRelationships.length - 1) {
-        var j = i + 1
-        while (allRelationshipsUnique && j < innerRelationships.length) {
-          allRelationshipsUnique = innerRelationships(i) != innerRelationships(j)
-          j = j + 1
-        }
-        i = i + 1
-      }
-      allRelationshipsUnique
-    }
-  }
 
   private def allRelationshipsSeenUnique(row: ReadableRow): Boolean = {
     val relationshipsSeen = row.getRefAt(trailStateMetadataSlotOffset).asInstanceOf[TrailState].relationshipsSeen
