@@ -4831,7 +4831,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = false,
           maxLength = 4,
-          depthName = Some("depth"),
           nodePredicates = Seq(nodePredicate),
           relationshipPredicates = Seq(relationshipPredicate)
         ),
@@ -4842,7 +4841,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "VarLengthExpand(Pruning,BFS)",
         SingleChild(lhsPD),
         Seq(details(
-          "p = (a)-[:R*..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) AND all(r IN relationships(p) WHERE r.prop = $autodouble_1) depth"
+          "p = (a)-[:R*..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) AND all(r IN relationships(p) WHERE r.prop = $autodouble_1)"
         )),
         Set("a", "y")
       )
@@ -4859,7 +4858,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = true,
           4,
-          depthName = Some("depth"),
           Seq(nodePredicate),
           Seq()
         ),
@@ -4869,7 +4867,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(Pruning,BFS)",
         SingleChild(lhsPD),
-        Seq(details("p = (a)-[:R*0..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1) depth")),
+        Seq(details("p = (a)-[:R*0..4]->(y) WHERE all(x IN nodes(p) WHERE x.prop = $autodouble_1)")),
         Set("a", "y")
       )
     )
@@ -4885,7 +4883,6 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           "y",
           includeStartNode = false,
           4,
-          depthName = Some("depth"),
           Seq(),
           Seq()
         ),
@@ -4895,7 +4892,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "VarLengthExpand(Pruning,BFS)",
         SingleChild(lhsPD),
-        Seq(details("(a)-[*..4]->(y) depth")),
+        Seq(details("(a)-[*..4]->(y)")),
         Set("a", "y")
       )
     )

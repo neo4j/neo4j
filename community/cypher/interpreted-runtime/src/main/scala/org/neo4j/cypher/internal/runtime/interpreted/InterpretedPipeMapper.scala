@@ -999,24 +999,12 @@ case class InterpretedPipeMapper(
           predicate
         )(id = id)
 
-      case BFSPruningVarExpand(
-          _,
-          from,
-          dir,
-          types,
-          to,
-          includeStartNode,
-          max,
-          depthName,
-          nodePredicate,
-          relationshipPredicate
-        ) =>
+      case BFSPruningVarExpand(_, from, dir, types, to, includeStartNode, max, nodePredicate, relationshipPredicate) =>
         val predicate = varLengthPredicates(id, nodePredicate, relationshipPredicate)
         BFSPruningVarLengthExpandPipe(
           source,
           from,
           to,
-          depthName,
           RelationshipTypes(types.toArray),
           dir,
           includeStartNode,

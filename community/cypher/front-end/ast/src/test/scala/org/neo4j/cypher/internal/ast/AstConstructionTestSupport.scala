@@ -140,11 +140,9 @@ import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.ElementId
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Id
-import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Max
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.Nodes
-import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.expressions.functions.Sum
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
@@ -349,30 +347,14 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def avg(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Avg.name)(pos))
 
-  def collect(expression: Expression, distinct: Boolean = false): FunctionInvocation =
-    FunctionInvocation(FunctionName(Collect.name)(pos), distinct, IndexedSeq(expression))(pos)
+  def collect(expression: Expression): FunctionInvocation =
+    FunctionInvocation(expression, FunctionName(Collect.name)(pos))
 
   def max(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Max.name)(pos))
 
   def min(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Min.name)(pos))
-
-  def size(expression: Expression): FunctionInvocation =
-    FunctionInvocation(expression, FunctionName(Size.name)(pos))
-
-  def length(expression: Expression): FunctionInvocation =
-    FunctionInvocation(expression, FunctionName(Length.name)(pos))
-
-  def path(
-    start: LogicalVariable,
-    relationships: LogicalVariable,
-    end: LogicalVariable,
-    direction: SemanticDirection = SemanticDirection.BOTH
-  ): PathExpression =
-    PathExpression(
-      NodePathStep(start, MultiRelationshipPathStep(relationships, direction, Some(end), NilPathStep()(pos))(pos))(pos)
-    )(pos)
 
   def sum(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Sum.name)(pos))

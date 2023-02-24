@@ -302,10 +302,6 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         "(x)-[*1..3]->(y)",
         relationshipPredicates = Seq(Predicate("r", "id(r) <> 5"), Predicate("r2", "id(r2) > 5"))
       )
-      .bfsPruningVarExpand(
-        "(x)-[*1..3]->(y)",
-        depthName = Some("depth")
-      )
       .argument()
       .build()
   )

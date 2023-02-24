@@ -761,7 +761,6 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
       case expand: BFSPruningVarExpand =>
         slots.newLong(expand.to, nullable, CTNode)
-        expand.depthName.foreach(name => slots.newReference(name, nullable, CTInteger))
 
       case Create(_, nodes, relationships) =>
         nodes.foreach(n => slots.newLong(n.idName, nullable = false, CTNode))

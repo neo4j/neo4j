@@ -50,8 +50,7 @@ case object CardinalityRewriter extends LogicalPlanRewriter with StepSequencer.S
     effectiveCardinalities: EffectiveCardinalities,
     providedOrders: ProvidedOrders,
     otherAttributes: Attributes[LogicalPlan],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    readOnly: Boolean
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter =
     recordEffectiveOutputCardinality(context.executionModel, cardinalities, effectiveCardinalities, providedOrders)
 

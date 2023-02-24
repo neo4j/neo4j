@@ -591,7 +591,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   def bfsPruningVarExpand(
     pattern: String,
-    depthName: Option[String] = None,
     nodePredicates: Seq[Predicate] = Seq.empty,
     relationshipPredicates: Seq[Predicate] = Seq.empty
   ): IMPL = {
@@ -599,7 +598,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newRelationship(varFor(p.relName))
     newNode(varFor(p.to))
     p.length match {
-      case VarPatternLength(min, maybeMax) if min <= 1 =>
+      case VarPatternLength(min, Some(max)) if min <= 1 =>
         appendAtCurrentIndent(UnaryOperator(lp =>
           BFSPruningVarExpand(
             lp,
@@ -608,8 +607,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
             p.relTypes,
             p.to,
             min == 0,
-            maxLength = maybeMax.getOrElse(Int.MaxValue),
-            depthName,
+            max,
             nodePredicates.map(_.asVariablePredicate),
             relationshipPredicates.map(_.asVariablePredicate)
           )(_)
@@ -1638,15 +1636,6 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
     appendAtCurrentIndent(UnaryOperator(lp => {
       Aggregation(lp, Parser.parseProjections(groupingExpressions: _*), expressions)(_)
-    }))
-  }
-
-  def aggregation(
-    groupingExpressions: Map[String, Expression],
-    aggregationExpressions: Map[String, Expression]
-  ): IMPL = {
-    appendAtCurrentIndent(UnaryOperator(lp => {
-      Aggregation(lp, groupingExpressions, aggregationExpressions)(_)
     }))
   }
 

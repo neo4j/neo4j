@@ -63,8 +63,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     effectiveCardinalities: EffectiveCardinalities,
     providedOrders: ProvidedOrders,
     otherAttributes: Attributes[LogicalPlan],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    readOnly: Boolean
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter =
     fixedPoint(context.cancellationChecker)(
       inSequence(context.cancellationChecker)(
@@ -81,11 +80,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
           otherAttributes.withAlso(effectiveCardinalities, providedOrders)
         ),
         removeIdenticalPlans(otherAttributes.withAlso(cardinalities, effectiveCardinalities, solveds, providedOrders)),
-        pruningVarExpander(anonymousVariableNameGenerator),
-        // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
-        if (readOnly) bfsAggregationRemover else identity,
-        // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
-        if (context.executionModel.providedOrderPreserving && readOnly) bfsDepthOrderer else identity,
+        pruningVarExpander,
         useTop,
         skipInPartialSort,
         simplifySelections,
@@ -138,8 +133,7 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     effectiveCardinalities: EffectiveCardinalities,
     providedOrders: ProvidedOrders,
     otherAttributes: Attributes[LogicalPlan],
-    anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
-    readOnly: Boolean
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): Rewriter
 
   override def process(from: LogicalPlanState, context: PlannerContext): LogicalPlanState = {
@@ -157,8 +151,7 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
         from.planningAttributes.effectiveCardinalities,
         from.planningAttributes.providedOrders,
         otherAttributes,
-        from.anonymousVariableNameGenerator,
-        from.query.readOnly
+        from.anonymousVariableNameGenerator
       )
     )
     from.copy(maybeLogicalPlan = Some(rewritten))

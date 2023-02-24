@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.allExpander;
 import static org.neo4j.internal.kernel.api.helpers.BFSPruningVarExpandCursor.incomingExpander;
@@ -35,15 +34,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.api.list.primitive.LongList;
-import org.eclipse.collections.api.list.primitive.MutableIntList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.block.factory.primitive.LongPredicates;
-import org.eclipse.collections.impl.factory.primitive.IntLists;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
-import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
 import org.neo4j.exceptions.KernelException;
@@ -104,17 +98,11 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(graph(outgoingExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add(start)
-                            .add(a1, a2, a3, a4, a5)
-                            .add(b1, b2, b3, b4, b5)
-                            .build());
-
-            assertThat(graph(outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(a1, a2, a3, a4, a5)
-                            .add(b1, b2, b3, b4, b5)
-                            .build());
+            assertThat(asDepthMap(outgoingExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(start, a1, a2, a3, a4, a5, b1, b2, b3, b4, b5);
+            assertThat(asDepthMap(
+                            outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(a1, a2, a3, a4, a5, b1, b2, b3, b4, b5);
         }
     }
 
@@ -159,17 +147,10 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(graph(allExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(a1, a2, a3, a4, a5)
-                            .add(b1, b2, b3, b4, b5)
-                            .build());
-
-            assertThat(graph(allExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add(start)
-                            .add(a1, a2, a3, a4, a5)
-                            .add(b1, b2, b3, b4, b5)
-                            .build());
+            assertThat(asDepthMap(allExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(Map.of(a1, 0, a2, 0, a3, 0, a4, 0, a5, 0, b1, 1, b2, 1, b3, 1, b4, 1, b5, 1));
+            assertThat(asDepthMap(allExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(List.of(start, a1, a2, a3, a4, a5, b1, b2, b3, b4, b5));
         }
     }
 
@@ -214,7 +195,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(graph(outgoingExpander(
+            assertThat(asDepthMap(outgoingExpander(
                             start,
                             true,
                             26,
@@ -224,12 +205,8 @@ class BFSPruningVarExpandCursorTest {
                             n -> n != a3,
                             Predicates.alwaysTrue(),
                             NO_TRACKING)))
-                    .isEqualTo(graph().add(start)
-                            .add(a1, a2, a4, a5)
-                            .add(b1, b2, b4, b5)
-                            .build());
-
-            assertThat(graph(outgoingExpander(
+                    .containsOnlyKeys(start, a1, a2, a4, a5, b1, b2, b4, b5);
+            assertThat(asDepthMap(outgoingExpander(
                             start,
                             false,
                             26,
@@ -239,10 +216,7 @@ class BFSPruningVarExpandCursorTest {
                             n -> n != a3,
                             Predicates.alwaysTrue(),
                             NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(a1, a2, a4, a5)
-                            .add(b1, b2, b4, b5)
-                            .build());
+                    .containsOnlyKeys(a1, a2, a4, a5, b1, b2, b4, b5);
         }
     }
 
@@ -287,7 +261,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(graph(allExpander(
+            assertThat(asDepthMap(allExpander(
                             start,
                             true,
                             26,
@@ -297,12 +271,8 @@ class BFSPruningVarExpandCursorTest {
                             n -> n != a3,
                             Predicates.alwaysTrue(),
                             NO_TRACKING)))
-                    .isEqualTo(graph().add(start)
-                            .add(a1, a2, a4, a5)
-                            .add(b1, b2, b4, b5)
-                            .build());
-
-            assertThat(graph(allExpander(
+                    .containsOnlyKeys(List.of(start, a1, a2, a4, a5, b1, b2, b4, b5));
+            assertThat(asDepthMap(allExpander(
                             start,
                             false,
                             26,
@@ -312,10 +282,7 @@ class BFSPruningVarExpandCursorTest {
                             n -> n != a3,
                             Predicates.alwaysTrue(),
                             NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(a1, a2, a4, a5)
-                            .add(b1, b2, b4, b5)
-                            .build());
+                    .containsOnlyKeys(List.of(a1, a2, a4, a5, b1, b2, b4, b5));
         }
     }
 
@@ -360,7 +327,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(graph(outgoingExpander(
+            assertThat(asDepthMap(outgoingExpander(
                             start,
                             true,
                             26,
@@ -371,12 +338,8 @@ class BFSPruningVarExpandCursorTest {
                             cursor -> cursor.relationshipReference() != filterThis
                                     && cursor.relationshipReference() != andFilterThat,
                             NO_TRACKING)))
-                    .isEqualTo(graph().add(start)
-                            .add(a1, a2, a3, a5)
-                            .add(b1, b3, b5)
-                            .build());
-
-            assertThat(graph(outgoingExpander(
+                    .containsOnlyKeys(List.of(start, a1, a2, a3, a5, b1, b3, b5));
+            assertThat(asDepthMap(outgoingExpander(
                             start,
                             false,
                             26,
@@ -387,7 +350,7 @@ class BFSPruningVarExpandCursorTest {
                             cursor -> cursor.relationshipReference() != filterThis
                                     && cursor.relationshipReference() != andFilterThat,
                             NO_TRACKING)))
-                    .isEqualTo(graph().add().add(a1, a2, a3, a5).add(b1, b3, b5).build());
+                    .containsOnlyKeys(List.of(a1, a2, a3, a5, b1, b3, b5));
         }
     }
 
@@ -432,7 +395,7 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(graph(allExpander(
+            assertThat(asDepthMap(allExpander(
                             start,
                             true,
                             26,
@@ -443,12 +406,8 @@ class BFSPruningVarExpandCursorTest {
                             cursor -> cursor.relationshipReference() != filterThis
                                     && cursor.relationshipReference() != andFilterThat,
                             NO_TRACKING)))
-                    .isEqualTo(graph().add(start)
-                            .add(a1, a2, a3, a5)
-                            .add(b1, b3, b5)
-                            .build());
-
-            assertThat(graph(allExpander(
+                    .containsOnlyKeys(List.of(start, a1, a2, a3, a5, b1, b3, b5));
+            assertThat(asDepthMap(allExpander(
                             start,
                             false,
                             26,
@@ -459,7 +418,7 @@ class BFSPruningVarExpandCursorTest {
                             cursor -> cursor.relationshipReference() != filterThis
                                     && cursor.relationshipReference() != andFilterThat,
                             NO_TRACKING)))
-                    .isEqualTo(graph().add().add(a1, a2, a3, a5).add(b1, b3, b5).build());
+                    .containsOnlyKeys(List.of(a1, a2, a3, a5, b1, b3, b5));
         }
     }
 
@@ -493,9 +452,8 @@ class BFSPruningVarExpandCursorTest {
             var expander = outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(graph(expander))
-                    .isEqualTo(
-                            graph().add().add(a1, b1).add(a2, b2).add(b3, end).build());
+            assertThat(graph(expander, false))
+                    .isEqualTo(graph().add(a1, b1).add(a2, b2).add(b3, end).build());
         }
     }
 
@@ -507,12 +465,16 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // then
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            true))
                     .isEqualTo(graph(graph.nodes.subList(0, 4)));
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graphWithEmptyZeroFrontier(graph.nodes.subList(1, 4)));
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            false))
+                    .isEqualTo(graph(graph.nodes.subList(1, 4)));
         }
     }
 
@@ -524,17 +486,20 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // then
-            assertThat(graph(incomingExpander(
-                            graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(
+                            incomingExpander(
+                                    graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            true))
                     .isEqualTo(graph().add(graph.startNode())
                             .add(graph.nodes.get(9))
                             .add(graph.nodes.get(8))
                             .add(graph.nodes.get(7))
                             .build());
-            assertThat(graph(incomingExpander(
-                            graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(graph.nodes.get(9))
+            assertThat(graph(
+                            incomingExpander(
+                                    graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            false))
+                    .isEqualTo(graph().add(graph.nodes.get(9))
                             .add(graph.nodes.get(8))
                             .add(graph.nodes.get(7))
                             .build());
@@ -551,16 +516,17 @@ class BFSPruningVarExpandCursorTest {
 
             // then
             assertThat(graph(
-                            allExpander(graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                            allExpander(graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            true))
                     .isEqualTo(graph().add(graph.startNode())
                             .add(graph.nodes.get(1), graph.nodes.get(9))
                             .add(graph.nodes.get(2), graph.nodes.get(8))
                             .add(graph.nodes.get(3), graph.nodes.get(7))
                             .build());
-            assertThat(graph(allExpander(
-                            graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(graph.nodes.get(1), graph.nodes.get(9))
+            assertThat(graph(
+                            allExpander(graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            false))
+                    .isEqualTo(graph().add(graph.nodes.get(1), graph.nodes.get(9))
                             .add(graph.nodes.get(2), graph.nodes.get(8))
                             .add(graph.nodes.get(3), graph.nodes.get(7))
                             .build());
@@ -584,12 +550,30 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(start, type2, write.nodeCreate());
 
             // then
-            assertThat(graph(outgoingExpander(
-                            start, new int[] {type1}, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(
+                            outgoingExpander(
+                                    start,
+                                    new int[] {type1},
+                                    true,
+                                    3,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    NO_TRACKING),
+                            true))
                     .isEqualTo(graph().add(start).add(end).build());
-            assertThat(graph(outgoingExpander(
-                            start, new int[] {type1}, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(end).build());
+            assertThat(graph(
+                            outgoingExpander(
+                                    start,
+                                    new int[] {type1},
+                                    false,
+                                    3,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    NO_TRACKING),
+                            false))
+                    .isEqualTo(graph().add(end).build());
         }
     }
 
@@ -610,12 +594,30 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(write.nodeCreate(), type2, start);
 
             // then
-            assertThat(graph(incomingExpander(
-                            start, new int[] {type1}, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(
+                            incomingExpander(
+                                    start,
+                                    new int[] {type1},
+                                    true,
+                                    3,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    NO_TRACKING),
+                            true))
                     .isEqualTo(graph().add(start).add(end).build());
-            assertThat(graph(incomingExpander(
-                            start, new int[] {type1}, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(end).build());
+            assertThat(graph(
+                            incomingExpander(
+                                    start,
+                                    new int[] {type1},
+                                    false,
+                                    3,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    NO_TRACKING),
+                            false))
+                    .isEqualTo(graph().add(end).build());
         }
     }
 
@@ -636,12 +638,30 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(start, type2, write.nodeCreate());
 
             // then
-            assertThat(graph(allExpander(
-                            start, new int[] {type1}, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(
+                            allExpander(
+                                    start,
+                                    new int[] {type1},
+                                    true,
+                                    3,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    NO_TRACKING),
+                            true))
                     .isEqualTo(graph().add(start).add(end).build());
-            assertThat(graph(allExpander(
-                            start, new int[] {type1}, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(end).build());
+            assertThat(graph(
+                            allExpander(
+                                    start,
+                                    new int[] {type1},
+                                    false,
+                                    3,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    NO_TRACKING),
+                            false))
+                    .isEqualTo(graph().add(end).build());
         }
     }
 
@@ -653,23 +673,33 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // then
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(), true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(), true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            true))
                     .isEqualTo(graph().add(graph.startNode()).build());
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(), false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(EMPTY);
-            assertThat(graph(incomingExpander(
-                            graph.startNode(), true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add(graph.startNode()).build());
-            assertThat(graph(incomingExpander(
-                            graph.startNode(), false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(), false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            false))
                     .isEqualTo(EMPTY);
             assertThat(graph(
-                            allExpander(graph.startNode(), true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                            incomingExpander(
+                                    graph.startNode(), true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            true))
                     .isEqualTo(graph().add(graph.startNode()).build());
-            assertThat(graph(allExpander(
-                            graph.startNode(), false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(
+                            incomingExpander(
+                                    graph.startNode(), false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            false))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(
+                            allExpander(graph.startNode(), true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            true))
+                    .isEqualTo(graph().add(graph.startNode()).build());
+            assertThat(graph(
+                            allExpander(graph.startNode(), false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            false))
                     .isEqualTo(EMPTY);
         }
     }
@@ -696,8 +726,8 @@ class BFSPruningVarExpandCursorTest {
                     start, new int[] {type}, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(graph(expander))
-                    .isEqualTo(graph().add().add(middleNode, end).build());
+            assertThat(graph(expander, false))
+                    .isEqualTo(graph().add(middleNode, end).build());
         }
     }
 
@@ -710,17 +740,20 @@ class BFSPruningVarExpandCursorTest {
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
 
             // then
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(), true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            true))
                     .isEqualTo(graph().add(graph.nodes.get(0))
                             .add(graph.nodes.subList(1, 4))
                             .add(graph.nodes.subList(4, 13))
                             .add(graph.nodes.subList(13, 40))
                             .build());
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(graph.nodes.subList(1, 4))
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            false))
+                    .isEqualTo(graph().add(graph.nodes.subList(1, 4))
                             .add(graph.nodes.subList(4, 13))
                             .add(graph.nodes.subList(13, 40))
                             .build());
@@ -739,9 +772,8 @@ class BFSPruningVarExpandCursorTest {
                     outgoingExpander(graph.startNode(), false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(graph(expander))
-                    .isEqualTo(graph().add()
-                            .add(graph.nodes.get(1), graph.nodes.get(2))
+            assertThat(graph(expander, false))
+                    .isEqualTo(graph().add(graph.nodes.get(1), graph.nodes.get(2))
                             .add(graph.nodes.get(3), graph.nodes.get(4), graph.nodes.get(5), graph.nodes.get(6))
                             .add(
                                     graph.nodes.get(7),
@@ -764,28 +796,32 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // then
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(),
-                            true,
-                            11,
-                            tx.dataRead(),
-                            nodeCursor,
-                            relCursor,
-                            value -> value <= graph.nodes.get(5),
-                            Predicates.alwaysTrue(),
-                            NO_TRACKING)))
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(),
+                                    true,
+                                    11,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    value -> value <= graph.nodes.get(5),
+                                    Predicates.alwaysTrue(),
+                                    NO_TRACKING),
+                            true))
                     .isEqualTo(graph(graph.nodes.subList(0, 6)));
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(),
-                            false,
-                            11,
-                            tx.dataRead(),
-                            nodeCursor,
-                            relCursor,
-                            value -> value <= graph.nodes.get(5),
-                            Predicates.alwaysTrue(),
-                            NO_TRACKING)))
-                    .isEqualTo(graphWithEmptyZeroFrontier(graph.nodes.subList(1, 6)));
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(),
+                                    false,
+                                    11,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    value -> value <= graph.nodes.get(5),
+                                    Predicates.alwaysTrue(),
+                                    NO_TRACKING),
+                            false))
+                    .isEqualTo(graph(graph.nodes.subList(1, 6)));
         }
     }
 
@@ -797,28 +833,32 @@ class BFSPruningVarExpandCursorTest {
                 var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
                 var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
             // then
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(),
-                            true,
-                            11,
-                            tx.dataRead(),
-                            nodeCursor,
-                            relCursor,
-                            LongPredicates.alwaysTrue(),
-                            cursor -> cursor.relationshipReference() < graph.relationships.get(9),
-                            NO_TRACKING)))
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(),
+                                    true,
+                                    11,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    LongPredicates.alwaysTrue(),
+                                    cursor -> cursor.relationshipReference() < graph.relationships.get(9),
+                                    NO_TRACKING),
+                            true))
                     .isEqualTo(graph(graph.nodes.subList(0, 10)));
-            assertThat(graph(outgoingExpander(
-                            graph.startNode(),
-                            false,
-                            11,
-                            tx.dataRead(),
-                            nodeCursor,
-                            relCursor,
-                            LongPredicates.alwaysTrue(),
-                            cursor -> cursor.relationshipReference() < graph.relationships.get(9),
-                            NO_TRACKING)))
-                    .isEqualTo(graphWithEmptyZeroFrontier(graph.nodes.subList(1, 10)));
+            assertThat(graph(
+                            outgoingExpander(
+                                    graph.startNode(),
+                                    false,
+                                    11,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    LongPredicates.alwaysTrue(),
+                                    cursor -> cursor.relationshipReference() < graph.relationships.get(9),
+                                    NO_TRACKING),
+                            false))
+                    .isEqualTo(graph(graph.nodes.subList(1, 10)));
         }
     }
 
@@ -836,10 +876,12 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(node2, rel, node1);
 
             // then
-            assertThat(graph(outgoingExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(outgoingExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(node1).add(node2).build());
-            assertThat(graph(outgoingExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(node2).add(node1).build());
+            assertThat(graph(
+                            outgoingExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING),
+                            false))
+                    .isEqualTo(graph().add(node2).add(node1).build());
         }
     }
 
@@ -857,16 +899,16 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(node1, rel, node2);
 
             // then
-            assertThat(graph(allExpander(node1, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(node1, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(node1, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(node1, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(node1).add(node2).build());
-            assertThat(graph(allExpander(node1, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(node2).build());
-            assertThat(graph(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(node1, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(node2).build());
+            assertThat(graph(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(node1).add(node2).build());
-            assertThat(graph(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(node2).build());
+            assertThat(graph(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(node2).build());
         }
     }
 
@@ -882,16 +924,16 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(node1, rel, node1);
 
             // then
-            assertThat(graph(allExpander(node1, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(node1, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(node1, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(node1, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(node1).build());
-            assertThat(graph(allExpander(node1, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(node1).build());
-            assertThat(graph(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(node1, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(graph().add(node1).build());
-            assertThat(graph(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(node1).build());
+            assertThat(graph(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
+                    .isEqualTo(graph().add(node1).build());
+            assertThat(graph(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(node1).build());
         }
     }
 
@@ -909,16 +951,16 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(node2, rel, node1);
 
             // then
-            assertThat(graph(allExpander(node1, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(node1, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(node1, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(node1, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(node1).add(node2).build());
-            assertThat(graph(allExpander(node1, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(node2).build());
-            assertThat(graph(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(node1, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(node2).build());
+            assertThat(graph(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(node1).add(node2).build());
-            assertThat(graph(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(node2).add(node1).build());
+            assertThat(graph(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(node2).add(node1).build());
         }
     }
 
@@ -936,28 +978,32 @@ class BFSPruningVarExpandCursorTest {
             long dontUse = write.relationshipCreate(node2, rel, node1);
 
             // then
-            assertThat(graph(allExpander(
-                            node1,
-                            true,
-                            2,
-                            tx.dataRead(),
-                            nodeCursor,
-                            relCursor,
-                            LongPredicates.alwaysTrue(),
-                            cursor -> cursor.relationshipReference() != dontUse,
-                            NO_TRACKING)))
+            assertThat(graph(
+                            allExpander(
+                                    node1,
+                                    true,
+                                    2,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    LongPredicates.alwaysTrue(),
+                                    cursor -> cursor.relationshipReference() != dontUse,
+                                    NO_TRACKING),
+                            true))
                     .isEqualTo(graph().add(node1).add(node2).build());
-            assertThat(graph(allExpander(
-                            node1,
-                            false,
-                            2,
-                            tx.dataRead(),
-                            nodeCursor,
-                            relCursor,
-                            LongPredicates.alwaysTrue(),
-                            cursor -> cursor.relationshipReference() != dontUse,
-                            NO_TRACKING)))
-                    .isEqualTo(graph().add().add(node2).build());
+            assertThat(graph(
+                            allExpander(
+                                    node1,
+                                    false,
+                                    2,
+                                    tx.dataRead(),
+                                    nodeCursor,
+                                    relCursor,
+                                    LongPredicates.alwaysTrue(),
+                                    cursor -> cursor.relationshipReference() != dontUse,
+                                    NO_TRACKING),
+                            false))
+                    .isEqualTo(graph().add(node2).build());
         }
     }
 
@@ -981,16 +1027,16 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a, rel, c);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
-            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
+            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
         }
     }
 
@@ -1015,18 +1061,18 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a, rel, c);
 
             // then
-            assertThat(graph(allExpander(a, true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).build());
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
-            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
+            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(a).build());
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(a).build());
         }
     }
 
@@ -1051,16 +1097,16 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(c, rel, a);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
-            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
+            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(a).build());
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(a).build());
         }
     }
 
@@ -1085,20 +1131,20 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b, rel, c);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
-            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
+            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
-            assertThat(graph(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
+            assertThat(graph(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add().add(a).build());
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(a).build());
         }
     }
 
@@ -1112,7 +1158,7 @@ class BFSPruningVarExpandCursorTest {
             int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
             //            (b)
             //           / |
-            // (start)-(a) |
+            // (start)-(a)  |
             //           \ |
             //            (c)
             long start = write.nodeCreate();
@@ -1125,34 +1171,28 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b, rel, c);
 
             // then
-            assertThat(graph(allExpander(start, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(start, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(start, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(start, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(start).add(a).build());
-            assertThat(graph(allExpander(start, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(a).build());
-            assertThat(graph(allExpander(start, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(start, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(a).build());
+            assertThat(graph(allExpander(start, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(start).add(a).add(b, c).build());
-            assertThat(graph(allExpander(start, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(a).add(b, c).build());
-            assertThat(graph(allExpander(start, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(start, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(a).add(b, c).build());
+            assertThat(graph(allExpander(start, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(start).add(a).add(b, c).build());
-            assertThat(graph(allExpander(start, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(a).add(b, c).build());
-            assertThat(graph(allExpander(start, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(start, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(a).add(b, c).build());
+            assertThat(graph(allExpander(start, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(start).add(a).add(b, c).build());
-            assertThat(graph(allExpander(start, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(a).add(b, c).build());
-            assertThat(graph(allExpander(start, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(start, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(a).add(b, c).build());
+            assertThat(graph(allExpander(start, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(start).add(a).add(b, c).build());
-            assertThat(graph(allExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(a)
-                            .add(b, c)
-                            .add()
-                            .add()
-                            .add(start)
-                            .build());
+            assertThat(graph(allExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(a).add(b, c).add(start).build());
         }
     }
 
@@ -1179,24 +1219,24 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(d, rel, c);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
-            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
+            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).add(d).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d).build());
-            assertThat(graph(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d).build());
+            assertThat(graph(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).add(d).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d).build());
-            assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d).build());
+            assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).add(d).build());
-            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d).add().add(a).build());
+            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d).add(a).build());
         }
     }
 
@@ -1225,29 +1265,28 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(e, rel, d);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
-            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
+            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).add(d, e).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d, e).build());
-            assertThat(graph(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d, e).build());
+            assertThat(graph(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).add(d, e).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d, e).build());
-            assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d, e).build());
+            assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).add(d, e).build());
-            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d, e).build());
-            assertThat(graph(allExpander(a, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d, e).build());
+            assertThat(graph(allExpander(a, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).add(d, e).build());
-            assertThat(graph(allExpander(a, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(
-                            graph().add().add(b, c).add(d, e).add().add().add(a).build());
+            assertThat(graph(allExpander(a, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d, e).add(a).build());
         }
     }
 
@@ -1281,21 +1320,20 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b3, rel, c3);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b1, b2, b3).build());
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b1, b2, b3).build());
-            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b1, b2, b3).build());
+            assertThat(graph(allExpander(a, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b1, b2, b3).add(c1, c2, c3).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b1, b2, b3).add(c1, c2, c3).build());
-            assertThat(graph(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b1, b2, b3).add(c1, c2, c3).build());
+            assertThat(graph(allExpander(a, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b1, b2, b3).add(c1, c2, c3).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(
-                            graph().add().add(b1, b2, b3).add(c1, c2, c3).add(a).build());
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b1, b2, b3).add(c1, c2, c3).add(a).build());
         }
     }
 
@@ -1326,16 +1364,16 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(e, rel, f);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d).add(e).build());
-            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d).add(e).add(f, a).build());
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d).build());
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d).add(e).build());
+            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d).add(e).add(f, a).build());
         }
     }
 
@@ -1367,22 +1405,22 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(e, rel, g);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).build());
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d, e).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d, e).add(f, g).build());
-            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d, e).add(f, g).build());
-            assertThat(graph(allExpander(a, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).build());
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d, e).build());
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d, e).add(f, g).build());
+            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d, e).add(f, g).build());
+            assertThat(graph(allExpander(a, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b, c).add(d, e).add(f, g).build());
-            assertThat(graph(allExpander(a, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c).add(d, e).add(f, g).build());
+            assertThat(graph(allExpander(a, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c).add(d, e).add(f, g).build());
         }
     }
 
@@ -1404,20 +1442,20 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(c, rel, b);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b).build());
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).add(c).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).add(c).build());
-            assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).build());
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).add(c).build());
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).add(c).build());
+            assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b).add(c).build());
-            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).add(c).build());
+            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).add(c).build());
         }
     }
 
@@ -1439,20 +1477,20 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(c, rel, b);
 
             // then
-            assertThat(graph(outgoingExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(outgoingExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(outgoingExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(outgoingExpander(a, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b).build());
-            assertThat(graph(outgoingExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).build());
-            assertThat(graph(outgoingExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).add(c).build());
-            assertThat(graph(outgoingExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).add(c).build());
-            assertThat(graph(outgoingExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(outgoingExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).build());
+            assertThat(graph(outgoingExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).add(c).build());
+            assertThat(graph(outgoingExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).add(c).build());
+            assertThat(graph(outgoingExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b).add(c).build());
-            assertThat(graph(outgoingExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).add(c).build());
+            assertThat(graph(outgoingExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).add(c).build());
         }
     }
 
@@ -1472,18 +1510,18 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(b, rel, b);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).build());
-            assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).build());
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).build());
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).build());
+            assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), true))
                     .isEqualTo(graph().add(a).add(b).build());
-            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).build());
+            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).build());
         }
     }
 
@@ -1506,16 +1544,16 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(c, rel, b);
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).add(a, c).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).add(a, c).build());
-            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b).add(a, c).build());
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).build());
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).add(a, c).build());
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).add(a, c).build());
+            assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b).add(a, c).build());
         }
     }
 
@@ -1631,14 +1669,14 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(c, rel, d); // 7
 
             // then
-            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            assertThat(graph(allExpander(a, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
                     .isEqualTo(EMPTY);
-            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c, d, e).build());
-            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c, d, e).build());
-            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add().add(b, c, d, e).add().add(a).build());
+            assertThat(graph(allExpander(a, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c, d, e).build());
+            assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c, d, e).build());
+            assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING), false))
+                    .isEqualTo(graph().add(b, c, d, e).add(a).build());
         }
     }
 
@@ -1721,19 +1759,9 @@ class BFSPruningVarExpandCursorTest {
 
     private static class BFSGraph {
         private final List<LongList> graph;
-        private final IntList distance;
 
-        private BFSGraph(List<LongList> graph, IntList distance) {
-            if (graph.size() != distance.size()) {
-                throw new IllegalStateException(format(
-                        """
-                                                                 Collections 'graph' and 'distance' must have same length but did not.
-                                                                 'graph' = %s
-                                                                 'distance' = %s""",
-                        graph, distance));
-            }
+        private BFSGraph(List<LongList> graph) {
             this.graph = graph;
-            this.distance = distance;
         }
 
         @Override
@@ -1747,22 +1775,19 @@ class BFSPruningVarExpandCursorTest {
 
             BFSGraph bfsGraph = (BFSGraph) o;
 
-            return graph.equals(bfsGraph.graph) && distance.equals(bfsGraph.distance);
+            return graph.equals(bfsGraph.graph);
         }
 
         @Override
         public int hashCode() {
-            return new HashCodeBuilder(17, 37).append(graph).append(distance).toHashCode();
+            return graph.hashCode();
         }
 
         @Override
         public String toString() {
             StringBuilder builder = new StringBuilder();
-            for (int i = 0; i < graph.size(); i++) {
-                builder.append("[")
-                        .append(distance.get(i))
-                        .append("]")
-                        .append(graph.get(i).makeString("{", ", ", "}\n"));
+            for (LongList longList : graph) {
+                builder.append(longList.makeString("{", ", ", "}\n"));
             }
             return builder.toString();
         }
@@ -1772,42 +1797,36 @@ class BFSPruningVarExpandCursorTest {
         return new BFSGraphBuilder();
     }
 
-    private BFSGraph graph(BFSPruningVarExpandCursor cursor) {
+    private BFSGraph graph(BFSPruningVarExpandCursor cursor, boolean includeStartNode) {
         List<LongList> graph = new ArrayList<>();
-        MutableIntList distance = new IntArrayList();
-
+        if (includeStartNode && cursor.next()) {
+            graph.add(LongLists.mutable.of(cursor.endNode()));
+        }
         int d = -1;
-        MutableLongList list = LongLists.mutable.empty();
+        MutableLongList list = null;
         while (cursor.next()) {
-            if (d != cursor.currentDepth()) {
-                // with loops, distance to next valid node can be more than one greater than previous seen distance
-                int emptyFrontiersToInsert = cursor.currentDepth() - d;
-                for (int i = 1; i < emptyFrontiersToInsert; i++) {
-                    graph.add(LongLists.immutable.empty());
-                    distance.add(d + i);
-                }
+            if (d != cursor.currentDepth() || list == null) {
                 d = cursor.currentDepth();
-                // sort nodes of same depth, so equality check is not dependent on traversal order / storage format
-                list.sortThis();
+                if (list != null) {
+                    // sort nodes of same depth by node id, so equality check is not dependent on traversal order /
+                    // storage format
+                    list.sortThis();
+                }
                 list = LongLists.mutable.empty();
                 graph.add(list);
-                distance.add(d);
             }
             list.add(cursor.endNode());
         }
-        list.sortThis();
-        return new BFSGraph(graph, distance);
+
+        // in the above loop we will miss sorting the last list
+        if (list != null) {
+            list.sortThis();
+        }
+        return new BFSGraph(graph);
     }
 
     BFSGraph graph(List<Long> elements) {
-        return graph(graph(), elements);
-    }
-
-    BFSGraph graphWithEmptyZeroFrontier(List<Long> elements) {
-        return graph(graph().add(), elements);
-    }
-
-    BFSGraph graph(BFSGraphBuilder builder, List<Long> elements) {
+        var builder = graph();
         for (Long element : elements) {
             builder.add(element);
         }
@@ -1816,15 +1835,11 @@ class BFSPruningVarExpandCursorTest {
 
     private static class BFSGraphBuilder {
         private final List<LongList> graph = new ArrayList<>();
-        private final MutableIntList distance = new IntArrayList();
-
-        private int currentDistance = 0;
 
         BFSGraphBuilder add(long... elements) {
             LongArrayList list = LongArrayList.newListWith(elements);
             list.sortThis();
             graph.add(list);
-            distance.add(currentDistance++);
             return this;
         }
 
@@ -1835,14 +1850,13 @@ class BFSPruningVarExpandCursorTest {
             }
             list.sortThis();
             graph.add(list);
-            distance.add(currentDistance++);
             return this;
         }
 
         BFSGraph build() {
-            return new BFSGraph(graph, distance);
+            return new BFSGraph(graph);
         }
     }
 
-    private static final BFSGraph EMPTY = new BFSGraph(Collections.emptyList(), IntLists.immutable.empty());
+    private static final BFSGraph EMPTY = new BFSGraph(Collections.emptyList());
 }

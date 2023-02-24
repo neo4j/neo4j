@@ -384,7 +384,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
     protected abstract void closeMore();
 
-    public abstract int currentDepth();
+    abstract int currentDepth();
 
     @Override
     public void setTracer(KernelReadTracer tracer) {
@@ -480,7 +480,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
 
         @Override
-        public int currentDepth() {
+        int currentDepth() {
             return currentDepth;
         }
 
@@ -631,12 +631,11 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             this.currFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
             this.seenNodesWithParent = HeapTrackingCollections.newLongLongMap(memoryTracker);
             expand(startNode);
-            currentDepth = 1;
         }
 
         @Override
         public final boolean next() {
-            while (currentDepth <= maxDepth) {
+            while (currentDepth < maxDepth) {
                 clearLoopCount();
                 while (selectionCursor.next()) {
                     if (relFilter.test(selectionCursor)) {
@@ -646,8 +645,8 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                         // and only retrace later if a loop has been detected
                         if (other == startNode) {
                             // special case, self-loop for start node
-                            if (origin == other && currentDepth == 1) {
-                                loopCounter = 1;
+                            if (origin == other && currentDepth == 0) {
+                                loopCounter = 0;
                             }
                             continue;
                         }
@@ -671,9 +670,9 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                                 shouldCheckForLoops()) // if we already found a shorter loop, don't bother
                         {
                             long parentOfOrigin = seenNodesWithParent.getIfAbsent(origin, NO_SUCH_NODE);
-                            if (parentOfOrigin == NO_SUCH_NODE && currentDepth == 1) {
-                                // we are in the very first layer and have a loop to the start node
-                                loopCounter = 2;
+                            if (parentOfOrigin == NO_SUCH_NODE && currentDepth == 0) {
+                                // we are in the very fist layer and have a loop to the start node
+                                loopCounter = 1;
                             } else if (parentOfOrigin != other && parentOfOrigin != NO_SUCH_NODE) {
                                 // By already checking, shouldCheckForLoop we know that we either have no loop
                                 // or we have found a loop into a different BFS layer (not in prevFrontier)
@@ -702,7 +701,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
 
         @Override
-        public int currentDepth() {
+        int currentDepth() {
             return currentDepth;
         }
 
@@ -728,10 +727,10 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
 
         private boolean checkAndDecreaseLoopCount() {
-            if (loopCounter == 1) {
+            if (loopCounter == 0) {
                 loopCounter = EMIT_START_NODE;
                 return true;
-            } else if (loopCounter > 1) {
+            } else if (loopCounter > 0) {
                 loopCounter--;
             }
             return false;
@@ -801,10 +800,9 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             }
             if (state == EmitState.EMIT) {
                 state = EmitState.EMITTED;
-                currentDepth++;
             }
 
-            while (currentDepth <= maxDepth) {
+            while (currentDepth < maxDepth) {
                 while (selectionCursor.next()) {
                     if (relFilter.test(selectionCursor)) {
                         long other = selectionCursor.otherNodeReference();
@@ -829,7 +827,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
 
         @Override
-        public int currentDepth() {
+        int currentDepth() {
             return currentDepth;
         }
 
