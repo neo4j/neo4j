@@ -27,6 +27,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.neo4j.time.SystemNanoClock;
 import wiremock.com.fasterxml.jackson.databind.ObjectMapper;
 import wiremock.org.hamcrest.CoreMatchers;
 import wiremock.org.hamcrest.Matcher;
@@ -74,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 import static org.neo4j.pushtocloud.HttpCopier.ERROR_REASON_EXCEEDS_MAX_SIZE;
 import static org.neo4j.pushtocloud.HttpCopier.ERROR_REASON_UNSUPPORTED_INDEXES;
@@ -93,6 +95,7 @@ class HttpCopierTest
     private static final int TEST_PORT = 8080;
     private static final String TEST_CONSOLE_URL = "http://localhost:" + TEST_PORT;
     private static final String STATUS_POLLING_PASSED_FIRST_CALL = "Passed first";
+    private static final String STATUS_POLLING_PASSED_SECOND_CALL = "Passed second";
 
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     WireMockServer wireMock;
@@ -564,6 +567,57 @@ class HttpCopierTest
     }
 
     @Test
+    void shouldHandleUploadStartTimeoutFailure() throws IOException
+    {
+        // given
+        ObjectMapper mapper = new ObjectMapper();
+        ControlledProgressListener progressListener = new ControlledProgressListener();
+        SystemNanoClock clockMock = mock( SystemNanoClock.class );
+        HttpCopier copier = new HttpCopier( ctx, millis -> {}, ( name, length ) -> progressListener, clockMock, 10, 10 );
+        Path source = createDump();
+        long sourceLength = fs.getFileSize( source );
+        long dbSize = sourceLength * 4;
+        String authorizationTokenResponse = "abc";
+        String signedURIPath = "/signed";
+        String uploadLocationPath = "/upload";
+
+        wireMock.stubFor(
+                authenticationRequest(false).willReturn(successfulAuthorizationResponse(authorizationTokenResponse)));
+        wireMock.stubFor(initiateUploadTargetRequest(authorizationTokenResponse)
+                .willReturn(successfulInitiateUploadTargetResponse(signedURIPath)));
+        wireMock.stubFor(
+                initiateUploadRequest(signedURIPath).willReturn(successfulInitiateUploadResponse(uploadLocationPath)));
+        wireMock.stubFor(
+                resumeUploadRequest(uploadLocationPath, sourceLength).willReturn(successfulResumeUploadResponse()));
+        wireMock.stubFor(
+                triggerImportRequest(authorizationTokenResponse).willReturn(successfulTriggerImportResponse()));
+        // ...and
+
+        // the database has status "running"
+        wireMock.stubFor(get(urlEqualTo("/import/status"))
+                .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
+                .willReturn(secondSuccessfulDatabaseRunningResponse())
+                .inScenario("test")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
+
+        // the load should have started but database still has status "running"
+        wireMock.stubFor(get(urlEqualTo("/import/status"))
+                .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
+                .willReturn(secondSuccessfulDatabaseRunningResponse())
+                .inScenario("test")
+                .whenScenarioStateIs(STATUS_POLLING_PASSED_FIRST_CALL));
+
+        when(clockMock.millis()).thenReturn(0L).thenReturn(120 * 1000L);
+
+        // when
+        assertThrows(
+                CommandFailedException.class,
+                containsString("Timed out waiting for database load to start"),
+                () -> authenticateAndCopy(copier, source, dbSize, true, "user", "pass".toCharArray()));
+    }
+
+    @Test
     void shouldHandleUploadInACoupleOfRounds() throws IOException, CommandFailedException
     {
         ControlledProgressListener progressListener = new ControlledProgressListener();
@@ -633,6 +687,7 @@ class HttpCopierTest
                                   .willReturn( successfulResumeUploadResponse() ) );
         wireMock.stubFor(
                 triggerImportRequest( authorizationTokenResponse ).willReturn( successfulTriggerImportResponse() ) );
+        wireMock.stubFor(firstStatusPollingRequest(authorizationTokenResponse));
         // ...and
         StatusBody statusBody = new StatusBody();
         statusBody.Status = "loading failed";
@@ -645,13 +700,86 @@ class HttpCopierTest
         wireMock.stubFor( get( urlEqualTo( "/import/status" ) )
                                   .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) )
                                   .willReturn( aResponse().withBody( mapper.writeValueAsString( statusBody ) )
-                                                          .withHeader( "Content-Type", "application/json" ).withStatus( HTTP_OK ) ) );
+                                                          .withHeader( "Content-Type", "application/json" ).withStatus( HTTP_OK ) )
+                .inScenario("test")
+                .whenScenarioStateIs(STATUS_POLLING_PASSED_FIRST_CALL));
 
         // when/then
         assertThrows( CommandFailedException.class,
                       allOf( containsString( errorMessage ), containsString( errorUrl ),
                              not( containsString( ERROR_REASON_UNSUPPORTED_INDEXES ) ), not( containsString( ".." ) ) ),
                       () -> authenticateAndCopy( copier, source, 1234, true, "user", "pass".toCharArray() ) );
+    }
+
+    @Test
+    void shouldHandleFailedImportStatusFromPreviousLoad() throws IOException, CommandFailedException
+    {
+        // given
+        ObjectMapper mapper = new ObjectMapper();
+        ControlledProgressListener progressListener = new ControlledProgressListener();
+        HttpCopier copier = new HttpCopier( ctx, millis -> {}, ( name, length ) -> progressListener );
+        Path source = createDump();
+        long sourceLength = fs.getFileSize( source );
+        long dbSize = sourceLength * 4;
+        String authorizationTokenResponse = "abc";
+        String signedURIPath = "/signed";
+        String uploadLocationPath = "/upload";
+
+        wireMock.stubFor(
+                authenticationRequest(false).willReturn(successfulAuthorizationResponse(authorizationTokenResponse)));
+        wireMock.stubFor(initiateUploadTargetRequest(authorizationTokenResponse)
+                .willReturn(successfulInitiateUploadTargetResponse(signedURIPath)));
+        wireMock.stubFor(
+                initiateUploadRequest(signedURIPath).willReturn(successfulInitiateUploadResponse(uploadLocationPath)));
+        wireMock.stubFor(
+                resumeUploadRequest(uploadLocationPath, sourceLength).willReturn(successfulResumeUploadResponse()));
+        wireMock.stubFor(
+                triggerImportRequest(authorizationTokenResponse).willReturn(successfulTriggerImportResponse()));
+        // ...and
+        StatusBody statusBody = new StatusBody();
+        statusBody.Status = "loading failed";
+        String errorMessage = "The uploaded dump file contains deprecated indexes, "
+                + "which we are unable to import in the current version of Neo4j Aura. "
+                + "Please upgrade to the recommended index provider.";
+        String errorUrl = "https://aura.support.neo4j.com/";
+        statusBody.Error = new ErrorBody( errorMessage, ERROR_REASON_UNSUPPORTED_INDEXES, errorUrl );
+
+        wireMock.stubFor(get(urlEqualTo("/import/status"))
+                .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
+                .willReturn(aResponse()
+                        .withBody(mapper.writeValueAsString(statusBody))
+                        .withHeader("Content-Type", "application/json")
+                        .withStatus(HTTP_OK))
+                .inScenario("test")
+                .whenScenarioStateIs(Scenario.STARTED)
+                .willSetStateTo(STATUS_POLLING_PASSED_FIRST_CALL));
+
+        wireMock.stubFor(get(urlEqualTo("/import/status"))
+                .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
+                .willReturn(firstSuccessfulDatabaseRunningResponse())
+                .inScenario("test")
+                .whenScenarioStateIs(STATUS_POLLING_PASSED_FIRST_CALL)
+                .willSetStateTo(STATUS_POLLING_PASSED_SECOND_CALL));
+
+        wireMock.stubFor(get(urlEqualTo("/import/status"))
+                .withHeader("Authorization", equalTo("Bearer " + authorizationTokenResponse))
+                .willReturn(secondSuccessfulDatabaseRunningResponse())
+                .inScenario("test")
+                .whenScenarioStateIs(STATUS_POLLING_PASSED_SECOND_CALL));
+
+        // when
+        authenticateAndCopy(copier, source, dbSize, true, "user", "pass".toCharArray());
+
+        // then
+        verify(postRequestedFor(urlEqualTo("/import/auth")));
+        verify(postRequestedFor(urlEqualTo("/import"))
+                .withRequestBody(matchingJsonPath("FullSize", equalTo(String.valueOf(dbSize)))));
+        verify(postRequestedFor(urlEqualTo(signedURIPath)));
+        verify(putRequestedFor(urlEqualTo(uploadLocationPath)));
+        verify(postRequestedFor(urlEqualTo("/import/upload-complete")));
+        assertTrue(progressListener.doneCalled);
+        // we need to add 100 extra ticks to the progress listener because of the database phases
+        assertEquals(sourceLength + 100, progressListener.progress);
     }
 
     @Test
