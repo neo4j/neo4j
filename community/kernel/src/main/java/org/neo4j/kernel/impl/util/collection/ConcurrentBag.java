@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.util.collection;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 import org.neo4j.memory.MemoryTracker;
 
 /**
@@ -44,13 +44,17 @@ import org.neo4j.memory.MemoryTracker;
  */
 public final class ConcurrentBag<T> {
 
-    private static final long SHALLOW_SIZE_ATOMIC_REFERENCE = shallowSizeOfInstance(AtomicReference.class);
-    public static final long SIZE_OF_NODE = shallowSizeOfInstance(Node.class) + SHALLOW_SIZE_ATOMIC_REFERENCE;
-    static final long SIZE_OF_BAG =
-            shallowSizeOfInstance(ConcurrentBag.class) + SIZE_OF_NODE + SHALLOW_SIZE_ATOMIC_REFERENCE;
+    @SuppressWarnings("rawtypes")
+    private static final AtomicReferenceFieldUpdater<ConcurrentBag, Node> UPDATE_TAIL =
+            AtomicReferenceFieldUpdater.newUpdater(ConcurrentBag.class, Node.class, "tail");
 
-    private final Node<T> head;
-    private final AtomicReference<Node<T>> tail;
+    private static final AtomicReferenceFieldUpdater<Node, Node> UPDATE_NODE =
+            AtomicReferenceFieldUpdater.newUpdater(Node.class, Node.class, "next");
+    public static final long SIZE_OF_NODE = shallowSizeOfInstance(Node.class);
+    static final long SIZE_OF_BAG = shallowSizeOfInstance(ConcurrentBag.class) + SIZE_OF_NODE;
+
+    private final Node head;
+    private volatile Node tail;
 
     /**
      * Allocate a new ConcurrentBag
@@ -61,28 +65,28 @@ public final class ConcurrentBag<T> {
     }
 
     public ConcurrentBag() {
-        Node<T> node = new Node<>(null);
+        Node node = new Node(null);
         this.head = node;
-        this.tail = new AtomicReference<>(node);
+        this.tail = node;
     }
 
     public void add(T value) {
-        Node<T> node = new Node<>(value);
+        Node node = new Node(value);
         while (true) {
-            Node<T> last = tail.get();
-            Node<T> next = last.next.get();
-            if (last == tail.get()) {
+            Node last = tail;
+            Node next = last.next;
+            if (last == tail) {
                 if (next == null) {
-                    if (last.next.compareAndSet(null, node)) {
+                    if (UPDATE_NODE.compareAndSet(last, null, node)) {
                         // NOTE: if this CAS operation fails we can still return successfully since it means
                         // another thread "helped out" (see NOTE below).
-                        tail.compareAndSet(last, node);
+                        UPDATE_TAIL.compareAndSet(this, last, node);
                         return;
                     }
                 } else {
                     // NOTE: some other thread appended its node but has not yet updated tail,
                     // let's be helpful and set it for them.
-                    tail.compareAndSet(last, next);
+                    UPDATE_TAIL.compareAndSet(this, last, next);
                 }
             }
         }
@@ -90,28 +94,33 @@ public final class ConcurrentBag<T> {
 
     public Iterator<T> iterator() {
         return new Iterator<>() {
-            private Node<T> current = head;
+            private Node current = head;
 
             @Override
             public boolean hasNext() {
-                return current.next.get() != null;
+                return current.next != null;
             }
 
+            @SuppressWarnings("unchecked")
             @Override
             public T next() {
-                current = current.next.get();
-                return current.value;
+                current = current.next;
+                return (T) current.value;
             }
         };
     }
 
-    private static class Node<E> {
-        private final E value;
-        private final AtomicReference<Node<E>> next;
+    static class Node {
+        private final Object value;
+        volatile Node next;
 
-        Node(E value) {
+        Node(Object value) {
             this.value = value;
-            this.next = new AtomicReference<>(null);
+            this.next = null;
+        }
+
+        boolean compareAndSetNext(Node newNode) {
+            return UPDATE_NODE.compareAndSet(this, null, newNode);
         }
     }
 }
