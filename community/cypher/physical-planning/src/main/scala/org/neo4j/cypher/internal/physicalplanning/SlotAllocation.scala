@@ -1181,9 +1181,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         lhs.newLong(end, nullable, CTNode)
         groupNodes.foreach(n => lhs.newReference(n.groupName, false, CTList(CTNode)))
         groupRelationships.foreach(r => lhs.newReference(r.groupName, false, CTList(CTRelationship)))
-        if (allocateArgumentSlots) {
-          lhs.newMetaData(TRAIL_STATE_METADATA_KEY)
-        }
+        lhs.newMetaData(TRAIL_STATE_METADATA_KEY)
 
       case _ =>
     }

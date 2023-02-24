@@ -139,6 +139,7 @@ import org.neo4j.cypher.internal.physicalplanning.LongSlot
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlan
 import org.neo4j.cypher.internal.physicalplanning.RefSlot
 import org.neo4j.cypher.internal.physicalplanning.Slot
+import org.neo4j.cypher.internal.physicalplanning.SlotAllocation
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.LOAD_CSV_METADATA_KEY
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
@@ -1495,6 +1496,7 @@ class SlottedPipeMapper(
           slots(start),
           slots.getLongOffsetFor(end),
           rhsSlots.getLongOffsetFor(innerStart),
+          trailStateMetadataSlot = rhsSlots.getMetaDataOffsetFor(SlotAllocation.TRAIL_STATE_METADATA_KEY),
           rhsSlots(innerEnd),
           groupNodes.map(n => GroupSlot(rhsSlots(n.singletonName), slots(n.groupName))).toArray,
           groupRelationships.map(r => GroupSlot(rhsSlots(r.singletonName), slots(r.groupName))).toArray,

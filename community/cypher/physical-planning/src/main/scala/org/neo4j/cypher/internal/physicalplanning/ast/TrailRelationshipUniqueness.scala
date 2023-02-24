@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.physicalplanning.ast
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class TrailRelationshipUniqueness(trailStateMetadataSlotKey: String, innerRelationships: Set[String])
+case class TrailRelationshipUniqueness(trailStateMetadataSlotKey: String, innerRelationship: String)
     extends Expression {
 
   override def isConstantForQuery: Boolean = false

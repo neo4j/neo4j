@@ -29,12 +29,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Values.booleanValue
 
-case class TrailRelationshipsUniqueExpression(trailStateMetadataSlotOffset: Int, innerRelationships: Set[Slot])
+case class TrailRelationshipsUniqueExpression(trailStateMetadataSlotOffset: Int, innerRelationship: Slot)
     extends Expression
     with SlottedExpression {
 
-  private[this] val innerRelGetters =
-    innerRelationships.map(s => makeGetPrimitiveRelationshipFromSlotFunctionFor(s)).toArray
+  private[this] val innerRelGetter = makeGetPrimitiveRelationshipFromSlotFunctionFor(innerRelationship)
 
   override def apply(row: ReadableRow, state: QueryState): BooleanValue = {
     booleanValue(allRelationshipsSeenUnique(row))
@@ -44,15 +43,7 @@ case class TrailRelationshipsUniqueExpression(trailStateMetadataSlotOffset: Int,
 
   private def allRelationshipsSeenUnique(row: ReadableRow): Boolean = {
     val relationshipsSeen = row.getRefAt(trailStateMetadataSlotOffset).asInstanceOf[TrailState].relationshipsSeen
-    var i = 0
-    while (i < innerRelGetters.length) {
-      val r = innerRelGetters(i)
-      if (relationshipsSeen.contains(r.applyAsLong(row))) {
-        return false
-      }
-      i += 1
-    }
-    true
+    !relationshipsSeen.contains(innerRelGetter.applyAsLong(row))
   }
 }
 

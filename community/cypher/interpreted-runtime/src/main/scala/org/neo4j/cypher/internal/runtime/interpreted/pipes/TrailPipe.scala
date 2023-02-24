@@ -44,7 +44,7 @@ import org.neo4j.values.virtual.VirtualValues.EMPTY_LIST
 
 import scala.annotation.tailrec
 
-case class TrailState(
+case class LegacyTrailState(
   node: Long,
   groupNodes: HeapTrackingArrayList[ListValue],
   groupRelationships: HeapTrackingArrayList[ListValue],
@@ -95,7 +95,7 @@ case class TrailPipe(
         {
           outerRow.getByName(start) match {
             case startNode: VirtualNodeValue =>
-              val stack = newArrayDeque[TrailState](tracker)
+              val stack = newArrayDeque[LegacyTrailState](tracker)
               if (repetition.max.isGreaterThan(0)) {
                 val relationshipsSeen = HeapTrackingCollections.newLongSet(tracker)
                 val ir = previouslyBoundRelationships.iterator
@@ -109,7 +109,7 @@ case class TrailPipe(
                     relationshipsSeen.add(castOrFail[VirtualRelationshipValue](i.next()).id())
                   }
                 }
-                stack.push(TrailState(
+                stack.push(LegacyTrailState(
                   startNode.id(),
                   emptyGroupNodes,
                   emptyGroupRelationships,
@@ -121,7 +121,7 @@ case class TrailPipe(
               }
               new PrefetchingIterator[CypherRow] {
                 private var innerResult: ClosingIterator[CypherRow] = ClosingIterator.empty
-                private var trailState: TrailState = _
+                private var trailState: LegacyTrailState = _
                 private var emitFirst = repetition.min == 0
 
                 override protected[this] def closeMore(): Unit = {
@@ -160,7 +160,7 @@ case class TrailPipe(
                       }
 
                       if (allRelationshipsUnique) {
-                        stack.push(TrailState(
+                        stack.push(LegacyTrailState(
                           innerEndNode.id(),
                           newGroupNodes,
                           newGroupRels,

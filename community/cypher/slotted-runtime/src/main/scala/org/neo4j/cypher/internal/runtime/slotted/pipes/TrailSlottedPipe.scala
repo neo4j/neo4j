@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.collection.trackable.HeapTrackingCollections.newArrayDeque
+import org.neo4j.collection.trackable.HeapTrackingLongHashSet
 import org.neo4j.cypher.internal.physicalplanning.Slot
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.physicalplanning.SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor
@@ -40,19 +41,63 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TrailPipe.emptyLists
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.TrailState
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
+import org.neo4j.cypher.internal.runtime.slotted.expressions.TrailState
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.memory.HeapEstimator
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
+import org.neo4j.values.AnyValueWriter
+import org.neo4j.values.Equality
+import org.neo4j.values.ValueMapper
+import org.neo4j.values.storable.ValueRepresentation
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import java.util.function.ToLongFunction
 
 import scala.annotation.tailrec
+import scala.runtime.ScalaRunTime
+
+case class SlottedTrailState(
+  node: Long,
+  groupNodes: HeapTrackingArrayList[ListValue],
+  groupRelationships: HeapTrackingArrayList[ListValue],
+  override val relationshipsSeen: HeapTrackingLongHashSet,
+  iterations: Int,
+  closeGroupsOnClose: Boolean
+) extends AnyValue with TrailState {
+
+  override protected def equalTo(other: Any): Boolean = ScalaRunTime.equals(other)
+
+  override protected def computeHash(): Int = ScalaRunTime._hashCode(SlottedTrailState.this)
+
+  override def writeTo[E <: Exception](writer: AnyValueWriter[E]): Unit = throw new UnsupportedOperationException()
+
+  override def ternaryEquals(other: AnyValue): Equality = throw new UnsupportedOperationException()
+
+  override def map[T](mapper: ValueMapper[T]): T = throw new UnsupportedOperationException()
+
+  override def getTypeName: String = "PipelinedTrailState"
+
+  override def estimatedHeapUsage(): Long = SlottedTrailState.SHALLOW_SIZE
+
+  override def valueRepresentation(): ValueRepresentation = ValueRepresentation.UNKNOWN
+
+  def close(): Unit = {
+    if (closeGroupsOnClose) {
+      groupNodes.close()
+      groupRelationships.close()
+    }
+    relationshipsSeen.close()
+  }
+}
+
+object SlottedTrailState {
+  final val SHALLOW_SIZE: Long = HeapEstimator.shallowSizeOfInstance(classOf[SlottedTrailState])
+}
 
 case class TrailSlottedPipe(
   source: Pipe,
@@ -61,6 +106,7 @@ case class TrailSlottedPipe(
   startSlot: Slot,
   endOffset: Int,
   innerStarOffset: Int,
+  trailStateMetadataSlot: Int,
   innerEndSlot: Slot,
   groupNodes: Array[GroupSlot],
   groupRelationships: Array[GroupSlot],
@@ -153,7 +199,7 @@ case class TrailSlottedPipe(
             val rhsInitialRow = SlottedRow(rhsSlots)
             rhsInitialRow.copyFrom(outerRow, argumentSize.nLongs, argumentSize.nReferences)
 
-            val stack = newArrayDeque[TrailState](tracker)
+            val stack = newArrayDeque[SlottedTrailState](tracker)
             if (repetition.max.isGreaterThan(0)) {
               val relationshipsSeen = HeapTrackingCollections.newLongSet(tracker)
               val ir = previouslyBoundRelGetters.iterator
@@ -168,7 +214,7 @@ case class TrailSlottedPipe(
                   relationshipsSeen.add(castOrFail[VirtualRelationshipValue](i.next()).id())
                 }
               }
-              stack.push(TrailState(
+              stack.push(SlottedTrailState(
                 startNode,
                 emptyGroupNodes,
                 emptyGroupRelationships,
@@ -180,7 +226,7 @@ case class TrailSlottedPipe(
             }
             new PrefetchingIterator[CypherRow] {
               private var innerResult: ClosingIterator[CypherRow] = ClosingIterator.empty
-              private var trailState: TrailState = _
+              private var trailState: SlottedTrailState = _
               private var emitFirst = repetition.min == 0
 
               override protected[this] def closeMore(): Unit = {
@@ -202,40 +248,37 @@ case class TrailSlottedPipe(
                   if (repetition.max.isGreaterThan(trailState.iterations)) {
                     val newSet = HeapTrackingCollections.newLongSet(tracker, trailState.relationshipsSeen)
 
-                    var allRelationshipsUnique = true
                     var i = 0
-                    while (allRelationshipsUnique && i < innerRelGetters.length) {
+                    while (i < innerRelGetters.length) {
                       val r = innerRelGetters(i)
                       if (!newSet.add(r.applyAsLong(row))) {
-                        allRelationshipsUnique = false
+                        throw new IllegalStateException(
+                          "Method should only be called when all relationships are known to be unique"
+                        )
                       }
                       i += 1
                     }
 
-                    if (allRelationshipsUnique) {
-                      stack.push(TrailState(
-                        innerEndNode,
-                        TrailSlottedPipe.computeNodeGroupVariables(
-                          groupNodeGetters,
-                          trailState.groupNodes,
-                          row,
-                          queryContext,
-                          tracker
-                        ),
-                        TrailSlottedPipe.computeRelGroupVariables(
-                          groupRelGetters,
-                          trailState.groupRelationships,
-                          row,
-                          queryContext,
-                          tracker
-                        ),
-                        newSet,
-                        trailState.iterations + 1,
-                        closeGroupsOnClose = true
-                      ))
-                    } else {
-                      newSet.close()
-                    }
+                    stack.push(SlottedTrailState(
+                      innerEndNode,
+                      TrailSlottedPipe.computeNodeGroupVariables(
+                        groupNodeGetters,
+                        trailState.groupNodes,
+                        row,
+                        queryContext,
+                        tracker
+                      ),
+                      TrailSlottedPipe.computeRelGroupVariables(
+                        groupRelGetters,
+                        trailState.groupRelationships,
+                        row,
+                        queryContext,
+                        tracker
+                      ),
+                      newSet,
+                      trailState.iterations + 1,
+                      closeGroupsOnClose = true
+                    ))
                   }
                   // if iterated long enough emit, otherwise recurse
                   if (trailState.iterations >= repetition.min) {
@@ -256,6 +299,7 @@ case class TrailSlottedPipe(
                   // Run RHS with previous end-node as new innerStartNode
                   trailState = stack.pop()
                   rhsInitialRow.setLongAt(innerStarOffset, trailState.node)
+                  rhsInitialRow.setRefAt(trailStateMetadataSlot, trailState)
                   val innerState = state.withInitialContext(rhsInitialRow)
                   innerResult = inner.createResults(innerState).filter(row => {
                     var relationshipsAreUnique = true

@@ -504,11 +504,8 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         } else
           e
 
-      case e: IsRepeatTrailUnique if !slotConfiguration.hasMetaDataSlot(SlotAllocation.TRAIL_STATE_METADATA_KEY) =>
-        True()(e.position)
-
       case IsRepeatTrailUnique(Variable(name)) =>
-        ast.TrailRelationshipUniqueness(SlotAllocation.TRAIL_STATE_METADATA_KEY, Set(name))
+        ast.TrailRelationshipUniqueness(SlotAllocation.TRAIL_STATE_METADATA_KEY, name)
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }
