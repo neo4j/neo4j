@@ -26,8 +26,11 @@ import org.neo4j.test.server.HTTP
 
 case class HttpCypherExecutor(private val dbHttp: HTTP.Builder) extends CypherExecutor with HttpExceptionConverter {
 
-  override def beginTransaction(): CypherExecutorTransaction =
-    HttpTransaction.begin(dbHttp)
+  override def beginTransaction(): CypherExecutorTransaction = HttpTransaction.begin(dbHttp)
+
+  override def beginTransaction(conf: CypherExecutor.TransactionConfig): CypherExecutorTransaction = {
+    throw new UnsupportedOperationException("Configured transactions not supported in http")
+  }
 
   override def execute[T](
     queryToExecute: String,

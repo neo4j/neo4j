@@ -24,6 +24,8 @@ import org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.connectors.HttpConnector
 import org.neo4j.configuration.helpers.SocketAddress
+import org.neo4j.cypher.testing.api.CypherExecutor
+import org.neo4j.cypher.testing.api.CypherExecutor.TransactionConfig
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.api.StatementResult
@@ -165,6 +167,17 @@ case class FeatureDatabaseManagementService(
   }
 
   def begin(): CypherExecutorTransaction = cypherExecutor.beginTransaction()
+
+  def begin(conf: TransactionConfig): CypherExecutorTransaction = {
+    cypherExecutor.beginTransaction(conf)
+  }
+
+  /**
+   * If a session based executor is used (driver) this creates an executor with a new session.
+   * 
+   * Caller is responsible for closing the executor.
+   */
+  def withNewSession(): CypherExecutor = if (cypherExecutor.sessionBased) createExecutor() else cypherExecutor
 
   def execute[T](statement: String, parameters: Map[String, Object], converter: StatementResult => T): T =
     cypherExecutor.execute(statement, parameters, converter)

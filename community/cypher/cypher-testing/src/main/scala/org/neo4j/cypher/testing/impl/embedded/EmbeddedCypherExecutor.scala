@@ -24,12 +24,24 @@ import org.neo4j.cypher.testing.api.CypherExecutorTransaction
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Result
+import org.neo4j.kernel.impl.coreapi.TransactionImpl
+
+import java.util.concurrent.TimeUnit
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 case class EmbeddedCypherExecutor(private val graph: GraphDatabaseService) extends CypherExecutor
     with EmbeddedExceptionConverter {
   override def beginTransaction(): CypherExecutorTransaction = EmbeddedTransaction(graph.beginTx())
+
+  override def beginTransaction(conf: CypherExecutor.TransactionConfig): CypherExecutorTransaction = {
+    val tx = conf.timeout match {
+      case Some(timeout) => graph.beginTx(timeout.toMillis, TimeUnit.MILLISECONDS)
+      case None          => graph.beginTx()
+    }
+    conf.metadata.foreach(metadata => tx.asInstanceOf[TransactionImpl].setMetaData(metadata.asJava))
+    EmbeddedTransaction(tx)
+  }
 
   override def execute[T](
     queryToExecute: String,
