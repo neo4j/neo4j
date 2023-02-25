@@ -26,7 +26,7 @@ class CypherExecutorExceptionTest extends CypherFunSuite {
 
   test("should be able to extract status from executor exception") {
     val originalStatus = Status.Statement.ExecutionFailed
-    val exception = CypherExecutorException(originalStatus, "Test")
+    val exception = CypherExecutorException(originalStatus, new Exception, Some("Test"))
     val extractedStatus = Status.statusCodeOf(exception)
     extractedStatus should equal(originalStatus)
   }

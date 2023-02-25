@@ -28,7 +28,11 @@ import scala.collection.JavaConverters.iterableAsScalaIterableConverter
  * Exception abstraction for CypherExecutor:s
  * All exceptions thrown when executing cypher in a CypherExecutor should be converted into CypherExecutorException:s
  */
-case class CypherExecutorException(status: Status, message: String) extends RuntimeException(message) with HasStatus
+case class CypherExecutorException(
+  status: Status,
+  original: Throwable,
+  message: Option[String] = None
+) extends RuntimeException(message.getOrElse(original.getMessage)) with HasStatus
 
 object CypherExecutorException {
 

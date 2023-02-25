@@ -27,5 +27,5 @@ trait EmbeddedExceptionConverter extends ExceptionConverter {
 
   override def asExecutorException(throwable: Throwable): Option[CypherExecutorException] =
     Option(Status.statusCodeOf(throwable))
-      .map(status => CypherExecutorException(status, throwable.getMessage))
+      .map(status => CypherExecutorException(status, throwable))
 }

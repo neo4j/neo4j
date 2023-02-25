@@ -31,7 +31,7 @@ trait DriverExceptionConverter extends ExceptionConverter {
     exception <- findDriverException(throwable)
     status <- statusOf(exception.code())
     message = exception.getMessage
-  } yield CypherExecutorException(status, message)
+  } yield CypherExecutorException(status, throwable, Some(message))
 
   @tailrec
   private def findDriverException(throwable: Throwable): Option[Neo4jException] = throwable match {
