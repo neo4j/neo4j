@@ -100,6 +100,15 @@ trait CypherRow extends ReadWriteRow with Measurable {
    * Reduce size of row, by removing unused data, if possible.
    */
   def compact(): Unit = {}
+
+  /**
+   * This is a hack to avoid some of the worst heap over estimation of slotted runtime.
+   *
+   * @param previous another row that has the same slot configuration as this row
+   *                 and is assumed to remain in memory for as long as this row does
+   *                 or null
+   */
+  def deduplicatedEstimatedHeapUsage(previous: CypherRow): Long = estimatedHeapUsage()
 }
 
 object MapCypherRow {

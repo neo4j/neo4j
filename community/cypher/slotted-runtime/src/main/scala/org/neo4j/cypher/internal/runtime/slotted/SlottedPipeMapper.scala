@@ -185,7 +185,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertiesOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyFromMapOperation
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SetPropertyOperation
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Top1WithTiesPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TopNPipe
@@ -265,6 +264,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetNodePropertyOpe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertiesOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertyFromMapOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetRelationshipPropertyOperation
+import org.neo4j.cypher.internal.runtime.slotted.pipes.SortSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TrailSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.TransactionForeachSlottedPipe
@@ -1259,9 +1259,10 @@ class SlottedPipeMapper(
         fallback.onOneChildPlan(plan, source)
 
       case Sort(_, sortItems) =>
-        SortPipe(source, SlottedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder(slots, _))))(
-          id = id
-        )
+        SortSlottedPipe(
+          source,
+          SlottedExecutionContextOrdering.asComparator(sortItems.map(translateColumnOrder(slots, _)))
+        )(id = id)
 
       case PartialSort(_, alreadySortedPrefix, stillToSortSuffix, skipSortingPrefixLength) =>
         PartialSortPipe(

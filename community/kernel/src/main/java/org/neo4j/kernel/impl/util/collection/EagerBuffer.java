@@ -48,11 +48,12 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable {
 
     private final MemoryTracker scopedMemoryTracker;
     private final IntUnaryOperator growthStrategy;
+    private final ChunkMemoryEstimator<T> memoryEstimator;
 
     private EagerBuffer.Chunk<T> first;
     private EagerBuffer.Chunk<T> current;
     private long size;
-    private int maxChunkSize;
+    private final int maxChunkSize;
 
     public static <T extends Measurable> EagerBuffer<T> createEagerBuffer(MemoryTracker memoryTracker) {
         return createEagerBuffer(
@@ -67,29 +68,44 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable {
 
     public static <T extends Measurable> EagerBuffer<T> createEagerBuffer(
             MemoryTracker memoryTracker, int initialChunkSize, int maxChunkSize, IntUnaryOperator growthStrategy) {
+        return createEagerBuffer(
+                memoryTracker, initialChunkSize, maxChunkSize, growthStrategy, ChunkMemoryEstimator.createDefault());
+    }
+
+    public static <T extends Measurable> EagerBuffer<T> createEagerBuffer(
+            MemoryTracker memoryTracker,
+            int initialChunkSize,
+            int maxChunkSize,
+            IntUnaryOperator growthStrategy,
+            ChunkMemoryEstimator<T> memoryEstimator) {
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
-        scopedMemoryTracker.allocateHeap(
-                SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfInstance(IntUnaryOperator.class));
-        return new EagerBuffer<T>(scopedMemoryTracker, initialChunkSize, maxChunkSize, growthStrategy);
+        scopedMemoryTracker.allocateHeap(SHALLOW_SIZE
+                + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE
+                + shallowSizeOfInstance(IntUnaryOperator.class)
+                + shallowSizeOfInstance(ChunkMemoryEstimator.class));
+        return new EagerBuffer<>(scopedMemoryTracker, initialChunkSize, maxChunkSize, growthStrategy, memoryEstimator);
     }
 
     private EagerBuffer(
             MemoryTracker scopedMemoryTracker,
             int initialChunkSize,
             int maxChunkSize,
-            IntUnaryOperator growthStrategy) {
+            IntUnaryOperator growthStrategy,
+            ChunkMemoryEstimator<T> memoryEstimator) {
         this.scopedMemoryTracker = scopedMemoryTracker;
         this.maxChunkSize = maxChunkSize;
         this.growthStrategy = growthStrategy;
-        first = new EagerBuffer.Chunk<>(initialChunkSize, scopedMemoryTracker.getScopedMemoryTracker());
+        this.memoryEstimator = memoryEstimator;
+        first = new EagerBuffer.Chunk<>(
+                initialChunkSize, scopedMemoryTracker.getScopedMemoryTracker(), memoryEstimator);
         current = first;
     }
 
     public void add(T element) {
         if (!current.add(element)) {
             int newChunkSize = grow(current.elements.length);
-            EagerBuffer.Chunk<T> newChunk =
-                    new EagerBuffer.Chunk<>(newChunkSize, scopedMemoryTracker.getScopedMemoryTracker());
+            EagerBuffer.Chunk<T> newChunk = new EagerBuffer.Chunk<>(
+                    newChunkSize, scopedMemoryTracker.getScopedMemoryTracker(), memoryEstimator);
             current.next = newChunk;
             current = newChunk;
             current.add(element);
@@ -188,24 +204,38 @@ public class EagerBuffer<T extends Measurable> extends DefaultCloseListenable {
         }
     }
 
+    public interface ChunkMemoryEstimator<T extends Measurable> {
+
+        long estimateHeapUsage(T element, T previous);
+
+        static <T extends Measurable> ChunkMemoryEstimator<T> createDefault() {
+            return (element, previous) -> element.estimatedHeapUsage();
+        }
+    }
+
     private static class Chunk<T extends Measurable> {
         private static final long SHALLOW_SIZE = shallowSizeOfInstance(EagerBuffer.Chunk.class);
 
         private final Object[] elements;
+        private final ChunkMemoryEstimator<T> memoryEstimator;
+        private final MemoryTracker memoryTracker;
         private EagerBuffer.Chunk<T> next;
-        private MemoryTracker memoryTracker;
         private int cursor;
 
-        Chunk(int size, MemoryTracker memoryTracker) {
+        Chunk(int size, MemoryTracker memoryTracker, ChunkMemoryEstimator<T> memoryEstimator) {
             memoryTracker.allocateHeap(
                     SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE + shallowSizeOfObjectArray(size));
+
             elements = new Object[size];
             this.memoryTracker = memoryTracker;
+            this.memoryEstimator = memoryEstimator;
         }
 
         boolean add(T element) {
             if (cursor < elements.length) {
-                memoryTracker.allocateHeap(element.estimatedHeapUsage());
+                @SuppressWarnings("unchecked")
+                final var previous = cursor == 0 ? null : (T) elements[cursor - 1];
+                memoryTracker.allocateHeap(memoryEstimator.estimateHeapUsage(element, previous));
                 elements[cursor++] = element;
                 return true;
             }

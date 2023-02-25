@@ -19,44 +19,48 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
+import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.cypher.internal.runtime.ClosingIterator
-import org.neo4j.cypher.internal.runtime.ClosingIterator.JavaIteratorAsClosingIterator
+import org.neo4j.cypher.internal.runtime.ClosingIterator.DelegatingClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeWithSource
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
-import org.neo4j.cypher.internal.runtime.slotted.SlottedRowEagerBuffer
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.kernel.impl.util.collection.EagerBuffer
 
-case class EagerSlottedPipe(source: Pipe, slots: SlotConfiguration)(val id: Id = Id.INVALID_ID)
-    extends PipeWithSource(source) {
+import java.util.Comparator
+
+import scala.jdk.CollectionConverters.IteratorHasAsScala
+
+case class SortSlottedPipe(
+  source: Pipe,
+  comparator: Comparator[ReadableRow]
+)(val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
 
   protected def internalCreateResults(
     input: ClosingIterator[CypherRow],
     state: QueryState
   ): ClosingIterator[CypherRow] = {
-    val buffer = SlottedRowEagerBuffer(
-      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x),
-      1024,
-      8192,
-      EagerBuffer.GROW_NEW_CHUNKS_BY_100_PCT,
-      slots
-    )
-    state.query.resources.trace(buffer)
+    val scopedMemoryTracker =
+      state.memoryTrackerForOperatorProvider.memoryTrackerForOperator(id.x).getScopedMemoryTracker
+    var arrayList = HeapTrackingArrayList.newArrayList[CypherRow](256, scopedMemoryTracker)
+    var previous: CypherRow = null
     while (input.hasNext) {
       val row = input.next()
-      row.compact()
-      buffer.add(row)
+      // Note, not safe to call row.compact() here, like we do in pipelined, because sort is not breaking in slotted.
+      scopedMemoryTracker.allocateHeap(row.deduplicatedEstimatedHeapUsage(previous))
+      arrayList.add(row)
+      previous = row
     }
-    buffer.autoClosingIterator().asClosingIterator.map { bufferedRow =>
-      // this is necessary because Eager is the beginning of a new pipeline
-      // We do this on the output side, and buffer the input rows they will use less memory
-      val outputRow = SlottedRow(slots)
-      outputRow.copyAllFrom(bufferedRow)
-      outputRow
-    }.closing(buffer)
+    previous = null
+    arrayList.sort(comparator)
+    new DelegatingClosingIterator[CypherRow](arrayList.iterator().asScala) {
+      override def closeMore(): Unit = {
+        arrayList = null
+        scopedMemoryTracker.close()
+        input.close()
+      }
+    }
   }
 }

@@ -307,6 +307,25 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
     usage
   }
 
+  override def deduplicatedEstimatedHeapUsage(previous: CypherRow): Long = {
+    if (previous eq null) {
+      estimatedHeapUsage
+    } else {
+      var usage = SlottedRow.INSTANCE_SIZE + HeapEstimator.sizeOf(longs) + HeapEstimator.shallowSizeOf(
+        refs.asInstanceOf[Array[Object]]
+      )
+      var i = 0
+      while (i < refs.length) {
+        val ref = refs(i)
+        if ((ref ne null) && (ref ne previous.getRefAt(i))) {
+          usage += ref.estimatedHeapUsage()
+        }
+        i += 1
+      }
+      usage
+    }
+  }
+
   private def fail(): Nothing = throw new InternalException("Tried using a slotted context as a map")
 
   // -----------------------------------------------------------------------------------------------------------

@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.options.CypherRuntimeOption.slotted
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -918,6 +920,52 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 
     // then
     a[MemoryLimitExceededException] should be thrownBy { countRows(logicalQuery, runtime) }
+  }
+
+  test("should not count duplicated memory in slotted eager") {
+    // Pipelined only passes this test with large morsel sizes
+    assume(runtime.correspondingRuntimeOption.contains(slotted))
+    // given
+    val sizeHint = 2000
+    val aaa = "a".repeat(2048)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("aaa")
+      .eager()
+      .unwind(s"range(1, $sizeHint) as i")
+      .projection(s"'$aaa' as aaa")
+      .argument()
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+
+    val row = Array[Any](aaa)
+    val expected = Seq.fill(sizeHint)(row)
+    result should beColumns("aaa").withRows(inOrder(expected))
+
+    result.runtimeResult.queryProfile().maxAllocatedMemory() should be < 200000L
+  }
+
+  test("should not count duplicated memory in slotted sort") {
+    // Pipelined only passes this test with large morsel sizes
+    assume(runtime.correspondingRuntimeOption.contains(slotted))
+    // given
+    val sizeHint = 2000
+    val aaa = "a".repeat(2048)
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("i", "aaa")
+      .sort(Seq(Descending("i")))
+      .unwind(s"range(1, $sizeHint) as i")
+      .projection(s"'$aaa' as aaa")
+      .argument()
+      .build()
+
+    val result = profile(logicalQuery, runtime)
+
+    val row = Array[Any](aaa)
+    val expected = Range.inclusive(1, sizeHint).reverse.map(i => Array[Any](i, aaa))
+    result should beColumns("i", "aaa").withRows(inOrder(expected))
+
+    result.runtimeResult.queryProfile().maxAllocatedMemory() should be < 200000L
   }
 
   protected def assertHeapHighWaterMark(

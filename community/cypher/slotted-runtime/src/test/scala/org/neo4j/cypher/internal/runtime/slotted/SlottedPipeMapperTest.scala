@@ -85,7 +85,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.ProjectionPipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.RelationshipTypes
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.SkipPipe
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.SortPipe
 import org.neo4j.cypher.internal.runtime.slotted.aggregation.SlottedPrimitiveGroupingAggTable
 import org.neo4j.cypher.internal.runtime.slotted.expressions.NodeProperty
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedCommandProjection
@@ -108,6 +107,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.NodesByLabelScanSlottedPi
 import org.neo4j.cypher.internal.runtime.slotted.pipes.OptionalExpandAllSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.OptionalExpandIntoSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.OptionalSlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.SortSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.UnwindSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.VarLengthExpandSlottedPipe
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -827,7 +827,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
     LiteralHelper.literal(1)
     // We have to use mathPattern to ignore equality on the comparator, which does not implement equals in a sensible way.
     pipe should matchPattern {
-      case SortPipe(
+      case SortSlottedPipe(
           UnwindSlottedPipe(
             ArgumentSlottedPipe(),
             commands.expressions.ListLiteral(

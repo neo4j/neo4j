@@ -36,6 +36,8 @@ import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
 
+import scala.util.Random
+
 class SlottedRowTest extends CypherFunSuite {
 
   private def slots(longs: Int, refs: Int) = {
@@ -212,6 +214,110 @@ class SlottedRowTest extends CypherFunSuite {
 
     mutatingLeftDoesNotAffectRight(row, newRow, slots.getCachedPropertyOffsetFor(prop("n", "cache2")))
     mutatingLeftDoesNotAffectRight(newRow, row, slots.getCachedPropertyOffsetFor(prop("n", "cache3")))
+  }
+
+  test("deduplicated estimated heap usage long slots") {
+    val rows = Range(0, 3).map { i =>
+      val slots =
+        SlotConfiguration.empty
+          .newLong("long0", nullable = false, CTNode)
+          .newLong("long1", nullable = false, CTNode)
+          .newLong("long2", nullable = false, CTNode)
+          .newLong("long3", nullable = false, CTNode)
+
+      val row = SlottedRow(slots)
+
+      row.setLongAt(0, Random.nextLong())
+      row.setLongAt(1, Random.nextLong())
+      row.setLongAt(2, Random.nextLong())
+      row.setLongAt(3, Random.nextLong())
+
+      row
+    }
+
+    for {
+      rowA <- rows
+      rowB <- rows
+    } {
+      val estA = rowA.estimatedHeapUsage
+      rowA.deduplicatedEstimatedHeapUsage(rowB) shouldBe estA
+    }
+  }
+
+  test("deduplicated estimated heap usage ref slots with no duplication") {
+    val rows = Range(0, 4).map { i =>
+      val slots =
+        SlotConfiguration.empty
+          .newReference("ref0", nullable = false, CTAny)
+          .newReference("ref1", nullable = false, CTAny)
+          .newReference("ref2", nullable = false, CTAny)
+          .newReference("ref3", nullable = false, CTAny)
+
+      val row = SlottedRow(slots)
+
+      row.setRefAt(0, stringValue("a".repeat(i)))
+      row.setRefAt(1, stringValue("a".repeat(i)))
+      row.setRefAt(2, stringValue("a".repeat(i)))
+      row.setRefAt(3, stringValue("a".repeat(i)))
+
+      row
+    }
+
+    for {
+      rowA <- rows
+      rowB <- rows
+    } {
+      withClue(s"$rowA compared to $rowB") {
+        val est = rowA.estimatedHeapUsage
+        val dedupEst = rowA.deduplicatedEstimatedHeapUsage(rowB)
+        if (rowA eq rowB) {
+          dedupEst shouldBe (est - rowA.refs.map(_.estimatedHeapUsage()).sum)
+        } else {
+          dedupEst shouldBe est
+        }
+      }
+    }
+  }
+
+  test("deduplicated estimated heap usage ref slots with duplication") {
+    val ref1 = stringValue("a")
+    val ref4 = stringValue("a".repeat(128))
+    val rows = Range(0, 4).map { i =>
+      val slots =
+        SlotConfiguration.empty
+          .newReference("ref0", nullable = false, CTAny)
+          .newReference("ref1", nullable = false, CTAny)
+          .newReference("ref2", nullable = false, CTAny)
+          .newReference("ref3", nullable = false, CTAny)
+          .newReference("ref4", nullable = false, CTAny)
+          .newLong("long0", nullable = false, CTNode)
+
+      val row = SlottedRow(slots)
+
+      row.setRefAt(0, stringValue("aaa"))
+      row.setRefAt(1, ref1)
+      row.setRefAt(2, stringValue("aaa"))
+      row.setRefAt(3, stringValue("aaa"))
+      row.setRefAt(4, ref4)
+      row.setLongAt(0, 0)
+
+      row
+    }
+
+    for {
+      rowA <- rows
+      rowB <- rows
+    } {
+      withClue(s"$rowA compared to $rowB") {
+        val est = rowA.estimatedHeapUsage
+        val dedupEst = rowA.deduplicatedEstimatedHeapUsage(rowB)
+        if (rowA eq rowB) {
+          dedupEst shouldBe (est - rowA.refs.map(_.estimatedHeapUsage()).sum)
+        } else {
+          dedupEst shouldBe (est - ref1.estimatedHeapUsage() - ref4.estimatedHeapUsage())
+        }
+      }
+    }
   }
 
   private def prop(node: String, prop: String) =
