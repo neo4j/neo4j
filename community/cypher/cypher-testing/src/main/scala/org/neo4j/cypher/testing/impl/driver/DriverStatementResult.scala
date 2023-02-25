@@ -55,4 +55,6 @@ case class DriverStatementResult(private val driverResult: Result) extends State
       new InputPosition(pos.offset, pos.line, pos.column)
     }
   }
+
+  override def close(): Unit = {}
 }

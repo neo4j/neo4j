@@ -21,7 +21,7 @@ package org.neo4j.cypher.testing.api
 
 import org.neo4j.graphdb.Notification
 
-trait StatementResult {
+trait StatementResult extends AutoCloseable {
 
   type Record = Map[String, AnyRef]
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.testing.api
 
-trait CypherExecutorTransaction {
+trait CypherExecutorTransaction extends AutoCloseable {
 
   def execute(statement: String, parameters: Map[String, Any]): StatementResult
 

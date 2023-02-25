@@ -31,4 +31,6 @@ case class EmbeddedTransaction(private val embeddedTransaction: Transaction) ext
   override def commit(): Unit = embeddedTransaction.commit()
 
   override def rollback(): Unit = embeddedTransaction.rollback()
+
+  override def close(): Unit = embeddedTransaction.close()
 }

@@ -35,4 +35,6 @@ case class EmbeddedStatementResult(private val embeddedResult: Result) extends S
 
   override def getNotifications(): List[Notification] =
     Iterables.asList(embeddedResult.getNotifications).asScala.toList
+
+  override def close(): Unit = embeddedResult.close()
 }

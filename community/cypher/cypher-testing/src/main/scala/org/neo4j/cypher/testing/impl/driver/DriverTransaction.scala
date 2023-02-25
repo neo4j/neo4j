@@ -42,4 +42,6 @@ case class DriverTransaction(private val driverTransaction: Transaction) extends
   } catch {
     case t: Throwable => throw DriverRecordConverter.addStatus(t, t)
   }
+
+  override def close(): Unit = driverTransaction.close()
 }

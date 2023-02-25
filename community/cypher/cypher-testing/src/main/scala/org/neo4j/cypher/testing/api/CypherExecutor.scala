@@ -19,8 +19,17 @@
  */
 package org.neo4j.cypher.testing.api
 
+import org.neo4j.cypher.testing.api.CypherExecutor.TransactionConfig
+
+import scala.concurrent.duration.FiniteDuration
+
 trait CypherExecutor extends AutoCloseable {
   def execute[T](queryToExecute: String, neo4jParams: Map[String, Object], converter: StatementResult => T): T
-
   def beginTransaction(): CypherExecutorTransaction
+  def beginTransaction(conf: TransactionConfig): CypherExecutorTransaction
+  def sessionBased: Boolean
+}
+
+object CypherExecutor {
+  case class TransactionConfig(timeout: Option[FiniteDuration], metadata: Option[Map[String, AnyRef]])
 }

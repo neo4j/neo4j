@@ -25,16 +25,31 @@ import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.driver.Session
 import org.neo4j.driver.TransactionConfig
 
+import java.time.Duration
 import scala.collection.JavaConverters.mapAsJavaMapConverter
 
 case class DriverCypherExecutor(private val session: Session) extends CypherExecutor {
 
   override def beginTransaction(): CypherExecutorTransaction = DriverTransaction(session.beginTransaction())
 
-  override def execute[T](queryToExecute: String,
-                          neo4jParams: Map[String, Object],
-                          converter: StatementResult => T): T =
-    converter(DriverStatementResult(session.run(queryToExecute, neo4jParams.asJava, TransactionConfig.empty())))
+  override def beginTransaction(conf: CypherExecutor.TransactionConfig): CypherExecutorTransaction = {
+    DriverTransaction(session.beginTransaction(asDriverConf(conf)))
+  }
+
+  override def execute[T](
+    queryToExecute: String,
+    neo4jParams: Map[String, Object],
+    converter: StatementResult => T
+  ): T = converter(DriverStatementResult(session.run(queryToExecute, neo4jParams.asJava, TransactionConfig.empty())))
+
 
   override def close(): Unit = session.close()
+  override def sessionBased: Boolean = true
+
+  private def asDriverConf(txConf: CypherExecutor.TransactionConfig): TransactionConfig = {
+    val builder = TransactionConfig.builder()
+    txConf.timeout.foreach(t => builder.withTimeout(Duration.ofMillis(t.toMillis)))
+    txConf.metadata.foreach(m => builder.withMetadata(m.asJava))
+    builder.build()
+  }
 }
