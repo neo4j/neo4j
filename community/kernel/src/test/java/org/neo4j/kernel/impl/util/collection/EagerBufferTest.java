@@ -27,12 +27,14 @@ import java.util.Iterator;
 
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 class EagerBufferTest
 {
@@ -149,5 +151,27 @@ class EagerBufferTest
         assertFalse( iterator1.hasNext() );
         assertFalse( iterator2.hasNext() );
         assertFalse( iterator3.hasNext() );
+    }
+
+    @Test
+    void useCustomMemoryEstimator()
+    {
+        var buffer = EagerBuffer.createEagerBuffer( memoryTracker, 16, 16, EagerBuffer.KEEP_CONSTANT_CHUNK_SIZE, new ConstantChunkMemoryEstimator() );
+        final var startMem = memoryTracker.estimatedHeapMemory();
+        buffer.add( stringValue("hello") );
+        buffer.add( stringValue("hello") );
+        buffer.add( stringValue("hello") );
+
+        assertEquals( startMem + 3000, memoryTracker.estimatedHeapMemory() );
+        buffer.close();
+    }
+}
+
+class ConstantChunkMemoryEstimator implements EagerBuffer.ChunkMemoryEstimator<AnyValue>
+{
+    @Override
+    public long estimateHeapUsage( AnyValue element, AnyValue firstInChunk )
+    {
+        return 1000;
     }
 }

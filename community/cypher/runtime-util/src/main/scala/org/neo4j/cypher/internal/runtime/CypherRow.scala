@@ -84,6 +84,15 @@ trait CypherRow extends ReadWriteRow with Measurable {
   def copyMapped(func: AnyValue => AnyValue): CypherRow
 
   def isNull(key: String): Boolean
+
+  /**
+   * This is a hack to avoid some of the worst heap over estimation of slotted runtime.
+   *
+   * @param previous another row that has the same slot configuration as this row
+   *                 and is assumed to remain in memory for as long as this row does
+   *                 or null
+   */
+  def deduplicatedEstimatedHeapUsage(previous: CypherRow): Long = estimatedHeapUsage()
 }
 
 object MapCypherRow {
