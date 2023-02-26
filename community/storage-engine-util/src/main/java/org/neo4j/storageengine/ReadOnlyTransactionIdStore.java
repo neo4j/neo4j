@@ -21,7 +21,7 @@ package org.neo4j.storageengine;
 
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.storageengine.api.ClosedTransactionMetadata;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -33,7 +33,7 @@ public class ReadOnlyTransactionIdStore implements TransactionIdStore {
     private final long transactionConsensusIndex;
     private final LogPosition logPosition;
 
-    public ReadOnlyTransactionIdStore(LogTailMetadata logTailMetadata) {
+    public ReadOnlyTransactionIdStore(LogTailLogVersionsMetadata logTailMetadata) {
         var lastCommittedTransaction = logTailMetadata.getLastCommittedTransaction();
         transactionId = lastCommittedTransaction.transactionId();
         transactionChecksum = lastCommittedTransaction.checksum();
