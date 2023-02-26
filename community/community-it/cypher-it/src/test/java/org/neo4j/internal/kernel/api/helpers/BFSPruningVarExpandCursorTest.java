@@ -104,17 +104,25 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(graph(outgoingExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add(start)
-                            .add(a1, a2, a3, a4, a5)
-                            .add(b1, b2, b3, b4, b5)
-                            .build());
+            BFSGraph expectedWithStart = graph().add(start)
+                    .add(a1, a2, a3, a4, a5)
+                    .add(b1, b2, b3, b4, b5)
+                    .build();
+            assertThat(graph(outgoingExpander(start, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(expectedWithStart);
+            assertThat(graph(outgoingExpander(
+                            start, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(expectedWithStart);
 
-            assertThat(graph(outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(a1, a2, a3, a4, a5)
-                            .add(b1, b2, b3, b4, b5)
-                            .build());
+            BFSGraph expectedWithoutStart = graph().add()
+                    .add(a1, a2, a3, a4, a5)
+                    .add(b1, b2, b3, b4, b5)
+                    .build();
+            assertThat(graph(outgoingExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(expectedWithoutStart);
+            assertThat(graph(outgoingExpander(
+                            start, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(expectedWithoutStart);
         }
     }
 
@@ -159,17 +167,25 @@ class BFSPruningVarExpandCursorTest {
             write.relationshipCreate(a5, rel, b5);
 
             // then
-            assertThat(graph(allExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(a1, a2, a3, a4, a5)
-                            .add(b1, b2, b3, b4, b5)
-                            .build());
+            BFSGraph expectedWithoutStart = graph().add()
+                    .add(a1, a2, a3, a4, a5)
+                    .add(b1, b2, b3, b4, b5)
+                    .build();
+            assertThat(graph(allExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(expectedWithoutStart);
+            assertThat(graph(allExpander(
+                            start, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(expectedWithoutStart);
 
-            assertThat(graph(allExpander(start, true, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add(start)
-                            .add(a1, a2, a3, a4, a5)
-                            .add(b1, b2, b3, b4, b5)
-                            .build());
+            BFSGraph expectedWitStart = graph().add(start)
+                    .add(a1, a2, a3, a4, a5)
+                    .add(b1, b2, b3, b4, b5)
+                    .build();
+            assertThat(graph(allExpander(start, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(expectedWitStart);
+            assertThat(graph(allExpander(
+                            start, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(expectedWitStart);
         }
     }
 
@@ -490,12 +506,15 @@ class BFSPruningVarExpandCursorTest {
             long shouldNotCross = write.relationshipCreate(b3, rel, end);
 
             // when
-            var expander = outgoingExpander(start, false, 26, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
+            var expander = outgoingExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
+            var expanderWithMaxDepth = outgoingExpander(
+                    start, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING);
 
             // then
-            assertThat(graph(expander))
-                    .isEqualTo(
-                            graph().add().add(a1, b1).add(a2, b2).add(b3, end).build());
+            BFSGraph expected =
+                    graph().add().add(a1, b1).add(a2, b2).add(b3, end).build();
+            assertThat(graph(expander)).isEqualTo(expected);
+            assertThat(graph(expanderWithMaxDepth)).isEqualTo(expected);
         }
     }
 
@@ -838,7 +857,13 @@ class BFSPruningVarExpandCursorTest {
             // then
             assertThat(graph(outgoingExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add(node1).add(node2).build());
+            assertThat(graph(outgoingExpander(
+                            node1, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(node1).add(node2).build());
             assertThat(graph(outgoingExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(node2).add(node1).build());
+            assertThat(graph(outgoingExpander(
+                            node1, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(node2).add(node1).build());
         }
     }
@@ -892,6 +917,12 @@ class BFSPruningVarExpandCursorTest {
                     .isEqualTo(graph().add(node1).build());
             assertThat(graph(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(node1).build());
+            assertThat(graph(allExpander(
+                            node1, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(node1).build());
+            assertThat(graph(allExpander(
+                            node1, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(node1).build());
         }
     }
 
@@ -918,6 +949,12 @@ class BFSPruningVarExpandCursorTest {
             assertThat(graph(allExpander(node1, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add(node1).add(node2).build());
             assertThat(graph(allExpander(node1, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(node2).add(node1).build());
+            assertThat(graph(allExpander(
+                            node1, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(node1).add(node2).build());
+            assertThat(graph(allExpander(
+                            node1, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(node2).add(node1).build());
         }
     }
@@ -1153,6 +1190,18 @@ class BFSPruningVarExpandCursorTest {
                             .add()
                             .add(start)
                             .build());
+            assertThat(graph(allExpander(
+                            start, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).build());
+            assertThat(graph(allExpander(
+                            start, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add()
+                            .add(a)
+                            .add(b, c)
+                            .add()
+                            .add()
+                            .add(start)
+                            .build());
         }
     }
 
@@ -1196,6 +1245,12 @@ class BFSPruningVarExpandCursorTest {
             assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add(a).add(b, c).add(d).build());
             assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(b, c).add(d).add().add(a).build());
+            assertThat(graph(
+                            allExpander(a, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b, c).add(d).add().add(a).build());
         }
     }
@@ -1248,6 +1303,13 @@ class BFSPruningVarExpandCursorTest {
             assertThat(graph(allExpander(a, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(
                             graph().add().add(b, c).add(d, e).add().add().add(a).build());
+            assertThat(graph(
+                            allExpander(a, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(a).add(b, c).add(d, e).build());
+            assertThat(graph(allExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(
+                            graph().add().add(b, c).add(d, e).add().add().add(a).build());
         }
     }
 
@@ -1296,6 +1358,13 @@ class BFSPruningVarExpandCursorTest {
             assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(
                             graph().add().add(b1, b2, b3).add(c1, c2, c3).add(a).build());
+            assertThat(graph(
+                            allExpander(a, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(a).add(b1, b2, b3).add(c1, c2, c3).build());
+            assertThat(graph(allExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(
+                            graph().add().add(b1, b2, b3).add(c1, c2, c3).add(a).build());
         }
     }
 
@@ -1335,6 +1404,9 @@ class BFSPruningVarExpandCursorTest {
             assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b, c).add(d).add(e).build());
             assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(b, c).add(d).add(e).add(f, a).build());
+            assertThat(graph(allExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b, c).add(d).add(e).add(f, a).build());
         }
     }
@@ -1418,6 +1490,12 @@ class BFSPruningVarExpandCursorTest {
                     .isEqualTo(graph().add(a).add(b).add(c).build());
             assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b).add(c).build());
+            assertThat(graph(
+                            allExpander(a, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(a).add(b).add(c).build());
+            assertThat(graph(allExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(b).add(c).build());
         }
     }
 
@@ -1453,6 +1531,12 @@ class BFSPruningVarExpandCursorTest {
                     .isEqualTo(graph().add(a).add(b).add(c).build());
             assertThat(graph(outgoingExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b).add(c).build());
+            assertThat(graph(outgoingExpander(
+                            a, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(a).add(b).add(c).build());
+            assertThat(graph(outgoingExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(b).add(c).build());
         }
     }
 
@@ -1483,6 +1567,12 @@ class BFSPruningVarExpandCursorTest {
             assertThat(graph(allExpander(a, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add(a).add(b).build());
             assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(b).build());
+            assertThat(graph(
+                            allExpander(a, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(a).add(b).build());
+            assertThat(graph(allExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b).build());
         }
     }
@@ -1515,6 +1605,9 @@ class BFSPruningVarExpandCursorTest {
             assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b).add(a, c).build());
             assertThat(graph(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(b).add(a, c).build());
+            assertThat(graph(allExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b).add(a, c).build());
         }
     }
@@ -1596,6 +1689,9 @@ class BFSPruningVarExpandCursorTest {
                     .containsOnlyKeys(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
             assertThat(asDepthMap(allExpander(a, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .containsOnlyKeys(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
+            assertThat(asDepthMap(allExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .containsOnlyKeys(List.of(b1, b2, b3, c1, c2, c3, c4, c5, c6, c7, c8, c9));
         }
     }
 
@@ -1638,6 +1734,9 @@ class BFSPruningVarExpandCursorTest {
             assertThat(graph(allExpander(a, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b, c, d, e).build());
             assertThat(graph(allExpander(a, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(b, c, d, e).add().add(a).build());
+            assertThat(graph(allExpander(
+                            a, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add().add(b, c, d, e).add().add(a).build());
         }
     }

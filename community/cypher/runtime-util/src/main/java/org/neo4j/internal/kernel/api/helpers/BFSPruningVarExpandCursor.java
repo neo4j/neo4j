@@ -607,6 +607,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         // which it was discovered so that we can emit the start-node at the correct depth.
         private int loopCounter = NO_LOOP;
         private int currentDepth;
+        private int lastSuccessfulDepth;
         private HeapTrackingLongHashSet prevFrontier;
         private HeapTrackingLongHashSet currFrontier;
         // Keeps track of all seen nodes and their parent nodes. The parent is used for loop detection.
@@ -632,6 +633,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             this.seenNodesWithParent = HeapTrackingCollections.newLongLongMap(memoryTracker);
             expand(startNode);
             currentDepth = 1;
+            lastSuccessfulDepth = 0;
         }
 
         @Override
@@ -663,6 +665,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                         if (parentOfOther == NO_SUCH_NODE && nodeFilter.test(other)) {
                             seenNodesWithParent.put(other, origin);
                             currFrontier.add(other);
+                            lastSuccessfulDepth = currentDepth;
                             return true;
                         } else if (parentOfOther != NO_SUCH_NODE
                                 && // make sure nodeFilter passed
@@ -690,10 +693,14 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                     }
                 } else {
                     if (checkAndDecreaseLoopCount()) {
+                        lastSuccessfulDepth = currentDepth;
                         return true;
                     }
 
                     swapFrontiers();
+                    if (lastSuccessfulDepth < currentDepth && !loopDetected()) {
+                        return false;
+                    }
                     currentDepth++;
                 }
             }
@@ -744,7 +751,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
 
         private boolean loopDetected() {
-            return loopCounter >= START_NODE_EMITTED;
+            return loopCounter > START_NODE_EMITTED;
         }
 
         private boolean expand(long nodeId) {
@@ -767,6 +774,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
     private static class AllBFSPruningVarExpandCursorIncludingStartNode extends BFSPruningVarExpandCursor {
         private int currentDepth;
+        private int lastSuccessfulDepth;
         private HeapTrackingLongHashSet prevFrontier;
         private HeapTrackingLongHashSet currFrontier;
         private final HeapTrackingLongHashSet seen;
@@ -789,6 +797,8 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             this.prevFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
             this.currFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
             this.seen = HeapTrackingCollections.newLongSet(memoryTracker);
+            this.currentDepth = 0;
+            this.lastSuccessfulDepth = -1;
         }
 
         @Override
@@ -797,6 +807,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 expand(startNode);
                 seen.add(startNode);
                 state = EmitState.EMIT;
+                lastSuccessfulDepth = currentDepth;
                 return true;
             }
             if (state == EmitState.EMIT) {
@@ -810,6 +821,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                         long other = selectionCursor.otherNodeReference();
                         if (seen.add(other) && nodeFilter.test(other)) {
                             currFrontier.add(other);
+                            lastSuccessfulDepth = currentDepth;
                             return true;
                         }
                     }
@@ -821,6 +833,9 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                     }
                 } else {
                     swapFrontiers();
+                    if (lastSuccessfulDepth < currentDepth) {
+                        return false;
+                    }
                     currentDepth++;
                 }
             }
