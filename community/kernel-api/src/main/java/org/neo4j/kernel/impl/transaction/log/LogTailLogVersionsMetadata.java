@@ -32,6 +32,8 @@ public interface LogTailLogVersionsMetadata {
 
     LogTailLogVersionsMetadata EMPTY_LOG_TAIL = new EmptyLogTailLogVersionsMetadata();
 
+    boolean isRecoveryRequired();
+
     long getCheckpointLogVersion();
 
     long getLogVersion();

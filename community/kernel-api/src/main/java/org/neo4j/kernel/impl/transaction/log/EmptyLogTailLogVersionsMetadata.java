@@ -28,6 +28,11 @@ public class EmptyLogTailLogVersionsMetadata implements LogTailLogVersionsMetada
     static final LogPosition START_POSITION = new LogPosition(INITIAL_LOG_VERSION, BASE_TX_LOG_BYTE_OFFSET);
 
     @Override
+    public boolean isRecoveryRequired() {
+        return false;
+    }
+
+    @Override
     public long getCheckpointLogVersion() {
         return INITIAL_LOG_VERSION;
     }

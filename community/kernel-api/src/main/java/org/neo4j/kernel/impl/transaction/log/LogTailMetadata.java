@@ -25,8 +25,6 @@ import org.neo4j.storageengine.api.StoreId;
 
 public interface LogTailMetadata extends KernelVersionProvider, LogTailLogVersionsMetadata {
 
-    boolean isRecoveryRequired();
-
     Optional<StoreId> getStoreId();
 
     boolean logsMissing();
