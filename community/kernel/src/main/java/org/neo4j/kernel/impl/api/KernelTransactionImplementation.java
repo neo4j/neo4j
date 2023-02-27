@@ -217,7 +217,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile TransactionWriteState writeState;
     private AccessCapability accessCapability;
     private final KernelStatement currentStatement;
-    private volatile OverridableSecurityContext overridableSecurityContext;
+    private OverridableSecurityContext overridableSecurityContext;
     private final Locks.Client lockClient;
     private volatile long transactionSequenceNumber;
     private LeaseClient leaseClient;

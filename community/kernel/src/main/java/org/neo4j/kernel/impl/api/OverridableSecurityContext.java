@@ -28,7 +28,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 public class OverridableSecurityContext {
 
     private final SecurityContext originalSecurityContext;
-    private volatile SecurityContext currentSecurityContext;
+    private SecurityContext currentSecurityContext;
 
     OverridableSecurityContext(SecurityContext securityContext) {
         this.originalSecurityContext = securityContext;
