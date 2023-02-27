@@ -20,15 +20,19 @@
 package org.neo4j.kernel.monitoring;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.DatabaseEventContext;
 import org.neo4j.graphdb.event.DatabaseEventListenerAdapter;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.LogAssertions;
 import org.neo4j.monitoring.DatabaseHealth;
@@ -59,6 +63,9 @@ public class OutOfDiskSpaceMonitoringIT {
 
     @Inject
     private GraphDatabaseService db;
+
+    @Inject
+    private DatabaseManagementService dbms;
 
     @Test
     void shouldPropagateOutOfDiskSpaceEventToRegisteredListener() {
@@ -113,5 +120,27 @@ public class OutOfDiskSpaceMonitoringIT {
                         "    WITH value",
                         "    CALL dbms.setConfigValue(\"" + read_only_databases.name()
                                 + "\", replace(value, \"<databaseName>\", \"\"))");
+    }
+
+    @Test
+    void outOfDiskSpaceOnSystemDbShouldNotAffectReadOnly() {
+        RuntimeException cause = new RuntimeException("System db exception");
+
+        GraphDatabaseAPI system = (GraphDatabaseAPI) dbms.database(SYSTEM_DATABASE_NAME);
+        var systemHealth = system.getDependencyResolver().resolveDependency(DatabaseHealth.class);
+        systemHealth.outOfDiskSpace(cause);
+
+        // Out of disk space logging but no read-only logging.
+        LogAssertions.assertThat(logProvider)
+                .containsMessages("Database out of disk space: ")
+                .containsMessages(DatabaseHealth.outOfDiskSpaceMessage)
+                .containsException(cause)
+                .doesNotContainMessage("has been put into read-only mode");
+
+        // Still writeable
+        try (Transaction tx = system.beginTx()) {
+            assertThatNoException().isThrownBy(tx::createNode);
+            tx.commit();
+        }
     }
 }

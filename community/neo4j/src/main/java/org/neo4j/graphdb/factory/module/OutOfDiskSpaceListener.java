@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.factory.module;
 
+import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.read_only_databases;
 
 import java.util.HashSet;
@@ -41,7 +42,9 @@ public class OutOfDiskSpaceListener extends DatabaseEventListenerAdapter {
     public void databaseOutOfDiskSpace(DatabaseEventContext event) {
         var databaseEvent = (ExceptionalDatabaseEvent) event;
         var databaseName = databaseEvent.getDatabaseName();
-        makeReadOnly(databaseName);
+        if (!SYSTEM_DATABASE_NAME.equals(databaseName)) {
+            makeReadOnly(databaseName);
+        }
     }
 
     /**
