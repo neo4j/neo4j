@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
+import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
+import org.neo4j.cypher.internal.compiler.helpers.PropertyAccessHelper.PropertyAccess
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.parsing
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
@@ -425,10 +427,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     plan
   }
 
-  def fakeLogicalPlanFor(id: String*): FakePlan = FakePlan(id.toSet)
+  def fakeLogicalPlanFor(id: String*): FakeLeafPlan = FakeLeafPlan(id.toSet)
 
-  def fakeLogicalPlanFor(planningAttributes: PlanningAttributes, id: String*): FakePlan = {
-    val res = FakePlan(id.toSet)
+  def fakeLogicalPlanFor(planningAttributes: PlanningAttributes, id: String*): FakeLeafPlan = {
+    val res = FakeLeafPlan(id.toSet)
     planningAttributes.solveds.set(res.id, SinglePlannerQuery.empty)
     planningAttributes.cardinalities.set(res.id, 0.0)
     planningAttributes.providedOrders.set(res.id, ProvidedOrder.empty)

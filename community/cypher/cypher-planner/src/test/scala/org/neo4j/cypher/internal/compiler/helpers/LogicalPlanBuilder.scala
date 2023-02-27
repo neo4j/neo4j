@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder.FakeLeafPlan
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.combineHasLabels
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.pos
 import org.neo4j.cypher.internal.logical.builder.Resolver
-import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -37,8 +37,6 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Default
-import org.neo4j.cypher.internal.util.attribution.IdGen
-import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
 class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new LogicalPlanResolver) extends AbstractLogicalPlanBuilder[LogicalPlan, LogicalPlanBuilder](resolver, wholePlan) {
@@ -92,13 +90,5 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
 
   def build(readOnly: Boolean = true): LogicalPlan = {
     buildLogicalPlan()
-  }
-}
-
-object LogicalPlanBuilder {
-  case class FakeLeafPlan(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
-    override val availableSymbols: Set[String] = argumentIds
-    override def usedVariables: Set[String] = Set.empty
-    override def withoutArgumentIds(argsToExclude: Set[String]): LogicalLeafPlan = copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
   }
 }

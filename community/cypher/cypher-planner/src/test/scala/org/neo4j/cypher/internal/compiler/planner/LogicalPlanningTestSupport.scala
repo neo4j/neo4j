@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
+import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
 import org.neo4j.cypher.internal.compiler.phases.JavaccParsing
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
@@ -59,7 +60,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.devNullListener
 import org.neo4j.cypher.internal.compiler.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -78,9 +78,11 @@ import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.PlannerQueryPart
+import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
+import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -105,7 +107,6 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
-import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -307,7 +308,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       queryGraph = QueryGraph.empty.addPatternNodes(ids: _*),
       horizon = projections
     )
-    val res = FakePlan(ids.toSet)
+    val res = FakeLeafPlan(ids.toSet)
     planningAttributes.solveds.set(res.id, solved)
     planningAttributes.cardinalities.set(res.id, Cardinality(1))
     planningAttributes.providedOrders.set(res.id, ProvidedOrder.empty)
@@ -316,19 +317,18 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   def newMockedLogicalPlan(idNames: Set[String],
                            planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes,
-                           hints: Set[Hint] = Set[Hint](),
-                           availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
+                           hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints))
-    newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(1), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
+    newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(1))
   }
 
   def newMockedLogicalPlanWithSolved(planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes,
                                      idNames: Set[String],
                                      solved: PlannerQueryPart,
                                      cardinality: Cardinality = Cardinality(1),
-                                     providedOrder: ProvidedOrder = ProvidedOrder.empty,
-                                     availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
-    val res = FakePlan(idNames, availablePropertiesFromIndexes)
+                                     providedOrder: ProvidedOrder = ProvidedOrder.empty
+                                     ): LogicalPlan = {
+    val res = FakeLeafPlan(idNames)
     planningAttributes.solveds.set(res.id, solved)
     planningAttributes.cardinalities.set(res.id, cardinality)
     planningAttributes.providedOrders.set(res.id, providedOrder)
@@ -338,10 +338,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   def newMockedLogicalPlanWithPatterns(planningAttributes: PlanningAttributes,
                                        idNames: Set[String],
                                        patterns: Seq[PatternRelationship] = Seq.empty,
-                                       hints: Set[Hint] = Set[Hint](),
-                                       availablePropertiesFromIndexes: Map[Property, String] = Map.empty): LogicalPlan = {
+                                       hints: Set[Hint] = Set[Hint]()): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(patterns).addHints(hints))
-    newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0), availablePropertiesFromIndexes = availablePropertiesFromIndexes)
+    newMockedLogicalPlanWithSolved(planningAttributes, idNames, solved, Cardinality(0))
   }
 
   val config: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
@@ -391,10 +390,4 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
     output.query
   }
-}
-
-case class FakePlan(availableSymbols: Set[String] = Set.empty, propertyMap: Map[Property, String] = Map.empty)(implicit idGen: IdGen)
-  extends LogicalPlan(idGen)  {
-  def rhs = None
-  def lhs = None
 }
