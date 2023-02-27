@@ -46,6 +46,7 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
 import org.neo4j.internal.kernel.api.TokenWrite;
@@ -57,6 +58,7 @@ import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 
 @ImpermanentDbmsExtension
+@Timeout(value = 10)
 class BFSPruningVarExpandCursorTest {
     private static final EmptyMemoryTracker NO_TRACKING = EmptyMemoryTracker.INSTANCE;
 
