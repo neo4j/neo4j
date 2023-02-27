@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.NotImplementedPlanContext
 import org.neo4j.cypher.internal.compiler.TestSignatureResolvingPlanContext
+import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
 import org.neo4j.cypher.internal.compiler.phases.CreatePlannerQuery
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.Parse
@@ -350,7 +351,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       queryGraph = QueryGraph.empty.addPatternNodes(ids: _*),
       horizon = projections
     )
-    val res = FakePlan(ids.toSet)
+    val res = FakeLeafPlan(ids.toSet)
     planningAttributes.solveds.set(res.id, solved)
     planningAttributes.cardinalities.set(res.id, Cardinality(1))
     planningAttributes.providedOrders.set(res.id, ProvidedOrder.empty)
@@ -365,8 +366,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     idNames: Set[String],
     planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes,
     hints: Set[Hint] = Set[Hint](),
-    selections: Selections = Selections(),
-    availablePropertiesFromIndexes: Map[Property, String] = Map.empty
+    selections: Selections = Selections()
   ): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(
       QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addHints(hints).addSelections(selections)
@@ -375,8 +375,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       planningAttributes,
       idNames,
       solved,
-      Cardinality(1),
-      availablePropertiesFromIndexes = availablePropertiesFromIndexes
+      Cardinality(1)
     )
   }
 
@@ -385,10 +384,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     idNames: Set[String],
     solved: PlannerQuery,
     cardinality: Cardinality = Cardinality(1),
-    providedOrder: ProvidedOrder = ProvidedOrder.empty,
-    availablePropertiesFromIndexes: Map[Property, String] = Map.empty
+    providedOrder: ProvidedOrder = ProvidedOrder.empty
   ): LogicalPlan = {
-    val res = FakePlan(idNames, availablePropertiesFromIndexes)
+    val res = FakeLeafPlan(idNames)
     planningAttributes.solveds.set(res.id, solved)
     planningAttributes.cardinalities.set(res.id, cardinality)
     planningAttributes.providedOrders.set(res.id, providedOrder)
@@ -400,8 +398,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     idNames: Set[String],
     patterns: Set[PatternRelationship] = Set.empty,
     hints: Set[Hint] = Set[Hint](),
-    selections: Selections = Selections(),
-    availablePropertiesFromIndexes: Map[Property, String] = Map.empty
+    selections: Selections = Selections()
   ): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(idNames.toSeq: _*).addPatternRelationships(
       patterns
@@ -410,8 +407,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
       planningAttributes,
       idNames,
       solved,
-      Cardinality(0),
-      availablePropertiesFromIndexes = availablePropertiesFromIndexes
+      Cardinality(0)
     )
   }
 
@@ -476,11 +472,4 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
     output.query
   }
-}
-
-case class FakePlan(availableSymbols: Set[String] = Set.empty, propertyMap: Map[Property, String] = Map.empty)(implicit
-idGen: IdGen)
-    extends LogicalPlan(idGen) {
-  def rhs = None
-  def lhs = None
 }

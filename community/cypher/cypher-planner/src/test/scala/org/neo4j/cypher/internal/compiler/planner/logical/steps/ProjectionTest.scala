@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
-import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.expressions.Expression
-import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -115,13 +113,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
   }
 
-  private def queryGraphWith(
-    skip: Option[Expression] = None,
-    limit: Option[Expression] = None,
-    sortItems: Seq[ast.SortItem] = Seq.empty,
-    projectionsMap: Map[String, Expression],
-    availablePropertiesFromIndexes: Map[Property, String] = Map.empty
-  ): (LogicalPlanningContext, LogicalPlan) = {
+  private def queryGraphWith(projectionsMap: Map[String, Expression]): (LogicalPlanningContext, LogicalPlan) = {
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext(),
       semanticTable = new SemanticTable(types = mock[ASTAnnotationMap[Expression, ExpressionTypeInfo]])
@@ -133,8 +125,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
       newMockedLogicalPlanWithSolved(
         context.staticComponents.planningAttributes,
         idNames = ids,
-        solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*)),
-        availablePropertiesFromIndexes = availablePropertiesFromIndexes
+        solved = RegularSinglePlannerQuery(QueryGraph.empty.addPatternNodes(ids.toList: _*))
       )
 
     (context, plan)

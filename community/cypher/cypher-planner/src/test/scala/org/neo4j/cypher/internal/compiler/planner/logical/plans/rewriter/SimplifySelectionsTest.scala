@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.planner.FakePlan
+import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should rewrite Selection(false, source) to Limit(source, 0)") {
-    val source: LogicalPlan = FakePlan(Set.empty)
+    val source: LogicalPlan = FakeLeafPlan(Set.empty)
     val selection = Selection(Seq(falseLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(
@@ -45,7 +45,7 @@ class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should rewrite Selection(false, Create) to ExhaustiveLimit(Create, 0)") {
-    val source = Create(FakePlan(Set.empty), Seq(CreateNode("n", Set.empty, None)), Seq.empty)
+    val source = Create(FakeLeafPlan(Set.empty), Seq(CreateNode("n", Set.empty, None)), Seq.empty)
     val selection = Selection(Seq(falseLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(
@@ -54,14 +54,14 @@ class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should rewrite Selection(true, source) to source") {
-    val source: LogicalPlan = FakePlan(Set.empty)
+    val source: LogicalPlan = FakeLeafPlan(Set.empty)
     val selection = Selection(Seq(trueLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(source)
   }
 
   test("should not rewrite plans not obviously true or false") {
-    val source: LogicalPlan = FakePlan(Set.empty)
+    val source: LogicalPlan = FakeLeafPlan(Set.empty)
     val selection = Selection(Seq(DummyExpression(CTAny)), source)
 
     selection.endoRewrite(simplifySelections) should equal(selection)
