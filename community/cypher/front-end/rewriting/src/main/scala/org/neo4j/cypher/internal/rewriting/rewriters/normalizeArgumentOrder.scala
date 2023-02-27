@@ -22,7 +22,7 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.expressions.functions.Function.isIdFunction
 import org.neo4j.cypher.internal.rewriting.conditions.SubqueryExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
 import org.neo4j.cypher.internal.rewriting.conditions.normalizedEqualsArguments
@@ -55,10 +55,10 @@ case object normalizeArgumentOrder extends StepSequencer.Step with ASTRewriterFa
   val instance: Rewriter = topDown(Rewriter.lift {
 
     // move id(n) on equals to the left
-    case predicate @ Equals(func @ FunctionInvocation(_, _, _, _), _) if func.function == functions.Id =>
+    case predicate @ Equals(func @ FunctionInvocation(_, _, _, _), _) if isIdFunction(func) =>
       predicate
 
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _, _)) if rhs.function == functions.Id =>
+    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _, _)) if isIdFunction(rhs) =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
 
     // move n.prop on equals to the left

@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.FunctionTypeSignature
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.TypeSignatures
+import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.util.InputPosition
 
 object Category extends Enumeration {
@@ -139,6 +140,8 @@ object Function {
         }
     }.toList
   }
+
+  def isIdFunction(func: FunctionInvocation) = func.function == functions.Id || func.function == functions.ElementId
 }
 
 abstract case class FunctionInfo(f: FunctionWithName) {

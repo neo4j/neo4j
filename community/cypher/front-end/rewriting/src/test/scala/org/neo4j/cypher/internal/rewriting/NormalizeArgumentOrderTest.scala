@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizeArgumentOrder
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -39,43 +41,6 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
     val expected = equals(rhs, lhs)
 
     normalizeArgumentOrder.instance(input) should equal(expected)
-  }
-
-  test("id(a) = id(b) rewritten to: id(a) = id(b)") {
-    val lhs = id(varFor("a"))
-    val rhs = id(varFor("b"))
-
-    val input = equals(lhs, rhs)
-
-    normalizeArgumentOrder.instance(input) should equal(input)
-  }
-
-  test("23 = id(a) rewritten to: id(a) = 23") {
-    val lhs = literalInt(12)
-    val rhs = id(varFor("a"))
-
-    val input = equals(lhs, rhs)
-    val expected = equals(rhs, lhs)
-
-    normalizeArgumentOrder.instance(input) should equal(expected)
-  }
-
-  test("a.prop = id(b) rewritten to: id(b) = a.prop") {
-    val lhs = prop("a", "prop")
-    val rhs = id(varFor("b"))
-
-    val input = equals(rhs, lhs)
-
-    normalizeArgumentOrder.instance(input) should equal(input)
-  }
-
-  test("id(a) = b.prop rewritten to: id(a) = b.prop") {
-    val lhs = id(varFor("a"))
-    val rhs = prop("b", "prop")
-
-    val input = equals(lhs, rhs)
-
-    normalizeArgumentOrder.instance(input) should equal(input)
   }
 
   test("a < n.prop rewritten to: n.prop > a") {
@@ -113,4 +78,54 @@ class NormalizeArgumentOrderTest extends CypherFunSuite with AstConstructionTest
 
     normalizeArgumentOrder.instance(input) should equal(lessThanOrEqual(rhs, lhs))
   }
+}
+
+trait NormalizeArgumentOrderIdTestBase extends CypherFunSuite with AstConstructionTestSupport {
+
+  protected def makeId(e: Expression): FunctionInvocation
+
+  test("id(a) = id(b) rewritten to: id(a) = id(b)") {
+    val lhs = makeId(varFor("a"))
+    val rhs = makeId(varFor("b"))
+
+    val input = equals(lhs, rhs)
+
+    normalizeArgumentOrder.instance(input) should equal(input)
+  }
+
+  test("23 = makeId(a) rewritten to: id(a) = 23") {
+    val lhs = literalInt(12)
+    val rhs = makeId(varFor("a"))
+
+    val input = equals(lhs, rhs)
+    val expected = equals(rhs, lhs)
+
+    normalizeArgumentOrder.instance(input) should equal(expected)
+  }
+
+  test("a.prop = makeId(b) rewritten to: id(b) = a.prop") {
+    val lhs = prop("a", "prop")
+    val rhs = makeId(varFor("b"))
+
+    val input = equals(rhs, lhs)
+
+    normalizeArgumentOrder.instance(input) should equal(input)
+  }
+
+  test("id(a) = b.prop rewritten to: id(a) = b.prop") {
+    val lhs = makeId(varFor("a"))
+    val rhs = prop("b", "prop")
+
+    val input = equals(lhs, rhs)
+
+    normalizeArgumentOrder.instance(input) should equal(input)
+  }
+}
+
+class NormalizeArgumentOrderIdTest extends NormalizeArgumentOrderIdTestBase {
+  override protected def makeId(e: Expression): FunctionInvocation = id(e)
+}
+
+class NormalizeArgumentOrderElementIdTest extends NormalizeArgumentOrderIdTestBase {
+  override protected def makeId(e: Expression): FunctionInvocation = elementId(e)
 }

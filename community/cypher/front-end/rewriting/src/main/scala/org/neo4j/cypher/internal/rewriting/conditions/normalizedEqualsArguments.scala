@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.Property
-import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.expressions.functions.Function.isIdFunction
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
 case object normalizedEqualsArguments extends ValidatingCondition {
@@ -34,8 +34,6 @@ case object normalizedEqualsArguments extends ValidatingCondition {
         s"Equals at ${eq.position} is not normalized: $eq"
     }
   }
-
-  private def isIdFunction(func: FunctionInvocation) = func.function == functions.Id
 
   private def notIdFunction(expr: Expression) =
     !expr.isInstanceOf[FunctionInvocation] || !isIdFunction(expr.asInstanceOf[FunctionInvocation])

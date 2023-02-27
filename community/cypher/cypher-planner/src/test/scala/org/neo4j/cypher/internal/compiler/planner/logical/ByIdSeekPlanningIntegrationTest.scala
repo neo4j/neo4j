@@ -237,4 +237,50 @@ class ByIdSeekPlanningIntegrationTest extends CypherFunSuite
       .undirectedRelationshipByElementIdSeek("r", "a", "b", Set.empty, parameter("ids", CTAny))
       .build()
   }
+
+  test("should plan node by element id seek with parameter property") {
+    val query =
+      """MATCH (a)
+        |WHERE elementId(a) = $param.prop
+        |RETURN a""".stripMargin
+
+    val planner = plannerBuilder().build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .nodeByElementIdSeek("a", Set.empty, "$param.prop")
+      .build()
+  }
+
+  test("should plan undirected relationship by element id seek with parameter property") {
+    val query =
+      """MATCH (a)-[r]-(b)
+        |WHERE elementId(r) = $param.prop
+        |RETURN r""".stripMargin
+
+    val planner = plannerBuilder()
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .undirectedRelationshipByElementIdSeek("r", "a", "b", Set.empty, "$param.prop")
+      .build()
+  }
+
+  test("should plan directed relationship by element id seek with parameter property") {
+    val query =
+      """MATCH (a)-[r]->(b)
+        |WHERE elementId(r) = $param.prop
+        |RETURN r""".stripMargin
+
+    val planner = plannerBuilder()
+      .setRelationshipCardinality("()-[]->()", 500)
+      .build()
+
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .directedRelationshipByElementIdSeek("r", "a", "b", Set.empty, "$param.prop")
+      .build()
+  }
 }

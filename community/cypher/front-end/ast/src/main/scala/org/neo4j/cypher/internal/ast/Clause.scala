@@ -84,7 +84,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
-import org.neo4j.cypher.internal.expressions.functions
+import org.neo4j.cypher.internal.expressions.functions.Function.isIdFunction
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
@@ -699,7 +699,7 @@ case class Match(
    */
   private def applicable(other: Expression): Boolean = {
     other match {
-      case f: FunctionInvocation => f.function != functions.Id
+      case f: FunctionInvocation => !isIdFunction(f)
       case _                     => true
     }
   }
