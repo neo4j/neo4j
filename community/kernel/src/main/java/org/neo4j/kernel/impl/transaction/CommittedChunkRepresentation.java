@@ -28,6 +28,7 @@ import org.neo4j.common.Subject;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.CommandChunk;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -48,6 +49,8 @@ public record CommittedChunkRepresentation(
         ChunkMetadata chunkMetadata = new ChunkMetadata(
                 start instanceof LogEntryStart,
                 end instanceof LogEntryCommit,
+                false,
+                logEntryChunkStart.getPreviousBatchLogPosition(),
                 logEntryChunkStart.getChunkId(),
                 UNKNOWN_CONSENSUS_INDEX,
                 logEntryChunkStart.getTimeWritten(),
@@ -63,7 +66,11 @@ public record CommittedChunkRepresentation(
     @Override
     public int serialize(LogEntryWriter<? extends WritableChecksumChannel> writer) throws IOException {
         byte version = chunkStart.kernelVersion().version();
-        writer.writeChunkStartEntry(version, chunkStart.getTimeWritten(), chunkStart.getChunkId());
+        writer.writeChunkStartEntry(
+                version,
+                chunkStart.getTimeWritten(),
+                chunkStart.getChunkId(),
+                chunkStart.getPreviousBatchLogPosition());
         writer.serialize(commandBatch);
         return writer.writeChunkEndEntry(version, chunkEnd.getTransactionId(), chunkEnd.getChunkId());
     }
@@ -88,11 +95,20 @@ public record CommittedChunkRepresentation(
         return false;
     }
 
+    @Override
+    public LogPosition previousBatchLogPosition() {
+        return chunkStart.getPreviousBatchLogPosition();
+    }
+
     private static LogEntryChunkStart createChunkStart(LogEntry start) {
         if (start instanceof LogEntryChunkStart chunkStart) {
             return chunkStart;
         } else if (start instanceof LogEntryStart entryStart) {
-            return new LogEntryChunkStart(entryStart.kernelVersion(), entryStart.getTimeWritten(), BASE_CHUNK_NUMBER);
+            return new LogEntryChunkStart(
+                    entryStart.kernelVersion(),
+                    entryStart.getTimeWritten(),
+                    BASE_CHUNK_NUMBER,
+                    LogPosition.UNSPECIFIED);
         } else {
             throw new IllegalArgumentException("Was expecting start record. Actual entry: " + start);
         }

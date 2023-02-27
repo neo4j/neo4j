@@ -19,23 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.tracing;
 
-/**
- * A trace event that represents the commit process of a transaction.
- */
-public interface CommitEvent extends AutoCloseable {
-    CommitEvent NULL = new CommitEvent() {
+public interface RollbackBatchEvent extends AutoCloseable {
+    RollbackBatchEvent NULL = new RollbackBatchEvent() {
         @Override
         public void close() {}
 
         @Override
-        public LogAppendEvent beginLogAppend() {
-            return LogAppendEvent.NULL;
-        }
-
-        @Override
-        public StoreApplyEvent beginStoreApply() {
-            return StoreApplyEvent.NULL;
-        }
+        public void batchedRolledBack(int rolledBackBatches, long transactionId) {}
     };
 
     /**
@@ -45,12 +35,9 @@ public interface CommitEvent extends AutoCloseable {
     void close();
 
     /**
-     * Begin appending commands for the committing transaction, to the transaction log.
+     * Notification about roll back of command batched in particular transaction
+     * @param rolledBackBatches number of rolled back batches
+     * @param transactionId id of transaction that was rolled back
      */
-    LogAppendEvent beginLogAppend();
-
-    /**
-     * Begin applying the commands of the committed transaction to the stores.
-     */
-    StoreApplyEvent beginStoreApply();
+    void batchedRolledBack(int rolledBackBatches, long transactionId);
 }

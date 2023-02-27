@@ -61,11 +61,13 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryPools;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -136,6 +138,8 @@ public final class KernelTransactionFactory {
                 TransactionIdGenerator.EMPTY,
                 mock(DbmsRuntimeRepository.class),
                 kernelVersionProvider,
+                mock(LogicalTransactionStore.class),
+                mock(DatabaseHealth.class),
                 NullLogProvider.getInstance(),
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
 

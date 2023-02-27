@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
@@ -31,7 +31,8 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
  */
 public class ReadOnlyTransactionCommitProcess implements TransactionCommitProcess {
     @Override
-    public long commit(CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+    public long commit(
+            CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent, TransactionApplicationMode mode)
             throws TransactionFailureException {
         throw new TransactionFailureException(
                 Status.General.ForbiddenOnReadOnlyDatabase,

@@ -76,8 +76,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Panic;
@@ -198,9 +198,9 @@ class BatchingTransactionAppenderTest {
         appender.append(batch, logAppendEvent);
 
         // THEN
-        verify(logWriterSpy).append(eq(batch1), eq(2L), anyLong(), anyInt());
-        verify(logWriterSpy).append(eq(batch2), eq(3L), anyLong(), anyInt());
-        verify(logWriterSpy).append(eq(batch3), eq(4L), anyLong(), anyInt());
+        verify(logWriterSpy).append(eq(batch1), eq(2L), anyLong(), anyInt(), any(LogPosition.class));
+        verify(logWriterSpy).append(eq(batch2), eq(3L), anyLong(), anyInt(), any(LogPosition.class));
+        verify(logWriterSpy).append(eq(batch3), eq(4L), anyLong(), anyInt(), any(LogPosition.class));
     }
 
     @Test
@@ -366,6 +366,7 @@ class BatchingTransactionAppenderTest {
         when(commandBatch.consensusIndex()).thenReturn(0L);
         when(commandBatch.kernelVersion()).thenReturn(LatestVersions.LATEST_KERNEL_VERSION);
         when(commandBatch.iterator()).thenReturn(emptyIterator());
+        when(commandBatch.isFirst()).thenReturn(true);
 
         var e = assertThrows(
                 IOException.class,
@@ -400,7 +401,7 @@ class BatchingTransactionAppenderTest {
                 transaction, NULL_CONTEXT, StoreCursors.NULL, transactionCommitment, transactionIdGenerator);
         assertThrows(
                 TransactionFailureException.class,
-                () -> commitProcess.commit(batch, CommitEvent.NULL, TransactionApplicationMode.EXTERNAL));
+                () -> commitProcess.commit(batch, TransactionWriteEvent.NULL, TransactionApplicationMode.EXTERNAL));
     }
 
     private BatchingTransactionAppender createTransactionAppender() {

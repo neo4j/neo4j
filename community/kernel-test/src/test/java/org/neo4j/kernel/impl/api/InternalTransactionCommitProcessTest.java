@@ -50,8 +50,8 @@ import org.neo4j.kernel.impl.transaction.log.TestableTransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -60,7 +60,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
 
 class InternalTransactionCommitProcessTest {
-    private final CommitEvent commitEvent = CommitEvent.NULL;
+    private final TransactionWriteEvent transactionWriteEvent = TransactionWriteEvent.NULL;
 
     @Test
     void shouldFailWithProperMessageOnAppendException() throws Exception {
@@ -76,7 +76,8 @@ class InternalTransactionCommitProcessTest {
         // WHEN
         TransactionFailureException exception = assertThrows(
                 TransactionFailureException.class,
-                () -> commitProcess.commit(mockedTransaction(mock(TransactionIdStore.class)), commitEvent, INTERNAL));
+                () -> commitProcess.commit(
+                        mockedTransaction(mock(TransactionIdStore.class)), transactionWriteEvent, INTERNAL));
         assertThat(exception.getMessage()).contains("Could not append transaction: ");
         assertTrue(contains(exception, rootCause.getMessage(), rootCause.getClass()));
     }
@@ -98,7 +99,8 @@ class InternalTransactionCommitProcessTest {
 
         // WHEN
         TransactionFailureException exception = assertThrows(
-                TransactionFailureException.class, () -> commitProcess.commit(transaction, commitEvent, INTERNAL));
+                TransactionFailureException.class,
+                () -> commitProcess.commit(transaction, transactionWriteEvent, INTERNAL));
         assertThat(exception.getMessage()).contains("Could not apply the transaction:");
         assertTrue(contains(exception, rootCause.getMessage(), rootCause.getClass()));
 
@@ -137,7 +139,7 @@ class InternalTransactionCommitProcessTest {
                         StoreCursors.NULL,
                         new FakeCommitment(txId, transactionIdStore, true),
                         new IdStoreTransactionIdGenerator(transactionIdStore)),
-                commitEvent,
+                transactionWriteEvent,
                 INTERNAL);
 
         verify(transactionIdStore)
@@ -156,7 +158,8 @@ class InternalTransactionCommitProcessTest {
 
         TransactionFailureException exception = assertThrows(
                 TransactionFailureException.class,
-                () -> commitProcess.commit(mockedTransaction(mock(TransactionIdStore.class)), commitEvent, INTERNAL));
+                () -> commitProcess.commit(
+                        mockedTransaction(mock(TransactionIdStore.class)), transactionWriteEvent, INTERNAL));
         assertThat(exception.getMessage()).contains("Could not preallocate disk space ");
         // FIXME ODP this is not the status we should end up with in the end
         assertThat(exception.status()).isEqualTo(Status.General.UnknownError);
@@ -174,7 +177,8 @@ class InternalTransactionCommitProcessTest {
 
         TransactionFailureException exception = assertThrows(
                 TransactionFailureException.class,
-                () -> commitProcess.commit(mockedTransaction(mock(TransactionIdStore.class)), commitEvent, INTERNAL));
+                () -> commitProcess.commit(
+                        mockedTransaction(mock(TransactionIdStore.class)), transactionWriteEvent, INTERNAL));
         assertThat(exception.getMessage()).contains("Could not preallocate disk space ");
         assertThat(exception.status()).isEqualTo(Status.Transaction.TransactionCommitFailed);
         assertTrue(contains(exception, "IO exception other than out of disk", IOException.class));
@@ -185,7 +189,7 @@ class InternalTransactionCommitProcessTest {
         TransactionAppender appender = mock(TransactionAppender.class);
         StorageEngine storageEngine = mock(StorageEngine.class);
         TransactionCommitProcess commitProcess = new InternalTransactionCommitProcess(appender, storageEngine, false);
-        commitProcess.commit(mockedTransaction(mock(TransactionIdStore.class)), commitEvent, INTERNAL);
+        commitProcess.commit(mockedTransaction(mock(TransactionIdStore.class)), transactionWriteEvent, INTERNAL);
 
         verify(storageEngine, never()).preAllocateStoreFilesForCommands(any(), any());
     }

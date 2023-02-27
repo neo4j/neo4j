@@ -23,11 +23,11 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORM
 
 import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.tracing.AppendTransactionEvent;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
@@ -36,22 +36,29 @@ import org.neo4j.kernel.impl.transaction.tracing.LogFileFlushEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
+import org.neo4j.kernel.impl.transaction.tracing.RollbackBatchEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 
 /**
  * Tracer used to trace database scoped events, like transaction logs rotations, checkpoints, transactions etc
  */
 public class DefaultTracer implements DatabaseTracer {
-    private final AtomicLong appendedBytes = new AtomicLong();
-    private final AtomicLong numberOfFlushes = new AtomicLong();
+    private final LongAdder appendedBytes = new LongAdder();
+    private final LongAdder numberOfFlushes = new LongAdder();
+    private final LongAdder batchesAppended = new LongAdder();
+    private final LongAdder batchesRolledBack = new LongAdder();
+    private final LongAdder batchTransactionsRolledBack = new LongAdder();
     private final AtomicLong appliedBatchSize = new AtomicLong();
 
     private final CountingLogRotateEvent countingLogRotateEvent = new CountingLogRotateEvent();
-    private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.addAndGet(CURRENT_FORMAT_LOG_HEADER_SIZE);
-    private final LogFileFlushEvent logFileFlushEvent = numberOfFlushes::incrementAndGet;
+    private final LogFileCreateEvent logFileCreateEvent = () -> appendedBytes.add(CURRENT_FORMAT_LOG_HEADER_SIZE);
+    private final LogFileFlushEvent logFileFlushEvent = numberOfFlushes::increment;
     private final LogAppendEvent logAppendEvent = new DefaultLogAppendEvent();
-    private final CommitEvent commitEvent = new DefaultCommitEvent();
+    private final TransactionWriteEvent transactionWriteEvent = new DefaultTransactionWriteEvent();
+    private final TransactionRollbackEvent transactionRollbackEvent = new DefaultTransactionRollbackEvent();
     private final TransactionEvent transactionEvent = new DefaultTransactionEvent();
     private final CountingLogCheckPointEvent logCheckPointEvent;
 
@@ -67,7 +74,7 @@ public class DefaultTracer implements DatabaseTracer {
 
     @Override
     public long appendedBytes() {
-        return appendedBytes.get();
+        return appendedBytes.longValue();
     }
 
     @Override
@@ -87,12 +94,27 @@ public class DefaultTracer implements DatabaseTracer {
 
     @Override
     public long numberOfFlushes() {
-        return numberOfFlushes.get();
+        return numberOfFlushes.longValue();
     }
 
     @Override
     public long lastTransactionLogAppendBatch() {
-        return appliedBatchSize.get();
+        return appliedBatchSize.longValue();
+    }
+
+    @Override
+    public long batchesAppended() {
+        return batchesAppended.longValue();
+    }
+
+    @Override
+    public long rolledbackBatches() {
+        return batchesRolledBack.longValue();
+    }
+
+    @Override
+    public long rolledbackBatchedTransactions() {
+        return batchTransactionsRolledBack.longValue();
     }
 
     @Override
@@ -144,7 +166,7 @@ public class DefaultTracer implements DatabaseTracer {
         if (logPositionAfterAppend.getLogVersion() != logPositionBeforeAppend.getLogVersion()) {
             throw new IllegalStateException("Appending to several log files is not supported.");
         }
-        appendedBytes.addAndGet(logPositionAfterAppend.getByteOffset() - logPositionBeforeAppend.getByteOffset());
+        appendedBytes.add(logPositionAfterAppend.getByteOffset() - logPositionBeforeAppend.getByteOffset());
     }
 
     @Override
@@ -177,8 +199,18 @@ public class DefaultTracer implements DatabaseTracer {
         public void setRollback(boolean rollback) {}
 
         @Override
-        public CommitEvent beginCommitEvent() {
-            return commitEvent;
+        public TransactionWriteEvent beginCommitEvent() {
+            return transactionWriteEvent;
+        }
+
+        @Override
+        public TransactionWriteEvent beginChunkWriteEvent() {
+            return transactionWriteEvent;
+        }
+
+        @Override
+        public TransactionRollbackEvent beginRollback() {
+            return transactionRollbackEvent;
         }
 
         @Override
@@ -191,7 +223,7 @@ public class DefaultTracer implements DatabaseTracer {
         public void setReadOnly(boolean wasReadOnly) {}
     }
 
-    private class DefaultCommitEvent implements CommitEvent {
+    private class DefaultTransactionWriteEvent implements TransactionWriteEvent {
         @Override
         public void close() {}
 
@@ -204,6 +236,37 @@ public class DefaultTracer implements DatabaseTracer {
         public StoreApplyEvent beginStoreApply() {
             return StoreApplyEvent.NULL;
         }
+
+        @Override
+        public void chunkAppended(int chunkNumber, long transactionSequenceNumber, long transactionId) {
+            batchesAppended.increment();
+        }
+    }
+
+    private class DefaultTransactionRollbackEvent implements TransactionRollbackEvent {
+
+        @Override
+        public RollbackBatchEvent beginRollbackDataEvent() {
+            return new RollbackBatchEvent() {
+                @Override
+                public void close() {
+                    batchTransactionsRolledBack.increment();
+                }
+
+                @Override
+                public void batchedRolledBack(int rolledBackBatches, long transactionId) {
+                    batchesRolledBack.add(rolledBackBatches);
+                }
+            };
+        }
+
+        @Override
+        public TransactionWriteEvent beginRollbackWriteEvent() {
+            return transactionWriteEvent;
+        }
+
+        @Override
+        public void close() {}
     }
 
     private class DefaultLogAppendEvent implements LogAppendEvent {

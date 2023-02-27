@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -116,7 +116,7 @@ class KernelRecoveryTest {
                                 storeCursors,
                                 commitmentFactory.newCommitment(),
                                 transactionIdGenerator),
-                        CommitEvent.NULL,
+                        TransactionWriteEvent.NULL,
                         TransactionApplicationMode.EXTERNAL);
             }
         }

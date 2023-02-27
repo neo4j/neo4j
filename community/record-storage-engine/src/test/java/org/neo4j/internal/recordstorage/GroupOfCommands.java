@@ -62,6 +62,11 @@ public class GroupOfCommands implements CommandBatchToApply {
     }
 
     @Override
+    public LogPosition previousBatchLogPosition() {
+        return LogPosition.UNSPECIFIED;
+    }
+
+    @Override
     public Subject subject() {
         return Subject.SYSTEM;
     }

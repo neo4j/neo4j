@@ -26,9 +26,9 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.StoreApplyEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
@@ -46,23 +46,25 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
     }
 
     @Override
-    public long commit(CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+    public long commit(
+            CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent, TransactionApplicationMode mode)
             throws TransactionFailureException {
         if (preAllocateSpaceInStores) {
-            preAllocateSpaceInStores(batch, commitEvent, mode);
+            preAllocateSpaceInStores(batch, transactionWriteEvent, mode);
         }
 
-        long lastTxId = appendToLog(batch, commitEvent);
+        long lastTxId = appendToLog(batch, transactionWriteEvent);
         try {
-            applyToStore(batch, commitEvent, mode);
+            applyToStore(batch, transactionWriteEvent, mode);
             return lastTxId;
         } finally {
             close(batch);
         }
     }
 
-    private long appendToLog(CommandBatchToApply batch, CommitEvent commitEvent) throws TransactionFailureException {
-        try (LogAppendEvent logAppendEvent = commitEvent.beginLogAppend()) {
+    private long appendToLog(CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent)
+            throws TransactionFailureException {
+        try (LogAppendEvent logAppendEvent = transactionWriteEvent.beginLogAppend()) {
             return appender.append(batch, logAppendEvent);
         } catch (Throwable cause) {
             throw new TransactionFailureException(
@@ -70,9 +72,10 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
         }
     }
 
-    protected void applyToStore(CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+    protected void applyToStore(
+            CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent, TransactionApplicationMode mode)
             throws TransactionFailureException {
-        try (StoreApplyEvent storeApplyEvent = commitEvent.beginStoreApply()) {
+        try (StoreApplyEvent storeApplyEvent = transactionWriteEvent.beginStoreApply()) {
             storageEngine.apply(batch, mode);
         } catch (Throwable cause) {
             throw new TransactionFailureException(
@@ -83,7 +86,7 @@ public class InternalTransactionCommitProcess implements TransactionCommitProces
     }
 
     private void preAllocateSpaceInStores(
-            CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode)
+            CommandBatchToApply batch, TransactionWriteEvent transactionWriteEvent, TransactionApplicationMode mode)
             throws TransactionFailureException {
         // FIXME ODP - add function to commitEvent to be able to trace?
         try {

@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.kernel.impl.api.TransactionToApply.NOT_SPECIFIED_CHUNK_ID;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
+import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -240,7 +241,8 @@ class ReversedSingleFileCommandBatchCursorTest {
                     tx(random.intBetween(minTransactionSize, maxTransactionSize)),
                     ++txId,
                     NOT_SPECIFIED_CHUNK_ID,
-                    previousChecksum);
+                    previousChecksum,
+                    UNSPECIFIED);
         }
         channel.prepareForFlush().flush();
         // Don't close the channel, LogFile owns it
@@ -250,7 +252,7 @@ class ReversedSingleFileCommandBatchCursorTest {
         var channel = logFile.getTransactionLogWriter().getChannel();
         TransactionLogWriter writer = new TransactionLogWriter(
                 channel, new CorruptedLogEntryWriter<>(channel), LATEST_KERNEL_VERSION_PROVIDER);
-        writer.append(tx(random.intBetween(100, 1000)), ++txId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
+        writer.append(tx(random.intBetween(100, 1000)), ++txId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM, UNSPECIFIED);
     }
 
     private static CommandBatch tx(int size) {

@@ -81,6 +81,11 @@ public record CommandChunk(List<StorageCommand> commands, ChunkMetadata chunkMet
     }
 
     @Override
+    public boolean isRollback() {
+        return chunkMetadata.rollback();
+    }
+
+    @Override
     public boolean accept(Visitor<StorageCommand, IOException> visitor) throws IOException {
         for (StorageCommand command : commands) {
             if (visitor.visit(command)) {

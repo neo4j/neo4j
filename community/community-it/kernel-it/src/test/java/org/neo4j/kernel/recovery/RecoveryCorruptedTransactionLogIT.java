@@ -1102,7 +1102,7 @@ class RecoveryCorruptedTransactionLogIT {
             commands.add(new Command.NodeCommand(LATEST_LOG_SERIALIZATION, new NodeRecord(2), new NodeRecord(3)));
             CompleteTransaction transaction = new CompleteTransaction(
                     commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
-            writer.append(transaction, 1000, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
+            writer.append(transaction, 1000, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM, LogPosition.UNSPECIFIED);
         }
     }
 

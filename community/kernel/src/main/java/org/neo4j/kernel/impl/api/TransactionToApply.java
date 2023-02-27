@@ -117,6 +117,11 @@ public class TransactionToApply implements CommandBatchToApply {
     }
 
     @Override
+    public LogPosition previousBatchLogPosition() {
+        return LogPosition.UNSPECIFIED;
+    }
+
+    @Override
     public Subject subject() {
         return commandBatch.subject();
     }

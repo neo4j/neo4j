@@ -235,8 +235,12 @@ class ReversedMultiFileCommandBatchCursorTest {
         TransactionLogWriter writer = logFile.getTransactionLogWriter();
         int previousChecksum = BASE_TX_CHECKSUM;
         for (int i = 0; i < count; i++) {
-            previousChecksum =
-                    writer.append(tx(random.intBetween(1, 5)), ++txId, NOT_SPECIFIED_CHUNK_ID, previousChecksum);
+            previousChecksum = writer.append(
+                    tx(random.intBetween(1, 5)),
+                    ++txId,
+                    NOT_SPECIFIED_CHUNK_ID,
+                    previousChecksum,
+                    LogPosition.UNSPECIFIED);
         }
         channel.prepareForFlush().flush();
         return writer.getCurrentPosition();

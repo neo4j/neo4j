@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
@@ -56,6 +58,7 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.graphdb.TransactionRollbackException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -130,12 +133,17 @@ import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.KernelTokenRead;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
+import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -145,6 +153,7 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryPool;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -152,6 +161,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.SystemNanoClock;
@@ -197,7 +207,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final CursorContextFactory contextFactory;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final TransactionIdGenerator transactionIdGenerator;
+    private final DatabaseHealth databaseHealth;
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
+    private final LogicalTransactionStore transactionStore;
 
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
@@ -292,6 +304,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             TransactionIdGenerator transactionIdGenerator,
             DbmsRuntimeRepository dbmsRuntimeRepository,
             KernelVersionProvider kernelVersionProvider,
+            LogicalTransactionStore transactionStore,
+            DatabaseHealth databaseHealth,
             LogProvider logProvider,
             boolean multiVersioned) {
         this.config = new LocalConfig(externalConfig);
@@ -299,6 +313,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.contextFactory = contextFactory;
         this.readOnlyDatabaseChecker = readOnlyDatabaseChecker;
         this.transactionIdGenerator = transactionIdGenerator;
+        this.databaseHealth = databaseHealth;
         this.transactionMemoryPool = new TransactionMemoryPool(dbTransactionsPool, config, () -> !closed, logProvider);
         this.memoryTracker = transactionMemoryPool.getTransactionTracker();
         this.eventListeners = eventListeners;
@@ -315,6 +330,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.clocks = new TransactionClockContext(clock);
         this.transactionTracer = tracers.getDatabaseTracer();
         this.leaseService = leaseService;
+        this.transactionStore = transactionStore;
         this.currentStatement =
                 new KernelStatement(this, tracers.getLockTracer(), this.clocks, cpuClockRef, namedDatabaseId, config);
         this.statistics = new Statistics(
@@ -832,14 +848,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         assertNoInnerTransactions();
         closing = true;
         Throwable exception = null;
-        long txId = -1;
+        long txId = ROLLBACK_ID;
         try {
             if (canCommit()) {
                 txId = commitTransaction();
             } else {
                 rollback(null);
                 failOnNonExplicitRollbackIfNeeded();
-                txId = ROLLBACK_ID;
             }
         } catch (TransactionFailureException | RuntimeException | Error e) {
             exception = e;
@@ -943,7 +958,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public long commit(CommitEvent commitEvent, long timeCommitted, MemoryTracker memoryTracker, boolean ignored)
+        public long commit(
+                TransactionWriteEvent transactionWriteEvent,
+                long timeCommitted,
+                MemoryTracker memoryTracker,
+                boolean ignored)
                 throws KernelException {
             // Gather up commands from the various sources
             List<StorageCommand> extractedCommands = extractCommands(memoryTracker);
@@ -980,14 +999,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         commitmentFactory.newCommitment(),
                         transactionIdGenerator);
                 kernelTransactionMonitor.beforeApply();
-                return commitProcess.commit(batch, commitEvent, INTERNAL);
+                return commitProcess.commit(batch, transactionWriteEvent, INTERNAL);
             }
             return READ_ONLY_ID;
+        }
+
+        @Override
+        public void rollback(TransactionRollbackEvent rollbackEvent) {
+            // default implementation does not do any transaction related rollbacks
         }
     }
 
     private class ChunkCommitter implements TransactionCommitter {
         private int chunkNumber = BASE_CHUNK_NUMBER;
+        private LogPosition previousBatchLogPosition = LogPosition.UNSPECIFIED;
         private KernelVersion kernelVersion;
         private ChunkedTransaction transactionPayload;
         private final TransactionCommitmentFactory commitmentFactory;
@@ -997,21 +1022,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
 
         @Override
-        public long commit(CommitEvent commitEvent, long timeCommitted, MemoryTracker memoryTracker, boolean commit)
+        public long commit(
+                TransactionWriteEvent transactionWriteEvent,
+                long timeCommitted,
+                MemoryTracker memoryTracker,
+                boolean commit)
                 throws KernelException {
             List<StorageCommand> extractedCommands = extractCommands(memoryTracker);
             if (!extractedCommands.isEmpty() || commit) {
                 if (kernelVersion == null) {
                     kernelVersion = kernelVersionProvider.kernelVersion();
                 }
-                // kernel version can be updated by upgrade listener and for now we only fail to commit such
-                // transactions.
-                if (commit && kernelVersion != kernelVersionProvider.kernelVersion()) {
-                    throw new UnsupportedOperationException("We do not support upgrade during chunked transaction.");
+                if (commit) {
+                    validateCurrentKernelVersion();
                 }
                 var chunkMetadata = new ChunkMetadata(
                         chunkNumber == BASE_CHUNK_NUMBER,
                         commit,
+                        false,
+                        previousBatchLogPosition,
                         chunkNumber,
                         UNKNOWN_CONSENSUS_INDEX,
                         startTimeMillis,
@@ -1029,10 +1058,98 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 }
                 CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
                 transactionPayload.init(chunk);
-                commitProcess.commit(transactionPayload, commitEvent, INTERNAL);
+                commitProcess.commit(transactionPayload, transactionWriteEvent, INTERNAL);
+                transactionWriteEvent.chunkAppended(
+                        chunkNumber, getTransactionSequenceNumber(), transactionPayload.transactionId());
+                previousBatchLogPosition = transactionPayload.lastBatchLogPosition();
                 chunkNumber++;
             }
             return transactionPayload != null ? transactionPayload.transactionId() : READ_ONLY_ID;
+        }
+
+        @Override
+        public void rollback(TransactionRollbackEvent rollbackEvent) {
+            if (transactionPayload != null) {
+                try {
+                    rollbackBatches(rollbackEvent);
+                    writeRollbackEntry(rollbackEvent);
+                } catch (Exception e) {
+                    databaseHealth.panic(e);
+                    Exceptions.throwIfInstanceOf(e, TransactionRollbackException.class);
+                    throw new TransactionRollbackException("Transaction rollback failed", e);
+                }
+            }
+        }
+
+        private void writeRollbackEntry(TransactionRollbackEvent transactionRollbackEvent)
+                throws TransactionFailureException {
+            validateCurrentKernelVersion();
+            var chunkMetadata = new ChunkMetadata(
+                    false,
+                    true,
+                    true,
+                    LogPosition.UNSPECIFIED,
+                    chunkNumber,
+                    UNKNOWN_CONSENSUS_INDEX,
+                    startTimeMillis,
+                    lastTransactionIdWhenStarted,
+                    clocks.systemClock().millis(),
+                    leaseClient.leaseId(),
+                    kernelVersion,
+                    securityContext().subject().userSubject());
+            CommandChunk chunk = new CommandChunk(emptyList(), chunkMetadata);
+            transactionPayload.init(chunk);
+            try (var writeEvent = transactionRollbackEvent.beginRollbackWriteEvent()) {
+                commitProcess.commit(transactionPayload, writeEvent, INTERNAL);
+            }
+        }
+
+        // kernel version can be updated by upgrade listener and for now we only fail to commit such
+        // transactions.
+        private void validateCurrentKernelVersion() {
+            if (kernelVersion != kernelVersionProvider.kernelVersion()) {
+                throw new UnsupportedOperationException("We do not support upgrade during chunked transaction.");
+            }
+        }
+
+        private void rollbackBatches(TransactionRollbackEvent transactionRollbackEvent) throws Exception {
+            long transactionIdToRollback = transactionPayload.transactionId();
+            int rolledbackBatches = 0;
+            int chunksToRollback = chunkNumber - 1;
+            LogPosition logPosition = transactionPayload.lastBatchLogPosition();
+            try (var rollbackDataEvent = transactionRollbackEvent.beginRollbackDataEvent()) {
+                while (rolledbackBatches != chunksToRollback) {
+                    try (CommandBatchCursor commandBatches = transactionStore.getCommandBatches(logPosition)) {
+                        if (!commandBatches.next()) {
+                            throw new TransactionRollbackException(format(
+                                    "Transaction rollback failed. Expected to rollback %d batches, but was able to undo only %d for transaction with id %d.",
+                                    chunksToRollback, rolledbackBatches, transactionIdToRollback));
+                        }
+                        CommittedCommandBatch commandBatch = commandBatches.get();
+                        if (commandBatch.txId() != transactionIdToRollback) {
+                            throw new TransactionRollbackException(format(
+                                    "Transaction rollback failed. Batch with transaction id %d encountered, while it was expected to belong to transaction id %d. Batch id: %s.",
+                                    commandBatch.txId(), transactionId, chunkId(commandBatch)));
+                        }
+                        rolledbackBatches++;
+                        transactionPayload.init((CommandChunk) commandBatch.commandBatch());
+                        storageEngine.apply(transactionPayload, TransactionApplicationMode.REVERSE_RECOVERY);
+                        logPosition = commandBatch.previousBatchLogPosition();
+                    }
+                }
+                if (logPosition != LogPosition.UNSPECIFIED) {
+                    throw new TransactionRollbackException(format(
+                            "Transaction rollback failed. All expected %d batches in transaction id %d were rolled back but chain claims to have more at: %s.",
+                            chunksToRollback, transactionId, logPosition));
+                }
+                rollbackDataEvent.batchedRolledBack(chunksToRollback, transactionIdToRollback);
+            }
+        }
+
+        private String chunkId(CommittedCommandBatch commandBatch) {
+            return commandBatch.commandBatch() instanceof CommandChunk cc
+                    ? String.valueOf(cc.chunkMetadata().chunkId())
+                    : "N/A";
         }
 
         @Override
@@ -1047,7 +1164,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         boolean success = false;
         long txId = READ_ONLY_ID;
         TransactionListenersState listenersState = null;
-        try (CommitEvent commitEvent = transactionEvent.beginCommitEvent()) {
+        try (TransactionWriteEvent transactionWriteEvent = transactionEvent.beginCommitEvent()) {
             listenersState = eventListeners.beforeCommit(txState, this, storageReader);
             if (listenersState != null && listenersState.isFailed()) {
                 Throwable cause = listenersState.failure();
@@ -1068,7 +1185,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 lockClient.prepareForCommit();
 
                 long timeCommitted = clocks.systemClock().millis();
-                txId = committer.commit(commitEvent, timeCommitted, memoryTracker, true);
+                txId = committer.commit(transactionWriteEvent, timeCommitted, memoryTracker, true);
                 commitTime = timeCommitted;
             }
             success = true;
@@ -1110,23 +1227,26 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void rollback(TransactionListenersState listenersState) throws KernelException {
         try {
             if (hasTxStateWithChanges()) {
-                AutoCloseable constraintDropper = () -> {
-                    try {
-                        dropCreatedConstraintIndexes();
-                    } catch (IllegalStateException | SecurityException e) {
-                        throw new TransactionFailureException(
-                                Status.Transaction.TransactionRollbackFailed,
-                                e,
-                                "Could not drop created constraint indexes");
-                    }
-                };
-                AutoCloseable storageRollback = () -> {
-                    try (var rollbackContext = contextFactory.create("transaction rollback")) {
-                        storageEngine.rollback(txState, rollbackContext);
-                    }
-                };
+                try (var rollbackEvent = transactionEvent.beginRollback()) {
+                    committer.rollback(rollbackEvent);
+                    AutoCloseable constraintDropper = () -> {
+                        try {
+                            dropCreatedConstraintIndexes();
+                        } catch (IllegalStateException | SecurityException e) {
+                            throw new TransactionFailureException(
+                                    Status.Transaction.TransactionRollbackFailed,
+                                    e,
+                                    "Could not drop created constraint indexes");
+                        }
+                    };
+                    AutoCloseable storageRollback = () -> {
+                        try (var rollbackContext = contextFactory.create("transaction rollback")) {
+                            storageEngine.rollback(txState, rollbackContext);
+                        }
+                    };
 
-                IOUtils.close((s, throwable) -> throwable, constraintDropper, storageRollback);
+                    IOUtils.close((s, throwable) -> throwable, constraintDropper, storageRollback);
+                }
             }
         } catch (KernelException | RuntimeException | Error e) {
             throw e;
@@ -1369,7 +1489,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public String toString() {
-        return String.format("KernelTransaction[lease:%d]", leaseClient.leaseId());
+        return format("KernelTransaction[lease:%d]", leaseClient.leaseId());
     }
 
     public void dispose() {

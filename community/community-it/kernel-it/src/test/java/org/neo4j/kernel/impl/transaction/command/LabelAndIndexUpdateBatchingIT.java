@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -114,11 +114,14 @@ class LabelAndIndexUpdateBatchingIT {
                 db.getDependencyResolver().resolveDependency(TransactionCommitProcess.class);
         try {
             int cutoffIndex = findCutoffIndex(transactions, txIdCutOffPoint);
-            commitProcess.commit(toApply(transactions.subList(0, cutoffIndex), db), CommitEvent.NULL, EXTERNAL);
+            commitProcess.commit(
+                    toApply(transactions.subList(0, cutoffIndex), db), TransactionWriteEvent.NULL, EXTERNAL);
 
             // WHEN applying the two transactions (node N and the constraint) in the same batch
             commitProcess.commit(
-                    toApply(transactions.subList(cutoffIndex, transactions.size()), db), CommitEvent.NULL, EXTERNAL);
+                    toApply(transactions.subList(cutoffIndex, transactions.size()), db),
+                    TransactionWriteEvent.NULL,
+                    EXTERNAL);
 
             // THEN node N should've ended up in the index too
             try (Transaction tx = db.beginTx()) {

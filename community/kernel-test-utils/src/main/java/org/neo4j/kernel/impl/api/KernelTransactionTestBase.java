@@ -71,8 +71,9 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
@@ -82,6 +83,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.CommandBatchToApply;
@@ -236,6 +238,8 @@ class KernelTransactionTestBase {
                 TransactionIdGenerator.EMPTY,
                 mock(DbmsRuntimeRepository.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
+                mock(LogicalTransactionStore.class),
+                mock(DatabaseHealth.class),
                 NullLogProvider.getInstance(),
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
     }
@@ -249,7 +253,10 @@ class KernelTransactionTestBase {
         public List<CommandBatch> transactions = new ArrayList<>();
 
         @Override
-        public long commit(CommandBatchToApply batch, CommitEvent commitEvent, TransactionApplicationMode mode) {
+        public long commit(
+                CommandBatchToApply batch,
+                TransactionWriteEvent transactionWriteEvent,
+                TransactionApplicationMode mode) {
             transactions.add(batch.commandBatch());
             return ++txId;
         }

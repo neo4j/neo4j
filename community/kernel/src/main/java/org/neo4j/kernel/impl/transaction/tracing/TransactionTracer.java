@@ -69,6 +69,21 @@ public interface TransactionTracer extends TransactionLogCounters {
         public long lastTransactionLogAppendBatch() {
             return 0;
         }
+
+        @Override
+        public long batchesAppended() {
+            return 0;
+        }
+
+        @Override
+        public long rolledbackBatches() {
+            return 0;
+        }
+
+        @Override
+        public long rolledbackBatchedTransactions() {
+            return 0;
+        }
     };
 
     /**

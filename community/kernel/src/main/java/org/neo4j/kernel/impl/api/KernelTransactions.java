@@ -64,6 +64,7 @@ import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -71,6 +72,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.ScopedMemoryPool;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionId;
@@ -103,6 +105,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final TransactionIdStore transactionIdStore;
     private final KernelVersionProvider kernelVersionProvider;
+    private final LogicalTransactionStore transactionStore;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AccessCapabilityFactory accessCapabilityFactory;
     private final SystemNanoClock clock;
@@ -115,6 +118,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final IdController.IdFreeCondition externalIdReuseCondition;
     private final TransactionCommitmentFactory commitmentFactory;
     private final TransactionIdGenerator transactionIdGenerator;
+    private final DatabaseHealth databaseHealth;
     private final LogProvider internalLogProvider;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
@@ -188,6 +192,8 @@ public class KernelTransactions extends LifecycleAdapter
             TransactionCommitmentFactory commitmentFactory,
             TransactionIdSequence transactionIdSequence,
             TransactionIdGenerator transactionIdGenerator,
+            DatabaseHealth databaseHealth,
+            LogicalTransactionStore transactionStore,
             LogProvider internalLogProvider) {
         this.config = config;
         this.locks = locks;
@@ -211,6 +217,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.externalIdReuseCondition = externalIdReuseCondition;
         this.commitmentFactory = commitmentFactory;
         this.transactionIdGenerator = transactionIdGenerator;
+        this.databaseHealth = databaseHealth;
         this.internalLogProvider = internalLogProvider;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup(tokenHolders, globalProcedures);
         this.namedDatabaseId = namedDatabaseId;
@@ -224,6 +231,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.schemaState = schemaState;
         this.leaseService = leaseService;
         this.transactionIdSequence = transactionIdSequence;
+        this.transactionStore = transactionStore;
         this.multiVersioned = storageEngine.getOpenOptions().contains(MULTI_VERSIONED);
         this.txPool = new MonitoredTransactionPool(
                 new GlobalKernelTransactionPool(
@@ -501,6 +509,8 @@ public class KernelTransactions extends LifecycleAdapter
                     transactionIdGenerator,
                     dbmsRuntimeRepository,
                     kernelVersionProvider,
+                    transactionStore,
+                    databaseHealth,
                     internalLogProvider,
                     multiVersioned);
             this.transactions.add(tx);

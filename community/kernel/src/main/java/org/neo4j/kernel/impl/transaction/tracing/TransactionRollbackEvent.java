@@ -17,20 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.transaction.tracing;
 
-import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
-import org.neo4j.memory.MemoryTracker;
+public interface TransactionRollbackEvent extends AutoCloseable {
 
-public interface TransactionCommitter {
-    long commit(
-            TransactionWriteEvent transactionWriteEvent, long commitTime, MemoryTracker memoryTracker, boolean commit)
-            throws KernelException;
+    TransactionRollbackEvent NULL = new TransactionRollbackEvent() {
+        @Override
+        public RollbackBatchEvent beginRollbackDataEvent() {
+            return RollbackBatchEvent.NULL;
+        }
 
-    void rollback(TransactionRollbackEvent rollbackEvent) throws TransactionFailureException;
+        @Override
+        public TransactionWriteEvent beginRollbackWriteEvent() {
+            return TransactionWriteEvent.NULL;
+        }
 
-    default void reset() {}
+        @Override
+        public void close() {}
+    };
+
+    RollbackBatchEvent beginRollbackDataEvent();
+
+    TransactionWriteEvent beginRollbackWriteEvent();
+
+    @Override
+    void close();
 }

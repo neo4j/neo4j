@@ -153,7 +153,7 @@ import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.IndexStoreViewFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
-import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
@@ -658,7 +658,7 @@ public class Database extends AbstractDatabase {
                         kernelModule.getTransactionIdGenerator());
                 TransactionCommitProcess commitProcess =
                         databaseDependencies.resolveDependency(TransactionCommitProcess.class);
-                commitProcess.commit(toApply, CommitEvent.NULL, TransactionApplicationMode.INTERNAL);
+                commitProcess.commit(toApply, TransactionWriteEvent.NULL, TransactionApplicationMode.INTERNAL);
             }
         });
     }
@@ -894,7 +894,8 @@ public class Database extends AbstractDatabase {
         databaseDependencies.satisfyDependencies(
                 checkPointer, logFiles, logicalTransactionStore, transactionAppender, transactionLogService);
 
-        return new DatabaseTransactionLogModule(checkPointer, transactionAppender, transactionMetadataCache);
+        return new DatabaseTransactionLogModule(
+                checkPointer, transactionAppender, transactionMetadataCache, logicalTransactionStore);
     }
 
     private DatabaseKernelModule buildKernel(
@@ -967,6 +968,8 @@ public class Database extends AbstractDatabase {
                 commitmentFactory,
                 transactionIdSequence,
                 transactionIdGenerator,
+                databaseHealth,
+                logsModule.getLogicalTransactionStore(),
                 internalLogProvider));
 
         buildTransactionMonitor(kernelTransactions, databaseConfig);

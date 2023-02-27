@@ -62,12 +62,21 @@ public class TransactionLogWriter {
     * The first chunk of chunked transactions comes also with a start entry.
     * The last chunk in the chunked transaction comes with a commit entry at the end.
     */
-    public int append(CommandBatch batch, long transactionId, long chunkId, int previousChecksum) throws IOException {
+    public int append(
+            CommandBatch batch,
+            long transactionId,
+            long chunkId,
+            int previousChecksum,
+            LogPosition previousBatchPosition)
+            throws IOException {
         KernelVersion kernelVersion = batch.kernelVersion();
         if (kernelVersion == null) {
             kernelVersion = versionProvider.kernelVersion();
         }
         byte version = kernelVersion.version();
+        if (batch.isRollback()) {
+            return writer.writeRollbackEntry(version, transactionId, batch.getTimeCommitted());
+        }
 
         if (batch.isFirst()) {
             writer.writeStartEntry(
@@ -77,7 +86,7 @@ public class TransactionLogWriter {
                     previousChecksum,
                     encodeLogIndex(batch.consensusIndex()));
         } else {
-            writer.writeChunkStartEntry(version, batch.getTimeCommitted(), chunkId);
+            writer.writeChunkStartEntry(version, batch.getTimeCommitted(), chunkId, previousBatchPosition);
         }
 
         // Write all the commands to the log channel

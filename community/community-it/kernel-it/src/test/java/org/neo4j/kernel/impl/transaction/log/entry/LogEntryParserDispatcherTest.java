@@ -81,7 +81,7 @@ class LogEntryParserDispatcherTest {
                 byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
                 entryWriter.writeStartEntry(version, 1, 2, 3, EMPTY_BYTE_ARRAY);
                 entryWriter.writeChunkEndEntry(version, 17, 13);
-                entryWriter.writeChunkStartEntry(version, 11, 13);
+                entryWriter.writeChunkStartEntry(version, 11, 13, new LogPosition(14, 15));
                 entryWriter.writeCommitEntry(version, 7, 8);
             }
 

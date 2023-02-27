@@ -105,6 +105,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -116,6 +117,7 @@ import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.scheduler.JobScheduler;
@@ -802,6 +804,8 @@ class KernelTransactionsTest {
                 mock(TransactionCommitmentFactory.class),
                 new TransactionIdSequence(),
                 TransactionIdGenerator.EMPTY,
+                mock(DatabaseHealth.class),
+                mock(LogicalTransactionStore.class),
                 NullLogProvider.getInstance());
     }
 
@@ -914,6 +918,8 @@ class KernelTransactionsTest {
                     mock(TransactionCommitmentFactory.class),
                     new TransactionIdSequence(),
                     TransactionIdGenerator.EMPTY,
+                    mock(DatabaseHealth.class),
+                    mock(LogicalTransactionStore.class),
                     NullLogProvider.getInstance());
         }
 

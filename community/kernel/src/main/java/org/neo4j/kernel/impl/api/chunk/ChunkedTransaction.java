@@ -43,6 +43,7 @@ public class ChunkedTransaction implements CommandBatchToApply {
     private final Commitment commitment;
     private final TransactionIdGenerator transactionIdGenerator;
     private boolean idGenerated;
+    private LogPosition lastBatchLogPosition = LogPosition.UNSPECIFIED;
     private long transactionId = TRANSACTION_ID_NOT_SPECIFIED;
     private CommandBatchToApply next;
 
@@ -87,6 +88,11 @@ public class ChunkedTransaction implements CommandBatchToApply {
     }
 
     @Override
+    public LogPosition previousBatchLogPosition() {
+        return chunk.chunkMetadata().previousBatchLogPosition();
+    }
+
+    @Override
     public CursorContext cursorContext() {
         return cursorContext;
     }
@@ -113,22 +119,27 @@ public class ChunkedTransaction implements CommandBatchToApply {
         }
     }
 
+    public LogPosition lastBatchLogPosition() {
+        return lastBatchLogPosition;
+    }
+
     @Override
     public CommandBatch commandBatch() {
         return chunk;
     }
 
     @Override
-    public void batchAppended(LogPosition beforeCommit, LogPosition positionAfter, int checksum) {
+    public void batchAppended(LogPosition beforeStart, LogPosition positionAfter, int checksum) {
         if (chunk.isFirst()) {
             this.commitment.commit(
                     transactionId,
-                    beforeCommit,
+                    beforeStart,
                     positionAfter,
                     checksum,
                     chunk.chunkMetadata().consensusIndex());
             this.cursorContext.getVersionContext().initWrite(transactionId);
         }
+        lastBatchLogPosition = beforeStart;
     }
 
     @Override

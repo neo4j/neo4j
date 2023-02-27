@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
+import static org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent.NULL;
 import static org.neo4j.lock.ResourceLocker.IGNORE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;

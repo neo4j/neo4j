@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.database;
 
+import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
@@ -27,14 +28,21 @@ class DatabaseTransactionLogModule {
     private final CheckPointer checkPointer;
     private final TransactionAppender appender;
     private final TransactionMetadataCache transactionMetadataCache;
+    private final LogicalTransactionStore logicalTransactionStore;
 
     DatabaseTransactionLogModule(
             CheckPointer checkPointer,
             TransactionAppender appender,
-            TransactionMetadataCache transactionMetadataCache) {
+            TransactionMetadataCache transactionMetadataCache,
+            LogicalTransactionStore logicalTransactionStore) {
         this.checkPointer = checkPointer;
         this.appender = appender;
         this.transactionMetadataCache = transactionMetadataCache;
+        this.logicalTransactionStore = logicalTransactionStore;
+    }
+
+    public LogicalTransactionStore getLogicalTransactionStore() {
+        return logicalTransactionStore;
     }
 
     TransactionMetadataCache transactionMetadataCache() {

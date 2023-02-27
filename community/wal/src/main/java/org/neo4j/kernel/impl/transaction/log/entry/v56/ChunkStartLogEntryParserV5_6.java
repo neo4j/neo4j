@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry.v56;
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParser;
@@ -42,6 +43,8 @@ public class ChunkStartLogEntryParserV5_6 extends LogEntryParser {
             throws IOException {
         long timeWritten = channel.getLong();
         long chunkId = channel.getLong();
-        return new LogEntryChunkStart(version, timeWritten, chunkId);
+        long logVersion = channel.getLong();
+        long offset = channel.getLong();
+        return new LogEntryChunkStart(version, timeWritten, chunkId, new LogPosition(logVersion, offset));
     }
 }

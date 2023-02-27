@@ -31,8 +31,8 @@ public interface TransactionEvent extends AutoCloseable {
         public void setRollback(boolean rollback) {}
 
         @Override
-        public CommitEvent beginCommitEvent() {
-            return CommitEvent.NULL;
+        public TransactionWriteEvent beginCommitEvent() {
+            return TransactionWriteEvent.NULL;
         }
 
         @Override
@@ -43,6 +43,16 @@ public interface TransactionEvent extends AutoCloseable {
 
         @Override
         public void setReadOnly(boolean wasReadOnly) {}
+
+        @Override
+        public TransactionWriteEvent beginChunkWriteEvent() {
+            return TransactionWriteEvent.NULL;
+        }
+
+        @Override
+        public TransactionRollbackEvent beginRollback() {
+            return TransactionRollbackEvent.NULL;
+        }
     };
 
     /**
@@ -58,7 +68,17 @@ public interface TransactionEvent extends AutoCloseable {
     /**
      * Begin the process of committing the transaction.
      */
-    CommitEvent beginCommitEvent();
+    TransactionWriteEvent beginCommitEvent();
+
+    /**
+     * Begin the process of writing the transaction content to storage.
+     */
+    TransactionWriteEvent beginChunkWriteEvent();
+
+    /**
+     * Begin the process of transaction rollback.
+     */
+    TransactionRollbackEvent beginRollback();
 
     /**
      * Mark the end of the transaction, after it has been committed or rolled back.

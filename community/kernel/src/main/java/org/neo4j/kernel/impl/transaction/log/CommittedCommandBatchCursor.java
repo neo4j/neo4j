@@ -25,6 +25,7 @@ import java.util.List;
 import org.neo4j.kernel.impl.transaction.CommittedChunkRepresentation;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.RollbackChunkRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
@@ -33,7 +34,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkEnd;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryRollback;
-import org.neo4j.kernel.impl.transaction.tracing.RollbackChunkRepresentation;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class CommittedCommandBatchCursor implements CommandBatchCursor {

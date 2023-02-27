@@ -139,8 +139,8 @@ public class TransactionLogInitializer {
         LogFile logFile = logFiles.getLogFile();
         TransactionLogWriter transactionLogWriter = logFile.getTransactionLogWriter();
         CompleteTransaction emptyTx = emptyTransaction(timestamp, upgradeTransactionId, kernelVersion, consensusIndex);
-        int checksum =
-                transactionLogWriter.append(emptyTx, upgradeTransactionId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM);
+        int checksum = transactionLogWriter.append(
+                emptyTx, upgradeTransactionId, NOT_SPECIFIED_CHUNK_ID, BASE_TX_CHECKSUM, LogPosition.UNSPECIFIED);
         logFile.forceAfterAppend(LogAppendEvent.NULL);
         LogPosition position = transactionLogWriter.getCurrentPosition();
         appendCheckpoint(

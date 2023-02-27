@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.tracing;
+package org.neo4j.kernel.impl.transaction;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
@@ -28,7 +28,7 @@ import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.CommandChunk;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
 
@@ -43,6 +43,8 @@ public record RollbackChunkRepresentation(
                 new ChunkMetadata(
                         false,
                         true,
+                        true,
+                        LogPosition.UNSPECIFIED,
                         -1,
                         UNKNOWN_CONSENSUS_INDEX,
                         timeWritten,
@@ -81,5 +83,10 @@ public record RollbackChunkRepresentation(
     @Override
     public boolean isRollback() {
         return true;
+    }
+
+    @Override
+    public LogPosition previousBatchLogPosition() {
+        return LogPosition.UNSPECIFIED;
     }
 }

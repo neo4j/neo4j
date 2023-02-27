@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction;
 
 import java.io.IOException;
 import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
 
@@ -37,4 +38,6 @@ public interface CommittedCommandBatch {
     long txId();
 
     boolean isRollback();
+
+    LogPosition previousBatchLogPosition();
 }

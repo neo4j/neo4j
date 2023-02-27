@@ -31,6 +31,7 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 
@@ -61,10 +62,14 @@ public class LogEntryWriter<T extends WritableChecksumChannel> {
                 .put(additionalHeaderData, additionalHeaderData.length);
     }
 
-    public void writeChunkStartEntry(byte version, long timeWritten, long chunkId) throws IOException {
+    public void writeChunkStartEntry(byte version, long timeWritten, long chunkId, LogPosition previousChunkStart)
+            throws IOException {
         channel.beginChecksum();
         writeLogEntryHeader(version, CHUNK_START, channel);
-        channel.putLong(timeWritten).putLong(chunkId);
+        channel.putLong(timeWritten)
+                .putLong(chunkId)
+                .putLong(previousChunkStart.getLogVersion())
+                .putLong(previousChunkStart.getByteOffset());
     }
 
     public int writeChunkEndEntry(byte version, long transactionId, long chunkId) throws IOException {

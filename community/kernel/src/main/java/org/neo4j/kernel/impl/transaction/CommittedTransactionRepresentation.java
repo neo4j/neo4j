@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.List;
 import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
@@ -90,6 +91,11 @@ public record CommittedTransactionRepresentation(
     @Override
     public boolean isRollback() {
         return false;
+    }
+
+    @Override
+    public LogPosition previousBatchLogPosition() {
+        return LogPosition.UNSPECIFIED;
     }
 
     @Override

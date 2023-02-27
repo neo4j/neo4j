@@ -45,8 +45,8 @@ public class ChunkSink implements ChunkedTransactionSink {
     public void write(TxState txState, TransactionEvent transactionEvent) {
         MemoryTracker memoryTracker = txState.memoryTracker();
         if (memoryTracker.estimatedHeapMemory() > chunkSize) {
-            try (var commitEvent = transactionEvent.beginCommitEvent()) {
-                committer.commit(commitEvent, clocks.systemClock().millis(), memoryTracker, false);
+            try (var chunkWriteEvent = transactionEvent.beginChunkWriteEvent()) {
+                committer.commit(chunkWriteEvent, clocks.systemClock().millis(), memoryTracker, false);
                 txState.reset();
             } catch (KernelException ke) {
                 throw new RuntimeException("Fail to append transaction chunk.", ke);

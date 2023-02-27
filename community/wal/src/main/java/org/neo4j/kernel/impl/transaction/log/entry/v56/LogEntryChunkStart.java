@@ -22,16 +22,20 @@ package org.neo4j.kernel.impl.transaction.log.entry.v56;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_START;
 
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 
 public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
     private final long timeWritten;
     private final long chunkId;
+    private final LogPosition previousBatchLogPosition;
 
-    public LogEntryChunkStart(KernelVersion kernelVersion, long timeWritten, long chunkId) {
+    public LogEntryChunkStart(
+            KernelVersion kernelVersion, long timeWritten, long chunkId, LogPosition previousBatchLogPosition) {
         super(kernelVersion, CHUNK_START);
         this.timeWritten = timeWritten;
         this.chunkId = chunkId;
+        this.previousBatchLogPosition = previousBatchLogPosition;
     }
 
     public long getTimeWritten() {
@@ -42,11 +46,15 @@ public class LogEntryChunkStart extends AbstractVersionAwareLogEntry {
         return chunkId;
     }
 
+    public LogPosition getPreviousBatchLogPosition() {
+        return previousBatchLogPosition;
+    }
+
     @Override
     public String toString() {
-        return "LogEntryChunkStart{" + "kernelVersion="
-                + kernelVersion() + ", timeWritten="
+        return "LogEntryChunkStart{" + "timeWritten="
                 + timeWritten + ", chunkId="
-                + chunkId + '}';
+                + chunkId + ", previousBatchLogPosition="
+                + previousBatchLogPosition + '}';
     }
 }

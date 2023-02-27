@@ -55,4 +55,19 @@ public interface TransactionLogCounters {
      * @return last append batch size
      */
     long lastTransactionLogAppendBatch();
+
+    /**
+     * Total number of batches appended as part of batched transactions
+     */
+    long batchesAppended();
+
+    /**
+     * Total number of batches rolled back as part of batched transactions
+     */
+    long rolledbackBatches();
+
+    /**
+     * Total number of rolled back batched transactions
+     */
+    long rolledbackBatchedTransactions();
 }

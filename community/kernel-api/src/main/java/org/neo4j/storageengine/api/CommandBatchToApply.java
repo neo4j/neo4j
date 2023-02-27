@@ -40,6 +40,12 @@ public interface CommandBatchToApply extends CommandStream, AutoCloseable {
     long chunkId();
 
     /**
+     * Position of previous command batch of the same transaction in the transaction log
+     * @return position of previous batch or {@link LogPosition#UNSPECIFIED} if no previous batch exists.
+     */
+    LogPosition previousBatchLogPosition();
+
+    /**
      * Subject that triggered the commands.
      * <p>
      * This is used for monitoring purposes, so a unit of work can be linked to its initiator.

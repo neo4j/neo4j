@@ -176,6 +176,11 @@ public class CompleteTransaction implements CommandBatch {
     }
 
     @Override
+    public boolean isRollback() {
+        return false;
+    }
+
+    @Override
     public Iterator<StorageCommand> iterator() {
         return commands.iterator();
     }
