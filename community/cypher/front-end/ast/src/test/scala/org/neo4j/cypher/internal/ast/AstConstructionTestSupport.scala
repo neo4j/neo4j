@@ -815,6 +815,22 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     ExistsExpression(simpleMatchQuery)(pos, Some(introducedVariables), Some(scopeDependencies))
   }
 
+  def simpleCollectExpression(
+    pattern: Pattern,
+    maybeWhere: Option[Where],
+    returnItem: Return,
+    introducedVariables: Set[LogicalVariable] = Set.empty,
+    scopeDependencies: Set[LogicalVariable] = Set.empty
+  ): CollectExpression = {
+
+    val simpleMatchQuery = singleQuery(
+      Match(optional = false, pattern, Seq(), maybeWhere)(pos),
+      returnItem
+    )
+
+    CollectExpression(simpleMatchQuery)(pos, Some(introducedVariables), Some(scopeDependencies))
+  }
+
   def simpleCountExpression(
     pattern: Pattern,
     maybeWhere: Option[Where],

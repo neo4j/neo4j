@@ -81,6 +81,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions
@@ -1235,8 +1236,7 @@ case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[
 
   private def checkNoSubqueryInMerge: SemanticCheck = {
     val hasSubqueryExpression = Seq(pattern, actions).folder.treeCollect {
-      case e: CountExpression  => e
-      case e: ExistsExpression => e
+      case e: FullSubqueryExpression => e
     }
 
     hasSubqueryExpression match {

@@ -95,6 +95,8 @@ sealed trait ReadAdministrationCommand extends AdministrationCommand {
       invalid.map {
         case exp: ExistsExpression =>
           error("The EXISTS expression is not valid on SHOW commands.", exp.position)
+        case exp: CollectExpression =>
+          error("The COLLECT expression is not valid on SHOW commands.", exp.position)
         case exp: CountExpression =>
           error("The COUNT expression is not valid on SHOW commands.", exp.position)
         case exp: PatternExpression =>
@@ -1124,6 +1126,8 @@ object ShowAliases {
 object AliasDriverSettingsCheck {
   val existsErrorMessage = "The EXISTS expression is not valid in driver settings."
   val countErrorMessage = "The COUNT expression is not valid in driver settings."
+  val collectErrorMessage = "The COLLECT expression is not valid in driver settings."
+  val genericErrorMessage = "This expression is not valid in driver settings."
 
   def findInvalidDriverSettings(driverSettings: Option[Either[Map[String, Expression], Parameter]])
     : Option[Expression] = {
@@ -1131,8 +1135,9 @@ object AliasDriverSettingsCheck {
       case Some(Left(settings)) =>
         settings.values.flatMap(s =>
           s.folder.treeFind[Expression] {
-            case _: ExistsExpression => true
-            case _: CountExpression  => true
+            case _: ExistsExpression  => true
+            case _: CollectExpression => true
+            case _: CountExpression   => true
           }
         ).headOption
       case _ => None
@@ -1198,8 +1203,12 @@ final case class CreateRemoteDatabaseAlias(
     case _ => AliasDriverSettingsCheck.findInvalidDriverSettings(driverSettings) match {
         case Some(expr: ExistsExpression) =>
           error(AliasDriverSettingsCheck.existsErrorMessage, expr.position)
-        case Some(expr) =>
+        case Some(expr: CountExpression) =>
           error(AliasDriverSettingsCheck.countErrorMessage, expr.position)
+        case Some(expr: CollectExpression) =>
+          error(AliasDriverSettingsCheck.collectErrorMessage, expr.position)
+        case Some(expr) =>
+          error(AliasDriverSettingsCheck.genericErrorMessage, expr.position)
         case _ => super.semanticCheck chain SemanticState.recordCurrentScope(this)
       }
   }
@@ -1236,8 +1245,12 @@ final case class AlterRemoteDatabaseAlias(
         expr match {
           case _: ExistsExpression =>
             error(AliasDriverSettingsCheck.existsErrorMessage, expr.position)
-          case _ =>
+          case _: CountExpression =>
             error(AliasDriverSettingsCheck.countErrorMessage, expr.position)
+          case _: CollectExpression =>
+            error(AliasDriverSettingsCheck.collectErrorMessage, expr.position)
+          case _ =>
+            error(AliasDriverSettingsCheck.genericErrorMessage, expr.position)
         }
       case _ =>
         val isLocalAlias = targetName.isDefined && url.isEmpty

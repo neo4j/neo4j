@@ -21,7 +21,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class CountExpression(query: Query)(
+case class CollectExpression(query: Query)(
   val position: InputPosition,
   override val computedIntroducedVariables: Option[Set[LogicalVariable]],
   override val computedScopeDependencies: Option[Set[LogicalVariable]]
@@ -30,7 +30,7 @@ case class CountExpression(query: Query)(
   self =>
 
   override def withQuery(query: Query): FullSubqueryExpression =
-    CountExpression(query)(position, computedIntroducedVariables, computedScopeDependencies)
+    CollectExpression(query)(position, computedIntroducedVariables, computedScopeDependencies)
 
   override def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable])
     : ExpressionWithComputedDependencies =
@@ -43,7 +43,7 @@ case class CountExpression(query: Query)(
   override def subqueryAstNode: ASTNode = query
 
   override def dup(children: Seq[AnyRef]): this.type = {
-    CountExpression(
+    CollectExpression(
       children.head.asInstanceOf[Query]
     )(position, computedIntroducedVariables, computedScopeDependencies).asInstanceOf[this.type]
   }

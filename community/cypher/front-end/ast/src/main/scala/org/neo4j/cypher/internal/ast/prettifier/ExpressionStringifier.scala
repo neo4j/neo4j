@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.prettifier
 
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions.Add
@@ -339,6 +340,10 @@ private class DefaultExpressionStringifier(
       case ExistsExpression(q) =>
         val p = prettifier.asString(q)
         s"EXISTS { $p }"
+
+      case CollectExpression(q) =>
+        val p = prettifier.asString(q)
+        s"COLLECT { $p }"
 
       case CountExpression(q) =>
         val p = prettifier.asString(q)

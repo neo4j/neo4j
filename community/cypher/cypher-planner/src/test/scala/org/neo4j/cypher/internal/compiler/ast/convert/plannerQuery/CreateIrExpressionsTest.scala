@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Query
@@ -27,6 +28,7 @@ import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.CollectAll
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
@@ -58,6 +60,8 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Negation
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
@@ -66,6 +70,7 @@ import org.neo4j.cypher.internal.rewriting.rewriters.inlineNamedPathsInPatternCo
 import org.neo4j.cypher.internal.rewriting.rewriters.normalizePredicates
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.InputPosition.NONE
 import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.WindowsStringSafe
@@ -161,10 +166,12 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   private def queryWith(
     qg: QueryGraph,
     horizon: Option[QueryHorizon],
-    tail: Option[SinglePlannerQuery] = None
+    tail: Option[SinglePlannerQuery] = None,
+    interestingOrder: InterestingOrder = InterestingOrder.empty
   ): PlannerQuery = {
     RegularSinglePlannerQuery(
       queryGraph = qg,
+      interestingOrder = interestingOrder,
       horizon = horizon.getOrElse(RegularQueryProjection()),
       tail = tail
     )
@@ -1022,6 +1029,195 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     countIRExpression.countVariableName shouldBe countVariableName
     countIRExpression.solvedExpressionAsString should equal(
       "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2 }"
+    )
+  }
+
+  test("Rewrites Collect Expression") {
+    val simpleMatchQuery = singleQuery(
+      match_(n_r_m_chain, None),
+      return_(
+        aliasedReturnItem(n)
+      )
+    )
+
+    val ce = CollectExpression(simpleMatchQuery)(pos, Some(Set(r, m)), Some(Set(n)))
+
+    val collectVariableName = makeAnonymousVariableNameGenerator().nextName
+    val semanticTable = new SemanticTable().addNode(n)
+
+    val rewritten = rewrite(ce, semanticTable)
+    val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]
+
+    collectIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name),
+          argumentIds = Set(n.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+            )
+        ),
+        horizon =
+          Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
+        None
+      )
+    )
+
+    collectIRExpression.collectionName shouldBe collectVariableName
+    collectIRExpression.variableToCollectName shouldBe n.name
+    collectIRExpression.solvedExpressionAsString should equal("COLLECT { MATCH (n)-[r]-(m)\nRETURN n AS n }")
+  }
+
+  test("Rewrites Ordered Collect Expression") {
+    val simpleMatchQuery = singleQuery(
+      match_(n_r_m_chain, None),
+      return_(
+        orderBy(n.asc),
+        aliasedReturnItem(n)
+      )
+    )
+
+    val ce = CollectExpression(simpleMatchQuery)(pos, Some(Set(r, m)), Some(Set(n)))
+
+    val collectVariableName = makeAnonymousVariableNameGenerator().nextName
+    val semanticTable = new SemanticTable().addNode(n)
+
+    val rewritten = rewrite(ce, semanticTable)
+    val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]
+
+    collectIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name),
+          argumentIds = Set(n.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+            )
+        ),
+        horizon =
+          Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
+        None,
+        InterestingOrder.required(RequiredOrderCandidate.asc(n, Map("n" -> n)))
+      )
+    )
+
+    collectIRExpression.collectionName shouldBe collectVariableName
+    collectIRExpression.variableToCollectName shouldBe n.name
+    collectIRExpression.solvedExpressionAsString should equal(
+      "COLLECT { MATCH (n)-[r]-(m)\nRETURN n AS n\n  ORDER BY n ASCENDING }"
+    )
+  }
+
+  test("Rewrites Collect Expression with WHERE") {
+    val ce = simpleCollectExpression(
+      n_r_m_r2_o_r3_q,
+      Some(where(rPred)),
+      return_(
+        orderBy(n.asc),
+        aliasedReturnItem(n)
+      ),
+      Set(n, r, m, r2, o, r3, q),
+      Set.empty
+    )
+
+    val collectVariableName = makeAnonymousVariableNameGenerator().nextName
+    val semanticTable = new SemanticTable().addNode(n)
+
+    val rewritten = rewrite(ce, semanticTable)
+    val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]
+
+    collectIRExpression.query should equal(
+      queryWith(
+        QueryGraph(
+          patternNodes = Set(n.name, m.name, o.name, q.name),
+          patternRelationships =
+            Set(
+              PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r2").name, (o.name, m.name), OUTGOING, Seq.empty, SimplePatternLength),
+              PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
+            ),
+          selections = Selections.from(Seq(
+            not(equals(r, r3)),
+            not(equals(r, r2)),
+            not(equals(r3, r2)),
+            andedPropertyInequalities(rPred)
+          ))
+        ),
+        horizon =
+          Some(RegularQueryProjection(Map("n" -> n), isTerminating = true)),
+        None,
+        InterestingOrder.required(RequiredOrderCandidate.asc(n, Map("n" -> n)))
+      )
+    )
+
+    collectIRExpression.collectionName shouldBe collectVariableName
+    collectIRExpression.variableToCollectName shouldBe n.name
+    collectIRExpression.solvedExpressionAsString should equal(
+      "COLLECT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n\n  ORDER BY n ASCENDING }"
+    )
+  }
+
+  test("Rewrites Collect Expression with Union") {
+    val unionQuery = union(
+      singleQuery(
+        match_(n_r_m_chain, None),
+        return_(
+          aliasedReturnItem(n)
+        )
+      ),
+      singleQuery(
+        match_(n_r_m_chain, None),
+        return_(
+          aliasedReturnItem(n)
+        )
+      )
+    )
+
+    val rewrittenQuery: Query = unionQuery.endoRewrite(Namespacer.projectUnions)
+
+    val ce = CollectExpression(rewrittenQuery)(pos, Some(Set(r, m)), Some(Set(n)))
+
+    val countVariableName = makeAnonymousVariableNameGenerator().nextName
+    val semanticTable = new SemanticTable().addNode(Variable("n")(InputPosition(16, 1, 17)))
+
+    val rewritten = rewrite(ce, semanticTable)
+    val collectIRExpression = rewritten.asInstanceOf[ListIRExpression]
+
+    collectIRExpression.query should equal(
+      UnionQuery(
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            patternNodes = Set(n.name, m.name),
+            argumentIds = Set(n.name),
+            patternRelationships =
+              Set(
+                PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+              )
+          ),
+          horizon = RegularQueryProjection(Map("n" -> n))
+        ),
+        RegularSinglePlannerQuery(
+          QueryGraph(
+            patternNodes = Set(n.name, m.name),
+            argumentIds = Set(n.name),
+            patternRelationships =
+              Set(
+                PatternRelationship(varFor("r").name, (n.name, m.name), BOTH, Seq.empty, SimplePatternLength)
+              )
+          ),
+          horizon = RegularQueryProjection(Map("n" -> n))
+        ),
+        distinct = true,
+        List(UnionMapping(varFor(n.name), varFor(n.name), varFor(n.name)))
+      )
+    )
+
+    collectIRExpression.collectionName shouldBe countVariableName
+    collectIRExpression.variableToCollectName shouldBe n.name
+    collectIRExpression.solvedExpressionAsString should equal(
+      "COLLECT { MATCH (n)-[r]-(m)\nRETURN n AS n\nUNION\nMATCH (n)-[r]-(m)\nRETURN n AS n }"
     )
   }
 

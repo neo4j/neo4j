@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.UnionDistinct
@@ -734,6 +735,24 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
               checkForShadowedVariables chain
               SemanticState.recordCurrentScope(x.query)
           } chain specifyType(CTInteger, x)
+
+      // COLLECT
+      case x: CollectExpression =>
+        whenState(!_.features.contains(SemanticFeature.CollectSubquerySupport)) {
+          error("Collect Subqueries are not yet supported", x.position)
+        } chain
+          SemanticState.recordCurrentScope(x) chain
+          withScopedState {
+            x.query.semanticCheckInSubqueryExpressionContext(canOmitReturn = false) chain
+              when(x.query.containsUpdates) {
+                SemanticError("A Collect Expression cannot contain any updates", x.position)
+              } chain
+              when(x.query.returnVariables.includeExisting || x.query.returnColumns.size != 1) {
+                SemanticError("A Collect Expression must end with a single return column.", x.position)
+              } chain
+              checkForShadowedVariables chain
+              SemanticState.recordCurrentScope(x.query)
+          } chain specifyType(CTList(CTAny).covariant, x)
 
       case x: Expression => semanticCheckFallback(ctx, x)
     }

@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.CallClause
 import org.neo4j.cypher.internal.ast.Clause
 import org.neo4j.cypher.internal.ast.ClauseAllowedOnSystem
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CommandClauseAllowedOnSystem
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.CreateAliasAction
@@ -1029,6 +1030,10 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case p: PatternComprehension => throw context.cypherExceptionFactory.syntaxException(
               "You cannot include a pattern comprehension on a system database",
               p.position
+            )
+          case c: CollectExpression => throw context.cypherExceptionFactory.syntaxException(
+              "You cannot include a COLLECT expression on a system database",
+              c.position
             )
           case c: CountExpression => throw context.cypherExceptionFactory.syntaxException(
               "You cannot include a COUNT expression on a system database",

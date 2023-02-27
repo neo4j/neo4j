@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BtreeIndexes
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.ConstraintVersion0
@@ -1178,7 +1179,7 @@ class Neo4jASTFactory(query: String)
 
   /** Exists and Count allow for PatternList and Optional Where, convert here to give a unified Exists / Count
    * containing a semantically valid Query. */
-  private def convertExistsAndCountToUnifiedExpression(
+  private def convertSubqueryExpressionToUnifiedExpression(
     patterns: util.List[PatternPart],
     query: Query,
     where: Where
@@ -1202,7 +1203,11 @@ class Neo4jASTFactory(query: String)
     query: Query,
     where: Where
   ): Expression = {
-    ExistsExpression(convertExistsAndCountToUnifiedExpression(patterns, query, where))(p, None, None)
+    ExistsExpression(convertSubqueryExpressionToUnifiedExpression(patterns, query, where))(
+      p,
+      None,
+      None
+    )
   }
 
   override def countExpression(
@@ -1211,7 +1216,18 @@ class Neo4jASTFactory(query: String)
     query: Query,
     where: Where
   ): Expression = {
-    CountExpression(convertExistsAndCountToUnifiedExpression(patterns, query, where))(p, None, None)
+    CountExpression(convertSubqueryExpressionToUnifiedExpression(patterns, query, where))(p, None, None)
+  }
+
+  override def collectExpression(
+    p: InputPosition,
+    query: Query
+  ): Expression = {
+    CollectExpression(query)(
+      p,
+      None,
+      None
+    )
   }
 
   override def mapProjection(p: InputPosition, v: Variable, items: util.List[MapProjectionElement]): Expression =

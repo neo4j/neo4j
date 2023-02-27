@@ -58,6 +58,7 @@ import org.neo4j.cypher.internal.ast.AssignPrivilegeAction
 import org.neo4j.cypher.internal.ast.AssignRoleAction
 import org.neo4j.cypher.internal.ast.BuiltInFunctions
 import org.neo4j.cypher.internal.ast.Clause
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.CompositeDatabaseManagementActions
 import org.neo4j.cypher.internal.ast.ConstraintVersion2
@@ -865,6 +866,12 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     scopeDependencies <- zeroOrMore(_variable)
   } yield ExistsExpression(query)(pos, Some(introducedVariables.toSet), Some(scopeDependencies.toSet))
 
+  def _collectExpression: Gen[CollectExpression] = for {
+    query <- _query
+    introducedVariables <- zeroOrMore(_variable)
+    scopeDependencies <- zeroOrMore(_variable)
+  } yield CollectExpression(query)(pos, Some(introducedVariables.toSet), Some(scopeDependencies.toSet))
+
   def _countExpression: Gen[CountExpression] = for {
     query <- _query
     introducedVariables <- zeroOrMore(_variable)
@@ -922,6 +929,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
         lzy(_containerIndex),
         lzy(_existsExpression),
         lzy(_countExpression),
+        lzy(_collectExpression),
         lzy(_patternComprehension)
       )
     )

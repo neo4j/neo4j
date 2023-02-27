@@ -434,6 +434,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL collectExpression(NULL p, NULL q) {
+        return null;
+    }
+
+    @Override
     public NULL mapProjection(NULL p, NULL v, List<NULL> nulls) {
         return null;
     }

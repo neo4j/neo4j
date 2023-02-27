@@ -19,8 +19,6 @@ package org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.ExpressionWithComputedDependencies
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.ScopeExpression
-import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -28,9 +26,12 @@ case class ExistsExpression(query: Query)(
   val position: InputPosition,
   override val computedIntroducedVariables: Option[Set[LogicalVariable]],
   override val computedScopeDependencies: Option[Set[LogicalVariable]]
-) extends ScopeExpression with BooleanExpression with SubqueryExpression with ExpressionWithComputedDependencies {
+) extends FullSubqueryExpression with BooleanExpression {
 
   self =>
+
+  override def withQuery(query: Query): FullSubqueryExpression =
+    ExistsExpression(query)(position, computedIntroducedVariables, computedScopeDependencies)
 
   override def withComputedIntroducedVariables(computedIntroducedVariables: Set[LogicalVariable])
     : ExpressionWithComputedDependencies =

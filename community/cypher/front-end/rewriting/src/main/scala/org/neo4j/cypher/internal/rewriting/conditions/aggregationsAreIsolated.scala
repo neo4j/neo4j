@@ -16,8 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting.conditions
 
-import org.neo4j.cypher.internal.ast.CountExpression
-import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
@@ -38,12 +37,12 @@ object hasAggregateButIsNotAggregate extends (Expression => Boolean) {
 
   def apply(expression: Expression): Boolean = expression match {
     case IsAggregate(_) => false
-    case _: ExistsExpression | _: CountExpression =>
-      false // Full Exists and Count contain Regular Queries which can have aggregations
+    case _: FullSubqueryExpression =>
+      false // Full Subquery Expressions contain Regular Queries which can have aggregations
     case e: Expression =>
       e.folder.treeFold[Boolean](false) {
-        case _: ExistsExpression | _: CountExpression => SkipChildren(_)
-        case IsAggregate(_)                           => _ => SkipChildren(true)
+        case _: FullSubqueryExpression => SkipChildren(_)
+        case IsAggregate(_)            => _ => SkipChildren(true)
       }
   }
 }

@@ -17,8 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.ast.CountExpression
-import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.ProjectingUnion
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.SingleQuery
@@ -61,16 +60,11 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 case object addDependenciesToProjectionsInSubqueryExpressions extends StepSequencer.Step
     with ASTRewriterFactory {
 
-  val instance = bottomUp(Rewriter.lift {
-    case e: ExistsExpression =>
+  val instance: Rewriter = bottomUp(Rewriter.lift {
+    case e: FullSubqueryExpression =>
       val scopeDependencies = e.scopeDependencies
       val newQuery = rewriteQuery(e.query, scopeDependencies)
-      e.copy(query = newQuery)(e.position, e.computedIntroducedVariables, Some(scopeDependencies))
-
-    case e: CountExpression =>
-      val scopeDependencies = e.scopeDependencies
-      val newQuery = rewriteQuery(e.query, scopeDependencies)
-      e.copy(query = newQuery)(e.position, e.computedIntroducedVariables, Some(scopeDependencies))
+      e.withQuery(newQuery)
   })
 
   private def rewriteQuery(query: Query, scopeDependencies: Set[LogicalVariable]): Query =

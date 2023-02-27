@@ -1509,6 +1509,11 @@ public class LiteralInterpreter
     }
 
     @Override
+    public Object collectExpression(NULL p, NULL q) {
+        throw new UnsupportedOperationException("collectExpression is not a literal");
+    }
+
+    @Override
     public Object mapProjection(NULL p, Object v, List<NULL> nulls) {
         throw new UnsupportedOperationException("mapProjection is not a literal");
     }

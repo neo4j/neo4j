@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery
 
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -268,6 +269,33 @@ case class CreateIrExpressions(
         countExpression.position,
         countExpression.computedIntroducedVariables,
         countExpression.computedScopeDependencies
+      )
+
+    /**
+     * Rewrites COLLECT { (n)-[anon_0]->(anon_1:M) RETURN n } into
+     * IR for MATCH (n)-[anon_0]->(anon_1:M) RETURN n
+     */
+    case collectExpression @ CollectExpression(q) =>
+      val collectVariableName = anonymousVariableNameGenerator.nextName
+      val arguments = collectExpression.dependencies.map(_.name)
+      val plannerQuery = toPlannerQuery(
+        q,
+        semanticTable,
+        anonymousVariableNameGenerator,
+        CancellationChecker.NeverCancelled,
+        arguments
+      )
+
+      /**
+       * Collect Subqueries may only return one item, we also know that all branches of Union
+       * clauses will have the same variable name. This is all checked earlier in semantic checking.
+       */
+      val toCollectVar = collectExpression.query.returnVariables.explicitVariables.head.name
+
+      ListIRExpression(plannerQuery, toCollectVar, collectVariableName, stringifier(collectExpression))(
+        collectExpression.position,
+        collectExpression.computedIntroducedVariables,
+        collectExpression.computedScopeDependencies
       )
 
     case PatternComprehension(Some(_), _, _, _) =>

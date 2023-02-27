@@ -193,6 +193,8 @@ public interface ASTExpressionFactory<
 
     EXPRESSION countExpression(POS p, List<PATTERN> patterns, QUERY q, WHERE where);
 
+    EXPRESSION collectExpression(POS p, QUERY q);
+
     EXPRESSION mapProjection(POS p, VARIABLE v, List<MAP_PROJECTION_ITEM> items);
 
     MAP_PROJECTION_ITEM mapProjectionLiteralEntry(StringPos<POS> property, EXPRESSION value);

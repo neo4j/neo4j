@@ -18,9 +18,8 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
 import org.neo4j.cypher.internal.ast.AscSortItem
-import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.DescSortItem
-import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.ast.FullSubqueryExpression
 import org.neo4j.cypher.internal.ast.OrderBy
 import org.neo4j.cypher.internal.ast.ProjectingUnion
 import org.neo4j.cypher.internal.ast.ProjectionClause
@@ -185,19 +184,8 @@ case class normalizeWithAndReturnClauses(
     case clause @ ProjectionClause(_, ri: ReturnItems, None, _, _, None) =>
       clause.copyProjection(returnItems = aliasImplicitlyAliasedReturnItems(ri))
 
-    case exists @ ExistsExpression(query) =>
-      exists.copy(query = rewriteTopLevelQuery(query))(
-        exists.position,
-        exists.computedIntroducedVariables,
-        exists.computedScopeDependencies
-      )
-
-    case count @ CountExpression(query) =>
-      count.copy(query = rewriteTopLevelQuery(query))(
-        count.position,
-        count.computedIntroducedVariables,
-        count.computedScopeDependencies
-      )
+    case fullSubqueryExpression: FullSubqueryExpression =>
+      fullSubqueryExpression.withQuery(rewriteTopLevelQuery(fullSubqueryExpression.query))
 
     // Alias return items and rewrite ORDER BY and WHERE
     case clause @ ProjectionClause(_, ri: ReturnItems, orderBy, _, _, where) =>

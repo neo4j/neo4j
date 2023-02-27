@@ -395,6 +395,7 @@ TOKEN [IGNORE_CASE] :
     | < CALL: "CALL" >
     | < CASE: "CASE" >
     | < CHANGE: "CHANGE">
+    | < COLLECT: "COLLECT">
     | < COMMAND: "COMMAND">
     | < COMMANDS: "COMMANDS">
     | < COMMIT: "COMMIT" >
@@ -2894,6 +2895,7 @@ EXPRESSION Expression1() throws Exception:
         | LOOKAHEAD( 3 ) e=MapLiteral()
         | LOOKAHEAD( 3 ) e=ExistsExpression() // `exists { match` should not be a map-projection
         | LOOKAHEAD( 3 ) e=CountExpression()
+        | LOOKAHEAD( 3 ) e=CollectExpression()
         | LOOKAHEAD( 2 ) e=MapProjection()
         | LOOKAHEAD( <LBRACKET> v=Variable() <IN> e=Expression() ( <WHERE> | <BAR> | <RBRACKET> )) e=ListComprehension() // before literal because it takes precedence. Lookahead due to potential confusion with ListLiteral
         | LOOKAHEAD( PatternComprehensionPrefix() ) e=PatternComprehension() // Only after matching up to "WHERE" or "|" can we be sure it is a PatternComprehension and not a ListLiteral.
@@ -3154,6 +3156,21 @@ EXPRESSION CountExpression() throws Exception:
     <RCURLY>
     {
         return astFactory.countExpression( pos( t ), patterns, q, where );
+    }
+}
+
+EXPRESSION CollectExpression() throws Exception:
+{
+    Token t;
+    QUERY q;
+}
+{
+    t=<COLLECT>
+    <LCURLY>
+        q=RegularQuery()
+    <RCURLY>
+    {
+        return astFactory.collectExpression( pos( t ), q );
     }
 }
 
@@ -6162,6 +6179,7 @@ Token UnescapedSymbolicNameString() :
         | t=<CALL>
         | t=<CASE>
         | t=<CHANGE>
+        | t=<COLLECT>
         | t=<COMMAND>
         | t=<COMMANDS>
         | t=<COMMIT>
