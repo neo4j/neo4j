@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo
 import org.neo4j.cypher.internal.ir.QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
 import org.neo4j.cypher.internal.ir.UpdateGraph.SolvedPredicatesOfOneLeafPlan
@@ -376,10 +377,10 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
       )
     else {
       val leafPlansPredicatesResolver = getLeafPlansPredicatesResolver(inputPlan)
-      val conflicts = horizonReadWriteConflict(query, leafPlansPredicatesResolver) ++ horizonWriteReadConflict(
-        query,
-        leafPlansPredicatesResolver
-      )
+      val conflicts =
+        horizonReadWriteConflict(query, leafPlansPredicatesResolver) ++
+          horizonWriteReadConflict(query, leafPlansPredicatesResolver) ++
+          writeAfterCallInTransactionsConflict(query)
       if (conflicts.nonEmpty)
         context.staticComponents.logicalPlanProducer.planEager(pcWrappedPlan, context, conflicts)
       else
@@ -533,6 +534,23 @@ class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
       Seq.empty
     else
       writeReadConflictInHeadRecursive(head, tail.tail.get, leafPlansPredicatesResolver)
+  }
+
+  private def writeAfterCallInTransactionsConflict(query: SinglePlannerQuery): Option[EagernessReason.Reason] = {
+    def isCallInTxHorizon(horizon: QueryHorizon): Boolean = {
+      horizon match {
+        case call: CallSubqueryHorizon => call.inTransactionsParameters.isDefined
+        case _                         => false
+      }
+    }
+    val hasConflict = isCallInTxHorizon(query.horizon) && {
+      query.allPlannerQueries.drop(1).exists { tailQuery =>
+        tailQuery.queryGraph.containsUpdates ||
+        (!tailQuery.horizon.readOnly && !isCallInTxHorizon(tailQuery.horizon))
+      }
+    }
+    if (hasConflict) Some(EagernessReason.WriteAfterCallInTransactions)
+    else None
   }
 }
 

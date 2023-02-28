@@ -2634,6 +2634,8 @@ case class LogicalPlan2PlanDescription(
       Some(pretty"read/set conflict for property: ${asPrettyString(property)}")
     case EagernessReason.UnknownPropertyReadSetConflict(_) =>
       Some(pretty"read/set conflict for some property")
+    case EagernessReason.WriteAfterCallInTransactions =>
+      Some(pretty"write after CALL { ... } IN TRANSACTIONS")
     case EagernessReason.Unknown =>
       None
   }

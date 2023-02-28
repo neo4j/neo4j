@@ -1484,8 +1484,9 @@ object LogicalPlanToPlanBuilderString {
   private def eagernessReasonStr(reason: Reason): String = {
     val prefix = objectName(EagernessReason)
     val suffix = reason match {
-      case EagernessReason.Unknown             => objectName(EagernessReason.Unknown)
-      case EagernessReason.UpdateStrategyEager => objectName(EagernessReason.UpdateStrategyEager)
+      case EagernessReason.Unknown                      => objectName(EagernessReason.Unknown)
+      case EagernessReason.UpdateStrategyEager          => objectName(EagernessReason.UpdateStrategyEager)
+      case EagernessReason.WriteAfterCallInTransactions => objectName(EagernessReason.WriteAfterCallInTransactions)
       case EagernessReason.LabelReadSetConflict(label, maybeConflict) =>
         s"${objectName(EagernessReason.LabelReadSetConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
       case EagernessReason.LabelReadRemoveConflict(label, maybeConflict) =>

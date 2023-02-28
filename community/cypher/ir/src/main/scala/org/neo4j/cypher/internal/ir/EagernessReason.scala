@@ -68,4 +68,8 @@ object EagernessReason {
   ) extends Reason
 
   case class UnknownPropertyReadSetConflict(override val maybeConflict: Option[Conflict] = None) extends Reason
+
+  case object WriteAfterCallInTransactions extends Reason {
+    override def maybeConflict: Option[Conflict] = None
+  }
 }
