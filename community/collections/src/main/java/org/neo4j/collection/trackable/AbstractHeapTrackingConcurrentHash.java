@@ -244,7 +244,7 @@ public abstract class AbstractHeapTrackingConcurrentHash {
      * Transfer all entries from src to dest tables
      */
     abstract void transfer(
-            AtomicReferenceArray<Object> src, HeapTrackingConcurrentHashMap.ResizeContainer resizeContainer);
+            AtomicReferenceArray<Object> src, AbstractHeapTrackingConcurrentHash.ResizeContainer resizeContainer);
 
     abstract void reverseTransfer(AtomicReferenceArray<Object> src, ResizeContainer resizeContainer);
 

@@ -385,7 +385,7 @@ public interface FileSystemAbstraction extends Closeable {
      * the path exists, then those missing directories will be created prior to the file rename.
      *
      * @param path The base directory to start streaming files from, or the specific individual file to stream.
-     * @param includeDirectories @code true} to include directories in the {@link Stream}, {@code false} otherwise.
+     * @param includeDirectories {@code true} to include directories in the {@link Stream}, {@code false} otherwise.
      * @return A {@link Stream} of all files in the tree.
      * @throws NoSuchFileException If the given base directory or file does not exist.
      * @throws IOException  If an I/O error occurs, possibly with the canonicalization of the paths.

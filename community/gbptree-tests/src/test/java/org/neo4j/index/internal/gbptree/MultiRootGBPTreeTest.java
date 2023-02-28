@@ -39,6 +39,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -129,6 +130,40 @@ class MultiRootGBPTreeTest {
                     .isTrue();
             tree.close();
             tree = null;
+        }
+    }
+
+    @Test
+    void multiRootMinimalHashcodeCacheIndex() throws IOException {
+        tree.close();
+        tree = null;
+
+        PageCacheTracer pageCacheTracer = PageCacheTracer.NULL;
+        var layoutWithBadHashes = new MinimalHashCodeEntriesLayout();
+        try (var badHashesTree = new MultiRootGBPTree<>(
+                pageCache,
+                fileSystem,
+                directory.file("tree"),
+                layoutWithBadHashes,
+                NO_MONITOR,
+                NO_HEADER_READER,
+                immediate(),
+                false,
+                getOpenOptions(),
+                "db",
+                "test multi-root tree",
+                new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY),
+                multipleRoots(layoutWithBadHashes, (int) kibiBytes(1)),
+                pageCacheTracer)) {
+
+            var externalId1 = 101;
+            badHashesTree.create(layoutWithBadHashes.key(externalId1), NULL_CONTEXT);
+            insertData(badHashesTree, externalId1, 1, 100);
+            assertSeek(badHashesTree, externalId1, 1, 100);
+
+            assertThat(badHashesTree.consistencyCheck(
+                            NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors()))
+                    .isTrue();
         }
     }
 
@@ -704,7 +739,9 @@ class MultiRootGBPTreeTest {
         return externalIds;
     }
 
-    private void assertSeek(long externalId, long startSeed, int count) throws IOException {
+    private void assertSeek(
+            MultiRootGBPTree<RawBytes, RawBytes, RawBytes> tree, long externalId, long startSeed, int count)
+            throws IOException {
         var low = layout.newKey();
         var high = layout.newKey();
         layout.initializeAsLowest(low);
@@ -719,7 +756,17 @@ class MultiRootGBPTreeTest {
         }
     }
 
+    private void assertSeek(long externalId, long startSeed, int count) throws IOException {
+        assertSeek(tree, externalId, startSeed, count);
+    }
+
     private void insertData(long externalId, long startSeed, int count) throws IOException {
+        insertData(tree, externalId, startSeed, count);
+    }
+
+    private void insertData(
+            MultiRootGBPTree<RawBytes, RawBytes, RawBytes> tree, long externalId, long startSeed, int count)
+            throws IOException {
         try (var writer = tree.access(rootKeyLayout.key(externalId)).writer(NULL_CONTEXT)) {
             for (var i = 0; i < count; i++) {
                 writer.put(layout.key(startSeed + i), layout.value(startSeed + i));
@@ -788,6 +835,32 @@ class MultiRootGBPTreeTest {
             long pos = position.get();
             return "RootContents{" + "key=" + key + ", exists=" + exists + ", low=" + low(pos) + ", high=" + high(pos)
                     + '}';
+        }
+    }
+
+    private static class MinimalHashCodeMyRawBytes extends RawBytes {
+
+        public MinimalHashCodeMyRawBytes() {}
+
+        public MinimalHashCodeMyRawBytes(byte[] byteArray) {
+            super(byteArray);
+        }
+
+        @Override
+        public int hashCode() {
+            return Integer.MIN_VALUE;
+        }
+    }
+
+    private static class MinimalHashCodeEntriesLayout extends SimpleByteArrayLayout {
+        @Override
+        public RawBytes newKey() {
+            return new MinimalHashCodeMyRawBytes();
+        }
+
+        @Override
+        public RawBytes copyKey(RawBytes rawBytes, RawBytes into) {
+            return new MinimalHashCodeMyRawBytes(Arrays.copyOf(rawBytes.bytes, rawBytes.bytes.length));
         }
     }
 }

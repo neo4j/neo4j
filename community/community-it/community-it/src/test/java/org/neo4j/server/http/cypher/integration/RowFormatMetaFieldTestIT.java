@@ -38,8 +38,6 @@ import org.neo4j.test.server.HTTP;
 import org.neo4j.test.server.HTTP.Response;
 
 public class RowFormatMetaFieldTestIT extends AbstractRestFunctionalTestBase {
-    private final HTTP.Builder http = HTTP.withBaseUri(container().getBaseUri());
-
     private String commitResource;
 
     @BeforeEach

@@ -33,7 +33,6 @@ import org.neo4j.util.VisibleForTesting;
 public class JfrProfiler extends PeriodicProfiler {
     private final Path dir;
     private final Duration maxDuration;
-    private final SystemNanoClock clock;
     private final JmxDump.JfrProfileConnection jfr;
 
     JfrProfiler(JmxDump dump, FileSystemAbstraction fs, Path dir, Duration duration, SystemNanoClock clock) {
@@ -41,7 +40,6 @@ public class JfrProfiler extends PeriodicProfiler {
         this.dir = dir;
         this.maxDuration =
                 duration.plus(Duration.ofMinutes(1)); // It will die at most 1 minute after duration, if we fail to stop
-        this.clock = clock;
         try {
             fs.mkdirs(dir);
             jfr = dump.jfrConnection();

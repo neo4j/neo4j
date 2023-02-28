@@ -20,17 +20,14 @@
 package org.neo4j.index.internal.gbptree;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayDeque;
 import java.util.Queue;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.tuple.Pair;
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.io.pagecache.PageCursor;
 
 public class SimpleIdProvider implements IdProvider {
-    private final Queue<Pair<Long, Long>> releasedIds = new LinkedList<>();
+    private final Queue<Pair<Long, Long>> releasedIds = new ArrayDeque<>();
     private final Supplier<PageCursor> cursorSupplier;
     private long lastId;
 
@@ -57,12 +54,6 @@ public class SimpleIdProvider implements IdProvider {
     @Override
     public void releaseId(long stableGeneration, long unstableGeneration, long id, CursorCreator cursorCreator) {
         releasedIds.add(Pair.of(unstableGeneration, id));
-    }
-
-    LongIterator unacquiredIds() {
-        final MutableLongSet unacquiredIds = new LongHashSet();
-        releasedIds.forEach(pair -> unacquiredIds.add(pair.getValue()));
-        return unacquiredIds.longIterator();
     }
 
     @Override

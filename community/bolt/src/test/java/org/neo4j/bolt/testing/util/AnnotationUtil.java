@@ -102,7 +102,7 @@ public final class AnnotationUtil {
             Class<A> annotationType,
             Function<A, Class<? extends T>> typeParameter,
             boolean distinct) {
-        var stream = findAnnotations(context, annotationType).stream().map(typeParameter::apply);
+        var stream = findAnnotations(context, annotationType).stream().map(typeParameter);
 
         if (distinct) {
             stream = stream.distinct();
@@ -117,7 +117,7 @@ public final class AnnotationUtil {
             Function<A, Class<? extends T>> typeParameter,
             boolean distinct) {
         var stream = AnnotationSupport.findRepeatableAnnotations(element, annotationType).stream()
-                .map(typeParameter::apply);
+                .map(typeParameter);
 
         if (distinct) {
             stream = stream.distinct();

@@ -205,7 +205,7 @@ class CheckCommandIT {
         try (var ignored = LockChecker.checkDatabaseLock(databaseLayout)) {
             final var assertFailure =
                     assertThatThrownBy(checkCommand::execute).isInstanceOf(CommandFailedException.class);
-            assertFailure.getCause().isInstanceOf(FileLockException.class);
+            assertFailure.cause().isInstanceOf(FileLockException.class);
             assertFailure.hasMessageContainingAll("The database is in use", "Stop database", dbName, "and try again");
         }
     }

@@ -21,12 +21,10 @@ package org.neo4j.collection.trackable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.eclipse.collections.impl.list.Interval;
 import org.eclipse.collections.impl.parallel.ParallelIterate;
-import org.eclipse.collections.impl.tuple.ImmutableEntry;
 import org.junit.jupiter.api.Test;
 import org.neo4j.memory.EmptyMemoryTracker;
 
@@ -151,20 +149,6 @@ public class HeapTrackingConcurrentLongHashMapTest {
         map.put(key1, value1);
         map.put(key2, value2);
         return map;
-    }
-
-    private <V> HeapTrackingConcurrentLongHashMap<V> newMapWithKeysValues(
-            long key1, V value1, long key2, V value2, long key3, V value3) {
-        HeapTrackingConcurrentLongHashMap<V> map =
-                HeapTrackingConcurrentLongHashMap.newMap(EmptyMemoryTracker.INSTANCE);
-        map.put(key1, value1);
-        map.put(key2, value2);
-        map.put(key3, value3);
-        return map;
-    }
-
-    private <K, V> Map.Entry<K, V> entry(K k, V v) {
-        return ImmutableEntry.of(k, v);
     }
 
     private ExecutorService executor() {

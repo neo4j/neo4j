@@ -231,11 +231,6 @@ public abstract class PropertyIndexQuery implements IndexQuery {
         return propertyKeyId;
     }
 
-    @Override
-    public final int queriedId() {
-        return propertyKeyId();
-    }
-
     /**
      * @param value to test against the query.
      * @return true if the {@code value} satisfies the query; false otherwise.

@@ -388,6 +388,7 @@ public final class HeapTrackingConcurrentLongHashSet extends AbstractHeapTrackin
             this.next = next;
         }
 
+        @Override
         public Node getNext() {
             return this.next;
         }

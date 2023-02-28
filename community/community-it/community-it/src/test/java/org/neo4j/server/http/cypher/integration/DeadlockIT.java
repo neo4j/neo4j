@@ -40,8 +40,6 @@ import org.neo4j.test.server.HTTP;
 
 @ExtendWith(OtherThreadExtension.class)
 class DeadlockIT extends AbstractRestFunctionalTestBase {
-    private final HTTP.Builder http = HTTP.withBaseUri(container().getBaseUri());
-
     @Inject
     private OtherThread otherThread;
 

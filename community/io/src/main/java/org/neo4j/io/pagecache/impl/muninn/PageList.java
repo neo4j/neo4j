@@ -402,10 +402,6 @@ class PageList implements PageReferenceTranslator {
         setSwapperId(pageRef, swapperId); // Page now considered isBoundTo( swapper, filePageId )
     }
 
-    private static IllegalArgumentException swapperCannotBeNull() {
-        return new IllegalArgumentException("swapper cannot be null");
-    }
-
     static IllegalStateException cannotFaultException(
             long pageRef,
             PageSwapper swapper,

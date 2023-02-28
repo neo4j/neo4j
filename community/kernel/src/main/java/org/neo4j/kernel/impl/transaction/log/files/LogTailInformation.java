@@ -109,6 +109,7 @@ public class LogTailInformation implements LogTailMetadata {
         return Optional.ofNullable(lastCheckPoint);
     }
 
+    @Override
     public String toString() {
         return "LogTailInformation{" + "lastCheckPoint=" + lastCheckPoint + ", firstTxIdAfterLastCheckPoint="
                 + firstTxIdAfterLastCheckPoint + ", filesNotFound="

@@ -349,7 +349,7 @@ public class StubStorageCursors implements StorageReader {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
-    public class Data<SELF> {
+    public static class Data<SELF> {
         boolean inUse = true;
 
         public SELF inUse(boolean inUse) {

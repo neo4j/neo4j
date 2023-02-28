@@ -112,7 +112,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     }
 
     @Override
-    public void setRoot(Root root) throws IOException {
+    public void setRoot(Root root) {
         this.root = root;
     }
 
@@ -357,7 +357,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     }
 
     private int cacheIndex(ROOT_KEY dataRootKey) {
-        return abs(dataRootKey.hashCode()) % rootMappingCache.length();
+        int hashCode = dataRootKey.hashCode();
+        return (hashCode == Integer.MIN_VALUE) ? 0 : (abs(hashCode) % rootMappingCache.length());
     }
 
     @Override

@@ -77,7 +77,7 @@ class FulltextResultCollectorTest {
         @Override
         public int hashCode() {
             int result = (int) (entity ^ (entity >>> 32));
-            result = 31 * result + (score != +0.0f ? Float.floatToIntBits(score) : 0);
+            result = 31 * result + (score != 0.0f ? Float.floatToIntBits(score) : 0);
             return result;
         }
 

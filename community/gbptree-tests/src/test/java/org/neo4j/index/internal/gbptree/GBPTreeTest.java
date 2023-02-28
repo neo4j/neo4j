@@ -40,26 +40,20 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -91,8 +85,6 @@ import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.PageCache;
@@ -1898,20 +1890,6 @@ class GBPTreeTest {
                     from = to;
                 }
             }
-        }
-    }
-
-    private byte[] fileContent(Path indexFile) throws IOException {
-        Set<OpenOption> options = new HashSet<>();
-        options.add(StandardOpenOption.READ);
-        try (StoreChannel storeChannel = fileSystem.open(indexFile, options)) {
-            int fileSize = (int) storeChannel.size();
-            ByteBuffer expectedContent = ByteBuffers.allocate(fileSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
-            storeChannel.readAll(expectedContent);
-            expectedContent.flip();
-            byte[] bytes = new byte[fileSize];
-            expectedContent.get(bytes);
-            return bytes;
         }
     }
 

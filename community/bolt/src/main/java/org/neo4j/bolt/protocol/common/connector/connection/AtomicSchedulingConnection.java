@@ -40,7 +40,6 @@ import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
-import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.Error;
@@ -51,7 +50,6 @@ import org.neo4j.bolt.runtime.BoltConnectionAuthFatality;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.tx.Transaction;
-import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.exceptions.KernelException;
@@ -608,18 +606,5 @@ public class AtomicSchedulingConnection extends AbstractConnection {
                     this.executor,
                     this.clock);
         }
-    }
-
-    @FunctionalInterface
-    private interface TransactionFactory {
-        Transaction create(
-                TransactionManager transactionManager,
-                TransactionOwner owner,
-                String databaseName,
-                AccessMode mode,
-                List<Bookmark> bookmarks,
-                Duration timeout,
-                Map<String, Object> metadata)
-                throws TransactionException;
     }
 }

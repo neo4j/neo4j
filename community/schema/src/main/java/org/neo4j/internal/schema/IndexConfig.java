@@ -63,15 +63,15 @@ public final class IndexConfig {
     private static void validate(Value value) {
         ValueCategory category = value.valueGroup().category();
         switch (category) {
-            case GEOMETRY:
-            case GEOMETRY_ARRAY:
-            case TEMPORAL:
-            case TEMPORAL_ARRAY:
-            case UNKNOWN:
-            case NO_CATEGORY:
-                throw new IllegalArgumentException("Value type not support in index configuration: " + value + ".");
-            default:
+            case GEOMETRY,
+                    GEOMETRY_ARRAY,
+                    TEMPORAL,
+                    TEMPORAL_ARRAY,
+                    UNKNOWN,
+                    NO_CATEGORY -> throw new IllegalArgumentException(
+                    "Value type not support in index configuration: " + value + ".");
                 // Otherwise everything is fine.
+            default -> {}
         }
     }
 

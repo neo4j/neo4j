@@ -341,7 +341,7 @@ public class StatementImpl implements Statement {
         this.eventPublisher.removeListener(listener);
     }
 
-    final class DiscardingRecordConsumer implements ResponseHandler {
+    static final class DiscardingRecordConsumer implements ResponseHandler {
         private final ResponseHandler delegate;
 
         public DiscardingRecordConsumer(ResponseHandler delegate) {

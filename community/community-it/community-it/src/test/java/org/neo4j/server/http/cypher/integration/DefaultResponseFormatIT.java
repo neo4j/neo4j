@@ -31,7 +31,6 @@ import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
 
 public class DefaultResponseFormatIT extends AbstractRestFunctionalTestBase {
-    HTTP.Builder http = HTTP.withBaseUri(container().getBaseUri());
 
     @Test
     void testDefaultResponseFormatIsJson() throws JsonParseException {

@@ -225,7 +225,7 @@ public class UploadCommand extends AbstractAdminCommand {
         }
     }
 
-    class ProdMatcher extends UrlMatcher {
+    static class ProdMatcher extends UrlMatcher {
         @Override
         protected Pattern pattern() {
             return Pattern.compile(

@@ -859,6 +859,8 @@
                   -Xep:SelfComparison:WARN -Xep:BadAnnotationImplementation:WARN -Xep:ModifyingCollectionWithItself:WARN \
                   -Xep:BoxedPrimitiveEquality:WARN -Xep:BanJNDI:WARN -Xep:CanIgnoreReturnValueSuggester:OFF \
                   -Xep:ByteBufferBackingArray:OFF -Xep:LongDoubleConversion:OFF -Xep:NarrowCalculation:OFF \
+                  -Xep:JavaUtilDate:OFF -Xep:JavaTimeDefaultTimeZone:OFF -Xep:SameNameButDifferent:OFF \
+                  -Xep:EmptyCatch:OFF -Xep:TypeParameterUnusedInFormals:OFF \
                   -XepExcludedPaths:.*/target/generated-sources/.*</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED</arg>
                 <arg>-J--add-exports=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED</arg>
@@ -875,7 +877,7 @@
                 <path>
                   <groupId>com.google.errorprone</groupId>
                   <artifactId>error_prone_core</artifactId>
-                  <version>2.16</version>
+                  <version>2.18.0</version>
                 </path>
               </annotationProcessorPaths>
             </configuration>

@@ -310,7 +310,7 @@ class NodeChecker implements Checker {
                 if (labelIndexState.currentRange != null) {
                     for (long nodeIdMissingFromStore = labelIndexState.lastCheckedEntityId + 1;
                             nodeIdMissingFromStore < nodeId
-                                    & labelIndexState.currentRange.covers(nodeIdMissingFromStore);
+                                    && labelIndexState.currentRange.covers(nodeIdMissingFromStore);
                             nodeIdMissingFromStore++) {
                         if (labelIndexState.currentRange.tokens(nodeIdMissingFromStore).length > 0) {
                             reporter.forNodeLabelScan(new TokenScanDocument(labelIndexState.currentRange))

@@ -30,7 +30,7 @@ import org.neo4j.values.storable.CSVHeaderInformation;
  *
  * Sub-interfaces and implementations can and should specify specific accessors for the purpose
  * of performance and less garbage, f.ex. where an IntExtractor could have an accessor method for
- * getting the extracted value as primitive int, to avoid auto-boxing which would arise from calling {@link #value()}.
+ * getting the extracted value as primitive int.
  *
  * @see Extractors for a collection of very common extractors.
  */

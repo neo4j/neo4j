@@ -300,15 +300,6 @@ public class AutocommitIT {
         shouldTerminateConnectionOnMessage(fsm, messages.goodbye());
     }
 
-    private static void reset(StateMachine machine, BoltMessages messages) throws BoltConnectionFatality {
-        var recorder = new ResponseRecorder();
-
-        machine.connection().interrupt();
-        machine.process(messages.reset(), recorder);
-
-        assertThat(recorder).hasSuccessResponse();
-    }
-
     static String createLocalIrisData(StateMachine machine, BoltMessages messages)
             throws BoltConnectionFatality, IOException {
         for (String className : IRIS_CLASS_NAMES) {

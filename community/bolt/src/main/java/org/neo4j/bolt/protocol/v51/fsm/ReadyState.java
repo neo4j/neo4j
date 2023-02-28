@@ -36,6 +36,7 @@ public class ReadyState extends org.neo4j.bolt.protocol.v50.fsm.ReadyState {
         super(routingTableGetter);
     }
 
+    @Override
     public void setAuthenticationState(AuthenticationState authenticationState) {
         this.authenticationState = authenticationState;
     }

@@ -109,7 +109,7 @@ public interface CheckPointer {
     /**
      * Shutdown checkpointer and prevent any new checkpoints from happening.
      * Any checkpoint requested on a shutdown checkpointer will not write any checkpoint and will
-     * return {@link -1} since checkpoint wasn't executed.
+     * return {@code -1} since checkpoint wasn't executed.
      */
     void shutdown();
 }

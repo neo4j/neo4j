@@ -136,6 +136,7 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
                 forceBtreeIndexesToRange);
     }
 
+    @Override
     public StorageEngine instantiate(
             FileSystemAbstraction fs,
             Clock clock,
@@ -263,6 +264,7 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
                 fs, pageCache, pageCacheTracer, config, databaseLayout, contextFactory, logTailMetadata);
     }
 
+    @Override
     public List<org.neo4j.internal.schema.SchemaRule> loadSchemaRules(
             FileSystemAbstraction fs,
             PageCache pageCache,
