@@ -64,7 +64,7 @@ abstract class RuntimeDebugLoggingTestBase[CONTEXT <: RuntimeContext](
     result should beColumns("x").withRows(inOrder(expected))
 
     dbmsFileSystem should haveFile(debugLogPath)
-      .containing("Ignoring inner transaction error")
+      .containing("Recover error in inner transaction")
   }
 
   test("log ignored errors in transaction apply") {
@@ -89,7 +89,7 @@ abstract class RuntimeDebugLoggingTestBase[CONTEXT <: RuntimeContext](
     result should beColumns("x").withRows(inOrder(expected))
 
     dbmsFileSystem should haveFile(debugLogPath)
-      .containing("Ignoring inner transaction error")
+      .containing("Recover error in inner transaction")
   }
 }
 

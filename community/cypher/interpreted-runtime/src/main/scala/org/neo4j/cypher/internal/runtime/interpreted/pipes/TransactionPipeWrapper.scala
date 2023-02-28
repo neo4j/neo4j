@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.CypherRowEntityTransformer
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.assertTransactionStateIsEmpty
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.commitTransactionWithStatistics
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.TransactionPipeWrapper.logError
 import org.neo4j.exceptions.InternalException
 import org.neo4j.kernel.impl.util.collection.EagerBuffer
 import org.neo4j.kernel.impl.util.collection.EagerBuffer.createEagerBuffer
@@ -135,7 +136,7 @@ trait TransactionPipeWrapper {
       Commit(transactionId)
     } catch {
       case NonFatal(e) =>
-        state.query.logProvider.getLog(getClass).info("Ignoring inner transaction error", e)
+        logError(state, transactionId, e)
 
         Try(Option(innerIterator).foreach(_.close()))
           .failed
@@ -257,5 +258,11 @@ object TransactionPipeWrapper {
 
     val executionStatistics = QueryStatistics(transactionsCommitted = 1)
     outerQueryState.query.addStatistics(executionStatistics)
+  }
+
+  private def logError(state: QueryState, innerTxId: String, t: Throwable): Unit = {
+    val outerTxId = state.query.transactionalContext.userTransactionId
+    val log = state.query.logProvider.getLog(getClass)
+    log.info(s"Recover error in inner transaction $innerTxId (outer transaction $outerTxId)", t)
   }
 }
