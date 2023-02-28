@@ -197,4 +197,242 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
   }
 
+  test("Should remove unnecessary qpp group variables in path") {
+    val query = """MATCH p = ((a)-->())+ RETURN 1""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in UNWIND") {
+    val query = """MATCH ((a)-->())+ UNWIND a AS foo RETURN 1""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in WITH") {
+    val query = """MATCH ((a)-->())+ WITH a AS foo RETURN 1 """.stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in IMPORT-WITH") {
+    val query = """MATCH ((a)-->())+ CALL { WITH a RETURN 1 AS n } RETURN n""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in ORDER BY") {
+    val query = """MATCH ((a)-->())+ RETURN 1 ORDER BY a""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in FOREACH") {
+    val query = """MATCH ((a)-->())+ FOREACH (_a in a | SET _a.n = 1) RETURN 1""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in another MATCH") {
+    val query = """MATCH ((a)-->())+ MATCH (c WHERE c = a) RETURN 1""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in procedure argument") {
+    val query = """MATCH ((a)-->())+ RETURN abs(a[0].n)""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in DELETE") {
+    val query = """MATCH ((a)-->())+ DELETE a[0]""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in CREATE") {
+    val query = """MATCH ((a)-->())+ CREATE (x {prop: a[0].prop})""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in SET") {
+    val query = """MATCH ((a)-->())+ SET (a[0]).prop = 5""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
+
+  test("Should remove unnecessary qpp group variables with variable reference in REMOVE") {
+    val query = """MATCH ((a)-->())+ REMOVE (a[0]).prop""".stripMargin
+
+    val statement = prepareFrom(
+      query,
+      rewriterPhaseUnderTest,
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.QuantifiedPathPatternPathAssignment
+    ).statement()
+
+    val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
+
+    val expectedVariableGroupings = Set(
+      VariableGrouping(varFor("  a@0"), varFor("  a@2"))(pos),
+      VariableGrouping(varFor("  UNNAMED1"), varFor("  UNNAMED3"))(pos)
+    )
+
+    rewrittenQpp.variableGroupings should equal(expectedVariableGroupings)
+  }
 }

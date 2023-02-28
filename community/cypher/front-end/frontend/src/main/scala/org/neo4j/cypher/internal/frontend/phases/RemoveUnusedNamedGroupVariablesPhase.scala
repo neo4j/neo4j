@@ -43,7 +43,7 @@ case object RemoveUnusedNamedGroupVariablesPhase extends Phase[BaseContext, Base
     AmbiguousNamesDisambiguated,
     RelationshipUniquenessPredicatesInMatchAndMerge
   )
-//RelationshipUniquenessPredicatesInMatchAndMerge
+
   override def postConditions: Set[StepSequencer.Condition] = Set(QPPsDoesNotHaveUnusedGroupVariables)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
