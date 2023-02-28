@@ -79,7 +79,12 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
       rightSize <- 1.until(goalSize)
       rightGoal <- goal.subGoals(rightSize)
       if (leftGoal != rightGoal) && (Goal(leftGoal.bitSet | rightGoal.bitSet) == goal)
-      lhs <- table(leftGoal).iterator
+
+      // Only the best LHS plans, excluding the best sorted ones,
+      // since Join does not keep LHS order
+      lhs <- table(leftGoal).result.iterator
+
+      // All RHS plans
       rhs <- table(rightGoal).iterator
     } {
       val overlappingNodes =
@@ -87,7 +92,7 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
       if (overlappingNodes.nonEmpty) {
         val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
         // If the overlapping symbols contain more than the overlapping nodes, that means
-        // We have solved the same relationship on both LHS and RHS. Joining this is plan
+        // We have solved the same symbol on both LHS and RHS. Joining these plans
         // would not be optimal, but we have to consider it, if expanding is not longer possible due to compaction
         if (
           expandStillPossible && overlappingNodes == overlappingSymbols ||

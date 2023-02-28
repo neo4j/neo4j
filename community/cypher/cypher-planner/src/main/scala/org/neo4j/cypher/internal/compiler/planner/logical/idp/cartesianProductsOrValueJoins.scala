@@ -143,7 +143,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
   }
 
   /**
-   * Connects components step-wise, i.e. it will  connect at least 2 components.
+   * Connects components step-wise, i.e. it will connect at least 2 components.
    * Greedily chooses the cheapest option to connect at each step.
    *
    * @param plans the so-far connected components
@@ -608,7 +608,9 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
   ) {
     val lhs: Expression = predicateToPlan.lhs
     val rhs: Expression = predicateToPlan.rhs
-    val inversePredicateToPlan = predicateToPlan.switchSides
+    val inversePredicateToPlan: Equals = predicateToPlan.switchSides
+
+    def inverse: JoinPredicate = copy(predicateToPlan = inversePredicateToPlan)
   }
 
   /**

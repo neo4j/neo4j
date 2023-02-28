@@ -1297,4 +1297,73 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .nodeByLabelScan("a", "A")
       .build()
   }
+
+  test("Plans Generic ORDER BY with no Sort on RHS of CartesianProduct - no IDP required") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .build()
+
+    val query =
+      """MATCH (a), (b) 
+        |RETURN *
+        |ORDER BY 1
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .sort(Seq(Ascending("1")))
+      .projection("1 AS 1")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build())
+  }
+
+  test("Plans Generic ORDER BY with no Sort on RHS of CartesianProduct - IDP required") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .build()
+
+    val query =
+      """MATCH (a), (b) 
+        |WHERE a.prop > b.prop
+        |RETURN *
+        |ORDER BY 1
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .sort(Seq(Ascending("1")))
+      .projection("1 AS 1")
+      .filter("cacheN[a.prop] > cacheN[b.prop]")
+      .cartesianProduct()
+      .|.cacheProperties("cacheNFromStore[b.prop]")
+      .|.allNodeScan("b")
+      .cacheProperties("cacheNFromStore[a.prop]")
+      .allNodeScan("a")
+      .build())
+  }
+
+  test("Plans Generic ORDER BY with no Sort on LHS of Join") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .enablePrintCostComparisons()
+      .build()
+
+    val query =
+      """MATCH (a), (b) 
+        |WHERE a.prop = b.prop
+        |RETURN *
+        |ORDER BY 1
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .sort(Seq(Ascending("1")))
+      .projection("1 AS 1")
+      .valueHashJoin("a.prop = b.prop")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build())
+  }
 }

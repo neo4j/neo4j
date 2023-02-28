@@ -52,12 +52,47 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
 
       val step = ValueHashJoinComponentConnector.solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit, ctx)
       val plans = step(registry, goal, table, ctx).toSeq
-      plans should contain theSameElementsAs (Seq(
+      plans should contain theSameElementsAs Seq(
         ValueHashJoin(nPlan, mPlan, joinPred),
         ValueHashJoin(mPlan, nPlan, joinPred.switchSides)
-      ))
+      )
       // We should be able to call step twice and get the same result
       step(registry, goal, table, ctx).toSeq should contain theSameElementsAs plans
+    }
+  }
+
+  test("produces only value hash joins with sort on RHS") {
+    val table = IDPTable.empty[LogicalPlan]
+    val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
+
+    val joinPred = equals(prop("n", "prop"), prop("m", "prop"))
+    new given().withLogicalPlanningContext { (cfg, ctx) =>
+      val order = InterestingOrderConfig.empty
+      val kit = ctx.plannerState.config.toKit(order, ctx)
+      val nQg = QueryGraph(patternNodes = Set("n"))
+      val mQg = QueryGraph(patternNodes = Set("m"))
+      val fullQg = (nQg ++ mQg).withSelections(Selections(Set(Predicate(Set("n", "m"), joinPred))))
+
+      // extra-symbol is used to make `nPlan != nPlanSort`
+      val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
+      val nPlanSort = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n", "extra-symbol")
+      val mPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m")
+      val mPlanSort = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m", "extra-symbol")
+
+      table.put(register(registry, nQg), sorted = false, nPlan)
+      table.put(register(registry, nQg), sorted = true, nPlanSort)
+      table.put(register(registry, mQg), sorted = false, mPlan)
+      table.put(register(registry, mQg), sorted = true, mPlanSort)
+      val goal = register(registry, nQg, mQg)
+
+      val step = ValueHashJoinComponentConnector.solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit, ctx)
+      val plans = step(registry, goal, table, ctx).toSeq
+      plans should contain theSameElementsAs Seq(
+        ValueHashJoin(nPlan, mPlan, joinPred),
+        ValueHashJoin(nPlan, mPlanSort, joinPred),
+        ValueHashJoin(mPlan, nPlan, joinPred.switchSides),
+        ValueHashJoin(mPlan, nPlanSort, joinPred.switchSides)
+      )
     }
   }
 
@@ -96,7 +131,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
 
       val step = ValueHashJoinComponentConnector.solverStep(GoalBitAllocation(3, 0, Seq.empty), fullQg, order, kit, ctx)
       val plans = step(registry, goal, table, ctx).toSeq
-      plans should contain theSameElementsAs (Seq(
+      plans should contain theSameElementsAs Seq(
         ValueHashJoin(nPlan, moPlan, joinPred1),
         ValueHashJoin(moPlan, nPlan, joinPred1.switchSides),
         ValueHashJoin(nPlan, moPlan, joinPred3),
@@ -109,7 +144,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
         ValueHashJoin(noPlan, mPlan, joinPred1),
         ValueHashJoin(mPlan, noPlan, joinPred2),
         ValueHashJoin(noPlan, mPlan, joinPred2.switchSides)
-      ))
+      )
     }
   }
 
@@ -122,7 +157,7 @@ class ValueHashJoinComponentConnectorTest extends CypherFunSuite with LogicalPla
       val kit = ctx.plannerState.config.toKit(order, ctx)
       val nQg = QueryGraph(patternNodes = Set("n"))
       val mQg = QueryGraph(patternNodes = Set("m"))
-      val fullQg = (nQg ++ mQg)
+      val fullQg = nQg ++ mQg
 
       val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
       val mPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m")

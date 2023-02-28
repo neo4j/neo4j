@@ -38,8 +38,11 @@ case object CartesianProductComponentConnector
     (_: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) => {
       for {
         (leftGoal, rightGoal) <- goal.coveringSplits
+        // All LHS plans
         leftPlan <- table(leftGoal).iterator
-        rightPlan <- table(rightGoal).iterator
+        // Only the best RHS plans, excluding the best sorted ones,
+        // since CartesianProduct does not keep RHS order
+        rightPlan <- table(rightGoal).result
       } yield context.staticComponents.logicalPlanProducer.planCartesianProduct(leftPlan, rightPlan, context)
     }
 }

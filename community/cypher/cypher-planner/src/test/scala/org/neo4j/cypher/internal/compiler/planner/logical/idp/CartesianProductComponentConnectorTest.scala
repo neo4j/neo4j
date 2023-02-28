@@ -50,7 +50,42 @@ class CartesianProductComponentConnectorTest extends CypherFunSuite with Logical
       val step =
         CartesianProductComponentConnector.solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit, ctx)
       val plans = step(registry, goal, table, ctx).toSeq
-      plans should contain theSameElementsAs (Seq(CartesianProduct(nPlan, mPlan), CartesianProduct(mPlan, nPlan)))
+      plans should contain theSameElementsAs Seq(CartesianProduct(nPlan, mPlan), CartesianProduct(mPlan, nPlan))
+    }
+  }
+
+  test("produces only cartesian product combinations with sort on LHS") {
+    val table = IDPTable.empty[LogicalPlan]
+    val registry: DefaultIdRegistry[QueryGraph] = IdRegistry[QueryGraph]
+
+    new given().withLogicalPlanningContext { (cfg, ctx) =>
+      val order = InterestingOrderConfig.empty
+      val kit = ctx.plannerState.config.toKit(order, ctx)
+      val nQg = QueryGraph(patternNodes = Set("n"))
+      val mQg = QueryGraph(patternNodes = Set("m"))
+      val fullQg = nQg ++ mQg
+
+      // extra-symbol is used to make `nPlan != nPlanSort`
+      val nPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n")
+      val nPlanSort = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "n", "extra-symbol")
+      val mPlan = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m")
+      val mPlanSort = fakeLogicalPlanFor(ctx.staticComponents.planningAttributes, "m", "extra-symbol")
+
+      table.put(register(registry, nQg), sorted = false, nPlan)
+      table.put(register(registry, nQg), sorted = true, nPlanSort)
+      table.put(register(registry, mQg), sorted = false, mPlan)
+      table.put(register(registry, mQg), sorted = true, mPlanSort)
+      val goal = register(registry, nQg, mQg)
+
+      val step =
+        CartesianProductComponentConnector.solverStep(GoalBitAllocation(2, 0, Seq.empty), fullQg, order, kit, ctx)
+      val plans = step(registry, goal, table, ctx).toSeq
+      plans should contain theSameElementsAs Seq(
+        CartesianProduct(nPlan, mPlan),
+        CartesianProduct(nPlanSort, mPlan),
+        CartesianProduct(mPlan, nPlan),
+        CartesianProduct(mPlanSort, nPlan)
+      )
     }
   }
 

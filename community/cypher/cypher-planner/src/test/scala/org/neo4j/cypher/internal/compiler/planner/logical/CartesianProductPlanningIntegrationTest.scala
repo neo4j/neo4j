@@ -432,4 +432,26 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .nodeByIdSeek("b", Set(), 0)
       .build())
   }
+
+  test("Plans Generic ORDER BY with no Sort on RHS of CartesianProduct") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .enablePrintCostComparisons()
+      .build()
+
+    val query =
+      """MATCH (a), (b) 
+        |RETURN *
+        |ORDER BY 1
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .sort(Seq(Ascending("1")))
+      .projection("1 AS 1")
+      .cartesianProduct()
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build())
+  }
 }

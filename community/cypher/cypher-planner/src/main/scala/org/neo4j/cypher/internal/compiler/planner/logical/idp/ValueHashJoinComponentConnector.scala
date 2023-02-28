@@ -44,36 +44,30 @@ case object ValueHashJoinComponentConnector
       (_: IdRegistry[QueryGraph], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext) =>
         {
           for {
-            predicate <- predicates.toIterator
+            predicate <- predicates.iterator.flatMap(p => Iterator(p, p.inverse))
 
             (leftGoal, rightGoal) <- goal.coveringSplits
 
-            leftPlan <- table(leftGoal).iterator
+            // Only the best LHS plans, excluding the best sorted ones,
+            // since Join does not keep LHS order
+            leftPlan <- table(leftGoal).result.iterator
             if leftPlan.satisfiesExpressionDependencies(predicate.lhs) && !leftPlan.satisfiesExpressionDependencies(
               predicate.rhs
             )
+            // All RHS plans
             rightPlan <- table(rightGoal).iterator
             if rightPlan.satisfiesExpressionDependencies(predicate.rhs) && !rightPlan.satisfiesExpressionDependencies(
               predicate.lhs
             )
-
-            plan <- Iterator(
-              context.staticComponents.logicalPlanProducer.planValueHashJoin(
-                leftPlan,
-                rightPlan,
-                predicate.predicateToPlan,
-                predicate.originalPredicate,
-                context
-              ),
-              context.staticComponents.logicalPlanProducer.planValueHashJoin(
-                rightPlan,
-                leftPlan,
-                predicate.inversePredicateToPlan,
-                predicate.originalPredicate,
-                context
-              )
+          } yield {
+            context.staticComponents.logicalPlanProducer.planValueHashJoin(
+              leftPlan,
+              rightPlan,
+              predicate.predicateToPlan,
+              predicate.originalPredicate,
+              context
             )
-          } yield plan
+          }
         }
     }
   }
