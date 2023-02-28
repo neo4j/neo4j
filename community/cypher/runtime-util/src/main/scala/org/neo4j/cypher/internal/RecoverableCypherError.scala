@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.NonFatalCypherError.isNonFatal
 import org.neo4j.kernel.api.exceptions.Status.Classification
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 
@@ -39,13 +40,13 @@ object RecoverableCypherError {
   def unapply(t: Throwable): Option[Throwable] = Some(t).filter(isRecoverable)
 
   // We use a whitelist approach here:
-  // Only classified errors are considered recoverable,
+  // Only non-fatal classified errors are considered recoverable,
   // except DatabaseError which is used for more serious and/or internal problems of the database.
   // NOTE: If you believe a specific error is incorrectly classified here, first consider changing the classification
   //       of its error code before complicating this logic with special cases,
   //       so we can keep this reasonably principled and easily explainable to users.
   def isRecoverable(t: Throwable): Boolean = t match {
-    case e: HasStatus =>
+    case e: HasStatus if isNonFatal(e) =>
       val classification = e.status().code().classification()
       classification match {
         case Classification.ClientError |
@@ -54,6 +55,16 @@ object RecoverableCypherError {
         case _ =>
           false
       }
+
+    // Unfortunately there are still some public API exceptions that do not implement HasStatus that we still
+    // want to consider recoverable.
+    // We should probably add a HasStatus in the next major release where we can make API changes to get rid
+    // of this special case.
+    // (These should also be matching the above classifications after passing through
+    //  org.neo4j.cypher.internal.macros.TranslateExceptionMacros)
+    case _: org.neo4j.graphdb.ConstraintViolationException =>
+      true
+
     case _ =>
       false
   }
