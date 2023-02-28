@@ -649,12 +649,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         identity
     }
     val repetitions = relVariables.values.filter(_.size > 1)
-    if (varLength) {
-      repetitions.map(_.sortBy(_.position).drop(1).head).toSeq
-    } else {
-      // For backwards compatibility, return the first occurrence
-      repetitions.map(_.minBy(_.position)).toSeq
-    }
+    repetitions.map(_.minBy(_.position)).toSeq
   }
 
   private def checkNodeProperties(ctx: SemanticContext, properties: Option[Expression]): SemanticCheck =

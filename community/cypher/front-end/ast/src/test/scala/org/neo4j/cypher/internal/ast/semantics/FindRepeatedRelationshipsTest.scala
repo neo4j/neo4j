@@ -63,7 +63,7 @@ class FindRepeatedRelationshipsTest extends CypherFunSuite {
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true) should equal(Seq(relR))
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true)(0).position should equal(
-      relRCopy.position
+      relR.position
     )
   }
 
@@ -96,7 +96,7 @@ class FindRepeatedRelationshipsTest extends CypherFunSuite {
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true) should equal(Seq(relR))
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true)(0).position should equal(
-      relRCopy.position
+      relR.position
     )
   }
 
