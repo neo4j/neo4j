@@ -87,10 +87,8 @@ final class PathValueBuilder(state: QueryState) extends Consumer[RelationshipVis
     val rel = relOrNull.asInstanceOf[VirtualRelationshipValue]
     val previousNode = nodes.getLast
     val start = rel.startNodeId(this)
-    val end = rel.endNodeId(this)
     if (start == previousNode) addOutgoingRelationship(rel)
-    else if (end == previousNode) addIncomingRelationship(rel)
-    else throw new IllegalArgumentException(s"Invalid usage of PathValueBuilder, $previousNode must be a node in $rel")
+    else addIncomingRelationship(rel)
   }
 
   def addIncomingRelationships(relsOrNull: AnyValue): PathValueBuilder = nullCheck(relsOrNull) {

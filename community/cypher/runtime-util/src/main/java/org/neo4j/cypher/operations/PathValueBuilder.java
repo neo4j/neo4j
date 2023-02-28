@@ -171,10 +171,8 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
         long end = relationship.endNodeId(this);
         if (previous == start) {
             add(relationship.id(), end);
-        } else if (previous == end) {
-            add(relationship.id(), start);
         } else {
-            throw new IllegalArgumentException();
+            add(relationship.id(), start);
         }
     }
 
@@ -383,20 +381,9 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
         long previous = nodes.get(nodes.size() - 1);
         VirtualRelationshipValue first = (VirtualRelationshipValue) relationships.head();
 
-        boolean correctDirection = first.startNodeId(this) == previous || previous == first.endNodeId(this);
-
-        if (correctDirection) {
-            for (AnyValue value : relationships) {
-                if (notNoValue(value)) {
-                    addUndirected((VirtualRelationshipValue) value);
-                }
-            }
-        } else {
-            ListValue reversed = relationships.reverse();
-            for (AnyValue rel : reversed) {
-                if (notNoValue(rel)) {
-                    addUndirected((VirtualRelationshipValue) rel);
-                }
+        for (AnyValue value : relationships) {
+            if (notNoValue(value)) {
+                addUndirected((VirtualRelationshipValue) value);
             }
         }
     }

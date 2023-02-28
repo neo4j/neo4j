@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiIncomingRelationshipProjector
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiOutgoingRelationshipProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiIncomingRelationshipWithKnownTargetProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiOutgoingRelationshipWithKnownTargetProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.nilProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.quantifiedPathProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleNodeProjector
@@ -110,7 +110,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
       )(pos)) _
 
     converters.toCommandProjectedPath(expr) should equal(
-      ProjectedPath(singleNodeProjector("b", multiIncomingRelationshipProjector("r", nilProjector)))
+      ProjectedPath(singleNodeProjector("b", multiIncomingRelationshipWithKnownTargetProjector("r", "a", nilProjector)))
     )
   }
 
@@ -127,7 +127,7 @@ class PathExpressionConversionTest extends CypherFunSuite {
       )(pos)) _
 
     converters.toCommandProjectedPath(expr) should equal(
-      ProjectedPath(singleNodeProjector("a", multiOutgoingRelationshipProjector("r", nilProjector)))
+      ProjectedPath(singleNodeProjector("a", multiOutgoingRelationshipWithKnownTargetProjector("r", "b", nilProjector)))
     )
   }
 
@@ -152,7 +152,11 @@ class PathExpressionConversionTest extends CypherFunSuite {
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(singleNodeProjector(
         "a",
-        multiOutgoingRelationshipProjector("r1", singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector))
+        multiOutgoingRelationshipWithKnownTargetProjector(
+          "r1",
+          "b",
+          singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector)
+        )
       ))
     )
   }
@@ -178,7 +182,11 @@ class PathExpressionConversionTest extends CypherFunSuite {
     converters.toCommandProjectedPath(expr) should equal(
       ProjectedPath(singleNodeProjector(
         "a",
-        multiOutgoingRelationshipProjector("r1", singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector))
+        multiOutgoingRelationshipWithKnownTargetProjector(
+          "r1",
+          "b",
+          singleRelationshipWithKnownTargetProjector("r2", "c", nilProjector)
+        )
       ))
     )
   }

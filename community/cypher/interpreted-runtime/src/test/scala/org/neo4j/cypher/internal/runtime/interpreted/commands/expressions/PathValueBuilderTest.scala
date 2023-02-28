@@ -170,15 +170,6 @@ class PathValueBuilderTest extends CypherFunSuite {
     ))
   }
 
-  test("Invalid relationship order - addUndirectedRelationships") {
-    val builder = new PathValueBuilder(state)
-
-    an[IllegalArgumentException] shouldBe thrownBy {
-      builder.addNode(A)
-        .addUndirectedRelationships(VirtualValues.list(rel2, rel1))
-    }
-  }
-
   test("p = (b)-[r:X*0]-(a)") {
     val builder = new PathValueBuilder(state)
 

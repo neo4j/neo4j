@@ -35,8 +35,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.Projector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiIncomingRelationshipProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiIncomingRelationshipWithKnownTargetProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiOutgoingRelationshipProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiOutgoingRelationshipWithKnownTargetProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiUndirectedRelationshipProjector
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.multiUndirectedRelationshipWithKnownTargetProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.nilProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.quantifiedPathProjector
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath.singleIncomingRelationshipProjector
@@ -216,13 +219,47 @@ class ExpressionConverters(converters: ExpressionConverter*) {
       case internal.expressions.SingleRelationshipPathStep(rel: LogicalVariable, SemanticDirection.BOTH, _, next) =>
         singleUndirectedRelationshipProjector(rel.name, project(next))
 
-      case internal.expressions.MultiRelationshipPathStep(rel: LogicalVariable, SemanticDirection.INCOMING, _, next) =>
+      case internal.expressions.MultiRelationshipPathStep(
+          rel: LogicalVariable,
+          SemanticDirection.INCOMING,
+          Some(target),
+          next
+        ) =>
+        multiIncomingRelationshipWithKnownTargetProjector(rel.name, target.name, project(next))
+
+      case internal.expressions.MultiRelationshipPathStep(
+          rel: LogicalVariable,
+          SemanticDirection.OUTGOING,
+          Some(target),
+          next
+        ) =>
+        multiOutgoingRelationshipWithKnownTargetProjector(rel.name, target.name, project(next))
+
+      case internal.expressions.MultiRelationshipPathStep(
+          rel: LogicalVariable,
+          SemanticDirection.BOTH,
+          Some(target),
+          next
+        ) =>
+        multiUndirectedRelationshipWithKnownTargetProjector(rel.name, target.name, project(next))
+
+      case internal.expressions.MultiRelationshipPathStep(
+          rel: LogicalVariable,
+          SemanticDirection.INCOMING,
+          None,
+          next
+        ) =>
         multiIncomingRelationshipProjector(rel.name, project(next))
 
-      case internal.expressions.MultiRelationshipPathStep(rel: LogicalVariable, SemanticDirection.OUTGOING, _, next) =>
+      case internal.expressions.MultiRelationshipPathStep(
+          rel: LogicalVariable,
+          SemanticDirection.OUTGOING,
+          None,
+          next
+        ) =>
         multiOutgoingRelationshipProjector(rel.name, project(next))
 
-      case internal.expressions.MultiRelationshipPathStep(rel: LogicalVariable, SemanticDirection.BOTH, _, next) =>
+      case internal.expressions.MultiRelationshipPathStep(rel: LogicalVariable, SemanticDirection.BOTH, None, next) =>
         multiUndirectedRelationshipProjector(rel.name, project(next))
 
       case internal.expressions.RepeatPathStep(variables, toNode, next) =>
