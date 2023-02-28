@@ -40,6 +40,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.os.OsBeanUtil;
@@ -126,7 +127,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
 
         log = userLogProvider.getLog(getClass());
 
-        boolean licenseAccepted = checkLicenseAgreement(homeDir, daemonMode);
+        boolean startAllowed = checkLicenseAgreement(homeDir, config, daemonMode);
 
         // Log any messages written before logging was configured.
         startupLog.replayInto(log);
@@ -138,7 +139,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
             return INVALID_CONFIGURATION_ERROR_CODE;
         }
 
-        if (!licenseAccepted) {
+        if (!startAllowed) {
             // Message should be printed by the checkLicenseAgreement call above
             return LICENSE_NOT_ACCEPTED_ERROR_CODE;
         }
@@ -263,7 +264,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
     protected abstract DatabaseManagementService createNeo(
             Config config, boolean daemonMode, GraphDatabaseDependencies dependencies);
 
-    protected abstract boolean checkLicenseAgreement(Path homeDir, boolean daemonMode);
+    protected abstract boolean checkLicenseAgreement(Path homeDir, Configuration config, boolean daemonMode);
 
     private static Log4jLogProvider setupLogging(Config config, boolean daemonMode) {
         Path xmlConfig = config.get(GraphDatabaseSettings.user_logging_config_path);

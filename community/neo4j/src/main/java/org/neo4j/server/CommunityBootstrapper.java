@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.factory.DbmsInfo.COMMUNITY;
 import java.nio.file.Path;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.facade.DatabaseManagementServiceFactory;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
@@ -38,7 +39,7 @@ public class CommunityBootstrapper extends NeoBootstrapper {
     }
 
     @Override
-    protected boolean checkLicenseAgreement(Path homeDir, boolean daemonMode) {
+    protected boolean checkLicenseAgreement(Path homeDir, Configuration config, boolean daemonMode) {
         return true;
     }
 }
