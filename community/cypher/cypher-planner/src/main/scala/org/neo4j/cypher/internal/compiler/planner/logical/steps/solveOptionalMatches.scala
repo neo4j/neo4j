@@ -65,7 +65,7 @@ case object applyOptional extends OptionalSolver {
                      context: LogicalPlanningContext): OptionalSolver.Solver = {
     val innerContext: LogicalPlanningContext = context.withFusedLabelInfo(enclosingQg.selections.labelInfo)
     val inner = context.strategy.plan(optionalQg, interestingOrderConfig, innerContext)
-    (lhs: LogicalPlan) => inner.allResults.map { inner =>
+    (lhs: LogicalPlan) => inner.allResults.iterator.map { inner =>
       val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext, optionalQg)
       val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
 

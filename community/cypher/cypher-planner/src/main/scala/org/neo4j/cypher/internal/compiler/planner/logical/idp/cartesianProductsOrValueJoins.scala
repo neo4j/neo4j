@@ -412,7 +412,7 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
         // Keep only RHSs that actually leverage the data from the LHS to use an index.
         // The reason is that otherwise, we are producing a cartesian product disguising as an Apply, and
         // this confuses the cost model
-        rhsPlans.fold[Iterator[LogicalPlan]](Iterator.empty)(_.allResults.collect {
+        rhsPlans.fold[Iterator[LogicalPlan]](Iterator.empty)(_.allResults.iterator.collect {
           case rhsPlan if containsDependentIndexSeeks(rhsPlan) =>
             context.logicalPlanProducer.planApply(lhsPlan, rhsPlan, context)
         })

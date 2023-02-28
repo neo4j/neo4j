@@ -46,7 +46,7 @@ trait LeafPlanFinder {
   def apply(config: QueryPlannerConfiguration,
             queryGraph: QueryGraph,
             interestingOrderConfig: InterestingOrderConfig,
-            context: LogicalPlanningContext): Iterable[BestPlans]
+            context: LogicalPlanningContext): Map[Set[String], BestPlans]
 }
 
 sealed trait LeafPlanRestrictions {

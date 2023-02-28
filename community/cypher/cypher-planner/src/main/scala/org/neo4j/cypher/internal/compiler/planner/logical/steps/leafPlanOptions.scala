@@ -51,30 +51,30 @@ object leafPlanOptions extends LeafPlanFinder {
   override def apply(config: QueryPlannerConfiguration,
                      queryGraph: QueryGraph,
                      interestingOrderConfig: InterestingOrderConfig,
-                     context: LogicalPlanningContext): Iterable[BestPlans] = {
+                     context: LogicalPlanningContext): Map[Set[String], BestPlans] = {
     val queryPlannerKit = config.toKit(interestingOrderConfig, context)
     val pickBest = config.pickBestCandidate(context)
 
     val leafPlanCandidates = config.leafPlanners.candidates(queryGraph, interestingOrderConfig = interestingOrderConfig, context = context)
     val leafPlanCandidatesWithSelections = queryPlannerKit.select(leafPlanCandidates, queryGraph)
 
-    val bestPlansPerAvailableSymbols = leafPlanCandidatesWithSelections
+    val bestPlansPerAvailableSymbols: Map[Set[String], BestResults[LogicalPlan]] =
+      leafPlanCandidatesWithSelections
       // Group by available symbols which are part of the query graph.
       .groupBy(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
-      .values
-      .map { bucket =>
+      .map { case (availableSymbols, bucket) =>
         val bestPlan = pickBest(bucket, leafPlanHeuristic(context), s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}").get
 
         if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
           val sortedLeaves = bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
           val bestSortedPlan = pickBest(sortedLeaves, s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}")
-          BestResults(bestPlan, bestSortedPlan)
+          availableSymbols -> BestResults(bestPlan, bestSortedPlan)
         } else {
-          BestResults(bestPlan, None)
+          availableSymbols -> BestResults(bestPlan, None)
         }
       }
 
-    bestPlansPerAvailableSymbols.map(_.map(context.leafPlanUpdater.apply))
+    bestPlansPerAvailableSymbols.mapValues(_.map(context.leafPlanUpdater.apply))
   }
 
   def leafPlanHeuristic(context: LogicalPlanningContext): SelectorHeuristic = new SelectorHeuristic {
