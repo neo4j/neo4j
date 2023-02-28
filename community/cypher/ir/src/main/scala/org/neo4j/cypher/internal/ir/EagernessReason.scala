@@ -33,4 +33,6 @@ object EagernessReason {
   case class DeleteOverlap(identifiers: Seq[String]) extends Reason
 
   case class ReadDeleteConflict(identifier: String) extends Reason
+
+  case object WriteAfterCallInTransactions extends Reason
 }

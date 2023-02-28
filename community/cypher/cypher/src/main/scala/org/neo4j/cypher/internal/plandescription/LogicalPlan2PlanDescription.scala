@@ -1207,6 +1207,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean,
       case _@EagernessReason.OverlappingSetLabels(labels) => pretty"overlapping set labels: ${labels.map(asPrettyString(_)).mkPrettyString(", ")}"
       case _@EagernessReason.OverlappingDeletedLabels(labels) => pretty"overlapping remove labels: ${labels.map(asPrettyString(_)).mkPrettyString(", ")}"
       case _@EagernessReason.DeleteOverlap(identifiers) => pretty"delete overlap: ${identifiers.map(asPrettyString(_)).mkPrettyString(", ")}"
+      case _@EagernessReason.WriteAfterCallInTransactions => pretty"write after CALL { ... } IN TRANSACTIONS"
+
     }
   }
 

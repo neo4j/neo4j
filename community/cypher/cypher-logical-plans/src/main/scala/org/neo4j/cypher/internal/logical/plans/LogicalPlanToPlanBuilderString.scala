@@ -711,6 +711,7 @@ object LogicalPlanToPlanBuilderString {
     val suffix = reason match {
       case EagernessReason.Unknown => objectName(EagernessReason.Unknown)
       case EagernessReason.UpdateStrategyEager => objectName(EagernessReason.UpdateStrategyEager)
+      case EagernessReason.WriteAfterCallInTransactions => objectName(EagernessReason.WriteAfterCallInTransactions)
       case EagernessReason.OverlappingSetLabels(labels) => s"${objectName(EagernessReason.OverlappingSetLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
       case EagernessReason.OverlappingDeletedLabels(labels) => s"${objectName(EagernessReason.OverlappingDeletedLabels)}(Seq(${wrapInQuotationsAndMkString(labels)}))"
       case EagernessReason.DeleteOverlap(identifiers) => s"${objectName(EagernessReason.DeleteOverlap)}(Seq(${wrapInQuotationsAndMkString(identifiers)}))"
