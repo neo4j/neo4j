@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.RecoverableCypherError
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
@@ -135,7 +136,7 @@ trait TransactionPipeWrapper {
       commitTransactionWithStatistics(innerTxContext, state)
       Commit(transactionId)
     } catch {
-      case NonFatal(e) =>
+      case RecoverableCypherError(e) =>
         logError(state, transactionId, e)
 
         Try(Option(innerIterator).foreach(_.close()))
