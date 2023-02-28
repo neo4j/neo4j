@@ -135,6 +135,8 @@ trait TransactionPipeWrapper {
       Commit(transactionId)
     } catch {
       case NonFatal(e) =>
+        state.query.logProvider.getLog(getClass).info("Ignoring inner transaction error", e)
+
         Try(Option(innerIterator).foreach(_.close()))
           .failed
           .foreach(e.addSuppressed)

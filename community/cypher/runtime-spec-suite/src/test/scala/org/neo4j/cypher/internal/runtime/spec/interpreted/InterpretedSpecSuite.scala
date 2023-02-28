@@ -139,6 +139,7 @@ import org.neo4j.cypher.internal.runtime.spec.tests.RelationshipTypeScanTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RemoveLabelsTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RightOuterHashJoinTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.RollupApplyTestBase
+import org.neo4j.cypher.internal.runtime.spec.tests.RuntimeDebugLoggingTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrAntiSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SelectOrSemiApplyTestBase
 import org.neo4j.cypher.internal.runtime.spec.tests.SemiApplyTestBase
@@ -523,3 +524,6 @@ class InterpretedRelationshipIndexSeekConcurrencyStressTest
 
 class InterpretedRelationshipIndexLockingUniqueSeekConcurrencyStressTest
     extends RelationshipIndexLockingUniqueSeekConcurrencyStressTestBase(COMMUNITY.EDITION, InterpretedRuntime)
+
+class InterpretedRuntimeDebugLoggingTest
+    extends RuntimeDebugLoggingTestBase(COMMUNITY.EDITION, InterpretedRuntime, SIZE_HINT)

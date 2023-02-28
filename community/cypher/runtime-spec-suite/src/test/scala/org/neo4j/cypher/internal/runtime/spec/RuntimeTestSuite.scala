@@ -47,6 +47,7 @@ import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction
 import org.neo4j.kernel.api.Kernel
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
@@ -109,6 +110,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
     with RuntimeTestResolver[CONTEXT] {
 
   protected var managementService: DatabaseManagementService = _
+  protected var dbmsFileSystem: EphemeralFileSystemAbstraction = _
   protected var graphDb: GraphDatabaseService = _
   protected var runtimeTestSupport: RuntimeTestSupport[CONTEXT] = _
   protected var kernel: Kernel = _
@@ -143,7 +145,9 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   }
 
   protected def restartDB(): Unit = {
-    managementService = edition.newGraphManagementService()
+    val dbms = edition.newGraphManagementService()
+    managementService = dbms.dbms
+    dbmsFileSystem = dbms.filesystem
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)
     kernel = graphDb.asInstanceOf[GraphDatabaseFacade].getDependencyResolver.resolveDependency(classOf[Kernel])
   }
@@ -189,6 +193,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
       runtimeTestSupport.stop()
       managementService.shutdown()
       managementService = null
+      dbmsFileSystem = null
       runtimeTestSupport = null
       kernel = null
       graphDb = null

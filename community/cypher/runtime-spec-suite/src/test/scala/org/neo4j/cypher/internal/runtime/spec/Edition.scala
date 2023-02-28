@@ -27,8 +27,10 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.RuntimeContextManager
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
+import org.neo4j.cypher.internal.runtime.spec.Edition.Dbms
 import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.io.fs.EphemeralFileSystemAbstraction
 import org.neo4j.kernel.lifecycle.LifeSupport
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
@@ -53,15 +55,16 @@ class Edition[CONTEXT <: RuntimeContext](
   val configs: (Setting[_], Object)*
 ) {
 
-  def newGraphManagementService(additionalConfigs: (Setting[_], Object)*): DatabaseManagementService = {
-    val graphBuilder = graphBuilderFactory().impermanent
+  def newGraphManagementService(additionalConfigs: (Setting[_], Object)*): Dbms = {
+    val fileSystem = new EphemeralFileSystemAbstraction
+    val graphBuilder = graphBuilderFactory().setFileSystem(fileSystem)
     configs.foreach {
       case (setting, value) => graphBuilder.setConfig(setting.asInstanceOf[Setting[Object]], value.asInstanceOf[Object])
     }
     additionalConfigs.foreach {
       case (setting, value) => graphBuilder.setConfig(setting.asInstanceOf[Setting[Object]], value.asInstanceOf[Object])
     }
-    graphBuilder.build()
+    Dbms(graphBuilder.build(), fileSystem)
   }
 
   def copyWith(additionalConfigs: (Setting[_], Object)*): Edition[CONTEXT] = {
@@ -96,6 +99,10 @@ class Edition[CONTEXT <: RuntimeContext](
     val config = Config.defaults(configs.toMap.asJava)
     CypherConfiguration.fromConfig(config)
   }
+}
+
+object Edition {
+  case class Dbms(dbms: DatabaseManagementService, filesystem: EphemeralFileSystemAbstraction)
 }
 
 object COMMUNITY {
