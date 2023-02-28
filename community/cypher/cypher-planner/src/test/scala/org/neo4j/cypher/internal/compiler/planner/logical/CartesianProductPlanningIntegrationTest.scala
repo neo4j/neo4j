@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
@@ -32,7 +33,8 @@ import org.neo4j.cypher.internal.planner.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 /**
- * This class tests only greedy - the idp counterpart is tested in [[ConnectComponentsPlanningIntegrationTest]]
+ * For CartesianProducts connecting disconnected components this class tests only greedy,
+ * the idp counterpart is tested in [[ConnectComponentsPlanningIntegrationTest]].
  */
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport {
 
@@ -308,5 +310,126 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .filter("$param1 > $param2")
       .nodeByLabelScan("a", "A")
       .build()
+  }
+
+  test("Plans ExpandInto on top of CartesianProduct for single relationship") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val query =
+      """MATCH (a)-[*1..2]-(b) 
+        |WHERE id(a) = 0 AND id(b) = 0  
+        |RETURN *
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should (equal(planner.subPlanBuilder()
+      .expandInto("(a)-[anon_0*1..2]-(b)")
+      .cartesianProduct()
+      .|.nodeByIdSeek("b", Set(), 0)
+      .nodeByIdSeek("a", Set(), 0)
+      .build()) or
+      equal(planner.subPlanBuilder()
+        .expandInto("(a)-[anon_0*1..2]-(b)")
+        .cartesianProduct()
+        .|.nodeByIdSeek("a", Set(), 0)
+        .nodeByIdSeek("b", Set(), 0)
+        .build()))
+  }
+
+  test(
+    "Plans ExpandInto on top of CartesianProduct for single relationship - Generic ORDER BY solved after aggregation"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val query =
+      """MATCH (a)-[*1..2]-(b) 
+        |WHERE id(a) = 0 AND id(b) = 0  
+        |RETURN count(b) 
+        |ORDER BY 1
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should (equal(planner.subPlanBuilder()
+      .sort(Seq(Ascending("1")))
+      .projection("1 AS 1")
+      .aggregation(Seq(), Seq("count(b) AS `count(b)`"))
+      .expandInto("(a)-[anon_0*1..2]-(b)")
+      .cartesianProduct()
+      .|.nodeByIdSeek("b", Set(), 0)
+      .nodeByIdSeek("a", Set(), 0)
+      .build()) or
+      equal(planner.subPlanBuilder()
+        .sort(Seq(Ascending("1")))
+        .projection("1 AS 1")
+        .aggregation(Seq(), Seq("count(b) AS `count(b)`"))
+        .expandInto("(a)-[anon_0*1..2]-(b)")
+        .cartesianProduct()
+        .|.nodeByIdSeek("a", Set(), 0)
+        .nodeByIdSeek("b", Set(), 0)
+        .build()))
+  }
+
+  test("Plans ExpandInto on top of CartesianProduct for single relationship - Generic ORDER BY solved in LHS") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val query =
+      """MATCH (a)-[*1..2]-(b) 
+        |WHERE id(a) = 0 AND id(b) = 0  
+        |RETURN *
+        |ORDER BY 1
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should (equal(planner.subPlanBuilder()
+      .expandInto("(a)-[anon_0*1..2]-(b)")
+      .cartesianProduct()
+      .|.nodeByIdSeek("b", Set(), 0)
+      .sort(Seq(Ascending("1")))
+      .projection("1 AS 1")
+      .nodeByIdSeek("a", Set(), 0)
+      .build()) or
+      equal(planner.subPlanBuilder()
+        .sort(Seq(Ascending("1")))
+        .projection("1 AS 1")
+        .expandInto("(a)-[anon_0*1..2]-(b)")
+        .cartesianProduct()
+        .|.nodeByIdSeek("a", Set(), 0)
+        .sort(Seq(Ascending("1")))
+        .projection("1 AS 1")
+        .nodeByIdSeek("b", Set(), 0)
+        .build()))
+  }
+
+  test("Plans ExpandInto on top of CartesianProduct for single relationship - Specific ORDER BY solved in LHS") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val query =
+      """MATCH (a)-[*1..2]-(b) 
+        |WHERE id(a) = 0 AND id(b) = 0  
+        |RETURN *
+        |ORDER BY b.prop
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .expandInto("(a)-[anon_0*1..2]-(b)")
+      .cartesianProduct()
+      .|.nodeByIdSeek("a", Set(), 0)
+      .sort(Seq(Ascending("b.prop")))
+      .projection("b.prop AS `b.prop`")
+      .nodeByIdSeek("b", Set(), 0)
+      .build())
   }
 }

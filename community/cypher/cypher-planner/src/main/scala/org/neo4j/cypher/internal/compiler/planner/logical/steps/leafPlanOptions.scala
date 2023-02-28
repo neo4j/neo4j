@@ -54,7 +54,7 @@ object leafPlanOptions extends LeafPlanFinder {
     queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
-  ): Iterable[BestPlans] = {
+  ): Map[Set[String], BestPlans] = {
     val queryPlannerKit = config.toKit(interestingOrderConfig, context)
     val pickBest = config.pickBestCandidate(context)
 
@@ -62,31 +62,29 @@ object leafPlanOptions extends LeafPlanFinder {
       config.leafPlanners.candidates(queryGraph, interestingOrderConfig = interestingOrderConfig, context = context)
     val leafPlanCandidatesWithSelections = queryPlannerKit.select(leafPlanCandidates, queryGraph)
 
-    val bestPlansPerAvailableSymbols =
-      leafPlanCandidatesWithSelections
-        .toSeq
-        .sequentiallyGroupBy(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
-        .map { case (_, bucket) =>
-          val bestPlan = pickBest(
-            bucket,
-            leafPlanHeuristic(context),
-            s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}"
-          ).get
+    leafPlanCandidatesWithSelections
+      .toSeq
+      .sequentiallyGroupBy(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
+      .map { case (availableSymbols, bucket) =>
+        val bestPlan = pickBest(
+          bucket,
+          leafPlanHeuristic(context),
+          s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}"
+        ).get
 
-          if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
-            val sortedLeaves =
-              bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
-            val bestSortedPlan = pickBest(
-              sortedLeaves,
-              s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}"
-            )
-            BestResults(bestPlan, bestSortedPlan)
-          } else {
-            BestResults(bestPlan, None)
-          }
+        if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
+          val sortedLeaves =
+            bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
+          val bestSortedPlan = pickBest(
+            sortedLeaves,
+            s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}"
+          )
+          availableSymbols -> BestResults(bestPlan, bestSortedPlan)
+        } else {
+          availableSymbols -> BestResults(bestPlan, None)
         }
-
-    bestPlansPerAvailableSymbols
+      }
+      .toMap
   }
 
   def leafPlanHeuristic(context: LogicalPlanningContext): SelectorHeuristic = new SelectorHeuristic {

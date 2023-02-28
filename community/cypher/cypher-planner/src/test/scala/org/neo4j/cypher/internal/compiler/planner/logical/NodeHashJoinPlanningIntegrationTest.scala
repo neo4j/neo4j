@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -109,5 +110,52 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .unwind(s"$array AS a0")
       .allNodeScan("n1")
       .build()
+  }
+
+  test("Plans Join on top of Expand for single relationship if hint is used") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val query =
+      """MATCH (a)-[*1..2]-(b) 
+        |USING JOIN ON a
+        |WHERE id(a) = 0 AND id(b) = 0  
+        |RETURN *
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .nodeHashJoin("a")
+      .|.expand("(b)-[anon_0*1..2]-(a)", projectedDir = INCOMING)
+      .|.nodeByIdSeek("b", Set(), 0)
+      .nodeByIdSeek("a", Set(), 0)
+      .build())
+  }
+
+  test("Plans Join on top of Expand for single relationship if hint is used - Generic ORDER BY solved in RHS") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val query =
+      """MATCH (a)-[*1..2]-(b) 
+        |USING JOIN ON a
+        |WHERE id(a) = 0 AND id(b) = 0  
+        |RETURN *
+        |ORDER BY 1
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .nodeHashJoin("a")
+      .|.expand("(b)-[anon_0*1..2]-(a)", projectedDir = INCOMING)
+      .|.sort(Seq(Ascending("1")))
+      .|.projection("1 AS 1")
+      .|.nodeByIdSeek("b", Set(), 0)
+      .nodeByIdSeek("a", Set(), 0)
+      .build())
   }
 }

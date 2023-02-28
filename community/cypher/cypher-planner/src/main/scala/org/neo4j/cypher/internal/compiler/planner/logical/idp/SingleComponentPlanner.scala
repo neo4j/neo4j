@@ -60,16 +60,13 @@ case class SingleComponentPlanner(
     kit: QueryPlannerKit,
     interestingOrderConfig: InterestingOrderConfig
   ): BestPlans = {
-    val bestPlansPerAvailableSymbol = leafPlanFinder(context.plannerState.config, qg, interestingOrderConfig, context)
+    val bestLeafPlansPerAvailableSymbol =
+      leafPlanFinder(context.plannerState.config, qg, interestingOrderConfig, context)
 
     val qppInnerPlans = new PrecomputedQPPInnerPlans(qg, context)
 
     val bestPlans =
       if (qg.nodeConnections.nonEmpty) {
-        val leaves = bestPlansPerAvailableSymbol.flatMap(bestPlans =>
-          bestPlans.bestResultFulfillingReq.toSeq :+ bestPlans.bestResult
-        ).toSet
-
         val orderRequirement = extraRequirementForInterestingOrder(context, interestingOrderConfig)
         val generators = solverConfig.solvers(qppInnerPlans).map(_(qg))
         val generator = IDPQueryGraphSolver.composeSolverSteps(qg, interestingOrderConfig, kit, context, generators)
@@ -85,7 +82,7 @@ case class SingleComponentPlanner(
         )
 
         monitor.initTableFor(qg)
-        val seed = initTable(qg, kit, leaves, qppInnerPlans, context, interestingOrderConfig)
+        val seed = initTable(qg, kit, bestLeafPlansPerAvailableSymbol, qppInnerPlans, context, interestingOrderConfig)
         monitor.startIDPIterationFor(qg)
         val result = solver(seed, qg.nodeConnections.toSeq, context)
         monitor.endIDPIterationFor(qg, result.bestResult)
@@ -94,10 +91,13 @@ case class SingleComponentPlanner(
       } else {
         val solutionPlans =
           if (qg.shortestPathPatterns.isEmpty) {
-            bestPlansPerAvailableSymbol
+            bestLeafPlansPerAvailableSymbol
+              .values
               .filter(bestPlans => planFullyCoversQG(qg, bestPlans.bestResult))
           } else {
-            bestPlansPerAvailableSymbol.map(_.map(kit.select(_, qg)))
+            bestLeafPlansPerAvailableSymbol
+              .values
+              .map(_.map(kit.select(_, qg)))
               .filter(bestPlans => planFullyCoversQG(qg, bestPlans.bestResult))
           }
         if (solutionPlans.size != 1) {
@@ -128,14 +128,15 @@ case class SingleComponentPlanner(
   private def initTable(
     qg: QueryGraph,
     kit: QueryPlannerKit,
-    leaves: Set[LogicalPlan],
+    bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
     qppInnerPlans: QPPInnerPlans,
     context: LogicalPlanningContext,
     interestingOrderConfig: InterestingOrderConfig
   ): Seed[NodeConnection, LogicalPlan] = {
     for (pattern <- qg.nodeConnections)
       yield {
-        val plans = planSinglePattern(qg, pattern, leaves, qppInnerPlans, context).map(plan => kit.select(plan, qg))
+        val plans = planSinglePattern(qg, pattern, bestLeafPlansPerAvailableSymbol, qppInnerPlans, context)
+          .map(plan => kit.select(plan, qg))
         // From _all_ plans (even if they are sorted), put the best into the seed
         // with `false`. We don't want to compare just the ones that are unsorted
         // in isolation, because it could be that the best overall plan is sorted.
@@ -198,11 +199,15 @@ object SingleComponentPlanner {
   def planSinglePattern(
     qg: QueryGraph,
     patternToSolve: NodeConnection,
-    leaves: Set[LogicalPlan],
+    bestLeafPlansPerAvailableSymbol: Map[Set[String], BestPlans],
     qppInnerPlans: QPPInnerPlans,
     context: LogicalPlanningContext
   ): Iterable[LogicalPlan] = {
     val solveds = context.staticComponents.planningAttributes.solveds
+
+    val leaves = bestLeafPlansPerAvailableSymbol
+      .values
+      .flatMap(_.allResults)
 
     val perLeafSolutions: Map[LogicalPlan, SinglePatternSolutions] = leaves.map { leaf =>
       val solvedQg = solveds.get(leaf.id).asSinglePlannerQuery.lastQueryGraph
@@ -227,64 +232,84 @@ object SingleComponentPlanner {
 
     val cartesianProductsAndJoins = {
       val (start, end) = patternToSolve.nodes
-      val startJoinNodes = Set(start)
-      val endJoinNodes = Set(end)
-      val maybeStartPlan = leaves
-        .find(leaf =>
-          solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == startJoinNodes
-            && !leaf.isInstanceOf[Argument]
-        )
-      val maybeEndPlan = leaves
-        .find(leaf =>
-          solveds(leaf.id).asSinglePlannerQuery.queryGraph.patternNodes == endJoinNodes
-            && !leaf.isInstanceOf[Argument]
-        )
+      if (start == end) {
         // We are not allowed to plan CP or joins with identical LHS and RHS
-        .filter(!maybeStartPlan.contains(_))
+        Iterable.empty[LogicalPlan]
+      } else {
+        val startJoinNodes = Set(start)
+        val endJoinNodes = Set(end)
 
-      val maybeCartesianProduct =
-        planSinglePatternCartesian(qg, patternToSolve, start, maybeStartPlan, maybeEndPlan, qppInnerPlans, context)
-      val maybeLeftExpand = maybeStartPlan.map(perLeafSolutions).collect {
-        case ExpandSolutions(leftExpand, _) => leftExpand
-      }.flatten
-      val maybeRightExpand = maybeEndPlan.map(perLeafSolutions).collect {
-        case ExpandSolutions(_, rightExpand) => rightExpand
-      }.flatten
+        val maybeStartBestPlans = bestLeafPlansPerAvailableSymbol.get(startJoinNodes)
+          .filter(!_.bestResult.isInstanceOf[Argument])
+        val maybeEndBestPlans = bestLeafPlansPerAvailableSymbol.get(endJoinNodes)
+          .filter(!_.bestResult.isInstanceOf[Argument])
 
-      val joins = planSinglePatternJoins(
-        qg,
-        maybeLeftExpand,
-        maybeRightExpand,
-        startJoinNodes,
-        endJoinNodes,
-        maybeStartPlan,
-        maybeEndPlan,
-        context
-      )
-      maybeCartesianProduct ++ joins
+        val cartesianProducts = planSinglePatternCartesianProducts(
+          qg,
+          patternToSolve,
+          start,
+          maybeStartBestPlans,
+          maybeEndBestPlans,
+          qppInnerPlans,
+          context
+        )
+
+        def getExpandSolutionOnTopOfLeaf(leaf: LogicalPlan): Option[ExpandSolutions] = perLeafSolutions(leaf) match {
+          case es: ExpandSolutions => Some(es)
+          case _                   => None
+        }
+
+        val joins = planSinglePatternJoins(
+          qg,
+          startJoinNodes,
+          endJoinNodes,
+          maybeStartBestPlans,
+          maybeEndBestPlans,
+          getExpandSolutionOnTopOfLeaf,
+          context
+        )
+
+        cartesianProducts ++ joins
+      }
     }
 
     perLeafSolutions.values.flatMap(_.getSolutions) ++ cartesianProductsAndJoins
   }
 
-  def planSinglePatternCartesian(
+  private def planSinglePatternCartesianProducts(
     qg: QueryGraph,
     pattern: NodeConnection,
     start: String,
-    maybeStartPlan: Option[LogicalPlan],
-    maybeEndPlan: Option[LogicalPlan],
+    maybeStartBestPlans: Option[BestPlans],
+    maybeEndBestPlans: Option[BestPlans],
     qppInnerPlans: QPPInnerPlans,
     context: LogicalPlanningContext
-  ): Option[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
-    case (Some(startPlan), Some(endPlan)) =>
-      planSinglePatternSide(
-        qg,
-        pattern,
-        context.staticComponents.logicalPlanProducer.planCartesianProduct(startPlan, endPlan, context),
-        start,
-        qppInnerPlans,
-        context
-      )
+  ): Iterable[LogicalPlan] = (maybeStartBestPlans, maybeEndBestPlans) match {
+    case (Some(startBestPlan), Some(endBestPlan)) =>
+      // CP keeps the LHS order. Therefore we consider both the bestResult and the best sorted result
+      // as LHSs of the CP.
+      val startLHSEndRHS = startBestPlan.allResults.map { lhsPlan =>
+        // CP does not keep the RHS order, so we only consider the best result as the RHS of the CP.
+        val rhsPlan = endBestPlan.bestResult
+        (lhsPlan, rhsPlan)
+      }
+      // Analogous
+      val endLHSStartRHS = endBestPlan.allResults.map { lhsPlan =>
+        val rhsPlan = startBestPlan.bestResult
+        (lhsPlan, rhsPlan)
+      }
+
+      (startLHSEndRHS ++ endLHSStartRHS).flatMap {
+        case (lhsPlan, rhsPlan) =>
+          planSinglePatternSide(
+            qg,
+            pattern,
+            context.staticComponents.logicalPlanProducer.planCartesianProduct(lhsPlan, rhsPlan, context),
+            start,
+            qppInnerPlans,
+            context
+          )
+      }
     case _ => None
   }
 
@@ -292,55 +317,75 @@ object SingleComponentPlanner {
    * If there are hints and the query graph is small, joins have to be constructed as an alternative here, otherwise the hints might not be able to be fulfilled.
    * Creating joins if the query graph is larger will lead to too many joins.
    */
-  def planSinglePatternJoins(
+  private def planSinglePatternJoins(
     qg: QueryGraph,
-    leftExpand: Option[LogicalPlan],
-    rightExpand: Option[LogicalPlan],
     startJoinNodes: Set[String],
     endJoinNodes: Set[String],
-    maybeStartPlan: Option[LogicalPlan],
-    maybeEndPlan: Option[LogicalPlan],
+    maybeStartBestPlans: Option[BestPlans],
+    maybeEndBestPlans: Option[BestPlans],
+    getExpandSolutionOnTopOfLeaf: LogicalPlan => Option[ExpandSolutions],
     context: LogicalPlanningContext
-  ): Iterable[LogicalPlan] = (maybeStartPlan, maybeEndPlan) match {
-    case (Some(startPlan), Some(endPlan)) if qg.hints.nonEmpty && qg.size == 1 =>
+  ): Iterable[LogicalPlan] = (maybeStartBestPlans, maybeEndBestPlans) match {
+    case (Some(startBestPlan), Some(endBestPlan)) if qg.hints.nonEmpty && qg.size == 1 =>
       val startJoinHints = qg.joinHints.filter(_.coveredBy(startJoinNodes))
       val endJoinHints = qg.joinHints.filter(_.coveredBy(endJoinNodes))
-      val join1a = leftExpand.map(expand =>
-        context.staticComponents.logicalPlanProducer.planNodeHashJoin(
-          endJoinNodes,
-          expand,
-          endPlan,
-          endJoinHints,
-          context
-        )
-      )
-      val join1b = leftExpand.map(expand =>
-        context.staticComponents.logicalPlanProducer.planNodeHashJoin(
-          endJoinNodes,
-          endPlan,
-          expand,
-          endJoinHints,
-          context
-        )
-      )
-      val join2a = rightExpand.map(expand =>
-        context.staticComponents.logicalPlanProducer.planNodeHashJoin(
-          startJoinNodes,
-          startPlan,
-          expand,
-          startJoinHints,
-          context
-        )
-      )
-      val join2b = rightExpand.map(expand =>
-        context.staticComponents.logicalPlanProducer.planNodeHashJoin(
-          startJoinNodes,
-          expand,
-          startPlan,
-          startJoinHints,
-          context
-        )
-      )
+
+      // Join keeps the RHS order. Therefore we consider both the bestResult and the best sorted result
+      // as RHSs of the join.
+      val join1a = endBestPlan.allResults.flatMap { endPlan =>
+        // Join does not keep the LHS order, so we only consider the best result as the LHS of the join.
+        getExpandSolutionOnTopOfLeaf(startBestPlan.bestResult)
+          .flatMap(_.leftExpand)
+          .map { leftExpand =>
+            context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+              endJoinNodes,
+              leftExpand,
+              endPlan,
+              endJoinHints,
+              context
+            )
+          }
+      }
+
+      val join1b = startBestPlan.allResults.flatMap(getExpandSolutionOnTopOfLeaf)
+        .flatMap(_.leftExpand)
+        .map { leftExpand =>
+          val endPlan = endBestPlan.bestResult
+          context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+            endJoinNodes,
+            endPlan,
+            leftExpand,
+            endJoinHints,
+            context
+          )
+        }
+
+      val join2a = endBestPlan.allResults.flatMap(getExpandSolutionOnTopOfLeaf)
+        .flatMap(_.rightExpand)
+        .map { rightExpand =>
+          val startPlan = startBestPlan.bestResult
+          context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+            startJoinNodes,
+            startPlan,
+            rightExpand,
+            startJoinHints,
+            context
+          )
+        }
+
+      val join2b = startBestPlan.allResults.flatMap { startPlan =>
+        getExpandSolutionOnTopOfLeaf(endBestPlan.bestResult)
+          .flatMap(_.rightExpand)
+          .map { rightExpand =>
+            context.staticComponents.logicalPlanProducer.planNodeHashJoin(
+              startJoinNodes,
+              rightExpand,
+              startPlan,
+              startJoinHints,
+              context
+            )
+          }
+      }
       join1a ++ join1b ++ join2a ++ join2b
     case _ => None
   }

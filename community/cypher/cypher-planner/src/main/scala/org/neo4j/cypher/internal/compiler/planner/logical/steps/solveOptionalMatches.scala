@@ -74,7 +74,7 @@ case object applyOptional extends OptionalSolver {
       context.withModifiedPlannerState(_.withFusedLabelInfo(enclosingQg.selections.labelInfo))
     val inner = context.staticComponents.queryGraphSolver.plan(optionalQg, interestingOrderConfig, innerContext)
     (lhs: LogicalPlan) =>
-      inner.allResults.map { inner =>
+      inner.allResults.iterator.map { inner =>
         val rhs = context.staticComponents.logicalPlanProducer.planOptional(
           inner,
           lhs.availableSymbols,

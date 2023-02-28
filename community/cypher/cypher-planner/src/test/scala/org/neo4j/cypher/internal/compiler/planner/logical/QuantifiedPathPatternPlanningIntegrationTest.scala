@@ -504,7 +504,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     plan should equal(
       planner.subPlanBuilder()
-        .filter(disjoint("r", "r2", 18))
+        .filter(disjoint("r", "r2", 20))
         .nodeHashJoin("x")
         .|.trail(`(x) ((a)-[r2]-(b))+ (v)`)
         .|.|.filterExpression(isRepeatTrailUnique("r2"))

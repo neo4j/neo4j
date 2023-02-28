@@ -60,7 +60,7 @@ trait LeafPlanFinder {
     queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
-  ): Iterable[BestPlans]
+  ): Map[Set[String], BestPlans]
 }
 
 sealed trait LeafPlanRestrictions {

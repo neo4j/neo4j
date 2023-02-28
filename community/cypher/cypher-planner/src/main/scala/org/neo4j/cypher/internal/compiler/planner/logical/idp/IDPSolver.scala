@@ -56,9 +56,9 @@ case class BestResults[+Result](bestResult: Result, bestResultFulfillingReq: Opt
   def map[B](f: Result => B): BestResults[B] = BestResults(f(bestResult), bestResultFulfillingReq.map(f))
 
   /**
-   * Returns iterator over all unique results
+   * Returns all unique results.
    */
-  def allResults: Iterator[Result] = (Set(bestResult) ++ bestResultFulfillingReq).toIterator
+  def allResults: Iterable[Result] = Set(bestResult) ++ bestResultFulfillingReq
 
   /**
    * Gets the bestResultFulfillingReq if present, otherwise gets bestResult
