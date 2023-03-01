@@ -26,6 +26,7 @@ import static org.neo4j.internal.helpers.Numbers.log2floor;
 
 import java.util.Arrays;
 import org.apache.commons.lang3.StringUtils;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Value in a GB+Tree for indexing id states. Accompanies that with a generation, i.e. which generation this value were written in.
@@ -58,10 +59,17 @@ class IdRange {
     private byte addition;
     private final long[][] bitSets;
     private final int numOfLongs;
+    private final int idsPerEntry;
 
-    IdRange(int numOfLongs) {
+    IdRange(int numOfLongs, int idsPerEntry) {
         this.bitSets = new long[BITSET_COUNT][numOfLongs];
         this.numOfLongs = numOfLongs;
+        this.idsPerEntry = idsPerEntry;
+    }
+
+    @VisibleForTesting
+    IdRange(int numOfLongs) {
+        this(numOfLongs, numOfLongs * BITSET_SIZE);
     }
 
     IdState getState(int n) {
@@ -215,12 +223,14 @@ class IdRange {
             long from = fromBitSet[i];
             if (isAddition(other.addition, BITSET_COMMIT)) {
                 if ((into & from) != 0) {
-                    int idsPerRange = numOfLongs * Long.SIZE;
+                    long rangeFirstId = key.getIdRangeIdx() * idsPerEntry;
+                    long firstId = rangeFirstId + (long) i * BITSET_SIZE;
+                    long lastId = Long.min(firstId + BITSET_SIZE, rangeFirstId + idsPerEntry) - 1;
                     throw new IllegalStateException(format(
                             "Illegal addition ID state for range: %d (IDs %d-%d) transition%ninto: %s%nfrom: %s",
                             key.getIdRangeIdx(),
-                            key.getIdRangeIdx() * idsPerRange,
-                            (key.getIdRangeIdx() + 1) * idsPerRange - 1,
+                            firstId,
+                            lastId,
                             toPaddedBinaryString(into),
                             toPaddedBinaryString(from)));
                 }

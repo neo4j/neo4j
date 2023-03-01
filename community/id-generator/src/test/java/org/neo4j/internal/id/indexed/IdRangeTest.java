@@ -20,6 +20,7 @@
 package org.neo4j.internal.id.indexed;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.DynamicTest.dynamicTest;
@@ -27,6 +28,7 @@ import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_RESERVED;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_REUSE;
+import static org.neo4j.internal.id.indexed.IdRange.BITSET_SIZE;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.DELETED;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.FREE;
 import static org.neo4j.internal.id.indexed.IdRange.IdState.USED;
@@ -280,6 +282,50 @@ class IdRangeTest {
             var expectedId = iterator.next();
             assertThat(visitor.hasId(expectedId, 1)).isTrue();
         }
+    }
+
+    @Test
+    void shouldIncludeCorrectIdRangeOnVerificationError() {
+        // given
+        var generation = 1L;
+        var numLongs = 2;
+        var idsPerEntry = numLongs * BITSET_SIZE;
+        var idRange = new IdRange(numLongs, idsPerEntry);
+        idRange.clear(generation, true);
+        var bit = BITSET_SIZE + 5;
+        idRange.setBits(BITSET_COMMIT, bit, 1);
+
+        // when
+        var addition = new IdRange(numLongs, idsPerEntry);
+        addition.clear(generation, true);
+        addition.setBits(BITSET_COMMIT, bit, 1);
+        var key = new IdRangeKey(3);
+        var expectedFirstId = key.getIdRangeIdx() * idsPerEntry + BITSET_SIZE;
+        var expectedLastId = expectedFirstId + BITSET_SIZE - 1;
+        assertThatThrownBy(() -> idRange.mergeFrom(key, addition, false))
+                .hasMessageContaining("IDs %d-%d", expectedFirstId, expectedLastId);
+    }
+
+    @Test
+    void shouldIncludeCorrectIdRangeOnVerificationErrorForSmallerIdsPerEntry() {
+        // given
+        var generation = 1L;
+        var numLongs = 1;
+        var idsPerEntry = BITSET_SIZE / 2;
+        var idRange = new IdRange(numLongs, idsPerEntry);
+        idRange.clear(generation, true);
+        var bit = 7;
+        idRange.setBits(BITSET_COMMIT, bit, 1);
+
+        // when
+        var addition = new IdRange(numLongs, idsPerEntry);
+        addition.clear(generation, true);
+        addition.setBits(BITSET_COMMIT, bit, 1);
+        var key = new IdRangeKey(3);
+        var expectedFirstId = key.getIdRangeIdx() * idsPerEntry;
+        var expectedLastId = expectedFirstId + idsPerEntry - 1;
+        assertThatThrownBy(() -> idRange.mergeFrom(key, addition, false))
+                .hasMessageContaining("IDs %d-%d", expectedFirstId, expectedLastId);
     }
 
     private static Stream<Arguments> slotSizesAndOffsets() {

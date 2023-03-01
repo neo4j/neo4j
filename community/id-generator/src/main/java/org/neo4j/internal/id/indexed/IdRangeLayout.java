@@ -52,7 +52,7 @@ public class IdRangeLayout extends Layout.Adapter<IdRangeKey, IdRange> {
 
     @Override
     public IdRange newValue() {
-        return new IdRange(longsPerEntry);
+        return new IdRange(longsPerEntry, idsPerEntry);
     }
 
     @Override
