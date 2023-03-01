@@ -33,8 +33,7 @@ case object planMatch extends MatchPlanner {
     val interestingOrderConfig = InterestingOrderConfig.interestingOrderForPart(
       query = query,
       isRhs = rhsPart,
-      isHorizon = false,
-      disallowSplittingTop = context.settings.debugOptions.disallowSplittingTopEnabled
+      isHorizon = false
     )
     context.staticComponents.queryGraphSolver.plan(
       query.queryGraph,

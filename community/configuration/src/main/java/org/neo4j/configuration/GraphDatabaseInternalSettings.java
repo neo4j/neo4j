@@ -394,21 +394,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Integer> cypher_pipelined_operator_fusion_over_pipeline_limit = newBuilder(
                     "internal.cypher.pipelined.operator_fusion_over_pipeline_limit", INT, 8)
             .build();
-
-    public enum SplittingTopBehavior {
-        DEFAULT,
-        DISALLOW
-    }
-
-    @Internal
-    @Description(
-            "Determines whether the planner is allowed to push down the sort portion of an ORDER BY + LIMIT combination")
-    public static final Setting<SplittingTopBehavior> cypher_splitting_top_behavior = newBuilder(
-                    "internal.cypher.splitting_top_behavior",
-                    ofEnum(SplittingTopBehavior.class),
-                    SplittingTopBehavior.DEFAULT)
-            .build();
-
     public enum EagerAnalysisImplementation {
         IR,
         LP

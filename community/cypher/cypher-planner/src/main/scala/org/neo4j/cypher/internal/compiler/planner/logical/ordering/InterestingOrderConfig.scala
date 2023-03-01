@@ -55,7 +55,6 @@ object InterestingOrderConfig {
     query: SinglePlannerQuery,
     isRhs: Boolean,
     isHorizon: Boolean,
-    disallowSplittingTop: Boolean
   ): InterestingOrderConfig = {
     val readOnly = if (isHorizon) query.tail.forall(_.readOnly) else query.readOnly
 
@@ -70,14 +69,7 @@ object InterestingOrderConfig {
         order.copy(interestingOrderCandidates = order.interestingOrderCandidates ++ extraCandidates)
       }
 
-      val orderToSolve =
-        if (DisallowSplittingTop.demoteRequiredOrderToInterestingOrder(query, isHorizon, disallowSplittingTop)) {
-          orderToConsiderSolving.asInteresting
-        } else {
-          orderToConsiderSolving
-        }
-
-      InterestingOrderConfig(orderToReport = orderToReport, orderToSolve = orderToSolve)
+      InterestingOrderConfig(orderToReport = orderToReport, orderToSolve = orderToConsiderSolving)
     }
   }
 

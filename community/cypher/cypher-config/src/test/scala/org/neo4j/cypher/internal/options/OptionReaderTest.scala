@@ -60,8 +60,8 @@ class OptionReaderTest extends CypherFunSuite {
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
           .set(
-            GraphDatabaseInternalSettings.cypher_splitting_top_behavior,
-            GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
+            GraphDatabaseInternalSettings.cypher_eager_analysis_implementation,
+            GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP
           )
           .build()
       ),
@@ -70,7 +70,7 @@ class OptionReaderTest extends CypherFunSuite {
 
     options
       .shouldEqual(CypherQueryOptions.default.copy(
-        debugOptions = CypherDebugOptions(Set(CypherDebugOption.disallowSplittingTop))
+        debugOptions = CypherDebugOptions(Set(CypherDebugOption.useLPEagerAnalyzer))
       ))
   }
 
@@ -80,8 +80,8 @@ class OptionReaderTest extends CypherFunSuite {
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
           .set(
-            GraphDatabaseInternalSettings.cypher_splitting_top_behavior,
-            GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
+            GraphDatabaseInternalSettings.cypher_eager_analysis_implementation,
+            GraphDatabaseInternalSettings.EagerAnalysisImplementation.LP
           )
           .build()
       ),
@@ -90,7 +90,7 @@ class OptionReaderTest extends CypherFunSuite {
 
     options
       .shouldEqual(CypherQueryOptions.default.copy(
-        debugOptions = CypherDebugOptions(Set(CypherDebugOption.disallowSplittingTop, CypherDebugOption.tostring))
+        debugOptions = CypherDebugOptions(Set(CypherDebugOption.useLPEagerAnalyzer, CypherDebugOption.tostring))
       ))
   }
 

@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.options
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.options.CypherDebugOption.disallowSplittingTop
 import org.neo4j.cypher.internal.options.CypherDebugOption.useLPEagerAnalyzer
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
@@ -365,7 +364,7 @@ sealed abstract class CypherDebugOption(flag: String) extends CypherKeyValueOpti
 case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
       name = "debug",
       cypherConfigBooleans =
-        Map(disallowSplittingTop -> (_.disallowSplittingTop), useLPEagerAnalyzer -> (_.useLPEagerAnalyzer))
+        Map(useLPEagerAnalyzer -> (_.useLPEagerAnalyzer))
     ) {
   // Unused. We need to have a default
   case object default extends CypherDebugOption("none")
@@ -384,7 +383,6 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object fabricLogRecords extends CypherDebugOption("fabriclogrecords")
   case object logicalPlanBuilder extends CypherDebugOption("logicalplanbuilder")
   case object rawCardinalities extends CypherDebugOption("rawcardinalities")
-  case object disallowSplittingTop extends CypherDebugOption("disallowsplittingtop")
   case object warnOnCompilationErrors extends CypherDebugOption("warnoncompilationerrors")
   case object useLPEagerAnalyzer extends CypherDebugOption("uselogicalplaneageranalyzer")
   case object disableExistsSubqueryCaching extends CypherDebugOption("disableexistssubquerycaching")
@@ -405,7 +403,6 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
     fabricLogRecords,
     logicalPlanBuilder,
     rawCardinalities,
-    disallowSplittingTop,
     warnOnCompilationErrors,
     disableExistsSubqueryCaching
   )
@@ -454,7 +451,6 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val fabricLogRecordsEnabled: Boolean = isEnabled(CypherDebugOption.fabricLogRecords)
   val logicalPlanBuilderEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlanBuilder)
   val rawCardinalitiesEnabled: Boolean = isEnabled(CypherDebugOption.rawCardinalities)
-  val disallowSplittingTopEnabled: Boolean = isEnabled(CypherDebugOption.disallowSplittingTop)
   val warnOnCompilationErrors: Boolean = isEnabled(CypherDebugOption.warnOnCompilationErrors)
   val useLPEagerAnalyzer: Boolean = isEnabled(CypherDebugOption.useLPEagerAnalyzer)
   val disableExistsSubqueryCaching: Boolean = isEnabled(CypherDebugOption.disableExistsSubqueryCaching)

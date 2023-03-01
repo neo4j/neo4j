@@ -59,8 +59,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
     val sortIfTailOrSelfRequiredConfig = InterestingOrderConfig.interestingOrderForPart(
       query = plannerQuery,
       isRhs = false,
-      isHorizon = true,
-      disallowSplittingTop = context.settings.debugOptions.disallowSplittingTopEnabled
+      isHorizon = true
     )
 
     // Plans horizon on top of the current best-overall plan, ensuring ordering only if required by the current query part.

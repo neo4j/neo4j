@@ -100,10 +100,6 @@ class CypherConfiguration private (val config: Config) {
   val memoryTrackingController: MemoryTrackingController = MEMORY_TRACKING_ENABLED_CONTROLLER
   val enableMonitors: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors)
 
-  val disallowSplittingTop: Boolean = config.get(
-    GraphDatabaseInternalSettings.cypher_splitting_top_behavior
-  ) == GraphDatabaseInternalSettings.SplittingTopBehavior.DISALLOW
-
   val enableExtraSemanticFeatures: Set[String] =
     config.get(GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features).asScala.toSet
 
