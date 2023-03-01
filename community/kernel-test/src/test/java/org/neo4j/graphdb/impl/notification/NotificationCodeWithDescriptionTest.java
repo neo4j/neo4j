@@ -48,8 +48,6 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_EXPERIMENTAL;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_UNSUPPORTED;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY;
-import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.SUBQUERY_VARIABLE_SHADOWING;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNBOUNDED_SHORTEST_PATH;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNION_RETURN_ORDER;
@@ -486,34 +484,6 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
-    void shouldConstructNotificationsFor_SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY() {
-        Notification notification = SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(InputPosition.empty);
-
-        verifyNotification(
-                notification,
-                "Index cannot execute wildcard query efficiently",
-                SeverityLevel.INFORMATION,
-                "Neo.ClientNotification.Statement.SuboptimalIndexForWildcardQuery",
-                "If the performance of this statement using `CONTAINS` doesn't meet your expectations check out the alternative index-providers, see "
-                        + "documentation on index configuration.",
-                NotificationCategory.PERFORMANCE);
-    }
-
-    @Test
-    void shouldConstructNotificationsFor_SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY() {
-        Notification notification = SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(InputPosition.empty);
-
-        verifyNotification(
-                notification,
-                "Index cannot execute wildcard query efficiently",
-                SeverityLevel.INFORMATION,
-                "Neo.ClientNotification.Statement.SuboptimalIndexForWildcardQuery",
-                "If the performance of this statement using `ENDS WITH` doesn't meet your expectations check out the alternative index-providers, see "
-                        + "documentation on index configuration.",
-                NotificationCategory.PERFORMANCE);
-    }
-
-    @Test
     void shouldConstructNotificationsFor_CODE_GENERATION_FAILED() {
         Notification notification = CODE_GENERATION_FAILED.notification(InputPosition.empty);
 
@@ -674,8 +644,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -61, 77, 109, 64, 7, 37, 70, -45, 20, -49, -69, -113, -82, -90, -84, 109, -28, -105, -128, -127, 13, 80,
-            -111, 49, 83, 117, 34, -111, 71, -126, -124, -44
+            -121, 48, -20, 36, 20, 117, -12, -72, 36, 0, -36, -5, -81, -84, -78, 121, 18, 20, -9, 30, 49, -96, 29, -30,
+            76, -65, -87, 118, 56, -49, -50, -61
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

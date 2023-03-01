@@ -284,6 +284,7 @@ public interface Status {
                 "Adding a schema index may speed up this query.",
                 SeverityLevel.INFORMATION,
                 NotificationCategory.PERFORMANCE),
+        @Deprecated
         SuboptimalIndexForWildcardQuery(
                 ClientNotification,
                 "Index cannot execute wildcard query efficiently",

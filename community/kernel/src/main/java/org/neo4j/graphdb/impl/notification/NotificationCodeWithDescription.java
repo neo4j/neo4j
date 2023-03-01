@@ -111,14 +111,6 @@ public enum NotificationCodeWithDescription {
     MISSING_PARAMETERS_FOR_EXPLAIN(
             Status.Statement.ParameterNotProvided,
             "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN."),
-    SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY(
-            Status.Statement.SuboptimalIndexForWildcardQuery,
-            "If the performance of this statement using `CONTAINS` doesn't meet your expectations check out the alternative index-providers, see "
-                    + "documentation on index configuration."),
-    SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY(
-            Status.Statement.SuboptimalIndexForWildcardQuery,
-            "If the performance of this statement using `ENDS WITH` doesn't meet your expectations check out the alternative index-providers, see "
-                    + "documentation on index configuration."),
     CODE_GENERATION_FAILED(
             Status.Statement.CodeGenerationFailed,
             "The database was unable to generate code for the query. A stacktrace can be found in the debug.log."),

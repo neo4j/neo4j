@@ -24,22 +24,6 @@ import org.neo4j.cypher.internal.ast.UsingIndexHintType
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 
-case class SuboptimalIndexForConstainsQueryNotification(
-  variableName: String,
-  labelOrRelType: String,
-  propertyKeys: Seq[String],
-  entityType: EntityType
-) extends InternalNotification
-
-case class SuboptimalIndexForEndsWithQueryNotification(
-  variableName: String,
-  labelOrRelType: String,
-  propertyKeys: Seq[String],
-  entityType: EntityType
-) extends InternalNotification
-
-case object StartUnavailableFallback extends InternalNotification
-
 case class RuntimeUnsupportedNotification(msg: String) extends InternalNotification
 
 case class IndexHintUnfulfillableNotification(

@@ -41,8 +41,6 @@ import org.neo4j.cypher.internal.compiler.NodeIndexLookupUnfulfillableNotificati
 import org.neo4j.cypher.internal.compiler.ProcedureWarningNotification
 import org.neo4j.cypher.internal.compiler.RelationshipIndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
-import org.neo4j.cypher.internal.compiler.SuboptimalIndexForConstainsQueryNotification
-import org.neo4j.cypher.internal.compiler.SuboptimalIndexForEndsWithQueryNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
@@ -172,26 +170,6 @@ object NotificationWrapping {
       NotificationCodeWithDescription.RUNTIME_EXPERIMENTAL.notification(
         graphdb.InputPosition.empty,
         NotificationDetail.Factory.message("PARALLEL", msg)
-      )
-    case SuboptimalIndexForConstainsQueryNotification(variableName, label, propertyKeys, entityType) =>
-      val detail = entityType match {
-        case EntityType.NODE => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
-        case EntityType.RELATIONSHIP =>
-          NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
-      }
-      NotificationCodeWithDescription.SUBOPTIMAL_INDEX_FOR_CONTAINS_QUERY.notification(
-        graphdb.InputPosition.empty,
-        detail
-      )
-    case SuboptimalIndexForEndsWithQueryNotification(variableName, label, propertyKeys, entityType) =>
-      val detail = entityType match {
-        case EntityType.NODE => NotificationDetail.Factory.nodeAnyIndex(variableName, label, propertyKeys: _*)
-        case EntityType.RELATIONSHIP =>
-          NotificationDetail.Factory.relationshipAnyIndex(variableName, label, propertyKeys: _*)
-      }
-      NotificationCodeWithDescription.SUBOPTIMAL_INDEX_FOR_ENDS_WITH_QUERY.notification(
-        graphdb.InputPosition.empty,
-        detail
       )
     case MissingParametersNotification(names) =>
       NotificationCodeWithDescription.MISSING_PARAMETERS_FOR_EXPLAIN.notification(
