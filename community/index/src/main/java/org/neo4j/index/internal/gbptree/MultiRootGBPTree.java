@@ -1329,7 +1329,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             if (dirtyOnStartup && reportDirty) {
                 cleanTrackingVisitor.dirtyOnStartup(indexFile);
             }
-            rootLayer.consistencyCheck(state, cleanTrackingVisitor, reportDirty, contextFactory);
+            rootLayer.consistencyCheck(state, cleanTrackingVisitor, reportDirty, contextFactory, numThreads);
         } catch (TreeInconsistencyException | MetadataMismatchException | CursorException e) {
             cleanTrackingVisitor.exception(e);
         }

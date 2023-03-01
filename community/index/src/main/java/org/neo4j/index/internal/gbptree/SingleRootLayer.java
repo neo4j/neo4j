@@ -116,7 +116,8 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
             GBPTreeConsistencyChecker.ConsistencyCheckState state,
             GBPTreeConsistencyCheckVisitor visitor,
             boolean reportDirty,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            int numThreads)
             throws IOException {
         long generation = support.generation();
         var pagedFile = support.pagedFile();
@@ -124,6 +125,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
                         treeNode,
                         layout,
                         state,
+                        numThreads,
                         stableGeneration(generation),
                         unstableGeneration(generation),
                         reportDirty,

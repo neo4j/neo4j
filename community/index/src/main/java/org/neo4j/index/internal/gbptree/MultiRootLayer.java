@@ -35,7 +35,9 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.common.DependencyResolver;
@@ -44,6 +46,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.util.Preconditions;
+import org.neo4j.util.concurrent.Futures;
 
 /**
  * A {@link RootLayer} that has support for multiple data trees, instead of the otherwise normal scenario of having a single data tree.
@@ -264,17 +267,20 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             GBPTreeConsistencyChecker.ConsistencyCheckState state,
             GBPTreeConsistencyCheckVisitor visitor,
             boolean reportDirty,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            int numThreads)
             throws IOException {
-        // Check the root mapping tree
+        // Check the root mapping tree using numThreads
         long generation = support.generation();
         long stableGeneration = stableGeneration(generation);
         long unstableGeneration = unstableGeneration(generation);
         var pagedFile = support.pagedFile();
+        var isRootTreeClean = new CleanTrackingConsistencyCheckVisitor(visitor);
         new GBPTreeConsistencyChecker<>(
                         rootTreeNode,
                         rootLayout,
                         state,
+                        numThreads,
                         stableGeneration,
                         unstableGeneration,
                         reportDirty,
@@ -282,26 +288,63 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                         ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
                         root,
                         contextFactory)
-                .check(visitor);
+                .check(isRootTreeClean);
 
-        // Check each root
-        try (var context = contextFactory.create("allRootsSeek");
-                Seeker<ROOT_KEY, RootMappingValue> seek = allRootsSeek(context)) {
-            while (seek.next()) {
-                Root dataRoot = seek.value().asRoot();
-                new GBPTreeConsistencyChecker<>(
-                                dataTreeNode,
-                                dataLayout,
-                                state,
-                                stableGeneration,
-                                unstableGeneration,
-                                reportDirty,
-                                pagedFile.path(),
-                                ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
-                                dataRoot,
-                                contextFactory)
-                        .check(visitor);
-            }
+        if (!isRootTreeClean.isConsistent()) {
+            // The root tree has inconsistencies, we essentially cannot trust to read it in order to get
+            // to the data trees
+            return;
+        }
+
+        // Check data trees in parallel, each using a single thread
+        List<ROOT_KEY> dataTreePartitions;
+        try (var context = contextFactory.create("allRootsSeek")) {
+            var low = rootLayout.newKey();
+            var high = rootLayout.newKey();
+            rootLayout.initializeAsLowest(low);
+            rootLayout.initializeAsHighest(high);
+            dataTreePartitions =
+                    support.internalPartitionedSeek(rootLayout, rootTreeNode, low, high, numThreads, this, context);
+        }
+        var tasks = new LinkedList<Callable<Void>>();
+        for (var i = 0; i < dataTreePartitions.size() - 1; i++) {
+            var partitionLow = dataTreePartitions.get(i);
+            var partitionHigh = dataTreePartitions.get(i + 1);
+            tasks.addLast(() -> {
+                try (var context = contextFactory.create("Check data tree");
+                        var partitionSeek = support.initializeSeeker(
+                                support.internalAllocateSeeker(
+                                        rootLayout, rootTreeNode, context, SeekCursor.NO_MONITOR),
+                                this,
+                                partitionLow,
+                                partitionHigh,
+                                DEFAULT_MAX_READ_AHEAD,
+                                LEAF_LEVEL)) {
+                    while (partitionSeek.next()) {
+                        var dataRoot = partitionSeek.value().asRoot();
+                        new GBPTreeConsistencyChecker<>(
+                                        dataTreeNode,
+                                        dataLayout,
+                                        state,
+                                        1,
+                                        stableGeneration,
+                                        unstableGeneration,
+                                        reportDirty,
+                                        pagedFile.path(),
+                                        ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
+                                        dataRoot,
+                                        contextFactory)
+                                .check(visitor);
+                    }
+                }
+                return null;
+            });
+        }
+        try {
+            var results = state.executor.invokeAll(tasks);
+            Futures.getAll(results);
+        } catch (Exception e) {
+            throw new IOException(e);
         }
     }
 

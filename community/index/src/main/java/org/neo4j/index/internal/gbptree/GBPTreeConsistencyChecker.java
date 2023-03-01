@@ -35,10 +35,12 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -46,6 +48,7 @@ import org.eclipse.collections.impl.factory.Lists;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.helpers.NamedThreadFactory;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -75,11 +78,13 @@ class GBPTreeConsistencyChecker<KEY> {
     private final ThrowingFunction<CursorContext, PageCursor, IOException> cursorFactory;
     private final Root root;
     private final CursorContextFactory contextFactory;
+    private final int numThreads;
 
     GBPTreeConsistencyChecker(
             TreeNode<KEY, ?> node,
             Layout<KEY, ?> layout,
             ConsistencyCheckState state,
+            int numThreads,
             long stableGeneration,
             long unstableGeneration,
             boolean reportDirty,
@@ -91,6 +96,7 @@ class GBPTreeConsistencyChecker<KEY> {
         this.comparator = node.keyComparator();
         this.layout = layout;
         this.state = state;
+        this.numThreads = numThreads;
         this.stableGeneration = stableGeneration;
         this.unstableGeneration = unstableGeneration;
         this.reportDirty = reportDirty;
@@ -267,7 +273,7 @@ class GBPTreeConsistencyChecker<KEY> {
             return;
         }
 
-        if (level == 0 && state.numThreads > 1) {
+        if (level == 0 && numThreads > 1) {
             // Let's parallelize checking the children in the root, one child is one task
             var futures = new ArrayList<Future<?>>();
             var rightmostPerLevelFromShards = new ArrayList<RightmostInChainShard>();
@@ -663,8 +669,7 @@ class GBPTreeConsistencyChecker<KEY> {
         private final long lastId;
         private final BitSet seenIds;
         private final GBPTreeConsistencyCheckVisitor visitor;
-        private final ExecutorService executor;
-        private final int numThreads;
+        final ExecutorService executor;
 
         ConsistencyCheckState(
                 Path file,
@@ -679,11 +684,19 @@ class GBPTreeConsistencyChecker<KEY> {
             this.seenIds = new BitSet(toIntExact(highId()));
             this.visitor = visitor;
 
+            int numSpawnedThreads = Integer.max(1, numThreads - 1);
+            this.executor = new ThreadPoolExecutor(
+                    numSpawnedThreads,
+                    numSpawnedThreads,
+                    30,
+                    TimeUnit.SECONDS,
+                    new ArrayBlockingQueue<>(numSpawnedThreads),
+                    new NamedThreadFactory("GBPTreeConsistencyChecker"),
+                    new ThreadPoolExecutor.CallerRunsPolicy());
+
             IdProvider.IdProviderVisitor freelistSeenIdsVisitor =
                     new FreelistSeenIdsVisitor(file, seenIds, lastId, visitor);
             idProvider.visitFreelist(freelistSeenIdsVisitor, cursorCreator);
-            this.executor = Executors.newFixedThreadPool(numThreads);
-            this.numThreads = numThreads;
         }
 
         private long highId() {

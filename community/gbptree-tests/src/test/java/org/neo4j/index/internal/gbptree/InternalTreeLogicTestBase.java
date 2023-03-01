@@ -1718,16 +1718,14 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         long currentPageId = readCursor.getCurrentPageId();
         root.goTo(readCursor);
         ThrowingConsistencyCheckVisitor visitor = new ThrowingConsistencyCheckVisitor();
-        try (ConsistencyCheckState state = new ConsistencyCheckState(
-                null,
-                id,
-                visitor,
-                CursorCreator.bind(readCursor),
-                Runtime.getRuntime().availableProcessors())) {
+        var numThreads = Runtime.getRuntime().availableProcessors();
+        try (ConsistencyCheckState state =
+                new ConsistencyCheckState(null, id, visitor, CursorCreator.bind(readCursor), numThreads)) {
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>(
                     node,
                     layout,
                     state,
+                    numThreads,
                     stableGeneration,
                     unstableGeneration,
                     true,

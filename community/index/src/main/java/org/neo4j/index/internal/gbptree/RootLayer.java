@@ -121,13 +121,15 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
      * @param visitor gets notified about potential inconsistencies.
      * @param reportDirty whether to report (to the visitor) about GBPTree being dirty, i.e. not cleanly shut down before checking.
      * @param contextFactory for creating cursor contexts.
+     * @param numThreads number of threads to use for the check.
      * @throws IOException on I/O error.
      */
     abstract void consistencyCheck(
             GBPTreeConsistencyChecker.ConsistencyCheckState state,
             GBPTreeConsistencyCheckVisitor visitor,
             boolean reportDirty,
-            CursorContextFactory contextFactory)
+            CursorContextFactory contextFactory,
+            int numThreads)
             throws IOException;
 
     /**
