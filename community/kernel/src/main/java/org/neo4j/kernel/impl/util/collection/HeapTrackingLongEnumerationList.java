@@ -26,6 +26,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
+import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.Preconditions;
@@ -373,7 +374,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
      * Apply the function for each key-value pair in the list, but skipping over null values.
      */
     @SuppressWarnings("unchecked")
-    public void foreach(BiConsumer<Long, V> fun) {
+    public void foreach(LongObjectProcedure<V> fun) {
         Chunk<V> chunk = firstChunk;
         long key = firstKey;
         int chunkMask = chunkSize - 1;
@@ -383,7 +384,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
         while (key < lastKeyInFirstChunk) {
             V value = (V) chunk.values[index];
             if (value != null) {
-                fun.accept(key, value);
+                fun.value(key, value);
             }
             index = (index + 1) & chunkMask;
             key++;
@@ -400,7 +401,7 @@ public class HeapTrackingLongEnumerationList<V> extends DefaultCloseListenable {
             }
             V value = (V) chunk.values[index];
             if (value != null) {
-                fun.accept(key, value);
+                fun.value(key, value);
             }
             index++;
             key++;

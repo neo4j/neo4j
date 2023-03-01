@@ -23,8 +23,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import org.eclipse.collections.impl.list.Interval;
 import org.eclipse.collections.impl.parallel.ParallelIterate;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.neo4j.memory.EmptyMemoryTracker;
 
@@ -141,6 +144,50 @@ public class HeapTrackingConcurrentLongHashMapTest {
                 },
                 1,
                 executor());
+    }
+
+    @RepeatedTest(10)
+    void computeTest() throws Throwable {
+        HeapTrackingConcurrentLongHashMap<Integer> map =
+                HeapTrackingConcurrentLongHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+        int max = 10000;
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        int randomStart = random.nextInt(0, 100);
+        int randomEnd = random.nextInt(100, max);
+        for (int i = randomStart; i < randomEnd; i++) {
+            map.put(i, -1);
+        }
+
+        int threads = random.nextInt(1, 2 * Runtime.getRuntime().availableProcessors());
+        var executor = Executors.newFixedThreadPool(threads);
+
+        for (int i = 0; i < threads; i++) {
+            executor.submit(new Contestant(map, 0, max));
+        }
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
+        assertThat(map.size()).isEqualTo(max);
+        for (int i = 0; i < max; i++) {
+            Integer actual = map.get(i);
+            assertThat(actual).isEqualTo(i);
+        }
+    }
+
+    private record Contestant(HeapTrackingConcurrentLongHashMap<Integer> map, int start, int end) implements Runnable {
+
+        @Override
+        public void run() {
+            for (int i = start; i < end; i++) {
+                final int newValue = i;
+                map.compute(i, integer -> {
+                    if (integer == null || integer == -1) {
+                        return newValue;
+                    } else {
+                        return integer;
+                    }
+                });
+            }
+        }
     }
 
     private <K, V> HeapTrackingConcurrentLongHashMap<V> newMapWithKeysValues(long key1, V value1, long key2, V value2) {

@@ -28,7 +28,9 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.LongFunction;
+import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.memory.MemoryTracker;
 
@@ -86,11 +88,10 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
+                    if (e.key == key) {
                         V oldValue = e.getValue();
                         Entry<V> newEntry =
-                                new Entry<>(e.getKey(), value, this.createReplacementChainForRemoval((Entry<V>) o, e));
+                                new Entry<>(e.key, value, this.createReplacementChainForRemoval((Entry<V>) o, e));
                         if (!currentArray.compareAndSet(index, o, newEntry)) {
                             //noinspection ContinueStatementWithLabel
                             continue outer;
@@ -120,8 +121,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
-                    long candidate = e.getKey();
-                    if (candidate == key) {
+                    if (e.key == key) {
                         return e.getValue();
                     }
                     e = e.getNext();
@@ -148,8 +148,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
-                    long candidate = e.getKey();
-                    if (candidate == key) {
+                    if (e.key == key) {
                         return e.getValue();
                     }
                     e = e.getNext();
@@ -233,7 +232,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
     }
 
     private void unconditionalCopy(AtomicReferenceArray<Object> dest, Entry<V> toCopyEntry) {
-        int hash = hash(toCopyEntry.getKey());
+        int hash = hash(toCopyEntry.key);
         AtomicReferenceArray<Object> currentArray = dest;
         while (true) {
             int length = currentArray.length();
@@ -247,10 +246,10 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
                     if (toCopyEntry.getNext() == null) {
                         newEntry = toCopyEntry; // no need to duplicate
                     } else {
-                        newEntry = new Entry<>(toCopyEntry.getKey(), toCopyEntry.getValue());
+                        newEntry = new Entry<>(toCopyEntry.key, toCopyEntry.getValue());
                     }
                 } else {
-                    newEntry = new Entry<>(toCopyEntry.getKey(), toCopyEntry.getValue(), (Entry<V>) o);
+                    newEntry = new Entry<>(toCopyEntry.key, toCopyEntry.getValue(), (Entry<V>) o);
                 }
                 if (currentArray.compareAndSet(index, o, newEntry)) {
                     return;
@@ -273,8 +272,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key) && Objects.equals(e.getValue(), value)) {
+                    if (e.key == key && Objects.equals(e.getValue(), value)) {
                         Entry<V> replacement = this.createReplacementChainForRemoval((Entry<V>) o, e);
                         if (currentArray.compareAndSet(index, o, replacement)) {
                             this.addToSize(-1);
@@ -341,7 +339,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
         return null;
     }
 
-    private V slowGet(Object key, int hash, AtomicReferenceArray<Object> currentArray) {
+    private V slowGet(long key, int hash, AtomicReferenceArray<Object> currentArray) {
         while (true) {
             int length = currentArray.length();
             int index = indexFor(hash, length);
@@ -351,8 +349,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
+                    if (e.key == key) {
                         return e.getValue();
                     }
                     e = e.getNext();
@@ -370,11 +367,77 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
         return new ValueIterator();
     }
 
+    public void forEach(LongObjectProcedure<? super V> action) {
+        if (action == null) throw new NullPointerException();
+        EntryIterator iterator = new EntryIterator();
+        while (iterator.hasNext()) {
+            Entry<V> next = iterator.next();
+            action.value(next.key, next.value);
+        }
+    }
+
     public void forEachValue(Consumer<? super V> action) {
         if (action == null) throw new NullPointerException();
         var values = values();
         while (values.hasNext()) {
             action.accept(values.next());
+        }
+    }
+
+    public V compute(long key, Function<V, ? extends V> mapFunction) {
+        int hash = this.hash(Long.hashCode(key));
+        var currentArray = this.table;
+        int length = currentArray.length();
+        int index = indexFor(hash, length);
+        Object o = currentArray.get(index);
+        if (o == null) {
+            V mappedValue = mapFunction.apply(null);
+            Entry<V> newEntry = new Entry<>(key, mappedValue, null);
+            addToSize(1);
+            if (currentArray.compareAndSet(index, null, newEntry)) {
+                return mappedValue;
+            }
+            addToSize(-1);
+        }
+        return this.slowCompute(key, mapFunction, hash, currentArray);
+    }
+
+    private V slowCompute(
+            long key, Function<V, ? extends V> mapFunction, int hash, AtomicReferenceArray<Object> currentArray) {
+        //noinspection LabeledStatement
+        outer:
+        while (true) {
+            int length = currentArray.length();
+            int index = indexFor(hash, length);
+            Object o = currentArray.get(index);
+            if (o == RESIZED || o == RESIZING) {
+                currentArray = this.helpWithResizeWhileCurrentIndex(currentArray, index);
+            } else {
+                Entry<V> e = (Entry<V>) o;
+                while (e != null) {
+                    if (e.key == key) {
+                        V mappedValue = mapFunction.apply(e.getValue());
+                        if (mappedValue == e.getValue()) {
+                            return mappedValue;
+                        }
+                        Entry<V> newEntry =
+                                new Entry<>(e.key, mappedValue, this.createReplacementChainForRemoval((Entry<V>) o, e));
+                        if (!currentArray.compareAndSet(index, o, newEntry)) {
+                            //noinspection ContinueStatementWithLabel
+                            continue outer;
+                        }
+                        return mappedValue;
+                    }
+                    e = e.getNext();
+                }
+
+                V mappedValue = mapFunction.apply(null);
+                Entry<V> newEntry = new Entry<>(key, mappedValue, (Entry<V>) o);
+                if (currentArray.compareAndSet(index, o, newEntry)) {
+                    this.incrementSizeAndPossiblyResize(currentArray, length, o);
+                    return mappedValue;
+                }
+            }
         }
     }
 
@@ -390,8 +453,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
+                    if (e.key == key) {
                         return e;
                     }
                     e = e.getNext();
@@ -443,8 +505,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
         }
         Entry<V> e = (Entry<V>) o;
         while (e != null) {
-            long candidate = e.getKey();
-            if (candidate == key) {
+            if (e.key == key) {
                 if (oldValue == e.getValue() || (oldValue != null && oldValue.equals(e.getValue()))) {
                     Entry<V> replacement = this.createReplacementChainForRemoval((Entry<V>) o, e);
                     Entry<V> newEntry = new Entry<>(key, newValue, replacement);
@@ -470,8 +531,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
-                    long candidate = e.getKey();
-                    if (candidate == key) {
+                    if (e.key == key) {
                         if (oldValue == e.getValue() || (oldValue != null && oldValue.equals(e.getValue()))) {
                             Entry<V> replacement = this.createReplacementChainForRemoval((Entry<V>) o, e);
                             Entry<V> newEntry = new Entry<>(key, newValue, replacement);
@@ -514,11 +574,10 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
+                    if (e.key == key) {
                         V oldValue = e.getValue();
                         Entry<V> newEntry =
-                                new Entry<>(e.getKey(), value, this.createReplacementChainForRemoval((Entry<V>) o, e));
+                                new Entry<>(e.key, value, this.createReplacementChainForRemoval((Entry<V>) o, e));
                         if (!currentArray.compareAndSet(index, o, newEntry)) {
                             //noinspection ContinueStatementWithLabel
                             continue outer;
@@ -543,8 +602,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
         }
         Entry<V> e = (Entry<V>) o;
         while (e != null) {
-            Object candidate = e.getKey();
-            if (candidate.equals(key)) {
+            if (e.key == key) {
                 Entry<V> replacement = this.createReplacementChainForRemoval((Entry<V>) o, e);
                 if (currentArray.compareAndSet(index, o, replacement)) {
                     this.addToSize(-1);
@@ -569,8 +627,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             } else {
                 Entry<V> e = (Entry<V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
+                    if (e.key == key) {
                         Entry<V> replacement = this.createReplacementChainForRemoval((Entry<V>) o, e);
                         if (currentArray.compareAndSet(index, o, replacement)) {
                             this.addToSize(-1);
@@ -594,7 +651,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
         Entry<V> e = original;
         while (e != null) {
             if (e != toRemove) {
-                replacement = new Entry<>(e.getKey(), e.getValue(), replacement);
+                replacement = new Entry<>(e.key, e.getValue(), replacement);
             }
             e = e.getNext();
         }
@@ -612,7 +669,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             }
             Entry<V> e = (Entry<V>) o;
             while (e != null) {
-                long key = e.getKey();
+                long key = e.key;
                 Object value = e.getValue();
                 h += Long.hashCode(key) ^ (value == null ? 0 : value.hashCode());
                 e = e.getNext();
@@ -637,7 +694,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
         EntryIterator iterator = new EntryIterator();
         while (iterator.hasNext()) {
             var e = iterator.next();
-            long key = e.getKey();
+            long key = e.key;
             V value = e.getValue();
             if (value == null) {
                 if (!(m.get(key) == null && m.containsKey(key))) {
