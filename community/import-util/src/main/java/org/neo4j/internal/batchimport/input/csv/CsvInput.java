@@ -99,7 +99,7 @@ public class CsvInput implements Input
                 new Groups(), memoryTracker );
     }
 
-    CsvInput(
+    public CsvInput(
             Iterable<DataFactory> nodeDataFactory, Header.Factory nodeHeaderFactory,
             Iterable<DataFactory> relationshipDataFactory, Header.Factory relationshipHeaderFactory,
             IdType idType, Configuration config, boolean autoSkipHeaders, Monitor monitor, Groups groups, MemoryTracker memoryTracker )
