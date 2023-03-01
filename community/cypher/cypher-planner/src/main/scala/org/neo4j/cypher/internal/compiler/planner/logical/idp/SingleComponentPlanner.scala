@@ -235,14 +235,15 @@ object SingleComponentPlanner {
       if (start == end) {
         // We are not allowed to plan CP or joins with identical LHS and RHS
         Iterable.empty[LogicalPlan]
+      } else if (qg.argumentIds.contains(start) || qg.argumentIds.contains(end)) {
+        // This kind of join for single relationship patterns is currently only supported for non-argument nodes.
+        Iterable.empty[LogicalPlan]
       } else {
         val startJoinNodes = Set(start)
         val endJoinNodes = Set(end)
 
-        val maybeStartBestPlans = bestLeafPlansPerAvailableSymbol.get(startJoinNodes)
-          .filter(!_.bestResult.isInstanceOf[Argument])
-        val maybeEndBestPlans = bestLeafPlansPerAvailableSymbol.get(endJoinNodes)
-          .filter(!_.bestResult.isInstanceOf[Argument])
+        val maybeStartBestPlans = bestLeafPlansPerAvailableSymbol.get(startJoinNodes ++ qg.argumentIds)
+        val maybeEndBestPlans = bestLeafPlansPerAvailableSymbol.get(endJoinNodes ++ qg.argumentIds)
 
         val cartesianProducts = planSinglePatternCartesianProducts(
           qg,

@@ -19,11 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.JoinHintException
+
+import java.lang.Boolean.TRUE
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
@@ -132,6 +136,90 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .|.nodeByIdSeek("b", Set(), 0)
       .nodeByIdSeek("a", Set(), 0)
       .build())
+  }
+
+  test("Plans Join on top of Expand for single relationship if hint is used, with argument in QG") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .build()
+
+    val query =
+      """WITH 1 as nbr
+        |MATCH (a)-[*1..2]-(b) 
+        |USING JOIN ON a
+        |WHERE id(a) = 0 AND id(b) = 0 AND b.prop = nbr
+        |RETURN *
+        |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .apply()
+      .|.nodeHashJoin("a")
+      .|.|.expand("(b)-[anon_0*1..2]-(a)", projectedDir = INCOMING)
+      .|.|.filter("b.prop = nbr")
+      .|.|.nodeByIdSeek("b", Set("nbr"), 0)
+      .|.nodeByIdSeek("a", Set("nbr"), 0)
+      .projection("1 AS nbr")
+      .argument()
+      .build())
+  }
+
+  test("Does not plan Join if both nodes of the single relationship pattern are arguments") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
+      .build()
+
+    val query =
+      """MATCH (a), (b)
+        |WITH * SKIP 1
+        |MATCH (a)-[*1..2]-(b)
+        |USING JOIN ON a
+        |RETURN *
+        |""".stripMargin
+
+    val exception = the[JoinHintException] thrownBy planner.plan(query)
+    exception.getMessage should startWith("Unable to plan hash join")
+  }
+
+  test("Does not plan Join if join node is argument - single relationship") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
+      .build()
+
+    val query =
+      """MATCH (a)
+        |WITH * SKIP 1
+        |MATCH (a)-[*1..2]-(b)
+        |USING JOIN ON a
+        |RETURN *
+        |""".stripMargin
+
+    val exception = the[JoinHintException] thrownBy planner.plan(query)
+    exception.getMessage should startWith("Unable to plan hash join")
+  }
+
+  test("Does not plan Join if other node is argument - single relationship") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(100)
+      .withSetting(GraphDatabaseSettings.cypher_hints_error, TRUE)
+      .build()
+
+    val query =
+      """MATCH (a)
+        |WITH * SKIP 1
+        |MATCH (a)-[*1..2]-(b)
+        |USING JOIN ON b
+        |RETURN *
+        |""".stripMargin
+
+    val exception = the[JoinHintException] thrownBy planner.plan(query)
+    exception.getMessage should startWith("Unable to plan hash join")
   }
 
   test("Plans Join on top of Expand for single relationship if hint is used - Generic ORDER BY solved in RHS") {
