@@ -20,7 +20,6 @@
 package org.neo4j.fabric
 
 import org.neo4j.configuration.Config
-import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
@@ -56,7 +55,6 @@ import org.neo4j.fabric.planning.Use
 import org.neo4j.fabric.util.Rewritten.RewritingOps
 import org.neo4j.kernel.database.DatabaseIdFactory
 import org.neo4j.kernel.database.DatabaseReference
-import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue

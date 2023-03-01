@@ -26,7 +26,6 @@ import org.neo4j.fabric.eval.Catalog.InternalAlias
 import org.neo4j.fabric.executor.Location
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NamedDatabaseId
-import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.lifecycle.LifecycleAdapter
 import org.neo4j.storageengine.api.TransactionIdStore
 
@@ -105,9 +104,6 @@ class CommunityCatalogManager(
     case other =>
       None // ignore unexpected reference types
   }
-
-  private def databaseName(databaseId: NamedDatabaseId): NormalizedDatabaseName =
-    new NormalizedDatabaseName(databaseId.name)
 
   override def locationOf(
     sessionDatabase: DatabaseReference,
