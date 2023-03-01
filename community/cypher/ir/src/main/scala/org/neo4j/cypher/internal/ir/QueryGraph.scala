@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.ir.helpers.PatternConverters
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.collection.mutable
@@ -82,6 +83,12 @@ case class QueryGraph(
       optionalMatches = optionalMatches.map(_.mapSelections(f)),
       quantifiedPathPatterns = quantifiedPathPatterns.map(qpp => qpp.copy(pattern = qpp.pattern.mapSelections(f)))
     )
+
+  def addPatternContent(patternContent: PatternConverters.DestructResult): QueryGraph = this
+    .addPatternNodes(patternContent.nodeIds: _*)
+    .addPatternRelationships(patternContent.rels.toSet)
+    .addQuantifiedPathPatterns(patternContent.quantifiedPathPatterns.toSet)
+    .addShortestPaths(patternContent.shortestPaths: _*)
 
   def addPatternNodes(nodes: String*): QueryGraph =
     copy(patternNodes = patternNodes ++ nodes)

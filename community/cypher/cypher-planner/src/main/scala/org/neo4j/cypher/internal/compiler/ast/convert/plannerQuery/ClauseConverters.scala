@@ -113,6 +113,7 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
+import org.neo4j.cypher.internal.ir.helpers.PatternConverters
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
@@ -513,12 +514,8 @@ object ClauseConverters {
           // It's either all or nothing per match clause.
           QueryGraph(
             selections = selections,
-            patternNodes = patternContent.nodeIds.toSet,
-            patternRelationships = patternContent.rels.toSet,
-            quantifiedPathPatterns = patternContent.quantifiedPathPatterns.toSet,
-            hints = clause.hints.toSet,
-            shortestPathPatterns = patternContent.shortestPaths.toSet
-          )
+            hints = clause.hints.toSet
+          ).addPatternContent(patternContent)
         )
       }
     } else {
@@ -526,11 +523,8 @@ object ClauseConverters {
         qg =>
           qg
             .addSelections(selections)
-            .addPatternNodes(patternContent.nodeIds: _*)
-            .addPatternRelationships(patternContent.rels.toSet)
-            .addQuantifiedPathPatterns(patternContent.quantifiedPathPatterns.toSet)
             .addHints(clause.hints)
-            .addShortestPaths(patternContent.shortestPaths: _*)
+            .addPatternContent(patternContent)
       }
     }
   }

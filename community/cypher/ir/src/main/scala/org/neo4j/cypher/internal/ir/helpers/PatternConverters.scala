@@ -205,13 +205,11 @@ object PatternConverters {
         case rel: RelationshipChain => (rel.leftNode.variable.get.name, rel.rightNode.variable.get.name)
       }
 
-      val content = quantifiedPathElement.destructed
+      val patternContent = quantifiedPathElement.destructed
       val qg = QueryGraph(
-        patternNodes = content.nodeIds.toSet,
-        patternRelationships = content.rels.toSet,
         argumentIds = Set.empty,
         selections = Selections.from(quantifiedPath.optionalWhereExpression)
-      )
+      ).addPatternContent(patternContent)
 
       val variableGroupings = quantifiedPath.variableGroupings
       val nodeVariableGroupings = variableGroupings

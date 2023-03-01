@@ -129,13 +129,8 @@ case class CreateIrExpressions(
 
     val qg = QueryGraph(
       argumentIds = dependencies,
-      patternNodes = patternContent.nodeIds.toSet,
-      patternRelationships = patternContent.rels.toSet,
-      quantifiedPathPatterns = patternContent.quantifiedPathPatterns.toSet,
-      shortestPathPatterns =
-        patternContent.shortestPaths.toSet, // Not really needed, PatternExpressions/PatternComprehension can't express shortestPath
       selections = Selections.from(uniquePredicates ++ varLengthPredicates ++ extractedPredicates ++ maybePredicate)
-    )
+    ).addPatternContent(patternContent)
 
     val query = RegularSinglePlannerQuery(
       queryGraph = qg,
