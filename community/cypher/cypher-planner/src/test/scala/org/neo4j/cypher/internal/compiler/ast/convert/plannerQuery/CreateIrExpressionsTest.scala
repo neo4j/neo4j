@@ -265,7 +265,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
             ),
             selections = Selections.from(Seq(
-              not(equals(r2, r)),
+              differentRelationships(r2, r),
               andedPropertyInequalities(rPred),
               andedPropertyInequalities(oPred),
               equals(prop(r.name, "prop"), literalInt(5)),
@@ -443,7 +443,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
             ),
             selections = Selections.from(Seq(
-              not(equals(r2, r)),
+              differentRelationships(r2, r),
               andedPropertyInequalities(rPred),
               andedPropertyInequalities(oPred),
               equals(prop(r.name, "prop"), literalInt(5)),
@@ -480,9 +480,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
-            not(equals(r, r3)),
-            not(equals(r, r2)),
-            not(equals(r3, r2))
+            differentRelationships(r, r3),
+            differentRelationships(r, r2),
+            differentRelationships(r3, r2)
           ))
         ),
         None
@@ -491,7 +491,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     existsIRExpression.existsVariableName shouldBe existsVariableName
     existsIRExpression.solvedExpressionAsString should equal(
-      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2 }"
+      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not `r` = `r3` AND not `r` = `r2` AND not `r3` = `r2` }"
     )
   }
 
@@ -515,9 +515,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
-            not(equals(r, r3)),
-            not(equals(r, r2)),
-            not(equals(r3, r2)),
+            differentRelationships(r, r3),
+            differentRelationships(r, r2),
+            differentRelationships(r3, r2),
             andedPropertyInequalities(rPred)
           ))
         ),
@@ -527,7 +527,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     existsIRExpression.existsVariableName shouldBe existsVariableName
     existsIRExpression.solvedExpressionAsString should equal(
-      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not r = r3 AND not r = r2 AND not r3 = r2 }"
+      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not `r` = `r3` AND not `r` = `r2` AND not `r3` = `r2` }"
     )
   }
 
@@ -561,9 +561,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
-            not(equals(r, r3)),
-            not(equals(r, r2)),
-            not(equals(r3, r2))
+            differentRelationships(r, r3),
+            differentRelationships(r, r2),
+            differentRelationships(r3, r2)
           ))
         ),
         horizon = Some(RegularQueryProjection(Map("n" -> n), isTerminating = true))
@@ -572,7 +572,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     existsIRExpression.existsVariableName shouldBe existsVariableName
     existsIRExpression.solvedExpressionAsString should equal(
-      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n }"
+      "EXISTS { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not `r` = `r3` AND not `r` = `r2` AND not `r3` = `r2`\nRETURN n AS n }"
     )
   }
 
@@ -701,9 +701,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
-            not(equals(r, r3)),
-            not(equals(r, r2)),
-            not(equals(r3, r2))
+            differentRelationships(r, r3),
+            differentRelationships(r, r2),
+            differentRelationships(r3, r2)
           ))
         ),
         horizon =
@@ -714,7 +714,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     countIRExpression.countVariableName shouldBe countVariableName
     countIRExpression.solvedExpressionAsString should equal(
-      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n }"
+      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not `r` = `r3` AND not `r` = `r2` AND not `r3` = `r2`\nRETURN n AS n }"
     )
   }
 
@@ -917,7 +917,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             PatternRelationship(r2.name, (m.name, o.name), INCOMING, Seq.empty, SimplePatternLength)
           ),
           selections = Selections.from(Seq(
-            not(equals(r2, r)),
+            differentRelationships(r2, r),
             andedPropertyInequalities(rPred),
             andedPropertyInequalities(oPred),
             equals(prop(r.name, "prop"), literalInt(5)),
@@ -933,7 +933,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     countIRExpression.countVariableName shouldBe countVariableName
     countIRExpression.solvedExpressionAsString should equal(
-      "COUNT { MATCH (n)-[r:R|P]->(m)<-[r2]-(o)\n  WHERE r.prop = 5 AND o.prop = 5 AND not o:% AND r.foo > 5 AND o.foo > 5 AND not r2 = r }"
+      "COUNT { MATCH (n)-[r:R|P]->(m)<-[r2]-(o)\n  WHERE r.prop = 5 AND o.prop = 5 AND not o:% AND r.foo > 5 AND o.foo > 5 AND not `r2` = `r` }"
     )
   }
 
@@ -1015,9 +1015,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
             PatternRelationship(r3.name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
           ),
           selections = Selections.from(Seq(
-            not(equals(r, r2)),
-            not(equals(r, r3)),
-            not(equals(r3, r2))
+            differentRelationships(r, r2),
+            differentRelationships(r, r3),
+            differentRelationships(r3, r2)
           ))
         ),
         horizon =
@@ -1028,7 +1028,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
     countIRExpression.countVariableName shouldBe countVariableName
     countIRExpression.solvedExpressionAsString should equal(
-      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not r = r3 AND not r = r2 AND not r3 = r2 }"
+      "COUNT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE not `r` = `r3` AND not `r` = `r2` AND not `r3` = `r2` }"
     )
   }
 
@@ -1139,9 +1139,9 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
               PatternRelationship(varFor("r3").name, (m.name, q.name), OUTGOING, Seq.empty, SimplePatternLength)
             ),
           selections = Selections.from(Seq(
-            not(equals(r, r3)),
-            not(equals(r, r2)),
-            not(equals(r3, r2)),
+            differentRelationships(r, r3),
+            differentRelationships(r, r2),
+            differentRelationships(r3, r2),
             andedPropertyInequalities(rPred)
           ))
         ),
@@ -1155,7 +1155,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
     collectIRExpression.collectionName shouldBe collectVariableName
     collectIRExpression.variableToCollectName shouldBe n.name
     collectIRExpression.solvedExpressionAsString should equal(
-      "COLLECT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not r = r3 AND not r = r2 AND not r3 = r2\nRETURN n AS n\n  ORDER BY n ASCENDING }"
+      "COLLECT { MATCH (n)-[r]-(m), (o)-[r2]->(m)-[r3]->(q)\n  WHERE r.foo > 5 AND not `r` = `r3` AND not `r` = `r2` AND not `r3` = `r2`\nRETURN n AS n\n  ORDER BY n ASCENDING }"
     )
   }
 

@@ -17,10 +17,12 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
+import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
+import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
@@ -54,6 +56,9 @@ case class UniquenessRewriter(anonymousVariableNameGenerator: AnonymousVariableN
           Some(Equals(element1.copyId, element2.copyId)(list.position))
         )(u.position))
       )(u.position)
+
+    case p @ DifferentRelationships(rel1, rel2) =>
+      Not(Equals(rel1, rel2)(p.position))(p.position)
   })
 
   override def apply(value: AnyRef): AnyRef = instance(value)

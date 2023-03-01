@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.DecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
@@ -287,6 +288,12 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       case x: GreaterThanOrEqual =>
         check(ctx, x.arguments) chain checkTypes(x, x.signatures)
+
+      case x @ DifferentRelationships(lhs, rhs) =>
+        check(ctx, x.arguments) chain
+          expectType(CTRelationship, lhs) chain
+          expectType(CTRelationship, rhs) chain
+          specifyType(CTBoolean, x)
 
       case x @ Disjoint(lhs, rhs) =>
         check(ctx, x.arguments) chain

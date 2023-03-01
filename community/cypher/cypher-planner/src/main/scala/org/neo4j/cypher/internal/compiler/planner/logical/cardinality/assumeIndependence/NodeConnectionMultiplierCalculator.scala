@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_REL_UNIQUENESS_SELECTIVITY
-import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.RelationshipUniquenessPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SelectivityCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SpecifiedAndKnown
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.SpecifiedButUnknown
@@ -33,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeInde
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.qppRangeForEstimations
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep.VariableList
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
+import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -125,7 +125,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
 
       def uniquenessPredicatesWithin(qpp: QuantifiedPathPattern) =
         qpp.pattern.selections.flatPredicates.collect {
-          case RelationshipUniquenessPredicate(pred) if pred.isOnRelationships(semanticTable) => pred
+          case pred: DifferentRelationships => pred
         }
 
       pattern match {
@@ -241,7 +241,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
     totalNbrOfNodes: Cardinality,
     labelInfo: LabelInfo,
     relationshipsWithUniquePredicate: => Set[String],
-    withinIterationUniquenessPredicates: => Seq[RelationshipUniquenessPredicate]
+    withinIterationUniquenessPredicates: => Seq[DifferentRelationships]
   )(
     implicit semanticTable: SemanticTable,
     cardinalityModel: CardinalityModel,
@@ -328,7 +328,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
   private def uniquenessSelectivityForQpp(
     relationshipsWithUniquePredicate: => Set[String],
     numberOfIterations: Int,
-    withinIterationUniquenessPredicates: => Seq[RelationshipUniquenessPredicate]
+    withinIterationUniquenessPredicates: => Seq[DifferentRelationships]
   ) = {
     /*
      * Given a QPP like (()-[r1]->()-[r2]->()){2} = ()-[r1_1]->()-[r2_1]->()-[r1_2]->()-[r2_2]->(),

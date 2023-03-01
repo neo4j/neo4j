@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.ElementIdToLongId
@@ -380,6 +381,8 @@ private class DefaultExpressionStringifier(
             "elementIdListToRelationshipIdList"
         }
         s"$prefix(${apply(elementIdExpr)})"
+
+      case DifferentRelationships(Variable(rel1), Variable(rel2)) => s"not `$rel1` = `$rel2`"
 
       case Disjoint(Variable(rel1), Variable(rel2)) => s"disjoint(`$rel1`, `$rel2`)"
 

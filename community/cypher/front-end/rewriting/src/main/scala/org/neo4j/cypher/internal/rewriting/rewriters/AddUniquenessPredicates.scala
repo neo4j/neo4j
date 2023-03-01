@@ -22,8 +22,8 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.Disjoint
-import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.In
@@ -203,7 +203,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
         Seq(False()(pos))
 
       case (x: SingleRelationship, y: SingleRelationship) if !x.isAlwaysDifferentFrom(y) =>
-        Seq(Not(Equals(x.variable.copyId, y.variable.copyId)(pos))(pos))
+        Seq(DifferentRelationships(x.variable.copyId, y.variable.copyId)(pos))
 
       case (x: SingleRelationship, y: RelationshipGroup) =>
         y.innerRelationships

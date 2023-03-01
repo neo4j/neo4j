@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.ElementIdToLongId
@@ -863,6 +864,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
     CountExpression(simpleMatchQuery)(pos, Some(introducedVariables), Some(scopeDependencies))
   }
+
+  def differentRelationships(relVar1: String, relVar2: String): DifferentRelationships =
+    DifferentRelationships(varFor(relVar1), varFor(relVar2))(pos)
+
+  def differentRelationships(relVar1: LogicalVariable, relVar2: LogicalVariable): DifferentRelationships =
+    DifferentRelationships(relVar1, relVar2)(pos)
 
   def unique(list: Expression): Unique =
     Unique(list)(pos)

@@ -251,7 +251,7 @@ class NodeConnectionMultiplierCalculatorTest extends CypherFunSuite with AstCons
               List(RelTypeName("R")(InputPosition.NONE)),
               SimplePatternLength
             )).addSelections(
-              Selections.from(not(equals(varFor("r_i"), varFor("s_i"))))
+              Selections.from(differentRelationships("r_i", "s_i"))
             ),
         repetition = Repetition.apply(2, UpperBound.Limited(2)),
         nodeVariableGroupings =

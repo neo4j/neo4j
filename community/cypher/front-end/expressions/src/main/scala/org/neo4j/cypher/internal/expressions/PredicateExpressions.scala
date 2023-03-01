@@ -369,6 +369,17 @@ case class AssertIsNode(lhs: Expression)(val position: InputPosition) extends Bo
 }
 
 /**
+ * Tests whether the two relationships given are different.
+ *
+ * @param rel1 first relationship
+ * @param rel2 second relationship
+ */
+case class DifferentRelationships(rel1: LogicalVariable, rel2: LogicalVariable)(val position: InputPosition)
+    extends BooleanExpression {
+  override def isConstantForQuery: Boolean = false
+}
+
+/**
  * Tests whether the elements in the two lists given are disjoint, that is, none of the elements from one list
  * also exist in the other list.
  *

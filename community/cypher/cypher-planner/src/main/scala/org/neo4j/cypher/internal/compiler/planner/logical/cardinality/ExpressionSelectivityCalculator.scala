@@ -57,6 +57,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeeka
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -210,8 +211,9 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       calculateSelectivityForPropertyExistence(scannable.name, labelInfo, relTypeInfo, scannable.propertyKey)
 
     // Implicit relation uniqueness predicates
-    case RelationshipUniquenessPredicate(pred) if pred.isOnRelationships(semanticTable) =>
-      DEFAULT_REL_UNIQUENESS_SELECTIVITY // This should not be the default. Instead, we should figure
+    case _: DifferentRelationships =>
+      // This should not be the default. Instead, we should figure out the number of matching relationships and use it
+      DEFAULT_REL_UNIQUENESS_SELECTIVITY
 
     case _: Unique | _: IsRepeatTrailUnique =>
       // These are currently only generated for var-length or QPP uniqueness predicates and

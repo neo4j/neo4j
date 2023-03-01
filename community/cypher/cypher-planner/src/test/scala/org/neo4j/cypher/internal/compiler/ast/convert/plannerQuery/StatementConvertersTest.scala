@@ -498,7 +498,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "c"), OUTGOING, Seq.empty, SimplePatternLength)
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    query.queryGraph.selections should equal(Selections.from(not(equals(varFor("r2"), varFor("r")))))
+    query.queryGraph.selections should equal(Selections.from(differentRelationships("r2", "r")))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -516,7 +516,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "a"), OUTGOING, Seq.empty, SimplePatternLength)
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.selections should equal(Selections.from(not(equals(varFor("r2"), varFor("r")))))
+    query.queryGraph.selections should equal(Selections.from(differentRelationships("r2", "r")))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -533,7 +533,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "c"), BOTH, Seq.empty, SimplePatternLength)
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    query.queryGraph.selections should equal(Selections.from(not(equals(varFor("r2"), varFor("r")))))
+    query.queryGraph.selections should equal(Selections.from(differentRelationships("r2", "r")))
     query.horizon should equal(RegularQueryProjection(
       Map(
         "a" -> varFor("a"),
@@ -550,7 +550,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       PatternRelationship("r2", ("b", "c"), BOTH, Seq.empty, SimplePatternLength)
     ))
     query.queryGraph.patternNodes should equal(Set("a", "b", "c"))
-    val predicate = Predicate(Set("r", "r2"), not(equals(varFor("r"), varFor("r2"))))
+    val predicate = Predicate(Set("r", "r2"), differentRelationships("r", "r2"))
     query.queryGraph.selections.predicates should equal(Set(predicate))
     query.horizon should equal(RegularQueryProjection(
       Map(
@@ -1662,7 +1662,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
               ),
             argumentIds = Set("m"),
             selections = Selections.from(Seq(
-              not(equals(r3, r2))
+              differentRelationships(r3, r2)
             ))
           )
         )
@@ -1800,7 +1800,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         PatternRelationship("r3", ("x", "y"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
       ),
       selections = Selections.from(Set(
-        not(equals(varFor("r1"), varFor("r3"))),
+        differentRelationships("r1", "r3"),
         unique(varFor("r2")),
         not(in(varFor("r1"), varFor("r2"))),
         not(in(varFor("r3"), varFor("r2")))
@@ -1942,7 +1942,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
                   SimplePatternLength
                 )
               ),
-            selections = Selections.from(not(equals(varFor("r2"), varFor("r1"))))
+            selections = Selections.from(differentRelationships("r2", "r1"))
           ),
           repetition = Repetition(min = 5, max = UpperBound.Limited(5)),
           nodeVariableGroupings =
