@@ -19,13 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.QueryGraphSolverWithGreedyConnectComponents
-import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2.configurationThatForcesCompacting
-import org.neo4j.cypher.internal.compiler.planner.logical.idp.ConfigurableIDPSolverConfig
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -35,7 +32,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2
+class WithPlanningIntegrationTest extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
 
@@ -233,15 +230,43 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("Complex star pattern with WITH in front should not trip up joinSolver") {
     // created after https://github.com/neo4j/neo4j/issues/12212
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setLabelCardinality("LabelA", 10)
+      .setLabelCardinality("LabelB", 10)
+      .setLabelCardinality("LabelC", 10)
+      .setLabelCardinality("LabelD", 10)
+      .setLabelCardinality("LabelK", 10)
+      .setLabelCardinality("LabelSp", 10)
+      .setLabelCardinality("LabelV", 10)
+      .setLabelCardinality("LabelX", 10)
+      .setRelationshipCardinality("()-[:LabelE]->()", 10)
+      .setRelationshipCardinality("(:LabelC)-[:LabelE]->()", 10)
+      .setRelationshipCardinality("(:LabelC)-[:LabelE]->(:LabelC)", 10)
+      .setRelationshipCardinality("()-[:LabelE]->(:LabelC)", 10)
+      .setRelationshipCardinality("()-[:relTypeA]->()", 10)
+      .setRelationshipCardinality("(:LabelA)-[:relTypeA]->()", 10)
+      .setRelationshipCardinality("(:LabelA)-[:relTypeA]->(:LabelB)", 10)
+      .setRelationshipCardinality("()-[:relTypeA]->(:LabelB)", 10)
+      .setRelationshipCardinality("(:LabelA)-[:relTypeA]->(:LabelSp)", 10)
+      .setRelationshipCardinality("()-[:relTypeA]->(:LabelSp)", 10)
+      .setRelationshipCardinality("()-[:relTypeB]->()", 10)
+      .setRelationshipCardinality("(:LabelSp)-[:relTypeB]->(:LabelC)", 10)
+      .setRelationshipCardinality("(:LabelSp)-[:relTypeB]->()", 10)
+      .setRelationshipCardinality("()-[:relTypeB]->(:LabelC)", 10)
+      .setRelationshipCardinality("(:LabelB)-[:relTypeB]->(:LabelC)", 10)
+      .setRelationshipCardinality("(:LabelB)-[:relTypeB]->()", 10)
+      .setRelationshipCardinality("()-[:relTypeLink]->()", 10)
+      .setRelationshipCardinality("(:LabelD)-[:relTypeLink]->()", 10)
+      .setRelationshipCardinality("(:LabelD)-[:relTypeLink]->(:LabelA)", 10)
+      .setRelationshipCardinality("()-[:relTypeLink]->(:LabelA)", 10)
+      .setRelationshipCardinality("()-[:relTypeZ]->()", 10)
+      // the goal here is to force compaction as fast as possible
+      .withSetting(GraphDatabaseInternalSettings.cypher_idp_solver_table_threshold, Int.box(16))
+      .withSetting(GraphDatabaseInternalSettings.cypher_idp_solver_duration_threshold, Long.box(10))
+      .build()
 
-    val maxIterationTime = 1 // the goal here is to force compaction as fast as possible
-    val queryGraphSolver =
-      QueryGraphSolverWithGreedyConnectComponents.queryGraphSolver(
-        new ConfigurableIDPSolverConfig(1, maxIterationTime),
-        disableExistsSubqueryCaching = false
-      )
-
-    planFor(
+    planner.plan(
       """WITH 20000 AS param1, 5000 AS param2
         |MATCH (gknA:LabelA {propertyA: 4})-[r1:relTypeA]->(:LabelB)-[r2:relTypeB]->(commonLe:LabelC) <-[r3:relTypeB]-(:LabelB)<-[r4:relTypeA]-(gknB:LabelA {propertyA: 4})
         |WHERE NOT exists( (gknA)<-[:relTypeLink]-(:LabelD) ) AND NOT exists( (gknB)<-[:relTypeLink]-(:LabelD) ) AND substring(gknA.propertyB, 0, size(gknA.propertyB) - 1) = substring(gknB.propertyB, 0, size(gknB.propertyB) - 1) AND gknA.propertyC < gknB.propertyC
@@ -258,9 +283,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         |WITH areaLocation, bound, LabelC
         |CREATE (areaLocation)-[boundRel:relTypeZ]->(LabelC)
         |SET boundRel.thing = bound.thing, boundRel.propertyD = 2
-      """.stripMargin,
-      configurationThatForcesCompacting,
-      queryGraphSolver
+      """.stripMargin
     )
     // if we fail planning for this query the test fails
   }
