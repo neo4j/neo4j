@@ -25,7 +25,6 @@ import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
 import java.util.Optional;
 import java.util.concurrent.Executor;
-import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
@@ -53,7 +52,6 @@ import org.neo4j.fabric.executor.FabricLocalExecutor;
 import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.FabricStatementLifecycles;
 import org.neo4j.fabric.executor.ThrowingFabricRemoteExecutor;
-import org.neo4j.fabric.pipeline.SignatureResolver;
 import org.neo4j.fabric.planning.FabricPlanner;
 import org.neo4j.fabric.transaction.ErrorReporter;
 import org.neo4j.fabric.transaction.FabricTransactionMonitor;
@@ -143,6 +141,9 @@ public abstract class FabricServicesBootstrap {
 
         var errorReporter = new ErrorReporter(logService);
         var catalogManager = register(createCatalogManger(fabricDatabaseManager), CatalogManager.class);
+
+        var globalProcedures = dependencies.resolveDependency(GlobalProcedures.class);
+
         register(
                 new TransactionManager(
                         remoteExecutor,
@@ -153,21 +154,18 @@ public abstract class FabricServicesBootstrap {
                         systemNanoClock,
                         config,
                         availabilityGuard,
-                        errorReporter),
+                        errorReporter,
+                        globalProcedures),
                 TransactionManager.class);
 
         var cypherConfig = CypherConfiguration.fromConfig(config);
-
-        Supplier<GlobalProcedures> proceduresSupplier = () -> resolve(GlobalProcedures.class);
-        var signatureResolver = new SignatureResolver(proceduresSupplier);
         var statementLifecycles = new FabricStatementLifecycles(databaseManager, monitors, config, systemNanoClock);
         var monitoredExecutor = jobScheduler.monitoredJobExecutor(CYPHER_CACHE);
         var cacheFactory = new ExecutorBasedCaffeineCacheFactory(
                 job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));
-        var planner = register(
-                new FabricPlanner(fabricConfig, cypherConfig, monitors, cacheFactory, signatureResolver),
-                FabricPlanner.class);
-        var useEvaluation = register(new UseEvaluation(proceduresSupplier, signatureResolver), UseEvaluation.class);
+        var planner =
+                register(new FabricPlanner(fabricConfig, cypherConfig, monitors, cacheFactory), FabricPlanner.class);
+        var useEvaluation = register(new UseEvaluation(), UseEvaluation.class);
 
         register(new FabricReactorHooksService(errorReporter), FabricReactorHooksService.class);
 

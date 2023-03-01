@@ -49,6 +49,7 @@ import org.neo4j.fabric.executor.SingleDbTransaction;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
 import org.neo4j.graphdb.TransactionTerminatedException;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -90,11 +91,14 @@ public class FabricTransactionImpl
 
     private final FabricKernelTransaction kernelTransaction;
 
+    private final Procedures contextlessProcedures;
+
     FabricTransactionImpl(
             FabricTransactionInfo transactionInfo,
             TransactionBookmarkManager bookmarkManager,
             FabricRemoteExecutor remoteExecutor,
             FabricLocalExecutor localExecutor,
+            FabricProcedures contextlessProcedures,
             ErrorReporter errorReporter,
             TransactionManager transactionManager,
             Catalog catalogSnapshot,
@@ -110,6 +114,7 @@ public class FabricTransactionImpl
         this.clock = clock;
         this.id = ID_GENERATOR.incrementAndGet();
         this.initializationTrace = traceProvider.getTraceInfo();
+        this.contextlessProcedures = contextlessProcedures;
 
         this.locationCache = new LocationCache(catalogManager, transactionInfo);
 
@@ -466,6 +471,10 @@ public class FabricTransactionImpl
 
         Long transactionId = kernelTransaction.transactionId();
         return new ExecutingQuery.TransactionBinding(namedDbId, () -> 0L, () -> 0L, () -> 0L, transactionId);
+    }
+
+    public Procedures contextlessProcedures() {
+        return contextlessProcedures;
     }
 
     private <TX extends SingleDbTransaction> TX startReadingTransaction(

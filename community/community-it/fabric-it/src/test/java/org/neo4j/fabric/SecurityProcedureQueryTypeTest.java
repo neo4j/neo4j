@@ -28,10 +28,13 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.fabric.eval.Catalog;
+import org.neo4j.fabric.pipeline.SignatureResolver;
 import org.neo4j.fabric.planning.FabricPlanner;
 import org.neo4j.fabric.planning.QueryType;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -49,6 +52,8 @@ class SecurityProcedureQueryTypeTest {
     private static FabricPlanner planner;
     private static DatabaseManagementService databaseManagementService;
 
+    private static ProcedureSignatureResolver signatures;
+
     @BeforeAll
     static void beforeAll() {
         databaseManagementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
@@ -56,7 +61,9 @@ class SecurityProcedureQueryTypeTest {
                 .build();
         DependencyResolver dependencyResolver =
                 ((GraphDatabaseFacade) databaseManagementService.database("system")).getDependencyResolver();
+
         planner = dependencyResolver.resolveDependency(FabricPlanner.class);
+        signatures = SignatureResolver.from(dependencyResolver.resolveDependency(GlobalProcedures.class));
     }
 
     @AfterAll
@@ -66,7 +73,8 @@ class SecurityProcedureQueryTypeTest {
 
     @Test
     void showCurrentUserShouldBeReadQueryType() {
-        var instance = planner.instance("CALL dbms.showCurrentUser()", MapValue.EMPTY, "system", Catalog.empty());
+        var instance =
+                planner.instance(signatures, "CALL dbms.showCurrentUser()", MapValue.EMPTY, "system", Catalog.empty());
         // DBMS mode gives READ
         assertThat(instance.plan().queryType()).isEqualTo(QueryType.READ());
     }

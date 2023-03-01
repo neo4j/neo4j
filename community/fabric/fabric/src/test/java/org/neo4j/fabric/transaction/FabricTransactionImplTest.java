@@ -51,6 +51,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseIdFactory;
@@ -198,6 +199,7 @@ public class FabricTransactionImplTest {
         var guard = mock(AvailabilityGuard.class);
         var securityLog = mock(AbstractSecurityLog.class);
         var catalogManager = mock(CatalogManager.class);
+        var globalProcedures = mock(GlobalProcedures.class);
         return new TransactionManager(
                 remoteExecutor,
                 localExecutor,
@@ -207,7 +209,8 @@ public class FabricTransactionImplTest {
                 Clocks.nanoClock(),
                 config,
                 guard,
-                errorReporter);
+                errorReporter,
+                globalProcedures);
     }
 
     private static FabricTransactionInfo createTransactionInfo() {

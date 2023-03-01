@@ -36,11 +36,13 @@ import java.util.stream.Stream;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.ast.GraphSelection;
+import org.neo4j.cypher.internal.evaluator.StaticEvaluation;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.eval.UseEvaluation;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
+import org.neo4j.fabric.pipeline.SignatureResolver;
 import org.neo4j.fabric.planning.FabricPlan;
 import org.neo4j.fabric.planning.FabricPlanner;
 import org.neo4j.fabric.planning.FabricQuery;
@@ -108,6 +110,10 @@ public class FabricExecutor {
 
         lifecycle.startProcessing();
 
+        var procedures = fabricTransaction.contextlessProcedures();
+        var signatureResolver = SignatureResolver.from(procedures);
+        var evaluator = StaticEvaluation.from(procedures);
+
         try {
             var defaultGraphName = fabricTransaction
                     .getTransactionInfo()
@@ -117,7 +123,12 @@ public class FabricExecutor {
 
             var catalog = fabricTransaction.getCatalogSnapshot();
             var plannerInstance = planner.instance(
-                    statement, parameters, defaultGraphName, catalog, fabricTransaction.cancellationChecker());
+                    signatureResolver,
+                    statement,
+                    parameters,
+                    defaultGraphName,
+                    catalog,
+                    fabricTransaction.cancellationChecker());
             var plan = plannerInstance.plan();
             var query = plan.query();
 
@@ -128,8 +139,9 @@ public class FabricExecutor {
             if (plan.debugOptions().logPlan()) {
                 log.debug(String.format("Fabric plan: %s", Fragment.pretty().asString(query)));
             }
+
             var statementResult = fabricTransaction.execute(ctx -> {
-                var useEvaluator = useEvaluation.instance(statement, catalog);
+                var useEvaluator = useEvaluation.instance(evaluator, signatureResolver, statement, catalog);
                 FabricStatementExecution execution;
                 if (plan.debugOptions().logRecords()) {
                     execution = new FabricLoggingStatementExecution(

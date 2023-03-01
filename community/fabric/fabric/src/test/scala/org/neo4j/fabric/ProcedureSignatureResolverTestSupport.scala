@@ -65,7 +65,8 @@ trait ProcedureSignatureResolverTestSupport {
   val callableUseFunctions: Seq[procedure.CallableUserFunction] = Seq(
     mkFunction(Seq("const0"), Seq(), "MyCategory")(Values.intValue(0)),
     mkFunction(Seq("const1"), Seq(), "MyOtherCategory")(Values.intValue(1)),
-    mkFunction(Seq("my", "ns", "const0"), Seq("x"), "MyCategory")(Values.intValue(2))
+    mkFunction(Seq("my", "ns", "const0"), Seq("x"), "MyCategory")(Values.intValue(2)),
+    mkFunction(Seq("say", "neo4j"), Seq(), "MyCategory")(Values.stringValue("neo4j"))
   )
 
   val signatures: ProcedureSignatureResolver = TestProcedureSignatureResolver(callableProcedures, callableUseFunctions)

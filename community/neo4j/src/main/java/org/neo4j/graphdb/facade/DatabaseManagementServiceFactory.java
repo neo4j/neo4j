@@ -155,8 +155,7 @@ public class DatabaseManagementServiceFactory {
         var databaseInfoService = edition.createDatabaseInfoService(databaseContextProvider);
         globalDependencies.satisfyDependencies(databaseInfoService);
 
-        edition.bootstrapFabricServices();
-
+        // Routing procedures depend on DatabaseResolver
         edition.createDefaultDatabaseResolver(globalModule);
         globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
 
@@ -168,7 +167,11 @@ public class DatabaseManagementServiceFactory {
         var routingService = edition.createRoutingService(databaseContextProvider, clientRoutingDomainChecker);
         globalDependencies.satisfyDependency(routingService);
 
+        // Fabric depends on Procedures
         setupProcedures(globalModule, edition, databaseContextProvider, routingService);
+
+        edition.bootstrapFabricServices();
+
         edition.registerDatabaseInitializers(globalModule);
 
         edition.createSecurityModule(globalModule);

@@ -32,23 +32,21 @@ import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Rewritten.RewritingOps
-import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
-import java.util.function.Supplier
-
 import scala.jdk.CollectionConverters.MapHasAsScala
 
 class UseEvaluation(
-  proceduresSupplier: Supplier[GlobalProcedures],
-  signatureResolver: ProcedureSignatureResolver
 ) {
 
-  private val evaluator = StaticEvaluation.from(proceduresSupplier)
-
-  def instance(query: String, catalog: Catalog) =
+  def instance(
+    evaluator: StaticEvaluation.StaticEvaluator,
+    signatureResolver: ProcedureSignatureResolver,
+    query: String,
+    catalog: Catalog
+  ) =
     new UseEvaluation.Instance(query, catalog, evaluator, signatureResolver)
 
 }

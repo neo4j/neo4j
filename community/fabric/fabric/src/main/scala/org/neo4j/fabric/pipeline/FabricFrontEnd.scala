@@ -61,7 +61,6 @@ import org.neo4j.values.virtual.MapValue
 case class FabricFrontEnd(
   cypherConfig: CypherConfiguration,
   kernelMonitors: monitoring.Monitors,
-  signatures: ProcedureSignatureResolver,
   cacheFactory: CaffeineCacheFactory
 ) {
 
@@ -96,6 +95,7 @@ case class FabricFrontEnd(
   }
 
   case class Pipeline(
+    signatures: ProcedureSignatureResolver,
     query: PreParsedQuery,
     params: MapValue,
     cancellationChecker: CancellationChecker

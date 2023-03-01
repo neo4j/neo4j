@@ -50,36 +50,46 @@ import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CTTime
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.exceptions.CypherExecutionException
+import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.procs
 import org.neo4j.internal.kernel.api.procs.DefaultParameterValue
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle
-import org.neo4j.kernel.api.procedure.GlobalProcedures
+import org.neo4j.kernel.api.procedure.ProcedureView
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.procedure.Mode
+import org.neo4j.util.VisibleForTesting
 
 import java.util.Optional
-import java.util.function.Supplier
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-class SignatureResolver(registrySupplier: Supplier[GlobalProcedures]) extends ProcedureSignatureResolver {
+class SignatureResolver(
+  getProc: Function[procs.QualifiedName, procs.ProcedureHandle],
+  getFunc: Function[procs.QualifiedName, procs.UserFunctionHandle]
+) extends ProcedureSignatureResolver {
 
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
-    Option(registrySupplier.get().function(SignatureResolver.asKernelQualifiedName(name)))
+    Option(getFunc(SignatureResolver.asKernelQualifiedName(name)))
       .map(fcn => SignatureResolver.toCypherFunction(fcn))
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
-    val handle = registrySupplier.get().procedure(kn)
-    SignatureResolver.toCypherProcedure(handle)
+    SignatureResolver.toCypherProcedure(getProc(kn))
   }
 }
 
 object SignatureResolver {
+
+  def from(procedures: Procedures) = new SignatureResolver(procedures.procedureGet, procedures.functionGet);
+
+  // Note: Typically the signature resolver should be derived from a transaction bound Procedures object.
+  // In some testing situations this can be troublesome to reach, and thus we provide this escape hatch.
+  @VisibleForTesting
+  def from(procedureView: ProcedureView) = new SignatureResolver(procedureView.procedure, procedureView.function)
 
   def toCypherProcedure(handle: ProcedureHandle): ProcedureSignature = {
     val signature = handle.signature()

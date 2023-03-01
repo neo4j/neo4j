@@ -38,6 +38,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory;
@@ -57,6 +58,7 @@ public class TransactionManager extends LifecycleAdapter {
     private final Set<FabricTransactionImpl> openTransactions = ConcurrentHashMap.newKeySet();
     private final long awaitActiveTransactionDeadlineMillis;
     private final AvailabilityGuard availabilityGuard;
+    private final GlobalProcedures globalProcedures;
     private final CatalogManager catalogManager;
 
     public TransactionManager(
@@ -68,7 +70,8 @@ public class TransactionManager extends LifecycleAdapter {
             SystemNanoClock clock,
             Config config,
             AvailabilityGuard availabilityGuard,
-            ErrorReporter errorReporter) {
+            ErrorReporter errorReporter,
+            GlobalProcedures globalProcedures) {
         this.remoteExecutor = remoteExecutor;
         this.localExecutor = localExecutor;
         this.catalogManager = catalogManager;
@@ -80,6 +83,7 @@ public class TransactionManager extends LifecycleAdapter {
         this.awaitActiveTransactionDeadlineMillis = config.get(GraphDatabaseSettings.shutdown_transaction_end_timeout)
                 .toMillis();
         this.availabilityGuard = availabilityGuard;
+        this.globalProcedures = globalProcedures;
     }
 
     public FabricTransaction begin(
@@ -97,11 +101,14 @@ public class TransactionManager extends LifecycleAdapter {
                 .getLoginContext()
                 .authorize(LoginContext.IdLookup.EMPTY, databaseNameToAuthorizeFor, securityLog);
 
+        var procedures = new FabricProcedures(globalProcedures);
+
         FabricTransactionImpl fabricTransaction = new FabricTransactionImpl(
                 transactionInfo,
                 transactionBookmarkManager,
                 remoteExecutor,
                 localExecutor,
+                procedures,
                 errorReporter,
                 this,
                 catalogManager.currentCatalog(),

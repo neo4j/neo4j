@@ -45,6 +45,7 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
+import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -88,7 +89,7 @@ class FabricPlannerTest
     new FabricConfig(() => Duration.ZERO, new FabricConfig.DataStream(0, 0, 0, 0), false, true)
 
   private val config = makeConfig()
-  private val planner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+  private val planner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
   private val fabricName = "fabric"
   private val sessionGraphName = "session"
 
@@ -106,7 +107,7 @@ class FabricPlannerTest
     params: MapValue = params,
     sessionDatabaseName: String = defaultGraphName
   ): planner.PlannerInstance = {
-    planner.instance(query, params, sessionDatabaseName, fabricCatalog)
+    planner.instance(signatures, query, params, sessionDatabaseName, fabricCatalog)
   }
 
   private def plan(query: String, params: MapValue = params, sessionDatabaseName: String = defaultGraphName) =
@@ -541,7 +542,7 @@ class FabricPlannerTest
   "Cache:" - {
 
     "cache hit on equal input" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q =
         """WITH 1 AS x
@@ -556,15 +557,15 @@ class FabricPlannerTest
           |RETURN w, y
           |""".stripMargin
 
-      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
-      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(1)
       newPlanner.queryCache.getHits.shouldEqual(1)
     }
 
     "cache miss on different query" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q1 =
         """WITH 1 AS x
@@ -576,30 +577,30 @@ class FabricPlannerTest
           |RETURN x, 2 AS y
           |""".stripMargin
 
-      newPlanner.instance(q1, params, defaultGraphName, Catalog(Map())).plan
-      newPlanner.instance(q2, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q1, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q2, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
     }
 
     "cache miss on different default graph" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q =
         """WITH 1 AS x
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q, params, "foo", Catalog(Map())).plan
-      newPlanner.instance(q, params, "bar", Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, "foo", Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, "bar", Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
     }
 
     "cache miss on options" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q1 =
         """WITH 1 AS x
@@ -612,15 +613,15 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q1, params, defaultGraphName, Catalog(Map())).plan
-      newPlanner.instance(q2, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q1, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q2, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
     }
 
     "cache miss on different param types" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q =
         """WITH 1 AS x
@@ -628,19 +629,26 @@ class FabricPlannerTest
           |""".stripMargin
 
       newPlanner.instance(
+        signatures,
         q,
         VirtualValues.map(Array("a"), Array(Values.of("a"))),
         defaultGraphName,
         Catalog(Map())
       ).plan
-      newPlanner.instance(q, VirtualValues.map(Array("a"), Array(Values.of(1))), defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(
+        signatures,
+        q,
+        VirtualValues.map(Array("a"), Array(Values.of(1))),
+        defaultGraphName,
+        Catalog(Map())
+      ).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
     }
 
     "cache miss on new params" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q =
         """WITH 1 AS x
@@ -648,12 +656,14 @@ class FabricPlannerTest
           |""".stripMargin
 
       newPlanner.instance(
+        signatures,
         q,
         VirtualValues.map(Array("a"), Array(Values.of("a"))),
         defaultGraphName,
         Catalog(Map())
       ).plan
       newPlanner.instance(
+        signatures,
         q,
         VirtualValues.map(Array("a", "b"), Array(Values.of("a"), Values.of(1))),
         defaultGraphName,
@@ -665,7 +675,7 @@ class FabricPlannerTest
     }
 
     "cache hit on different param values" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q =
         """WITH 1 AS x
@@ -673,12 +683,14 @@ class FabricPlannerTest
           |""".stripMargin
 
       newPlanner.instance(
+        signatures,
         q,
         VirtualValues.map(Array("a"), Array(Values.of("a"))),
         defaultGraphName,
         Catalog(Map())
       ).plan
       newPlanner.instance(
+        signatures,
         q,
         VirtualValues.map(Array("a"), Array(Values.of("b"))),
         defaultGraphName,
@@ -690,21 +702,21 @@ class FabricPlannerTest
     }
 
     "sensitive statements are not cached" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q =
         """CREATE USER foo SET PASSWORD 'secret'
           |""".stripMargin
 
-      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
-      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
     }
 
     "cache miss on literal vs variable with same name" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q1 =
         """MATCH (n)
@@ -717,29 +729,29 @@ class FabricPlannerTest
           |RETURN true
           |""".stripMargin
 
-      newPlanner.instance(q1, params, defaultGraphName, Catalog(Map())).plan
-      newPlanner.instance(q2, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q1, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q2, params, defaultGraphName, Catalog(Map())).plan
 
       newPlanner.queryCache.getMisses.shouldEqual(2)
       newPlanner.queryCache.getHits.shouldEqual(0)
     }
 
     "cache clears a context" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q =
         """WITH 1 AS x
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.contextSize(defaultGraphName).shouldEqual(1)
       newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(1)
       newPlanner.queryCache.contextSize(defaultGraphName).shouldEqual(0)
     }
 
     "cache clears only the given context" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q1 =
         """USE foo
@@ -752,8 +764,8 @@ class FabricPlannerTest
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q1, params, "foo", Catalog(Map())).plan
-      newPlanner.instance(q2, params, "bar", Catalog(Map())).plan
+      newPlanner.instance(signatures, q1, params, "foo", Catalog(Map())).plan
+      newPlanner.instance(signatures, q2, params, "bar", Catalog(Map())).plan
       newPlanner.queryCache.contextSize("foo").shouldEqual(1)
       newPlanner.queryCache.contextSize("bar").shouldEqual(1)
       newPlanner.queryCache.clearByContext("foo").shouldEqual(1)
@@ -762,7 +774,7 @@ class FabricPlannerTest
     }
 
     "the cache hits before being cleared, and it misses after being cleared" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q =
         """WITH 1 AS x
@@ -770,36 +782,36 @@ class FabricPlannerTest
           |""".stripMargin
 
       // plan query (cold miss)
-      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.getHits.shouldEqual(0)
       newPlanner.queryCache.getMisses.shouldEqual(1)
 
       // replan query (hits)
-      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.getHits.shouldEqual(1)
       newPlanner.queryCache.getMisses.shouldEqual(1)
 
       // clear cache and rereplan query (cold miss again)
       newPlanner.queryCache.clearByContext(defaultGraphName)
-      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.getHits.shouldEqual(1)
       newPlanner.queryCache.getMisses.shouldEqual(2)
     }
 
     "clear an empty cache" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
       newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(0)
     }
 
     "clearing the cache returns the number of evictions" in {
-      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory)
 
       val q =
         """WITH 1 AS x
           |RETURN x
           |""".stripMargin
 
-      newPlanner.instance(q, params, defaultGraphName, Catalog(Map())).plan
+      newPlanner.instance(signatures, q, params, defaultGraphName, Catalog(Map())).plan
       newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(1)
       newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(0)
     }
@@ -1239,8 +1251,8 @@ class FabricPlannerTest
 
     def planAndStitch(sessionGraphName: String, query: String, params: MapValue = params) = {
       val planner =
-        FabricPlanner(makeConfig(), cypherConfig, monitors, cacheFactory, signatures)
-          .instance(query, params, sessionGraphName, fabricCatalog)
+        FabricPlanner(makeConfig(), cypherConfig, monitors, cacheFactory)
+          .instance(signatures, query, params, sessionGraphName, fabricCatalog)
       Try(planner.plan)
     }
 

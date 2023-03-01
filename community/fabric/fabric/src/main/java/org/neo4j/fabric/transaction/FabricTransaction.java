@@ -30,6 +30,7 @@ import org.neo4j.fabric.executor.FabricRemoteExecutor;
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.fabric.planning.StatementType;
 import org.neo4j.fabric.stream.StatementResult;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
@@ -76,4 +77,6 @@ public interface FabricTransaction {
     CancellationChecker cancellationChecker();
 
     ExecutingQuery.TransactionBinding transactionBinding();
+
+    Procedures contextlessProcedures();
 }

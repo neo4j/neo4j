@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -69,6 +70,7 @@ class TransactionManagerTest {
         var securityLog = mock(AbstractSecurityLog.class);
         var catalogManager = mock(CatalogManager.class);
         var config = Config.defaults(shutdown_transaction_end_timeout, Duration.ZERO);
+        var globalProcedures = mock(GlobalProcedures.class);
         var transactionManager = new TransactionManager(
                 fabricRemoteExecutor,
                 localExecutor,
@@ -78,7 +80,8 @@ class TransactionManagerTest {
                 Clocks.nanoClock(),
                 config,
                 guard,
-                errorReporter);
+                errorReporter,
+                globalProcedures);
 
         // local tx
         var tx1 = transactionManager.begin(createTransactionInfo(), bookmarkManager);

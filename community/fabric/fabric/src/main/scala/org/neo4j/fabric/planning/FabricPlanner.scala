@@ -45,26 +45,27 @@ case class FabricPlanner(
   config: FabricConfig,
   cypherConfig: CypherConfiguration,
   monitors: Monitors,
-  cacheFactory: CaffeineCacheFactory,
-  signatures: ProcedureSignatureResolver
+  cacheFactory: CaffeineCacheFactory
 ) {
 
   private[planning] val queryCache = new FabricQueryCache(cacheFactory, cypherConfig.queryCacheSize)
 
-  private val frontend = FabricFrontEnd(cypherConfig, monitors, signatures, cacheFactory)
+  private val frontend = FabricFrontEnd(cypherConfig, monitors, cacheFactory)
 
   /**
    * Convenience method without cancellation checker. Should be used for tests only.
    */
   def instance(
+    signatureResolver: ProcedureSignatureResolver,
     queryString: String,
     queryParams: MapValue,
     defaultGraphName: String,
     catalog: Catalog
   ): PlannerInstance =
-    instance(queryString, queryParams, defaultGraphName, catalog, CancellationChecker.NeverCancelled)
+    instance(signatureResolver, queryString, queryParams, defaultGraphName, catalog, CancellationChecker.NeverCancelled)
 
   def instance(
+    signatureResolver: ProcedureSignatureResolver,
     queryString: String,
     queryParams: MapValue,
     defaultGraphName: String,
@@ -72,10 +73,11 @@ case class FabricPlanner(
     cancellationChecker: CancellationChecker
   ): PlannerInstance = {
     val query = frontend.preParsing.preParse(queryString)
-    PlannerInstance(query, queryParams, defaultGraphName, catalog, cancellationChecker)
+    PlannerInstance(signatureResolver, query, queryParams, defaultGraphName, catalog, cancellationChecker)
   }
 
   case class PlannerInstance(
+    signatureResolver: ProcedureSignatureResolver,
     query: PreParsedQuery,
     queryParams: MapValue,
     defaultContextName: String,
@@ -83,7 +85,7 @@ case class FabricPlanner(
     cancellationChecker: CancellationChecker
   ) {
 
-    private lazy val pipeline = frontend.Pipeline(query, queryParams, cancellationChecker)
+    private lazy val pipeline = frontend.Pipeline(signatureResolver, query, queryParams, cancellationChecker)
 
     private val useHelper = new UseHelper(catalog, defaultContextName)
 
