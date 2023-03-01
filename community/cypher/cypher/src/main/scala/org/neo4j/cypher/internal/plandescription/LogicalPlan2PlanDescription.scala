@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -41,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NameToken
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -2625,8 +2625,8 @@ case class LogicalPlan2PlanDescription(
       pretty"IN ${exprs.map(asPrettyString(_)).mkPrettyString("[", ",", "]")}"
     case ManySeekableArgs(ListLiteral(exprs)) =>
       pretty"= ${asPrettyString(exprs.head)}"
-    case ManySeekableArgs(autoParam @ AutoExtractedParameter(name, cypherType: ListType, _, _)) =>
-      pretty"IN ${asPrettyString(autoParam)}"
+    case ManySeekableArgs(param: Parameter) if param.parameterType.isInstanceOf[ListType] =>
+      pretty"IN ${asPrettyString(param)}"
     case _ =>
       pretty"= ${asPrettyString(seekableArgs.expr)}"
   }

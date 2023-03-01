@@ -92,6 +92,7 @@ import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
@@ -373,6 +374,7 @@ import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.EffectiveCardinality
+import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -673,6 +675,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         333.0
       ),
       planDescription(id, "NodeByIdSeek", NoChildren, Seq(details("node WHERE id(node) IN $autolist_0")), Set("node"))
+    )
+
+    assertGood(
+      attach(
+        NodeByIdSeek(
+          "node",
+          ManySeekableArgs(ExplicitParameter("listParam", CTList(CTAny), ExactSize(5))(pos)),
+          Set.empty
+        ),
+        333.0
+      ),
+      planDescription(id, "NodeByIdSeek", NoChildren, Seq(details("node WHERE id(node) IN $listParam")), Set("node"))
     )
 
     assertGood(
