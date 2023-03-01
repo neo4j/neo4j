@@ -61,8 +61,6 @@ object Neo4jAdapter {
       enableSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
     case "CallInTransactions" | "CallInTransactionsErrorHandling" | "CallInTransactionsErrorHandlingWithReturn" =>
       enableSemanticFeature(SemanticFeature.CallInTxsStatusAndErrorHandling)
-    case "CollectExpressionAcceptance" =>
-      enableSemanticFeature(SemanticFeature.CollectSubquerySupport)
     case _ => Map.empty
   }
 

@@ -738,10 +738,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
       // COLLECT
       case x: CollectExpression =>
-        whenState(!_.features.contains(SemanticFeature.CollectSubquerySupport)) {
-          error("Collect Subqueries are not yet supported", x.position)
-        } chain
-          SemanticState.recordCurrentScope(x) chain
+        SemanticState.recordCurrentScope(x) chain
           withScopedState {
             x.query.semanticCheckInSubqueryExpressionContext(canOmitReturn = false) chain
               when(x.query.containsUpdates) {

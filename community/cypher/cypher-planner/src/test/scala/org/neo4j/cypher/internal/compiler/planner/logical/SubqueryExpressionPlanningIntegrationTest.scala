@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
@@ -133,7 +132,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
     .addNodeIndex("FewProps", Seq("prop"), 1.0, 0.01)
     .addNodeIndex("SomeProps", Seq("prop"), 1.0, 0.1)
     .addNodeIndex("ManyProps", Seq("prop"), 1.0, 1.0)
-    .addSemanticFeature(SemanticFeature.CollectSubquerySupport)
     .build()
 
   test("should plan CREATE followed by container access with COUNT expression as an index") {

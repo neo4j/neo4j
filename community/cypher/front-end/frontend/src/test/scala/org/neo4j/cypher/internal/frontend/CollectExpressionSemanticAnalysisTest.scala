@@ -25,19 +25,10 @@ class CollectExpressionSemanticAnalysisTest
     extends CypherFunSuite
     with NameBasedSemanticAnalysisTestSuite {
 
-  test("RETURN COLLECT { MATCH (a) RETURN a }") {
-    runSemanticAnalysis().errors.toSet shouldEqual Set(
-      SemanticError(
-        "Collect Subqueries are not yet supported",
-        InputPosition(7, 1, 8)
-      )
-    )
-  }
-
   test(
     "RETURN COLLECT { MATCH (a) }"
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
         InputPosition(17, 1, 18)
@@ -52,7 +43,7 @@ class CollectExpressionSemanticAnalysisTest
   test(
     "RETURN COLLECT { MATCH (n) RETURN n }"
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test(
@@ -61,7 +52,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN m
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test(
@@ -73,7 +64,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN a
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test(
@@ -82,7 +73,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN m
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test(
@@ -90,7 +81,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN COLLECT { SET a.name = 1 }
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "A Collect Expression cannot contain any updates",
         InputPosition(17, 2, 8)
@@ -107,7 +98,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN COLLECT { MATCH (b) WHERE b.a = a.a DETACH DELETE b }
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "A Collect Expression cannot contain any updates",
         InputPosition(17, 2, 8)
@@ -124,7 +115,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN COLLECT { MATCH (b) MERGE (b)-[:FOLLOWS]->(:Person) }
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "A Collect Expression cannot contain any updates",
         InputPosition(17, 2, 8)
@@ -141,7 +132,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN COLLECT { CALL db.labels() YIELD label RETURN label  }
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test(
@@ -154,7 +145,7 @@ class CollectExpressionSemanticAnalysisTest
       |   RETURN b.name as name
       |}""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test(
@@ -162,7 +153,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN COLLECT { MATCH (m)-[r]->(p), (a)-[r2]-(c) RETURN m.prop }
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test(
@@ -170,7 +161,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN COLLECT { MATCH (a)-->(b) WHERE b.prop = 5 RETURN b }
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe empty
+    runSemanticAnalysis().errors.toSet shouldBe empty
   }
 
   test(
@@ -183,7 +174,7 @@ class CollectExpressionSemanticAnalysisTest
       |}
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "The variable `aNum` is shadowing a variable with the same name from the outer scope and needs to be renamed",
         InputPosition(54, 4, 13)
@@ -202,7 +193,7 @@ class CollectExpressionSemanticAnalysisTest
       |}
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "The variable `aNum` is shadowing a variable with the same name from the outer scope and needs to be renamed",
         InputPosition(92, 5, 13)
@@ -220,7 +211,7 @@ class CollectExpressionSemanticAnalysisTest
       |}
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "The variable `a` is shadowing a variable with the same name from the outer scope and needs to be renamed",
         InputPosition(57, 4, 13)
@@ -238,7 +229,7 @@ class CollectExpressionSemanticAnalysisTest
       |}
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe Set.empty
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
   }
 
   test(
@@ -252,7 +243,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN person.name
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe Set.empty
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
   }
 
   test(
@@ -267,7 +258,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN person.name
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe Set.empty
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
   }
 
   test(
@@ -280,7 +271,7 @@ class CollectExpressionSemanticAnalysisTest
       |}
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldBe Set.empty
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
   }
 
   test(
@@ -293,7 +284,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN person.name
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "Query cannot conclude with MATCH (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
         InputPosition(42, 3, 5)
@@ -320,7 +311,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN person.name
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
         InputPosition(74, 5, 5)
@@ -347,7 +338,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN person.name
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
         InputPosition(56, 4, 5)
@@ -374,7 +365,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN person.name
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
         InputPosition(69, 5, 5)
@@ -401,7 +392,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN person.name
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
         InputPosition(56, 4, 5)
@@ -430,7 +421,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN person.name
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
         InputPosition(56, 4, 5)
@@ -465,7 +456,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN person.name
      """.stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "All sub queries in an UNION must have the same return column names",
         InputPosition(69, 5, 5)
@@ -488,7 +479,7 @@ class CollectExpressionSemanticAnalysisTest
       |}
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "A Collect Expression must end with a single return column.",
         InputPosition(7, 1, 8)
@@ -503,7 +494,7 @@ class CollectExpressionSemanticAnalysisTest
       |}
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "A Collect Expression must end with a single return column.",
         InputPosition(7, 1, 8)
@@ -520,7 +511,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN a
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "A Collect Expression must end with a single return column.",
         InputPosition(16, 2, 7)
@@ -533,7 +524,7 @@ class CollectExpressionSemanticAnalysisTest
       |RETURN COLLECT { MATCH (m)-[r]->(p), (a)-[r2]-(c) RETURN * }
       |""".stripMargin
   ) {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.CollectSubquerySupport).errors.toSet shouldEqual Set(
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
       SemanticError(
         "A Collect Expression must end with a single return column.",
         InputPosition(17, 2, 8)

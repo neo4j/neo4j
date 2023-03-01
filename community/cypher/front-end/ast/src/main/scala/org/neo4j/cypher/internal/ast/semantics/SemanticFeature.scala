@@ -51,10 +51,6 @@ object SemanticFeature {
     override def name: String = "CALL IN TRANSACTIONS status report and error handling"
   }
 
-  case object CollectSubquerySupport extends SemanticFeature with FeatureToString {
-    override def name: String = "Collect Subquery"
-  }
-
   case object QuantifiedPathPatternPathAssignment extends SemanticFeature with FeatureToString {
     override def name: String = "Assigning Quantified Path Pattern to Paths"
   }
@@ -67,8 +63,7 @@ object SemanticFeature {
     QuantifiedPathPatterns,
     CallInTxsStatusAndErrorHandling,
     QuantifiedPathPatternPathAssignment,
-    ShowSetting,
-    CollectSubquerySupport
+    ShowSetting
   )
 
   def fromString(str: String): SemanticFeature =
