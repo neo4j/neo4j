@@ -606,11 +606,7 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
     val solverConfigsToTest = Seq(
       ExpandOnlyIDPSolverConfig,
       new ConfigurableIDPSolverConfig(maxTableSize = 32, iterationDurationLimit = Long.MaxValue), // table limited
-      new ConfigurableIDPSolverConfig(maxTableSize = Int.MaxValue, iterationDurationLimit = 500), // time limited
-      AdaptiveChainPatternConfig(10), // default
-      new AdaptiveChainPatternConfig(5) { // make sure it works on comprehensions for very long patterns
-        override def iterationDurationLimit: Long = 20
-      }
+      new ConfigurableIDPSolverConfig(maxTableSize = Int.MaxValue, iterationDurationLimit = 500) // time limited
     )
 
     solverConfigsToTest.foreach { solverConfig =>

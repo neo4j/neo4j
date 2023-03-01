@@ -85,35 +85,3 @@ case object JoinOnlyIDPSolverConfig extends ConfigurableIDPSolverConfig(256, Lon
   override def solvers(qppInnerPlans: QPPInnerPlans)
     : Seq[QueryGraph => IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext]] = Seq(joinSolverStep(_))
 }
-
-/* One more advanced approach is to allow the inner loop to automatically switch from
-   expands-only to expands and joins when the problem size becomes smaller.
-   This is a good compromise between performance and quality, however it is not clear
-   where best to draw the line, and it is probable that the joins might be planned in
-   sub-optimal positions. We should consider this for a future default once we have the
-   time to develop more confidence in the approach. */
-case class AdaptiveChainPatternConfig(patternLengthThreshold: Int) extends SingleComponentIDPSolverConfig {
-
-  override def solvers(qppInnerPlans: QPPInnerPlans)
-    : Seq[QueryGraph => IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext]] =
-    Seq(AdaptiveSolverStep(_, qppInnerPlans, (_, goal) => goal.size >= patternLengthThreshold))
-}
-
-case class AdaptiveSolverStep(qg: QueryGraph, qppInnerPlans: QPPInnerPlans, predicate: (QueryGraph, Goal) => Boolean)
-    extends IDPSolverStep[NodeConnection, LogicalPlan, LogicalPlanningContext] {
-
-  private val join = joinSolverStep(qg)
-  private val expand = expandSolverStep(qg, qppInnerPlans)
-
-  override def apply(
-    registry: IdRegistry[NodeConnection],
-    goal: Goal,
-    table: IDPCache[LogicalPlan],
-    context: LogicalPlanningContext
-  ): Iterator[LogicalPlan] = {
-    if (!registry.compacted() && predicate(qg, goal))
-      expand(registry, goal, table, context)
-    else
-      expand(registry, goal, table, context) ++ join(registry, goal, table, context)
-  }
-}
