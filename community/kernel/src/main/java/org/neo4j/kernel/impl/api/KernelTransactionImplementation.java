@@ -1071,6 +1071,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         public void rollback(TransactionRollbackEvent rollbackEvent) {
             if (transactionPayload != null) {
                 try {
+                    validateCurrentKernelVersion();
                     rollbackBatches(rollbackEvent);
                     writeRollbackEntry(rollbackEvent);
                 } catch (Exception e) {
@@ -1083,7 +1084,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
         private void writeRollbackEntry(TransactionRollbackEvent transactionRollbackEvent)
                 throws TransactionFailureException {
-            validateCurrentKernelVersion();
             var chunkMetadata = new ChunkMetadata(
                     false,
                     true,
