@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ast.UsingScanHint
 import org.neo4j.cypher.internal.compiler.ExecutionModel
 import org.neo4j.cypher.internal.compiler.helpers.PredicateHelper.coercePredicatesWithAnds
-import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
@@ -54,7 +53,6 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
-import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.MapProjection
@@ -282,6 +280,9 @@ case class LogicalPlanProducer(
   private val providedOrders = planningAttributes.providedOrders
   private val leveragedOrders = planningAttributes.leveragedOrders
   private val labelAndRelTypeInfos = planningAttributes.labelAndRelTypeInfos
+
+  private val attributesWithoutSolveds =
+    planningAttributes.asAttributes(idGen).without(solveds, planningAttributes.effectiveCardinalities)
 
   /**
    * This object is simply to group methods that are used by the [[SubqueryExpressionSolver]], and thus do not need to update `solveds`
@@ -1071,6 +1072,23 @@ case class LogicalPlanProducer(
     (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource)
   }
 
+  def fixupTrailRhsPlan(
+    originalPlan: LogicalPlan,
+    argumentToRemove: String,
+    predicatesToRemove: Set[Expression]
+  ): LogicalPlan = {
+    val fixedSolved = solveds.get(originalPlan.id).asSinglePlannerQuery.amendQueryGraph {
+      qg =>
+        // We added these in `PrecomputedQPPInnerPlans`, so for solved we have to remove it again.
+        qg.removeArgumentId(argumentToRemove)
+          .withSelections(qg.selections.filter(p => !predicatesToRemove.contains(p.expr)))
+    }
+
+    val newPlan = originalPlan.copyPlanWithIdGen(attributesWithoutSolveds.copy(originalPlan.id))
+    solveds.set(newPlan.id, fixedSolved)
+    newPlan
+  }
+
   def planTrail(
     source: LogicalPlan,
     pattern: QuantifiedPathPattern,
@@ -1086,15 +1104,7 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
 
     val innerPlanSolvedQG = solveds.get(innerPlan.id).asSinglePlannerQuery.queryGraph
-
-    val innerPlanSolvedQGFixed =
-      innerPlanSolvedQG
-        // We added this argument in `PrecomputedQPPInnerPlans`, so for solved we have to remove it again.
-        .withArgumentIds(innerPlanSolvedQG.argumentIds - startBinding.inner)
-        // We added these predicates in `PrecomputedQPPInnerPlans`, so for solved we have to remove it again.
-        .withSelections(innerPlanSolvedQG.selections.filter(!_.expr.isInstanceOf[IsRepeatTrailUnique]))
-
-    val solvedPattern = pattern.copy(pattern = innerPlanSolvedQGFixed)
+    val solvedPattern = pattern.copy(pattern = innerPlanSolvedQG)
 
     val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
       .addQuantifiedPathPattern(solvedPattern)

@@ -123,11 +123,7 @@ object expandSolverStep {
       qpp <- qg.quantifiedPathPatterns
       fromLeft <- Set(true, false)
     } yield {
-      val updatedQpp = {
-        val withArguments = updateQPPArguments(qpp, fromLeft)
-        addTrailUniquePredicates(withArguments)
-      }
-      val plan = planQPPInner(updatedQpp, context)
+      val plan = planQPPInner(qpp, fromLeft, context)
       TrailOption(qpp, fromLeft) -> plan
     }).toMap
 
@@ -139,27 +135,40 @@ object expandSolverStep {
    * The argument is either the left or the right node.
    */
   private def updateQPPArguments(qpp: QuantifiedPathPattern, fromLeft: Boolean): QuantifiedPathPattern = {
-    val bindingNodeArg = if (fromLeft) qpp.leftBinding.inner else qpp.rightBinding.inner
-    qpp.copy(pattern = qpp.pattern.withArgumentIds(qpp.pattern.argumentIds + bindingNodeArg))
+    val bindingNodeArg = additionalQPPArgument(qpp, fromLeft)
+    qpp.copy(pattern = qpp.pattern.addArgumentId(bindingNodeArg))
+  }
+
+  private def additionalQPPArgument(qpp: QuantifiedPathPattern, fromLeft: Boolean): String = {
+    if (fromLeft) qpp.leftBinding.inner
+    else qpp.rightBinding.inner
   }
 
   /**
-   * Add trail uniqueness predicates to the query graph inside the given [[QuantifiedPathPattern]].
+   * Additional predicates to solve on RHS of Trail.
    */
-  private def addTrailUniquePredicates(qpp: QuantifiedPathPattern): QuantifiedPathPattern = {
-    val repeatTrailUniquePredicates =
-      qpp.pattern.patternRelationships.map(r =>
-        IsRepeatTrailUnique(Variable(r.name)(InputPosition.NONE))(InputPosition.NONE)
-      ).toSeq
-    qpp.copy(pattern = qpp.pattern.addPredicates(repeatTrailUniquePredicates: _*))
+  private def additionalTrailPredicates(qpp: QuantifiedPathPattern): Set[Expression] = {
+    qpp.pattern.patternRelationships.map(r =>
+      IsRepeatTrailUnique(Variable(r.name)(InputPosition.NONE))(InputPosition.NONE)
+    )
   }
 
   /**
    * Plan the inner pattern of a [[QuantifiedPathPattern]].
    */
-  private def planQPPInner(qpp: QuantifiedPathPattern, context: LogicalPlanningContext): LogicalPlan = {
+  private def planQPPInner(
+    qpp: QuantifiedPathPattern,
+    fromLeft: Boolean,
+    context: LogicalPlanningContext
+  ): LogicalPlan = {
+    val additionalArgument = additionalQPPArgument(qpp, fromLeft)
+    val additionalPredicates = additionalTrailPredicates(qpp)
+    val qg = qpp.pattern.addArgumentId(additionalArgument).addPredicates(additionalPredicates.toSeq: _*)
+
     // We use InterestingOrderConfig.empty because the order from a RHS of Trail is not propagated anyway
-    context.staticComponents.queryGraphSolver.plan(qpp.pattern, InterestingOrderConfig.empty, context).result
+    val plan = context.staticComponents.queryGraphSolver.plan(qg, InterestingOrderConfig.empty, context).result
+
+    context.staticComponents.logicalPlanProducer.fixupTrailRhsPlan(plan, additionalArgument, additionalPredicates)
   }
 
   /**

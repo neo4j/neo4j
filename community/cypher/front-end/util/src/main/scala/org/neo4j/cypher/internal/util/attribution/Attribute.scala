@@ -184,4 +184,9 @@ case class Attributes[KEY <: Identifiable](idGen: IdGen, private val attributes:
   def withAlso(attributes: Attribute[KEY, _]*): Attributes[KEY] = {
     Attributes(this.idGen, this.attributes ++ attributes: _*)
   }
+
+  def without(attributesToExclude: Attribute[KEY, _]*): Attributes[KEY] = {
+    val newAttributes = attributes.filterNot(a => attributesToExclude.exists(toExclude => a eq toExclude))
+    Attributes(idGen, newAttributes: _*)
+  }
 }
