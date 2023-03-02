@@ -64,7 +64,6 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
           Status.Statement.ExecutionFailed,
           "can only be executed in an implicit transaction, but tried to execute in an explicit transaction."
         )(code)
-
     }
   }
 
@@ -74,10 +73,6 @@ abstract class TransactionalQueryErrorAcceptanceTestBase
 
   test("allows CALL IN TRANSACTIONS in implicit transaction") {
     testApiKind match {
-
-      case TestApiKind.Http =>
-        cancel("The HTTP api does not know about CALL IN TX")
-
       case _ =>
         expectNoError(executeInImplicitTx("CALL { CREATE () } IN TRANSACTIONS"))
     }

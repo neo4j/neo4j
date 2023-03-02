@@ -206,7 +206,7 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
 
     public void beginTransaction() throws TransactionException {
         this.transaction = this.transactionManager.create(
-                TransactionType.EXPLICIT,
+                isImplicit() ? TransactionType.IMPLICIT : TransactionType.EXPLICIT,
                 this,
                 this.databaseName,
                 readByDefault ? AccessMode.READ : AccessMode.WRITE,

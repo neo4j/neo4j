@@ -24,6 +24,7 @@ import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.server.WebContainerTestUtils.withCSVFile;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.containsNoErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.hasErrors;
 import static org.neo4j.server.http.cypher.integration.TransactionConditions.validRFCTimestamp;
@@ -253,17 +254,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
         assertThat(begin.status()).isEqualTo(200);
         assertThat(begin).satisfies(hasErrors(Status.Request.InvalidFormat));
         assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction);
-    }
-
-    @Test
-    public void begin_and_execute_invalid_query_and_commit() {
-
-        // begin and execute and commit
-        Response response =
-                POST(transactionCommitUri(), quotedJson("{ 'statements': [ { 'statement': 'MATCH n RETURN m' } ] }"));
-
-        assertThat(response.status()).isEqualTo(200);
-        assertThat(response).satisfies(hasErrors(Status.Statement.SyntaxError));
     }
 
     @Test
@@ -604,6 +594,155 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
         assertThat(firstCell.get("one").get("two").get(1).get("three").asInt()).isEqualTo(42);
 
         assertThat(response.get("errors").size()).isEqualTo(0);
+    }
+
+    @Test
+    public void begin_and_execute_call_in_tx_and_commit() throws Exception {
+
+        int nodes = 11;
+        int batch = 2;
+        withCSVFile(nodes, url -> {
+            Response response;
+            long nodesInDatabaseBeforeTransaction;
+            long txIdBefore;
+            int times = 0;
+            do {
+                nodesInDatabaseBeforeTransaction = countNodes();
+                txIdBefore = resolveDependency(TransactionIdStore.class).getLastClosedTransactionId();
+
+                // begin and execute and commit
+                // language=json
+                var query = String.format(
+                        """
+                        {
+                          "statements": [
+                            {
+                              "statement": "LOAD CSV FROM \\"%s\\" AS line CALL { WITH line CREATE() } IN TRANSACTIONS OF %s ROWS"
+                            }
+                          ]
+                        }
+                        """,
+                        url, batch);
+
+                response = POST(transactionCommitUri(), quotedJson(query));
+                times++;
+
+            } while (response.get("errors").iterator().hasNext() && (times < 5));
+
+            long txIdAfter = resolveDependency(TransactionIdStore.class).getLastClosedTransactionId();
+
+            assertThat(response).as("Last response is: " + response).satisfies(containsNoErrors());
+            assertThat(response.status()).isEqualTo(200);
+            assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + nodes);
+            assertThat(txIdAfter).isEqualTo(txIdBefore + ((nodes / batch) + 1));
+        });
+    }
+
+    @Test
+    public void begin_and_execute_call_in_tx_that_returns_data_and_commit() throws Exception {
+
+        int nodes = 11;
+        int batchSize = 2;
+
+        // language=json
+        var query =
+                """
+                {
+                  "statements": [
+                    {
+                      "statement": "LOAD CSV FROM \\"%s\\" AS line CALL { WITH line CREATE (n {id1: 23}) RETURN n } IN TRANSACTIONS OF %s ROWS RETURN n"
+                    }
+                  ]
+                }
+                """;
+
+        // warm up the CALL {} IN TX
+        withCSVFile(nodes, url -> POST(transactionCommitUri(), quotedJson(String.format(query, url, batchSize))));
+
+        withCSVFile(nodes, url -> {
+            long nodesInDatabaseBeforeTransaction = countNodes();
+            long txIdBefore = resolveDependency(TransactionIdStore.class).getLastClosedTransactionId();
+
+            // begin and execute and commit
+            Response response = POST(transactionCommitUri(), quotedJson(String.format(query, url, batchSize)));
+            long txIdAfter = resolveDependency(TransactionIdStore.class).getLastClosedTransactionId();
+
+            assertThat(response.status()).isEqualTo(200);
+
+            assertThat(response).satisfies(containsNoErrors());
+
+            JsonNode columns = response.get("results").get(0).get("columns");
+            assertThat(columns.toString()).isEqualTo("[\"n\"]");
+            assertThat(countNodes()).isEqualTo(nodesInDatabaseBeforeTransaction + nodes);
+            long expectedTxCount = (nodes / batchSize) + 1;
+
+            assertThat(txIdAfter - txIdBefore).isEqualTo(expectedTxCount);
+        });
+    }
+
+    @Test
+    public void begin_and_execute_multiple_call_in_tx_last_and_commit() throws Exception {
+
+        // language=json
+        var query =
+                """
+                {
+                  "statements": [
+                    {
+                      "statement": "CREATE ()"
+                    },
+                    {
+                      "statement": "LOAD CSV FROM \\"%s\\" AS line CALL { WITH line CREATE (n {id1: 23}) RETURN n } IN TRANSACTIONS RETURN n"
+                    }
+                  ]
+                }
+                """;
+
+        withCSVFile(1, url -> {
+            // begin and execute and commit
+            Response response = POST(transactionCommitUri(), quotedJson(String.format(query, url)));
+
+            // assertThat(response).satisfies(hasErrors(Status.Statement.ExecutionFailed));
+            assertThat(response.get("errors").get(0).get("message").asText())
+                    .startsWith("Expected transaction state to be empty when calling transactional subquery");
+        });
+    }
+
+    @Test
+    public void begin_and_execute_call_in_tx_followed_by_another_statement_and_commit() throws Exception {
+
+        // language=json
+        var query =
+                """
+                {
+                  "statements": [
+                    {
+                      "statement": "LOAD CSV FROM \\"%s\\" AS line CALL { WITH line CREATE (n {id1: 23}) RETURN n } IN TRANSACTIONS RETURN n"
+                    },
+                    {
+                      "statement": "RETURN 1"
+                    }
+                  ]
+                }
+                                """;
+
+        withCSVFile(1, url -> {
+            // begin and execute and commit
+            Response response = POST(transactionCommitUri(), quotedJson(String.format(query, url)));
+
+            assertThat(response.status()).isEqualTo(200);
+        });
+    }
+
+    @Test
+    public void begin_and_execute_invalid_query_and_commit() {
+
+        // begin and execute and commit
+        Response response =
+                POST(transactionCommitUri(), quotedJson("{ 'statements': [ { 'statement': 'MATCH n RETURN m' } ] }"));
+
+        assertThat(response.status()).isEqualTo(200);
+        assertThat(response).satisfies(hasErrors(Status.Statement.SyntaxError));
     }
 
     @Test
@@ -1064,6 +1203,67 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
 
         assertThat(begin2.status()).isEqualTo(200);
         assertThat(begin2).satisfies(containsNoErrors());
+    }
+
+    @Test
+    public void begin_and_execute_multiple_statements_with_partial_rollback() throws Exception {
+        var nodesAtStart = countNodes();
+
+        // language=json
+        var query =
+                """
+                {
+                  "statements": [
+                    {
+                      "statement": "UNWIND [4, 2, 1, 0] AS i CALL { WITH i CREATE ()} IN TRANSACTIONS OF 2 ROWS RETURN i"
+                    },
+                    {
+                      "statement": "CREATE ()"
+                    },
+                    {
+                      "statement": "CREATE ()"
+                    },
+                    {
+                      "statement": "BROKEN"
+                    }
+                  ]
+                }
+                                """;
+
+        HTTP.Response response = POST(transactionCommitUri(), quotedJson(query));
+
+        // Expect statements outside CALL IN TX not to be rolled back but other statements to be rolled back
+        assertThat(response).satisfies(hasErrors(Status.Statement.SyntaxError));
+        assertThat(countNodes()).isEqualTo(nodesAtStart + 4);
+    }
+
+    @Test
+    public void begin_and_execute_multiple_statements_successfully() throws Exception {
+        var nodesAtStart = countNodes();
+
+        // language=json
+        var query =
+                """
+                {
+                  "statements": [
+                    {
+                      "statement": "UNWIND [4, 2, 1, 0] AS i CALL { WITH i CREATE ()} IN TRANSACTIONS OF 2 ROWS RETURN i"
+                    },
+                    {
+                      "statement": "CREATE ()"
+                    },
+                    {
+                      "statement": "CREATE ()"
+                    }
+                  ]
+                }
+                """;
+
+        HTTP.Response response = POST(transactionCommitUri(), quotedJson(query.replace("\n", "")));
+
+        // Expect statements outside CALL IN TX not to be rolled back but other statements to be rolled back
+        assertThat(response).satisfies(containsNoErrors());
+        assertThat(countNodes()).isEqualTo(nodesAtStart + 6);
     }
 
     private String transactionCommitUri() {

@@ -155,7 +155,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -217,7 +217,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -270,7 +270,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -345,7 +345,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -422,7 +422,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -476,7 +476,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -533,7 +533,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -678,7 +678,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -729,7 +729,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -783,7 +783,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -864,7 +864,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -920,7 +920,7 @@ class InvocationTest {
         // then
         verify(txManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.READ,
@@ -1176,7 +1176,7 @@ class InvocationTest {
         txManagerOrder
                 .verify(transactionManager)
                 .create(
-                        TransactionType.EXPLICIT,
+                        TransactionType.IMPLICIT,
                         handle,
                         "neo4j",
                         AccessMode.WRITE,
