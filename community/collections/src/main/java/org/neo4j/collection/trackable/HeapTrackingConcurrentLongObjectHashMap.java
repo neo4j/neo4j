@@ -35,19 +35,19 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.memory.MemoryTracker;
 
 @SuppressWarnings({"unchecked"})
-public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrackingConcurrentHash
+public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHeapTrackingConcurrentHash
         implements AutoCloseable {
 
-    private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance(HeapTrackingConcurrentLongHashMap.class);
+    private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance( HeapTrackingConcurrentLongObjectHashMap.class);
     private static final long SHALLOW_SIZE_WRAPPER = shallowSizeOfInstance(Entry.class);
 
-    public static <V> HeapTrackingConcurrentLongHashMap<V> newMap(MemoryTracker memoryTracker) {
+    public static <V> HeapTrackingConcurrentLongObjectHashMap<V> newMap( MemoryTracker memoryTracker) {
         return newMap(memoryTracker, DEFAULT_INITIAL_CAPACITY);
     }
 
-    public static <V> HeapTrackingConcurrentLongHashMap<V> newMap(MemoryTracker memoryTracker, int size) {
+    public static <V> HeapTrackingConcurrentLongObjectHashMap<V> newMap( MemoryTracker memoryTracker, int size) {
         memoryTracker.allocateHeap(SHALLOW_SIZE_THIS);
-        return new HeapTrackingConcurrentLongHashMap<>(memoryTracker, size);
+        return new HeapTrackingConcurrentLongObjectHashMap<>( memoryTracker, size);
     }
 
     @Override
@@ -55,7 +55,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
         return SHALLOW_SIZE_WRAPPER;
     }
 
-    private HeapTrackingConcurrentLongHashMap(MemoryTracker memoryTracker, int initialCapacity) {
+    private HeapTrackingConcurrentLongObjectHashMap( MemoryTracker memoryTracker, int initialCapacity) {
         super(memoryTracker, initialCapacity);
     }
 
@@ -684,10 +684,10 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             return true;
         }
 
-        if (!(o instanceof HeapTrackingConcurrentLongHashMap<?>)) {
+        if (!(o instanceof HeapTrackingConcurrentLongObjectHashMap<?>)) {
             return false;
         }
-        HeapTrackingConcurrentLongHashMap<V> m = (HeapTrackingConcurrentLongHashMap<V>) o;
+        HeapTrackingConcurrentLongObjectHashMap<V> m = (HeapTrackingConcurrentLongObjectHashMap<V>) o;
         if (m.size() != this.size()) {
             return false;
         }
@@ -736,7 +736,7 @@ public final class HeapTrackingConcurrentLongHashMap<V> extends AbstractHeapTrac
             long key = this.current.key;
             V val = this.current.value;
             this.current = null;
-            return HeapTrackingConcurrentLongHashMap.this.remove(key, val);
+            return HeapTrackingConcurrentLongObjectHashMap.this.remove( key, val);
         }
     }
 

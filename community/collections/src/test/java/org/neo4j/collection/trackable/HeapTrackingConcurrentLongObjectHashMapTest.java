@@ -32,18 +32,19 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 @SuppressWarnings({"SameParameterValue", "resource"})
-public class HeapTrackingConcurrentLongHashMapTest {
+public class HeapTrackingConcurrentLongObjectHashMapTest
+{
 
     @Test
     public void putIfAbsent() {
-        HeapTrackingConcurrentLongHashMap<Integer> map = newMapWithKeysValues(1, 1, 2, 2);
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map = newMapWithKeysValues( 1, 1, 2, 2);
         assertThat(map.putIfAbsent(1, 1)).isEqualTo(1);
         assertThat(map.putIfAbsent(3, 3)).isNull();
     }
 
     @Test
     public void replace() {
-        HeapTrackingConcurrentLongHashMap<Integer> map = newMapWithKeysValues(1, 1, 2, 2);
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map = newMapWithKeysValues( 1, 1, 2, 2);
         assertThat(map.replace(1, 7)).isEqualTo(1);
         assertThat(map.get(1)).isEqualTo(7);
         assertThat(map.replace(3, 3)).isNull();
@@ -51,7 +52,7 @@ public class HeapTrackingConcurrentLongHashMapTest {
 
     @Test
     public void replaceWithOldValue() {
-        HeapTrackingConcurrentLongHashMap<Integer> map = newMapWithKeysValues(1, 1, 2, 2);
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map = newMapWithKeysValues( 1, 1, 2, 2);
 
         assertThat(map.replace(1, 1, 7)).isTrue();
         assertThat(map.get(1)).isEqualTo(7);
@@ -60,7 +61,7 @@ public class HeapTrackingConcurrentLongHashMapTest {
 
     @Test
     public void removeWithKeyValue() {
-        HeapTrackingConcurrentLongHashMap<Integer> map = newMapWithKeysValues(1, 1, 2, 2);
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map = newMapWithKeysValues( 1, 1, 2, 2);
 
         assertThat(map.remove(1, 1)).isTrue();
         assertThat(map.remove(2, 3)).isFalse();
@@ -69,10 +70,10 @@ public class HeapTrackingConcurrentLongHashMapTest {
     @SuppressWarnings("RedundantCollectionOperation")
     @Test
     public void concurrentPutGetPutRemoveContainsKeyContainsValueGetIfAbsentPutTest() {
-        HeapTrackingConcurrentLongHashMap<Integer> map1 =
-                HeapTrackingConcurrentLongHashMap.newMap(EmptyMemoryTracker.INSTANCE);
-        HeapTrackingConcurrentLongHashMap<Integer> map2 =
-                HeapTrackingConcurrentLongHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map1 =
+                HeapTrackingConcurrentLongObjectHashMap.newMap( EmptyMemoryTracker.INSTANCE);
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map2 =
+                HeapTrackingConcurrentLongObjectHashMap.newMap( EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
                 Interval.oneTo(100),
                 each -> {
@@ -101,8 +102,8 @@ public class HeapTrackingConcurrentLongHashMapTest {
 
     @Test
     public void concurrentClear() {
-        HeapTrackingConcurrentLongHashMap<Integer> map =
-                HeapTrackingConcurrentLongHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map =
+                HeapTrackingConcurrentLongObjectHashMap.newMap( EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
                 Interval.oneTo(100),
                 each -> {
@@ -118,8 +119,8 @@ public class HeapTrackingConcurrentLongHashMapTest {
 
     @Test
     public void concurrentRemoveAndPutIfAbsent() {
-        HeapTrackingConcurrentLongHashMap<Integer> map =
-                HeapTrackingConcurrentLongHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map =
+                HeapTrackingConcurrentLongObjectHashMap.newMap( EmptyMemoryTracker.INSTANCE);
         ParallelIterate.forEach(
                 Interval.oneTo(100),
                 each -> {
@@ -148,8 +149,8 @@ public class HeapTrackingConcurrentLongHashMapTest {
 
     @RepeatedTest(10)
     void computeTest() throws Throwable {
-        HeapTrackingConcurrentLongHashMap<Integer> map =
-                HeapTrackingConcurrentLongHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map =
+                HeapTrackingConcurrentLongObjectHashMap.newMap( EmptyMemoryTracker.INSTANCE);
         int max = 10000;
         ThreadLocalRandom random = ThreadLocalRandom.current();
         int randomStart = random.nextInt(0, 100);
@@ -173,7 +174,7 @@ public class HeapTrackingConcurrentLongHashMapTest {
         }
     }
 
-    private record Contestant(HeapTrackingConcurrentLongHashMap<Integer> map, int start, int end) implements Runnable {
+    private record Contestant(HeapTrackingConcurrentLongObjectHashMap<Integer> map, int start, int end) implements Runnable {
 
         @Override
         public void run() {
@@ -190,9 +191,9 @@ public class HeapTrackingConcurrentLongHashMapTest {
         }
     }
 
-    private <K, V> HeapTrackingConcurrentLongHashMap<V> newMapWithKeysValues(long key1, V value1, long key2, V value2) {
-        HeapTrackingConcurrentLongHashMap<V> map =
-                HeapTrackingConcurrentLongHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+    private <K, V> HeapTrackingConcurrentLongObjectHashMap<V> newMapWithKeysValues( long key1, V value1, long key2, V value2) {
+        HeapTrackingConcurrentLongObjectHashMap<V> map =
+                HeapTrackingConcurrentLongObjectHashMap.newMap( EmptyMemoryTracker.INSTANCE);
         map.put(key1, value1);
         map.put(key2, value2);
         return map;

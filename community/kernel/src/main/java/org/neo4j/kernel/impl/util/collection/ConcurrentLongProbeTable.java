@@ -25,7 +25,7 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Iterator;
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.neo4j.collection.trackable.HeapTrackingConcurrentLongHashMap;
+import org.neo4j.collection.trackable.HeapTrackingConcurrentLongObjectHashMap;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
@@ -34,7 +34,7 @@ public class ConcurrentLongProbeTable<V extends Measurable> extends DefaultClose
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(ConcurrentLongProbeTable.class);
 
     private final MemoryTracker scopedMemoryTracker;
-    private HeapTrackingConcurrentLongHashMap<ConcurrentBag<V>> map;
+    private HeapTrackingConcurrentLongObjectHashMap<ConcurrentBag<V>> map;
 
     public static <V extends Measurable> ConcurrentLongProbeTable<V> createLongProbeTable(MemoryTracker memoryTracker) {
         MemoryTracker scopedMemoryTracker = memoryTracker.getScopedMemoryTracker();
@@ -44,7 +44,7 @@ public class ConcurrentLongProbeTable<V extends Measurable> extends DefaultClose
 
     private ConcurrentLongProbeTable(MemoryTracker scopedMemoryTracker) {
         this.scopedMemoryTracker = scopedMemoryTracker;
-        this.map = HeapTrackingConcurrentLongHashMap.newMap(scopedMemoryTracker);
+        this.map = HeapTrackingConcurrentLongObjectHashMap.newMap( scopedMemoryTracker);
     }
 
     public void put(long key, V value) {
