@@ -53,6 +53,10 @@ case class FeatureDatabaseManagementService(private val databaseManagementServic
 
   def registerProcedure(procedure: Class[_]): Unit = globalProcedures.registerProcedure(procedure)
 
+  def registerFunction(function: Class[_]): Unit = globalProcedures.registerFunction(function)
+
+  def registerAggregationFunction(function: Class[_]): Unit = globalProcedures.registerAggregationFunction(function)
+
   def clearQueryCaches(): Unit = executionEngine.clearQueryCaches()
 
   def begin(): CypherExecutorTransaction = cypherExecutor.beginTransaction()

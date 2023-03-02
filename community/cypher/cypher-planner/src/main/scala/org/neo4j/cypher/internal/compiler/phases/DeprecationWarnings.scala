@@ -32,12 +32,15 @@ import org.neo4j.cypher.internal.frontend.phases.VisitorPhase
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
+import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
+import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.exceptions.InternalException
 
 /**
- * Find calls to deprecated procedures and generate warnings for them.
+ * Find calls to deprecated procedures and functions and generate warnings for them.
  */
 case object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {
   override def visit(value: BaseState, context: BaseContext): Unit = {
@@ -50,6 +53,12 @@ case object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseS
     statement.folder.treeFold(Set.empty[InternalNotification]) {
       case f@ResolvedCall(ProcedureSignature(name, _, _, Some(deprecatedBy), _, _, _, _, _, _, _), _, _, _, _, _) =>
         seq => SkipChildren(seq + DeprecatedProcedureNotification(f.position, name.toString, deprecatedBy))
+      case f@ResolvedFunctionInvocation(
+          _,
+          Some(UserFunctionSignature(name, _, _, Some(deprecatedBy), _, _, _, _, _)),
+          _
+        ) =>
+        seq => SkipChildren(seq + DeprecatedFunctionNotification(f.position, name.toString, deprecatedBy))
       case _:UnresolvedCall =>
         throw new InternalException("Expected procedures to have been resolved already")
     }
