@@ -68,6 +68,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.junit.jupiter.api.AfterEach;
@@ -93,6 +94,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
@@ -119,10 +121,12 @@ import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.extension.context.ExtensionContext;
 import org.neo4j.kernel.impl.api.tracer.DefaultTracer;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -659,6 +663,122 @@ class RecoveryIT {
         } finally {
             managementService.shutdown();
         }
+    }
+
+    @Test
+    void recoverRedefinedIndex() throws Exception {
+        // The situation in TX logs we are trying create:
+        // +[idx=3; 1 slot] ... [checkpoint] ... -[idx=3; 1 slot] ... +[idx=3; 2 slots]
+        // The situation above means that idx=3 has 1 slot according to schema store, but 2 on disk after crash.
+        // The recovery procedure used to blow up when this happened
+
+        GraphDatabaseService database = createDatabase();
+        Label label = Label.label("myLabel");
+        String property1 = "prop1";
+        String property2 = "prop2";
+        String rangeIndex = "range index";
+
+        try (Transaction transaction = database.beginTx()) {
+            transaction
+                    .schema()
+                    .indexFor(label)
+                    .on(property1)
+                    .withIndexType(IndexType.RANGE)
+                    .withName(rangeIndex)
+                    .create();
+            transaction.commit();
+        }
+        awaitIndexesOnline(database);
+
+        try (Transaction tx = database.beginTx()) {
+            Node node = tx.createNode(label);
+            node.setProperty(property1, "value1");
+            tx.commit();
+        }
+
+        // This is important to create the situation described at the beginning of the test.
+        // If we don't do this, the schema store will be empty after reverse recovery,
+        // which is an absolutely different situation.
+        forceCheckpoint(database);
+
+        long droppedIndexId;
+        try (Transaction tx = database.beginTx()) {
+            var indexDefinition = tx.schema().getIndexByName(rangeIndex);
+            droppedIndexId =
+                    ((IndexDefinitionImpl) indexDefinition).getIndexReference().getId();
+            indexDefinition.drop();
+
+            tx.commit();
+        }
+
+        try (Transaction tx = database.beginTx()) {
+            Node node = tx.createNode(label);
+            node.setProperty(property1, "value2");
+            node.setProperty(property2, "another value");
+            tx.commit();
+        }
+
+        // This is needed in order for the new index to have the same ID as the deleted one.
+        performIdMaintenance(database);
+
+        try (Transaction transaction = database.beginTx()) {
+            transaction
+                    .schema()
+                    .indexFor(label)
+                    .on(property1)
+                    .on(property2)
+                    .withIndexType(IndexType.RANGE)
+                    .withName(rangeIndex)
+                    .create();
+            transaction.commit();
+        }
+
+        try (Transaction tx = database.beginTx()) {
+            var indexDefinition = tx.schema().getIndexByName(rangeIndex);
+            // If the IDs don't match it is a different scenario than we intended to test.
+            assertEquals(
+                    droppedIndexId,
+                    ((IndexDefinitionImpl) indexDefinition).getIndexReference().getId());
+        }
+        awaitIndexesOnline(database);
+
+        try (Transaction tx = database.beginTx()) {
+            Node node = tx.createNode(label);
+            node.setProperty(property1, "value3");
+            node.setProperty(property2, "another value");
+            tx.commit();
+        }
+
+        managementService.shutdown();
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+
+        recoverDatabase();
+
+        GraphDatabaseAPI recoveredDatabase = createDatabase();
+        awaitIndexesOnline(recoveredDatabase);
+        try (InternalTransaction transaction = (InternalTransaction) recoveredDatabase.beginTx()) {
+            verifyNodeIndexEntries(2, rangeIndex, transaction, allEntries());
+            var props = transaction.getAllNodes().stream()
+                    .map(n -> n.getProperty(property1))
+                    .collect(Collectors.toList());
+            assertThat(props).containsExactly("value1", "value2", "value3");
+        } finally {
+            managementService.shutdown();
+        }
+    }
+
+    private void performIdMaintenance(GraphDatabaseService database) {
+        ((GraphDatabaseAPI) database)
+                .getDependencyResolver()
+                .resolveDependency(IdController.class)
+                .maintenance();
+    }
+
+    private void forceCheckpoint(GraphDatabaseService database) throws IOException {
+        ((GraphDatabaseAPI) database)
+                .getDependencyResolver()
+                .resolveDependency(CheckPointer.class)
+                .forceCheckPoint(new SimpleTriggerInfo("test checkpoint"));
     }
 
     private void verifyRelationshipIndexEntries(
