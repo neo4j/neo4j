@@ -394,6 +394,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Integer> cypher_pipelined_operator_fusion_over_pipeline_limit = newBuilder(
                     "internal.cypher.pipelined.operator_fusion_over_pipeline_limit", INT, 8)
             .build();
+
     public enum EagerAnalysisImplementation {
         IR,
         LP

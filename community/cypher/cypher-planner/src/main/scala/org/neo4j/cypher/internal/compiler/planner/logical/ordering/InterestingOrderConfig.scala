@@ -54,7 +54,7 @@ object InterestingOrderConfig {
   def interestingOrderForPart(
     query: SinglePlannerQuery,
     isRhs: Boolean,
-    isHorizon: Boolean,
+    isHorizon: Boolean
   ): InterestingOrderConfig = {
     val readOnly = if (isHorizon) query.tail.forall(_.readOnly) else query.readOnly
 
