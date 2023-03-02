@@ -1316,4 +1316,92 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("a", "rs", "end").withRows(expected)
   }
+
+  test("should project endpoints - start in scope and is reference") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes: Seq[Node], bNodes: Seq[Node]) = given { bipartiteGraph(nNodes, "A", "B", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(x)-[r]->(y)", startInScope = true, endInScope = false)
+      .expandAll("(x)-[r]->()")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((aNodes ++ bNodes).map(n => Array[Any](n)): _*))
+
+    // then
+    val expected = for {
+      a <- aNodes
+      b <- bNodes
+    } yield {
+      Array(a, b)
+    }
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - end node in scope and is reference") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes: Seq[Node], bNodes: Seq[Node]) = given { bipartiteGraph(nNodes, "A", "B", "R") }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "y")
+      .projectEndpoints("(y)<-[r]-(x)", startInScope = false, endInScope = true)
+      .expandAll("(x)-[r]->()")
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((aNodes ++ bNodes).map(n => Array[Any](n)): _*))
+
+    // then
+    val expected = for {
+      a <- aNodes
+      b <- bNodes
+    } yield {
+      Array(a, b)
+    }
+
+    runtimeResult should beColumns("x", "y").withRows(expected)
+  }
+
+  test("should project endpoints - varlength - start node in scope and is reference") {
+    // given
+    val nNodes = Math.sqrt(sizeHint).ceil.toInt
+    val (aNodes, bNodes, _, _) = given {
+      bidirectionalBipartiteGraph(nNodes, "A", "B", "RA", "RB")
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "r", "y")
+      .projectEndpoints("(x)-[r*]-(y)", startInScope = true, endInScope = false)
+      .expand("(x)<-[r*1..2]-()", projectedDir = SemanticDirection.INCOMING)
+      .input(variables = Seq("x"))
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((aNodes ++ bNodes).map(n => Array[Any](n)): _*))
+
+    // then
+    val expected = (for {
+      node <- aNodes ++ bNodes
+      oneStep =
+        node.getRelationships(INCOMING).asScala.map(r =>
+          Array[Any](node, Collections.singletonList(r), r.getOtherNode(node))
+        )
+      twoSteps = oneStep.flatMap {
+        case Array(_, rs, b) =>
+          val r = rs.asInstanceOf[java.util.List[Relationship]].get(0)
+          b.asInstanceOf[Node].getRelationships(INCOMING).asScala.map(r2 =>
+            Array[Any](node, java.util.List.of(r, r2), r2.getOtherNode(b.asInstanceOf[Node]))
+          )
+      }
+    } yield oneStep ++ twoSteps).flatten
+
+    runtimeResult should beColumns("x", "r", "y").withRows(expected)
+  }
 }
