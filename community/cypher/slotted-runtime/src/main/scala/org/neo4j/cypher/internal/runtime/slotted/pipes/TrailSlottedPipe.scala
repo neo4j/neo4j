@@ -65,7 +65,7 @@ case class SlottedTrailState(
   node: Long,
   groupNodes: HeapTrackingArrayList[ListValue],
   groupRelationships: HeapTrackingArrayList[ListValue],
-  override val relationshipsSeen: HeapTrackingLongHashSet,
+  relationshipsSeen: HeapTrackingLongHashSet,
   iterations: Int,
   closeGroupsOnClose: Boolean
 ) extends AnyValue with TrailState {
@@ -80,7 +80,7 @@ case class SlottedTrailState(
 
   override def map[T](mapper: ValueMapper[T]): T = throw new UnsupportedOperationException()
 
-  override def getTypeName: String = "PipelinedTrailState"
+  override def getTypeName: String = "SlottedTrailState"
 
   override def estimatedHeapUsage(): Long = SlottedTrailState.SHALLOW_SIZE
 
