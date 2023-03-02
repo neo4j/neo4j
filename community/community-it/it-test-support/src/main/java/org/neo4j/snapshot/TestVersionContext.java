@@ -23,6 +23,7 @@ import java.io.PrintStream;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.cypher.internal.javacompat.SnapshotExecutionEngine;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
@@ -50,7 +51,7 @@ public class TestVersionContext extends TransactionVersionContext {
             TransactionIdSnapshotFactory transactionIdSnapshotFactory,
             String databaseName,
             boolean wrongLastClosedTxId) {
-        super(transactionIdSnapshotFactory);
+        super(transactionIdSnapshotFactory, OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY);
         this.databaseName = databaseName;
         this.wrongLastClosedTxId = wrongLastClosedTxId;
     }

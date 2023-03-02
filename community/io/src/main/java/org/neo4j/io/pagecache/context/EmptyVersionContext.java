@@ -63,4 +63,9 @@ public class EmptyVersionContext implements VersionContext {
     public long[] notVisibleTransactionIds() {
         return EMPTY_LONG_ARRAY;
     }
+
+    @Override
+    public long oldestVisibleTransactionNumber() {
+        return 0;
+    }
 }

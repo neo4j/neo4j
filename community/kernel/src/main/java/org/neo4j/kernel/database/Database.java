@@ -77,6 +77,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -394,7 +395,7 @@ public class Database extends AbstractDatabase {
         // Check the tail of transaction logs and validate version
         LogTailMetadata tailMetadata = getLogTail();
         long lastClosedTxId = tailMetadata.getLastCommittedTransaction().transactionId();
-        initialiseContextFactory(() -> new TransactionIdSnapshot(lastClosedTxId));
+        initialiseContextFactory(() -> new TransactionIdSnapshot(lastClosedTxId), () -> lastClosedTxId);
 
         storageExists = storageEngineFactory.storageExists(fs, databaseLayout);
         validateStoreAndTxLogs(tailMetadata, cursorContextFactory, storageExists);
@@ -418,7 +419,7 @@ public class Database extends AbstractDatabase {
             // latest info
             tailMetadata = getLogTail();
             long recoveredTxId = tailMetadata.getLastCommittedTransaction().transactionId();
-            initialiseContextFactory(() -> new TransactionIdSnapshot(recoveredTxId));
+            initialiseContextFactory(() -> new TransactionIdSnapshot(recoveredTxId), () -> recoveredTxId);
         }
 
         metadataCache = databaseDependencies.satisfyDependency(new MetadataCache(tailMetadata));
@@ -459,7 +460,9 @@ public class Database extends AbstractDatabase {
 
         var metadataProvider = databaseDependencies.satisfyDependency(storageEngine.metadataProvider());
 
-        initialiseContextFactory(getTransactionIdSnapshotFactory(databaseConfig, metadataProvider));
+        initialiseContextFactory(
+                getTransactionIdSnapshotFactory(databaseConfig, metadataProvider),
+                getOldestTransactionIdFactory(databaseConfig, () -> kernelModule));
         elementIdMapper = new DefaultElementIdMapperV1(namedDatabaseId);
 
         // Recreate the logFiles after storage engine to get access to dependencies
@@ -572,8 +575,10 @@ public class Database extends AbstractDatabase {
         // no specific actions
     }
 
-    private void initialiseContextFactory(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {
-        cursorContextFactory.init(transactionIdSnapshotFactory);
+    private void initialiseContextFactory(
+            TransactionIdSnapshotFactory transactionIdSnapshotFactory,
+            OldestTransactionIdFactory oldestTransactionIdFactory) {
+        cursorContextFactory.init(transactionIdSnapshotFactory, oldestTransactionIdFactory);
     }
 
     @Override
@@ -1190,17 +1195,24 @@ public class Database extends AbstractDatabase {
     }
 
     private static LockService createLockService(DatabaseConfig databaseConfig) {
-        return isMultiVersioned(databaseConfig) ? new ReentrantLockService() : LockService.NO_LOCK_SERVICE;
+        return isNotMultiVersioned(databaseConfig) ? new ReentrantLockService() : LockService.NO_LOCK_SERVICE;
     }
 
     private static TransactionIdSnapshotFactory getTransactionIdSnapshotFactory(
             DatabaseConfig databaseConfig, MetadataProvider metadataProvider) {
-        return isMultiVersioned(databaseConfig)
+        return isNotMultiVersioned(databaseConfig)
                 ? (() -> new TransactionIdSnapshot(metadataProvider.getLastClosedTransactionId()))
                 : metadataProvider::getClosedTransactionSnapshot;
     }
 
-    private static boolean isMultiVersioned(DatabaseConfig databaseConfig) {
+    private static OldestTransactionIdFactory getOldestTransactionIdFactory(
+            DatabaseConfig databaseConfig, Supplier<DatabaseKernelModule> kernelModule) {
+        return isNotMultiVersioned(databaseConfig)
+                ? OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY
+                : (() -> kernelModule.get().kernelTransactions().oldestVisibleTransactionNumber());
+    }
+
+    private static boolean isNotMultiVersioned(DatabaseConfig databaseConfig) {
         return !"multiversion".equals(databaseConfig.get(db_format));
     }
 }

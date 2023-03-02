@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.context;
 
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
+import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
@@ -31,12 +32,16 @@ import org.neo4j.io.pagecache.context.VersionContext;
  */
 public class TransactionVersionContext implements VersionContext {
     private final TransactionIdSnapshotFactory transactionIdSnapshotFactory;
+    private final OldestTransactionIdFactory oldestTransactionIdFactory;
     private long transactionId = BASE_TX_ID;
     private TransactionIdSnapshot transactionIds;
+    private long oldestTransactionId = BASE_TX_ID;
     private boolean dirty;
 
-    public TransactionVersionContext(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {
+    public TransactionVersionContext(
+            TransactionIdSnapshotFactory transactionIdSnapshotFactory, OldestTransactionIdFactory oldestIdFactory) {
         this.transactionIdSnapshotFactory = transactionIdSnapshotFactory;
+        this.oldestTransactionIdFactory = oldestIdFactory;
     }
 
     @Override
@@ -49,6 +54,7 @@ public class TransactionVersionContext implements VersionContext {
     public void initWrite(long committingTxId) {
         assert committingTxId >= BASE_TX_ID;
         transactionId = committingTxId;
+        oldestTransactionId = oldestTransactionIdFactory.oldestTransactionId();
     }
 
     @Override
@@ -69,6 +75,11 @@ public class TransactionVersionContext implements VersionContext {
     @Override
     public long[] notVisibleTransactionIds() {
         return transactionIds.notVisibleTransactions();
+    }
+
+    @Override
+    public long oldestVisibleTransactionNumber() {
+        return oldestTransactionId;
     }
 
     @Override

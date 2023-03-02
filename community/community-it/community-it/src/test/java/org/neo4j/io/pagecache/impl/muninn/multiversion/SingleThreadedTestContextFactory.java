@@ -24,6 +24,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshot;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
@@ -88,7 +89,9 @@ public class SingleThreadedTestContextFactory extends CursorContextFactory {
         private final MutableTransactionSnapshotSupplier snapshotSupplier = new MutableTransactionSnapshotSupplier();
 
         @Override
-        public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {}
+        public void init(
+                TransactionIdSnapshotFactory transactionIdSnapshotFactory,
+                OldestTransactionIdFactory oldestTransactionIdFactory) {}
 
         @Override
         public VersionContext createVersionContext() {
@@ -101,7 +104,7 @@ public class SingleThreadedTestContextFactory extends CursorContextFactory {
         private final MutableTransactionSnapshotSupplier snapshotSupplier;
 
         TestTransactionVersionContext(MutableTransactionSnapshotSupplier snapshotSupplier) {
-            super(snapshotSupplier);
+            super(snapshotSupplier, OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY);
             this.snapshotSupplier = snapshotSupplier;
         }
     }

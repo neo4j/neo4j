@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.context;
 import static org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory.EMPTY_SNAPSHOT_FACTORY;
 
 import java.util.Objects;
+import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
@@ -32,15 +33,19 @@ import org.neo4j.io.pagecache.context.VersionContextSupplier;
  */
 public class TransactionVersionContextSupplier implements VersionContextSupplier {
     private TransactionIdSnapshotFactory transactionIdSnapshotFactory = EMPTY_SNAPSHOT_FACTORY;
+    private OldestTransactionIdFactory oldestIdFactory = OldestTransactionIdFactory.EMPTY_OLDEST_ID_FACTORY;
 
     @Override
-    public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {
+    public void init(
+            TransactionIdSnapshotFactory transactionIdSnapshotFactory,
+            OldestTransactionIdFactory oldestTransactionIdFactory) {
         this.transactionIdSnapshotFactory = Objects.requireNonNull(transactionIdSnapshotFactory);
+        this.oldestIdFactory = oldestTransactionIdFactory;
     }
 
     @Override
     public VersionContext createVersionContext() {
-        var versionContext = new TransactionVersionContext(transactionIdSnapshotFactory);
+        var versionContext = new TransactionVersionContext(transactionIdSnapshotFactory, oldestIdFactory);
         versionContext.initRead();
         return versionContext;
     }

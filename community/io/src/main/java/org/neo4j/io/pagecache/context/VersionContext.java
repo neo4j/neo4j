@@ -93,4 +93,10 @@ public interface VersionContext {
      * Used in multi versioned stores as part of visibility criteria.
      */
     long[] notVisibleTransactionIds();
+
+    /**
+     * Global oldest visible transaction number at the time this context is initialized for write.
+     * Any version lower than this one isn't visible by any active or future transaction and can be removed.
+     */
+    long oldestVisibleTransactionNumber();
 }

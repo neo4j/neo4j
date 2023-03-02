@@ -46,7 +46,9 @@ public class CursorContextFactory {
         return new CursorContext(this, cursorTracer, versionContextSupplier.createVersionContext());
     }
 
-    public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {
-        versionContextSupplier.init(transactionIdSnapshotFactory);
+    public void init(
+            TransactionIdSnapshotFactory transactionIdSnapshotFactory,
+            OldestTransactionIdFactory oldestTransactionIdFactory) {
+        versionContextSupplier.init(transactionIdSnapshotFactory, oldestTransactionIdFactory);
     }
 }

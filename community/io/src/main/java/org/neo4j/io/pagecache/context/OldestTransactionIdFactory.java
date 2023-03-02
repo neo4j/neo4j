@@ -19,22 +19,10 @@
  */
 package org.neo4j.io.pagecache.context;
 
-/**
- * {@link VersionContextSupplier} version that supply same {@link EmptyVersionContext} each time for cases
- * where version context mechanics is not required
- */
-public class EmptyVersionContextSupplier implements VersionContextSupplier {
-    public static final VersionContextSupplier EMPTY = new EmptyVersionContextSupplier();
+@FunctionalInterface
+public interface OldestTransactionIdFactory {
 
-    private EmptyVersionContextSupplier() {}
+    OldestTransactionIdFactory EMPTY_OLDEST_ID_FACTORY = () -> 0;
 
-    @Override
-    public void init(
-            TransactionIdSnapshotFactory transactionIdSnapshotFactory,
-            OldestTransactionIdFactory oldestTransactionIdFactory) {}
-
-    @Override
-    public VersionContext createVersionContext() {
-        return EmptyVersionContext.EMPTY;
-    }
+    long oldestTransactionId();
 }

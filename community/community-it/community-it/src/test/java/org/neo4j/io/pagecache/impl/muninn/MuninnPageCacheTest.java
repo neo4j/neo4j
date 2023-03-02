@@ -94,6 +94,7 @@ import org.neo4j.io.pagecache.PageSwapperFactory;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.OldestTransactionIdFactory;
 import org.neo4j.io.pagecache.context.TransactionIdSnapshotFactory;
 import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.io.pagecache.context.VersionContextSupplier;
@@ -2091,6 +2092,11 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         public long[] notVisibleTransactionIds() {
             return EMPTY_LONG_ARRAY;
         }
+
+        @Override
+        public long oldestVisibleTransactionNumber() {
+            return 0;
+        }
     }
 
     private static class InfoTracer extends DefaultPageCacheTracer {
@@ -2331,7 +2337,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         }
 
         @Override
-        public void init(TransactionIdSnapshotFactory transactionIdSnapshotFactory) {}
+        public void init(
+                TransactionIdSnapshotFactory transactionIdSnapshotFactory,
+                OldestTransactionIdFactory oldestTransactionIdFactory) {}
 
         @Override
         public VersionContext createVersionContext() {
