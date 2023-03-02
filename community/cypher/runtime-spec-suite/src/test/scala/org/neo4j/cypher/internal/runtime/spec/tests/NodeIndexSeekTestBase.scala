@@ -1108,6 +1108,36 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withSingleRow(nodes(10 / 10))
   }
 
+  testWithIndex(
+    _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
+    "should support composite index with duplicated seek term"
+  ) { index =>
+    val nodes = given {
+      nodeGraph(5, "Milk")
+      indexedNodeGraph(index.indexType, "Honey", "prop", "prop2") {
+        case (node, i) if i % 10 == 0 =>
+          node.setProperty("prop", i)
+          node.setProperty("prop2", i.toString)
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filter("true")
+      .nodeIndexOperator(
+        "x:Honey(prop IN ???, prop2 = '10')",
+        indexType = index.indexType,
+        paramExpr = Some(listOfInt(10, 10))
+      )
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(nodes(10 / 10))
+  }
+
   testWithIndex(_.supports(EXACT), "should cache properties with exact seek") { index =>
     val propertyType = randomAmong(index.querySupport(EXACT))
     val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))

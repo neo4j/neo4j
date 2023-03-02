@@ -362,7 +362,9 @@ trait EntityIndexSeeker {
           case null         => Seq.empty
           case _ => throw new CypherTypeException(s"Expected the value for $inner to be a collection but it was not.")
         }
-        expr.flatMap(e => makeValueNeoSafe.safeOrEmpty(e).map(value => PropertyIndexQuery.exact(propertyId, value)))
+        expr.flatMap(e =>
+          makeValueNeoSafe.safeOrEmpty(e).map(value => PropertyIndexQuery.exact(propertyId, value))
+        ).distinct
 
       case CompositeQueryExpression(_) =>
         throw new InternalException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
