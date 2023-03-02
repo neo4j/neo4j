@@ -65,8 +65,14 @@ import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
+import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.CommandLogicalPlan
+import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
@@ -84,6 +90,8 @@ import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlanExtension
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -93,16 +101,26 @@ import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.NodeCountFromCountStore
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.NodeIndexContainsScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
+import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
+import org.neo4j.cypher.internal.logical.plans.OrderedUnion
+import org.neo4j.cypher.internal.logical.plans.PartialSort
+import org.neo4j.cypher.internal.logical.plans.PartialTop
 import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
+import org.neo4j.cypher.internal.logical.plans.Projection
+import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
@@ -111,7 +129,11 @@ import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.TestOnlyPlan
+import org.neo4j.cypher.internal.logical.plans.Top
+import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
@@ -131,6 +153,8 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
+
+import scala.collection.immutable.ListSet
 
 /**
  * Finds all reads for a single plan.
@@ -564,15 +588,23 @@ object ReadFinder {
             ))(acc)
         }
 
-      case Expand(_, _, _, relTypes, to, relName, _) =>
-        processExpand(relTypes, to, relName)
+      case Expand(_, from, _, relTypes, to, relName, _) =>
+        processExpand(from, relTypes, to, relName)
 
-      case OptionalExpand(_, _, _, relTypes, to, relName, _, _) =>
-        processExpand(relTypes, to, relName)
+      case OptionalExpand(_, from, _, relTypes, to, relName, _, _) =>
+        processExpand(from, relTypes, to, relName)
 
-      case VarExpand(_, _, _, _, relTypes, to, relName, _, _, _, _) =>
+      case VarExpand(_, from, _, _, relTypes, to, relName, _, _, _, _) =>
         // relName is actually a List of relationships but we can consider it to be a Relationship Variable when doing eagerness analysis
-        processExpand(relTypes, to, relName)
+        processExpand(from, relTypes, to, relName)
+
+      case PruningVarExpand(_, from, _, relTypes, to, _, _, _, _) =>
+        // PruningVarExpand does not introduce a rel variable, but we need one to attach the predicates to.
+        processExpand(from, relTypes, to, anonymousVariableNameGenerator.nextName)
+
+      case BFSPruningVarExpand(_, from, _, relTypes, to, _, _, _, _, _) =>
+        // bfsPruningVarExpand does not introduce a rel variable, but we need one to attach the predicates to.
+        processExpand(from, relTypes, to, anonymousVariableNameGenerator.nextName)
 
       case FindShortestPaths(
           _,
@@ -583,27 +615,131 @@ object ReadFinder {
           _,
           _
         ) =>
-        val relVariable = Variable(name)(InputPosition.NONE)
-        val hasRelTypes = HasTypes(relVariable, types)(InputPosition.NONE)
-        val (leftNode, rightNode) = nodes
-        PlanReads()
-          // relVariable is actually a List of relationships but we can consider it to be a Relationship Variable when doing eagerness analysis
-          .withIntroducedRelationshipVariable(relVariable)
-          .withAddedRelationshipFilterExpression(relVariable, hasRelTypes)
-          .withReferencedNodeVariable(Variable(leftNode)(InputPosition.NONE))
-          .withReferencedNodeVariable(Variable(rightNode)(InputPosition.NONE))
+        processShortestPaths(name, nodes, types)
+
+      case LegacyFindShortestPaths(
+          _,
+          ShortestPathPattern(_, PatternRelationship(name, nodes, _, types, _), _),
+          _,
+          _,
+          _
+        ) =>
+        processShortestPaths(name, nodes, types)
 
       case ProduceResult(_, columns) =>
-        val hasNode = columns.exists(semanticTable.containsNode)
-        val hasRel = columns.exists(semanticTable.containsRelationship)
-        var result = PlanReads()
-        if (hasNode) {
-          result = result.withUnknownNodePropertiesRead().withUnknownLabelsRead()
+        // A ProduceResult can reference entities. These must be captured with
+        // .withReferencesNodeVariable / .withReferencedRelationshipVariable
+        // However, this is only used to place an Eager correctly between a read and a later Delete.
+        // Since, there can be no Deletes after a ProduceResult, this information is currently not used.
+        columns.foldLeft(PlanReads()) { (acc, col) =>
+          var res = acc
+          if (semanticTable.containsNode(col)) {
+            res = res
+              .withReferencedNodeVariable(col)
+              .withUnknownNodePropertiesRead()
+              .withUnknownLabelsRead()
+          }
+          if (semanticTable.containsRelationship(col)) {
+            res = res
+              .withReferencedRelationshipVariable(col)
+              .withUnknownRelPropertiesRead()
+              .withUnknownTypesRead()
+          }
+          res
         }
-        if (hasRel) {
-          result = result.withUnknownRelPropertiesRead().withUnknownTypesRead()
-        }
-        result
+
+      case NodeHashJoin(nodes, _, _) =>
+        nodes.foldLeft(PlanReads())(_.withReferencedNodeVariable(_))
+
+      case LeftOuterHashJoin(nodes, _, _) =>
+        nodes.foldLeft(PlanReads())(_.withReferencedNodeVariable(_))
+
+      case RightOuterHashJoin(nodes, _, _) =>
+        nodes.foldLeft(PlanReads())(_.withReferencedNodeVariable(_))
+
+      case Sort(_, columns) =>
+        processPotentialEntityReferences(columns.map(_.id), semanticTable)
+
+      case PartialSort(_, columns1, columns2, _) =>
+        processPotentialEntityReferences((columns1 ++ columns2).map(_.id), semanticTable)
+
+      case Top(_, columns, _) =>
+        processPotentialEntityReferences(columns.map(_.id), semanticTable)
+
+      case Top1WithTies(_, columns) =>
+        processPotentialEntityReferences(columns.map(_.id), semanticTable)
+
+      case PartialTop(_, columns1, columns2, _, _) =>
+        processPotentialEntityReferences((columns1 ++ columns2).map(_.id), semanticTable)
+
+      case OrderedUnion(_, _, columns) =>
+        processPotentialEntityReferences(columns.map(_.id), semanticTable)
+
+      case ConditionalApply(_, _, columns) =>
+        processPotentialEntityReferences(columns, semanticTable)
+
+      case AntiConditionalApply(_, _, columns) =>
+        processPotentialEntityReferences(columns, semanticTable)
+
+      case RollUpApply(_, _, _ /* always a list */, variableToCollect) =>
+        processPotentialEntityReferences(Seq(variableToCollect), semanticTable)
+
+      case AssertSameNode(node, _, _) =>
+        PlanReads().withReferencedNodeVariable(node)
+
+      case AssertSameRelationship(rel, _, _) =>
+        PlanReads().withReferencedRelationshipVariable(rel)
+
+      case Input(nodes, rels, vars, _) =>
+        // An Input can introduce entities. These must be captured with
+        // .withIntroducedNodeVariable / .withIntroducedRelationshipVariable
+        // However, Input is always the left-most-leaf plan, and therefore stable and never part of a Conflict.
+        // We only include this to be prepared for potential future refactorings
+        Function.chain[PlanReads](Seq(
+          nodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
+          rels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
+          vars.foldLeft(_) { (acc, col) =>
+            var res = acc
+            if (semanticTable.containsNode(col)) {
+              res = res.withIntroducedNodeVariable(col)
+            }
+            if (semanticTable.containsRelationship(col)) {
+              res = res.withIntroducedRelationshipVariable(col)
+            }
+            res
+          }
+        ))(PlanReads())
+
+      case Optional(_, symbols) =>
+        processPotentialEntityReferences(symbols, semanticTable)
+
+      case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, _, _) =>
+        Function.chain[PlanReads](Seq(
+          if (startInScope) _.withReferencedNodeVariable(start) else _.withIntroducedNodeVariable(start),
+          if (endInScope) _.withReferencedNodeVariable(end) else _.withIntroducedNodeVariable(end),
+          // rel could even be a List[Relationship]
+          if (semanticTable.containsRelationship(rel)) _.withReferencedRelationshipVariable(rel) else identity,
+          if (types.nonEmpty) {
+            val relVar = Variable(rel)(InputPosition.NONE)
+            _.withAddedRelationshipFilterExpression(relVar, relTypeNamesToOrs(relVar, types))
+          } else identity
+        ))(PlanReads())
+
+      case Projection(_, discardSymbols, _) =>
+        // Projection.projectExpressions could actually contain introductions of entity variables.
+        // But, these will always refer to variables that have been "found" before,
+        // Thus no new entity is really introduced. Using `withIntroducedNodeVariable`
+        // would lead to unnecessary Eagers. See test
+        // "inserts no eager between create and stable AllNodeScan + Projection"
+        // The same argument also holds for other plans:
+        //  * Argument
+        //  * Unwind
+        //  * [Ordered]Aggregation
+        //  * [Ordered]Distinct
+        processPotentialEntityReferences(discardSymbols, semanticTable)
+
+      case TriadicSelection(_, _, _, sourceId, seenId, targetId) =>
+        Seq(sourceId, seenId, targetId).foldLeft(PlanReads())(_.withReferencedNodeVariable(_))
 
       case Create(_, nodes, rels) =>
         val createdNodes = nodes.map(_.idName)
@@ -655,6 +791,9 @@ object ReadFinder {
 
       case SetRelationshipProperty(_, relName, _, _) =>
         PlanReads().withReferencedRelationshipVariable(relName)
+
+      case _: PhysicalPlanningPlan | _: CommandLogicalPlan | _: LogicalLeafPlanExtension | _: TestOnlyPlan =>
+        throw new IllegalStateException(s"Unsupported plan in eagerness analysis: $plan")
 
       case _ => PlanReads()
     }
@@ -804,6 +943,31 @@ object ReadFinder {
     }
   }
 
+  private def processShortestPaths(name: String, nodes: (String, String), types: Seq[RelTypeName]): PlanReads = {
+    val relVariable = Variable(name)(InputPosition.NONE)
+    val hasRelTypes = HasTypes(relVariable, types)(InputPosition.NONE)
+    val (leftNode, rightNode) = nodes
+    PlanReads()
+      // relVariable is actually a List of relationships but we can consider it to be a Relationship Variable when doing eagerness analysis
+      .withIntroducedRelationshipVariable(relVariable)
+      .withAddedRelationshipFilterExpression(relVariable, hasRelTypes)
+      .withReferencedNodeVariable(Variable(leftNode)(InputPosition.NONE))
+      .withReferencedNodeVariable(Variable(rightNode)(InputPosition.NONE))
+  }
+
+  private def processPotentialEntityReferences(columns: Iterable[String], semanticTable: SemanticTable): PlanReads = {
+    columns.foldLeft(PlanReads()) { (acc, col) =>
+      var res = acc
+      if (semanticTable.containsNode(col)) {
+        res = res.withReferencedNodeVariable(col)
+      }
+      if (semanticTable.containsRelationship(col)) {
+        res = res.withReferencedRelationshipVariable(col)
+      }
+      res
+    }
+  }
+
   private def processNodeIndexPlan(varName: String, labelName: String, properties: Seq[IndexedProperty]): PlanReads = {
     val variable = Variable(varName)(InputPosition.NONE)
     val lN = LabelName(labelName)(InputPosition.NONE)
@@ -925,10 +1089,7 @@ object ReadFinder {
     val leftVariable = Variable(leftNode)(InputPosition.NONE)
     val rightVariable = Variable(rightNode)(InputPosition.NONE)
     val relationshipVariable = Variable(idName)(InputPosition.NONE)
-    val predicates = relTypes.map { typeName =>
-      HasTypes(relationshipVariable, Seq(typeName))(InputPosition.NONE)
-    }
-    val filterExpression = Ors(predicates)(InputPosition.NONE)
+    val filterExpression = relTypeNamesToOrs(relationshipVariable, relTypes)
     PlanReads()
       .withIntroducedNodeVariable(leftVariable)
       .withIntroducedNodeVariable(rightVariable)
@@ -953,20 +1114,28 @@ object ReadFinder {
       .withAddedRelationshipFilterExpression(relationshipVariable, hasTypes)
   }
 
-  private def processExpand(relTypes: Seq[RelTypeName], to: String, relName: String): PlanReads = {
-    val nodeVariable = Variable(to)(InputPosition.NONE)
+  private def processExpand(from: String, relTypes: Seq[RelTypeName], to: String, relName: String): PlanReads = {
     val relationshipVariable = Variable(relName)(InputPosition.NONE)
+    val res = PlanReads()
+      .withReferencedNodeVariable(from)
+      .withIntroducedNodeVariable(to)
+      .withIntroducedRelationshipVariable(relationshipVariable)
+
+    if (relTypes.isEmpty) {
+      res
+    } else {
+      val filterExpression = relTypeNamesToOrs(relationshipVariable, relTypes)
+      res.withAddedRelationshipFilterExpression(relationshipVariable, filterExpression)
+    }
+  }
+
+  /**
+   * @param relTypes must not be empty
+   */
+  private def relTypeNamesToOrs(relationshipVariable: Variable, relTypes: Seq[RelTypeName]): Expression = {
     val predicates = relTypes.map { typeName =>
       HasTypes(relationshipVariable, Seq(typeName))(InputPosition.NONE)
     }
-    val filterExpression = if (predicates.nonEmpty)
-      Ors(predicates)(InputPosition.NONE)
-    else
-      HasTypes(relationshipVariable, Seq())(InputPosition.NONE)
-    PlanReads()
-      .withIntroducedNodeVariable(nodeVariable)
-      .withIntroducedRelationshipVariable(relationshipVariable)
-      .withAddedRelationshipFilterExpression(relationshipVariable, filterExpression)
+    Ors.create(ListSet.from(predicates))
   }
-
 }

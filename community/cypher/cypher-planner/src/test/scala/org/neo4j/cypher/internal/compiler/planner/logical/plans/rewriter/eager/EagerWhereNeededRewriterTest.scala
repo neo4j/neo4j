@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setR
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
@@ -920,6 +921,18 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n:N")
       .filter("n:O")
       .unwind("n.prop AS prop")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test("inserts no eager between create and stable AllNodeScan + Projection") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("m"))
+      .projection("n AS n2")
       .allNodeScan("n")
     val plan = planBuilder.build()
     val result = eagerizePlan(planBuilder, plan)
@@ -3926,6 +3939,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))
         ))
@@ -3955,6 +3969,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(5))))
         ))
@@ -3986,6 +4001,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(5))))
         ))
@@ -4125,7 +4141,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .deleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))
+        ))
         .filterExpression(nestedPlanExpression)
         .allNodeScan("n")
         .build()
@@ -4167,6 +4186,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(5))))
         ))
@@ -5283,6 +5303,46 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("Should be eager in read/create conflict with PruningVarExpand") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .pruningVarExpand("(n)-[:R1|R2*1..2]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .pruningVarExpand("(n)-[r:R1|R2*1..2]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with BFSPruningVarExpand") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .bfsPruningVarExpand("(n)-[:R1|R2*1..2]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .bfsPruningVarExpand("(n)-[r:R1|R2*1..2]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   test("Should not be eager in read/create conflict with VarExpand with no overlapping types") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
@@ -5317,6 +5377,26 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .shortestPath("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with LegacyShortestPath") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .legacyShortestPath("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .legacyShortestPath("(n)-[r]->(m)")
         .allNodeScan("n")
         .build()
     )
@@ -6263,6 +6343,551 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
     val result = eagerizePlan(planBuilder, plan)
     result should equal(plan)
+  }
+
+  test("Should be eager in Delete/Read conflict with read in NodeHashJoin") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .nodeHashJoin("n")
+      .|.nodeByLabelScan("n", "B")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (NodeHashJoin)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .nodeHashJoin("n")
+        .|.nodeByLabelScan("n", "B")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in LeftOuterHashJoin") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .leftOuterHashJoin("n")
+      .|.nodeByLabelScan("n", "B")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (LeftOuterHashJoin)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .leftOuterHashJoin("n")
+        .|.nodeByLabelScan("n", "B")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in RightOuterHashJoin") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .rightOuterHashJoin("n")
+      .|.nodeByLabelScan("n", "B")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (RightOuterHashJoin)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .rightOuterHashJoin("n")
+        .|.nodeByLabelScan("n", "B")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in Sort") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .apply()
+      // Placed Sort on RHS of Apply. Sort is Eager, so if it was on top, we would not need an Eager.
+      .|.sort(Seq(Descending("n")))
+      .|.nodeByLabelScan("n", "A")
+      .unwind("[1,2,3] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 4 (Sort)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.sort(Seq(Descending("n")))
+        .|.nodeByLabelScan("n", "A")
+        .unwind("[1,2,3] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in PartialSort") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .partialSort(Seq(Ascending("x")), Seq(Descending("n")))
+      .apply()
+      .|.nodeByLabelScan("n", "A")
+      .unwind("[1,2,3] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (PartialSort)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .partialSort(Seq(Ascending("x")), Seq(Descending("n")))
+        .apply()
+        .|.nodeByLabelScan("n", "A")
+        .unwind("[1,2,3] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in Top") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .apply()
+      // Placed Top on RHS of Apply. Top is Eager, so if it was on top, we would not need an Eager.
+      .|.top(Seq(Descending("n")), 1)
+      .|.nodeByLabelScan("n", "A")
+      .unwind("[1,2,3] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 4 (Top)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.top(Seq(Descending("n")), 1)
+        .|.nodeByLabelScan("n", "A")
+        .unwind("[1,2,3] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in Top1WithTies") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .apply()
+      // Placed Top on RHS of Apply. Top is Eager, so if it was on top, we would not need an Eager.
+      .|.top1WithTies(Seq(Descending("n")))
+      .|.nodeByLabelScan("n", "A")
+      .unwind("[1,2,3] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 4 (Top1WithTies)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.top1WithTies(Seq(Descending("n")))
+        .|.nodeByLabelScan("n", "A")
+        .unwind("[1,2,3] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in PartialTop") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .partialTop(Seq(Ascending("x")), Seq(Descending("n")), 1)
+      .apply()
+      .|.nodeByLabelScan("n", "A")
+      .unwind("[1,2,3] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (PartialTop)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .partialTop(Seq(Ascending("x")), Seq(Descending("n")), 1)
+        .apply()
+        .|.nodeByLabelScan("n", "A")
+        .unwind("[1,2,3] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in OrderedUnion") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .orderedUnion(Seq(Ascending("n")))
+      .|.nodeByLabelScan("n", "B")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (OrderedUnion)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .orderedUnion(Seq(Ascending("n")))
+        .|.nodeByLabelScan("n", "B")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in ConditionalApply") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .conditionalApply("n")
+      .|.argument("n")
+      .apply()
+      .|.nodeByLabelScan("n", "A")
+      .unwind("[1,2,3] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (ConditionalApply)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .conditionalApply("n")
+        .|.argument("n")
+        .apply()
+        .|.nodeByLabelScan("n", "A")
+        .unwind("[1,2,3] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in AntiConditionalApply") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .antiConditionalApply("n")
+      .|.argument("n")
+      .apply()
+      .|.nodeByLabelScan("n", "A")
+      .unwind("[1,2,3] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (AntiConditionalApply)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .antiConditionalApply("n")
+        .|.argument("n")
+        .apply()
+        .|.nodeByLabelScan("n", "A")
+        .unwind("[1,2,3] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in RollUpApply") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .rollUpApply("list", "n")
+      .|.expand("(n)-[r]->(m)")
+      .|.argument("n")
+      .apply()
+      .|.nodeByLabelScan("n", "A")
+      .unwind("[1,2,3] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        .eager(ListSet(
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4)))),
+          // Important that this is ID 3 (RollUpApply)
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))
+        ))
+        .rollUpApply("list", "n")
+        .|.expand("(n)-[r]->(m)")
+        .|.argument("n")
+        .apply()
+        .|.nodeByLabelScan("n", "A")
+        .unwind("[1,2,3] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in AssertSameNode") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .assertSameNode("n")
+      .|.nodeIndexOperator("n:B(prop = 0)", unique = true)
+      .nodeIndexOperator("n:A(prop = 0)", unique = true)
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (AssertSameNode)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .assertSameNode("n")
+        .|.nodeIndexOperator("n:B(prop = 0)", unique = true)
+        .nodeIndexOperator("n:A(prop = 0)", unique = true)
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in AssertSameRelationship") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteRelationship("r")
+      .assertSameRelationship("r")
+      .|.relationshipIndexOperator("(n2)-[r:R(prop < 100)]->(m2)", unique = true)
+      .relationshipIndexOperator("(n)-[r:R(prop > 0)]->(m)", unique = true)
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteRelationship("r")
+        // Important that this is ID 3 (AssertSameRelationship)
+        .eager(ListSet(ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))))
+        .assertSameRelationship("r")
+        .|.relationshipIndexOperator("(n2)-[r:R(prop < 100)]->(m2)", unique = true)
+        .relationshipIndexOperator("(n)-[r:R(prop > 0)]->(m)", unique = true)
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with read in Optional") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .apply()
+      .|.optional("n")
+      .|.filter("n:B")
+      .|.argument("n")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 4 (Optional)
+        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.optional("n")
+        .|.filter("n:B")
+        .|.argument("n")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with node read in ProjectEndpoints") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .projectEndpoints("(n)-[r]->(m2)", startInScope = true, endInScope = false)
+      .expand("(n)-[r]->(m)")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (ProjectEndpoints)
+        .eager(ListSet(
+          ReadDeleteConflict("m2", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))
+        ))
+        .projectEndpoints("(n)-[r]->(m2)", startInScope = true, endInScope = false)
+        .expand("(n)-[r]->(m)")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with relationship read in ProjectEndpoints") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteRelationship("r")
+      .projectEndpoints("(n)-[r]->(m2)", startInScope = true, endInScope = false)
+      .apply()
+      .|.allRelationshipsScan("(n)-[r]->(m)")
+      .unwind("[1,2,3] AS x")
+      .argument()
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteRelationship("r")
+        // Important that this is ID 3 (ProjectEndpoints)
+        .eager(ListSet(ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))))
+        .projectEndpoints("(n)-[r]->(m2)", startInScope = true, endInScope = false)
+        .apply()
+        .|.allRelationshipsScan("(n)-[r]->(m)")
+        .unwind("[1,2,3] AS x")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with node read in Projection (discardSymbols)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .detachDeleteNode("n")
+      .projection(Seq("1 AS one"), discard = Set("m"))
+      .cartesianProduct()
+      .|.nodeByLabelScan("m", "B")
+      .nodeByLabelScan("n", "A")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .detachDeleteNode("n")
+        // Important that this is ID 3 (Projection)
+        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .projection(Seq("1 AS one"), discard = Set("m"))
+        .cartesianProduct()
+        .|.nodeByLabelScan("m", "B")
+        .nodeByLabelScan("n", "A")
+        .build()
+    )
+  }
+
+  test("Should be eager in Delete/Read conflict with node read in TriadicSelection") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .deleteNode("a")
+      .triadicSelection(positivePredicate = false, "a", "b", "c")
+      .|.expandAll("(b)-[r2]->(c)")
+      .|.argument("b", "r1")
+      .expandAll("(a)-[r1]->(b)")
+      .nodeByLabelScan("a", "X")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .deleteNode("a")
+        // Important that this is ID 3 (TriadicSelection)
+        .eager(ListSet(
+          ReadDeleteConflict("a", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("b", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("c", Some(Conflict(Id(2), Id(3))))
+        ))
+        .triadicSelection(positivePredicate = false, "a", "b", "c")
+        .|.expandAll("(b)-[r2]->(c)")
+        .|.argument("b", "r1")
+        .expandAll("(a)-[r1]->(b)")
+        .nodeByLabelScan("a", "X")
+        .build()
+    )
   }
 
   // Ignored tests
