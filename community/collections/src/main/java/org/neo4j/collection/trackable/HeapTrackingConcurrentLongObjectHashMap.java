@@ -36,6 +36,12 @@ import org.neo4j.memory.MemoryTracker;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
+/**
+ * Specialization of HeapTrackingConcurrentHashMap that use long keys.
+ * <p>
+ * Implementation is based on org.eclipse.collections.impl.map.mutable.ConcurrentHashMap but adapted for using long keys.
+ * @param <V> the value type.
+ */
 @SuppressWarnings({"unchecked"})
 public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHeapTrackingConcurrentHash
         implements AutoCloseable {
