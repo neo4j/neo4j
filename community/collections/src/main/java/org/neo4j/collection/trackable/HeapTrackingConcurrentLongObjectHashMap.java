@@ -19,8 +19,7 @@
  */
 package org.neo4j.collection.trackable;
 
-import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
-import org.eclipse.collections.api.iterator.LongIterator;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -31,10 +30,9 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongFunction;
-
+import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.memory.MemoryTracker;
-
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 /**
  * Specialization of HeapTrackingConcurrentHashMap that use long keys.
@@ -46,16 +44,16 @@ import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHeapTrackingConcurrentHash
         implements AutoCloseable {
 
-    private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance( HeapTrackingConcurrentLongObjectHashMap.class);
+    private static final long SHALLOW_SIZE_THIS = shallowSizeOfInstance(HeapTrackingConcurrentLongObjectHashMap.class);
     private static final long SHALLOW_SIZE_WRAPPER = shallowSizeOfInstance(Entry.class);
 
-    public static <V> HeapTrackingConcurrentLongObjectHashMap<V> newMap( MemoryTracker memoryTracker) {
+    public static <V> HeapTrackingConcurrentLongObjectHashMap<V> newMap(MemoryTracker memoryTracker) {
         return newMap(memoryTracker, DEFAULT_INITIAL_CAPACITY);
     }
 
-    public static <V> HeapTrackingConcurrentLongObjectHashMap<V> newMap( MemoryTracker memoryTracker, int size) {
+    public static <V> HeapTrackingConcurrentLongObjectHashMap<V> newMap(MemoryTracker memoryTracker, int size) {
         memoryTracker.allocateHeap(SHALLOW_SIZE_THIS);
-        return new HeapTrackingConcurrentLongObjectHashMap<>( memoryTracker, size);
+        return new HeapTrackingConcurrentLongObjectHashMap<>(memoryTracker, size);
     }
 
     @Override
@@ -63,7 +61,7 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
         return SHALLOW_SIZE_WRAPPER;
     }
 
-    private HeapTrackingConcurrentLongObjectHashMap( MemoryTracker memoryTracker, int initialCapacity) {
+    private HeapTrackingConcurrentLongObjectHashMap(MemoryTracker memoryTracker, int initialCapacity) {
         super(memoryTracker, initialCapacity);
     }
 
@@ -744,7 +742,7 @@ public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHe
             long key = this.current.key;
             V val = this.current.value;
             this.current = null;
-            return HeapTrackingConcurrentLongObjectHashMap.this.remove( key, val);
+            return HeapTrackingConcurrentLongObjectHashMap.this.remove(key, val);
         }
     }
 

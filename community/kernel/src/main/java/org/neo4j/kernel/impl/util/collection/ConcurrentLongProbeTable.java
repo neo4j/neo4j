@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import org.apache.commons.lang3.mutable.MutableLong;
+import static java.util.Collections.emptyIterator;
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Iterator;
-
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.collection.trackable.HeapTrackingConcurrentLongObjectHashMap;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
-
-import static java.util.Collections.emptyIterator;
-import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class ConcurrentLongProbeTable<V extends Measurable> extends DefaultCloseListenable {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(ConcurrentLongProbeTable.class);
@@ -46,7 +44,7 @@ public class ConcurrentLongProbeTable<V extends Measurable> extends DefaultClose
 
     private ConcurrentLongProbeTable(MemoryTracker scopedMemoryTracker) {
         this.scopedMemoryTracker = scopedMemoryTracker;
-        this.map = HeapTrackingConcurrentLongObjectHashMap.newMap( scopedMemoryTracker);
+        this.map = HeapTrackingConcurrentLongObjectHashMap.newMap(scopedMemoryTracker);
     }
 
     public void put(long key, V value) {
