@@ -19,16 +19,18 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import static java.util.Collections.emptyIterator;
-import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.util.Iterator;
-import org.apache.commons.lang3.mutable.MutableLong;
+
 import org.neo4j.collection.trackable.HeapTrackingConcurrentLongObjectHashMap;
 import org.neo4j.internal.kernel.api.DefaultCloseListenable;
 import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
+
+import static java.util.Collections.emptyIterator;
+import static org.neo4j.memory.HeapEstimator.SCOPED_MEMORY_TRACKER_SHALLOW_SIZE;
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 public class ConcurrentLongProbeTable<V extends Measurable> extends DefaultCloseListenable {
     private static final long SHALLOW_SIZE = shallowSizeOfInstance(ConcurrentLongProbeTable.class);

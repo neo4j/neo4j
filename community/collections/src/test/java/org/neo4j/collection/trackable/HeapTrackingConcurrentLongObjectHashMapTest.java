@@ -19,17 +19,19 @@
  */
 package org.neo4j.collection.trackable;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import org.eclipse.collections.impl.list.Interval;
+import org.eclipse.collections.impl.parallel.ParallelIterate;
+import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import org.eclipse.collections.impl.list.Interval;
-import org.eclipse.collections.impl.parallel.ParallelIterate;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.Test;
+
 import org.neo4j.memory.EmptyMemoryTracker;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @SuppressWarnings({"SameParameterValue", "resource"})
 public class HeapTrackingConcurrentLongObjectHashMapTest

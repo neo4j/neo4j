@@ -19,7 +19,8 @@
  */
 package org.neo4j.collection.trackable;
 
-import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
+import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
+import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
@@ -30,9 +31,10 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.LongFunction;
-import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
-import org.eclipse.collections.api.iterator.LongIterator;
+
 import org.neo4j.memory.MemoryTracker;
+
+import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 @SuppressWarnings({"unchecked"})
 public final class HeapTrackingConcurrentLongObjectHashMap<V> extends AbstractHeapTrackingConcurrentHash
