@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestFunctions
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FUNCTION
@@ -40,6 +41,8 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
   override def beforeAll(): Unit = {
     // Used for testing deprecated procedures
     dbms.registerProcedure(classOf[TestProcedures])
+    dbms.registerFunction(classOf[TestFunctions])
+    dbms.registerAggregationFunction(classOf[TestFunctions])
   }
 
   override def afterAll(): Unit = {
@@ -54,10 +57,58 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(queries, true, DEPRECATED_PROCEDURE, detail)
   }
 
+  test("non-deprecated procedure calls") {
+    val queries = Seq("CALL newProc()", "CALL newProc() RETURN 1")
+
+    assertNoDeprecations(queries)
+  }
+
   test("deprecated procedure result field") {
     val query = "CALL changedProc() YIELD oldField RETURN oldField"
     val detail = NotificationDetail.Factory.deprecatedField("changedProc", "oldField")
     assertNotification(Seq(query), true, DEPRECATED_PROCEDURE_RETURN_FIELD, detail)
+  }
+
+  test("non-deprecated procedure result field") {
+    val queries = Seq("CALL changedProc() YIELD newField RETURN newField")
+
+    assertNoDeprecations(queries)
+  }
+
+  test("deprecated function calls") {
+    val queries = Seq(
+      "RETURN org.example.com.oldFunc()",
+      "MATCH (n) WHERE org.example.com.oldFunc() = 1 RETURN n"
+    )
+    val detail = NotificationDetail.Factory.deprecatedName("org.example.com.oldFunc", "org.example.com.newFunc")
+    assertNotification(queries, true, DEPRECATED_FUNCTION, detail)
+  }
+
+  test("deprecated aggregation function calls") {
+    val queries = Seq(
+      "UNWIND [1, 2, 3] AS nums RETURN org.example.com.oldAggFunc(nums)",
+      "UNWIND [1, 2, 3] AS nums WITH org.example.com.oldAggFunc(nums) AS aggTest RETURN aggTest"
+    )
+    val detail = NotificationDetail.Factory.deprecatedName("org.example.com.oldAggFunc", "org.example.com.newAggFunc")
+    assertNotification(queries, true, DEPRECATED_FUNCTION, detail)
+  }
+
+  test("non-deprecated function calls") {
+    val queries = Seq(
+      "RETURN org.example.com.newFunc()",
+      "MATCH (n) WHERE org.example.com.newFunc() = 1 RETURN n"
+    )
+
+    assertNoDeprecations(queries)
+  }
+
+  test("non-deprecated aggregation function calls") {
+    val queries = Seq(
+      "UNWIND [1, 2, 3] AS nums RETURN org.example.com.newAggFunc(nums)",
+      "UNWIND [1, 2, 3] AS nums WITH org.example.com.newAggFunc(nums) AS aggTest RETURN aggTest"
+    )
+
+    assertNoDeprecations(queries)
   }
 
   // DEPRECATIONS in 5.X

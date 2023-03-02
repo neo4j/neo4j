@@ -181,7 +181,7 @@ object CompilationPhases {
   // Phase 2
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =
     RewriteProcedureCalls andThen
-      ProcedureDeprecationWarnings andThen
+      ProcedureAndFunctionDeprecationWarnings andThen
       ProcedureWarnings andThen
       ObfuscationMetadataCollection
 

@@ -135,6 +135,10 @@ case class FeatureDatabaseManagementService(
 
   def registerProcedure(procedure: Class[_]): Unit = globalProcedures.registerProcedure(procedure)
 
+  def registerFunction(function: Class[_]): Unit = globalProcedures.registerFunction(function)
+
+  def registerAggregationFunction(function: Class[_]): Unit = globalProcedures.registerAggregationFunction(function)
+
   def registerUserAggregation(function: CallableUserAggregationFunction): Unit =
     kernel.registerUserAggregationFunction(function)
 

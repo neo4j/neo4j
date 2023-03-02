@@ -33,7 +33,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.UserAggregationFunction;
+import org.neo4j.procedure.UserAggregationResult;
+import org.neo4j.procedure.UserAggregationUpdate;
+import org.neo4j.procedure.UserFunction;
 import org.neo4j.test.conditions.Conditions;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
@@ -207,6 +212,44 @@ public class NotificationTestSupport {
         @Procedure("changedProc")
         public Stream<ChangedResults> changedProc() {
             return Stream.of(new ChangedResults());
+        }
+    }
+
+    public static class TestFunctions {
+        @UserFunction("org.example.com.newFunc")
+        public Long newFunc() {
+            return 2L;
+        }
+
+        @Deprecated
+        @UserFunction(name = "org.example.com.oldFunc", deprecatedBy = "org.example.com.newFunc")
+        public Long oldFunc() {
+            return 2L;
+        }
+
+        @UserAggregationFunction(name = "org.example.com.newAggFunc")
+        public TestAggFunction newAggFunc() {
+            return new TestAggFunction();
+        }
+
+        @Deprecated
+        @UserAggregationFunction(name = "org.example.com.oldAggFunc", deprecatedBy = "org.example.com.newAggFunc")
+        public TestAggFunction oldAggFunc() {
+            return new TestAggFunction();
+        }
+    }
+
+    public static class TestAggFunction {
+        Long latest = 0L;
+
+        @UserAggregationUpdate
+        public void update(@Name("value") Long value) {
+            latest = value;
+        }
+
+        @UserAggregationResult
+        public Long result() {
+            return latest;
         }
     }
 }
