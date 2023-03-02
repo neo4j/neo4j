@@ -38,14 +38,28 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
+import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.ir.DeleteExpression
+import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.SetLabelPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.ir.SetPropertiesPattern
+import org.neo4j.cypher.internal.ir.SetPropertyPattern
+import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Argument
+import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Expand
+import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -58,7 +72,12 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
+import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SetLabels
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
+import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -120,6 +139,11 @@ object ReadFinder {
       )
     }
 
+    def withIntroducedNodeVariable(name: String): PlanReads = {
+      val variable = Variable(name)(InputPosition.NONE)
+      withIntroducedNodeVariable(variable)
+    }
+
     def withAddedNodeFilterExpression(variable: LogicalVariable, filterExpression: Expression): PlanReads = {
       val newExpressions = nodeFilterExpressions.getOrElse(variable, Seq.empty) :+ filterExpression
       copy(nodeFilterExpressions = nodeFilterExpressions + (variable -> newExpressions))
@@ -130,6 +154,11 @@ object ReadFinder {
 
     def withReferencedNodeVariable(variable: LogicalVariable): PlanReads =
       copy(referencedNodeVariables = referencedNodeVariables + variable)
+
+    def withReferencedNodeVariable(name: String): PlanReads = {
+      val variable = Variable(name)(InputPosition.NONE)
+      withReferencedNodeVariable(variable)
+    }
   }
 
   /**
@@ -142,9 +171,8 @@ object ReadFinder {
         // This extra match is not strictly necessary, but allows us to detect a missing case for new leaf plans easier because it will fail hard.
         p match {
           case AllNodesScan(varName, _) =>
-            val variable = Variable(varName)(InputPosition.NONE)
             PlanReads()
-              .withIntroducedNodeVariable(variable)
+              .withIntroducedNodeVariable(varName)
 
           case NodeByLabelScan(varName, labelName, _, _) =>
             val variable = Variable(varName)(InputPosition.NONE)
@@ -168,9 +196,8 @@ object ReadFinder {
             }
 
           case IntersectionNodeByLabelsScan(varName, labelNames, _, _) =>
-            val variable = Variable(varName)(InputPosition.NONE)
             val acc = PlanReads()
-              .withIntroducedNodeVariable(variable)
+              .withIntroducedNodeVariable(varName)
             labelNames.foldLeft(acc) { (acc, labelName) =>
               val variable = Variable(varName)(InputPosition.NONE)
               val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
@@ -225,17 +252,15 @@ object ReadFinder {
             // We could avoid eagerness when we have IdSeeks with a single ID.
             // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
             // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
-            val variable = Variable(varName)(InputPosition.NONE)
             PlanReads()
-              .withIntroducedNodeVariable(variable)
+              .withIntroducedNodeVariable(varName)
 
           case NodeByElementIdSeek(varName, _, _) =>
             // We could avoid eagerness when we have IdSeeks with a single ID.
             // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
             // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
-            val variable = Variable(varName)(InputPosition.NONE)
             PlanReads()
-              .withIntroducedNodeVariable(variable)
+              .withIntroducedNodeVariable(varName)
 
           case _: Argument =>
             PlanReads()
@@ -254,24 +279,62 @@ object ReadFinder {
         }
 
       case Expand(_, _, _, _, to, _, _) =>
-        val variable = Variable(to)(InputPosition.NONE)
-        PlanReads()
-          .withIntroducedNodeVariable(variable)
+        PlanReads().withIntroducedNodeVariable(to)
 
       case OptionalExpand(_, _, _, _, to, _, _, _) =>
-        val variable = Variable(to)(InputPosition.NONE)
-        PlanReads()
-          .withIntroducedNodeVariable(variable)
+        PlanReads().withIntroducedNodeVariable(to)
 
       case VarExpand(_, _, _, _, _, to, _, _, _, _, _) =>
-        val variable = Variable(to)(InputPosition.NONE)
-        PlanReads()
-          .withIntroducedNodeVariable(variable)
+        PlanReads().withIntroducedNodeVariable(to)
 
       case ProduceResult(_, columns) if columns.exists(semanticTable.containsNode) =>
         PlanReads()
           .withUnknownPropertiesRead()
           .withUnknownLabelsRead()
+
+      case Create(_, nodes, rels) =>
+        val createdNodes = nodes.map(_.idName)
+        val createdRels = rels.map(_.idName)
+        val referencedNodes = rels.flatMap(r => Seq(r.leftNode, r.rightNode))
+
+        Function.chain[PlanReads](Seq(
+          createdNodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
+          // TODO createdRels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
+          referencedNodes.foldLeft(_)(_.withReferencedNodeVariable(_))
+        ))(PlanReads())
+
+      case Foreach(_, _, _, mutations) =>
+        mutations.foldLeft(PlanReads())(processSimpleMutatingPattern)
+
+      case Merge(_, nodes, rels, onMatch, onCreate, _) =>
+        val createdNodes = nodes.map(_.idName)
+        val createdRels = rels.map(_.idName)
+        val referencedNodes = rels.flatMap(r => Seq(r.leftNode, r.rightNode))
+
+        Function.chain[PlanReads](Seq(
+          createdNodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
+          // TODO createdRels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
+          referencedNodes.foldLeft(_)(_.withReferencedNodeVariable(_)),
+          onMatch.foldLeft(_)(processSimpleMutatingPattern),
+          onCreate.foldLeft(_)(processSimpleMutatingPattern)
+        ))(PlanReads())
+
+      case RemoveLabels(_, nodeName, _) =>
+        PlanReads().withReferencedNodeVariable(nodeName)
+
+      case SetLabels(_, nodeName, _) =>
+        PlanReads().withReferencedNodeVariable(nodeName)
+
+      case SetNodeProperties(_, nodeName, _) =>
+        PlanReads().withReferencedNodeVariable(nodeName)
+
+      case SetNodePropertiesFromMap(_, nodeName, _, _) =>
+        PlanReads().withReferencedNodeVariable(nodeName)
+
+      case SetNodeProperty(_, nodeName, _, _) =>
+        PlanReads().withReferencedNodeVariable(nodeName)
+
+      // TODO case SetRelationshipProperties, SetRelationshipPropertiesFromMap, SetRelationshipProperty
 
       case _ => PlanReads()
     }
@@ -367,4 +430,50 @@ object ReadFinder {
     }
   }
 
+  private def processSimpleMutatingPattern(
+    acc: PlanReads,
+    pattern: SimpleMutatingPattern
+  ): PlanReads = {
+    pattern match {
+      case CreatePattern(nodes, rels) =>
+        val createdNodes = nodes.map(_.idName)
+        val createdRels = rels.map(_.idName)
+        val referencedNodes = rels.flatMap(r => Seq(r.leftNode, r.rightNode))
+
+        Function.chain[PlanReads](Seq(
+          createdNodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
+          // TODO createdRels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
+          referencedNodes.foldLeft(_)(_.withReferencedNodeVariable(_))
+        ))(acc)
+
+      case _: DeleteExpression =>
+        acc
+
+      case RemoveLabelPattern(nodeName, _) =>
+        acc.withReferencedNodeVariable(nodeName)
+
+      case SetLabelPattern(nodeName, _) =>
+        acc.withReferencedNodeVariable(nodeName)
+
+      case SetNodePropertiesPattern(nodeName, _) =>
+        acc.withReferencedNodeVariable(nodeName)
+
+      case SetNodePropertiesFromMapPattern(nodeName, _, _) =>
+        acc.withReferencedNodeVariable(nodeName)
+
+      case SetNodePropertyPattern(nodeName, _, _) =>
+        acc.withReferencedNodeVariable(nodeName)
+
+      case _: SetPropertiesFromMapPattern => acc
+
+      case _: SetPropertyPattern => acc
+
+      case _: SetPropertiesPattern => acc
+
+      // TODO
+//      case SetRelationshipPropertiesPattern(relName, _) => ???
+//      case SetRelationshipPropertiesFromMapPattern(relName, _, _) => ???
+//      case SetRelationshipPropertyPattern(relName, _, _) => ???
+    }
+  }
 }
