@@ -236,7 +236,8 @@ public final class SettingMigrators {
                 "internal.cypher.planning_range_indexes_enabled",
                 "unsupported.cypher.planning_point_indexes_enabled",
                 "unsupported.cypher.planning_range_indexes_enabled",
-                "unsupported.cypher.planning_text_indexes_enabled");
+                "unsupported.cypher.planning_text_indexes_enabled",
+                "unsupported.cypher.splitting_top_behavior");
 
         private static final Collection<Mapping> LEGACY_UNSUPPORTED_SETTINGS_MAPPING = List.of(
                 new Mapping("dbms.capabilities.blocked", "internal.dbms.capabilities.blocked"),
@@ -339,7 +340,6 @@ public final class SettingMigrators {
                         "internal.cypher.pipelined_interpreted_pipes_fallback"),
                 new Mapping("unsupported.cypher.replan_algorithm", "internal.cypher.replan_algorithm"),
                 new Mapping("unsupported.cypher.runtime", "internal.cypher.runtime"),
-                new Mapping("unsupported.cypher.splitting_top_behavior", "internal.cypher.splitting_top_behavior"),
                 new Mapping(
                         "unsupported.cypher.statistics_divergence_target",
                         "internal.cypher.statistics_divergence_target"),
