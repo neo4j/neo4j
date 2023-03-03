@@ -1556,6 +1556,31 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 
+  testWithIndex(_.supports(EXACT, ValueType.STRING_ARRAY), s"should exact (single) seek an empty array") { index =>
+    val n = given {
+      nodeIndex(index.indexType, "Honey", "prop")
+      val n = tx.createNode(Label.label("Honey"))
+      n.setProperty("prop", Array.empty[String])
+      n
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filter("true")
+      .nodeIndexOperator(
+        "x:Honey(prop = ???)",
+        indexType = index.indexType,
+        paramExpr = Some(listOf())
+      )
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("x").withSingleRow(n)
+  }
+
   private def propFilter(predicate: Value => Boolean): Node => Boolean = {
     n => n.hasProperty("prop") && predicate.apply(asValue(n.getProperty("prop")))
   }
