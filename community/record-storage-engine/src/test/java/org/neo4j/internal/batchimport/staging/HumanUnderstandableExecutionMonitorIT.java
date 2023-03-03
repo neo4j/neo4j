@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.Config.defaults;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneNodeHeader;
 import static org.neo4j.internal.batchimport.input.DataGeneratorInput.bareboneRelationshipHeader;
@@ -108,12 +109,6 @@ class HumanUnderstandableExecutionMonitorIT {
                 bareboneNodeHeader(idType, group, extractors),
                 bareboneRelationshipHeader(idType, group, extractors),
                 groups);
-        Configuration configuration = new Configuration.Overridden(Configuration.DEFAULT) {
-            @Override
-            public long pageCacheMemory() {
-                return mebiBytes(8);
-            }
-        };
 
         // when
         try (JobScheduler jobScheduler = new ThreadPoolJobScheduler()) {
@@ -121,12 +116,12 @@ class HumanUnderstandableExecutionMonitorIT {
                             databaseLayout,
                             fileSystem,
                             NULL,
-                            configuration,
+                            Configuration.DEFAULT,
                             NullLogService.getInstance(),
                             monitor,
                             EMPTY,
                             new EmptyLogTailMetadata(defaults()),
-                            defaults(),
+                            defaults(pagecache_memory, mebiBytes(8)),
                             Monitor.NO_MONITOR,
                             jobScheduler,
                             Collector.EMPTY,

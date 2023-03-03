@@ -19,12 +19,14 @@
  */
 package org.neo4j.internal.batchimport.store;
 
+import static java.lang.Math.min;
 import static java.nio.file.StandardOpenOption.READ;
 import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_iops_limit;
 import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.IOUtils.uncheckedConsumer;
 import static org.neo4j.io.mem.MemoryAllocator.createAllocator;
@@ -64,6 +66,7 @@ import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.mem.MemoryAllocator;
+import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -103,6 +106,7 @@ import org.neo4j.token.TokenHolders;
  * {@link NeoStores} when instantiating it. Different services for specific purposes.
  */
 public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visitable {
+    static final long MAX_PAGE_CACHE_MEMORY = gibiBytes(1);
     private static final String BATCHING_STORE_CREATION_TAG = "batchingStoreCreation";
     private static final String BATCHING_STORE_SHUTDOWN_TAG = "batchingStoreShutdown";
 
@@ -324,7 +328,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             PageCacheTracer pageCacheTracer,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
-        Config neo4jConfig = getNeo4jConfig(config, dbConfig);
+        Config neo4jConfig = getNeo4jConfig(dbConfig);
         PageCache pageCache = createPageCache(fileSystem, neo4jConfig, pageCacheTracer, jobScheduler, memoryTracker);
 
         return new BatchingNeoStores(
@@ -355,13 +359,11 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             LogTailLogVersionsMetadata logTailMetadata,
             Config dbConfig,
             MemoryTracker memoryTracker) {
-        Config neo4jConfig = getNeo4jConfig(config, dbConfig);
-
         return new BatchingNeoStores(
                 fileSystem,
                 pageCache,
                 databaseLayout,
-                neo4jConfig,
+                getNeo4jConfig(dbConfig),
                 config,
                 logService,
                 initialIds,
@@ -373,10 +375,36 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
                 tracer);
     }
 
-    private static Config getNeo4jConfig(Configuration config, Config dbConfig) {
-        dbConfig.set(pagecache_memory, config.pageCacheMemory());
+    private static Config getNeo4jConfig(Config dbConfig) {
+        dbConfig.set(pagecache_memory, pageCacheMemory(dbConfig));
         dbConfig.set(check_point_iops_limit, -1);
         return dbConfig;
+    }
+
+    /**
+     * @return amount of memory to reserve for the page cache. This should just be "enough" for it to be able
+     * to sequentially read and write a couple of stores at a time. If configured too high then there will
+     * be less memory available for other caches which are critical during the import. Optimal size is
+     * estimated to be 100-200 MiB. The importer will figure out an optimal page size from this value,
+     * with slightly bigger page size than "normal" random access use cases.
+     */
+    private static long pageCacheMemory(Config dbConfig) {
+        var fromSetting = dbConfig.get(pagecache_memory);
+        if (fromSetting != null) {
+            return Long.min(MAX_PAGE_CACHE_MEMORY, fromSetting);
+        }
+
+        // Get the upper bound of what we can get from the default config calculation
+        // We even want to limit amount of memory a bit more since we don't need very much during import
+        long maxFreeMemory = OsBeanUtil.getFreePhysicalMemory();
+        if (0 < maxFreeMemory && maxFreeMemory < Long.MAX_VALUE) {
+            // We got a reading of amount of free memory from the OS, use this to potentially reduce the page cache
+            // size if the amount of free memory is very small.
+            return min(MAX_PAGE_CACHE_MEMORY, maxFreeMemory);
+        }
+        // We couldn't get a proper reading from the OS, just allocate the default page cache size,
+        // which is quite small and optimal in terms of performance.
+        return MAX_PAGE_CACHE_MEMORY;
     }
 
     private static PageCache createPageCache(

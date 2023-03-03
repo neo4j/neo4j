@@ -19,28 +19,18 @@
  */
 package org.neo4j.internal.batchimport;
 
-import static java.lang.Math.min;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_processors;
-import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.configuration.ToolingMemoryCalculations.NO_MONITOR;
-import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.util.FeatureToggles.getInteger;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.ToolingMemoryCalculations;
-import org.neo4j.io.os.OsBeanUtil;
 
 /**
  * Configuration for a an importer, mostly how and how much resources are used.
  */
 public interface Configuration {
     int DEFAULT_BATCH_SIZE = getInteger(Configuration.class, "DEFAULT_BATCH_SIZE", 10_000);
-
-    /**
-     * File name in which bad entries from the import will end up. This file will be created in the
-     * database directory of the imported database, i.e. <into>/bad.log.
-     */
-    long MAX_PAGE_CACHE_MEMORY = gibiBytes(1);
 
     int DEFAULT_MAX_MEMORY_PERCENT = 90;
 
@@ -85,27 +75,6 @@ public interface Configuration {
 
     static int allAvailableProcessors() {
         return Runtime.getRuntime().availableProcessors();
-    }
-
-    /**
-     * @return amount of memory to reserve for the page cache. This should just be "enough" for it to be able
-     * to sequentially read and write a couple of stores at a time. If configured too high then there will
-     * be less memory available for other caches which are critical during the import. Optimal size is
-     * estimated to be 100-200 MiB. The importer will figure out an optimal page size from this value,
-     * with slightly bigger page size than "normal" random access use cases.
-     */
-    default long pageCacheMemory() {
-        // Get the upper bound of what we can get from the default config calculation
-        // We even want to limit amount of memory a bit more since we don't need very much during import
-        long maxFreeMemory = OsBeanUtil.getFreePhysicalMemory();
-        if (0 < maxFreeMemory && maxFreeMemory < Long.MAX_VALUE) {
-            // We got a reading of amount of free memory from the OS, use this to potentially reduce the page cache
-            // size if the amount of free memory is very small.
-            return min(MAX_PAGE_CACHE_MEMORY, maxFreeMemory);
-        }
-        // We couldn't get a proper reading from the OS, just allocate the default page cache size,
-        // which is quite small and optimal in terms of performance.
-        return MAX_PAGE_CACHE_MEMORY;
     }
 
     /**
@@ -204,15 +173,6 @@ public interface Configuration {
 
         public Overridden(Config config) {
             this(Configuration.DEFAULT, config);
-        }
-
-        @Override
-        public long pageCacheMemory() {
-            Long pageCacheMemory = config.get(pagecache_memory);
-            if (pageCacheMemory == null) {
-                return defaults.pageCacheMemory();
-            }
-            return min(MAX_PAGE_CACHE_MEMORY, pageCacheMemory);
         }
 
         @Override

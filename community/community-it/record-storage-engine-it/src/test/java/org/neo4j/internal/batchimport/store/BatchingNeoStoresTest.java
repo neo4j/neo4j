@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_memory;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.internal.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
@@ -43,7 +44,9 @@ import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
 import java.util.List;
 import java.util.stream.Stream;
+import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -60,6 +63,7 @@ import org.neo4j.internal.recordstorage.LockVerificationFactory;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageReader;
 import org.neo4j.internal.schema.IndexConfigCompleter;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -465,6 +469,57 @@ class BatchingNeoStoresTest {
             assertEquals(20, countsStore.nodeCount(2, NULL_CONTEXT));
             assertEquals(30, countsStore.relationshipCount(ANY_LABEL, 1, 2, NULL_CONTEXT));
             assertEquals(50, countsStore.relationshipCount(1, 2, ANY_LABEL, NULL_CONTEXT));
+        }
+    }
+
+    @Test
+    void shouldOverrideBigPageCacheMemorySettingContainingUnit() throws IOException {
+        // GIVEN
+        Config dbConfig = Config.defaults(pagecache_memory, ByteUnit.gibiBytes(2));
+
+        // WHEN
+        try (var stores = batchingNeoStores(
+                fileSystem,
+                databaseLayout,
+                Configuration.DEFAULT,
+                NullLogService.getInstance(),
+                EMPTY,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
+                dbConfig,
+                Mockito.mock(JobScheduler.class),
+                PageCacheTracer.NULL,
+                NULL_CONTEXT_FACTORY,
+                INSTANCE)) {
+            // THEN
+            assertThat(stores.getPageCache().maxCachedPages()
+                            * stores.getPageCache().pageSize())
+                    .isCloseTo(BatchingNeoStores.MAX_PAGE_CACHE_MEMORY, Percentage.withPercentage(1));
+        }
+    }
+
+    @Test
+    void shouldOverrideSmallPageCacheMemorySettingContainingUnit() throws IOException {
+        // GIVEN
+        long overridden = ByteUnit.mebiBytes(10);
+        Config dbConfig = Config.defaults(pagecache_memory, overridden);
+
+        // WHEN
+        try (var stores = batchingNeoStores(
+                fileSystem,
+                databaseLayout,
+                Configuration.DEFAULT,
+                NullLogService.getInstance(),
+                EMPTY,
+                LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
+                dbConfig,
+                Mockito.mock(JobScheduler.class),
+                PageCacheTracer.NULL,
+                NULL_CONTEXT_FACTORY,
+                INSTANCE)) {
+            // THEN
+            assertThat(stores.getPageCache().maxCachedPages()
+                            * stores.getPageCache().pageSize())
+                    .isCloseTo(overridden, Percentage.withPercentage(1));
         }
     }
 
