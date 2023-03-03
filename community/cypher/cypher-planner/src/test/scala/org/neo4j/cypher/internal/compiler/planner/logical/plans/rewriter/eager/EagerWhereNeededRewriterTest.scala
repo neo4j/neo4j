@@ -2426,6 +2426,22 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("Should not insert an eager when the property conflict of a merge is on a stable iterator") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .merge(Seq(createNodeWithProperties("n", Seq(), "{foo: 5}")))
+      .filter("n.foo = 5")
+      .allNodeScan("n")
+
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
   // Insert Eager at best position
 
   test("inserts eager between conflicting plans at the cardinality minimum between the two plans") {
@@ -4516,23 +4532,6 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .argument()
         .build()
     )
-  }
-
-  // This one should really be fixed before enabling the new analysis
-  ignore("Should not insert an eager when the property conflict of a merge is on a stable iterator?") {
-    val planBuilder = new LogicalPlanBuilder()
-      .produceResults("d")
-      .merge(Seq(createNodeWithProperties("n", Seq(), "{foo: 5}")))
-      .filter("n.foo = 5")
-      .allNodeScan("n")
-
-    val plan = planBuilder.build()
-
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
-    result should equal(plan)
   }
 
   // No analysis for possible overlaps of node variables based on predicates yet.
