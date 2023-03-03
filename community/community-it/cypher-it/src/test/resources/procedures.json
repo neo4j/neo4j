@@ -1183,7 +1183,7 @@
         "type": "STRING?"
       }
     ],
-    "description": "The toggle can pause or resume read replica (deprecated in favor of dbms.cluster.secondaryReplicationToggle)",
+    "description": "The toggle can pause or resume read replica (deprecated in favor of dbms.cluster.secondaryReplicationDisable)",
     "rolesExecution": [
       "admin"
     ],
@@ -1248,11 +1248,11 @@
   },
   {
     "admin": true,
-    "name": "dbms.cluster.secondaryReplicationToggle",
+    "name": "dbms.cluster.secondaryReplicationDisable",
     "option": {
       "deprecated": false
     },
-    "signature": "dbms.cluster.secondaryReplicationToggle(databaseName :: STRING?, pause :: BOOLEAN?) :: (state :: STRING?)",
+    "signature": "dbms.cluster.secondaryReplicationDisable(databaseName :: STRING?, pause :: BOOLEAN?) :: (state :: STRING?)",
     "rolesBoostedExecution": [
       "admin"
     ],
