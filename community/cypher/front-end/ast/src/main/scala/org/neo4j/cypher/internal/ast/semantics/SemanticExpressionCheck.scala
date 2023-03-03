@@ -1035,14 +1035,20 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
     val outerScopeSymbols = inner.currentScope.parent.get.scope.symbolTable
     val innerScopeSymbols = inner.currentScope.scope.allSymbols
 
+    // Union symbols are excluded as those always have the position of the UNION keyword regardless of shadowing
+    val innerDefinitions = innerScopeSymbols.map {
+      case (name, symbols) =>
+        (name, symbols.filterNot(symbol => symbol.unionSymbol).map(_.definition))
+    }
+
     // If a variable of the same name exists, and there is a reference to that name that isn't the original
     def isShadowed(s: Symbol): Boolean =
-      innerScopeSymbols.contains(s.name) &&
-        innerScopeSymbols(s.name).map(_.definition).diff(Set(s.definition)).nonEmpty
+      innerDefinitions.contains(s.name) &&
+        innerDefinitions(s.name).diff(Set(s.definition)).nonEmpty
 
     val shadowedSymbols = outerScopeSymbols.collect {
       case (name, symbol) if isShadowed(symbol) =>
-        name -> innerScopeSymbols(name).find(_.definition != symbol.definition).get.definition.asVariable.position
+        name -> innerDefinitions(name).find(_ != symbol.definition).get.asVariable.position
     }
 
     val errors = shadowedSymbols.map {

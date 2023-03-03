@@ -540,7 +540,7 @@ sealed trait Union extends Query {
       symbolFromRhs <- scopeFromRhs.symbol(mapping.variableInRhsName)
     } yield {
       val unionType = symbolFromLhs.types.union(symbolFromRhs.types)
-      result = result.state.declareVariable(mapping.unionVariable, unionType) match {
+      result = result.state.declareVariable(mapping.unionVariable, unionType, unionVariable = true) match {
         case Left(err)        => SemanticCheckResult(result.state, err +: result.errors)
         case Right(nextState) => SemanticCheckResult(nextState, result.errors)
       }

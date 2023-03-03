@@ -42,6 +42,9 @@ object ScopeTestHelper {
   def nodeSymbol(name: String, definition: LogicalVariable, uses: LogicalVariable*): semantics.Symbol =
     typedSymbol(name, TypeSpec.exact(CTNode), definition, uses: _*)
 
+  def nodeSymbol(name: String, definition: LogicalVariable, unionVariable: Boolean): semantics.Symbol =
+    typedSymbol(name, TypeSpec.exact(CTNode), definition, unionVariable)
+
   def nodeSymbol(name: String, symbolUses: SymbolUses): semantics.Symbol =
     nodeSymbol(name, symbolUses.defVar, symbolUses.useVars: _*)
 
@@ -87,6 +90,9 @@ object ScopeTestHelper {
 
   def typedSymbol(name: String, typeSpec: TypeSpec, definition: LogicalVariable, uses: LogicalVariable*): Symbol =
     semantics.Symbol(name, typeSpec, SymbolUse(definition), uses.map(SymbolUse(_)).toSet)
+
+  def typedSymbol(name: String, typeSpec: TypeSpec, definition: LogicalVariable, unionVariable: Boolean): Symbol =
+    semantics.Symbol(name, typeSpec, SymbolUse(definition), Set.empty, unionVariable)
 
   def typedSymbol(name: String, typeSpec: TypeSpec, symbolUses: SymbolUses): Symbol =
     typedSymbol(name, typeSpec, symbolUses.defVar, symbolUses.useVars: _*)

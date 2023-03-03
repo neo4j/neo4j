@@ -162,6 +162,18 @@ class SemanticStateTest extends CypherFunSuite {
     ))
   }
 
+  test("should declare union variable") {
+    val state = SemanticState.clean.declareVariable(
+      Variable("foo")(DummyPosition(0)),
+      CTNode,
+      unionVariable = true
+    ).getOrElse(fail())
+    state.currentScope.availableSymbolDefinitions.map(_.asVariable) should equal(Set(
+      Variable("foo")(DummyPosition(0))
+    ))
+    state.currentScope.localSymbol("foo").getOrElse(fail()).unionSymbol should equal(true)
+  }
+
   test("should list all symbols from local scope but not from child scopes") {
     val state =
       for {

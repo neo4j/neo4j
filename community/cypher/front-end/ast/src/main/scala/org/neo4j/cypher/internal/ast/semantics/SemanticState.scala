@@ -73,12 +73,19 @@ final case class SymbolUse(use: Ref[LogicalVariable]) {
  *
  * All uses are in the same scope or in child scopes of the scope that contains the definition.
  *
- * @param name       the name
- * @param definition the definition
- * @param uses       all uses of the symbol. The definition is not a use.
- * @param types      the type specification
+ * @param name        the name
+ * @param types       the type specification
+ * @param definition  the definition
+ * @param uses        all uses of the symbol. The definition is not a use.
+ * @param unionSymbol if the symbol is only a variable introduced to keep track of UNION return values
  */
-final case class Symbol(name: String, types: TypeSpec, definition: SymbolUse, uses: Set[SymbolUse]) {
+final case class Symbol(
+  name: String,
+  types: TypeSpec,
+  definition: SymbolUse,
+  uses: Set[SymbolUse],
+  unionSymbol: Boolean = false
+) {
 
   /**
    * All references to this symbol. This includes the definition and the uses.
@@ -125,8 +132,14 @@ final case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) e
     copy(symbolTable = symbolTable ++ otherSymbols)
   }
 
-  def updateVariable(variable: String, types: TypeSpec, definition: SymbolUse, uses: Set[SymbolUse]): Scope =
-    copy(symbolTable = symbolTable.updated(variable, Symbol(variable, types, definition, uses)))
+  def updateVariable(
+    variable: String,
+    types: TypeSpec,
+    definition: SymbolUse,
+    uses: Set[SymbolUse],
+    unionVariable: Boolean = false
+  ): Scope =
+    copy(symbolTable = symbolTable.updated(variable, Symbol(variable, types, definition, uses, unionVariable)))
 
   /**
    * All symbol definitions of this scope and its children,
@@ -251,8 +264,14 @@ object SemanticState {
     def importValuesFromScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
       location.replace(scope.importValuesFromScope(other, exclude))
 
-    def updateVariable(variable: String, types: TypeSpec, definition: SymbolUse, uses: Set[SymbolUse]): ScopeLocation =
-      location.replace(scope.updateVariable(variable, types, definition, uses))
+    def updateVariable(
+      variable: String,
+      types: TypeSpec,
+      definition: SymbolUse,
+      uses: Set[SymbolUse],
+      unionVariable: Boolean = false
+    ): ScopeLocation =
+      location.replace(scope.updateVariable(variable, types, definition, uses, unionVariable))
 
     def declarationsAndDependencies: DeclarationsAndDependencies = {
       val allDefinitions = scope.allSymbolDefinitions.values.flatten.toSet
@@ -306,7 +325,8 @@ case class SemanticState(
     variable: LogicalVariable,
     possibleTypes: TypeSpec,
     maybePreviousDeclaration: Option[Symbol] = None,
-    overriding: Boolean = false
+    overriding: Boolean = false,
+    unionVariable: Boolean = false
   ): Either[SemanticError, SemanticState] =
     currentScope.localSymbol(variable.name) match {
       case Some(_) if !overriding =>
@@ -317,7 +337,7 @@ case class SemanticState(
             (previousDeclaration.definition, previousDeclaration.uses ++ Set(SymbolUse(variable)))
           case None => (SymbolUse(variable), Set.empty[SymbolUse])
         }
-        Right(updateVariable(variable, possibleTypes, definition, uses))
+        Right(updateVariable(variable, possibleTypes, definition, uses, unionVariable))
     }
 
   def addNotification(notification: InternalNotification): SemanticState =
@@ -377,10 +397,11 @@ case class SemanticState(
     variable: LogicalVariable,
     types: TypeSpec,
     definition: SymbolUse,
-    uses: Set[SymbolUse]
+    uses: Set[SymbolUse],
+    unionVariable: Boolean = false
   ): SemanticState =
     copy(
-      currentScope = currentScope.updateVariable(variable.name, types, definition, uses),
+      currentScope = currentScope.updateVariable(variable.name, types, definition, uses, unionVariable),
       typeTable = typeTable.updated(variable, ExpressionTypeInfo(types))
     )
 

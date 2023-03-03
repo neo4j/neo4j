@@ -222,9 +222,81 @@ class CollectExpressionSemanticAnalysisTest
   test(
     """MATCH (a)
       |RETURN COLLECT {
+      |  MATCH (b)
+      |  RETURN b AS a
+      |  UNION
+      |  MATCH (a)
+      |  RETURN a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        "The variable `a` is shadowing a variable with the same name from the outer scope and needs to be renamed",
+        InputPosition(53, 4, 15)
+      )
+    )
+  }
+
+  test(
+    """MATCH (a)
+      |RETURN COLLECT {
+      |  MATCH (a)
+      |  RETURN a
+      |  UNION ALL
+      |  MATCH ()-->(a)
+      |  RETURN a
+      |  UNION ALL
+      |  MATCH (b)
+      |  RETURN b AS a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        "The variable `a` is shadowing a variable with the same name from the outer scope and needs to be renamed",
+        InputPosition(128, 10, 15)
+      )
+    )
+  }
+
+  test(
+    """MATCH (a)
+      |RETURN COLLECT {
       |  MATCH (a)-->(b)
       |  WITH b as c
       |  MATCH (c)-->(d)
+      |  RETURN a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
+  }
+
+  test(
+    """MATCH (a)
+      |RETURN COLLECT {
+      |  MATCH (a)
+      |  RETURN a
+      |  UNION
+      |  MATCH (a)
+      |  RETURN a
+      |  UNION
+      |  MATCH (a)
+      |  RETURN a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
+  }
+
+  test(
+    """MATCH (a)
+      |RETURN COLLECT {
+      |  MATCH (a)
+      |  RETURN a
+      |  UNION ALL
+      |  MATCH (a)
       |  RETURN a
       |}
       |""".stripMargin

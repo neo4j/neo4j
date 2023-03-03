@@ -170,6 +170,47 @@ class ExistsExpressionSemanticAnalysisTest
     )
   }
 
+  test(
+    """MATCH (a)
+      |RETURN EXISTS {
+      |  MATCH (b)
+      |  RETURN b AS a
+      |  UNION
+      |  MATCH (a)
+      |  RETURN a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        "The variable `a` is shadowing a variable with the same name from the outer scope and needs to be renamed",
+        InputPosition(52, 4, 15)
+      )
+    )
+  }
+
+  test(
+    """MATCH (a)
+      |RETURN EXISTS {
+      |  MATCH (a)
+      |  RETURN a
+      |  UNION ALL
+      |  MATCH ()-->(a)
+      |  RETURN a
+      |  UNION ALL
+      |  MATCH (b)
+      |  RETURN b AS a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldEqual Set(
+      SemanticError(
+        "The variable `a` is shadowing a variable with the same name from the outer scope and needs to be renamed",
+        InputPosition(127, 10, 15)
+      )
+    )
+  }
+
   test("""MATCH (a)
          |RETURN EXISTS {
          |  MATCH (a)-->(b)
@@ -178,6 +219,37 @@ class ExistsExpressionSemanticAnalysisTest
          |  RETURN a
          |}
          |""".stripMargin) {
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
+  }
+
+  test(
+    """MATCH (a)
+      |RETURN EXISTS {
+      |  MATCH (a)
+      |  RETURN a
+      |  UNION
+      |  MATCH (a)
+      |  RETURN a
+      |  UNION
+      |  MATCH (a)
+      |  RETURN a
+      |}
+      |""".stripMargin
+  ) {
+    runSemanticAnalysis().errors.toSet shouldBe Set.empty
+  }
+
+  test(
+    """MATCH (a)
+      |RETURN EXISTS {
+      |  MATCH (a)
+      |  RETURN a
+      |  UNION ALL
+      |  MATCH (a)
+      |  RETURN a
+      |}
+      |""".stripMargin
+  ) {
     runSemanticAnalysis().errors.toSet shouldBe Set.empty
   }
 
