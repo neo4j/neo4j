@@ -47,9 +47,6 @@ class IdRange {
     static final int BITSET_REUSE = 1;
     static final int BITSET_RESERVED = 2;
 
-    /**
-     * Each {@code long} contains two bit-sets, one for commit bits and one for reuse bits
-     */
     static final int BITSET_SIZE = Long.SIZE;
 
     static final int BITSET_AND_MASK = BITSET_SIZE - 1;
