@@ -43,6 +43,7 @@ import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver.Leaf
 import org.neo4j.cypher.internal.ir.UpdateGraph.SolvedPredicatesOfOneLeafPlan
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
+import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.NonEmptyList
 
@@ -205,16 +206,14 @@ trait UpdateGraph {
       hasSetLabelPatterns ||
       hasSetNodePropertyPatterns
 
-  // TODO: We can be more precise and recursively check for overlaps inside nested foreach instead, e.g.
-  //  (foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(ug => ug.overlaps(qg) /* Read-Write */ ||
-  //  qg.foreachPatterns.exists(_.innerUpdates.allQueryGraphs.exists(x => ug.overlaps(x))) /* Write-Read */)))
-  //  ...
-  def foreachOverlap(qgWithInfo: QgWithLeafInfo): Boolean = {
-    val qg = qgWithInfo.queryGraph
-    qgWithInfo.hasUnstableLeaves &&
-    this != qg && // Foreach does not overlap itself
-    (this.hasForeachPatterns && qg.containsReads || // Conservatively always assume overlap for now
-      qg.hasForeachPatterns && qg.containsMergeRecursive && this.containsUpdates)
+  /**
+   * Foreach should have been flattened before calling in here
+   */
+  def assertNoForeach(): Unit = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !this.hasForeachPatterns,
+      "Foreach should be flattened prior to Eagerness Analysis"
+    )
   }
 
   /*
@@ -228,6 +227,8 @@ trait UpdateGraph {
     if (!containsUpdates) {
       ListSet.empty
     } else {
+      assertNoForeach()
+
       // A MERGE is always on its own in a QG. That's why we pick either the read graph of a MERGE or the qg itself.
       val readQg =
         qgWithInfo.queryGraph.mergeQueryGraph.map(mergeQg => qgWithInfo.copy(solvedQg = mergeQg)).getOrElse(qgWithInfo)
@@ -235,8 +236,7 @@ trait UpdateGraph {
       lazy val unknownReasons = nodeOverlap(readQg) ||
         createRelationshipOverlap(readQg) ||
         setPropertyOverlap(readQg) ||
-        deleteOverlapWithMergeIn(qgWithInfo.queryGraph) ||
-        foreachOverlap(readQg)
+        deleteOverlapWithMergeIn(qgWithInfo.queryGraph)
 
       val checkers = Seq(
         deleteOverlap(_, leafPlansPredicatesResolver),

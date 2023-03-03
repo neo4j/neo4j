@@ -58,7 +58,7 @@ object EagerAnalyzer {
 
   def apply(context: LogicalPlanningContext): EagerAnalyzer = {
     if (context.settings.debugOptions.useLPEagerAnalyzer) NoopEagerAnalyzer
-    else new EagerAnalyzerImpl(context)
+    else EagerAnalyzerImpl(context)
   }
 
   case class unnestEager(
@@ -109,7 +109,31 @@ trait EagerAnalyzer {
   def horizonEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan
 }
 
-class EagerAnalyzerImpl(context: LogicalPlanningContext) extends EagerAnalyzer {
+object EagerAnalyzerImpl {
+  def apply(context: LogicalPlanningContext): EagerAnalyzer = new ForeachFlatteningEagerAnalyzerWrapper(new EagerAnalyzerImpl(context))
+
+  class ForeachFlatteningEagerAnalyzerWrapper(inner: EagerAnalyzer) extends EagerAnalyzer {
+    override def headReadWriteEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.headReadWriteEagerize(inputPlan, query.flattenForeach)
+
+    override def tailReadWriteEagerizeNonRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.tailReadWriteEagerizeNonRecursive(inputPlan, query.flattenForeach)
+
+    override def tailReadWriteEagerizeRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.tailReadWriteEagerizeRecursive(inputPlan, query.flattenForeach)
+
+    override def headWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.headWriteReadEagerize(inputPlan, query.flattenForeach)
+
+    override def tailWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.tailWriteReadEagerize(inputPlan, query.flattenForeach)
+
+    override def horizonEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.horizonEagerize(inputPlan, query.flattenForeach)
+  }
+}
+
+class EagerAnalyzerImpl private(context: LogicalPlanningContext) extends EagerAnalyzer {
 
   implicit private val semanticTable: SemanticTable = context.staticComponents.semanticTable
 

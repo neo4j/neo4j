@@ -1950,7 +1950,6 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .rollUpApply("anon_3", "anon_2")
       .|.projection("b.age AS anon_2")
       .|.allRelationshipsScan("(a)-[anon_0]->(b)")
-      .eager(ListSet(EagernessReason.Unknown))
       .argument()
       .build())
   }
