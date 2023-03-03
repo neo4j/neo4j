@@ -99,7 +99,7 @@ public final class CypherCoercions {
         if (anyValue instanceof Value value) {
             return value;
         } else if (anyValue instanceof ListValue list
-                && list.itemValueRepresentation().canCreateArrayOfValueGroup()) {
+                && (list.isEmpty() || list.itemValueRepresentation().canCreateArrayOfValueGroup())) {
             return list.toStorableArray();
         } else {
             return null;
