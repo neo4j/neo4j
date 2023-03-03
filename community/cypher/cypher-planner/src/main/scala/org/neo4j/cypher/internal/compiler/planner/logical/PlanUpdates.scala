@@ -70,7 +70,10 @@ case object PlanUpdates extends UpdatesPlanner {
         // This query is constructed such that the current write is placed on its own QueryGraph
         // and all remaining writes are placed in the next query graph.
         val queryToCheckForConflicts = RegularSinglePlannerQuery(
-          queryGraph = QueryGraph(mutatingPatterns = IndexedSeq(nextPatternToPlan)),
+          queryGraph = QueryGraph(
+            argumentIds = nextPatternToPlan.dependencies,
+            mutatingPatterns = IndexedSeq(nextPatternToPlan)
+          ),
           tail = Some(RegularSinglePlannerQuery(
             queryGraph = QueryGraph(mutatingPatterns = remainingPatternToPlan)
           ))
