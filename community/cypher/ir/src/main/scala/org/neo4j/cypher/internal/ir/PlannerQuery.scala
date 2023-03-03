@@ -52,6 +52,13 @@ trait PlannerQueryPart {
    * It will throw an Exception if this is a UnionQuery.
    */
   def asSinglePlannerQuery: SinglePlannerQuery
+
+  /**
+   * Flattens all updates (recursively) inside FOREACH, inside this query.
+   *
+   * The resulting Query is not semantically equivalent (or even plannable), but useful for Eagerness analysis.
+   */
+  def flattenForeach: PlannerQueryPart
 }
 
 /**
@@ -85,4 +92,9 @@ case class UnionQuery(part: PlannerQueryPart,
   override def asSinglePlannerQuery: SinglePlannerQuery = throw new IllegalStateException("Called asSinglePlannerQuery on a UnionQuery")
 
   override def allQGsWithLeafInfo: Seq[QgWithLeafInfo] = query.allQGsWithLeafInfo ++ part.allQGsWithLeafInfo
+
+  override def flattenForeach: PlannerQueryPart = copy(
+    part = part.flattenForeach,
+    query = query.flattenForeach
+  )
 }

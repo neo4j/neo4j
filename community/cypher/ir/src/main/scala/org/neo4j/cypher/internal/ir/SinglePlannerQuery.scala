@@ -250,6 +250,24 @@ trait SinglePlannerQuery extends PlannerQueryPart {
   }
 
   override def asSinglePlannerQuery: SinglePlannerQuery = this
+
+  override def flattenForeach: SinglePlannerQuery = {
+    val flatUpdates = queryGraph.mutatingPatterns.collect {
+      case ForeachPattern(_, _, innerUpdates) =>
+        innerUpdates.flattenForeach.fold(Seq.empty[MutatingPattern]) {
+          case (updates, query) => updates ++ query.queryGraph.mutatingPatterns
+        }
+      case mutatingPattern => Seq(mutatingPattern)
+    }.flatten
+
+    copy(
+      queryGraph = queryGraph.copy(mutatingPatterns = flatUpdates),
+      tail = tail.map(_.flattenForeach)
+    ).updateHorizon {
+      case csh: CallSubqueryHorizon => csh.copy(callSubquery = csh.callSubquery.flattenForeach)
+      case horizon                  => horizon
+    }
+  }
 }
 
 object SinglePlannerQuery {

@@ -1158,7 +1158,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite
     planFor(q)._2 should beLike {
       case EmptyResult(
       Foreach(
-        RollUpApply(Eager(Argument(SetExtractor()), _), _/* <- This is the subQuery */, _, _), _, _, _)) => ()
+        RollUpApply(Argument(SetExtractor()), _/* <- This is the subQuery */, _, _), _, _, _)) => ()
     }
   }
 

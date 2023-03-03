@@ -33,16 +33,13 @@ import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
 import org.neo4j.cypher.internal.ir.UpdateGraph.SolvedPredicatesOfOneLeafPlan
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Merge
-import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
-import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -96,7 +93,40 @@ object EagerAnalyzer {
   }
 }
 
-class EagerAnalyzer(context: LogicalPlanningContext) {
+trait EagerAnalyzer {
+  def headReadWriteEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan
+  def tailReadWriteEagerizeNonRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan
+  def tailReadWriteEagerizeRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan
+  def headWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan
+  def tailWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan
+  def horizonEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan
+}
+
+object EagerAnalyzerImpl {
+  def apply(context: LogicalPlanningContext): EagerAnalyzer = new ForeachFlatteningEagerAnalyzerWrapper(new EagerAnalyzerImpl(context))
+
+  class ForeachFlatteningEagerAnalyzerWrapper(inner: EagerAnalyzer) extends EagerAnalyzer {
+    override def headReadWriteEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.headReadWriteEagerize(inputPlan, query.flattenForeach)
+
+    override def tailReadWriteEagerizeNonRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.tailReadWriteEagerizeNonRecursive(inputPlan, query.flattenForeach)
+
+    override def tailReadWriteEagerizeRecursive(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.tailReadWriteEagerizeRecursive(inputPlan, query.flattenForeach)
+
+    override def headWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.headWriteReadEagerize(inputPlan, query.flattenForeach)
+
+    override def tailWriteReadEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.tailWriteReadEagerize(inputPlan, query.flattenForeach)
+
+    override def horizonEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
+      inner.horizonEagerize(inputPlan, query.flattenForeach)
+  }
+}
+
+class EagerAnalyzerImpl private(context: LogicalPlanningContext) extends EagerAnalyzer {
 
   implicit private val semanticTable: SemanticTable = context.semanticTable
 

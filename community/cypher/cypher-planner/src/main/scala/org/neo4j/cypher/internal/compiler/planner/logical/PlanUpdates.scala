@@ -89,7 +89,7 @@ case object PlanUpdates extends UpdatesPlanner {
   }
 
   override def plan(query: SinglePlannerQuery, in: LogicalPlan, firstPlannerQuery: Boolean, context: LogicalPlanningContext): LogicalPlan = {
-    val eagerAnalyzer = new EagerAnalyzer(context)
+    val eagerAnalyzer = EagerAnalyzerImpl(context)
     // Eagerness pass 1 -- does previously planned reads conflict with future writes?
     val plan = if (firstPlannerQuery)
       eagerAnalyzer.headReadWriteEagerize(in, query)
