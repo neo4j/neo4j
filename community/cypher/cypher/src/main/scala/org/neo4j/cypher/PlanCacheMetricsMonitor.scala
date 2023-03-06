@@ -20,11 +20,72 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.QueryCache.CacheKey
-import org.neo4j.cypher.internal.QueryCacheTracer
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.cache.CacheTracer
+import org.neo4j.cypher.internal.cache.CypherQueryCaches
 
 import java.util.concurrent.atomic.AtomicLong
 
-class PlanCacheMetricsMonitor extends QueryCacheTracer[String] {
+abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] {
+  val monitorTag: String
+  val cacheKind: String
+
+  private val hits = new AtomicLong
+  private val misses = new AtomicLong
+  private val compiled = new AtomicLong
+  private val discards = new AtomicLong
+  private val staleEntries = new AtomicLong
+  private val cacheFlushes = new AtomicLong
+  override def cacheHit(key: KEY, metaData: String): Unit = hits.incrementAndGet()
+
+  override def cacheMiss(key: KEY, metaData: String): Unit = misses.incrementAndGet()
+
+  override def compute(key: KEY, metaData: String): Unit = compiled.incrementAndGet()
+
+  override def discard(key: KEY, metaData: String): Unit = discards.incrementAndGet()
+
+  override def computeWithExpressionCodeGen(key: KEY, metaData: String): Unit = compiled.incrementAndGet()
+
+  override def cacheStale(key: KEY, secondsSinceCompute: Int, metaData: String, maybeReason: Option[String]): Unit =
+    staleEntries.incrementAndGet()
+
+  override def cacheFlush(sizeOfCacheBeforeFlush: Long): Unit = {
+    discards.addAndGet(sizeOfCacheBeforeFlush)
+    cacheFlushes.incrementAndGet()
+  }
+
+  def getHits: Long = hits.get()
+  def getMisses: Long = misses.get()
+  def getCompiled: Long = compiled.get()
+  def getDiscards: Long = discards.get()
+  def getStaleEntries: Long = staleEntries.get()
+  def getCacheFlushes: Long = cacheFlushes.get()
+}
+
+class PreParserCacheMetricsMonitor extends CacheMetricsMonitor[String] {
+  override val monitorTag: String = CypherQueryCaches.PreParserCache.monitorTag
+  override val cacheKind: String = CypherQueryCaches.PreParserCache.kind
+}
+
+class ASTCacheMetricsMonitor extends CacheMetricsMonitor[CypherQueryCaches.AstCacheKey] {
+  override val monitorTag: String = CypherQueryCaches.AstCache.monitorTag
+  override val cacheKind: String = CypherQueryCaches.AstCache.kind
+}
+
+class LogicalPlanCacheMetricsMonitor extends CacheMetricsMonitor[CacheKey[Statement]] {
+  override val monitorTag: String = CypherQueryCaches.LogicalPlanCache.monitorTag
+  override val cacheKind: String = CypherQueryCaches.LogicalPlanCache.kind
+}
+
+class ExecutionPlanCacheMetricsMonitor extends CacheMetricsMonitor[CypherQueryCaches.ExecutionPlanCacheKey] {
+  override val monitorTag: String = CypherQueryCaches.ExecutionPlanCache.monitorTag
+  override val cacheKind: String = CypherQueryCaches.ExecutionPlanCache.kind
+}
+
+class ExecutableQueryCacheMetricsMonitor extends CacheMetricsMonitor[CacheKey[String]] {
+  override val monitorTag: String = CypherQueryCaches.ExecutableQueryCache.monitorTag
+  override val cacheKind: String = CypherQueryCaches.ExecutableQueryCache.kind
+
   private val counter = new AtomicLong()
   private val waitTime = new AtomicLong()
 
@@ -34,6 +95,7 @@ class PlanCacheMetricsMonitor extends QueryCacheTracer[String] {
     metaData: String,
     maybeReason: Option[String]
   ): Unit = {
+    super.cacheStale(queryKey, secondsSincePlan, metaData, maybeReason)
     counter.incrementAndGet()
     waitTime.addAndGet(secondsSincePlan)
   }
