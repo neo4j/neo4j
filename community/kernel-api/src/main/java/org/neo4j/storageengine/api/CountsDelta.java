@@ -21,7 +21,6 @@ package org.neo4j.storageengine.api;
 
 import static java.lang.Math.toIntExact;
 
-import java.util.Objects;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.eclipse.collections.api.map.MutableMap;
 import org.eclipse.collections.impl.map.mutable.UnifiedMap;
@@ -84,32 +83,5 @@ public class CountsDelta implements CountsAccessor, CountsAccessor.Updater {
         return !nodeCounts.isEmpty() || !relationshipCounts.isEmpty();
     }
 
-    public static class RelationshipKey {
-        public final int startLabelId;
-        public final int typeId;
-        public final int endLabelId;
-
-        RelationshipKey(int startLabelId, int typeId, int endLabelId) {
-            this.startLabelId = startLabelId;
-            this.typeId = typeId;
-            this.endLabelId = endLabelId;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            RelationshipKey that = (RelationshipKey) o;
-            return startLabelId == that.startLabelId && typeId == that.typeId && endLabelId == that.endLabelId;
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(startLabelId, typeId, endLabelId);
-        }
-    }
+    public record RelationshipKey(int startLabelId, int typeId, int endLabelId) {}
 }

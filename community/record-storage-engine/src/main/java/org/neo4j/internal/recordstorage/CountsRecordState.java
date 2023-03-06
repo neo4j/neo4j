@@ -50,7 +50,7 @@ public class CountsRecordState extends CountsDelta implements RecordState {
             long count = mutableLong.longValue();
             if (count != 0) {
                 target.add(new Command.RelationshipCountsCommand(
-                        serialization, k.startLabelId, k.typeId, k.endLabelId, count));
+                        serialization, k.startLabelId(), k.typeId(), k.endLabelId(), count));
             }
         });
     }
