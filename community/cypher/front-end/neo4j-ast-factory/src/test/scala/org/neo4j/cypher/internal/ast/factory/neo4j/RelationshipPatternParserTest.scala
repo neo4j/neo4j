@@ -19,12 +19,177 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class RelationshipPatternParserTest extends PatternParserTestBase {
 
   private val pathLength = Seq(("", None), ("*1..5", Some(Some(range(Some(1), Some(5))))))
+
+  test("MATCH ()--()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(direction = BOTH),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  test("MATCH ()-->()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(direction = OUTGOING),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  test("MATCH ()<--()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(direction = INCOMING),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  test("MATCH ()<-->()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(direction = BOTH),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  test("MATCH ()-[$props]->()") {
+    gives(
+      singleQuery(
+        match_(
+          relationshipChain(
+            nodePat(),
+            relPat(
+              properties = Some(ExplicitParameter("props", CTAny)(pos))
+            ),
+            nodePat()
+          )
+        )
+      )
+    )
+  }
+
+  for {
+    (maybeVariable, maybeVariableAst) <- variable
+    (maybePathLength, maybePathLengthAst) <- pathLength
+    (maybeProperties, maybePropertiesAst) <- properties
+  } yield {
+    test(s"MATCH ()-[$maybeVariable$maybePathLength$maybeProperties]-()") {
+      gives(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(),
+              relPat(
+                name = maybeVariableAst,
+                direction = BOTH,
+                length = maybePathLengthAst,
+                properties = maybePropertiesAst
+              ),
+              nodePat()
+            )
+          )
+        )
+      )
+    }
+
+    test(s"MATCH ()-[$maybeVariable$maybePathLength$maybeProperties]->()") {
+      gives(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(),
+              relPat(
+                name = maybeVariableAst,
+                direction = OUTGOING,
+                length = maybePathLengthAst,
+                properties = maybePropertiesAst
+              ),
+              nodePat()
+            )
+          )
+        )
+      )
+    }
+
+    test(s"MATCH ()<-[$maybeVariable$maybePathLength$maybeProperties]-()") {
+      gives(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(),
+              relPat(
+                name = maybeVariableAst,
+                direction = INCOMING,
+                length = maybePathLengthAst,
+                properties = maybePropertiesAst
+              ),
+              nodePat()
+            )
+          )
+        )
+      )
+    }
+  }
+
+  test("MATCH ()-()") {
+    failsToParse
+  }
+
+  test("MATCH ()->()") {
+    failsToParse
+  }
+
+  test("MATCH ()[]->()") {
+    failsToParse
+  }
+
+  test("MATCH ()-[]>()") {
+    failsToParse
+  }
+
+  test("MATCH ()-]->()") {
+    failsToParse
+  }
+
+  test("MATCH ()-[->()") {
+    failsToParse
+  }
 
   for {
     (expr, _, exprAstRel, exprAstBoth) <- labelExpressions
@@ -139,6 +304,56 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
             match_(
               pattern = nodePat(Some("n")),
               Some(where(eq(countExpression, literalInt(1))))
+            )
+          )
+        )
+      }
+
+      // COLLECT
+      test(
+        s"""
+           |MATCH (n)
+           |RETURN COLLECT {
+           |  MATCH (n)-[$maybeVariable $expr $maybePathLength $maybeProperties $maybeWhere]->()
+           |  RETURN 42 AS answer
+           |} AS collect
+           |""".stripMargin
+      ) {
+
+        val collectExpression: CollectExpression = CollectExpression(
+          singleQuery(
+            match_(
+              relationshipChain(
+                nodePat(Some("n")),
+                relPat(
+                  maybeVariableAst,
+                  Some(exprAstRel),
+                  maybePathLengthAst,
+                  maybePropertiesAst,
+                  maybeWhereAst
+                ),
+                nodePat()
+              )
+            ),
+            return_(
+              aliasedReturnItem(
+                literalInt(42L),
+                "answer"
+              )
+            )
+          )
+        )(pos, None, None)
+
+        gives(
+          singleQuery(
+            match_(
+              pattern = nodePat(Some("n"))
+            ),
+            return_(
+              aliasedReturnItem(
+                collectExpression,
+                "collect"
+              )
             )
           )
         )

@@ -19,10 +19,70 @@
  */
 package org.neo4j.cypher.internal.ast.factory.neo4j
 
+import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class NodePatternParserTest extends PatternParserTestBase {
+
+  test("MATCH ()") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat()
+        )
+      )
+    )
+  }
+
+  test("MATCH (n)") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat(Some("n"))
+        )
+      )
+    )
+  }
+
+  test("MATCH ({prop : 1})") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat(
+            properties = Some(mapOf(("prop", literalInt(1))))
+          )
+        )
+      )
+    )
+  }
+
+  test("MATCH ($props)") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat(
+            properties = Some(ExplicitParameter("props", CTAny)(pos))
+          )
+        )
+      )
+    )
+  }
+
+  test("MATCH (n {prop: 1})") {
+    gives(
+      singleQuery(
+        match_(
+          nodePat(
+            Some("n"),
+            properties = Some(mapOf(("prop", literalInt(1))))
+          )
+        )
+      )
+    )
+  }
 
   for {
     (expr, exprAstNode, _, exprAstBoth) <- labelExpressions
@@ -113,6 +173,51 @@ class NodePatternParserTest extends PatternParserTestBase {
             match_(
               pattern = nodePat(),
               Some(where(eq(countExpression, literalInt(1))))
+            )
+          )
+        )
+      }
+
+      // COLLECT
+      test(
+        s"""
+           |MATCH ()
+           |RETURN COLLECT {
+           |  MATCH ($maybeVariable $expr $maybeProperties $maybeWhere)
+           |  RETURN 42 AS answer
+           |} AS collect
+           |""".stripMargin
+      ) {
+
+        val collectExpression: CollectExpression = CollectExpression(
+          singleQuery(
+            match_(
+              nodePat(
+                maybeVariableAst,
+                Some(exprAstNode),
+                maybePropertiesAst,
+                maybeWhereAst
+              )
+            ),
+            return_(
+              aliasedReturnItem(
+                literalInt(42L),
+                "answer"
+              )
+            )
+          )
+        )(pos, None, None)
+
+        gives(
+          singleQuery(
+            match_(
+              pattern = nodePat()
+            ),
+            return_(
+              aliasedReturnItem(
+                collectExpression,
+                "collect"
+              )
             )
           )
         )
