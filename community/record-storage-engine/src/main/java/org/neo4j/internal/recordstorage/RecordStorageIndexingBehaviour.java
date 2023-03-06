@@ -26,4 +26,9 @@ public class RecordStorageIndexingBehaviour implements StorageEngineIndexingBeha
     public boolean useNodeIdsInRelationshipTypeScanIndex() {
         return false;
     }
+
+    @Override
+    public boolean requireCoordinationLocks() {
+        return true;
+    }
 }

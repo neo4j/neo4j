@@ -475,8 +475,11 @@ public class Database extends AbstractDatabase {
         // Token indexes
         FullScanStoreView fullScanStoreView =
                 new FullScanStoreView(lockService, storageEngine, databaseConfig, scheduler);
+        var indexStoreViewLocks = storageEngine.indexingBehaviour().requireCoordinationLocks()
+                ? lockService
+                : LockService.NO_LOCK_SERVICE;
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                databaseConfig, storageEngine, locks, fullScanStoreView, lockService, internalLogProvider);
+                databaseConfig, storageEngine, locks, fullScanStoreView, indexStoreViewLocks, internalLogProvider);
 
         // Schema indexes
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore(

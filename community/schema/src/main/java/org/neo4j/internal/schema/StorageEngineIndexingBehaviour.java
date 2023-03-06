@@ -26,4 +26,13 @@ public interface StorageEngineIndexingBehaviour {
      * contain at least one outgoing relationship of a given relationship type.
      */
     boolean useNodeIdsInRelationshipTypeScanIndex();
+
+    /**
+     * @return whether the store/lookup-index scans for building indexes require locks coordination using
+     * {@link org.neo4j.lock.LockService}. If {@code true} then locks will be acquired for each entity during
+     * scan, otherwise not.
+     */
+    default boolean requireCoordinationLocks() {
+        return true;
+    }
 }

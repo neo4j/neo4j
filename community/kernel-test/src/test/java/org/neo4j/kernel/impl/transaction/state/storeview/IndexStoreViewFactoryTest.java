@@ -40,8 +40,9 @@ class IndexStoreViewFactoryTest {
     @Test
     void shouldCreateIndexStoreView() {
         // Given
+        var storageEngine = mock(StorageEngine.class);
         var factory = new IndexStoreViewFactory(
-                Config.defaults(), mock(StorageEngine.class), locks, fullScanStoreView, lockService, logProvider);
+                Config.defaults(), storageEngine, locks, fullScanStoreView, lockService, logProvider);
 
         // When
         var indexStoreView = factory.createTokenIndexStoreView(indexProxies);
