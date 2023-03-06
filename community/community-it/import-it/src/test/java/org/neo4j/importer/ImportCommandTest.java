@@ -20,6 +20,9 @@
 package org.neo4j.importer;
 
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.factory.Maps;
+import org.eclipse.collections.api.map.ImmutableMap;
+import org.eclipse.collections.api.map.MutableMap;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -1994,6 +1997,100 @@ class ImportCommandTest
             assertThat( nodes.contains( "abc" ) || nodes.contains( "ghi" ) ).isTrue();
             assertThat( count( tx.getAllRelationships().iterator() ) ).isEqualTo( 1 );
         }
+    }
+
+    @Test
+    void autoSkipSubsequentHeadersShouldWorkAcrossMultipleFiles() throws Exception
+    {
+        // GIVEN
+        String header = ":LABEL,node_id:ID,counter:int";
+        Path nodeData1 = createAndWriteFile( "part0.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( header );
+            writer.println( "A,1,2" );
+        } );
+        Path nodeData2 = createAndWriteFile( "part1.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( header );
+            writer.println( "A,2,3" );
+        } );
+
+        ImmutableMap<String,Integer> expectedNodes = Maps.immutable.of( "1", 2, "2", 3 );
+
+        // WHEN
+        runImport(
+                "--auto-skip-subsequent-headers",
+                "true",
+                "--normalize-types",
+                "false",
+                "--nodes",
+                nodeData1.toAbsolutePath() + "," + nodeData2.toAbsolutePath() );
+
+        // THEN
+        MutableMap<Object,Object> actualNodes = Maps.mutable.empty();
+        try ( Transaction tx = getDatabaseApi().beginTx() )
+        {
+            try ( ResourceIterator<Node> nodes = tx.findNodes( label( "A" ) ) )
+            {
+                while ( nodes.hasNext() )
+                {
+                    Node node = nodes.next();
+                    Object counter = node.getProperty( "counter" );
+                    assertThat( counter ).isInstanceOf( Integer.class );
+                    actualNodes.put( node.getProperty( "node_id" ), counter );
+                }
+            }
+        }
+
+        assertThat( actualNodes.toImmutable() ).isEqualTo( expectedNodes );
+    }
+
+    @Test
+    void autoSkipSubsequentHeadersShouldWorkAcrossMultipleIndividuallyListedFiles() throws Exception
+    {
+        // GIVEN
+        String header = ":LABEL,node_id:ID,counter:int";
+        Path nodeData1 = createAndWriteFile( "group1.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( header );
+            writer.println( "A,1,3" );
+        } );
+        Path nodeData2 = createAndWriteFile( "group2.csv", Charset.defaultCharset(), writer ->
+        {
+            writer.println( header );
+            writer.println( "A,2,4" );
+        } );
+
+        ImmutableMap<String,Integer> expectedNodes = Maps.immutable.of( "1", 3, "2", 4 );
+
+        // WHEN
+        runImport(
+                "--auto-skip-subsequent-headers",
+                "true",
+                "--normalize-types",
+                "false",
+                "--nodes",
+                nodeData1.toAbsolutePath().toString(),
+                "--nodes",
+                nodeData2.toAbsolutePath().toString() );
+
+        // THEN
+        MutableMap<Object,Object> actualNodes = Maps.mutable.empty();
+        try ( Transaction tx = getDatabaseApi().beginTx() )
+        {
+            try ( ResourceIterator<Node> nodes = tx.findNodes( label( "A" ) ) )
+            {
+                while ( nodes.hasNext() )
+                {
+                    Node node = nodes.next();
+                    Object counter = node.getProperty( "counter" );
+                    assertThat( counter ).isInstanceOf( Integer.class );
+                    actualNodes.put( node.getProperty( "node_id" ), counter );
+                }
+            }
+        }
+
+        assertThat( actualNodes.toImmutable() ).isEqualTo( expectedNodes );
     }
 
     private static void assertContains( List<String> errorLines, String string )

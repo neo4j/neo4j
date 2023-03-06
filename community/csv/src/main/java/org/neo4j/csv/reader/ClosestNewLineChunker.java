@@ -78,7 +78,7 @@ public class ClosestNewLineChunker extends CharReadableChunker
         {
             offset += read;
             position += read;
-            int skipped = newSource && fileIndex > 0 ? headerSkip.skipHeader( into.buffer, 0, offset ) : 0;
+            int skipped = newSource && fileIndex >= 0 ? headerSkip.skipHeader( into.buffer, 0, offset ) : 0;
             into.initialize( skipped, offset - skipped, lastSeenSourceDescription );
             return true;
         }

@@ -134,7 +134,7 @@ class CsvInputIterator implements SourceTraceability, Closeable
                 {
                     Header.Entry[] entries = parseHeaderEntries( seeker, config, idType, new Groups(), ZoneId::systemDefault,
                             ( sourceDescription, entryIndex, name, type, groupName, extractors, idExtractor, groups, monitor ) -> new Header.Entry( name,
-                                    type == null ? Type.PROPERTY : Type.valueOf( type ), Group.GLOBAL, extractors.string() ), Header.NO_MONITOR );
+                                    typeFromSpec( type ), Group.GLOBAL, extractors.string() ), Header.NO_MONITOR );
                     // OK were able to parse this line as a header, skip it
                     if ( Arrays.stream( entries ).anyMatch( e -> e.type() != Type.PROPERTY && e.type() != Type.IGNORE ) )
                     {
@@ -149,6 +149,23 @@ class CsvInputIterator implements SourceTraceability, Closeable
             }
             return 0;
         };
+    }
+
+    private static Type typeFromSpec( String type )
+    {
+        if ( type != null )
+        {
+            try
+            {
+                return Type.valueOf( type );
+            }
+            catch ( IllegalArgumentException ex )
+            {
+                // catch the case when the header spec has come from something like `field_name:int`
+            }
+        }
+
+        return Type.PROPERTY;
     }
 
     public boolean next( CsvInputChunkProxy proxy ) throws IOException
