@@ -21,7 +21,6 @@ package org.neo4j.internal.counts;
 
 import static java.lang.String.format;
 
-import java.util.Objects;
 import java.util.function.Function;
 import org.neo4j.index.internal.gbptree.GBPTree;
 
@@ -102,10 +101,12 @@ public class CountsKey {
         return type;
     }
 
-    // Implements hashCode/equals so that these instances can be keys in a map
     @Override
     public int hashCode() {
-        return Objects.hash(type, first, second);
+        int result = type;
+        result = 31 * result + (int) (first ^ (first >>> 32));
+        result = 31 * result + second;
+        return result;
     }
 
     @Override
