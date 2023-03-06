@@ -36,10 +36,11 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.neo4j.shell.ConnectionConfig;
-import org.neo4j.shell.ParameterMap;
+import org.neo4j.shell.parameter.ParameterService;
 
 import static java.lang.String.format;
 import static org.neo4j.shell.cli.CliArgs.DEFAULT_SCHEME;
@@ -85,7 +86,7 @@ public class CliArgHelper
     public static CliArgs parseAndThrow( String... args ) throws ArgumentParserException
     {
         final CliArgs cliArgs = new CliArgs();
-        final ArgumentParser parser = setupParser( cliArgs.getParameters() );
+        final ArgumentParser parser = setupParser();
         preValidateArguments( parser, args );
         final Namespace ns = parser.parseArgs( args );
         return getCliArgs( cliArgs, parser, ns );
@@ -150,6 +151,8 @@ public class CliArgHelper
 
         cliArgs.setChangePassword( ns.getBoolean( "change-password" ) );
 
+        cliArgs.setParameters( ns.getList( "param" ) );
+
         return cliArgs;
     }
 
@@ -202,7 +205,7 @@ public class CliArgHelper
         }
     }
 
-    private static ArgumentParser setupParser( ParameterMap parameterMap )
+    private static ArgumentParser setupParser()
     {
         ArgumentParser parser = ArgumentParsers.newFor( "cypher-shell" ).build()
                 .defaultHelp( true )
@@ -262,8 +265,9 @@ public class CliArgHelper
 
         parser.addArgument( "-P", "--param" )
               .help( "Add a parameter to this session. Example: `-P \"number => 3\"` or `-P \"country => 'Spain'\"`. " +
-                      "This argument can be specified multiple times." )
-              .action( new AddParamArgumentAction( parameterMap ) );
+                     "This argument can be specified multiple times." )
+              .action( new AddParamArgumentAction( ParameterService.createParser() ) )
+              .setDefault( new ArrayList<ParameterService.RawParameter>() );
 
         parser.addArgument( "--debug" )
               .help( "print additional debug information" )

@@ -23,13 +23,15 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.Historian;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.commands.Begin;
 import org.neo4j.shell.commands.Command;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.AnsiLogger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -65,8 +67,11 @@ class CommandHelperTest
     {
         // Given
         AnsiLogger logger = new AnsiLogger( false );
-        CommandHelper commandHelper =
-                new CommandHelper( logger, Historian.empty, new CypherShell( logger, PrettyConfig.DEFAULT, false, new ShellParameterMap() ), null, null );
+        var boltStateHandler = new BoltStateHandler( false );
+        var prettyPrinter = new PrettyPrinter( PrettyConfig.DEFAULT );
+        var parameters = ParameterService.create( boltStateHandler );
+        var shell = new CypherShell( logger, boltStateHandler, prettyPrinter, parameters );
+        CommandHelper commandHelper = new CommandHelper( logger, Historian.empty, shell, null, null );
 
         // When
         Command begin = commandHelper.getCommand( ":BEGIN" );

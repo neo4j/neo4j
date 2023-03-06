@@ -23,11 +23,13 @@ import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -37,11 +39,10 @@ import static org.neo4j.shell.util.Versions.minorVersion;
 
 class CypherShellProtocolIntegrationTest
 {
-
     @Test
     void shouldConnectWithBoltProtocol() throws Exception
     {
-        CypherShell shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
+        CypherShell shell = createShell();
         try
         {
             shell.connect( new ConnectionConfig( "bolt", "localhost", 7687, "neo4j", "neo", Encryption.DEFAULT, ABSENT_DB_NAME ) );
@@ -56,7 +57,7 @@ class CypherShellProtocolIntegrationTest
     @Test
     void shouldConnectWithNeo4jProtocol() throws Exception
     {
-        CypherShell shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
+        CypherShell shell = createShell();
         try
         {
             // This should work even on older databases without the neo4j protocol, by falling back to bolt
@@ -72,7 +73,7 @@ class CypherShellProtocolIntegrationTest
     @Test
     void shouldConnectWithBoltSSCProtocol() throws Exception
     {
-        CypherShell shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
+        CypherShell shell = createShell();
         try
         {
             // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
@@ -89,7 +90,7 @@ class CypherShellProtocolIntegrationTest
     @Test
     void shouldConnectWithNeo4jSSCProtocol() throws Exception
     {
-        CypherShell shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, true, 1000 ), false, new ShellParameterMap() );
+        CypherShell shell = createShell();
         try
         {
             // Given 3.X series where X > 1, where SSC are the default. Hard to test in 4.0 sadly.
@@ -113,5 +114,12 @@ class CypherShellProtocolIntegrationTest
         assumeTrue( majorVersion( shell.getServerVersion() ) == 3 );
         assumeTrue( minorVersion( shell.getServerVersion() ) > 1 );
         shell.disconnect();
+    }
+
+    private CypherShell createShell()
+    {
+        var bolt = new BoltStateHandler( false );
+        var printer = new PrettyPrinter( new PrettyConfig( Format.PLAIN, true, 1000 ) );
+        return new CypherShell( new StringLinePrinter(), bolt, printer, ParameterService.create( bolt ) );
     }
 }

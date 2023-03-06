@@ -51,6 +51,7 @@ import org.neo4j.driver.summary.ResultSummary;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Connector;
 import org.neo4j.shell.DatabaseManager;
+import org.neo4j.shell.QueryRunner;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.TriFunction;
 import org.neo4j.shell.build.Build;
@@ -63,7 +64,7 @@ import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 /**
  * Handles interactions with the driver
  */
-public class BoltStateHandler implements TransactionHandler, Connector, DatabaseManager
+public class BoltStateHandler implements TransactionHandler, Connector, DatabaseManager, QueryRunner
 {
     private static final String USER_AGENT = "neo4j-cypher-shell/v" + Build.version();
     private final TriFunction<String, AuthToken, Config, Driver> driverProvider;
@@ -433,6 +434,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         return "";
     }
 
+    @Override
     public Optional<BoltResult> runCypher( String cypher,
                                            Map<String, Object> queryParams ) throws CommandException
     {

@@ -127,7 +127,7 @@ class CliArgsTest
     {
         // Parameters are set only through the Action from the CliArgHelper, bypassing CliArgs
         // so setting them cannot be tested here.
-        assertEquals( Collections.EMPTY_MAP, cliArgs.getParameters().allParameterValues() );
+        assertTrue( cliArgs.getParameters().isEmpty() );
     }
 
     @Test

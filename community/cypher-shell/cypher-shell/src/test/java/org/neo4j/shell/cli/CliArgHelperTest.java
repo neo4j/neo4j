@@ -260,7 +260,7 @@ class CliArgHelperTest extends LocaleDependentTestBase
     @Test
     void shouldNotAcceptInvalidEncryption()
     {
-        var exception = assertThrows( ArgumentParserException.class, () ->  CliArgHelper.parseAndThrow( "--encryption", "bugaluga" ) );
+        var exception = assertThrows( ArgumentParserException.class, () -> CliArgHelper.parseAndThrow( "--encryption", "bugaluga" ) );
         assertThat( exception.getMessage(), containsString( "argument --encryption: invalid choice: 'bugaluga' (choose from {true,false,default})" ) );
     }
 
@@ -269,7 +269,8 @@ class CliArgHelperTest extends LocaleDependentTestBase
     {
         CliArgs cliArgs = CliArgHelper.parse( "-P", "foo=>3+5" );
         assertNotNull( cliArgs );
-        assertEquals( 8L, cliArgs.getParameters().allParameterValues().get( "foo" ) );
+        assertEquals( "foo", cliArgs.getParameters().get( 0 ).name );
+        assertEquals( "3+5", cliArgs.getParameters().get( 0 ).expression );
     }
 
     @Test
@@ -277,7 +278,8 @@ class CliArgHelperTest extends LocaleDependentTestBase
     {
         CliArgs cliArgs = CliArgHelper.parse( "-P", "foo => 3 + 5" );
         assertNotNull( cliArgs );
-        assertEquals( 8L, cliArgs.getParameters().allParameterValues().get( "foo" ) );
+        assertEquals( "foo", cliArgs.getParameters().get( 0 ).name );
+        assertEquals( "3 + 5", cliArgs.getParameters().get( 0 ).expression );
     }
 
     @Test
@@ -285,7 +287,8 @@ class CliArgHelperTest extends LocaleDependentTestBase
     {
         CliArgs cliArgs = CliArgHelper.parse( "-P", "foo 3+5" );
         assertNotNull( cliArgs );
-        assertEquals( 8L, cliArgs.getParameters().allParameterValues().get( "foo" ) );
+        assertEquals( "foo", cliArgs.getParameters().get( 0 ).name );
+        assertEquals( "3+5", cliArgs.getParameters().get( 0 ).expression );
     }
 
     @Test
@@ -293,7 +296,8 @@ class CliArgHelperTest extends LocaleDependentTestBase
     {
         CliArgs cliArgs = CliArgHelper.parse( "-P", "foo=>'nanana'" );
         assertNotNull( cliArgs );
-        assertEquals( "nanana", cliArgs.getParameters().allParameterValues().get( "foo" ) );
+        assertEquals( "foo", cliArgs.getParameters().get( 0 ).name );
+        assertEquals( "'nanana'", cliArgs.getParameters().get( 0 ).expression );
     }
 
     @Test
@@ -301,16 +305,18 @@ class CliArgHelperTest extends LocaleDependentTestBase
     {
         CliArgs cliArgs = CliArgHelper.parse( "-P", "foo=>'nanana'", "-P", "bar=>3+5" );
         assertNotNull( cliArgs );
-        assertEquals( "nanana", cliArgs.getParameters().allParameterValues().get( "foo" ) );
-        assertEquals( 8L, cliArgs.getParameters().allParameterValues().get( "bar" ) );
+        assertEquals( "foo", cliArgs.getParameters().get( 0 ).name );
+        assertEquals( "'nanana'", cliArgs.getParameters().get( 0 ).expression );
+        assertEquals( "bar", cliArgs.getParameters().get( 1 ).name );
+        assertEquals( "3+5", cliArgs.getParameters().get( 1 ).expression );
     }
 
     @Test
     void shouldFailForInvalidSyntaxForArg()
     {
-        var exception = assertThrows( ArgumentParserException.class, () -> CliArgHelper.parseAndThrow( "-P", "foo: => 'nanana'" ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect usage" ) );
-        assertThat( exception.getMessage(), containsString( "usage: --param  \"name => value\"" ) );
+        var exception = assertThrows( IllegalArgumentException.class, () -> CliArgHelper.parseAndThrow( "-P", "foo: => 'nanana'" ) );
+        assertThat( exception.getMessage(), containsString( "Incorrect usage." ) );
+        assertThat( exception.getMessage(), containsString( "usage: --param  'name => value'" ) );
     }
 
     @Test

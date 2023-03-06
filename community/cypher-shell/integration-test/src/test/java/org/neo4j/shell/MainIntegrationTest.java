@@ -38,7 +38,10 @@ import org.neo4j.shell.cli.Encryption;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.AnsiLogger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.TestSimplePrompt;
 import org.neo4j.shell.test.AssertableMain;
 import org.neo4j.shell.util.Version;
@@ -81,11 +84,11 @@ class MainIntegrationTest
     void promptsOnWrongAuthenticationIfInteractive() throws Exception
     {
         testWithUser( "kate", "bush", false )
-            .args( "--format verbose" )
-            .userInputLines( "kate", "bush", "return 42 as x;", ":exit" )
-            .run()
-            .assertSuccess()
-            .assertThatOutput( startsWith( format( "username: kate%npassword: %n" ) ), returned42AndExited() );
+                .args( "--format verbose" )
+                .userInputLines( "kate", "bush", "return 42 as x;", ":exit" )
+                .run()
+                .assertSuccess()
+                .assertThatOutput( startsWith( format( "username: kate%npassword: %n" ) ), returned42AndExited() );
     }
 
     @Test
@@ -94,14 +97,14 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "bob", "expired", true )
-            .args( "--format verbose" )
-            .userInputLines( "bob", "expired", "newpass", "newpass", "return 42 as x;", ":exit" )
-            .run()
-            .assertSuccess()
-            .assertThatOutput(
-                startsWith( format( "username: bob%npassword: %nPassword change required%nnew password: %nconfirm password: %n" ) ),
-                returned42AndExited()
-            );
+                .args( "--format verbose" )
+                .userInputLines( "bob", "expired", "newpass", "newpass", "return 42 as x;", ":exit" )
+                .run()
+                .assertSuccess()
+                .assertThatOutput(
+                        startsWith( format( "username: bob%npassword: %nPassword change required%nnew password: %nconfirm password: %n" ) ),
+                        returned42AndExited()
+                );
     }
 
     @Test
@@ -110,12 +113,12 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() < 4 );
 
         testWithUser( "bob", "expired", true )
-            .args( "--format verbose" )
-            .userInputLines( "bob", "expired", "match (n) return count(n);", ":exit" )
-            .run()
-            .assertSuccess( false )
-            .assertThatErrorOutput( containsString( "CALL dbms.changePassword" ) )
-            .assertThatOutput( endsWithInteractiveExit );
+                .args( "--format verbose" )
+                .userInputLines( "bob", "expired", "match (n) return count(n);", ":exit" )
+                .run()
+                .assertSuccess( false )
+                .assertThatErrorOutput( containsString( "CALL dbms.changePassword" ) )
+                .assertThatOutput( endsWithInteractiveExit );
     }
 
     @Test
@@ -124,11 +127,11 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "bob", "expired", true )
-            .args( "-u bob -p expired -d system --format verbose" )
-            .addArgs( "ALTER CURRENT USER SET PASSWORD FROM \"expired\" TO \"shinynew\";" )
-            .run()
-            .assertSuccess()
-            .assertThatOutput( containsString( "0 rows" ) );
+                .args( "-u bob -p expired -d system --format verbose" )
+                .addArgs( "ALTER CURRENT USER SET PASSWORD FROM \"expired\" TO \"shinynew\";" )
+                .run()
+                .assertSuccess()
+                .assertThatOutput( containsString( "0 rows" ) );
 
         assertUserCanConnectAndRunQuery( "bob", "shinynew" );
     }
@@ -139,11 +142,11 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "kjell", "expired", true )
-            .args( "-u kjell -p expired -d neo4j --non-interactive")
-            .addArgs( "ALTER CURRENT USER SET PASSWORD FROM \"expired\" TO \"höglund\";" )
-            .run()
-            .assertFailure()
-            .assertThatErrorOutput( containsString( "The credentials you provided were valid, but must be changed" ) );
+                .args( "-u kjell -p expired -d neo4j --non-interactive" )
+                .addArgs( "ALTER CURRENT USER SET PASSWORD FROM \"expired\" TO \"höglund\";" )
+                .run()
+                .assertFailure()
+                .assertThatErrorOutput( containsString( "The credentials you provided were valid, but must be changed" ) );
     }
 
     @Test
@@ -152,10 +155,10 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "bruce", "expired", true )
-            .args( "-u bruce -p expired -d neo4j" ).addArgs( "match (n) return n;" )
-            .userInputLines( "newpass", "newpass" )
-            .run()
-            .assertSuccess();
+                .args( "-u bruce -p expired -d neo4j" ).addArgs( "match (n) return n;" )
+                .userInputLines( "newpass", "newpass" )
+                .run()
+                .assertSuccess();
 
         assertUserCanConnectAndRunQuery( "bruce", "newpass" );
     }
@@ -166,23 +169,23 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() >= 4 );
 
         testWithUser( "nick", "expired", true )
-            .args( "-u nick -p expired -d neo4j --non-interactive" ).addArgs( "match (n) return n;" )
-            .run()
-            .assertFailure()
-            .assertThatErrorOutput( containsString( "The credentials you provided were valid, but must be changed" ) )
-            .assertThatOutput( emptyString() );
+                .args( "-u nick -p expired -d neo4j --non-interactive" ).addArgs( "match (n) return n;" )
+                .run()
+                .assertFailure()
+                .assertThatErrorOutput( containsString( "The credentials you provided were valid, but must be changed" ) )
+                .assertThatOutput( emptyString() );
     }
 
     @Test
     void doesPromptOnNonInteractiveOuput() throws Exception
     {
         testWithUser( "holy", "ghost", false )
-            .addArgs( "return 42 as x;" )
-            .outputInteractive( false )
-            .userInputLines( "holy", "ghost" )
-            .run()
-            .assertSuccessAndConnected()
-            .assertOutputLines( "username: holy", "password: ", "x", "42" );
+                .addArgs( "return 42 as x;" )
+                .outputInteractive( false )
+                .userInputLines( "holy", "ghost" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertOutputLines( "username: holy", "password: ", "x", "42" );
     }
 
     @Test
@@ -190,7 +193,7 @@ class MainIntegrationTest
     {
         var expectedPrompt = format(
                 "neo4j@neo4j> %n" +
-                "neo4j@neo4j> :exit");
+                "neo4j@neo4j> :exit" );
 
         buildTest()
                 .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
@@ -200,85 +203,85 @@ class MainIntegrationTest
                 )
                 .run()
                 .assertSuccessAndConnected()
-                .assertThatOutput( containsString(expectedPrompt), endsWithInteractiveExit );
+                .assertThatOutput( containsString( expectedPrompt ), endsWithInteractiveExit );
     }
 
     @Test
     void wrongPortWithBolt() throws Exception
     {
         testWithUser( "leonard", "coen", false )
-            .args( "-u leonard -p coen -a bolt://localhost:1234" )
-            .run()
-            .assertFailure( "Unable to connect to localhost:1234, ensure the database is running and that there is a working network connection to it." );
+                .args( "-u leonard -p coen -a bolt://localhost:1234" )
+                .run()
+                .assertFailure( "Unable to connect to localhost:1234, ensure the database is running and that there is a working network connection to it." );
     }
 
     @Test
     void wrongPortWithNeo4j() throws Exception
     {
         testWithUser( "jackie", "leven", false )
-            .args( "-u jackie -p leven -a neo4j://localhost:1234" )
-            .run()
-            .assertFailure( "Connection refused" );
+                .args( "-u jackie -p leven -a neo4j://localhost:1234" )
+                .run()
+                .assertFailure( "Connection refused" );
     }
 
     @Test
     void shouldAskForCredentialsWhenConnectingWithAFile() throws Exception
     {
         testWithUser( "jacob", "collier", false )
-            .addArgs( "--file", fileFromResource( "single.cypher" ) )
-            .userInputLines( "jacob", "collier" )
-            .run()
-            .assertSuccessAndConnected()
-            .assertOutputLines( "username: jacob", "password: ", "result", "42" );
+                .addArgs( "--file", fileFromResource( "single.cypher" ) )
+                .userInputLines( "jacob", "collier" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertOutputLines( "username: jacob", "password: ", "result", "42" );
     }
 
     @Test
     void shouldSupportVerboseFormatWhenReadingFile() throws Exception
     {
         var expectedQueryResult = format(
-            "+--------+%n" +
-            "| result |%n" +
-            "+--------+%n" +
-            "| 42     |%n" +
-            "+--------+");
+                "+--------+%n" +
+                "| result |%n" +
+                "+--------+%n" +
+                "| 42     |%n" +
+                "+--------+" );
 
         testWithUser( "philip", "glass", false )
-            .args( "-u philip -p glass --format verbose").addArgs( "--file", fileFromResource( "single.cypher" ) )
-            .run()
-            .assertSuccessAndConnected()
-            .assertThatOutput( containsString( expectedQueryResult ) );
+                .args( "-u philip -p glass --format verbose" ).addArgs( "--file", fileFromResource( "single.cypher" ) )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput( containsString( expectedQueryResult ) );
     }
 
     @Test
     void shouldReadEmptyCypherStatementsFile() throws Exception
     {
         buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "empty.cypher" ) ).run()
-            .assertSuccessAndConnected()
-            .assertThatOutput( emptyString() );
+                   .assertSuccessAndConnected()
+                   .assertThatOutput( emptyString() );
     }
 
     @Test
     void shouldReadMultipleCypherStatementsFromFile() throws Exception
     {
         buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "multiple.cypher" ) ).run()
-            .assertSuccessAndConnected()
-            .assertOutputLines( "result", "42", "result", "1337", "result", "\"done\"" );
+                   .assertSuccessAndConnected()
+                   .assertOutputLines( "result", "42", "result", "1337", "result", "\"done\"" );
     }
 
     @Test
     void shouldFailIfInputFileDoesntExist() throws Exception
     {
         buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", "missing-file" ).run()
-            .assertFailure( "missing-file (No such file or directory)" );
+                   .assertFailure( "missing-file (No such file or directory)" );
     }
 
     @Test
     void shouldHandleInvalidCypherFromFile() throws Exception
     {
         buildTest().addArgs( "-u", USER, "-p", PASSWORD, "--file", fileFromResource( "invalid.cypher" ) ).run()
-            .assertFailure()
-            .assertThatErrorOutput( containsString( "Invalid input" ) )
-            .assertOutputLines( "result", "42" );
+                   .assertFailure()
+                   .assertThatErrorOutput( containsString( "Invalid input" ) )
+                   .assertOutputLines( "result", "42" );
     }
 
     @Test
@@ -286,11 +289,11 @@ class MainIntegrationTest
     {
         var file = fileFromResource( "single.cypher" );
         buildTest()
-            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-            .userInputLines( ":source " + file, ":exit" )
-            .run()
-            .assertSuccessAndConnected()
-            .assertThatOutput( containsString( "> :source " + file + format( "%nresult%n42" ) ), endsWithInteractiveExit );
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":source " + file, ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput( containsString( "> :source " + file + format( "%nresult%n42" ) ), endsWithInteractiveExit );
     }
 
     @Test
@@ -301,7 +304,7 @@ class MainIntegrationTest
                 .userInputLines( ":disconnect ", ":exit" )
                 .run()
                 .assertSuccessAndDisconnected()
-                .assertThatOutput( containsString( "> :disconnect " + format("%nDisconnected>")), endsWith( GOOD_BYE ) );
+                .assertThatOutput( containsString( "> :disconnect " + format( "%nDisconnected>" ) ), endsWith( GOOD_BYE ) );
     }
 
     @Test
@@ -312,7 +315,7 @@ class MainIntegrationTest
                 .userInputLines( ":disconnect ", "RETURN 42 AS x;", ":exit" )
                 .run()
                 .assertThatErrorOutput( containsString( "Not connected to Neo4j" ) )
-                .assertThatOutput( containsString( "> :disconnect " + format("%nDisconnected>")), endsWith( GOOD_BYE ) );
+                .assertThatOutput( containsString( "> :disconnect " + format( "%nDisconnected>" ) ), endsWith( GOOD_BYE ) );
     }
 
     @Test
@@ -324,8 +327,8 @@ class MainIntegrationTest
                 .run()
                 .assertSuccessAndDisconnected()
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format("%nDisconnected> :help")),
-                        containsString( format("%nAvailable commands:") ),
+                        containsString( "> :disconnect " + format( "%nDisconnected> :help" ) ),
+                        containsString( format( "%nAvailable commands:" ) ),
                         endsWith( GOOD_BYE ) );
     }
 
@@ -338,7 +341,7 @@ class MainIntegrationTest
                 .run()
                 .assertSuccessAndDisconnected()
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format("%nDisconnected> :history")),
+                        containsString( "> :disconnect " + format( "%nDisconnected> :history" ) ),
                         containsString( "1  :disconnect" ),
                         containsString( "2  :history" ),
                         endsWith( GOOD_BYE ) );
@@ -354,7 +357,7 @@ class MainIntegrationTest
                 .run()
                 .assertSuccessAndDisconnected()
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format("%nDisconnected> :source %s", file)),
+                        containsString( "> :disconnect " + format( "%nDisconnected> :source %s", file ) ),
                         endsWith( format( "Bye!%n" ) ) );
     }
 
@@ -363,12 +366,12 @@ class MainIntegrationTest
     {
         buildTest()
                 .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-                .userInputLines( ":disconnect ", format(":connect -u %s -p %s -d %s", USER, PASSWORD, SYSTEM_DB_NAME ), ":exit" )
+                .userInputLines( ":disconnect ", format( ":connect -u %s -p %s -d %s", USER, PASSWORD, SYSTEM_DB_NAME ), ":exit" )
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format("%nDisconnected> :connect -u %s -p %s -d %s", USER, PASSWORD, SYSTEM_DB_NAME ) ),
-                        endsWith( format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
+                        containsString( "> :disconnect " + format( "%nDisconnected> :connect -u %s -p %s -d %s", USER, PASSWORD, SYSTEM_DB_NAME ) ),
+                        endsWith( format( "%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
     }
 
     @Test
@@ -376,7 +379,7 @@ class MainIntegrationTest
     {
         buildTest()
                 .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-                .userInputLines( ":disconnect ", format(":connect --username %s --password %s --database %s", USER, PASSWORD, SYSTEM_DB_NAME ), ":exit" )
+                .userInputLines( ":disconnect ", format( ":connect --username %s --password %s --database %s", USER, PASSWORD, SYSTEM_DB_NAME ), ":exit" )
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
@@ -419,12 +422,12 @@ class MainIntegrationTest
     {
         buildTest()
                 .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-                .userInputLines( ":disconnect ", format(":connect -u %s -p %s", USER, PASSWORD ), ":exit" )
+                .userInputLines( ":disconnect ", format( ":connect -u %s -p %s", USER, PASSWORD ), ":exit" )
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format("%nDisconnected> :connect -u %s -p %s", USER, PASSWORD ) ),
-                        endsWith( format("%s@%s> %s",USER, DEFAULT_DEFAULT_DB_NAME, GOOD_BYE ) ) );
+                        containsString( "> :disconnect " + format( "%nDisconnected> :connect -u %s -p %s", USER, PASSWORD ) ),
+                        endsWith( format( "%s@%s> %s", USER, DEFAULT_DEFAULT_DB_NAME, GOOD_BYE ) ) );
     }
 
     @Test
@@ -432,13 +435,13 @@ class MainIntegrationTest
     {
         buildTest()
                 .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-                .userInputLines( ":disconnect ", format(":connect -d %s", SYSTEM_DB_NAME ), USER, PASSWORD, ":exit" )
+                .userInputLines( ":disconnect ", format( ":connect -d %s", SYSTEM_DB_NAME ), USER, PASSWORD, ":exit" )
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME ) ),
-                        containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" )),
-                        endsWith( format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
+                        containsString( "> :disconnect " + format( "%nDisconnected> :connect -d %s", SYSTEM_DB_NAME ) ),
+                        containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" ) ),
+                        endsWith( format( "%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
     }
 
     @Test
@@ -446,13 +449,13 @@ class MainIntegrationTest
     {
         buildTest()
                 .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-                .userInputLines( ":disconnect ", format(":connect -d %s", SYSTEM_DB_NAME ), USER, PASSWORD, ":exit" )
+                .userInputLines( ":disconnect ", format( ":connect -d %s", SYSTEM_DB_NAME ), USER, PASSWORD, ":exit" )
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format("%nDisconnected> :connect -d %s", SYSTEM_DB_NAME ) ),
-                        containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" )),
-                        endsWith( format("%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
+                        containsString( "> :disconnect " + format( "%nDisconnected> :connect -d %s", SYSTEM_DB_NAME ) ),
+                        containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" ) ),
+                        endsWith( format( "%s@%s> %s", USER, SYSTEM_DB_NAME, GOOD_BYE ) ) );
     }
 
     @Test
@@ -464,8 +467,8 @@ class MainIntegrationTest
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
-                        containsString( "> :disconnect " + format("%nDisconnected> :connect") ),
-                        containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" )),
+                        containsString( "> :disconnect " + format( "%nDisconnected> :connect" ) ),
+                        containsString( format( "%nusername: %s", USER ) + format( "%npassword: ***" ) ),
                         endsWith( GOOD_BYE ) );
     }
 
@@ -474,14 +477,14 @@ class MainIntegrationTest
     {
         var file = fileFromResource( "multiple.cypher" );
         buildTest()
-            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-            .userInputLines( ":source " + file, ":exit" )
-            .run()
-            .assertSuccessAndConnected()
-            .assertThatOutput(
-                containsString( "> :source " + file + format( "%nresult%n42%nresult%n1337%nresult%n\"done\"" ) ),
-                endsWithInteractiveExit
-            );
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":source " + file, ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString( "> :source " + file + format( "%nresult%n42%nresult%n1337%nresult%n\"done\"" ) ),
+                        endsWithInteractiveExit
+                );
     }
 
     @Test
@@ -489,11 +492,11 @@ class MainIntegrationTest
     {
         var file = fileFromResource( "empty.cypher" );
         buildTest()
-            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-            .userInputLines( ":source " + file, ":exit" )
-            .run()
-            .assertSuccessAndConnected()
-            .assertThatOutput( containsString( "> :source " + file + newLine + USER + "@" ), endsWithInteractiveExit );
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":source " + file, ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput( containsString( "> :source " + file + newLine + USER + "@" ), endsWithInteractiveExit );
     }
 
     @Test
@@ -501,12 +504,12 @@ class MainIntegrationTest
     {
         var file = fileFromResource( "invalid.cypher" );
         buildTest()
-            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-            .userInputLines( ":source " + file, ":exit" )
-            .run()
-            .assertSuccessAndConnected( false )
-            .assertThatErrorOutput( containsString( "Invalid input" ) )
-            .assertThatOutput( containsString( "> :source " + file + format( "%nresult%n42%n" ) + USER + "@" ), endsWithInteractiveExit );
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":source " + file, ":exit" )
+                .run()
+                .assertSuccessAndConnected( false )
+                .assertThatErrorOutput( containsString( "Invalid input" ) )
+                .assertThatOutput( containsString( "> :source " + file + format( "%nresult%n42%n" ) + USER + "@" ), endsWithInteractiveExit );
     }
 
     @Test
@@ -514,12 +517,12 @@ class MainIntegrationTest
     {
         var file = "this-is-not-a-file";
         buildTest()
-            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-            .userInputLines( ":source " + file, ":exit" )
-            .run()
-            .assertSuccessAndConnected( false )
-            .assertThatErrorOutput( is( "Cannot find file: '" + file + "'" + newLine ) )
-            .assertThatOutput( containsString( "> :source " + file + newLine + USER + "@" ), endsWithInteractiveExit );
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( ":source " + file, ":exit" )
+                .run()
+                .assertSuccessAndConnected( false )
+                .assertThatErrorOutput( is( "Cannot find file: '" + file + "'" + newLine ) )
+                .assertThatOutput( containsString( "> :source " + file + newLine + USER + "@" ), endsWithInteractiveExit );
     }
 
     @Test
@@ -529,10 +532,10 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() >= 4 );
 
         withDefaultDatabaseStopped( () ->
-            buildTest().addArgs( "-u", USER, "-p", PASSWORD ).run()
-                .assertFailure()
-                .assertThatErrorOutput( containsString( "database is unavailable" ) )
-                .assertOutputLines()
+                                            buildTest().addArgs( "-u", USER, "-p", PASSWORD ).run()
+                                                       .assertFailure()
+                                                       .assertThatErrorOutput( containsString( "database is unavailable" ) )
+                                                       .assertOutputLines()
         );
     }
 
@@ -543,11 +546,11 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() >= 4 );
 
         withDefaultDatabaseStopped( () ->
-            buildTest()
-                .addArgs( "-u", USER, "-p", PASSWORD, "-d", SYSTEM_DB_NAME )
-                .userInputLines( ":exit" )
-                .run()
-                .assertSuccessAndConnected()
+                                            buildTest()
+                                                    .addArgs( "-u", USER, "-p", PASSWORD, "-d", SYSTEM_DB_NAME )
+                                                    .userInputLines( ":exit" )
+                                                    .run()
+                                                    .assertSuccessAndConnected()
         );
     }
 
@@ -558,13 +561,13 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() >= 4 );
 
         withDefaultDatabaseStopped( () ->
-            buildTest()
-                .addArgs( "-u", USER, "-p", PASSWORD, "-d", SYSTEM_DB_NAME )
-                .userInputLines( ":use " + DEFAULT_DEFAULT_DB_NAME, ":exit" )
-                .run()
-                .assertSuccessAndConnected( false )
-                .assertThatErrorOutput( containsString( "database is unavailable" ) )
-                .assertThatOutput( endsWithInteractiveExit )
+                                            buildTest()
+                                                    .addArgs( "-u", USER, "-p", PASSWORD, "-d", SYSTEM_DB_NAME )
+                                                    .userInputLines( ":use " + DEFAULT_DEFAULT_DB_NAME, ":exit" )
+                                                    .run()
+                                                    .assertSuccessAndConnected( false )
+                                                    .assertThatErrorOutput( containsString( "database is unavailable" ) )
+                                                    .assertThatOutput( endsWithInteractiveExit )
         );
     }
 
@@ -575,13 +578,13 @@ class MainIntegrationTest
         assumeTrue( serverVersion.major() >= 4 );
 
         withDefaultDatabaseStopped( () ->
-            buildTest()
-                .addArgs( "-u", USER, "-p", PASSWORD, "-d", SYSTEM_DB_NAME )
-                .userInputLines( ":use", ":exit" )
-                .run()
-                .assertSuccessAndConnected( false )
-                .assertThatErrorOutput( containsString( "database is unavailable" ) )
-                .assertThatOutput( endsWithInteractiveExit )
+                                            buildTest()
+                                                    .addArgs( "-u", USER, "-p", PASSWORD, "-d", SYSTEM_DB_NAME )
+                                                    .userInputLines( ":use", ":exit" )
+                                                    .run()
+                                                    .assertSuccessAndConnected( false )
+                                                    .assertThatErrorOutput( containsString( "database is unavailable" ) )
+                                                    .assertThatOutput( endsWithInteractiveExit )
         );
     }
 
@@ -589,11 +592,11 @@ class MainIntegrationTest
     void shouldChangePassword() throws Exception
     {
         testWithUser( "kate", "bush", false )
-            .args( "--change-password" )
-            .userInputLines( "kate", "bush", "betterpassword", "betterpassword" )
-            .run()
-            .assertSuccess()
-            .assertOutputLines( "username: kate", "password: ", "new password: ", "confirm password: " );
+                .args( "--change-password" )
+                .userInputLines( "kate", "bush", "betterpassword", "betterpassword" )
+                .run()
+                .assertSuccess()
+                .assertOutputLines( "username: kate", "password: ", "new password: ", "confirm password: " );
 
         assertUserCanConnectAndRunQuery( "kate", "betterpassword" );
     }
@@ -602,11 +605,11 @@ class MainIntegrationTest
     void shouldChangePasswordWhenRequired() throws Exception
     {
         testWithUser( "paul", "simon", true )
-            .args( "--change-password" )
-            .userInputLines( "paul", "simon", "newpassword", "newpassword" )
-            .run()
-            .assertSuccess()
-            .assertOutputLines( "username: paul", "password: ", "new password: ", "confirm password: " );
+                .args( "--change-password" )
+                .userInputLines( "paul", "simon", "newpassword", "newpassword" )
+                .run()
+                .assertSuccess()
+                .assertOutputLines( "username: paul", "password: ", "new password: ", "confirm password: " );
 
         assertUserCanConnectAndRunQuery( "paul", "newpassword" );
     }
@@ -615,11 +618,11 @@ class MainIntegrationTest
     void shouldChangePasswordWithUser() throws Exception
     {
         testWithUser( "mike", "oldfield", false )
-            .args( "-u mike --change-password" )
-            .userInputLines( "oldfield", "newfield", "newfield" )
-            .run()
-            .assertSuccess()
-            .assertOutputLines( "password: ", "new password: ", "confirm password: " );
+                .args( "-u mike --change-password" )
+                .userInputLines( "oldfield", "newfield", "newfield" )
+                .run()
+                .assertSuccess()
+                .assertOutputLines( "password: ", "new password: ", "confirm password: " );
 
         assertUserCanConnectAndRunQuery( "mike", "newfield" );
     }
@@ -628,44 +631,44 @@ class MainIntegrationTest
     void shouldFailToChangePassword() throws Exception
     {
         testWithUser( "led", "zeppelin", false )
-            .args( "-u led --change-password" )
-            .userInputLines( "FORGOT MY PASSWORD", "robert", "robert" )
-            .run()
-            .assertFailure()
-            .assertThatErrorOutput( startsWith( "Failed to change password" ) )
-            .assertOutputLines( "password: ", "new password: ", "confirm password: " );
+                .args( "-u led --change-password" )
+                .userInputLines( "FORGOT MY PASSWORD", "robert", "robert" )
+                .run()
+                .assertFailure()
+                .assertThatErrorOutput( startsWith( "Failed to change password" ) )
+                .assertOutputLines( "password: ", "new password: ", "confirm password: " );
     }
 
     @Test
     void shouldHandleMultiLineHistory() throws Exception
     {
         var expected =
-            "> :history\n" +
-            " 1  return\n" +
-            "    'hej' as greeting;\n" +
-            " 2  return\n" +
-            "    1\n" +
-            "    as\n" +
-            "    x\n" +
-            "    ;\n" +
-            " 3  :history\n";
+                "> :history\n" +
+                " 1  return\n" +
+                "    'hej' as greeting;\n" +
+                " 2  return\n" +
+                "    1\n" +
+                "    as\n" +
+                "    x\n" +
+                "    ;\n" +
+                " 3  :history\n";
 
         buildTest()
-            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-            .userInputLines(
-                "return",
-                "'hej' as greeting;",
-                "return",
-                "1",
-                "as",
-                "x",
-                ";",
-                ":history",
-                ":exit"
-            )
-            .run()
-            .assertSuccessAndConnected()
-            .assertThatOutput( containsString( expected ), endsWithInteractiveExit );
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines(
+                        "return",
+                        "'hej' as greeting;",
+                        "return",
+                        "1",
+                        "as",
+                        "x",
+                        ";",
+                        ":history",
+                        ":exit"
+                )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput( containsString( expected ), endsWithInteractiveExit );
     }
 
     @Test
@@ -675,11 +678,11 @@ class MainIntegrationTest
 
         // Build up some history
         buildTest()
-            .historyFile( history.toFile() )
-            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-            .userInputLines( "return 1;", "return 2;", ":exit" )
-            .run()
-            .assertSuccessAndConnected();
+                .historyFile( history.toFile() )
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( "return 1;", "return 2;", ":exit" )
+                .run()
+                .assertSuccessAndConnected();
 
         var readHistory = Files.readAllLines( history );
         assertEquals( 3, readHistory.size() );
@@ -700,12 +703,12 @@ class MainIntegrationTest
 
         // Build up more history and clear
         buildTest()
-            .historyFile( history.toFile() )
-            .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
-            .userInputLines( "return 3;", ":history", ":history clear", ":history", ":exit" )
-            .run()
-            .assertSuccessAndConnected()
-            .assertThatOutput( containsString( expected1 ), containsString( expected2 ) );
+                .historyFile( history.toFile() )
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines( "return 3;", ":history", ":history clear", ":history", ":exit" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput( containsString( expected1 ), containsString( expected2 ) );
 
         var readHistoryAfterClear = Files.readAllLines( history );
         assertEquals( 2, readHistoryAfterClear.size() );
@@ -847,9 +850,57 @@ class MainIntegrationTest
                                 ":param when          => date('2021-01-12')\n"
                         ),
                         containsString(
-                                 "> return $purple, $advice, $when, $repeatAfterMe, $easyAs;\n" +
-                                 "$purple, $advice, $when, $repeatAfterMe, $easyAs\n" +
-                                 "\"rain\", [\"talk\", \"less\", \"smile\", \"more\"], 2021-01-12, \"ABC\", 6\n"
+                                "> return $purple, $advice, $when, $repeatAfterMe, $easyAs;\n" +
+                                "$purple, $advice, $when, $repeatAfterMe, $easyAs\n" +
+                                "\"rain\", [\"talk\", \"less\", \"smile\", \"more\"], 2021-01-12, \"ABC\", 6\n"
+                        )
+                );
+    }
+
+    @Test
+    void evaluatesParameterArgumentsWithSemicolon() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .addArgs( "--param", "purple => 'rain';" )
+                .addArgs( "--param", "white =>  \"space\"  ;  " )
+                .addArgs( "--param", "advice => ['talk', 'less', 'smile', 'more'];" )
+                .addArgs( "--param", "when => date('2021-01-12');" )
+                .addArgs( "--param", "repeatAfterMe => 'A' + 'B' + 'C';" )
+                .addArgs( "--param", "easyAs => 1 + 2 + 3;" )
+                .addArgs(
+                        "--param",
+                        "dt => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }));"
+                )
+                .addArgs(
+                        "--param",
+                        "dt2 => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }));"
+                )
+                .userInputLines(
+                        ":params",
+                        "return $purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;"
+                )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString(
+                                "> :params\n" +
+                                ":param advice        => ['talk', 'less', 'smile', 'more']\n" +
+                                ":param dt            => " +
+                                "datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))\n" +
+                                ":param dt2           => " +
+                                "datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))\n" +
+                                ":param easyAs        => 1 + 2 + 3\n" +
+                                ":param purple        => 'rain'\n" +
+                                ":param repeatAfterMe => 'A' + 'B' + 'C'\n" +
+                                ":param when          => date('2021-01-12')\n" +
+                                ":param white         => \"space\"  ;  \n"
+                        ),
+                        containsString(
+                                "> return $purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;\n" +
+                                "$purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2\n" +
+                                "\"rain\", \"space\", [\"talk\", \"less\", \"smile\", \"more\"], 2021-01-12, \"ABC\", 6, " +
+                                "2023-02-06T00:00-06:00[America/Chicago], 2023-02-06T00:00-06:00[America/Chicago]\n"
                         )
                 );
     }
@@ -880,9 +931,48 @@ class MainIntegrationTest
                                 ":param when          => date('2021-01-12')\n"
                         ),
                         containsString(
-                                 "> return $purple, $advice, $when, $repeatAfterMe, $easyAs;\n" +
-                                 "$purple, $advice, $when, $repeatAfterMe, $easyAs\n" +
-                                 "\"rain\", [\"talk\", \"less\", \"smile\", \"more\"], 2021-01-12, \"ABC\", 6\n"
+                                "> return $purple, $advice, $when, $repeatAfterMe, $easyAs;\n" +
+                                "$purple, $advice, $when, $repeatAfterMe, $easyAs\n" +
+                                "\"rain\", [\"talk\", \"less\", \"smile\", \"more\"], 2021-01-12, \"ABC\", 6\n"
+                        )
+                );
+    }
+
+    @Test
+    void evaluatesArgumentsInteractiveWithSemicolon() throws Exception
+    {
+        buildTest()
+                .addArgs( "-u", USER, "-p", PASSWORD, "--format", "plain" )
+                .userInputLines(
+                        ":param purple => 'rain';",
+                        ":param advice => ['talk', 'less', 'smile', 'more'];",
+                        ":param when => date('2021-01-12');",
+                        ":param repeatAfterMe => 'A' + 'B' + 'C';",
+                        ":param easyAs => 1 + 2 + 3;",
+                        ":param dt => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }));",
+                        ":param dt2 => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }));;",
+                        ":params",
+                        "return $purple, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;" )
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        containsString(
+                                "> :params\n" +
+                                ":param advice        => ['talk', 'less', 'smile', 'more']\n" +
+                                ":param dt            => " +
+                                "datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))\n" +
+                                ":param dt2           => " +
+                                "datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))\n" +
+                                ":param easyAs        => 1 + 2 + 3\n" +
+                                ":param purple        => 'rain'\n" +
+                                ":param repeatAfterMe => 'A' + 'B' + 'C'\n" +
+                                ":param when          => date('2021-01-12')\n"
+                        ),
+                        containsString(
+                                "> return $purple, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;\n" +
+                                "$purple, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2\n" +
+                                "\"rain\", [\"talk\", \"less\", \"smile\", \"more\"], 2021-01-12, \"ABC\", 6, " +
+                                "2023-02-06T00:00-06:00[America/Chicago], 2023-02-06T00:00-06:00[America/Chicago]\n"
                         )
                 );
     }
@@ -913,20 +1003,23 @@ class MainIntegrationTest
         return buildTest();
     }
 
-    private void runInSystemDb( ThrowingConsumer<CypherShell, Exception> systemDbConsumer )
+    private void runInSystemDb( ThrowingConsumer<CypherShell,Exception> systemDbConsumer )
     {
-        runInSystemDbAndReturn( shell -> {
-            systemDbConsumer.accept( shell );
-            return null;
-        } );
+        runInSystemDbAndReturn( shell ->
+                                {
+                                    systemDbConsumer.accept( shell );
+                                    return null;
+                                } );
     }
 
-    private <T> T runInDbAndReturn( String database, ThrowingFunction<CypherShell, T, Exception> systemDbConsumer )
+    private <T> T runInDbAndReturn( String database, ThrowingFunction<CypherShell,T,Exception> systemDbConsumer )
     {
         CypherShell shell = null;
         try
         {
-            shell = new CypherShell( new StringLinePrinter(), new PrettyConfig( Format.PLAIN, false, 100 ), true, new ShellParameterMap() );
+            var bolt = new BoltStateHandler( true );
+            var printer = new PrettyPrinter( new PrettyConfig( Format.PLAIN, false, 100 ) );
+            shell = new CypherShell( new StringLinePrinter(), bolt, printer, ParameterService.create( bolt ) );
             shell.connect( new ConnectionConfig( "neo4j", "localhost", 7687, USER, PASSWORD, Encryption.DEFAULT, database ) );
             return systemDbConsumer.apply( shell );
         }
@@ -943,7 +1036,7 @@ class MainIntegrationTest
         }
     }
 
-    private <T> T runInSystemDbAndReturn( ThrowingFunction<CypherShell, T, Exception> systemDbConsumer )
+    private <T> T runInSystemDbAndReturn( ThrowingFunction<CypherShell,T,Exception> systemDbConsumer )
     {
         var systemDb = serverVersion.major() >= 4 ? "system" : ""; // Before version 4 we don't support multi databases
         return runInDbAndReturn( systemDb, systemDbConsumer );
@@ -1033,7 +1126,7 @@ class MainIntegrationTest
             var terminal = terminalBuilder()
                     .dumb()
                     .streams( in, outPrintStream )
-                    .simplePromptSupplier(() -> new TestSimplePrompt( in, new PrintWriter( out ) ) )
+                    .simplePromptSupplier( () -> new TestSimplePrompt( in, new PrintWriter( out ) ) )
                     .interactive( !args.getNonInteractive() )
                     .logger( logger )
                     .build();

@@ -94,8 +94,8 @@ public class CommandHelper
         registerCommand( new Begin( cypherShell ) );
         registerCommand( new Commit( cypherShell ) );
         registerCommand( new Rollback( cypherShell ) );
-        registerCommand( new Param( cypherShell.getParameterMap() ) );
-        registerCommand( new Params( logger, cypherShell.getParameterMap() ) );
+        registerCommand( new Param( cypherShell.getParameters() ) );
+        registerCommand( new Params( logger, cypherShell.getParameters() ) );
         registerCommand( new Source( cypherShell, new ShellStatementParser() ) );
         registerCommand( new Disconnect( cypherShell ) );
         registerCommand( new Connect( cypherShell, terminal, connectionConfig ) );

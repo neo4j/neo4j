@@ -37,7 +37,10 @@ import org.neo4j.shell.exception.ThrowingAction;
 import org.neo4j.shell.log.AnsiFormattedText;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
+import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 import org.neo4j.util.VisibleForTesting;
 
@@ -56,6 +59,7 @@ public class Main implements Closeable
     private final boolean isOutputInteractive;
     private final ShellRunner.Factory runnerFactory;
     private final CypherShellTerminal terminal;
+    private final ParameterService parameters;
 
     public Main( CliArgs args )
     {
@@ -63,7 +67,10 @@ public class Main implements Closeable
         this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, System.out, System.err );
         this.terminal = terminalBuilder().interactive( isInteractive ).logger( logger ).build();
         this.args = args;
-        this.shell = new CypherShell( logger, new PrettyConfig( args ), shouldBeInteractive( args, terminal.isInteractive() ), args.getParameters() );
+        PrettyPrinter prettyPrinter = new PrettyPrinter( new PrettyConfig( args ) );
+        BoltStateHandler boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, terminal.isInteractive() ) );
+        this.parameters = ParameterService.create( boltStateHandler );
+        this.shell = new CypherShell( logger, boltStateHandler, prettyPrinter, parameters );
         this.isOutputInteractive = !args.getNonInteractive() && ShellRunner.isOutputInteractive();
         this.runnerFactory = new ShellRunner.Factory();
     }
@@ -74,13 +81,15 @@ public class Main implements Closeable
         this.terminal = terminal;
         this.args = args;
         this.logger = new AnsiLogger( args.getDebugMode(), Format.VERBOSE, out, err );
-        this.shell = new CypherShell( logger, new PrettyConfig( args ), shouldBeInteractive( args, terminal.isInteractive() ), args.getParameters() );
+        BoltStateHandler boltStateHandler = new BoltStateHandler( shouldBeInteractive( args, terminal.isInteractive() ) );
+        this.parameters = ParameterService.create( boltStateHandler );
+        this.shell = new CypherShell( logger, boltStateHandler, new PrettyPrinter( new PrettyConfig( args ) ), parameters );
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = new ShellRunner.Factory();
     }
 
     @VisibleForTesting
-    public Main( CliArgs args, AnsiLogger logger, CypherShell shell,
+    public Main( CliArgs args, AnsiLogger logger, CypherShell shell, ParameterService parameters,
                  boolean outputInteractive, ShellRunner.Factory runnerFactory, CypherShellTerminal terminal )
     {
         this.terminal = terminal;
@@ -89,6 +98,7 @@ public class Main implements Closeable
         this.shell = shell;
         this.isOutputInteractive = outputInteractive;
         this.runnerFactory = runnerFactory;
+        this.parameters = parameters;
     }
 
     public static void main( String[] args )
@@ -109,7 +119,7 @@ public class Main implements Closeable
         {
             exitCode = main.startShell();
         }
-        System.exit(exitCode);
+        System.exit( exitCode );
     }
 
     public int startShell()
@@ -206,7 +216,9 @@ public class Main implements Closeable
             try
             {
                 // Try to connect
-                return shell.connect( connectionConfig, command );
+                ConnectionConfig newConf = shell.connect( connectionConfig, command );
+                setArgumentParameters();
+                return newConf;
             }
             catch ( AuthenticationException e )
             {
@@ -242,8 +254,8 @@ public class Main implements Closeable
         if ( connectionConfig.username().isEmpty() )
         {
             String username = isOutputInteractive ?
-                    promptForNonEmptyText( "username", false ) :
-                    promptForText( "username", false );
+                              promptForNonEmptyText( "username", false ) :
+                              promptForText( "username", false );
             connectionConfig.setUsername( username );
         }
         if ( connectionConfig.password().isEmpty() )
@@ -261,8 +273,8 @@ public class Main implements Closeable
         if ( connectionConfig.username().isEmpty() )
         {
             String username = isOutputInteractive ?
-                    promptForNonEmptyText( "username", false ) :
-                    promptForText( "username", false );
+                              promptForNonEmptyText( "username", false ) :
+                              promptForText( "username", false );
             connectionConfig.setUsername( username );
         }
         if ( connectionConfig.password().isEmpty() )
@@ -295,7 +307,7 @@ public class Main implements Closeable
         String text = promptForText( prompt, maskInput );
         while ( text.isEmpty() )
         {
-            text = promptForText( String.format("%s cannot be empty%n%n%s", prompt, prompt), maskInput );
+            text = promptForText( String.format( "%s cannot be empty%n%n%s", prompt, prompt ), maskInput );
         }
         return text;
     }
@@ -342,6 +354,14 @@ public class Main implements Closeable
         catch ( Exception e )
         {
             // Ignore
+        }
+    }
+
+    private void setArgumentParameters() throws CommandException
+    {
+        for ( var parameter : args.getParameters() )
+        {
+            parameters.setParameter( parameters.evaluate( parameter ) );
         }
     }
 }

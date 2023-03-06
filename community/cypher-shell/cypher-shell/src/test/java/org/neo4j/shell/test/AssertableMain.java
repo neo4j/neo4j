@@ -41,6 +41,7 @@ import org.neo4j.shell.ShellRunner;
 import org.neo4j.shell.cli.CliArgs;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.log.AnsiLogger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.terminal.TestSimplePrompt;
 
 import static java.lang.System.lineSeparator;
@@ -160,6 +161,7 @@ public class AssertableMain
         public final ByteArrayOutputStream out = new ByteArrayOutputStream();
         public final ByteArrayOutputStream err = new ByteArrayOutputStream();
         public File historyFile;
+        public ParameterService parameters;
 
         public AssertableMainBuilder shell( CypherShell shell )
         {
@@ -193,13 +195,19 @@ public class AssertableMain
 
         public AssertableMainBuilder userInputLines( String... input )
         {
-            this.in = new ByteArrayInputStream( ( stream( input ).map( l -> l + "\n" ).collect( joining() ) ).getBytes() );
+            this.in = new ByteArrayInputStream( (stream( input ).map( l -> l + "\n" ).collect( joining() )).getBytes() );
             return this;
         }
 
         public AssertableMainBuilder userInput( String input )
         {
             this.in = new ByteArrayInputStream( input.getBytes() );
+            return this;
+        }
+
+        public AssertableMainBuilder parameters( ParameterService parameters )
+        {
+            this.parameters = parameters;
             return this;
         }
 
@@ -227,7 +235,8 @@ public class AssertableMain
                     .interactive( !args.getNonInteractive() )
                     .logger( logger )
                     .build();
-            var main = new Main( args, logger, shell, isOutputInteractive, runnerFactory, terminal );
+
+            var main = new Main( args, logger, shell, parameters, isOutputInteractive, runnerFactory, terminal );
             var exitCode = main.startShell();
 
             if ( closeMain )

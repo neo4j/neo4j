@@ -24,9 +24,10 @@ import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 
-import org.neo4j.shell.ParameterMap;
+import org.neo4j.shell.QueryRunner;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.state.ParamValue;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -40,18 +41,18 @@ import static org.mockito.Mockito.when;
 
 class ParamsTest
 {
-    private HashMap<String, ParamValue> vars;
+    private QueryRunner queryRunner;
+    private ParameterService parameters;
     private Logger logger;
     private Params cmd;
 
     @BeforeEach
     void setup() throws CommandException
     {
-        vars = new HashMap<>();
+        queryRunner = mock(QueryRunner.class);
+        parameters = ParameterService.create( queryRunner );
         logger = mock( Logger.class );
-        ParameterMap shell = mock( ParameterMap.class );
-        when( shell.getAllAsUserInput() ).thenReturn( vars );
-        cmd = new Params( logger, shell );
+        cmd = new Params( logger, parameters );
     }
 
     @Test
@@ -76,9 +77,7 @@ class ParamsTest
     void runCommand() throws CommandException
     {
         // given
-        String var = "var";
-        int value = 9;
-        vars.put( var, new ParamValue( String.valueOf( value ), value ) );
+        parameters.setParameter( new ParameterService.Parameter( "var", "9", 9 ) );
         // when
         cmd.execute( "" );
         // then
@@ -90,12 +89,13 @@ class ParamsTest
     void runCommandAlignment() throws CommandException
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 99999 ), 99999 ) );
+        parameters.setParameter( new ParameterService.Parameter( "param", "99999", 99999 ) );
+        parameters.setParameter( new ParameterService.Parameter( "var", "9", 9 ) );
+        parameters.setParameter( new ParameterService.Parameter( "param", "99998", 99998 ) );
         // when
         cmd.execute( "" );
         // then
-        verify( logger ).printOut( ":param param => 99999" );
+        verify( logger ).printOut( ":param param => 99998" );
         verify( logger ).printOut( ":param var   => 9" );
         verifyNoMoreInteractions( logger );
     }
@@ -104,8 +104,8 @@ class ParamsTest
     void runCommandWithArg() throws CommandException
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
+        parameters.setParameter( new ParameterService.Parameter( "var", "9", 9 ) );
+        parameters.setParameter( new ParameterService.Parameter( "param", "9999", 9999 ) );
         // when
         cmd.execute( "var" );
         // then
@@ -117,8 +117,8 @@ class ParamsTest
     void runCommandWithArgWithExtraSpace() throws CommandException
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
+        parameters.setParameter( new ParameterService.Parameter( "var", "9", 9 ) );
+        parameters.setParameter( new ParameterService.Parameter( "param", "9999", 9999 ) );
         // when
         cmd.execute( " var" );
         // then
@@ -130,8 +130,8 @@ class ParamsTest
     void runCommandWithArgWithBackticks() throws CommandException
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
+        parameters.setParameter( new ParameterService.Parameter( "var", "9", 9 ) );
+        parameters.setParameter( new ParameterService.Parameter( "param", "9999", 9999 ) );
         // when
         cmd.execute( "`var`" );
         // then
@@ -143,8 +143,8 @@ class ParamsTest
     void runCommandWithSpecialCharacters() throws CommandException
     {
         // given
-        vars.put( "var `", new ParamValue( String.valueOf( 9 ), 9 ) );
-        vars.put( "param", new ParamValue( String.valueOf( 9999 ), 9999 ) );
+        parameters.setParameter( new ParameterService.Parameter( "var `", "9", 9 ) );
+        parameters.setParameter( new ParameterService.Parameter( "param", "9999", 9999 ) );
         // when
         cmd.execute( "`var ```" );
         // then
@@ -156,7 +156,7 @@ class ParamsTest
     void runCommandWithUnknownArg()
     {
         // given
-        vars.put( "var", new ParamValue( String.valueOf( 9 ), 9 ) );
+        parameters.setParameter( new ParameterService.Parameter( "var", "9", 9 ) );
 
         // when
         CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob" ) );

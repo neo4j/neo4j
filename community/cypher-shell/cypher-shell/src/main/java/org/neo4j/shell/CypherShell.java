@@ -32,6 +32,7 @@ import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.exception.ThrowingAction;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.LinePrinter;
 import org.neo4j.shell.prettyprint.PrettyConfig;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
@@ -46,7 +47,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     // Final space to catch newline
     private static final Pattern cmdNamePattern = Pattern.compile( "^\\s*(?<name>[^\\s]+)\\b(?<args>.*)\\s*$" );
     private static final Pattern emptyStatementPattern = Pattern.compile( "^\\s*;$" );
-    private final ParameterMap parameterMap;
+    private final ParameterService parameters;
     private final LinePrinter linePrinter;
     private final BoltStateHandler boltStateHandler;
     private final PrettyPrinter prettyPrinter;
@@ -54,22 +55,14 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     private String lastNeo4jErrorCode;
 
     public CypherShell( LinePrinter linePrinter,
-                        PrettyConfig prettyConfig,
-                        boolean isInteractive,
-                        ParameterMap parameterMap )
-    {
-        this( linePrinter, new BoltStateHandler( isInteractive ), new PrettyPrinter( prettyConfig ), parameterMap );
-    }
-
-    protected CypherShell( LinePrinter linePrinter,
                            BoltStateHandler boltStateHandler,
                            PrettyPrinter prettyPrinter,
-                           ParameterMap parameterMap )
+                           ParameterService parameters )
     {
         this.linePrinter = linePrinter;
         this.boltStateHandler = boltStateHandler;
         this.prettyPrinter = prettyPrinter;
-        this.parameterMap = parameterMap;
+        this.parameters = parameters;
         addRuntimeHookToResetShell();
     }
 
@@ -132,7 +125,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     {
         try
         {
-            final Optional<BoltResult> result = boltStateHandler.runCypher( cypher, parameterMap.allParameterValues() );
+            final Optional<BoltResult> result = boltStateHandler.runCypher( cypher, parameters.parameterValues() );
             result.ifPresent( boltResult ->
                               {
                                   prettyPrinter.format( boltResult, linePrinter );
@@ -284,9 +277,9 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     /**
      * @return the parameter map.
      */
-    public ParameterMap getParameterMap()
+    public ParameterService getParameters()
     {
-        return parameterMap;
+        return parameters;
     }
 
     public void changePassword( ConnectionConfig connectionConfig, String newPassword )

@@ -21,14 +21,15 @@ package org.neo4j.shell.commands;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ExitException;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.CypherVariablesFormatter;
 
 import static org.neo4j.shell.commands.CommandHelper.simpleArgParse;
@@ -42,12 +43,12 @@ public class Params implements Command
     public static final String COMMAND_NAME = ":params";
     private static final Pattern backtickPattern = Pattern.compile( "^\\s*(?<key>(`([^`])*`)+?)\\s*" );
     private final Logger logger;
-    private final ParameterMap parameterMap;
+    private final ParameterService parameters;
 
-    public Params( Logger logger, ParameterMap parameterMap )
+    public Params( Logger logger, ParameterService parameters )
     {
         this.logger = logger;
-        this.parameterMap = parameterMap;
+        this.parameters = parameters;
     }
 
     @Override
@@ -106,11 +107,12 @@ public class Params implements Command
     private void listParam( String name ) throws CommandException
     {
         String parameterName = CypherVariablesFormatter.unescapedCypherVariable( name );
-        if ( !this.parameterMap.getAllAsUserInput().containsKey( parameterName ) )
+        ParameterService.Parameter param = parameters.parameters().get( parameterName );
+        if ( param == null )
         {
             throw new CommandException( "Unknown parameter: " + name );
         }
-        listParam( name.length(), name, this.parameterMap.getAllAsUserInput().get( parameterName ).getValueAsString() );
+        listParam( name.length(), name, param.expressionString );
     }
 
     private void listParam( int leftColWidth, String key, Object value )
@@ -120,10 +122,11 @@ public class Params implements Command
 
     private void listAllParams()
     {
-        List<String> keys = parameterMap.getAllAsUserInput().keySet().stream().sorted().collect( Collectors.toList() );
-
-        int leftColWidth = keys.stream().map( s -> escape( s ).length() ).reduce( 0, Math::max );
-
-        keys.forEach( key -> listParam( leftColWidth, escape( key ), parameterMap.getAllAsUserInput().get( key ).getValueAsString() ) );
+        final List<Map.Entry<String,ParameterService.Parameter>> sortedParams = parameters.parameters().entrySet().stream()
+                                                                                          .sorted( Map.Entry.comparingByKey())
+                                                                                          .map( e -> Map.entry( escape( e.getKey() ), e.getValue() ) )
+                                                                                          .collect( Collectors.toList());
+        int width = sortedParams.stream().map( e -> e.getKey().length() ).reduce( 0, Math::max );
+        sortedParams.forEach( e -> listParam( width, e.getKey(), e.getValue().expressionString ) );
     }
 }

@@ -20,29 +20,13 @@
 package org.neo4j.shell;
 
 import java.util.Map;
+import java.util.Optional;
 
-import org.neo4j.shell.exception.ParameterException;
-import org.neo4j.shell.state.ParamValue;
+import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.state.BoltResult;
 
-/**
- * An object which keeps named parameters and allows them them to be set/unset.
- */
-public interface ParameterMap
+public interface QueryRunner
 {
-    /**
-     * @param name        of variable to set value for
-     * @param valueString to interpret the value from
-     * @return the evaluated value
-     */
-    Object setParameter( String name, String valueString ) throws ParameterException;
-
-    /**
-     * @return map of all currently set variables and their values
-     */
-    Map<String, Object> allParameterValues();
-
-    /**
-     * @return map of all currently set variables and their values corresponding to the user valueString
-     */
-    Map<String, ParamValue> getAllAsUserInput();
+    Optional<BoltResult> runCypher( String cypher,
+                                    Map<String,Object> queryParams ) throws CommandException;
 }

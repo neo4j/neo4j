@@ -22,25 +22,23 @@ package org.neo4j.shell.commands;
 import java.util.Collections;
 import java.util.List;
 
-import org.neo4j.shell.ParameterMap;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.ParameterException;
-import org.neo4j.shell.log.AnsiFormattedText;
-import org.neo4j.shell.util.ParameterSetter;
+import org.neo4j.shell.exception.ExitException;
+import org.neo4j.shell.parameter.ParameterService;
+
+import static org.neo4j.shell.log.AnsiFormattedText.from;
 
 /**
  * This command sets a variable to a name, for use as query parameter.
  */
-public class Param extends ParameterSetter<CommandException> implements Command
+public class Param implements Command
 {
     private static final String COMMAND_NAME = ":param";
+    private final ParameterService parameters;
 
-    /**
-     * @param parameterMap the map to set parameters in
-     */
-    public Param( final ParameterMap parameterMap )
+    public Param( final ParameterService parameters )
     {
-        super( parameterMap );
+        this.parameters = parameters;
     }
 
     @Override
@@ -58,7 +56,7 @@ public class Param extends ParameterSetter<CommandException> implements Command
     @Override
     public String getUsage()
     {
-        return "name => value";
+        return "name => <Cypher Expression>";
     }
 
     @Override
@@ -74,22 +72,19 @@ public class Param extends ParameterSetter<CommandException> implements Command
     }
 
     @Override
-    protected void onWrongUsage() throws CommandException
+    public void execute( String args ) throws ExitException, CommandException
     {
-        throw new CommandException( AnsiFormattedText.from( "Incorrect usage.\nusage: " )
-                                                     .bold( COMMAND_NAME ).append( " " ).append( getUsage() ) );
-    }
-
-    @Override
-    protected void onWrongNumberOfArguments() throws CommandException
-    {
-        throw new CommandException( AnsiFormattedText.from( "Incorrect number of arguments.\nusage: " )
-                                                     .bold( COMMAND_NAME ).append( " " ).append( getUsage() ) );
-    }
-
-    @Override
-    protected void onParameterException( ParameterException e ) throws CommandException
-    {
-        throw new CommandException( e.getMessage(), e );
+        try
+        {
+            var parsed = parameters.parse( args );
+            parameters.setParameter( parameters.evaluate( parsed ) );
+        }
+        catch ( ParameterService.ParameterParsingException e )
+        {
+            throw new CommandException( from( "Incorrect usage.\nusage: " )
+                                                .bold( getName() )
+                                                .append( " " )
+                                                .append( getUsage() ) );
+        }
     }
 }

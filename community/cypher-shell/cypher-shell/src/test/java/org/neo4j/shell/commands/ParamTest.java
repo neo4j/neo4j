@@ -22,169 +22,105 @@ package org.neo4j.shell.commands;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.shell.ParameterMap;
+import org.neo4j.shell.QueryRunner;
 import org.neo4j.shell.exception.CommandException;
-import org.neo4j.shell.exception.ParameterException;
+import org.neo4j.shell.parameter.ParameterService;
 
+import static java.util.Arrays.stream;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 class ParamTest
 {
-    private final ParameterMap mockShell = mock( ParameterMap.class );
-    private final Command cmd = new Param( mockShell );
+    private QueryRunner db = mock( QueryRunner.class );
+    private ParameterService parameters = ParameterService.create( db );
+    private Command cmd = new Param( parameters );
+
+    @BeforeEach
+    void setup()
+    {
+        db = mock( QueryRunner.class );
+        parameters = ParameterService.create( db );
+        cmd = new Param( parameters );
+    }
+
+    @Test
+    void setParams() throws CommandException
+    {
+        var param1 = new ParameterService.Parameter( "myParam", "'here I am'", "here I am" );
+        var param2 = new ParameterService.Parameter( "myParam2", "2", 2L );
+        var param3 = new ParameterService.Parameter( "myParam", "'again'", "again" );
+        assertExecute( "myParam => 'here I am'", param1 );
+        assertExecute( "myParam2 => 2", param1, param2 );
+        assertExecute( "myParam => 'again'", param2, param3 );
+    }
 
     @Test
     void shouldFailIfNoArgs()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "" ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+        Exception e = assertThrows( CommandException.class, () -> cmd.execute( "" ) );
+        assertThat( e.getMessage(), containsString( "Incorrect usage" ) );
     }
 
     @Test
     void shouldFailIfOneArg()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob" ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
-    }
-
-    @Test
-    void setParam() throws ParameterException, CommandException
-    {
-        cmd.execute( "bob   9" );
-
-        verify( mockShell ).setParameter( "bob", "9" );
-    }
-
-    @Test
-    void setLambdasAsParam() throws ParameterException, CommandException
-    {
-        cmd.execute( "bob => 9" );
-
-        verify( mockShell ).setParameter( "bob", "9" );
-    }
-
-    @Test
-    void setLambdasAsParamWithBackticks() throws ParameterException, CommandException
-    {
-        cmd.execute( "`bob` => 9" );
-
-        verify( mockShell ).setParameter( "`bob`", "9" );
-    }
-
-    @Test
-    void setSpecialCharacterParameter() throws ParameterException, CommandException
-    {
-        cmd.execute( "bØb   9" );
-
-        verify( mockShell ).setParameter( "bØb", "9" );
-    }
-
-    @Test
-    void setSpecialCharacterParameterForLambdaExpressions() throws ParameterException, CommandException
-    {
-        cmd.execute( "`first=>Name` => \"Bruce\"" );
-
-        verify( mockShell ).setParameter( "`first=>Name`", "\"Bruce\"" );
-    }
-
-    @Test
-    void setParamWithSpecialCharacters() throws ParameterException, CommandException
-    {
-        cmd.execute( "`bob#`   9" );
-
-        verify( mockShell ).setParameter( "`bob#`", "9" );
-    }
-
-    @Test
-    void setParamWithOddNoOfBackTicks() throws ParameterException, CommandException
-    {
-        cmd.execute( " `bo `` sömething ```   9" );
-
-        verify( mockShell ).setParameter( "`bo `` sömething ```", "9" );
+        Exception e = assertThrows( CommandException.class, () -> cmd.execute( "bob" ) );
+        assertThat( e.getMessage(), containsString( "Incorrect usage.\nusage: :param name => <Cypher Expression>" ) );
     }
 
     @Test
     void shouldFailForVariablesWithoutEscaping()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob#   9" ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+        Exception e = assertThrows( CommandException.class, () -> cmd.execute( "bob#   9" ) );
+        assertThat( e.getMessage(), containsString( "Incorrect usage.\nusage: :param name => <Cypher Expression>" ) );
     }
 
     @Test
     void shouldFailForVariablesMixingMapStyleAssignmentAndLambdas()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "bob: => 9" ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect usage" ) );
+        Exception e = assertThrows( CommandException.class, () -> cmd.execute( "bob: => 9" ) );
+        assertThat( e.getMessage(), containsString( "Incorrect usage" ) );
     }
 
     @Test
     void shouldFailForEmptyVariables()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "``   9" ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+        Exception e = assertThrows( CommandException.class, () -> cmd.execute( "``   9" ) );
+        assertThat( e.getMessage(), containsString( "Incorrect usage" ) );
     }
 
     @Test
     void shouldFailForInvalidVariables()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "`   9" ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
+        Exception e = assertThrows( CommandException.class, () -> cmd.execute( "`   9" ) );
+        assertThat( e.getMessage(), containsString( "Incorrect usage" ) );
     }
 
     @Test
     void shouldFailForVariablesWithoutText()
     {
-        CommandException exception = assertThrows( CommandException.class, () -> cmd.execute( "```   9" ) );
-        assertThat( exception.getMessage(), containsString( "Incorrect number of arguments" ) );
-    }
-
-    @Test
-    void shouldNotSplitOnSpace() throws ParameterException, CommandException
-    {
-        cmd.execute( "bob 'one two'" );
-        verify( mockShell ).setParameter( "bob", "'one two'" );
-    }
-
-    @Test
-    void shouldAcceptUnicodeAlphaNumeric() throws ParameterException, CommandException
-    {
-        cmd.execute( "böb 'one two'" );
-        verify( mockShell ).setParameter( "böb", "'one two'" );
-    }
-
-    @Test
-    void shouldAcceptColonFormOfParams() throws ParameterException, CommandException
-    {
-        cmd.execute( "bob: one" );
-        verify( mockShell ).setParameter( "bob", "one" );
-    }
-
-    @Test
-    void shouldAcceptForTwoColonsFormOfParams() throws ParameterException, CommandException
-    {
-        cmd.execute( "`bob:`: one" );
-        verify( mockShell ).setParameter( "`bob:`", "one" );
-
-        cmd.execute( "`t:om` two" );
-        verify( mockShell ).setParameter( "`t:om`", "two" );
-    }
-
-    @Test
-    void shouldNotExecuteEscapedCypher() throws ParameterException, CommandException
-    {
-        cmd.execute( "bob \"RETURN 5 as bob\"" );
-        verify( mockShell ).setParameter( "bob", "\"RETURN 5 as bob\"" );
+        Exception e = assertThrows( CommandException.class, () -> cmd.execute( "```   9" ) );
+        assertThat( e.getMessage(), containsString( "Incorrect usage" ) );
     }
 
     @Test
     void printUsage()
     {
-        String usage = cmd.getUsage();
-        assertEquals( usage, "name => value" );
+        assertThat( cmd.getUsage(), containsString( "name => <Cypher Expression>" ) );
+    }
+
+    private void assertExecute( String args, ParameterService.Parameter... expected ) throws CommandException
+    {
+        cmd.execute( args );
+        var expectedMap = stream( expected ).collect( toMap( e -> e.name, identity() ) );
+        assertEquals( expectedMap, parameters.parameters() );
+        var expectedValues = stream( expected ).collect( toMap( e -> e.name, e -> e.value ) );
+        assertEquals( expectedValues, parameters.parameterValues() );
     }
 }

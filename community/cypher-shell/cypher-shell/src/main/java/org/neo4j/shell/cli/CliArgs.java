@@ -20,12 +20,12 @@
 package org.neo4j.shell.cli;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Historian;
-import org.neo4j.shell.ParameterMap;
-import org.neo4j.shell.ShellParameterMap;
+import org.neo4j.shell.parameter.ParameterService;
 
 import static org.neo4j.shell.DatabaseManager.ABSENT_DB_NAME;
 
@@ -54,7 +54,7 @@ public class CliArgs
     private int numSampleRows = DEFAULT_NUM_SAMPLE_ROWS;
     private boolean wrap = true;
     private String inputFilename;
-    private ParameterMap parameters = new ShellParameterMap();
+    private List<ParameterService.RawParameter> parameters = List.of();
     private boolean changePassword;
     private File historyFile = Historian.defaultHistoryFile();
 
@@ -275,9 +275,14 @@ public class CliArgs
         }
     }
 
-    public ParameterMap getParameters()
+    public List<ParameterService.RawParameter> getParameters()
     {
         return parameters;
+    }
+
+    public void setParameters( List<ParameterService.RawParameter> parameters )
+    {
+        this.parameters = parameters;
     }
 
     public void setChangePassword( boolean changePassword )

@@ -42,7 +42,6 @@ import org.neo4j.shell.CypherShell;
 import org.neo4j.shell.DatabaseManager;
 import org.neo4j.shell.Historian;
 import org.neo4j.shell.OfflineTestShell;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StatementExecuter;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.UserMessagesHandler;
@@ -53,6 +52,7 @@ import org.neo4j.shell.exception.NoMoreInputException;
 import org.neo4j.shell.exception.UserInterruptException;
 import org.neo4j.shell.log.AnsiLogger;
 import org.neo4j.shell.log.Logger;
+import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.state.BoltStateHandler;
 import org.neo4j.shell.terminal.CypherShellTerminal;
@@ -663,7 +663,7 @@ class InteractiveShellRunnerTest
         FakeInterruptableShell( Logger logger,
                                 BoltStateHandler boltStateHandler )
         {
-            super( logger, boltStateHandler, mock( PrettyPrinter.class ), new ShellParameterMap() );
+            super( logger, boltStateHandler, mock( PrettyPrinter.class ), ParameterService.create( boltStateHandler ) );
         }
 
         @Override

@@ -24,13 +24,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.shell.CypherShell;
-import org.neo4j.shell.ShellParameterMap;
 import org.neo4j.shell.StringLinePrinter;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.parameter.ParameterService;
+import org.neo4j.shell.parameter.ParameterService.Parameter;
 import org.neo4j.shell.prettyprint.PrettyConfig;
+import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.prettyprint.TablePlanFormatter;
+import org.neo4j.shell.state.BoltStateHandler;
 
+import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,7 +52,9 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     void setUp() throws Exception
     {
         linePrinter.clear();
-        shell = new CypherShell( linePrinter, new PrettyConfig( Format.VERBOSE, true, 1000 ), false, new ShellParameterMap() );
+        var bolt = new BoltStateHandler( false );
+        var printer = new PrettyPrinter( new PrettyConfig( Format.VERBOSE, true, 1000 ) );
+        shell = new CypherShell( linePrinter, bolt, printer, ParameterService.create( bolt ) );
 
         connect( "neo" );
     }
@@ -58,7 +64,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     {
         try
         {
-            shell.execute("MATCH (n) DETACH DELETE (n)");
+            shell.execute( "MATCH (n) DETACH DELETE (n)" );
         }
         finally
         {
@@ -125,40 +131,38 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
     }
 
     @Test
-    void paramsAndListVariables() throws CommandException
+    void paramsAndListVariables() throws CommandException, ParameterService.ParameterParsingException
     {
-        assertTrue( shell.getParameterMap().allParameterValues().isEmpty() );
+        assertTrue( shell.getParameters().parameters().isEmpty() );
 
         long randomLong = System.currentTimeMillis();
         String stringInput = "\"randomString\"";
-        shell.getParameterMap().setParameter( "string", stringInput );
-        Object paramValue = shell.getParameterMap().setParameter( "bob", String.valueOf( randomLong ) );
-        assertEquals( randomLong, paramValue );
+        shell.getParameters().setParameter( evaluate( format( "string => %s", stringInput ) ) );
+        shell.getParameters().setParameter( evaluate( format( "bob => %d", randomLong ) ) );
 
         shell.execute( "RETURN $bob, $string" );
 
         String result = linePrinter.output();
         assertThat( result, containsString( "| $bob" ) );
         assertThat( result, containsString( "| " + randomLong + " | " + stringInput + " |" ) );
-        assertEquals( randomLong, shell.getParameterMap().allParameterValues().get( "bob" ) );
-        assertEquals( "randomString", shell.getParameterMap().allParameterValues().get( "string" ) );
+        assertEquals( randomLong, shell.getParameters().parameterValues().get( "bob" ) );
+        assertEquals( "randomString", shell.getParameters().parameterValues().get( "string" ) );
     }
 
     @Test
-    void paramsAndListVariablesWithSpecialCharacters() throws CommandException
+    void paramsAndListVariablesWithSpecialCharacters() throws CommandException, ParameterService.ParameterParsingException
     {
-        assertTrue( shell.getParameterMap().allParameterValues().isEmpty() );
+        assertTrue( shell.getParameters().parameters().isEmpty() );
 
         long randomLong = System.currentTimeMillis();
-        Object paramValue = shell.getParameterMap().setParameter( "`bob`", String.valueOf( randomLong ) );
-        assertEquals( randomLong, paramValue );
+        shell.getParameters().setParameter( evaluate( format( "`bob` => %d", randomLong ) ) );
 
         shell.execute( "RETURN $`bob`" );
 
         String result = linePrinter.output();
         assertThat( result, containsString( "| $`bob`" ) );
         assertThat( result, containsString( "\n| " + randomLong + " |\n" ) );
-        assertEquals( randomLong, shell.getParameterMap().allParameterValues().get( "bob" ) );
+        assertEquals( randomLong, shell.getParameters().parameterValues().get( "bob" ) );
     }
 
     @Test
@@ -251,7 +255,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
         String actual = linePrinter.output();
         assertThat( actual.replace( " ", "" ), containsString( "|Plan|Statement|Version|Planner|Runtime|Time|DbHits|Rows|Memory(Bytes)|" ) ); // First table
         assertThat( actual.replace( " ", "" ),
-                containsString( "|Operator|Details|EstimatedRows|Rows|DBHits|Memory(Bytes)|PageCacheHits/Misses|" ) ); // Second table
+                    containsString( "|Operator|Details|EstimatedRows|Rows|DBHits|Memory(Bytes)|PageCacheHits/Misses|" ) ); // Second table
     }
 
     @Test
@@ -274,7 +278,7 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
         //then
         String actual = linePrinter.output();
         assertThat( actual,
-                    containsString( String.format(
+                    containsString( format(
                             "+-----+%n" +
                             "| row |%n" +
                             "+-----+%n" +
@@ -285,5 +289,11 @@ class CypherShellVerboseIntegrationTest extends CypherShellIntegrationTest
                             "%n" +
                             "3 rows%n" +
                             "ready to start consuming query after" ) ) );
+    }
+
+    private Parameter evaluate( String input ) throws ParameterService.ParameterParsingException, CommandException
+    {
+        var params = shell.getParameters();
+        return params.evaluate( params.parse( input ) );
     }
 }
