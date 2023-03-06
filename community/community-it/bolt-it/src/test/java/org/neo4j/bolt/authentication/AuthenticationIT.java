@@ -450,7 +450,7 @@ public class AuthenticationIT {
     }
 
     @ProtocolTest
-    void shouldBeNotBeAbleToAuthenticateOnHelloMessage(BoltWire wire, @Negotiated TransportConnection connection)
+    void shouldNotBeAbleToAuthenticateOnHelloMessage(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
         // authenticate normally using the preset credentials and update the password to a new value
         connection.send(wire.hello(Map.of(
@@ -465,7 +465,6 @@ public class AuthenticationIT {
 
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailureFuzzy(
-                        Status.Request.Invalid,
-                        "Message 'org.neo4j.bolt.protocol.v50.message.request.BeginMessage@782' cannot be handled by a session in the AUTHENTICATION state.");
+                        Status.Request.Invalid, "cannot be handled by a session in the AUTHENTICATION state.");
     }
 }

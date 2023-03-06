@@ -28,12 +28,11 @@ import static org.neo4j.values.storable.Values.longValue;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.response.NoopResponseHandler;
+import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v40.fsm.FailedState;
-import org.neo4j.bolt.protocol.v40.fsm.InTransactionState;
-import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
-import org.neo4j.bolt.protocol.v40.fsm.ReadyState;
-import org.neo4j.bolt.protocol.v40.messaging.request.RunMessage;
+import org.neo4j.bolt.protocol.v40.fsm.state.FailedState;
+import org.neo4j.bolt.protocol.v40.fsm.state.InTransactionState;
+import org.neo4j.bolt.protocol.v40.fsm.state.ReadyState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
@@ -271,7 +270,7 @@ public class InTransactionStateIT {
     @StateMachineTest
     void shouldTerminateOnInvalidStatement(
             @Streaming StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
-        fsm.process(new RunMessage("✨✨✨ INVALID QUERY STRING ✨✨✨"), recorder);
+        fsm.process(messages.run("✨✨✨ INVALID QUERY STRING ✨✨✨"), recorder);
 
         // Then
         assertThat(fsm).isInState(FailedState.class);

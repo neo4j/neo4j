@@ -29,8 +29,8 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v40.fsm.ReadyState;
-import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.ResetMessage;
+import org.neo4j.bolt.protocol.v40.fsm.state.ReadyState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.response.ResponseRecorder;
 import org.neo4j.function.ThrowingConsumer;
@@ -91,7 +91,7 @@ public final class StateMachineAssertions extends AbstractAssert<StateMachineAss
             var recorder = new ResponseRecorder();
 
             connection.interrupt();
-            this.actual.process(ResetMessage.INSTANCE, recorder);
+            this.actual.process(ResetMessage.getInstance(), recorder);
 
             ResponseRecorderAssertions.assertThat(recorder)
                     .as(this.descriptionText())

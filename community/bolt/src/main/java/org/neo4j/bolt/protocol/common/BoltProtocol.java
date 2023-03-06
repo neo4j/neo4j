@@ -23,7 +23,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -34,6 +33,15 @@ import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.ResponseMessage;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
+import org.neo4j.bolt.protocol.io.reader.DateReader;
+import org.neo4j.bolt.protocol.io.reader.DateTimeReader;
+import org.neo4j.bolt.protocol.io.reader.DateTimeZoneIdReader;
+import org.neo4j.bolt.protocol.io.reader.DurationReader;
+import org.neo4j.bolt.protocol.io.reader.LocalDateTimeReader;
+import org.neo4j.bolt.protocol.io.reader.LocalTimeReader;
+import org.neo4j.bolt.protocol.io.reader.Point2dReader;
+import org.neo4j.bolt.protocol.io.reader.Point3dReader;
+import org.neo4j.bolt.protocol.io.reader.TimeReader;
 import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
@@ -41,6 +49,7 @@ import org.neo4j.bolt.protocol.v42.BoltProtocolV42;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
 import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
 import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
+import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
@@ -49,17 +58,15 @@ import org.neo4j.values.storable.Value;
 
 public interface BoltProtocol {
 
-    static List<BoltProtocol> available(
-            LogService logging,
-            BoltGraphDatabaseManagementServiceSPI databaseManagementServiceSPI,
-            SystemNanoClock clock) {
+    static List<BoltProtocol> available(SystemNanoClock clock, LogService logging) {
         return List.of(
-                new BoltProtocolV40(logging, databaseManagementServiceSPI, clock),
-                new BoltProtocolV41(logging, databaseManagementServiceSPI, clock),
-                new BoltProtocolV42(logging, databaseManagementServiceSPI, clock),
-                new BoltProtocolV43(logging, databaseManagementServiceSPI, clock),
-                new BoltProtocolV44(logging, databaseManagementServiceSPI, clock),
-                new BoltProtocolV50(logging, databaseManagementServiceSPI, clock));
+                new BoltProtocolV40(clock, logging),
+                new BoltProtocolV41(clock, logging),
+                new BoltProtocolV42(clock, logging),
+                new BoltProtocolV43(clock, logging),
+                new BoltProtocolV44(clock, logging),
+                new BoltProtocolV50(clock, logging),
+                new BoltProtocolV51(clock, logging));
     }
 
     /**
@@ -123,7 +130,17 @@ public interface BoltProtocol {
      *
      * @param builder a struct registry.
      */
-    void registerStructReaders(StructRegistry.Builder<Connection, Value> builder);
+    default void registerStructReaders(StructRegistry.Builder<Connection, Value> builder) {
+        builder.register(DateReader.getInstance())
+                .register(DurationReader.getInstance())
+                .register(LocalDateTimeReader.getInstance())
+                .register(LocalTimeReader.getInstance())
+                .register(Point2dReader.getInstance())
+                .register(Point3dReader.getInstance())
+                .register(TimeReader.getInstance())
+                .register(DateTimeReader.getInstance())
+                .register(DateTimeZoneIdReader.getInstance());
+    }
 
     /**
      * Registers protocol specific struct writers for encoding of values through the result streaming APIs.

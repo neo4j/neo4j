@@ -25,9 +25,21 @@ import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.protocol.common.message.request.authentication.LogoffMessage;
+import org.neo4j.bolt.protocol.common.message.request.authentication.LogonMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.GoodbyeMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.ResetMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
+import org.neo4j.bolt.protocol.common.message.request.streaming.DiscardMessage;
+import org.neo4j.bolt.protocol.common.message.request.streaming.PullMessage;
+import org.neo4j.bolt.protocol.common.message.request.transaction.BeginMessage;
+import org.neo4j.bolt.protocol.common.message.request.transaction.CommitMessage;
+import org.neo4j.bolt.protocol.common.message.request.transaction.RollbackMessage;
+import org.neo4j.bolt.protocol.common.message.request.transaction.RunMessage;
 import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
@@ -43,27 +55,54 @@ public interface BoltMessages {
      */
     ProtocolVersion version();
 
-    default RequestMessage hello(RoutingContext routingContext) {
-        throw new UnsupportedOperationException("Routing is not supported by this protocol version");
+    default boolean supportsLogonMessage() {
+        return false;
     }
 
-    @Deprecated // TODO: This sucks
-    RequestMessage hello(Map<String, Object> meta);
+    default RequestMessage authenticate(String principal, String credentials) {
+        return this.logon(principal, credentials);
+    }
 
     default RequestMessage hello() {
         return this.hello(Collections.emptyMap());
     }
 
+    default RequestMessage hello(Map<String, Object> authToken) {
+        return this.hello(Collections.emptyList(), null, authToken);
+    }
+
+    default RequestMessage hello(RoutingContext routingContext) {
+        return this.hello(Collections.emptyList(), routingContext, Collections.emptyMap());
+    }
+
+    RequestMessage hello(List<Feature> features, RoutingContext routingContext, Map<String, Object> authToken);
+
     default RequestMessage hello(String principal, String credentials) {
         return this.hello(AuthToken.newBasicAuthToken(principal, credentials));
     }
 
-    RequestMessage reset();
+    default RequestMessage logon() {
+        return new LogonMessage(Collections.emptyMap());
+    }
 
-    RequestMessage goodbye();
+    default RequestMessage logon(String principal, String credentials) {
+        return new LogonMessage(AuthToken.newBasicAuthToken(principal, credentials));
+    }
+
+    default RequestMessage logoff() {
+        return LogoffMessage.getInstance();
+    }
+
+    default RequestMessage reset() {
+        return ResetMessage.getInstance();
+    }
+
+    default RequestMessage goodbye() {
+        return GoodbyeMessage.getInstance();
+    }
 
     default RequestMessage route() {
-        throw new UnsupportedOperationException("ROUTE is not supported by this protocol version");
+        return new RouteMessage(MapValue.EMPTY, Collections.emptyList(), null, null);
     }
 
     default RequestMessage begin() {
@@ -93,19 +132,27 @@ public interface BoltMessages {
         return this.begin(bookmarks, txTimeout, mode, txMetadata, databaseName, null);
     }
 
-    RequestMessage begin(
+    default RequestMessage begin(
             List<Bookmark> bookmarks,
             Duration txTimeout,
             AccessMode mode,
             Map<String, Object> txMetadata,
             String databaseName,
-            String impersonatedUser);
+            String impersonatedUser) {
+        return new BeginMessage(bookmarks, null, mode, txMetadata, databaseName, impersonatedUser);
+    }
 
-    RequestMessage commit();
+    default RequestMessage commit() {
+        return CommitMessage.getInstance();
+    }
 
-    RequestMessage rollback();
+    default RequestMessage rollback() {
+        return RollbackMessage.getInstance();
+    }
 
-    RequestMessage discard(long n, long statementId);
+    default RequestMessage discard(long n, long statementId) {
+        return new DiscardMessage(n, statementId);
+    }
 
     default RequestMessage discard(long n) {
         return discard(n, -1);
@@ -115,7 +162,9 @@ public interface BoltMessages {
         return discard(-1);
     }
 
-    RequestMessage pull(long n, long statementId);
+    default RequestMessage pull(long n, long statementId) {
+        return new PullMessage(n, statementId);
+    }
 
     default RequestMessage pull(long n) {
         return this.pull(n, -1);
@@ -141,13 +190,8 @@ public interface BoltMessages {
         return this.run(statement, "", params);
     }
 
-    RequestMessage run(String statement, String db, MapValue params);
-
-    default RequestMessage logon() {
-        throw new UnsupportedOperationException("LOGON is not supported by this protocol version");
-    }
-
-    default RequestMessage logoff() {
-        throw new UnsupportedOperationException("LOGOFF is not supported by this protocol version");
+    default RequestMessage run(String statement, String db, MapValue params) {
+        return new RunMessage(
+                statement, params, Collections.emptyList(), null, AccessMode.WRITE, Collections.emptyMap(), db, null);
     }
 }

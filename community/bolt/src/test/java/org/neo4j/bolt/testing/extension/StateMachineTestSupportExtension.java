@@ -84,14 +84,14 @@ public class StateMachineTestSupportExtension implements TestTemplateInvocationC
     private Stream<StateMachineProvider> matchingProviders(StateMachineTest annotation) {
         var includedVersions = StateMachineProvider.versions();
 
-        if (annotation.since().length != 0) {
-            if (annotation.since().length > 1) {
-                throw new IllegalStateException("Illegal test configuration: since can only contain a single version");
-            }
+        var since = convertVersion(annotation.since());
+        var until = convertVersion(annotation.until());
 
-            var protocolVersion = convertVersion(annotation.since()[0]);
-
-            return includedVersions.filter(version -> version.version().compareTo(protocolVersion) >= 0);
+        if (since.major() != 0) {
+            return includedVersions.filter(version -> version.version().compareTo(since) >= 0);
+        }
+        if (until.major() != ProtocolVersion.MAX_MINOR_BIT) {
+            return includedVersions.filter(version -> version.version().compareTo(until) < 0);
         }
 
         if (annotation.include().length != 0) {

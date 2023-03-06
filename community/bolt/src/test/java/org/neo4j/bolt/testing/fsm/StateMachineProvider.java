@@ -20,7 +20,6 @@
 package org.neo4j.bolt.testing.fsm;
 
 import java.util.stream.Stream;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.testing.messages.BoltMessages;
@@ -46,8 +45,5 @@ public interface StateMachineProvider {
 
     BoltMessages messages();
 
-    BoltProtocol protocol(
-            LogService logging,
-            BoltGraphDatabaseManagementServiceSPI graphDatabaseManagementServiceSPI,
-            SystemNanoClock clock);
+    BoltProtocol protocol(SystemNanoClock clock, LogService logging);
 }

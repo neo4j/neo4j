@@ -26,9 +26,9 @@ import static org.neo4j.values.storable.BooleanValue.TRUE;
 import static org.neo4j.values.storable.Values.longValue;
 
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
-import org.neo4j.bolt.protocol.v40.fsm.ReadyState;
+import org.neo4j.bolt.protocol.v40.fsm.state.ReadyState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;

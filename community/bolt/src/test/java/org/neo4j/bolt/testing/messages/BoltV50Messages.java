@@ -21,6 +21,7 @@
 package org.neo4j.bolt.testing.messages;
 
 import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 
 public class BoltV50Messages extends BoltV44Messages {
@@ -37,5 +38,25 @@ public class BoltV50Messages extends BoltV44Messages {
     @Override
     public ProtocolVersion version() {
         return BoltProtocolV50.VERSION;
+    }
+
+    @Override
+    public RequestMessage authenticate(String principal, String credentials) {
+        return this.hello(principal, credentials);
+    }
+
+    @Override
+    public RequestMessage logon() {
+        throw new UnsupportedOperationException("Logon");
+    }
+
+    @Override
+    public RequestMessage logon(String principal, String credentials) {
+        throw new UnsupportedOperationException("Logon");
+    }
+
+    @Override
+    public RequestMessage logoff() {
+        throw new UnsupportedOperationException("Logoff");
     }
 }

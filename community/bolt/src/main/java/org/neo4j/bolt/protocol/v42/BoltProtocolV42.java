@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.protocol.v42;
 
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
 import org.neo4j.logging.internal.LogService;
@@ -31,11 +30,8 @@ import org.neo4j.time.SystemNanoClock;
 public class BoltProtocolV42 extends BoltProtocolV41 {
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 2);
 
-    public BoltProtocolV42(
-            LogService logging,
-            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            SystemNanoClock clock) {
-        super(logging, boltGraphDatabaseManagementServiceSPI, clock);
+    public BoltProtocolV42(SystemNanoClock clock, LogService logging) {
+        super(clock, logging);
     }
 
     @Override

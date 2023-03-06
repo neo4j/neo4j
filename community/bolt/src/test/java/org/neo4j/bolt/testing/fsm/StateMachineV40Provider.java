@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.testing.fsm;
 
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.bolt.testing.messages.BoltMessages;
@@ -27,7 +26,7 @@ import org.neo4j.bolt.testing.messages.BoltV40Messages;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.time.SystemNanoClock;
 
-public class StateMachineV40Provider implements StateMachineProvider {
+public final class StateMachineV40Provider implements StateMachineProvider {
     private static final StateMachineProvider INSTANCE = new StateMachineV40Provider();
 
     private StateMachineV40Provider() {}
@@ -42,10 +41,7 @@ public class StateMachineV40Provider implements StateMachineProvider {
     }
 
     @Override
-    public BoltProtocol protocol(
-            LogService logging,
-            BoltGraphDatabaseManagementServiceSPI graphDatabaseManagementServiceSPI,
-            SystemNanoClock clock) {
-        return new BoltProtocolV40(logging, graphDatabaseManagementServiceSPI, clock);
+    public BoltProtocol protocol(SystemNanoClock clock, LogService logging) {
+        return new BoltProtocolV40(clock, logging);
     }
 }

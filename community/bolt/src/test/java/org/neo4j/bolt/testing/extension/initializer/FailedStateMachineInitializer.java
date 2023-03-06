@@ -23,7 +23,7 @@ import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.response.NoopResponseHandler;
-import org.neo4j.bolt.protocol.v40.fsm.FailedState;
+import org.neo4j.bolt.protocol.v40.fsm.state.FailedState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.assertions.StateMachineAssertions;
 import org.neo4j.bolt.testing.extension.dependency.StateMachineDependencyProvider;

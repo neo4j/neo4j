@@ -19,7 +19,7 @@
  */
 package org.neo4j.fabric.bootstrap;
 
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 
 /**
  * A collection of methods that allow overriding default behaviour to make some aspects of Fabric testable.

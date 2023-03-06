@@ -19,15 +19,14 @@
  */
 package org.neo4j.bolt.protocol.v43;
 
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
+import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
+import org.neo4j.bolt.protocol.common.message.decoder.connection.LegacyRouteMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v42.BoltProtocolV42;
 import org.neo4j.bolt.protocol.v43.fsm.StateMachineV43;
-import org.neo4j.bolt.protocol.v43.message.decoder.RouteMessageDecoder;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.time.SystemNanoClock;
@@ -38,11 +37,8 @@ import org.neo4j.time.SystemNanoClock;
 public class BoltProtocolV43 extends BoltProtocolV42 {
     public static final ProtocolVersion VERSION = new ProtocolVersion(4, 3);
 
-    public BoltProtocolV43(
-            LogService logging,
-            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            SystemNanoClock clock) {
-        super(logging, boltGraphDatabaseManagementServiceSPI, clock);
+    public BoltProtocolV43(SystemNanoClock clock, LogService logging) {
+        super(clock, logging);
     }
 
     @Override
@@ -51,18 +47,14 @@ public class BoltProtocolV43 extends BoltProtocolV42 {
     }
 
     @Override
-    protected StructRegistry<Connection, RequestMessage> createRequestMessageRegistry() {
-        return super.createRequestMessageRegistry()
-                .builderOf()
-                .register(RouteMessageDecoder.getInstance())
-                .build();
+    protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
+        return super.createRequestMessageRegistry().register(LegacyRouteMessageDecoder.getInstance());
     }
 
     @Override
-    public StateMachine createStateMachine(Connection connection) {
-        connection.memoryTracker().allocateHeap(StateMachineSPIImpl.SHALLOW_SIZE + StateMachineV43.SHALLOW_SIZE);
+    protected StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI) {
+        connection.memoryTracker().allocateHeap(StateMachineV43.SHALLOW_SIZE);
 
-        var boltSPI = new StateMachineSPIImpl(logging);
-        return new StateMachineV43(boltSPI, connection, clock);
+        return new StateMachineV43(stateMachineSPI, connection, clock);
     }
 }

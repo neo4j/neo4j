@@ -25,8 +25,8 @@ import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.asser
 
 import org.assertj.core.api.Assertions;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v51.fsm.AuthenticationState;
-import org.neo4j.bolt.protocol.v51.fsm.ReadyState;
+import org.neo4j.bolt.protocol.v51.fsm.state.AuthenticationState;
+import org.neo4j.bolt.protocol.v51.fsm.state.ReadyState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltProtocolBreachFatality;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
@@ -56,7 +56,7 @@ public class AuthenticationStateIT {
     }
 
     @StateMachineTest(since = @Version(major = 5, minor = 1))
-    public void shouldNotAcceptABeginMessageAndError(StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
+    public void shouldNotAcceptBeginMessage(StateMachine fsm, BoltMessages messages, ResponseRecorder recorder)
             throws BoltConnectionFatality {
         // Given
         fsm.process(messages.hello(), recorder);
@@ -65,7 +65,6 @@ public class AuthenticationStateIT {
 
         // Then
         var e = assertThrows(BoltProtocolBreachFatality.class, () -> fsm.process(messages.begin(), recorder));
-        Assertions.assertThat(e.getMessage())
-                .contains("BeginMessage@782' cannot be handled by a session in the AUTHENTICATION state.");
+        Assertions.assertThat(e.getMessage()).contains("cannot be handled by a session in the AUTHENTICATION state.");
     }
 }

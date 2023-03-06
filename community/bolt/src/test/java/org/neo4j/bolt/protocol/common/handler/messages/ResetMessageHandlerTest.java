@@ -26,8 +26,8 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.v40.messaging.request.CommitMessage;
-import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.ResetMessage;
+import org.neo4j.bolt.protocol.common.message.request.transaction.CommitMessage;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.Level;
@@ -41,7 +41,7 @@ class ResetMessageHandlerTest {
         var channel = new EmbeddedChannel();
         var connection = ConnectionMockFactory.newFactory().attachTo(channel, new ResetMessageHandler(log));
 
-        channel.writeInbound(ResetMessage.INSTANCE);
+        channel.writeInbound(ResetMessage.getInstance());
 
         verify(connection).interrupt();
         verifyNoMoreInteractions(connection);
@@ -56,7 +56,7 @@ class ResetMessageHandlerTest {
         var channel = new EmbeddedChannel();
         var connection = ConnectionMockFactory.newFactory().attachTo(channel, new ResetMessageHandler(log));
 
-        channel.writeInbound(CommitMessage.INSTANCE);
+        channel.writeInbound(CommitMessage.getInstance());
 
         verifyNoInteractions(connection);
 

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.platform.commons.util.AnnotationUtils;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.response.NoopResponseHandler;
-import org.neo4j.bolt.protocol.v40.fsm.AutoCommitState;
+import org.neo4j.bolt.protocol.v40.fsm.state.AutoCommitState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Autocommit;
 import org.neo4j.bolt.testing.assertions.StateMachineAssertions;

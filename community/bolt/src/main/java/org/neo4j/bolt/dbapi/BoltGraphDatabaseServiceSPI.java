@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;

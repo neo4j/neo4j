@@ -25,6 +25,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import org.junit.jupiter.api.TestTemplate;
+import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.testing.annotation.Version;
 
 @Documented
@@ -37,5 +38,7 @@ public @interface StateMachineTest {
 
     Version[] exclude() default {};
 
-    Version[] since() default {};
+    Version until() default @Version(major = ProtocolVersion.MAX_MAJOR_BIT, minor = ProtocolVersion.MAX_MINOR_BIT);
+
+    Version since() default @Version(major = 0, minor = 0);
 }

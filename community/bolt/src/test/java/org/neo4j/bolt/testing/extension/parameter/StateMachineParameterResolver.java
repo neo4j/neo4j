@@ -60,9 +60,7 @@ public class StateMachineParameterResolver implements ParameterResolver {
     public Object resolveParameter(ParameterContext parameterContext, ExtensionContext extensionContext)
             throws ParameterResolutionException {
         var protocol = this.fsmProvider.protocol(
-                NullLogService.getInstance(),
-                this.dependencyProvider.spi(extensionContext),
-                this.dependencyProvider.clock(extensionContext));
+                this.dependencyProvider.clock(extensionContext), NullLogService.getInstance());
         var connection = this.dependencyProvider.connection(extensionContext);
 
         var fsm = protocol.createStateMachine(connection);

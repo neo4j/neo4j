@@ -21,19 +21,18 @@ package org.neo4j.bolt.fsm;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.bolt.protocol.v40.messaging.util.MessageMetadataParserV40.ABSENT_DB_NAME;
 import static org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions.assertThat;
 import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertThat;
 
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v40.fsm.AutoCommitState;
-import org.neo4j.bolt.protocol.v40.fsm.FailedState;
-import org.neo4j.bolt.protocol.v40.fsm.InTransactionState;
-import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
-import org.neo4j.bolt.protocol.v44.message.request.RunMessage;
-import org.neo4j.bolt.protocol.v50.message.request.BeginMessage;
-import org.neo4j.bolt.protocol.v51.fsm.AuthenticationState;
+import org.neo4j.bolt.protocol.common.message.request.transaction.BeginMessage;
+import org.neo4j.bolt.protocol.common.message.request.transaction.RunMessage;
+import org.neo4j.bolt.protocol.v40.fsm.state.AutoCommitState;
+import org.neo4j.bolt.protocol.v40.fsm.state.FailedState;
+import org.neo4j.bolt.protocol.v40.fsm.state.InTransactionState;
+import org.neo4j.bolt.protocol.v51.fsm.state.AuthenticationState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.Version;
@@ -127,7 +126,7 @@ class ReadyStateIT {
             @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
         // Given
         var runMessage = mock(RunMessage.class);
-        when(runMessage.databaseName()).thenReturn(ABSENT_DB_NAME);
+        when(runMessage.databaseName()).thenReturn(null);
         when(runMessage.statement()).thenThrow(new RuntimeException("Fail"));
 
         // When
@@ -143,7 +142,7 @@ class ReadyStateIT {
             @Authenticated StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
         // Given
         var beginMessage = mock(BeginMessage.class);
-        when(beginMessage.databaseName()).thenReturn(ABSENT_DB_NAME);
+        when(beginMessage.databaseName()).thenReturn(null);
         when(beginMessage.bookmarks()).thenThrow(new RuntimeException("Fail"));
 
         // When

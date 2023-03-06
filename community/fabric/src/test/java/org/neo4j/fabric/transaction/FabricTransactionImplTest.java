@@ -38,7 +38,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;

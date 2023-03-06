@@ -19,17 +19,19 @@
  */
 package org.neo4j.bolt.testing.messages;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
-import org.neo4j.bolt.protocol.v43.message.request.RouteMessage;
-import org.neo4j.values.virtual.MapValueBuilder;
 
 /**
  * Quick access of all Bolt v43 messages
  */
-public class BoltV43Messages extends BoltV42Messages {
+public class BoltV43Messages extends AbstractBoltMessages {
     private static final BoltV43Messages INSTANCE = new BoltV43Messages();
 
     protected BoltV43Messages() {}
@@ -44,7 +46,37 @@ public class BoltV43Messages extends BoltV42Messages {
     }
 
     @Override
-    public RequestMessage route() {
-        return new RouteMessage(new MapValueBuilder().build(), List.of(), null);
+    public RequestMessage authenticate(String principal, String credentials) {
+        return this.hello(principal, credentials);
+    }
+
+    @Override
+    public RequestMessage logon() {
+        throw new UnsupportedOperationException("Logon");
+    }
+
+    @Override
+    public RequestMessage logon(String principal, String credentials) {
+        throw new UnsupportedOperationException("Logon");
+    }
+
+    @Override
+    public RequestMessage logoff() {
+        throw new UnsupportedOperationException("Logoff");
+    }
+
+    @Override
+    public RequestMessage begin(
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode mode,
+            Map<String, Object> txMetadata,
+            String databaseName,
+            String impersonatedUser) {
+        if (impersonatedUser != null) {
+            throw new UnsupportedOperationException("Impersonation");
+        }
+
+        return super.begin(bookmarks, txTimeout, mode, txMetadata, databaseName, impersonatedUser);
     }
 }

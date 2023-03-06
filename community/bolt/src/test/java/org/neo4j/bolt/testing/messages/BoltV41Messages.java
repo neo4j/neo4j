@@ -19,16 +19,15 @@
  */
 package org.neo4j.bolt.testing.messages;
 
-import static java.util.Collections.emptyMap;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
-
-import java.util.Collections;
+import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
-import org.neo4j.bolt.protocol.v41.message.request.HelloMessage;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.testing.error.UnsupportedProtocolFeatureException;
 
 /**
  * Quick access of all Bolt V41 messages
@@ -48,24 +47,42 @@ public class BoltV41Messages extends AbstractBoltMessages {
     }
 
     @Override
-    public RequestMessage hello(RoutingContext routingContext) {
-        return hello(Collections.emptyMap(), routingContext);
+    public RequestMessage authenticate(String principal, String credentials) {
+        return this.hello(principal, credentials);
     }
 
     @Override
-    public RequestMessage hello(Map<String, Object> meta) {
-        var helloMetaMap = this.getDefaultHelloMetaMap(meta);
-        return new HelloMessage(helloMetaMap, new RoutingContext(true, emptyMap()), helloMetaMap);
+    public RequestMessage logon() {
+        throw new UnsupportedProtocolFeatureException("Logon");
     }
 
     @Override
-    public RequestMessage hello() {
-        return this.hello(new RoutingContext(true, stringMap("policy", "fast", "region", "europe")));
+    public RequestMessage logon(String principal, String credentials) {
+        throw new UnsupportedProtocolFeatureException("Logon");
     }
 
-    protected RequestMessage hello(Map<String, Object> meta, RoutingContext routingContext) {
-        meta = this.getDefaultHelloMetaMap(meta);
-        // TODO: Why
-        return new HelloMessage(meta, routingContext, meta);
+    @Override
+    public RequestMessage logoff() {
+        throw new UnsupportedProtocolFeatureException("Logoff");
+    }
+
+    @Override
+    public RequestMessage route() {
+        throw new UnsupportedProtocolFeatureException("Routing");
+    }
+
+    @Override
+    public RequestMessage begin(
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode mode,
+            Map<String, Object> txMetadata,
+            String databaseName,
+            String impersonatedUser) {
+        if (impersonatedUser != null) {
+            throw new UnsupportedProtocolFeatureException("Impersonation");
+        }
+
+        return super.begin(bookmarks, txTimeout, mode, txMetadata, databaseName, impersonatedUser);
     }
 }

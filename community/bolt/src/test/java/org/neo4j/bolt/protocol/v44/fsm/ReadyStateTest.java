@@ -41,11 +41,13 @@ import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
+import org.neo4j.bolt.protocol.common.message.request.transaction.BeginMessage;
+import org.neo4j.bolt.protocol.common.message.request.transaction.RunMessage;
 import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
-import org.neo4j.bolt.protocol.v44.message.request.BeginMessage;
-import org.neo4j.bolt.protocol.v44.message.request.RouteMessage;
-import org.neo4j.bolt.protocol.v44.message.request.RunMessage;
+import org.neo4j.bolt.protocol.v43.fsm.state.FailedState;
+import org.neo4j.bolt.protocol.v44.fsm.state.ReadyState;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.bolt.tx.Transaction;
@@ -139,19 +141,14 @@ class ReadyStateTest {
         this.state = new ReadyState(this.routingTableGetter);
         this.state.setTransactionReadyState(this.inTransactionState);
         this.state.setStreamingState(this.streamingState);
+        this.state.setFailedState(new FailedState());
     }
 
     @Test
     void shouldAuthenticateImpersonationInBeginMessage() throws Exception {
         var message = new BeginMessage(
-                MapValue.EMPTY,
-                Collections.emptyList(),
-                null,
-                AccessMode.WRITE,
-                Collections.emptyMap(),
-                "neo4j",
-                "bob");
-        var nextState = this.state.processBeginMessage(message, this.context);
+                Collections.emptyList(), null, AccessMode.WRITE, Collections.emptyMap(), "neo4j", "bob");
+        var nextState = this.state.process(message, this.context);
 
         assertSame(this.inTransactionState, nextState);
 
@@ -178,7 +175,7 @@ class ReadyStateTest {
     @Test
     void shouldAuthenticateImpersonationInRouteMessage() throws Exception {
         var message = new RouteMessage(MapValue.EMPTY, Collections.emptyList(), "neo4j", "bob");
-        var nextState = this.state.processRouteMessage(message, this.context);
+        var nextState = this.state.process(message, this.context);
 
         assertSame(this.state, nextState);
 
@@ -200,14 +197,13 @@ class ReadyStateTest {
         var message = new RunMessage(
                 "RUN FANCY QUERY",
                 MapValue.EMPTY,
-                MapValue.EMPTY,
                 Collections.emptyList(),
                 null,
                 AccessMode.WRITE,
                 Collections.emptyMap(),
                 "neo4j",
                 "bob");
-        var nextState = this.state.processRunMessage(message, this.context);
+        var nextState = this.state.process(message, this.context);
 
         assertSame(this.streamingState, nextState);
 

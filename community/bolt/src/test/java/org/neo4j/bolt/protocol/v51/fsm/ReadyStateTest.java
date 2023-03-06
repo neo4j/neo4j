@@ -31,8 +31,10 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
-import org.neo4j.bolt.protocol.v51.message.request.LogoffMessage;
-import org.neo4j.bolt.protocol.v51.message.request.LogonMessage;
+import org.neo4j.bolt.protocol.common.message.request.authentication.LogoffMessage;
+import org.neo4j.bolt.protocol.common.message.request.authentication.LogonMessage;
+import org.neo4j.bolt.protocol.v51.fsm.state.AuthenticationState;
+import org.neo4j.bolt.protocol.v51.fsm.state.ReadyState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 
 public class ReadyStateTest {
@@ -58,9 +60,7 @@ public class ReadyStateTest {
 
     @Test
     public void shouldReturnAuthenticationStateWhenLogoffMessageReceived() throws BoltConnectionFatality {
-        LogoffMessage logoffMessage = new LogoffMessage();
-
-        State returnedState = stateInTest.process(logoffMessage, context);
+        State returnedState = stateInTest.process(LogoffMessage.getInstance(), context);
         assertEquals(authenticationState, returnedState);
     }
 

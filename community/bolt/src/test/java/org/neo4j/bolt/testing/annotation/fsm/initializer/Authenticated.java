@@ -27,6 +27,7 @@ import java.lang.annotation.Target;
 import org.neo4j.bolt.testing.extension.initializer.AuthenticatedStateMachineInitializer;
 
 @Documented
+@Negotiated
 @Retention(RetentionPolicy.RUNTIME)
 @Initialize(AuthenticatedStateMachineInitializer.class)
 @Target({ElementType.ANNOTATION_TYPE, ElementType.PARAMETER})

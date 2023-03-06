@@ -23,11 +23,13 @@ import java.time.Clock;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
+import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
 import org.neo4j.bolt.protocol.common.routing.ProcedureRoutingTableGetter;
-import org.neo4j.bolt.protocol.v40.fsm.AutoCommitState;
-import org.neo4j.bolt.protocol.v40.fsm.InTransactionState;
-import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
-import org.neo4j.bolt.protocol.v41.fsm.ConnectedState;
+import org.neo4j.bolt.protocol.v40.fsm.state.AutoCommitState;
+import org.neo4j.bolt.protocol.v40.fsm.state.ConnectedState;
+import org.neo4j.bolt.protocol.v40.fsm.state.InTransactionState;
+import org.neo4j.bolt.protocol.v43.fsm.state.FailedState;
+import org.neo4j.bolt.protocol.v43.fsm.state.ReadyState;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 
@@ -50,7 +52,7 @@ public class StateMachineV43 extends AbstractStateMachine {
                 + FailedState.SHALLOW_SIZE
                 + InterruptedState.SHALLOW_SIZE);
 
-        var connected = new ConnectedState(); // v4.1
+        var connected = new ConnectedState(); // v4
         var autoCommitState = new AutoCommitState(); // v4
         var inTransaction = new InTransactionState(); // v4
         var failed = new FailedState(); // v4.3

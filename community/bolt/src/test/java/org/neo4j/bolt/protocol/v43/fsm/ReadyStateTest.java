@@ -35,9 +35,10 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
+import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
 import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
-import org.neo4j.bolt.protocol.v40.fsm.FailedState;
-import org.neo4j.bolt.protocol.v43.message.request.RouteMessage;
+import org.neo4j.bolt.protocol.v40.fsm.state.FailedState;
+import org.neo4j.bolt.protocol.v43.fsm.state.ReadyState;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
@@ -65,7 +66,7 @@ class ReadyStateTest {
 
     @Test
     void shouldProcessTheRoutingMessageAndSetTheRoutingTableOnTheMetadata() throws Exception {
-        var routingMessage = new RouteMessage(new MapValueBuilder().build(), List.of(), "databaseName");
+        var routingMessage = new RouteMessage(MapValue.EMPTY, List.of(), "databaseName", null);
         var context = mock(StateMachineContext.class, RETURNS_MOCKS);
         var connectionState = mock(MutableConnectionState.class);
         doReturn(connectionState).when(context).connectionState();
@@ -84,7 +85,7 @@ class ReadyStateTest {
 
     @Test
     void shouldHandleFatalFailureIfTheRoutingTableFailedToBeGot() throws Exception {
-        var routingMessage = new RouteMessage(new MapValueBuilder().build(), List.of(), "databaseName");
+        var routingMessage = new RouteMessage(MapValue.EMPTY, List.of(), "databaseName", null);
         var context = mock(StateMachineContext.class, RETURNS_MOCKS);
         var mutableConnectionState = mock(MutableConnectionState.class);
 
@@ -105,7 +106,7 @@ class ReadyStateTest {
 
     @Test
     void shouldHandleFatalFailureIfGetRoutingTableThrowsAnException() throws Exception {
-        var routingMessage = new RouteMessage(new MapValueBuilder().build(), List.of(), "databaseName");
+        var routingMessage = new RouteMessage(MapValue.EMPTY, List.of(), "databaseName", null);
         var context = mock(StateMachineContext.class, RETURNS_MOCKS);
         var mutableConnectionState = mock(MutableConnectionState.class);
 

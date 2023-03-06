@@ -20,40 +20,28 @@
 package org.neo4j.bolt.protocol.v50;
 
 import java.util.Set;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.AbstractBoltProtocol;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.common.fsm.StateMachineSPIImpl;
+import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
+import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogoffMessageDecoder;
+import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultLogonMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
-import org.neo4j.bolt.protocol.io.reader.DateReader;
-import org.neo4j.bolt.protocol.io.reader.DateTimeReader;
-import org.neo4j.bolt.protocol.io.reader.DateTimeZoneIdReader;
-import org.neo4j.bolt.protocol.io.reader.DurationReader;
-import org.neo4j.bolt.protocol.io.reader.LocalDateTimeReader;
-import org.neo4j.bolt.protocol.io.reader.LocalTimeReader;
-import org.neo4j.bolt.protocol.io.reader.Point2dReader;
-import org.neo4j.bolt.protocol.io.reader.Point3dReader;
-import org.neo4j.bolt.protocol.io.reader.TimeReader;
 import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
-import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
-import org.neo4j.bolt.protocol.v50.fsm.StateMachineV50;
-import org.neo4j.bolt.protocol.v50.message.decoder.BeginMessageDecoder;
+import org.neo4j.bolt.protocol.v41.message.decoder.authentication.HelloMessageDecoderV41;
+import org.neo4j.bolt.protocol.v44.fsm.StateMachineV44;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.time.SystemNanoClock;
-import org.neo4j.values.storable.Value;
 
-public class BoltProtocolV50 extends BoltProtocolV44 {
+public class BoltProtocolV50 extends AbstractBoltProtocol {
     public static final ProtocolVersion VERSION = new ProtocolVersion(5, 0);
 
-    public BoltProtocolV50(
-            LogService logging,
-            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
-            SystemNanoClock clock) {
-        super(logging, boltGraphDatabaseManagementServiceSPI, clock);
+    public BoltProtocolV50(SystemNanoClock clock, LogService logging) {
+        super(clock, logging);
     }
 
     @Override
@@ -72,34 +60,17 @@ public class BoltProtocolV50 extends BoltProtocolV44 {
     }
 
     @Override
-    public void registerStructReaders(StructRegistry.Builder<Connection, Value> builder) {
-        // TODO: Protocols should no longer need to inherit from each other in order of release.
-        //       Provide a base type per major release instead?
-        builder.register(DateReader.getInstance())
-                .register(DurationReader.getInstance())
-                .register(LocalDateTimeReader.getInstance())
-                .register(LocalTimeReader.getInstance())
-                .register(Point2dReader.getInstance())
-                .register(Point3dReader.getInstance())
-                .register(TimeReader.getInstance())
-                .register(DateTimeReader.getInstance())
-                .register(DateTimeZoneIdReader.getInstance());
-    }
-
-    @Override
-    protected StructRegistry<Connection, RequestMessage> createRequestMessageRegistry() {
+    protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
         return super.createRequestMessageRegistry()
-                .builderOf()
-                .register(BeginMessageDecoder.getInstance())
-                .build();
+                .register(HelloMessageDecoderV41.getInstance())
+                .unregister(DefaultLogonMessageDecoder.getInstance())
+                .unregister(DefaultLogoffMessageDecoder.getInstance());
     }
 
     @Override
-    public StateMachine createStateMachine(Connection connection) {
-        connection.memoryTracker().allocateHeap(StateMachineSPIImpl.SHALLOW_SIZE + StateMachineV50.SHALLOW_SIZE);
+    protected StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI) {
+        connection.memoryTracker().allocateHeap(StateMachineV44.SHALLOW_SIZE);
 
-        var boltSPI = new StateMachineSPIImpl(logging);
-
-        return new StateMachineV50(boltSPI, connection, clock);
+        return new StateMachineV44(stateMachineSPI, connection, clock);
     }
 }

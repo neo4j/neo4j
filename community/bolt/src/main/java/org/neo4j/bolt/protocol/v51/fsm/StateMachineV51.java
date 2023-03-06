@@ -24,11 +24,14 @@ import java.time.Clock;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
+import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
 import org.neo4j.bolt.protocol.common.routing.ProcedureRoutingTableGetter;
-import org.neo4j.bolt.protocol.v40.fsm.AutoCommitState;
-import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
-import org.neo4j.bolt.protocol.v43.fsm.FailedState;
-import org.neo4j.bolt.protocol.v44.fsm.InTransactionState;
+import org.neo4j.bolt.protocol.v40.fsm.state.AutoCommitState;
+import org.neo4j.bolt.protocol.v43.fsm.state.FailedState;
+import org.neo4j.bolt.protocol.v44.fsm.state.InTransactionState;
+import org.neo4j.bolt.protocol.v51.fsm.state.AuthenticationState;
+import org.neo4j.bolt.protocol.v51.fsm.state.NegotiationState;
+import org.neo4j.bolt.protocol.v51.fsm.state.ReadyState;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 

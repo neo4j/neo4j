@@ -26,8 +26,8 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.v40.messaging.request.GoodbyeMessage;
-import org.neo4j.bolt.protocol.v40.messaging.request.ResetMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.GoodbyeMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.ResetMessage;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.Level;
@@ -42,7 +42,7 @@ class GoodbyeMessageHandlerTest {
         var channel = new EmbeddedChannel();
         var connection = ConnectionMockFactory.newFactory().attachTo(channel, new GoodbyeMessageHandler(log));
 
-        channel.writeInbound(GoodbyeMessage.INSTANCE);
+        channel.writeInbound(GoodbyeMessage.getInstance());
 
         assertThat(channel.<Object>readInbound()).isNull();
 
@@ -62,9 +62,9 @@ class GoodbyeMessageHandlerTest {
         var connection = ConnectionMockFactory.newFactory()
                 .attachTo(channel, new GoodbyeMessageHandler(NullLogProvider.getInstance()));
 
-        channel.writeInbound(ResetMessage.INSTANCE);
+        channel.writeInbound(ResetMessage.getInstance());
 
-        assertThat(channel.<Object>readInbound()).isSameAs(ResetMessage.INSTANCE);
+        assertThat(channel.<Object>readInbound()).isSameAs(ResetMessage.getInstance());
 
         verifyNoInteractions(connection);
         assertThat(log).doesNotHaveAnyLogs();

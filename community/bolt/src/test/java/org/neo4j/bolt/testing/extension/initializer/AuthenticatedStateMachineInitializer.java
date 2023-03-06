@@ -22,7 +22,6 @@ package org.neo4j.bolt.testing.extension.initializer;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions;
 import org.neo4j.bolt.testing.extension.dependency.StateMachineDependencyProvider;
@@ -39,12 +38,13 @@ public class AuthenticatedStateMachineInitializer implements StateMachineInitial
             StateMachineProvider provider,
             StateMachine fsm)
             throws BoltConnectionFatality {
+        var messages = provider.messages();
         var recorder = new ResponseRecorder();
 
-        fsm.process(provider.messages().hello(), recorder);
-        ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
-
-        if (provider.version().compareTo(BoltProtocolV51.VERSION) >= 0) {
+        if (!messages.supportsLogonMessage()) {
+            fsm.process(provider.messages().hello(), recorder);
+            ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
+        } else {
             fsm.process(provider.messages().logon(), recorder);
             ResponseRecorderAssertions.assertThat(recorder).hasSuccessResponse();
         }

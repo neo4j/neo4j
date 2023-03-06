@@ -26,7 +26,7 @@ import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertTha
 import static org.neo4j.values.storable.Values.stringValue;
 
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v40.fsm.ReadyState;
+import org.neo4j.bolt.protocol.v40.fsm.state.ReadyState;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.messages.BoltMessages;

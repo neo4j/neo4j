@@ -41,9 +41,11 @@ import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionStat
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
-import org.neo4j.bolt.protocol.v51.message.request.HelloMessage;
-import org.neo4j.bolt.protocol.v51.message.request.LogonMessage;
+import org.neo4j.bolt.protocol.common.message.request.authentication.HelloMessage;
+import org.neo4j.bolt.protocol.common.message.request.authentication.LogonMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
+import org.neo4j.bolt.protocol.v51.fsm.state.AuthenticationState;
+import org.neo4j.bolt.protocol.v51.fsm.state.NegotiationState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.values.storable.Values;
 
@@ -95,19 +97,14 @@ public class NegotiationStateTest {
     @Test
     public void shouldReturnNullWhenNonHelloMessageSend() {
         unAuthenticatedState.setAuthenticationState(null);
-        HelloMessage helloMessage = new HelloMessage(Collections.emptyMap(), null);
 
-        assertThrows(IllegalStateException.class, () -> unAuthenticatedState.process(helloMessage, context));
-    }
+        var message = new HelloMessage(
+                "SomeAgent/1.0",
+                Collections.emptyList(),
+                new RoutingContext(false, Collections.emptyMap()),
+                Collections.emptyMap());
 
-    @Test
-    public void shouldErrorIfNoUserAgentSent() {
-        Map<String, Object> metadata = new HashMap<>();
-
-        RoutingContext routingContext = new RoutingContext(false, Collections.emptyMap());
-        HelloMessage helloMessage = new HelloMessage(metadata, routingContext);
-
-        assertThrows(NullPointerException.class, () -> unAuthenticatedState.process(helloMessage, context));
+        assertThrows(IllegalStateException.class, () -> unAuthenticatedState.process(message, context));
     }
 
     @Test
@@ -115,10 +112,13 @@ public class NegotiationStateTest {
         Map<String, Object> metadata = new HashMap<>();
         metadata.put("user_agent", "text/5.1");
 
-        RoutingContext routingContext = new RoutingContext(false, Collections.emptyMap());
-        HelloMessage helloMessage = new HelloMessage(metadata, routingContext);
+        var message = new HelloMessage(
+                "SomeAgent/1.0",
+                Collections.emptyList(),
+                new RoutingContext(false, Collections.emptyMap()),
+                Collections.emptyMap());
 
-        State returnedState = unAuthenticatedState.process(helloMessage, context);
+        State returnedState = unAuthenticatedState.process(message, context);
 
         // should get the bolt version
         verify(context).boltSpi();

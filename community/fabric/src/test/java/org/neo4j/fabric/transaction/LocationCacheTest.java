@@ -31,7 +31,7 @@ import static org.mockito.Mockito.when;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.fabric.eval.Catalog;
 import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.executor.Location;

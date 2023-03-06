@@ -22,7 +22,7 @@ package org.neo4j.bolt.testing.extension.initializer;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v40.fsm.InTransactionState;
+import org.neo4j.bolt.protocol.v40.fsm.state.InTransactionState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.annotation.fsm.initializer.Streaming;
 import org.neo4j.bolt.testing.assertions.ResponseRecorderAssertions;

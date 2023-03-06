@@ -20,7 +20,7 @@
 package org.neo4j.bolt;
 
 import java.io.IOException;
-import org.neo4j.bolt.protocol.v40.messaging.request.RunMessage;
+import org.neo4j.bolt.protocol.common.message.request.transaction.RunMessage;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;

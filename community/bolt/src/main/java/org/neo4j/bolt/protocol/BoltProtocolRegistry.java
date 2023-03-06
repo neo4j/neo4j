@@ -70,5 +70,15 @@ public interface BoltProtocolRegistry {
          * @return a reference to this builder.
          */
         Builder register(BoltProtocol protocol);
+
+        /**
+         * Registers multiple protocol definitions with this builder.
+         * @param protocols a collection of protocol definitions.
+         * @return a reference to this builder.
+         */
+        default Builder register(Iterable<BoltProtocol> protocols) {
+            protocols.forEach(this::register);
+            return this;
+        }
     }
 }

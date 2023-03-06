@@ -19,8 +19,16 @@
  */
 package org.neo4j.bolt.testing.messages;
 
+import java.time.Duration;
+import java.util.List;
+import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
+import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
+import org.neo4j.bolt.testing.error.UnsupportedProtocolFeatureException;
 
 /**
  * Quick access of all Bolt V4 messages
@@ -35,5 +43,50 @@ public class BoltV40Messages extends AbstractBoltMessages {
 
     public static BoltMessages getInstance() {
         return INSTANCE;
+    }
+
+    @Override
+    public RequestMessage authenticate(String principal, String credentials) {
+        return this.hello(principal, credentials);
+    }
+
+    @Override
+    public RequestMessage hello(RoutingContext routingContext) {
+        throw new UnsupportedProtocolFeatureException("Routing");
+    }
+
+    @Override
+    public RequestMessage logon() {
+        throw new UnsupportedProtocolFeatureException("Logon");
+    }
+
+    @Override
+    public RequestMessage logon(String principal, String credentials) {
+        throw new UnsupportedProtocolFeatureException("Logon");
+    }
+
+    @Override
+    public RequestMessage logoff() {
+        throw new UnsupportedProtocolFeatureException("Logoff");
+    }
+
+    @Override
+    public RequestMessage route() {
+        throw new UnsupportedProtocolFeatureException("Routing");
+    }
+
+    @Override
+    public RequestMessage begin(
+            List<Bookmark> bookmarks,
+            Duration txTimeout,
+            AccessMode mode,
+            Map<String, Object> txMetadata,
+            String databaseName,
+            String impersonatedUser) {
+        if (impersonatedUser != null) {
+            throw new UnsupportedProtocolFeatureException("Impersonation");
+        }
+
+        return super.begin(bookmarks, txTimeout, mode, txMetadata, databaseName, impersonatedUser);
     }
 }

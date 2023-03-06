@@ -24,8 +24,8 @@ import static org.neo4j.bolt.testing.assertions.StateMachineAssertions.assertTha
 
 import java.util.List;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
-import org.neo4j.bolt.protocol.v40.fsm.FailedState;
-import org.neo4j.bolt.protocol.v40.fsm.InterruptedState;
+import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
+import org.neo4j.bolt.protocol.v40.fsm.state.FailedState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.test.annotation.CommunityStateMachineTestExtension;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;

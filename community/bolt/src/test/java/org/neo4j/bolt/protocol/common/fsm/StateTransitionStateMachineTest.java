@@ -19,8 +19,8 @@
  */
 package org.neo4j.bolt.protocol.common.fsm;
 
-import org.neo4j.bolt.protocol.v40.fsm.ConnectedState;
-import org.neo4j.bolt.protocol.v51.fsm.NegotiationState;
+import org.neo4j.bolt.protocol.v40.fsm.state.ConnectedState;
+import org.neo4j.bolt.protocol.v51.fsm.state.NegotiationState;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTest;
 import org.neo4j.bolt.testing.annotation.fsm.StateMachineTestExtension;

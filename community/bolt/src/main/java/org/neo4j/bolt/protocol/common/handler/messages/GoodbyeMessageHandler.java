@@ -22,7 +22,7 @@ package org.neo4j.bolt.protocol.common.handler.messages;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
-import org.neo4j.bolt.protocol.v40.messaging.request.GoodbyeMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.GoodbyeMessage;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Log;
 

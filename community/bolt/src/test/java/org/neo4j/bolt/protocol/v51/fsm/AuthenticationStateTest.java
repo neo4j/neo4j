@@ -37,8 +37,11 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
-import org.neo4j.bolt.protocol.v40.messaging.request.HelloMessage;
-import org.neo4j.bolt.protocol.v51.message.request.LogonMessage;
+import org.neo4j.bolt.protocol.common.message.request.authentication.HelloMessage;
+import org.neo4j.bolt.protocol.common.message.request.authentication.LogonMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
+import org.neo4j.bolt.protocol.v51.fsm.state.AuthenticationState;
+import org.neo4j.bolt.protocol.v51.fsm.state.ReadyState;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -82,8 +85,13 @@ public class AuthenticationStateTest {
 
     @Test
     public void shouldReturnNullWhenWrongMessageSent() throws BoltConnectionFatality {
-        HelloMessage message = new HelloMessage(Collections.emptyMap());
-        State returnedState = stateInTest.process(message, context);
+        var message = new HelloMessage(
+                "SomeAgent/1.0",
+                Collections.emptyList(),
+                new RoutingContext(false, Collections.emptyMap()),
+                Collections.emptyMap());
+
+        var returnedState = stateInTest.process(message, context);
 
         assertNull(returnedState);
     }
@@ -94,7 +102,7 @@ public class AuthenticationStateTest {
         LogonMessage message = new LogonMessage(Collections.emptyMap());
 
         when(connection.logon(anyMap())).thenThrow(new AuthenticationException(Status.Security.Unauthorized));
-        State returnedState = stateInTest.process(message, context);
+        stateInTest.process(message, context);
 
         verify(connection).logon(anyMap());
         verify(context).handleFailure(any(), eq(true));

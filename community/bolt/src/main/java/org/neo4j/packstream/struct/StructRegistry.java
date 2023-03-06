@@ -97,6 +97,15 @@ public interface StructRegistry<CTX, S> {
         }
 
         /**
+         * Removes a previously registered reader.
+         * @param reader a reader.
+         * @return a reference to this builder.
+         */
+        default Builder<CTX, S> unregister(StructReader<? super CTX, ? extends S> reader) {
+            return this.unregisterReader(reader.getTag());
+        }
+
+        /**
          * Registers a new reader for a given specific tag.
          *
          * @param tag    a structure tag.

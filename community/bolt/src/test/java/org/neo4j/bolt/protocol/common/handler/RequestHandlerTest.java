@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
@@ -35,8 +36,8 @@ import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
 import org.neo4j.bolt.protocol.common.message.Error;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v41.message.request.HelloMessage;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
+import org.neo4j.bolt.protocol.common.message.request.authentication.HelloMessage;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.logging.NullLogProvider;
@@ -46,7 +47,8 @@ class RequestHandlerTest {
 
     @Test
     void shouldEnqueueRequests() throws BoltConnectionFatality {
-        var msg = new HelloMessage(emptyMap(), new RoutingContext(true, emptyMap()), emptyMap());
+        var msg = new HelloMessage(
+                "SomeAgent/1.0", Collections.emptyList(), new RoutingContext(true, emptyMap()), emptyMap());
 
         var channel = new EmbeddedChannel();
         var connection =

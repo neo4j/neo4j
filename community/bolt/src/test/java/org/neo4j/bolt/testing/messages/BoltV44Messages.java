@@ -19,18 +19,9 @@
  */
 package org.neo4j.bolt.testing.messages;
 
-import java.time.Duration;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
-import org.neo4j.bolt.protocol.v44.message.request.BeginMessage;
-import org.neo4j.bolt.protocol.v44.message.request.RunMessage;
-import org.neo4j.values.virtual.MapValue;
 
 public class BoltV44Messages extends BoltV43Messages {
     private static final BoltV44Messages INSTANCE = new BoltV44Messages();
@@ -47,27 +38,22 @@ public class BoltV44Messages extends BoltV43Messages {
     }
 
     @Override
-    public RequestMessage run(String statement, String db, MapValue params) {
-        return new RunMessage(
-                statement,
-                params,
-                MapValue.EMPTY,
-                Collections.emptyList(),
-                null,
-                AccessMode.WRITE,
-                Collections.emptyMap(),
-                db,
-                null);
+    public RequestMessage authenticate(String principal, String credentials) {
+        return this.hello(principal, credentials);
     }
 
     @Override
-    public RequestMessage begin(
-            List<Bookmark> bookmarks,
-            Duration txTimeout,
-            AccessMode mode,
-            Map<String, Object> txMetadata,
-            String databaseName,
-            String impersonatedUser) {
-        return new BeginMessage(MapValue.EMPTY, bookmarks, txTimeout, mode, txMetadata, databaseName, impersonatedUser);
+    public RequestMessage logon() {
+        throw new UnsupportedOperationException("Logon");
+    }
+
+    @Override
+    public RequestMessage logon(String principal, String credentials) {
+        throw new UnsupportedOperationException("Logon");
+    }
+
+    @Override
+    public RequestMessage logoff() {
+        throw new UnsupportedOperationException("Logoff");
     }
 }

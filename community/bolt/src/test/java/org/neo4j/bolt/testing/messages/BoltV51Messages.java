@@ -20,22 +20,17 @@
 
 package org.neo4j.bolt.testing.messages;
 
-import static java.util.Collections.emptyMap;
-import static org.neo4j.internal.helpers.collection.MapUtil.map;
-import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
-
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.neo4j.bolt.negotiation.ProtocolVersion;
+import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
-import org.neo4j.bolt.protocol.v41.message.request.RoutingContext;
-import org.neo4j.bolt.protocol.v44.message.request.RouteMessage;
-import org.neo4j.bolt.protocol.v51.message.request.HelloMessage;
-import org.neo4j.bolt.protocol.v51.message.request.LogoffMessage;
-import org.neo4j.bolt.protocol.v51.message.request.LogonMessage;
-import org.neo4j.values.virtual.MapValueBuilder;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
+import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
+import org.neo4j.bolt.testing.error.UnsupportedProtocolFeatureException;
 
-public class BoltV51Messages extends BoltV50Messages {
+public class BoltV51Messages extends AbstractBoltMessages {
     private static final String USER_AGENT = "BoltV51Wire/0.0";
 
     private static final BoltV51Messages INSTANCE = new BoltV51Messages();
@@ -46,30 +41,42 @@ public class BoltV51Messages extends BoltV50Messages {
         return INSTANCE;
     }
 
-    private static final RequestMessage HELLO = new HelloMessage(
-            map("user_agent", USER_AGENT), new RoutingContext(true, stringMap("policy", "fast", "region", "europe")));
-
-    public static RouteMessage route(String impersonatedUser) {
-        return new RouteMessage(new MapValueBuilder().build(), List.of(), null, impersonatedUser);
+    @Override
+    public ProtocolVersion version() {
+        return BoltProtocolV51.VERSION;
     }
 
     @Override
-    public RequestMessage logon() {
-        return new LogonMessage(new HashMap<>(0));
+    protected String getUserAgent() {
+        return USER_AGENT;
     }
 
     @Override
-    public RequestMessage logoff() {
-        return LogoffMessage.INSTANCE;
-    }
-
-    @Override
-    public RequestMessage hello(Map<String, Object> meta) {
-        return new HelloMessage(this.getDefaultHelloMetaMap(meta), new RoutingContext(true, emptyMap()));
+    public boolean supportsLogonMessage() {
+        return true;
     }
 
     @Override
     public RequestMessage hello() {
-        return new HelloMessage(this.getDefaultHelloMetaMap(emptyMap()), new RoutingContext(true, emptyMap()));
+        return this.hello(Collections.emptyList(), new RoutingContext(false, Collections.emptyMap()), null);
+    }
+
+    @Override
+    public RequestMessage hello(Map<String, Object> authToken) {
+        throw new UnsupportedProtocolFeatureException("Authentication via HELLO");
+    }
+
+    @Override
+    public RequestMessage hello(String principal, String credentials) {
+        throw new UnsupportedProtocolFeatureException("Authentication via HELLO");
+    }
+
+    @Override
+    public RequestMessage hello(List<Feature> features, RoutingContext routingContext, Map<String, Object> authToken) {
+        if (authToken != null) {
+            throw new UnsupportedProtocolFeatureException("Authentication via HELLO");
+        }
+
+        return super.hello(features, routingContext, authToken);
     }
 }

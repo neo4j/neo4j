@@ -39,6 +39,7 @@ import javax.net.ssl.SSLException;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
+import org.neo4j.bolt.protocol.common.BoltProtocol;
 import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connection.BoltConnectionMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
@@ -57,14 +58,7 @@ import org.neo4j.bolt.protocol.common.connector.listener.ResponseMetricsConnecto
 import org.neo4j.bolt.protocol.common.connector.netty.DomainSocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.netty.SocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
-import org.neo4j.bolt.protocol.v40.BoltProtocolV40;
 import org.neo4j.bolt.protocol.v40.bookmark.BookmarkParserV40;
-import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
-import org.neo4j.bolt.protocol.v42.BoltProtocolV42;
-import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
-import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
-import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
-import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltMemoryPool;
@@ -186,13 +180,7 @@ public class BoltServer extends LifecycleAdapter {
         this.bookmarkParser = new BookmarkParserV40(databaseIdRepository, customBookmarkParser);
 
         this.protocolRegistry = BoltProtocolRegistry.builder()
-                .register(new BoltProtocolV40(logService, boltGraphDatabaseManagementServiceSPI, clock))
-                .register(new BoltProtocolV41(logService, boltGraphDatabaseManagementServiceSPI, clock))
-                .register(new BoltProtocolV42(logService, boltGraphDatabaseManagementServiceSPI, clock))
-                .register(new BoltProtocolV43(logService, boltGraphDatabaseManagementServiceSPI, clock))
-                .register(new BoltProtocolV44(logService, boltGraphDatabaseManagementServiceSPI, clock))
-                .register(new BoltProtocolV50(logService, boltGraphDatabaseManagementServiceSPI, clock))
-                .register(new BoltProtocolV51(logService, boltGraphDatabaseManagementServiceSPI, clock))
+                .register(BoltProtocol.available(clock, logService))
                 .build();
     }
 

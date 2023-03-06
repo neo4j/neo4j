@@ -52,7 +52,7 @@ public class UserAgentIT {
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailure(
                         Status.Request.Invalid,
-                        "Illegal value for field \"user_agent\": Expected \"user_agent\" to be non-null");
+                        "Illegal value for field \"user_agent\": Expected value to be non-null");
     }
 
     @ProtocolTest
@@ -61,8 +61,6 @@ public class UserAgentIT {
         connection.send(wire.hello(Map.of("scheme", "none", "user_agent", 42L)));
 
         BoltConnectionAssertions.assertThat(connection)
-                .receivesFailure(
-                        Status.Request.Invalid,
-                        "Illegal value for field \"user_agent\": Expected value to be a string");
+                .receivesFailure(Status.Request.Invalid, "Illegal value for field \"user_agent\": Expected string");
     }
 }
