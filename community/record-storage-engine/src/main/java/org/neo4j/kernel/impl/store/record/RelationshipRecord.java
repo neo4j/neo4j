@@ -24,7 +24,6 @@ import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import java.util.Objects;
-import org.neo4j.util.Preconditions;
 
 public class RelationshipRecord extends PrimitiveRecord {
     public static final long SHALLOW_SIZE = shallowSizeOfInstance(RelationshipRecord.class);
@@ -155,8 +154,10 @@ public class RelationshipRecord extends PrimitiveRecord {
     }
 
     private void assertEitherFirstOrSecondNode(long nodeId) {
-        Preconditions.checkArgument(
-                nodeId == firstNode || nodeId == secondNode, "%d is neither first nor second node of %s", nodeId, this);
+        var firstOrSecond = nodeId == firstNode || nodeId == secondNode;
+        if (!firstOrSecond) {
+            throw new IllegalArgumentException(nodeId + " is neither first nor second node of " + this);
+        }
     }
 
     public void setNextRel(long nextRel, long nodeId) {
