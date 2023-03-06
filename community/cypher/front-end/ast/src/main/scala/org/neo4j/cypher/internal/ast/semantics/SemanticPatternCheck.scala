@@ -365,6 +365,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
              |That is, neither of these is a quantified path pattern.""".stripMargin,
           b.position
         )
+      case _ => SemanticCheck.success // we could get here with only one element in factors
     }.reduce(_ chain _)
   }
 

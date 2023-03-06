@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UnknownSize
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
+import scala.annotation.nowarn
 import scala.util.hashing.MurmurHash3
 
 sealed trait Parameter extends Expression {
@@ -31,6 +32,7 @@ sealed trait Parameter extends Expression {
 
   // NOTE: hashCode and equals must be same for different parameter types, since we
   // auto parameterize for efficient cache utilization
+  @nowarn("msg=a type was inferred to be `Object`")
   override def hashCode(): Int = MurmurHash3.arrayHash(Array(name, parameterType))
 
   override def equals(obj: Any): Boolean = obj match {
@@ -71,6 +73,8 @@ case class AutoExtractedParameter(
   writer: LiteralWriter,
   sizeHint: BucketSize = UnknownSize
 )(val position: InputPosition) extends Parameter {
+
+  @nowarn("msg=a type was inferred to be `Object`")
   override def hashCode(): Int = MurmurHash3.arrayHash(Array(name, parameterType, sizeHint))
   override def canEqual(that: Any): Boolean = that.isInstanceOf[AutoExtractedParameter]
 

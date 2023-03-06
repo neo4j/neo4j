@@ -760,7 +760,7 @@ case class LogicalPlanProducer(
     originalPattern: PatternRelationship,
     hiddenSelections: Seq[Expression],
     argumentIds: Set[String],
-    solvedPredicates: Seq[Expression] = Seq.empty,
+    solvedPredicates: Seq[Expression],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     def planLeaf: LogicalPlan = {
@@ -1173,7 +1173,7 @@ case class LogicalPlanProducer(
     makePlan: (String, SeekableArgs, Set[String]) => NodeLogicalLeafPlan,
     variable: Variable,
     nodeIds: SeekableArgs,
-    solvedPredicates: Seq[Expression] = Seq.empty,
+    solvedPredicates: Seq[Expression],
     argumentIds: Set[String],
     context: LogicalPlanningContext
   ): LogicalPlan = {

@@ -42,6 +42,7 @@ object NamespacedName {
   def apply(names: util.List[String])(pos: InputPosition): NamespacedName = names.asScala.toSeq match {
     case x :: Nil => NamespacedName(List(x), None)(pos)
     case x :: xs  => NamespacedName(xs, Some(x))(pos)
+    case _        => throw new InternalError(s"Unexpected database name format")
   }
 
   def apply(name: String)(pos: InputPosition): NamespacedName = NamespacedName(List(name), None)(pos)

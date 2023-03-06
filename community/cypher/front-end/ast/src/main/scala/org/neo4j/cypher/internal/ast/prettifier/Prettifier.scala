@@ -193,7 +193,6 @@ import org.neo4j.cypher.internal.ast.TerminateTransactionsClause
 import org.neo4j.cypher.internal.ast.Topology
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.Union
-import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.UnresolvedCall
@@ -847,6 +846,8 @@ case class Prettifier(
       case x @ ReallocateDatabases(dryRun) =>
         if (dryRun) s"DRYRUN ${x.name}"
         else x.name
+
+      case command => throw new InternalError(s"Unexpected command $command")
     }
     useString + commandString
   }
@@ -873,6 +874,7 @@ case class Prettifier(
     case OptionsMap(map) => map.map {
         case (key, value) => s" SET OPTION ${backtick(key)} ${expr(value)}"
       }.mkString("")
+    case OptionsParam(_) => throw new InternalError("Expected NoOptions or OptionsMap but was OptionsParam")
   }
 
   case class IndentingQueryPrettifier(indentLevel: Int = 0) extends Prettifier.QueryPrettifier {
@@ -896,10 +898,6 @@ case class Prettifier(
           }
           Seq(lhs, operation, rhs).mkString(NL)
       }
-
-    private def asString(u: UnionMapping): String = {
-      s"${u.unionVariable.name}: [${u.variableInLhs.name}, ${u.variableInRhs.name}]"
-    }
 
     def asString(clause: Clause): String = dispatch(clause)
 
@@ -1416,12 +1414,12 @@ object Prettifier {
 
   def extractTopology(topology: Topology): String = {
     val primariesString = topology.primaries.flatMap {
-      case n if n != 1 => Some(s" $n PRIMARIES")
-      case 1           => Some(s" 1 PRIMARY")
+      case 1 => Some(s" 1 PRIMARY")
+      case n => Some(s" $n PRIMARIES")
     }.getOrElse("")
     val maybeSecondariesString = topology.secondaries.flatMap {
-      case n if n != 1 => Some(s" $n SECONDARIES")
-      case 1           => Some(s" 1 SECONDARY")
+      case 1 => Some(s" 1 SECONDARY")
+      case n => Some(s" $n SECONDARIES")
     }.getOrElse("")
     s" TOPOLOGY$primariesString$maybeSecondariesString"
   }

@@ -25,8 +25,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.PathExpression
-import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral

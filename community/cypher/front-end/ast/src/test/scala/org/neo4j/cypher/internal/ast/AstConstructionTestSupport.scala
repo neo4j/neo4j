@@ -967,6 +967,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
                 MultiRelationshipPathStep(varFor(relName), direction, Some(varFor(node)), currentPathStep)(pos)
             }
             nextStep(nodeTail, relTail, step)
+          case _ => throw new InternalError("there should never be more relationships than nodes")
         }
       }
 

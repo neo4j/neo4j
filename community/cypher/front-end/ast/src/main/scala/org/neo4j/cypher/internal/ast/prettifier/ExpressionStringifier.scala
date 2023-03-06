@@ -490,6 +490,7 @@ private class DefaultExpressionStringifier(
     case _: SensitiveAutoParameter if !sensitiveParamsAsParams => "'******'"
     case _: SensitiveLiteral                                   => "'******'"
     case param: Parameter                                      => s"$$${ExpressionStringifier.backtick(param.name)}"
+    case _                                                     => throw new InternalError("illegal password expression")
   }
 
   override def stringifyLabelExpression(labelExpression: LabelExpression): String = labelExpression match {

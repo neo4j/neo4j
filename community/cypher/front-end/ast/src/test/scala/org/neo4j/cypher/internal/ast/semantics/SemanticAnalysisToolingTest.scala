@@ -94,7 +94,7 @@ class SemanticAnalysisToolingTest extends CypherFunSuite with AstConstructionTes
 
   test("withState should work") {
     val initialState = SemanticState.clean
-    val Right(stateForCheck) = initialState.declareVariable(varFor("x"), CTNode.invariant)
+    val stateForCheck = initialState.declareVariable(varFor("x"), CTNode.invariant).getOrElse(fail())
 
     val error = SemanticError("some error", pos)
 

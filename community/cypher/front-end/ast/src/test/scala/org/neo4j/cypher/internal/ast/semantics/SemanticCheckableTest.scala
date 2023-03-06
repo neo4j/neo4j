@@ -217,7 +217,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
   test("SemanticCheck.success shouldn't alter result") {
     val state1 = SemanticState.clean
-    val Right(state2) = SemanticState.clean.declareVariable(varFor("x"), CTInteger.invariant)
+    val state2 = SemanticState.clean.declareVariable(varFor("x"), CTInteger.invariant).getOrElse(fail())
 
     SemanticCheck.success(state1) shouldBe SemanticCheckResult(state1, Seq.empty)
     SemanticCheck.success(state2) shouldBe SemanticCheckResult(state2, Seq.empty)
@@ -232,7 +232,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
   test("map should work") {
     val state1 = SemanticState.clean
-    val Right(state2) = SemanticState.clean.declareVariable(varFor("x"), CTInteger.invariant)
+    val state2 = SemanticState.clean.declareVariable(varFor("x"), CTInteger.invariant).getOrElse(fail())
 
     val check = SemanticCheck.success.map(res => res.copy(state = state2))
     check(state1) shouldBe SemanticCheckResult(state2, Seq.empty)
@@ -240,7 +240,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
   test("flatMap should work") {
     val state1 = SemanticState.clean
-    val Right(state2) = SemanticState.clean.declareVariable(varFor("x"), CTInteger.invariant)
+    val state2 = SemanticState.clean.declareVariable(varFor("x"), CTInteger.invariant).getOrElse(fail())
 
     val leafCheck = SemanticCheck.fromFunction(_ => SemanticCheckResult(state2, Seq.empty))
     val check = SemanticCheck.success.flatMap(_ => leafCheck)
@@ -249,9 +249,9 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
 
   test("for-comprehension should thread state between checks and keep errors separate") {
     val state0 = SemanticState.clean
-    val Right(state1) = state0.declareVariable(varFor("x"), CTInteger.invariant)
-    val Right(state2) = state1.declareVariable(varFor("y"), CTInteger.invariant)
-    val Right(state3) = state2.declareVariable(varFor("z"), CTInteger.invariant)
+    val state1 = state0.declareVariable(varFor("x"), CTInteger.invariant).getOrElse(fail())
+    val state2 = state1.declareVariable(varFor("y"), CTInteger.invariant).getOrElse(fail())
+    val state3 = state2.declareVariable(varFor("z"), CTInteger.invariant).getOrElse(fail())
 
     val error1 = SemanticError("first error", pos)
     val error3 = SemanticError("second error", pos)
@@ -329,7 +329,7 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
   }
 
   test("SemanticCheck.setState should work") {
-    val Right(state) = SemanticState.clean.declareVariable(varFor("x"), CTNode.invariant)
+    val state = SemanticState.clean.declareVariable(varFor("x"), CTNode.invariant).getOrElse(fail())
     SemanticCheck.setState(state).run(
       SemanticState.clean,
       SemanticCheckContext.default

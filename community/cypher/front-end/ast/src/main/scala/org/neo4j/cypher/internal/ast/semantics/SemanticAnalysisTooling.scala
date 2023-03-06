@@ -308,7 +308,7 @@ object SemanticAnalysisTooling {
 
   private def pushStateScopeWithVariablesFromRecordedScope(
     astNode: ASTNode,
-    exclude: Set[String] = Set.empty
+    exclude: Set[String]
   ): SemanticCheck =
     (state: SemanticState) => {
       val scopeToImportFrom = state.recordedScopes(astNode).scope

@@ -136,5 +136,6 @@ trait Neo4jProcedureAdapter extends ProcedureSupport {
     case CTNumber           => Neo4jTypes.NTNumber
     case CTInteger          => Neo4jTypes.NTInteger
     case CTFloat            => Neo4jTypes.NTFloat
+    case x                  => throw new InternalError(s"Unexpected CypherType ${x.getClass}")
   }
 }

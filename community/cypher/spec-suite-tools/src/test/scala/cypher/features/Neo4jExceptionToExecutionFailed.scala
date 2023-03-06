@@ -86,6 +86,7 @@ object Neo4jExceptionToExecutionFailed {
     val detail = phase match {
       case Phase.compile => compileTimeDetail(msg)
       case Phase.runtime => runtimeDetail(msg)
+      case x             => throw new InternalError(s"Expected ${Phase.compile} or ${Phase.runtime} but got $x")
     }
     val neo4jexception = Neo4jExecutionFailed(errorTypeStr, phase, detail, t)
     ExecutionFailed(errorTypeStr, phase, detail, Some(neo4jexception))

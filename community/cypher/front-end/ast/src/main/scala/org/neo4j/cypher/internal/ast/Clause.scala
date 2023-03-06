@@ -81,7 +81,6 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
-import org.neo4j.cypher.internal.expressions.SubqueryExpression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions.Function.isIdFunction

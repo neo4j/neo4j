@@ -122,7 +122,7 @@ abstract class DeleteExpressionTestBase[CONTEXT <: RuntimeContext](
 
   test("delete path in map") {
     val nodeCount = 10
-    val nodes = given {
+    given {
       nodeGraph(nodeCount)
     }
 

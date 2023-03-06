@@ -29,11 +29,13 @@ import org.opencypher.tools.tck.values.CypherPropertyMap
 import org.opencypher.tools.tck.values.CypherString
 import org.opencypher.tools.tck.values.CypherValue
 
+import scala.annotation.nowarn
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 object TCKValueToNeo4jValue extends (CypherValue => Object) {
 
+  @nowarn("msg=a type was inferred to be `Object`")
   def apply(value: CypherValue): Object = {
     value match {
       case CypherString(s)       => s
