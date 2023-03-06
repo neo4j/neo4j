@@ -17,17 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.commit;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.memory.MemoryTracker;
 
-public interface TransactionCommitter {
+public sealed interface TransactionCommitter permits ChunkCommitter, DefaultCommitter {
     long commit(
-            TransactionWriteEvent transactionWriteEvent, long commitTime, MemoryTracker memoryTracker, boolean commit)
+            TransactionWriteEvent transactionWriteEvent,
+            LeaseClient leaseClient,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker,
+            KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor,
+            long commitTime,
+            long startTimeMillis,
+            long lastTransactionIdWhenStarted,
+            boolean commit)
             throws KernelException;
 
     void rollback(TransactionRollbackEvent rollbackEvent) throws TransactionFailureException;

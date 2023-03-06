@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import static java.lang.String.format;
 import static java.lang.Thread.currentThread;
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.apache.commons.lang3.StringUtils.EMPTY;
@@ -33,9 +32,6 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionComm
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
-import static org.neo4j.storageengine.api.TransactionIdStore.BASE_CHUNK_NUMBER;
-import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.time.Clock;
 import java.util.Iterator;
@@ -58,7 +54,6 @@ import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.TransactionRollbackException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.internal.helpers.Exceptions;
@@ -92,7 +87,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -105,11 +99,11 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
-import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.ChunkSink;
-import org.neo4j.kernel.impl.api.chunk.ChunkedTransaction;
-import org.neo4j.kernel.impl.api.chunk.CommandChunk;
-import org.neo4j.kernel.impl.api.commit.ChunkedTransactionSink;
+import org.neo4j.kernel.impl.api.chunk.ChunkedTransactionSink;
+import org.neo4j.kernel.impl.api.commit.ChunkCommitter;
+import org.neo4j.kernel.impl.api.commit.DefaultCommitter;
+import org.neo4j.kernel.impl.api.commit.TransactionCommitter;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextCursorTracer;
@@ -133,15 +127,10 @@ import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.KernelTokenRead;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
-import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
-import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
@@ -161,7 +150,6 @@ import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.SystemNanoClock;
@@ -766,6 +754,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             leaseClient.ensureValid();
             readOnlyDatabaseChecker.check();
             transactionMonitor.upgradeToWriteTransaction();
+            txStateWriter.initialize(leaseClient, cursorContext, startTimeMillis, lastTransactionIdWhenStarted);
             txState = new TxState(
                     collectionsFactory,
                     memoryTracker,
@@ -950,216 +939,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private class DefaultCommitter implements TransactionCommitter {
-        private final TransactionCommitmentFactory commitmentFactory;
-
-        public DefaultCommitter(TransactionCommitmentFactory commitmentFactory) {
-            this.commitmentFactory = commitmentFactory;
-        }
-
-        @Override
-        public long commit(
-                TransactionWriteEvent transactionWriteEvent,
-                long timeCommitted,
-                MemoryTracker memoryTracker,
-                boolean ignored)
-                throws KernelException {
-            // Gather up commands from the various sources
-            List<StorageCommand> extractedCommands = extractCommands(memoryTracker);
-
-            /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
-             * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
-             * previously made changes in that same transaction, and so at some point a transaction may have
-             * changes and at another point, after more changes seemingly,
-             * the transaction may not have any changes.
-             * However, to track that "undoing" of the changes is a bit tedious, intrusive and hard to maintain
-             * and get right.... So to really make sure the transaction has changes we re-check by looking if we
-             * have produced any commands to add to the logical log.
-             */
-            if (!extractedCommands.isEmpty()) {
-                // Finish up the whole transaction representation
-                CompleteTransaction transactionRepresentation = new CompleteTransaction(
-                        extractedCommands,
-                        UNKNOWN_CONSENSUS_INDEX,
-                        startTimeMillis,
-                        lastTransactionIdWhenStarted,
-                        timeCommitted,
-                        leaseClient.leaseId(),
-                        kernelVersionProvider.kernelVersion(),
-                        overridableSecurityContext
-                                .currentSecurityContext()
-                                .subject()
-                                .userSubject());
-
-                // Commit the transaction
-                TransactionToApply batch = new TransactionToApply(
-                        transactionRepresentation,
-                        cursorContext,
-                        transactionalCursors,
-                        commitmentFactory.newCommitment(),
-                        transactionIdGenerator);
-                kernelTransactionMonitor.beforeApply();
-                return commitProcess.commit(batch, transactionWriteEvent, INTERNAL);
-            }
-            return READ_ONLY_ID;
-        }
-
-        @Override
-        public void rollback(TransactionRollbackEvent rollbackEvent) {
-            // default implementation does not do any transaction related rollbacks
-        }
-    }
-
-    private class ChunkCommitter implements TransactionCommitter {
-        private int chunkNumber = BASE_CHUNK_NUMBER;
-        private LogPosition previousBatchLogPosition = LogPosition.UNSPECIFIED;
-        private KernelVersion kernelVersion;
-        private ChunkedTransaction transactionPayload;
-        private final TransactionCommitmentFactory commitmentFactory;
-
-        public ChunkCommitter(TransactionCommitmentFactory commitmentFactory) {
-            this.commitmentFactory = commitmentFactory;
-        }
-
-        @Override
-        public long commit(
-                TransactionWriteEvent transactionWriteEvent,
-                long timeCommitted,
-                MemoryTracker memoryTracker,
-                boolean commit)
-                throws KernelException {
-            List<StorageCommand> extractedCommands = extractCommands(memoryTracker);
-            if (!extractedCommands.isEmpty() || commit) {
-                if (kernelVersion == null) {
-                    kernelVersion = kernelVersionProvider.kernelVersion();
-                }
-                if (commit) {
-                    validateCurrentKernelVersion();
-                }
-                var chunkMetadata = new ChunkMetadata(
-                        chunkNumber == BASE_CHUNK_NUMBER,
-                        commit,
-                        false,
-                        previousBatchLogPosition,
-                        chunkNumber,
-                        UNKNOWN_CONSENSUS_INDEX,
-                        startTimeMillis,
-                        lastTransactionIdWhenStarted,
-                        timeCommitted,
-                        leaseClient.leaseId(),
-                        kernelVersion,
-                        securityContext().subject().userSubject());
-                if (transactionPayload == null) {
-                    transactionPayload = new ChunkedTransaction(
-                            cursorContext,
-                            transactionalCursors,
-                            commitmentFactory.newCommitment(),
-                            transactionIdGenerator);
-                }
-                CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
-                transactionPayload.init(chunk);
-                commitProcess.commit(transactionPayload, transactionWriteEvent, INTERNAL);
-                transactionWriteEvent.chunkAppended(
-                        chunkNumber, getTransactionSequenceNumber(), transactionPayload.transactionId());
-                previousBatchLogPosition = transactionPayload.lastBatchLogPosition();
-                chunkNumber++;
-            }
-            return transactionPayload != null ? transactionPayload.transactionId() : READ_ONLY_ID;
-        }
-
-        @Override
-        public void rollback(TransactionRollbackEvent rollbackEvent) {
-            if (transactionPayload != null) {
-                try {
-                    validateCurrentKernelVersion();
-                    rollbackBatches(rollbackEvent);
-                    writeRollbackEntry(rollbackEvent);
-                } catch (Exception e) {
-                    databaseHealth.panic(e);
-                    Exceptions.throwIfInstanceOf(e, TransactionRollbackException.class);
-                    throw new TransactionRollbackException("Transaction rollback failed", e);
-                }
-            }
-        }
-
-        private void writeRollbackEntry(TransactionRollbackEvent transactionRollbackEvent)
-                throws TransactionFailureException {
-            var chunkMetadata = new ChunkMetadata(
-                    false,
-                    true,
-                    true,
-                    LogPosition.UNSPECIFIED,
-                    chunkNumber,
-                    UNKNOWN_CONSENSUS_INDEX,
-                    startTimeMillis,
-                    lastTransactionIdWhenStarted,
-                    clocks.systemClock().millis(),
-                    leaseClient.leaseId(),
-                    kernelVersion,
-                    securityContext().subject().userSubject());
-            CommandChunk chunk = new CommandChunk(emptyList(), chunkMetadata);
-            transactionPayload.init(chunk);
-            try (var writeEvent = transactionRollbackEvent.beginRollbackWriteEvent()) {
-                commitProcess.commit(transactionPayload, writeEvent, INTERNAL);
-            }
-        }
-
-        // kernel version can be updated by upgrade listener and for now we only fail to commit such
-        // transactions.
-        private void validateCurrentKernelVersion() {
-            if (kernelVersion != kernelVersionProvider.kernelVersion()) {
-                throw new UnsupportedOperationException("We do not support upgrade during chunked transaction.");
-            }
-        }
-
-        private void rollbackBatches(TransactionRollbackEvent transactionRollbackEvent) throws Exception {
-            long transactionIdToRollback = transactionPayload.transactionId();
-            int rolledbackBatches = 0;
-            int chunksToRollback = chunkNumber - 1;
-            LogPosition logPosition = transactionPayload.lastBatchLogPosition();
-            try (var rollbackDataEvent = transactionRollbackEvent.beginRollbackDataEvent()) {
-                while (rolledbackBatches != chunksToRollback) {
-                    try (CommandBatchCursor commandBatches = transactionStore.getCommandBatches(logPosition)) {
-                        if (!commandBatches.next()) {
-                            throw new TransactionRollbackException(format(
-                                    "Transaction rollback failed. Expected to rollback %d batches, but was able to undo only %d for transaction with id %d.",
-                                    chunksToRollback, rolledbackBatches, transactionIdToRollback));
-                        }
-                        CommittedCommandBatch commandBatch = commandBatches.get();
-                        if (commandBatch.txId() != transactionIdToRollback) {
-                            throw new TransactionRollbackException(format(
-                                    "Transaction rollback failed. Batch with transaction id %d encountered, while it was expected to belong to transaction id %d. Batch id: %s.",
-                                    commandBatch.txId(), transactionId, chunkId(commandBatch)));
-                        }
-                        rolledbackBatches++;
-                        transactionPayload.init((CommandChunk) commandBatch.commandBatch());
-                        storageEngine.apply(transactionPayload, TransactionApplicationMode.REVERSE_RECOVERY);
-                        logPosition = commandBatch.previousBatchLogPosition();
-                    }
-                }
-                if (logPosition != LogPosition.UNSPECIFIED) {
-                    throw new TransactionRollbackException(format(
-                            "Transaction rollback failed. All expected %d batches in transaction id %d were rolled back but chain claims to have more at: %s.",
-                            chunksToRollback, transactionId, logPosition));
-                }
-                rollbackDataEvent.batchedRolledBack(chunksToRollback, transactionIdToRollback);
-            }
-        }
-
-        private String chunkId(CommittedCommandBatch commandBatch) {
-            return commandBatch.commandBatch() instanceof CommandChunk cc
-                    ? String.valueOf(cc.chunkMetadata().chunkId())
-                    : "N/A";
-        }
-
-        @Override
-        public void reset() {
-            chunkNumber = BASE_CHUNK_NUMBER;
-            kernelVersion = null;
-            transactionPayload = null;
-        }
-    }
-
     private long commitTransaction() throws KernelException {
         boolean success = false;
         long txId = READ_ONLY_ID;
@@ -1185,7 +964,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 lockClient.prepareForCommit();
 
                 long timeCommitted = clocks.systemClock().millis();
-                txId = committer.commit(transactionWriteEvent, timeCommitted, memoryTracker, true);
+                txId = committer.commit(
+                        transactionWriteEvent,
+                        leaseClient,
+                        cursorContext,
+                        memoryTracker,
+                        kernelTransactionMonitor,
+                        timeCommitted,
+                        startTimeMillis,
+                        lastTransactionIdWhenStarted,
+                        true);
                 commitTime = timeCommitted;
             }
             success = true;
@@ -1204,7 +992,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private List<StorageCommand> extractCommands(MemoryTracker commandsTracker) throws KernelException {
+    public List<StorageCommand> extractCommands(MemoryTracker commandsTracker) throws KernelException {
         return storageEngine.createCommands(
                 txState,
                 storageReader,
@@ -1584,7 +1372,25 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private TransactionCommitter createCommitter(
             TransactionCommitmentFactory commitmentFactory, boolean multiVersioned) {
-        return multiVersioned ? new ChunkCommitter(commitmentFactory) : new DefaultCommitter(commitmentFactory);
+        return multiVersioned
+                ? new ChunkCommitter(
+                        this,
+                        commitmentFactory,
+                        kernelVersionProvider,
+                        transactionalCursors,
+                        transactionIdGenerator,
+                        commitProcess,
+                        databaseHealth,
+                        clocks,
+                        storageEngine,
+                        transactionStore)
+                : new DefaultCommitter(
+                        this,
+                        commitmentFactory,
+                        kernelVersionProvider,
+                        transactionalCursors,
+                        transactionIdGenerator,
+                        commitProcess);
     }
 
     public static class Statistics {
@@ -1767,6 +1573,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
+    @FunctionalInterface
     private interface ExecutionContextFactory {
 
         ExecutionContext createNew(

@@ -23,17 +23,24 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_versio
 
 import org.neo4j.configuration.Config;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.api.TransactionClockContext;
-import org.neo4j.kernel.impl.api.TransactionCommitter;
-import org.neo4j.kernel.impl.api.commit.ChunkedTransactionSink;
+import org.neo4j.kernel.impl.api.commit.TransactionCommitter;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.memory.MemoryTracker;
 
-public class ChunkSink implements ChunkedTransactionSink {
+public final class ChunkSink implements ChunkedTransactionSink {
     private final TransactionClockContext clocks;
     private final long chunkSize;
     private final TransactionCommitter committer;
+
+    private CursorContext cursorContext;
+    private LeaseClient leaseClient;
+    private long startTimeMillis;
+    private long lastTransactionIdWhenStarted;
 
     public ChunkSink(TransactionCommitter committer, TransactionClockContext clocks, Config config) {
         this.clocks = clocks;
@@ -46,11 +53,32 @@ public class ChunkSink implements ChunkedTransactionSink {
         MemoryTracker memoryTracker = txState.memoryTracker();
         if (memoryTracker.estimatedHeapMemory() > chunkSize) {
             try (var chunkWriteEvent = transactionEvent.beginChunkWriteEvent()) {
-                committer.commit(chunkWriteEvent, clocks.systemClock().millis(), memoryTracker, false);
+                committer.commit(
+                        chunkWriteEvent,
+                        leaseClient,
+                        cursorContext,
+                        memoryTracker,
+                        KernelTransaction.NO_MONITOR,
+                        clocks.systemClock().millis(),
+                        startTimeMillis,
+                        lastTransactionIdWhenStarted,
+                        false);
                 txState.reset();
             } catch (KernelException ke) {
                 throw new RuntimeException("Fail to append transaction chunk.", ke);
             }
         }
+    }
+
+    @Override
+    public void initialize(
+            LeaseClient leaseClient,
+            CursorContext cursorContext,
+            long startTimeMillis,
+            long lastTransactionIdWhenStarted) {
+        this.cursorContext = cursorContext;
+        this.leaseClient = leaseClient;
+        this.startTimeMillis = startTimeMillis;
+        this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;
     }
 }

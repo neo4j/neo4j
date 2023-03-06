@@ -58,7 +58,7 @@ import org.neo4j.util.concurrent.BinaryLatch;
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @ImpermanentDbmsExtension
 class DetachDeleteIT {
-    private static ExecutorService executor = Executors.newFixedThreadPool(5);
+    private static final ExecutorService executor = Executors.newFixedThreadPool(5);
 
     @AfterAll
     static void tearDown() {
