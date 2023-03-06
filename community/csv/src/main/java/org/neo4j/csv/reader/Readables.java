@@ -22,6 +22,8 @@ package org.neo4j.csv.reader;
 import static org.neo4j.csv.reader.BufferedCharSeeker.isEolChar;
 import static org.neo4j.csv.reader.CharReadable.EMPTY;
 
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -40,6 +42,7 @@ import java.util.function.LongSupplier;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.ZipInputStream;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.function.IOFunction;
 import org.neo4j.function.ThrowingFunction;
@@ -147,10 +150,12 @@ public class Readables {
         public CharReadable apply(final Path path) throws IOException {
             Magic magic = Magic.of(path);
             if (magic == Magic.ZIP) { // ZIP file
-                ZipFile zipFile = new ZipFile(path.toFile());
-                ZipEntry entry = getSingleSuitableEntry(zipFile);
+                ZipEntry entry;
+                try (ZipFile zipFile = new ZipFile(path.toFile())) {
+                    entry = getSingleSuitableEntry(zipFile);
+                }
                 return wrap(
-                        new InputStreamReader(zipFile.getInputStream(entry), charset) {
+                        new InputStreamReader(openZipInputStream(path, entry), charset) {
                             @Override
                             public String toString() {
                                 return path.toAbsolutePath().toString();
@@ -215,6 +220,19 @@ public class Readables {
                         },
                         Files.size(path));
             }
+        }
+
+        private static ZipInputStream openZipInputStream(Path path, ZipEntry entry) throws IOException {
+            var stream = new ZipInputStream(new BufferedInputStream(new FileInputStream(path.toFile())));
+            ZipEntry readEntry;
+            while ((readEntry = stream.getNextEntry()) != null) {
+                if (!readEntry.isDirectory() && readEntry.getName().equals(entry.getName())) {
+                    return stream;
+                }
+            }
+            stream.close();
+            throw new IllegalStateException(
+                    "Couldn't find zip entry with name " + entry.getName() + " when opening it as a stream");
         }
 
         private static ZipEntry getSingleSuitableEntry(ZipFile zipFile) throws IOException {
