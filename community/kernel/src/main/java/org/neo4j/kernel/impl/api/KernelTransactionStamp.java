@@ -61,6 +61,8 @@ public class KernelTransactionStamp {
 
     @Override
     public int hashCode() {
-        return Objects.hash(ktx, transactionSequenceNumber);
+        int result = ktx != null ? ktx.hashCode() : 0;
+        result = 31 * result + (int) (transactionSequenceNumber ^ (transactionSequenceNumber >>> 32));
+        return result;
     }
 }
