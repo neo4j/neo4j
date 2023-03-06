@@ -782,6 +782,7 @@ case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[
     SemanticPatternCheck.check(Pattern.SemanticContext.Merge, Pattern(Seq(pattern))(pattern.position)) chain
       actions.semanticCheck chain
       checkRelTypes(pattern) chain
+      where.semanticCheck chain
       checkNoSubqueryInMerge
 }
 
