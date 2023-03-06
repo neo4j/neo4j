@@ -132,23 +132,23 @@
     <scala.plugin.recompileMode>all</scala.plugin.recompileMode>
     <scala.test.version>3.2.13</scala.test.version>
     <asm.version>9.4</asm.version>
-    <metrics.version>4.2.15</metrics.version>
+    <metrics.version>4.2.17</metrics.version>
     <scala.target.vm>17</scala.target.vm>
     <jersey.version>2.34</jersey.version>
     <junit.version>5.9.2</junit.version>
     <junit.platform.version>1.9.2</junit.platform.version>
     <mockito.version>5.1.1</mockito.version>
     <opencypher.version>1.0.0-M21</opencypher.version>
-    <caffeine.version>3.1.2</caffeine.version>
+    <caffeine.version>3.1.4</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
     <jackson.version>2.14.2</jackson.version>
     <jackson-databind.version>2.14.2</jackson-databind.version>
-    <amazon-sdk.version>1.12.399</amazon-sdk.version>
+    <amazon-sdk.version>1.12.420</amazon-sdk.version>
     <guava.version>31.1-jre</guava.version>
     <awaitility.version>4.2.0</awaitility.version>
-    <log4j.version>2.19.0</log4j.version>
+    <log4j.version>2.20.0</log4j.version>
     <slf4j.version>2.0.6</slf4j.version>
-    <neo4j-java-driver.version>5.5.0</neo4j-java-driver.version>
+    <neo4j-java-driver.version>5.6.0</neo4j-java-driver.version>
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
     <picocli.version>4.7.1</picocli.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
@@ -1090,7 +1090,7 @@
       <dependency>
         <groupId>org.bitbucket.b_c</groupId>
         <artifactId>jose4j</artifactId>
-        <version>0.9.2</version>
+        <version>0.9.3</version>
       </dependency>
       <!--
        - Please note that when updating this dependency (i.e. due to a security vulnerability or bug) that the corresponding driver dependency also
@@ -1099,7 +1099,7 @@
       <dependency>
         <groupId>io.projectreactor</groupId>
         <artifactId>reactor-bom</artifactId>
-        <version>2022.0.2</version>
+        <version>2022.0.4</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
@@ -1233,14 +1233,14 @@
       <dependency>
         <groupId>org.netbeans.modules</groupId>
         <artifactId>org-netbeans-lib-profiler</artifactId>
-        <version>RELEASE150</version>
+        <version>RELEASE170</version>
         <scope>test</scope>
       </dependency>
 
       <dependency>
         <groupId>org.openjdk.jol</groupId>
         <artifactId>jol-core</artifactId>
-        <version>0.16</version>
+        <version>0.17</version>
         <scope>test</scope>
       </dependency>
 
@@ -1419,7 +1419,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.2-5</version>
+        <version>1.5.4-2</version>
       </dependency>
 
       <!--
@@ -1429,7 +1429,7 @@
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-bom</artifactId>
-        <version>4.1.87.Final</version>
+        <version>4.1.89.Final</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>

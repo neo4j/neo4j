@@ -46,7 +46,7 @@ public class FakeDriver implements Driver {
     }
 
     @Override
-    public BookmarkManager queryBookmarkManager() {
+    public BookmarkManager queryTaskBookmarkManager() {
         throw new UnsupportedOperationException("queryBookmarkManager is not supported in FakeDriver");
     }
 
