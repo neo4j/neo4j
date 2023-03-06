@@ -74,8 +74,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
     @Override
     void close();
 
-    long getNumberOfIdsInUse();
-
     long getDefragCount();
 
     void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext);
@@ -275,11 +273,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         @Override
         public void close() {
             delegate.close();
-        }
-
-        @Override
-        public long getNumberOfIdsInUse() {
-            return delegate.getNumberOfIdsInUse();
         }
 
         @Override

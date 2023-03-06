@@ -642,11 +642,6 @@ public class IndexedIdGenerator implements IdGenerator {
     }
 
     @Override
-    public long getNumberOfIdsInUse() {
-        return getHighId();
-    }
-
-    @Override
     public long getDefragCount() {
         // This is only correct up to cache capacity, but this method only seems to be used in tests and those tests
         // only

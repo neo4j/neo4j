@@ -135,11 +135,6 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
-        public long getNumberOfIdsInUse() {
-            return -1;
-        }
-
-        @Override
         public long getDefragCount() {
             return -1;
         }

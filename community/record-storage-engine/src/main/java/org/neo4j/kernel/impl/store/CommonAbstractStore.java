@@ -748,7 +748,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     /** @return The total number of ids in use. */
     public long getNumberOfIdsInUse() {
         assertIdGeneratorInitialized();
-        return idGenerator.getNumberOfIdsInUse();
+        return idGenerator.getHighId();
     }
 
     /**

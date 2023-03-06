@@ -39,22 +39,22 @@ public class RecordDatabaseEntityCounters implements StoreEntityCounters {
 
     @Override
     public long nodes() {
-        return idGeneratorFactory.get(RecordIdType.NODE).getNumberOfIdsInUse();
+        return idGeneratorFactory.get(RecordIdType.NODE).getHighId();
     }
 
     @Override
     public long relationships() {
-        return idGeneratorFactory.get(RecordIdType.RELATIONSHIP).getNumberOfIdsInUse();
+        return idGeneratorFactory.get(RecordIdType.RELATIONSHIP).getHighId();
     }
 
     @Override
     public long properties() {
-        return idGeneratorFactory.get(RecordIdType.PROPERTY).getNumberOfIdsInUse();
+        return idGeneratorFactory.get(RecordIdType.PROPERTY).getHighId();
     }
 
     @Override
     public long relationshipTypes() {
-        return idGeneratorFactory.get(SchemaIdType.RELATIONSHIP_TYPE_TOKEN).getNumberOfIdsInUse();
+        return idGeneratorFactory.get(SchemaIdType.RELATIONSHIP_TYPE_TOKEN).getHighId();
     }
 
     @Override

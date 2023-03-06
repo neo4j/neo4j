@@ -72,11 +72,6 @@ class ReadOnlyHighIdGenerator implements IdGenerator {
     }
 
     @Override
-    public long getNumberOfIdsInUse() {
-        return getHighId();
-    }
-
-    @Override
     public long getDefragCount() {
         // Doesn't quite matter actually, not for the intended use case anyway
         return 0;
