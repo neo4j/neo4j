@@ -1863,6 +1863,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def create(nodes: CreateNode*): IMPL = {
+    nodes.foreach(node => {
+      newNode(varFor(VariableParser.unescaped(node.idName)))
+    })
     appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, Seq.empty)(_)))
   }
 

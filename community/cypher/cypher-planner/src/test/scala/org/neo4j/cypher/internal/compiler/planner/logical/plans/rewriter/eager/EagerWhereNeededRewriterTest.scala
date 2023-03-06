@@ -918,6 +918,53 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(plan)
   }
 
+  test("inserts no Eager between Create and Create") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o"))
+      .create(createNode("m"))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
+  test("inserts no Eager between Create and Create with subsequent filters") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .filter("m.prop > 0")
+      .filter("o.prop > 0")
+      .create(createNode("o"))
+      .create(createNode("m"))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
+  test("inserts no Eager between Create and Create in Foreach") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .foreach("i", "[1]", Seq(createPattern(Seq(createNode("o")))))
+      .create(createNode("m"))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
   test("inserts no eager between label create and label read (Filter) after stable AllNodeScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
@@ -4912,6 +4959,36 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .nodeByLabelScan("n", "A")
         .build()
     )
+  }
+
+  test("inserts no Eager between Delete and Create") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(createNode("o"))
+      .deleteNode("n")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
+  }
+
+  test("inserts no Eager between Create and Delete") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .deleteNode("n")
+      .create(createNode("o"))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable
+    )
+    result should equal(plan)
   }
 
   // Ignored tests
