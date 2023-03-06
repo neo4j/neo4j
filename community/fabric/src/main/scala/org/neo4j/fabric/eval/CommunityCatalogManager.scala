@@ -19,67 +19,45 @@
  */
 package org.neo4j.fabric.eval
 
-import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.fabric.eval.Catalog.Alias
 import org.neo4j.fabric.eval.Catalog.Composite
 import org.neo4j.fabric.eval.Catalog.ExternalAlias
-import org.neo4j.fabric.eval.Catalog.Graph
 import org.neo4j.fabric.eval.Catalog.InternalAlias
 import org.neo4j.fabric.executor.Location
-import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.graphdb.event.TransactionData
-import org.neo4j.graphdb.event.TransactionEventListener
-import org.neo4j.graphdb.event.TransactionEventListenerAdapter
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
+import org.neo4j.kernel.lifecycle.LifecycleAdapter
+import org.neo4j.storageengine.api.TransactionIdStore
+
+import java.util.function.Supplier
 
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-class CommunityCatalogManager(databaseLookup: DatabaseLookup)
-    extends CatalogManager {
+class CommunityCatalogManager(
+  databaseLookup: DatabaseLookup,
+  systemDbTransactionIdStoreSupplier: Supplier[TransactionIdStore]
+) extends LifecycleAdapter with CatalogManager {
 
-  private val invalidationLock = new Object()
+  private val cachedCatalogLock = new Object()
   @volatile private var cachedCatalog: Catalog = _
-  @volatile private var invalidationToken: Object = _
+  @volatile private var cachedCatalogTxId: Long = 0
 
-  val catalogInvalidator: TransactionEventListener[AnyRef] = new TransactionEventListenerAdapter[AnyRef] {
-
-    override def afterCommit(data: TransactionData, state: AnyRef, databaseService: GraphDatabaseService): Unit =
-      invalidateCatalog()
-  }
+  private lazy val systemDbTransactionIdStore = systemDbTransactionIdStoreSupplier.get()
 
   final override def currentCatalog(): Catalog = {
-    val existingCatalog = cachedCatalog
-    if (existingCatalog != null) {
-      return existingCatalog
-    }
-
-    // There is a race between catalog construction and invalidation.
-    // The 'dark' scenario is caching a stale catalog, which can happen
-    // when another invalidation comes while a catalog is being constructed.
-    // Therefore a newly constructed catalog is cached only
-    // when the invalidation state represented by the invalidation token
-    // is the same as when the catalog construction started.
-    val invalidationTokenAtConstructionStart = invalidationToken
-    val newCatalog = createCatalog()
-
-    if (invalidationToken == invalidationTokenAtConstructionStart) {
-      invalidationLock.synchronized {
-        if (invalidationToken == invalidationTokenAtConstructionStart) {
+    val lastTxId = systemDbTransactionIdStore.getLastClosedTransactionId
+    if (cachedCatalogTxId < lastTxId) {
+      val newCatalog = createCatalog()
+      cachedCatalogLock.synchronized {
+        if (cachedCatalogTxId < lastTxId) {
           cachedCatalog = newCatalog
+          cachedCatalogTxId = lastTxId
         }
       }
     }
 
-    newCatalog
-  }
-
-  final def invalidateCatalog(): Unit = {
-    invalidationLock.synchronized {
-      invalidationToken = new Object()
-      cachedCatalog = null
-    }
+    cachedCatalog
   }
 
   protected def createCatalog(): Catalog = {

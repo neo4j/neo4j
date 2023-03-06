@@ -19,7 +19,6 @@
  */
 package org.neo4j.fabric.bootstrap;
 
-import static org.neo4j.kernel.database.NamedDatabaseId.SYSTEM_DATABASE_NAME;
 import static org.neo4j.scheduler.Group.CYPHER_CACHE;
 import static org.neo4j.scheduler.Group.FABRIC_WORKER;
 import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
@@ -66,7 +65,6 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
-import org.neo4j.kernel.internal.event.GlobalTransactionEventListeners;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLogProvider;
@@ -74,6 +72,7 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 
 public abstract class FabricServicesBootstrap {
@@ -260,10 +259,15 @@ public abstract class FabricServicesBootstrap {
 
         @Override
         protected CatalogManager createCatalogManger(FabricDatabaseManager fabricDatabaseManager) {
-            var catalogManager = new CommunityCatalogManager(createDatabaseLookup(fabricDatabaseManager));
-            resolve(GlobalTransactionEventListeners.class)
-                    .registerTransactionEventListener(SYSTEM_DATABASE_NAME, catalogManager.catalogInvalidator());
-            return catalogManager;
+            return new CommunityCatalogManager(
+                    createDatabaseLookup(fabricDatabaseManager), this::getSystemDbTransactionIdStore);
+        }
+
+        private TransactionIdStore getSystemDbTransactionIdStore() {
+            return databaseProvider
+                    .getSystemDatabaseContext()
+                    .dependencies()
+                    .resolveDependency(TransactionIdStore.class);
         }
 
         @Override
