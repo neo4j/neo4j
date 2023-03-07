@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
@@ -376,10 +377,22 @@ public class FabricTransactionImpl
 
     @Override
     public void markForTermination(Status reason) {
-        if (state != State.OPEN) {
-            return;
+        // While state is open, take the lock by polling.
+        // We do this to re-check state, which could be set by another thread committing or rolling back.
+        while (true) {
+            try {
+                if (state != State.OPEN) {
+                    return;
+                } else {
+                    if (exclusiveLock.tryLock(100, TimeUnit.MILLISECONDS)) {
+                        break;
+                    }
+                }
+            } catch (InterruptedException e) {
+                throw terminationFailedError();
+            }
         }
-        exclusiveLock.lock();
+
         try {
             if (state != State.OPEN) {
                 return;
