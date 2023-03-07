@@ -21,9 +21,9 @@ package org.neo4j.server.startup;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
+import static org.neo4j.internal.helpers.ProcessUtils.getModuleOptions;
 import static org.neo4j.logging.log4j.LogConfig.DEBUG_LOG;
 import static org.neo4j.logging.log4j.LogConfig.USER_LOG;
-import static org.neo4j.test.proc.ProcessUtil.getModuleOptions;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

@@ -33,6 +33,8 @@ Apache Software License, Version 2.0
   com.github.netcrusherorg:netcrusher-core
   Java Native Access
   LZ4 and xxHash
+  org.apiguardian:apiguardian-api
+  org.opentest4j:opentest4j
 
 BSD License
   asm
@@ -49,6 +51,13 @@ Eclipse Distribution License - v 1.0
 Eclipse Public License - v 1.0
   Eclipse Collections API
   Eclipse Collections Main Library
+
+Eclipse Public License v2.0
+  JUnit Jupiter API
+  JUnit Jupiter Engine
+  JUnit Platform Commons
+  JUnit Platform Engine API
+  JUnit Platform Launcher
 
 MIT License
   SLF4J API Module

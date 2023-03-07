@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.proc;
+package org.neo4j.internal.helpers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.test.proc.ProcessUtil.start;
+import static org.neo4j.internal.helpers.ProcessUtils.start;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -29,7 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class ProcessUtilTest {
+class ProcessUtilsTest {
     private static final String HELLO_WORLD = "Hello World";
 
     public static void main(String[] args) {
@@ -39,9 +39,9 @@ class ProcessUtilTest {
     @Test
     void mustFindWorkingJavaExecutableAndClassPath() throws Exception {
         List<String> command = new ArrayList<>();
-        command.add(ProcessUtil.getJavaExecutable().toString());
+        command.add(ProcessUtils.getJavaExecutable().toString());
         command.add("-cp");
-        command.add(ProcessUtil.getClassPath());
+        command.add(ProcessUtils.getClassPath());
         command.add(getClass().getName());
 
         ProcessBuilder builder = new ProcessBuilder(command);
@@ -50,7 +50,7 @@ class ProcessUtilTest {
         BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line = in.readLine();
 
-        assertThat(process.waitFor()).isEqualTo(0);
+        assertThat(process.waitFor()).isZero();
         assertThat(line).isEqualTo(HELLO_WORLD);
     }
 
@@ -61,7 +61,7 @@ class ProcessUtilTest {
         BufferedReader in = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line = in.readLine();
 
-        assertThat(process.waitFor()).isEqualTo(0);
+        assertThat(process.waitFor()).isZero();
         assertThat(line).isEqualTo(HELLO_WORLD);
     }
 }

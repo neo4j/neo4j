@@ -53,13 +53,13 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
+import org.neo4j.internal.helpers.ProcessUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.proc.ProcessUtil;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.time.Stopwatch;
 import picocli.CommandLine;
@@ -224,9 +224,9 @@ class ProfileCommandTest {
     private static class SeparateProcess {
         static Process startProcess() throws IOException {
             List<String> command = new ArrayList<>();
-            command.add(ProcessUtil.getJavaExecutable().toString());
+            command.add(ProcessUtils.getJavaExecutable().toString());
             command.add("-cp");
-            command.add(ProcessUtil.getClassPath());
+            command.add(ProcessUtils.getClassPath());
             command.add(SeparateProcess.class.getName());
             return new ProcessBuilder(command).start();
         }

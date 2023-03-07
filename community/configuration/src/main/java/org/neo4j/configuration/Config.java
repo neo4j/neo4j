@@ -24,7 +24,7 @@ import static java.util.Objects.requireNonNull;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_command_evaluation_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
-import static org.neo4j.internal.helpers.ProcessUtils.executeCommand;
+import static org.neo4j.internal.helpers.ProcessUtils.executeCommandWithOutput;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -854,7 +854,7 @@ public class Config implements Configuration {
             String str = entry.trim();
             String command = str.substring(2, str.length() - 1);
             log.info("Executing external script to retrieve value of setting " + settingName);
-            return executeCommand(command, commandEvaluationTimeout);
+            return executeCommandWithOutput(command, commandEvaluationTimeout);
         }
         return entry;
     }

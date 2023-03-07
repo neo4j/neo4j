@@ -23,7 +23,7 @@ import static java.lang.Boolean.getBoolean;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.proc.ProcessUtil.getModuleOptions;
+import static org.neo4j.internal.helpers.ProcessUtils.getModuleOptions;
 
 import java.io.BufferedReader;
 import java.io.IOException;

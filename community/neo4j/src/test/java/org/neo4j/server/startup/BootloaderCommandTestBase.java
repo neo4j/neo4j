@@ -34,8 +34,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.BootloaderSettings.windows_service_name;
+import static org.neo4j.internal.helpers.ProcessUtils.start;
 import static org.neo4j.server.startup.BootloaderOsAbstraction.UNKNOWN_PID;
-import static org.neo4j.test.proc.ProcessUtil.start;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

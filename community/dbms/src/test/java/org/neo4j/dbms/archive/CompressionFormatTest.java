@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.GZIP;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.ZSTD;
 import static org.neo4j.dbms.archive.StandardCompressionFormat.selectCompressionFormat;
-import static org.neo4j.test.proc.ProcessUtil.start;
+import static org.neo4j.internal.helpers.ProcessUtils.start;
 
 import org.junit.jupiter.api.Test;
 

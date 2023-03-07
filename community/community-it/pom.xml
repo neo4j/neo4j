@@ -53,6 +53,7 @@
         <module>fabric-it</module>
         <module>security-it</module>
         <module>no-opens-it</module>
+        <module>slf4j-logging-it</module>
     </modules>
 
     <profiles>

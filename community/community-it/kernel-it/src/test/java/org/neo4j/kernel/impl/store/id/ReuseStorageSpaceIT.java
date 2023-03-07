@@ -26,8 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.internal.helpers.ProcessUtils.start;
 import static org.neo4j.test.Race.throwing;
-import static org.neo4j.test.proc.ProcessUtil.start;
 
 import java.nio.file.Path;
 import java.util.ArrayList;

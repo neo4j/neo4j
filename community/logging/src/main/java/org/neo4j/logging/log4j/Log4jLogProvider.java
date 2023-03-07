@@ -20,7 +20,6 @@
 package org.neo4j.logging.log4j;
 
 import java.io.OutputStream;
-import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.Level;
 
@@ -48,17 +47,17 @@ public class Log4jLogProvider implements InternalLogProvider {
     }
 
     @Override
-    public InternalLog getLog(Class<?> loggingClass) {
+    public Log4jLog getLog(Class<?> loggingClass) {
         return new Log4jLog(ctx.getLogger(loggingClass));
     }
 
     @Override
-    public InternalLog getLog(String name) {
+    public Log4jLog getLog(String name) {
         return new Log4jLog(ctx.getLogger(name));
     }
 
     @Override
-    public InternalLog getLog(LoggerTarget target) {
+    public Log4jLog getLog(LoggerTarget target) {
         return new Log4jLog(ctx.getLogger(target.getTarget()));
     }
 

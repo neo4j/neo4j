@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 import org.junit.jupiter.api.Test;
+import org.neo4j.internal.helpers.ProcessUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -38,7 +39,6 @@ import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
-import org.neo4j.test.proc.ProcessUtil;
 import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.utils.TestDirectory;
 
@@ -65,7 +65,7 @@ class GBPTreePartialCreateFuzzIT {
     void shouldDetectAndThrowIOExceptionOnPartiallyCreatedFile() throws Exception {
         // given a crashed-on-open index
         Path file = testDirectory.file("index");
-        Process process = ProcessUtil.start(
+        Process process = ProcessUtils.start(
                 pb -> pb.redirectError(INHERIT).redirectOutput(INHERIT),
                 getClass().getName(),
                 file.toAbsolutePath().toString());

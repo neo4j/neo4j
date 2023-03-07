@@ -34,7 +34,8 @@ class UnixBootloaderOs extends AbstractUnixBootloaderOs {
 
     private static int getFileHandleLimit() {
         try {
-            String result = ProcessUtils.executeCommand(new String[] {"bash", "-c", "ulimit -n"}, ofMinutes(1));
+            String result =
+                    ProcessUtils.executeCommandWithOutput(new String[] {"bash", "-c", "ulimit -n"}, ofMinutes(1));
             return StringUtils.isNumeric(result) ? Integer.parseInt(result) : Integer.MAX_VALUE;
         } catch (RuntimeException e) { // Ignore this check if it is not available
         }

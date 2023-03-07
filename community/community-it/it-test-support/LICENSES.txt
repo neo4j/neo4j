@@ -78,6 +78,8 @@ Apache Software License, Version 2.0
   Netty/Transport/Native/KQueue
   Netty/Transport/Native/Unix/Common
   Non-Blocking Reactive Foundation for the JVM
+  org.apiguardian:apiguardian-api
+  org.opentest4j:opentest4j
   picocli
   Scala Reflect
   WMI4Java
@@ -910,6 +912,10 @@ Eclipse Public License v2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
+  JUnit Jupiter API
+  JUnit Jupiter Engine
+  JUnit Platform Commons
+  JUnit Platform Engine API
   ServiceLocator Default Implementation
 ------------------------------------------------------------------------------
 

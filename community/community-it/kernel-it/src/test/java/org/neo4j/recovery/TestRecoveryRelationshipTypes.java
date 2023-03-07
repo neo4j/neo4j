@@ -22,7 +22,7 @@ package org.neo4j.recovery;
 import static java.lang.System.exit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.test.proc.ProcessUtil.start;
+import static org.neo4j.internal.helpers.ProcessUtils.start;
 
 import java.io.IOException;
 import java.nio.file.Path;

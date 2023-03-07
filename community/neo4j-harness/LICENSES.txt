@@ -910,6 +910,8 @@ Eclipse Public License v2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
+  JUnit Jupiter API
+  JUnit Jupiter Engine
   JUnit Platform Commons
   JUnit Platform Engine API
   JUnit Vintage Engine

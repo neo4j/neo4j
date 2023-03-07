@@ -66,6 +66,7 @@
     <module>server-test-utils</module>
     <module>consistency-check</module>
     <module>neo4j-harness</module>
+    <module>neo4j-slf4j-provider</module>
     <module>dbms</module>
     <module>command-line</module>
     <module>random-values</module>

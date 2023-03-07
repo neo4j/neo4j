@@ -20,6 +20,7 @@
 package org.neo4j.server;
 
 import static java.lang.String.format;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
 
@@ -27,7 +28,10 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.management.MemoryUsage;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -35,7 +39,6 @@ import org.apache.commons.lang3.SystemUtils;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.BufferingLog;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -54,6 +57,7 @@ import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.startup.Environment;
 import org.neo4j.server.startup.PidFileHelper;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
 import sun.misc.Signal;
 
@@ -65,6 +69,9 @@ public abstract class NeoBootstrapper implements Bootstrapper {
     public static final int GRAPH_DATABASE_STARTUP_ERROR_CODE = 2;
     public static final int INVALID_CONFIGURATION_ERROR_CODE = 3;
     public static final int LICENSE_NOT_ACCEPTED_ERROR_CODE = 4;
+    private static final String NEO4J_SLF4J_PROVIDER = "org.neo4j.server.logging.slf4j.SLF4JLogBridge";
+    private static final boolean USE_NEO4J_SLF4J_PROVIDER =
+            FeatureToggles.flag(Bootstrapper.class, "useNeo4jSlf4jProvider", false);
 
     private volatile DatabaseManagementService databaseManagementService;
     private volatile Closeable userLogFileStream;
@@ -164,8 +171,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
 
         try {
             serverAddress = config.get(HttpConnector.listen_address).toString();
-            serverLocation = config.get(GraphDatabaseInternalSettings.databases_root_path)
-                    .toString();
+            serverLocation = config.get(databases_root_path).toString();
 
             log.info("Starting...");
             databaseManagementService = createNeo(config, daemonMode, dependencies);
@@ -284,7 +290,31 @@ public abstract class NeoBootstrapper implements Bootstrapper {
         Logger.getLogger("").setLevel(Level.WARNING);
         JULBridge.forwardTo(userLogProvider);
         JettyLogBridge.setLogProvider(userLogProvider);
+        setupSLF4JProvider(userLogProvider, List.of("org.eclipse.jetty"), "WARN");
         return userLogProvider;
+    }
+
+    private static void setupSLF4JProvider(Log4jLogProvider userLogProvider, List<String> prefixFilters, String level) {
+        if (!USE_NEO4J_SLF4J_PROVIDER) {
+            return;
+        }
+
+        try {
+            // Load dynamically to allow user to remove the neo4j SLF4J provider and replace it another one
+            Class<?> bridge = Class.forName(NEO4J_SLF4J_PROVIDER);
+            Method setLogProvider =
+                    bridge.getMethod("setInstantiationContext", Log4jLogProvider.class, List.class, String.class);
+            setLogProvider.invoke(null, userLogProvider, prefixFilters, level);
+        } catch (ClassNotFoundException
+                | NoSuchMethodException
+                | InvocationTargetException
+                | IllegalAccessException e) {
+            userLogProvider
+                    .getLog(NEO4J_SLF4J_PROVIDER)
+                    .info(
+                            "Neo4j SLF4J provider not found. Libraries that uses SLF4J, e.g. Jetty, will not be able to write the the Neo4j log files.");
+            userLogProvider.getLog(NEO4J_SLF4J_PROVIDER).debug("Details: ", e);
+        }
     }
 
     // Exit gracefully if possible
