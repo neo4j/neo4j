@@ -110,9 +110,12 @@ trait EagerAnalyzer {
 }
 
 object EagerAnalyzerImpl {
-  def apply(context: LogicalPlanningContext): EagerAnalyzer = new ForeachFlatteningEagerAnalyzerWrapper(new EagerAnalyzerImpl(context))
+
+  def apply(context: LogicalPlanningContext): EagerAnalyzer =
+    new ForeachFlatteningEagerAnalyzerWrapper(new EagerAnalyzerImpl(context))
 
   class ForeachFlatteningEagerAnalyzerWrapper(inner: EagerAnalyzer) extends EagerAnalyzer {
+
     override def headReadWriteEagerize(inputPlan: LogicalPlan, query: SinglePlannerQuery): LogicalPlan =
       inner.headReadWriteEagerize(inputPlan, query.flattenForeach)
 
@@ -133,7 +136,7 @@ object EagerAnalyzerImpl {
   }
 }
 
-class EagerAnalyzerImpl private(context: LogicalPlanningContext) extends EagerAnalyzer {
+class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerAnalyzer {
 
   implicit private val semanticTable: SemanticTable = context.staticComponents.semanticTable
 
