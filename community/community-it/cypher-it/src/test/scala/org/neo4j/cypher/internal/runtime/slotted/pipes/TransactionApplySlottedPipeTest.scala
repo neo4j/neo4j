@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
+import org.mockito.Mockito.when
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
@@ -30,9 +31,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.LiteralHelper.lite
 import org.neo4j.cypher.internal.runtime.slotted.SlottedCypherRowFactory
 import org.neo4j.cypher.internal.util.symbols.CTMap
 import org.neo4j.kernel.api.KernelTransaction.Type.IMPLICIT
+import org.neo4j.kernel.api.exceptions.Status
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
+import org.scalatestplus.mockito.MockitoSugar.mock
 
 class TransactionApplySlottedPipeTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 
@@ -161,7 +165,21 @@ class FailingNextIterable[T](succeeds: T*) extends Iterable[T] {
     override def hasNext: Boolean = true
 
     override def next(): T = {
-      if (iter.hasNext) iter.next() else throw new RuntimeException("Hello, I fail for you")
+      if (iter.hasNext) iter.next()
+      else throw new TransactionApplyTestException("Hello, I fail for you", Status.Classification.TransientError)
+    }
+  }
+}
+
+class TransactionApplyTestException(message: String, classification: Status.Classification)
+    extends RuntimeException(message) with HasStatus {
+
+  override val status: Status = new Status() {
+
+    override val code: Status.Code = {
+      val mockCode = mock[Status.Code]
+      when(mockCode.classification()).thenReturn(classification)
+      mockCode
     }
   }
 }
