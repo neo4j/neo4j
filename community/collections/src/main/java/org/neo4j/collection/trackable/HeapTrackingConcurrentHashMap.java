@@ -71,7 +71,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         int index = indexFor(hash, length);
         Object o = currentArray.get(index);
         if (o == null) {
-            Entry<K, V> newEntry = new Entry<>(key, value, null);
+            Entry<K, V> newEntry = new Entry<>(key, value, hash, null);
             addToSize(1);
             if (currentArray.compareAndSet(index, null, newEntry)) {
                 return null;
@@ -93,20 +93,19 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
-                        V oldValue = e.getValue();
+                    if (e.hash == hash && e.key.equals(key)) {
+                        V oldValue = e.value;
                         Entry<K, V> newEntry = new Entry<>(
-                                e.getKey(), value, this.createReplacementChainForRemoval((Entry<K, V>) o, e));
+                                e.key, value, hash, this.createReplacementChainForRemoval((Entry<K, V>) o, e));
                         if (!currentArray.compareAndSet(index, o, newEntry)) {
                             //noinspection ContinueStatementWithLabel
                             continue outer;
                         }
                         return oldValue;
                     }
-                    e = e.getNext();
+                    e = e.next;
                 }
-                Entry<K, V> newEntry = new Entry<>(key, value, (Entry<K, V>) o);
+                Entry<K, V> newEntry = new Entry<>(key, value, hash, (Entry<K, V>) o);
                 if (currentArray.compareAndSet(index, o, newEntry)) {
                     this.incrementSizeAndPossiblyResize(currentArray, length, o);
                     return null;
@@ -128,13 +127,12 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    K candidate = e.getKey();
-                    if (candidate.equals(key)) {
-                        return e.getValue();
+                    if (e.hash == hash && e.key.equals(key)) {
+                        return e.value;
                     }
-                    e = e.getNext();
+                    e = e.next;
                 }
-                Entry<K, V> newEntry = new Entry<>(key, value, (Entry<K, V>) o);
+                Entry<K, V> newEntry = new Entry<>(key, value, hash, (Entry<K, V>) o);
                 if (currentArray.compareAndSet(index, o, newEntry)) {
                     this.incrementSizeAndPossiblyResize(currentArray, length, o);
                     return null; // per the contract of putIfAbsent, we return null when the map didn't have this key
@@ -157,15 +155,14 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    K candidate = e.getKey();
-                    if (candidate.equals(key)) {
-                        return e.getValue();
+                    if (e.hash == hash && e.key.equals(key)) {
+                        return e.value;
                     }
-                    e = e.getNext();
+                    e = e.next;
                 }
                 if (currentArray.compareAndSet(index, o, RESERVED)) {
                     V newValue = mappingFunction.apply(key);
-                    Entry<K, V> newEntry = new Entry<>(key, newValue, (Entry<K, V>) o);
+                    Entry<K, V> newEntry = new Entry<>(key, newValue, hash, (Entry<K, V>) o);
                     currentArray.set(index, newEntry);
                     this.incrementSizeAndPossiblyResize(currentArray, length, o);
                     // per the contract of computeIfAbsent, we return the newvalue when the map
@@ -217,7 +214,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                 if (src.compareAndSet(j, o, RESIZING)) {
                     while (e != null) {
                         this.unconditionalCopy(dest, e);
-                        e = e.getNext();
+                        e = e.next;
                     }
                     src.set(j, RESIZED);
                     j++;
@@ -252,7 +249,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                         if (src.compareAndSet(j, o, RESIZING)) {
                             while (e != null) {
                                 this.unconditionalCopy(dest, e);
-                                e = e.getNext();
+                                e = e.next;
                             }
                             src.set(j, RESIZED);
                             j--;
@@ -263,8 +260,8 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         }
     }
 
-    private void unconditionalCopy(AtomicReferenceArray<Object> dest, Entry<K, V> toCopyEntry) {
-        int hash = hash(toCopyEntry.getKey());
+    private void unconditionalCopy(final AtomicReferenceArray<Object> dest, final Entry<K, V> toCopyEntry) {
+        int hash = hash(toCopyEntry.key);
         AtomicReferenceArray<Object> currentArray = dest;
         while (true) {
             int length = currentArray.length();
@@ -275,13 +272,13 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> newEntry;
                 if (o == null) {
-                    if (toCopyEntry.getNext() == null) {
+                    if (toCopyEntry.next == null) {
                         newEntry = toCopyEntry; // no need to duplicate
                     } else {
-                        newEntry = new Entry<>(toCopyEntry.getKey(), toCopyEntry.getValue());
+                        newEntry = new Entry<>(toCopyEntry.key, toCopyEntry.value, hash);
                     }
                 } else {
-                    newEntry = new Entry<>(toCopyEntry.getKey(), toCopyEntry.getValue(), (Entry<K, V>) o);
+                    newEntry = new Entry<>(toCopyEntry.key, toCopyEntry.value, hash, (Entry<K, V>) o);
                 }
                 if (currentArray.compareAndSet(index, o, newEntry)) {
                     return;
@@ -305,8 +302,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key) && Objects.equals(e.getValue(), value)) {
+                    if (e.hash == hash && e.key.equals(key) && Objects.equals(e.value, value)) {
                         Entry<K, V> replacement = this.createReplacementChainForRemoval((Entry<K, V>) o, e);
                         if (currentArray.compareAndSet(index, o, replacement)) {
                             this.addToSize(-1);
@@ -315,7 +311,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                         //noinspection ContinueStatementWithLabel
                         continue outer;
                     }
-                    e = e.getNext();
+                    e = e.next;
                 }
                 return false;
             }
@@ -340,11 +336,10 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                 } else if (o instanceof Entry<?, ?>) {
                     Entry<K, V> e = (Entry<K, V>) o;
                     while (e != null) {
-                        Object v = e.getValue();
-                        if (Objects.equals(v, value)) {
+                        if (Objects.equals(e.value, value)) {
                             return true;
                         }
-                        e = e.getNext();
+                        e = e.next;
                     }
                 }
             }
@@ -368,7 +363,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         if (o == RESIZED || o == RESIZING || o == RESERVED) {
             return this.slowGet(key, hash, currentArray);
         }
-        for (Entry<K, V> e = (Entry<K, V>) o; e != null; e = e.getNext()) {
+        for (Entry<K, V> e = (Entry<K, V>) o; e != null; e = e.next) {
             Object k;
             if ((k = e.key) == key || key.equals(k)) {
                 return e.value;
@@ -387,11 +382,10 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
-                        return e.getValue();
+                    if (e.hash == hash && e.key.equals(key)) {
+                        return e.value;
                     }
-                    e = e.getNext();
+                    e = e.next;
                 }
                 return null;
             }
@@ -410,11 +404,10 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
+                    if (e.hash == hash && e.key.equals(key)) {
                         return e;
                     }
-                    e = e.getNext();
+                    e = e.next;
                 }
                 return null;
             }
@@ -445,7 +438,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                         int removedEntries = 0;
                         while (e != null) {
                             removedEntries++;
-                            e = e.getNext();
+                            e = e.next;
                         }
                         this.addToSize(-removedEntries);
                     }
@@ -491,17 +484,17 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         }
         Entry<K, V> e = (Entry<K, V>) o;
         while (e != null) {
-            Object candidate = e.getKey();
-            if (candidate == key || candidate.equals(key)) {
-                if (oldValue == e.getValue() || (oldValue != null && oldValue.equals(e.getValue()))) {
+            Object candidate = e.key;
+            if (e.hash == hash && (candidate == key || candidate.equals(key))) {
+                if (oldValue == e.value || (oldValue != null && oldValue.equals(e.value))) {
                     Entry<K, V> replacement = this.createReplacementChainForRemoval((Entry<K, V>) o, e);
-                    Entry<K, V> newEntry = new Entry<>(key, newValue, replacement);
+                    Entry<K, V> newEntry = new Entry<>(key, newValue, hash, replacement);
                     return currentArray.compareAndSet(index, o, newEntry)
                             || this.slowReplace(key, oldValue, newValue, hash, currentArray);
                 }
                 return false;
             }
-            e = e.getNext();
+            e = e.next;
         }
         return false;
     }
@@ -519,11 +512,11 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate == key || candidate.equals(key)) {
-                        if (oldValue == e.getValue() || (oldValue != null && oldValue.equals(e.getValue()))) {
+                    Object candidate = e.key;
+                    if (e.hash == hash && (candidate == key || candidate.equals(key))) {
+                        if (oldValue == e.value || (oldValue != null && oldValue.equals(e.value))) {
                             Entry<K, V> replacement = this.createReplacementChainForRemoval((Entry<K, V>) o, e);
-                            Entry<K, V> newEntry = new Entry<>(key, newValue, replacement);
+                            Entry<K, V> newEntry = new Entry<>(key, newValue, hash, replacement);
                             if (currentArray.compareAndSet(index, o, newEntry)) {
                                 return true;
                             }
@@ -532,7 +525,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                         }
                         return false;
                     }
-                    e = e.getNext();
+                    e = e.next;
                 }
                 return false;
             }
@@ -564,18 +557,17 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
-                        V oldValue = e.getValue();
+                    if (e.hash == hash && e.key.equals(key)) {
+                        V oldValue = e.value;
                         Entry<K, V> newEntry = new Entry<>(
-                                e.getKey(), value, this.createReplacementChainForRemoval((Entry<K, V>) o, e));
+                                e.key, value, hash, this.createReplacementChainForRemoval((Entry<K, V>) o, e));
                         if (!currentArray.compareAndSet(index, o, newEntry)) {
                             //noinspection ContinueStatementWithLabel
                             continue outer;
                         }
                         return oldValue;
                     }
-                    e = e.getNext();
+                    e = e.next;
                 }
                 return null;
             }
@@ -594,8 +586,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
         } else if (o == null || o instanceof Entry<?, ?>) {
             Entry<K, V> e = (Entry<K, V>) o;
             while (e != null) {
-                Object candidate = e.getKey();
-                if (candidate.equals(key)) {
+                if (e.hash == hash && e.key.equals(key)) {
                     Entry<K, V> replacement = this.createReplacementChainForRemoval((Entry<K, V>) o, e);
                     if (currentArray.compareAndSet(index, o, replacement)) {
                         this.addToSize(-1);
@@ -603,7 +594,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                     }
                     return this.slowRemove(key, hash, currentArray);
                 }
-                e = e.getNext();
+                e = e.next;
             }
         }
         return null;
@@ -621,17 +612,16 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    Object candidate = e.getKey();
-                    if (candidate.equals(key)) {
+                    if (e.hash == hash && e.key.equals(key)) {
                         Entry<K, V> replacement = this.createReplacementChainForRemoval((Entry<K, V>) o, e);
                         if (currentArray.compareAndSet(index, o, replacement)) {
                             this.addToSize(-1);
-                            return e.getValue();
+                            return e.value;
                         }
                         //noinspection ContinueStatementWithLabel
                         continue outer;
                     }
-                    e = e.getNext();
+                    e = e.next;
                 }
                 return null;
             }
@@ -640,15 +630,15 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
 
     private Entry<K, V> createReplacementChainForRemoval(Entry<K, V> original, Entry<K, V> toRemove) {
         if (original == toRemove) {
-            return original.getNext();
+            return original.next;
         }
         Entry<K, V> replacement = null;
         Entry<K, V> e = original;
         while (e != null) {
             if (e != toRemove) {
-                replacement = new Entry<>(e.getKey(), e.getValue(), replacement);
+                replacement = new Entry<>(e.key, e.value, e.hash, replacement);
             }
-            e = e.getNext();
+            e = e.next;
         }
         return replacement;
     }
@@ -664,10 +654,10 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
             } else if (o == null || o instanceof Entry<?, ?>) {
                 Entry<K, V> e = (Entry<K, V>) o;
                 while (e != null) {
-                    Object key = e.getKey();
-                    Object value = e.getValue();
+                    Object key = e.key;
+                    Object value = e.value;
                     h += (key == null ? 0 : key.hashCode()) ^ (value == null ? 0 : value.hashCode());
-                    e = e.getNext();
+                    e = e.next;
                 }
             }
         }
@@ -740,7 +730,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
                 throw new NoSuchElementException();
             }
 
-            if ((this.next = e.getNext()) == null) {
+            if ((this.next = e.next) == null) {
                 this.findNext();
             }
             this.current = e;
@@ -782,7 +772,7 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
     private final class KeyIterator extends HashMapIterator<K> implements Iterator<K> {
         @Override
         public K next() {
-            return this.nextEntry().getKey();
+            return this.nextEntry().key;
         }
 
         @Override
@@ -949,17 +939,21 @@ public final class HeapTrackingConcurrentHashMap<K, V> extends AbstractHeapTrack
     private static final class Entry<K, V> implements Map.Entry<K, V>, Wrapper<Entry<K, V>> {
         private final K key;
         private final V value;
+
+        private final int hash;
         private final Entry<K, V> next;
 
-        private Entry(K key, V value) {
+        private Entry(K key, V value, int hash) {
             this.key = key;
             this.value = value;
+            this.hash = hash;
             this.next = null;
         }
 
-        private Entry(K key, V value, Entry<K, V> next) {
+        private Entry(K key, V value, int hash, Entry<K, V> next) {
             this.key = key;
             this.value = value;
+            this.hash = hash;
             this.next = next;
         }
 
