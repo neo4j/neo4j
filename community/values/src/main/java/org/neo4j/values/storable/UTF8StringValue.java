@@ -156,8 +156,8 @@ public final class UTF8StringValue extends StringValue {
         return hashFunction.update(hash, cpc.codePointCount);
     }
 
-    public static class CodePointCursor {
-        private byte[] values;
+    public static final class CodePointCursor {
+        private final byte[] values;
         private int i;
         private int codePointCount;
 
