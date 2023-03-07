@@ -27,6 +27,7 @@ import java.nio.ByteBuffer;
 
 public class OutputStreamWritableChannel implements FlushableChannel {
     private final DataOutputStream dataOutputStream;
+    private boolean isClosed;
 
     public OutputStreamWritableChannel(OutputStream outputStream) {
         this.dataOutputStream = new DataOutputStream(outputStream);
@@ -98,7 +99,28 @@ public class OutputStreamWritableChannel implements FlushableChannel {
     }
 
     @Override
+    public boolean isOpen() {
+        return !isClosed;
+    }
+
+    @Override
     public void close() throws IOException {
+        isClosed = true;
         dataOutputStream.close();
+    }
+
+    @Override
+    public int write(ByteBuffer src) throws IOException {
+        int remaining = src.remaining();
+        putAll(src);
+        return remaining;
+    }
+
+    @Override
+    public void beginChecksum() {}
+
+    @Override
+    public int putChecksum() throws IOException {
+        return 0;
     }
 }

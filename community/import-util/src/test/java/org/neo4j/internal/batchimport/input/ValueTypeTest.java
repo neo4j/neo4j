@@ -121,10 +121,31 @@ class ValueTypeTest {
         }
 
         @Override
+        public boolean isOpen() {
+            return true;
+        }
+
+        @Override
         public void close() {}
 
         long position() {
             return position;
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            int remaining = src.remaining();
+            putAll(src);
+            return remaining;
+        }
+
+        @Override
+        public void beginChecksum() {}
+
+        @Override
+        public int putChecksum() {
+            position += Integer.BYTES;
+            return 0;
         }
     }
 }

@@ -41,7 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
@@ -232,7 +232,7 @@ class ReversedSingleFileCommandBatchCursorTest {
 
     private void writeTransactions(int transactionCount, int minTransactionSize, int maxTransactionSize)
             throws IOException {
-        FlushablePositionAwareChecksumChannel channel =
+        FlushablePositionAwareChannel channel =
                 logFile.getTransactionLogWriter().getChannel();
         TransactionLogWriter writer = logFile.getTransactionLogWriter();
         int previousChecksum = BASE_TX_CHECKSUM;
@@ -265,7 +265,7 @@ class ReversedSingleFileCommandBatchCursorTest {
                 commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, ANONYMOUS);
     }
 
-    private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T> {
+    private static class CorruptedLogEntryWriter<T extends WritableChannel> extends LogEntryWriter<T> {
         CorruptedLogEntryWriter(T channel) {
             super(channel);
         }

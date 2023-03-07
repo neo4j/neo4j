@@ -33,7 +33,6 @@ import java.util.zip.Checksum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.test.RandomSupport;
@@ -44,7 +43,7 @@ import org.neo4j.test.utils.TestDirectory;
 
 @TestDirectoryExtension
 @ExtendWith(RandomExtension.class)
-class PhysicalFlushableChecksumChannelFuzzerTest {
+class PhysicalFlushableChannelFuzzerTest {
     @Inject
     private DefaultFileSystemAbstraction fileSystem;
 
@@ -60,7 +59,7 @@ class PhysicalFlushableChecksumChannelFuzzerTest {
         StoreChannel storeChannel = fileSystem.write(file);
 
         ArrayList<WrittenEntry> entries = new ArrayList<>();
-        try (var channel = new PhysicalFlushableChecksumChannel(
+        try (var channel = new PhysicalFlushableLogChannel(
                 storeChannel, new HeapScopedBuffer(64, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
 
             int numberOfEntries = random.intBetween(10, 100);
@@ -92,7 +91,7 @@ class PhysicalFlushableChecksumChannelFuzzerTest {
 
     record WrittenEntry(int size, int checksum) {}
 
-    private int randomInteractions(PhysicalFlushableChecksumChannel channel) throws IOException {
+    private int randomInteractions(PhysicalFlushableLogChannel channel) throws IOException {
         int totalSize = 0;
 
         int numberOfInteractions = random.intBetween(1, 100);

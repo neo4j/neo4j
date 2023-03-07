@@ -20,9 +20,10 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.neo4j.io.fs.ReadableChannel;
 
-public class DelegateReadableChannel implements ReadableClosablePositionAwareChecksumChannel {
+public class DelegateReadableChannel implements ReadableClosablePositionAwareChannel {
     private ReadableChannel delegate;
 
     public void delegateTo(ReadableChannel delegate) {
@@ -73,10 +74,10 @@ public class DelegateReadableChannel implements ReadableClosablePositionAwareChe
 
     @Override
     public byte markAndGet(LogPositionMarker marker) throws IOException {
-        if (delegate instanceof ReadableClosablePositionAwareChecksumChannel posChannel) {
+        if (delegate instanceof ReadableClosablePositionAwareChannel posChannel) {
             return posChannel.markAndGet(marker);
         }
-        return ReadableClosablePositionAwareChecksumChannel.super.markAndGet(marker);
+        return ReadableClosablePositionAwareChannel.super.markAndGet(marker);
     }
 
     @Override
@@ -99,6 +100,12 @@ public class DelegateReadableChannel implements ReadableClosablePositionAwareChe
     }
 
     @Override
+    public boolean isOpen() {
+        assertAssigned();
+        return delegate.isOpen();
+    }
+
+    @Override
     public void close() {
         // no op
     }
@@ -118,5 +125,11 @@ public class DelegateReadableChannel implements ReadableClosablePositionAwareChe
     public int endChecksumAndValidate() {
         // no op
         return 0;
+    }
+
+    @Override
+    public int read(ByteBuffer dst) throws IOException {
+        assertAssigned();
+        return delegate.read(dst);
     }
 }

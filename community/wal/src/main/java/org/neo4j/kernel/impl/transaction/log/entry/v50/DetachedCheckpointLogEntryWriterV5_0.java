@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.time.Instant;
 import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogEntryWriter;
@@ -39,9 +38,9 @@ import org.neo4j.storageengine.api.TransactionId;
 
 public class DetachedCheckpointLogEntryWriterV5_0 implements CheckpointLogEntryWriter {
     public static final int RECORD_LENGTH_BYTES = 232;
-    protected final WritableChecksumChannel channel;
+    protected final WritableChannel channel;
 
-    public DetachedCheckpointLogEntryWriterV5_0(WritableChecksumChannel channel) {
+    public DetachedCheckpointLogEntryWriterV5_0(WritableChannel channel) {
         this.channel = channel;
     }
 

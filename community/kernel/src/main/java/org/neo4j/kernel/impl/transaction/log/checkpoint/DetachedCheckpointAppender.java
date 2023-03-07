@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -64,7 +64,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final Panic databasePanic;
     private final LogRotation logRotation;
     private StoreId storeId;
-    private PositionAwarePhysicalFlushableChecksumChannel writer;
+    private PositionAwarePhysicalFlushableChannel writer;
     private CheckpointWriters checkpointWriters;
     private NativeScopedBuffer buffer;
     private PhysicalLogVersionedStoreChannel channel;
@@ -100,7 +100,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), version);
         seekCheckpointChannel(version);
         buffer = new NativeScopedBuffer(kibiBytes(1), ByteOrder.LITTLE_ENDIAN, context.getMemoryTracker());
-        writer = new PositionAwarePhysicalFlushableChecksumChannel(channel, buffer);
+        writer = new PositionAwarePhysicalFlushableChannel(channel, buffer);
         checkpointWriters = new CheckpointWriters(writer);
     }
 

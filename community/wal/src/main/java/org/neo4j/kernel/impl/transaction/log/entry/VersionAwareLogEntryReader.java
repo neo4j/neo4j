@@ -27,7 +27,7 @@ import org.neo4j.io.fs.ReadPastEndException;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryRollback;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.util.FeatureToggles;
@@ -61,7 +61,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
     }
 
     @Override
-    public LogEntry readLogEntry(ReadableClosablePositionAwareChecksumChannel channel) throws IOException {
+    public LogEntry readLogEntry(ReadableClosablePositionAwareChannel channel) throws IOException {
         try {
             byte versionCode = channel.markAndGet(positionMarker);
             if (versionCode == 0) {
@@ -153,7 +153,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
         }
     }
 
-    private void rewindOneByte(ReadableClosablePositionAwareChecksumChannel channel) throws IOException {
+    private void rewindOneByte(ReadableClosablePositionAwareChannel channel) throws IOException {
         // take current position
         channel.getCurrentPosition(positionMarker);
         ((PositionableChannel) channel).setCurrentPosition(positionMarker.getByteOffset() - 1);

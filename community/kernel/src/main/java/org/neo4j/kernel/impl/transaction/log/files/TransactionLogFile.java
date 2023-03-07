@@ -58,7 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
@@ -98,7 +98,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private final LogRotation logRotation;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
-    private PositionAwarePhysicalFlushableChecksumChannel writer;
+    private PositionAwarePhysicalFlushableChannel writer;
     private LogVersionRepository logVersionRepository;
     private final LogHeaderCache logHeaderCache;
     private final FileSystemAbstraction fileSystem;
@@ -138,7 +138,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         // try to set position
         seekChannelPosition(currentLogVersion);
 
-        writer = new PositionAwarePhysicalFlushableChecksumChannel(
+        writer = new PositionAwarePhysicalFlushableChannel(
                 channel,
                 new NativeScopedBuffer(
                         context.getConfig().get(transaction_log_buffer_size), ByteOrder.LITTLE_ENDIAN, memoryTracker));

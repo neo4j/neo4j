@@ -31,11 +31,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryRollback;
 
 public class SketchingCommandBatchCursor implements CommandBatchCursor {
-    private final ReadableClosablePositionAwareChecksumChannel channel;
+    private final ReadableClosablePositionAwareChannel channel;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
-    public SketchingCommandBatchCursor(ReadableClosablePositionAwareChecksumChannel channel, LogEntryReader entryReader)
+    public SketchingCommandBatchCursor(ReadableClosablePositionAwareChannel channel, LogEntryReader entryReader)
             throws IOException {
         this.channel = channel;
         channel.getCurrentPosition(lastGoodPositionMarker);

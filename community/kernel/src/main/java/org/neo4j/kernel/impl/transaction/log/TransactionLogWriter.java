@@ -31,18 +31,18 @@ import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.util.VisibleForTesting;
 
 public class TransactionLogWriter {
-    private final FlushablePositionAwareChecksumChannel channel;
-    private final LogEntryWriter<FlushablePositionAwareChecksumChannel> writer;
+    private final FlushablePositionAwareChannel channel;
+    private final LogEntryWriter<FlushablePositionAwareChannel> writer;
     private final KernelVersionProvider versionProvider;
 
-    public TransactionLogWriter(FlushablePositionAwareChecksumChannel channel, KernelVersionProvider versionProvider) {
+    public TransactionLogWriter(FlushablePositionAwareChannel channel, KernelVersionProvider versionProvider) {
         this(channel, new LogEntryWriter<>(channel), versionProvider);
     }
 
     @VisibleForTesting
     public TransactionLogWriter(
-            FlushablePositionAwareChecksumChannel channel,
-            LogEntryWriter<FlushablePositionAwareChecksumChannel> writer,
+            FlushablePositionAwareChannel channel,
+            LogEntryWriter<FlushablePositionAwareChannel> writer,
             KernelVersionProvider versionProvider) {
         this.channel = channel;
         this.writer = writer;
@@ -112,7 +112,7 @@ public class TransactionLogWriter {
     }
 
     @VisibleForTesting
-    public FlushablePositionAwareChecksumChannel getChannel() {
+    public FlushablePositionAwareChannel getChannel() {
         return channel;
     }
 
@@ -121,7 +121,7 @@ public class TransactionLogWriter {
     }
 
     @VisibleForTesting
-    public LogEntryWriter<FlushablePositionAwareChecksumChannel> getWriter() {
+    public LogEntryWriter<FlushablePositionAwareChannel> getWriter() {
         return writer;
     }
 }

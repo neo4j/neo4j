@@ -19,14 +19,14 @@
  */
 package org.neo4j.io.fs;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 
 /**
  * Represents an infinite channel to write primitive data to.
  */
-public interface WritableChannel extends Closeable {
+public interface WritableChannel extends WritableByteChannel, ChecksumWriter {
     /**
      * Writes a {@code byte} to this channel.
      *

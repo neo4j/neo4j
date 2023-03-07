@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.io.fs.ReadableChecksumChannel;
 
-public interface ReadableClosablePositionAwareChecksumChannel extends ReadableChecksumChannel, PositionAwareChannel {
+public interface ReadableClosablePositionAwareChannel extends ReadableChannel, PositionAwareChannel {
     /**
      * Logically, this method is the same as calling
      * {@link PositionAwareChannel#getCurrentPosition(LogPositionMarker)} followed by a call to

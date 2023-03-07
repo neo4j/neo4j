@@ -24,7 +24,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.decodeLogIn
 
 import java.io.IOException;
 import java.util.List;
-import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -61,7 +61,7 @@ public record CommittedTransactionRepresentation(
     }
 
     @Override
-    public int serialize(LogEntryWriter<? extends WritableChecksumChannel> writer) throws IOException {
+    public int serialize(LogEntryWriter<? extends WritableChannel> writer) throws IOException {
         byte version = startEntry.kernelVersion().version();
         writer.writeStartEntry(
                 version,

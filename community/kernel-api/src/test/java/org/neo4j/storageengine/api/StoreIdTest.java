@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -63,6 +64,7 @@ class StoreIdTest {
     private static class ChannelBuffer implements WritableChannel, ReadableChannel {
 
         private final ByteBuffer buffer;
+        private boolean isClosed;
 
         ChannelBuffer(int capacity) {
             this.buffer = ByteBuffer.allocate(capacity);
@@ -152,10 +154,50 @@ class StoreIdTest {
         }
 
         @Override
-        public void close() {}
+        public boolean isOpen() {
+            return !isClosed;
+        }
+
+        @Override
+        public void close() {
+            isClosed = true;
+        }
 
         void flip() {
             buffer.flip();
+        }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+            int remaining = dst.remaining();
+            dst.put(buffer);
+            return remaining;
+        }
+
+        @Override
+        public int write(ByteBuffer src) throws IOException {
+            int remaining = src.remaining();
+            buffer.put(src);
+            return remaining;
+        }
+
+        @Override
+        public int getChecksum() {
+            return BASE_TX_CHECKSUM;
+        }
+
+        @Override
+        public int endChecksumAndValidate() {
+            return buffer.getInt();
+        }
+
+        @Override
+        public void beginChecksum() {}
+
+        @Override
+        public int putChecksum() {
+            buffer.putInt(BASE_TX_CHECKSUM);
+            return BASE_TX_CHECKSUM;
         }
     }
 }

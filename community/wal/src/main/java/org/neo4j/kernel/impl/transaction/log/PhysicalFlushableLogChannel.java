@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
+import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.ScopedBuffer;
 
-class PhysicalFlushableLogChannel extends PhysicalFlushableChecksumChannel {
-    PhysicalFlushableLogChannel(StoreChannel channel, ScopedBuffer scopedBuffer) {
+public class PhysicalFlushableLogChannel extends PhysicalFlushableChannel {
+    public PhysicalFlushableLogChannel(StoreChannel channel, ScopedBuffer scopedBuffer) {
         super(channel, scopedBuffer);
     }
 

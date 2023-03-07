@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryWriterV5_0;
@@ -29,7 +29,7 @@ public final class CheckpointWriters {
     private final DetachedCheckpointLogEntryWriterV5_0 writer5_0;
     private final DetachedCheckpointLogEntryWriterV5_6 writer5_6;
 
-    public CheckpointWriters(WritableChecksumChannel channel) {
+    public CheckpointWriters(WritableChannel channel) {
         writer5_0 = new DetachedCheckpointLogEntryWriterV5_0(channel);
         writer5_6 = new DetachedCheckpointLogEntryWriterV5_6(channel);
     }

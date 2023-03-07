@@ -35,7 +35,6 @@ import java.nio.ByteOrder;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.KernelVersion;
@@ -44,6 +43,7 @@ import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkEnd;
@@ -75,8 +75,7 @@ class LogEntryParserDispatcherTest {
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             Path path = directory.createFile("a");
             StoreChannel storeChannel = fs.write(path);
-            try (PhysicalFlushableChecksumChannel writeChannel =
-                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+            try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
                 var entryWriter = new LogEntryWriter<>(writeChannel);
                 byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
                 entryWriter.writeStartEntry(version, 1, 2, 3, EMPTY_BYTE_ARRAY);

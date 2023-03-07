@@ -19,14 +19,14 @@
  */
 package org.neo4j.io.fs;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
 
 /**
  * Represents a channel from where primitive values can be read. Mirrors {@link WritableChannel} in
  * data types that can be read.
  */
-public interface ReadableChannel extends Closeable {
+public interface ReadableChannel extends ReadableByteChannel, ChecksumReader {
     /**
      * @return the next {@code byte} in this channel.
      * @throws IOException I/O error from channel.

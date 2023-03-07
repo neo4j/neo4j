@@ -50,7 +50,7 @@ import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionLogWriter;
@@ -230,7 +230,7 @@ class ReversedMultiFileCommandBatchCursorTest {
     }
 
     private LogPosition writeTransactions(int count) throws IOException {
-        FlushablePositionAwareChecksumChannel channel =
+        FlushablePositionAwareChannel channel =
                 logFile.getTransactionLogWriter().getChannel();
         TransactionLogWriter writer = logFile.getTransactionLogWriter();
         int previousChecksum = BASE_TX_CHECKSUM;

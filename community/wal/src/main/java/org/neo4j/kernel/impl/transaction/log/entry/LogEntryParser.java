@@ -20,16 +20,16 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
-import org.neo4j.io.fs.ReadableChecksumChannel;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
 /**
- * Reads and parses the next {@link LogEntry} from {@link ReadableChecksumChannel}, given the version.
+ * Reads and parses the next {@link LogEntry} from {@link ReadableChannel}, given the version.
  *
- * {@link #parse(KernelVersion, ReadableChecksumChannel, LogPositionMarker, CommandReaderFactory)}.
+ * {@link #parse(KernelVersion, ReadableChannel, LogPositionMarker, CommandReaderFactory)}.
  */
 public abstract class LogEntryParser {
     private final byte type;
@@ -49,7 +49,7 @@ public abstract class LogEntryParser {
      * Parses the next {@link LogEntry} read from the {@code channel}.
      *
      * @param version version this log entry is determined to be of.
-     * @param channel {@link ReadableChecksumChannel} to read the data from.
+     * @param channel {@link ReadableChannel} to read the data from.
      * @param marker {@link LogPositionMarker} marking the position in the {@code channel} that is the
      * start of this entry.
      * @param commandReaderFactory {@link CommandReaderFactory} for retrieving a {@link CommandReader}
@@ -59,7 +59,7 @@ public abstract class LogEntryParser {
      */
     public abstract LogEntry parse(
             KernelVersion version,
-            ReadableChecksumChannel channel,
+            ReadableChannel channel,
             LogPositionMarker marker,
             CommandReaderFactory commandReaderFactory)
             throws IOException;

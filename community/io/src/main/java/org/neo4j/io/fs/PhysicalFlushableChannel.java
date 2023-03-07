@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
+import java.util.zip.Checksum;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
@@ -41,11 +42,14 @@ import org.neo4j.util.VisibleForTesting;
 public class PhysicalFlushableChannel implements FlushableChannel {
     public static final int DEFAULT_BUFFER_SIZE = toIntExact(ByteUnit.kibiBytes(4));
 
-    private volatile boolean closed;
-
-    protected ScopedBuffer scopedBuffer;
     protected StoreChannel channel;
-    protected ByteBuffer buffer;
+
+    private final ByteBuffer checksumView;
+    private final Checksum checksum;
+
+    private ScopedBuffer scopedBuffer;
+    private ByteBuffer buffer;
+    private volatile boolean closed;
 
     @VisibleForTesting
     public PhysicalFlushableChannel(StoreChannel channel, MemoryTracker memoryTracker) {
@@ -56,6 +60,8 @@ public class PhysicalFlushableChannel implements FlushableChannel {
         this.channel = channel;
         this.scopedBuffer = scopedBuffer;
         this.buffer = scopedBuffer.getBuffer();
+        this.checksumView = this.buffer.duplicate();
+        checksum = CHECKSUM_FACTORY.get();
     }
 
     /**
@@ -64,6 +70,11 @@ public class PhysicalFlushableChannel implements FlushableChannel {
      */
     @Override
     public Flushable prepareForFlush() throws IOException {
+        // Update checksum with what we got
+        checksumView.limit(buffer.position());
+        checksum.update(checksumView);
+        checksumView.clear();
+
         buffer.flip();
         Flushable flushable = flushToChannel(channel, buffer);
         buffer.clear();
@@ -72,7 +83,7 @@ public class PhysicalFlushableChannel implements FlushableChannel {
 
     @Override
     public FlushableChannel put(byte value) throws IOException {
-        bufferWithGuaranteedSpace(1).put(value);
+        bufferWithGuaranteedSpace(Byte.BYTES).put(value);
         return this;
     }
 
@@ -127,9 +138,20 @@ public class PhysicalFlushableChannel implements FlushableChannel {
             buffer.put(src);
             return this;
         }
+
         prepareForFlush(); // Flush internal buffer
-        flushToChannel(channel, src);
+
+        src.mark();
+        flushToChannel(channel, src); // Write directly to channel
+        src.reset();
+        checksum.update(src);
+
         return this;
+    }
+
+    @Override
+    public boolean isOpen() {
+        return !closed;
     }
 
     /**
@@ -170,7 +192,7 @@ public class PhysicalFlushableChannel implements FlushableChannel {
         channel.position(position);
     }
 
-    ByteBuffer bufferWithGuaranteedSpace(int spaceInBytes) throws IOException {
+    private ByteBuffer bufferWithGuaranteedSpace(int spaceInBytes) throws IOException {
         assert spaceInBytes <= buffer.capacity();
         if (buffer.remaining() < spaceInBytes) {
             prepareForFlush();
@@ -198,5 +220,35 @@ public class PhysicalFlushableChannel implements FlushableChannel {
 
         // OK, this channel was closed without us really knowing about it, throw exception as is.
         throw e;
+    }
+
+    @Override
+    public int write(ByteBuffer src) throws IOException {
+        int remaining = src.remaining();
+        putAll(src);
+        return remaining;
+    }
+
+    @Override
+    public void beginChecksum() {
+        checksum.reset();
+        checksumView.limit(checksumView.capacity());
+        checksumView.position(buffer.position());
+    }
+
+    @Override
+    public int putChecksum() throws IOException {
+        // Make sure we can append checksum
+        bufferWithGuaranteedSpace(Integer.BYTES);
+
+        // Consume remaining bytes
+        checksumView.limit(buffer.position());
+        checksum.update(checksumView);
+        int calculatedChecksum = (int) this.checksum.getValue();
+
+        // Append
+        buffer.putInt(calculatedChecksum);
+
+        return calculatedChecksum;
     }
 }

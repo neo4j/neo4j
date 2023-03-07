@@ -25,7 +25,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 import java.io.IOException;
 import java.util.List;
 import org.neo4j.common.Subject;
-import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.CommandChunk;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -64,7 +64,7 @@ public record CommittedChunkRepresentation(
     }
 
     @Override
-    public int serialize(LogEntryWriter<? extends WritableChecksumChannel> writer) throws IOException {
+    public int serialize(LogEntryWriter<? extends WritableChannel> writer) throws IOException {
         byte version = chunkStart.kernelVersion().version();
         writer.writeChunkStartEntry(
                 version,

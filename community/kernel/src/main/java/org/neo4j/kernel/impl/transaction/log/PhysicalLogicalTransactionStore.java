@@ -126,7 +126,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore 
         }
 
         @Override
-        public boolean visit(ReadableClosablePositionAwareChecksumChannel channel) throws IOException {
+        public boolean visit(ReadableClosablePositionAwareChannel channel) throws IOException {
             LogEntry logEntry;
             LogEntryStart startEntry = null;
             while ((logEntry = logEntryReader.readLogEntry(channel)) != null) {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.io.fs.ReadableChecksumChannel;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.legacy.InlineCheckpointLogEntryParser;
 
@@ -30,7 +30,7 @@ class LegacyLogEntryParserSetV2_3 extends LogEntryParserSet {
     }
 
     @Override
-    public ReadableChecksumChannel wrap(ReadableChecksumChannel channel) {
-        return new ByteReversingReadableChecksumChannel(channel);
+    public ReadableChannel wrap(ReadableChannel channel) {
+        return new ByteReversingReadableChannel(channel);
     }
 }

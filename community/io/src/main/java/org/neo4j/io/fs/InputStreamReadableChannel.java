@@ -22,9 +22,11 @@ package org.neo4j.io.fs;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
 public class InputStreamReadableChannel implements ReadableChannel {
     private final DataInputStream dataInputStream;
+    private boolean isClosed;
 
     public InputStreamReadableChannel(InputStream inputStream) {
         this.dataInputStream = new DataInputStream(inputStream);
@@ -66,7 +68,39 @@ public class InputStreamReadableChannel implements ReadableChannel {
     }
 
     @Override
+    public boolean isOpen() {
+        return !isClosed;
+    }
+
+    @Override
     public void close() throws IOException {
+        isClosed = true;
         dataInputStream.close();
+    }
+
+    @Override
+    public int read(ByteBuffer dst) throws IOException {
+        int remaining = dst.remaining();
+        if (dst.hasArray()) {
+            return dataInputStream.read(dst.array(), dst.position(), remaining);
+        }
+
+        while (dst.hasRemaining()) {
+            dst.put(dataInputStream.readByte());
+        }
+        return remaining;
+    }
+
+    @Override
+    public void beginChecksum() {}
+
+    @Override
+    public int getChecksum() {
+        return 0;
+    }
+
+    @Override
+    public int endChecksumAndValidate() throws IOException {
+        return 0;
     }
 }

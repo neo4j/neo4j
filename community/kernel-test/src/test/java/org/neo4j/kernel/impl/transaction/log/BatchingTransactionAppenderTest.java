@@ -295,7 +295,7 @@ class BatchingTransactionAppenderTest {
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        FlushablePositionAwareChecksumChannel channel = spy(new PositionAwarePhysicalFlushableChecksumChannel(
+        FlushablePositionAwareChannel channel = spy(new PositionAwarePhysicalFlushableChannel(
                 mock(PhysicalLogVersionedStoreChannel.class),
                 new HeapScopedBuffer(Long.BYTES * 2, ByteOrder.LITTLE_ENDIAN, INSTANCE)));
         IOException failure = new IOException(failureMessage);
@@ -339,7 +339,7 @@ class BatchingTransactionAppenderTest {
         // GIVEN
         long txId = 3;
         String failureMessage = "Forces a failure";
-        FlushablePositionAwareChecksumChannel channel = spy(new InMemoryClosableChannel());
+        FlushablePositionAwareChannel channel = spy(new InMemoryClosableChannel());
         IOException failure = new IOException(failureMessage);
         final Flushable flushable = mock(Flushable.class);
         doAnswer(invocation -> {

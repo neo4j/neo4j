@@ -84,7 +84,7 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.PositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -682,7 +682,7 @@ class TransactionLogsRecoveryTest {
                         file,
                         EMPTY_ACCESSOR,
                         DatabaseTracer.NULL);
-                var writableLogChannel = new PositionAwarePhysicalFlushableChecksumChannel(
+                var writableLogChannel = new PositionAwarePhysicalFlushableChannel(
                         versionedStoreChannel,
                         new HeapScopedBuffer(toIntExact(KibiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             writeLogHeader(

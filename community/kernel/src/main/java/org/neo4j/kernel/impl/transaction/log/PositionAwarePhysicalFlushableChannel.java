@@ -22,20 +22,20 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.io.Flushable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import org.neo4j.io.fs.FlushableChecksumChannel;
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
+import org.neo4j.io.fs.FlushableChannel;
+import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.memory.ScopedBuffer;
 
 /**
- * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushablePositionAwareChecksumChannel}. This
- * implementation uses a {@link PhysicalFlushableChecksumChannel}, which provides buffering for write operations over the
+ * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushablePositionAwareChannel}. This
+ * implementation uses a {@link PhysicalFlushableChannel}, which provides buffering for write operations over the
  * decorated channel.
  */
-public class PositionAwarePhysicalFlushableChecksumChannel implements FlushablePositionAwareChecksumChannel {
+public class PositionAwarePhysicalFlushableChannel implements FlushablePositionAwareChannel {
     private LogVersionedStoreChannel logVersionedStoreChannel;
     private final PhysicalFlushableLogChannel channel;
 
-    public PositionAwarePhysicalFlushableChecksumChannel(
+    public PositionAwarePhysicalFlushableChannel(
             LogVersionedStoreChannel logVersionedStoreChannel, ScopedBuffer buffer) {
         this.logVersionedStoreChannel = logVersionedStoreChannel;
         this.channel = new PhysicalFlushableLogChannel(logVersionedStoreChannel, buffer);
@@ -68,43 +68,48 @@ public class PositionAwarePhysicalFlushableChecksumChannel implements FlushableP
     }
 
     @Override
-    public FlushableChecksumChannel put(byte value) throws IOException {
+    public FlushableChannel put(byte value) throws IOException {
         return channel.put(value);
     }
 
     @Override
-    public FlushableChecksumChannel putShort(short value) throws IOException {
+    public FlushableChannel putShort(short value) throws IOException {
         return channel.putShort(value);
     }
 
     @Override
-    public FlushableChecksumChannel putInt(int value) throws IOException {
+    public FlushableChannel putInt(int value) throws IOException {
         return channel.putInt(value);
     }
 
     @Override
-    public FlushableChecksumChannel putLong(long value) throws IOException {
+    public FlushableChannel putLong(long value) throws IOException {
         return channel.putLong(value);
     }
 
     @Override
-    public FlushableChecksumChannel putFloat(float value) throws IOException {
+    public FlushableChannel putFloat(float value) throws IOException {
         return channel.putFloat(value);
     }
 
     @Override
-    public FlushableChecksumChannel putDouble(double value) throws IOException {
+    public FlushableChannel putDouble(double value) throws IOException {
         return channel.putDouble(value);
     }
 
     @Override
-    public FlushableChecksumChannel put(byte[] value, int offset, int length) throws IOException {
+    public FlushableChannel put(byte[] value, int offset, int length) throws IOException {
         return channel.put(value, offset, length);
     }
 
     @Override
-    public FlushableChecksumChannel putAll(ByteBuffer src) throws IOException {
+    public FlushableChannel putAll(ByteBuffer src) throws IOException {
         return channel.putAll(src);
+    }
+
+    @Override
+    public boolean isOpen() {
+        return channel.isOpen();
     }
 
     @Override
@@ -113,8 +118,10 @@ public class PositionAwarePhysicalFlushableChecksumChannel implements FlushableP
     }
 
     @Override
-    public void write(ByteBuffer buffer) throws IOException {
+    public int write(ByteBuffer buffer) throws IOException {
+        int remaining = buffer.remaining();
         logVersionedStoreChannel.writeAll(buffer);
+        return remaining;
     }
 
     public void setChannel(LogVersionedStoreChannel channel) {

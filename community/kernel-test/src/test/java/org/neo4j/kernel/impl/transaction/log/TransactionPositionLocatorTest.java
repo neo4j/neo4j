@@ -38,8 +38,7 @@ import org.neo4j.test.LatestVersions;
 
 class TransactionPositionLocatorTest {
     private final LogEntryReader logEntryReader = mock(LogEntryReader.class);
-    private final ReadableClosablePositionAwareChecksumChannel channel =
-            mock(ReadableClosablePositionAwareChecksumChannel.class);
+    private final ReadableClosablePositionAwareChannel channel = mock(ReadableClosablePositionAwareChannel.class);
 
     private final long txId = 42;
     private final LogPosition startPosition = new LogPosition(1, 128);

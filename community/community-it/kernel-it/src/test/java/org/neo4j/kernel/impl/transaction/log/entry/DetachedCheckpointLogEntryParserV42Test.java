@@ -39,16 +39,15 @@ import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.io.fs.WritableChecksumChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
@@ -108,15 +107,13 @@ class DetachedCheckpointLogEntryParserV42Test {
 
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.BIG_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(path);
-            try (PhysicalFlushableChecksumChannel writeChannel =
-                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+            try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
                 writeCheckpoint(writeChannel, KernelVersion.V4_4, StringUtils.repeat("b", 1024));
             }
         }
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.open(path, Set.of(StandardOpenOption.WRITE, StandardOpenOption.APPEND));
-            try (PhysicalFlushableChecksumChannel writeChannel =
-                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+            try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
                 writeCheckpoint(writeChannel, KernelVersion.V5_0, StringUtils.repeat("c", 1024));
             }
         }
@@ -141,7 +138,7 @@ class DetachedCheckpointLogEntryParserV42Test {
         return (LogEntryDetachedCheckpointV4_2) entryReader.readLogEntry(readChannel);
     }
 
-    private static void writeCheckpoint(WritableChecksumChannel channel, KernelVersion kernelVersion, String reason)
+    private static void writeCheckpoint(WritableChannel channel, KernelVersion kernelVersion, String reason)
             throws IOException {
         var storeId = new StoreId(4, 5, "engine-1", "format-1", 1, 2);
         var logPosition = new LogPosition(1, 2);
@@ -150,7 +147,7 @@ class DetachedCheckpointLogEntryParserV42Test {
     }
 
     private static void writeCheckPointEntry(
-            WritableChecksumChannel channel,
+            WritableChannel channel,
             KernelVersion kernelVersion,
             LogPosition logPosition,
             Instant checkpointTime,

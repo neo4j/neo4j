@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.neo4j.io.fs.ReadableChecksumChannel;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryParserV5_0;
 
@@ -35,7 +35,7 @@ public class LogEntryParserSetV5_0 extends LogEntryParserSetV4_4 {
     }
 
     @Override
-    public ReadableChecksumChannel wrap(ReadableChecksumChannel channel) {
+    public ReadableChannel wrap(ReadableChannel channel) {
         return channel;
     }
 }

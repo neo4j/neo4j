@@ -24,7 +24,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 
 import java.io.IOException;
 import org.neo4j.common.Subject;
-import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.CommandChunk;
@@ -56,7 +56,7 @@ public record RollbackChunkRepresentation(
     }
 
     @Override
-    public int serialize(LogEntryWriter<? extends WritableChecksumChannel> writer) throws IOException {
+    public int serialize(LogEntryWriter<? extends WritableChannel> writer) throws IOException {
         return writer.writeRollbackEntry(kernelVersion.version(), transactionId, timeWritten);
     }
 

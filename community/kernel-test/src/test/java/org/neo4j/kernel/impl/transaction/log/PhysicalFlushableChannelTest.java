@@ -30,9 +30,11 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.neo4j.io.ByteUnit.bytes;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.ClosedChannelException;
@@ -41,6 +43,7 @@ import java.nio.file.Path;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
+import java.util.zip.Checksum;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -297,7 +300,7 @@ class PhysicalFlushableChannelTest {
         StoreChannel storeChannel = fileSystem.write(file);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 storeChannel, 1, (byte) -1, file, nativeChannelAccessor, databaseTracer);
-        try (var channel = new PositionAwarePhysicalFlushableChecksumChannel(
+        try (var channel = new PositionAwarePhysicalFlushableChannel(
                 versionedStoreChannel, new NativeScopedBuffer(1024, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             LogPosition initialPosition = channel.getCurrentPosition();
 
@@ -364,6 +367,64 @@ class PhysicalFlushableChannelTest {
         channel.put((byte) 0);
         // and wanting to empty that into the channel
         assertThrows(ClosedChannelException.class, channel::prepareForFlush);
+    }
+
+    @Test
+    void calculateChecksum() throws IOException {
+        final Path firstFile = directory.homePath().resolve("file1");
+        StoreChannel storeChannel = fileSystem.write(firstFile);
+        int channelChecksum;
+        try (var channel = new PhysicalFlushableLogChannel(
+                storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
+            channel.beginChecksum();
+            channel.put((byte) 10);
+            channelChecksum = channel.putChecksum();
+        }
+
+        int fileSize = (int) fileSystem.getFileSize(firstFile);
+        assertEquals(Byte.BYTES + Integer.BYTES, fileSize);
+        byte[] writtenBytes = new byte[fileSize];
+        try (InputStream in = Files.newInputStream(firstFile)) {
+            in.read(writtenBytes);
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(writtenBytes).order(ByteOrder.LITTLE_ENDIAN);
+
+        Checksum checksum = CHECKSUM_FACTORY.get();
+        checksum.update(10);
+
+        assertEquals(checksum.getValue(), channelChecksum);
+        assertEquals(10, buffer.get());
+        assertEquals(checksum.getValue(), buffer.getInt());
+    }
+
+    @Test
+    void beginChecksumShouldResetCalculations() throws IOException {
+        final Path firstFile = directory.homePath().resolve("file1");
+        StoreChannel storeChannel = fileSystem.write(firstFile);
+        int channelChecksum;
+        try (var channel = new PhysicalFlushableLogChannel(
+                storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
+            channel.put((byte) 5);
+            channel.beginChecksum();
+            channel.put((byte) 10);
+            channelChecksum = channel.putChecksum();
+        }
+
+        int fileSize = (int) fileSystem.getFileSize(firstFile);
+        assertEquals(Byte.BYTES + Byte.BYTES + Integer.BYTES, fileSize);
+        byte[] writtenBytes = new byte[fileSize];
+        try (InputStream in = Files.newInputStream(firstFile)) {
+            in.read(writtenBytes);
+        }
+        ByteBuffer buffer = ByteBuffer.wrap(writtenBytes).order(ByteOrder.LITTLE_ENDIAN);
+
+        Checksum checksum = CHECKSUM_FACTORY.get();
+        checksum.update(10);
+
+        assertEquals(checksum.getValue(), channelChecksum);
+        assertEquals(5, buffer.get());
+        assertEquals(10, buffer.get());
+        assertEquals(checksum.getValue(), buffer.getInt());
     }
 
     private ByteBuffer readFile(Path file) throws IOException {

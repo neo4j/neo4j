@@ -31,11 +31,11 @@ import java.time.Instant;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.PhysicalFlushableChecksumChannel;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryWriterV5_0;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
@@ -55,8 +55,7 @@ class DetachedCheckpointLogEntryWriterV50Test {
     void detachedCheckpointEntryHasSpecificLength() throws IOException {
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(directory.createFile("a"));
-            try (PhysicalFlushableChecksumChannel writeChannel =
-                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+            try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
                 var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriterV5_0(writeChannel);
                 long initialPosition = writeChannel.position();
                 writeCheckpoint(checkpointLogEntryWriter, "checkpoint reason");
@@ -70,8 +69,7 @@ class DetachedCheckpointLogEntryWriterV50Test {
     void anyCheckpointEntryHaveTheSameSize() throws IOException {
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(directory.createFile("b"));
-            try (PhysicalFlushableChecksumChannel writeChannel =
-                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+            try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
                 var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriterV5_0(writeChannel);
 
                 for (int i = 0; i < 100; i++) {
@@ -88,8 +86,7 @@ class DetachedCheckpointLogEntryWriterV50Test {
     void longCheckpointReasonIsTrimmedToFit() throws IOException {
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(directory.createFile("b"));
-            try (PhysicalFlushableChecksumChannel writeChannel =
-                    new PhysicalFlushableChecksumChannel(storeChannel, buffer)) {
+            try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
                 var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriterV5_0(writeChannel);
 
                 long initialPosition = writeChannel.position();

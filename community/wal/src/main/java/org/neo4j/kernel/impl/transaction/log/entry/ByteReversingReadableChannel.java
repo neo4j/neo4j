@@ -20,16 +20,17 @@
 package org.neo4j.kernel.impl.transaction.log.entry;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import org.neo4j.io.fs.ChecksumMismatchException;
-import org.neo4j.io.fs.ReadableChecksumChannel;
+import org.neo4j.io.fs.ReadableChannel;
 
 /**
  * ReadableChecksumChannel that reverses bytes of short, int, and long types read from delegate
  */
-public class ByteReversingReadableChecksumChannel implements ReadableChecksumChannel {
-    private final ReadableChecksumChannel delegate;
+public class ByteReversingReadableChannel implements ReadableChannel {
+    private final ReadableChannel delegate;
 
-    public ByteReversingReadableChecksumChannel(ReadableChecksumChannel delegate) {
+    public ByteReversingReadableChannel(ReadableChannel delegate) {
         this.delegate = delegate;
     }
 
@@ -92,7 +93,17 @@ public class ByteReversingReadableChecksumChannel implements ReadableChecksumCha
     }
 
     @Override
+    public boolean isOpen() {
+        return delegate.isOpen();
+    }
+
+    @Override
     public void close() throws IOException {
         delegate.close();
+    }
+
+    @Override
+    public int read(ByteBuffer dst) throws IOException {
+        return delegate.read(dst);
     }
 }

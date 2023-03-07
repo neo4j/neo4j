@@ -71,7 +71,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -80,7 +80,7 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChecksumChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -1090,9 +1090,9 @@ class RecoveryCorruptedTransactionLogIT {
                 .build();
         try (Lifespan lifespan = new Lifespan(internalLogFiles)) {
             LogFile transactionLogFile = internalLogFiles.getLogFile();
-            LogEntryWriter<FlushablePositionAwareChecksumChannel> realLogEntryWriter =
+            LogEntryWriter<FlushablePositionAwareChannel> realLogEntryWriter =
                     transactionLogFile.getTransactionLogWriter().getWriter();
-            LogEntryWriter<FlushablePositionAwareChecksumChannel> wrappedLogEntryWriter =
+            LogEntryWriter<FlushablePositionAwareChannel> wrappedLogEntryWriter =
                     logEntryWriterWrapper.wrap(realLogEntryWriter);
             TransactionLogWriter writer = new TransactionLogWriter(
                     realLogEntryWriter.getChannel(), wrappedLogEntryWriter, LATEST_KERNEL_VERSION_PROVIDER);
@@ -1214,14 +1214,14 @@ class RecoveryCorruptedTransactionLogIT {
 
     @FunctionalInterface
     private interface LogEntryWriterWrapper {
-        default <T extends WritableChecksumChannel> LogEntryWriter<T> wrap(LogEntryWriter<T> logEntryWriter) {
+        default <T extends WritableChannel> LogEntryWriter<T> wrap(LogEntryWriter<T> logEntryWriter) {
             return to(logEntryWriter.getChannel());
         }
 
-        <T extends WritableChecksumChannel> LogEntryWriter<T> to(T channel);
+        <T extends WritableChannel> LogEntryWriter<T> to(T channel);
     }
 
-    private static class CorruptedLogEntryWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T> {
+    private static class CorruptedLogEntryWriter<T extends WritableChannel> extends LogEntryWriter<T> {
         CorruptedLogEntryWriter(T channel) {
             super(channel);
         }
@@ -1238,7 +1238,7 @@ class RecoveryCorruptedTransactionLogIT {
         }
     }
 
-    private static class CorruptedLogEntryVersionWriter<T extends WritableChecksumChannel> extends LogEntryWriter<T> {
+    private static class CorruptedLogEntryVersionWriter<T extends WritableChannel> extends LogEntryWriter<T> {
         CorruptedLogEntryVersionWriter(T channel) {
             super(channel);
         }

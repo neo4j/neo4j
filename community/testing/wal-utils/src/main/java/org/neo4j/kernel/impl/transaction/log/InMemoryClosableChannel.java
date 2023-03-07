@@ -34,11 +34,11 @@ import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
 
 /**
- * Implementation of {@link ReadableClosablePositionAwareChecksumChannel} operating over a {@code byte[]} in memory.
+ * Implementation of {@link ReadableClosablePositionAwareChannel} operating over a {@code byte[]} in memory.
  */
 public class InMemoryClosableChannel
-        implements ReadableClosablePositionAwareChecksumChannel,
-                FlushablePositionAwareChecksumChannel,
+        implements ReadableClosablePositionAwareChannel,
+                FlushablePositionAwareChannel,
                 PositionableChannel,
                 ReadableByteChannel {
     private final byte[] bytes;
@@ -274,8 +274,10 @@ public class InMemoryClosableChannel
     }
 
     @Override
-    public void write(ByteBuffer buffer) throws IOException {
+    public int write(ByteBuffer buffer) throws IOException {
+        int remaining = buffer.remaining();
         writer.write(buffer);
+        return remaining;
     }
 
     @Override
@@ -294,6 +296,7 @@ public class InMemoryClosableChannel
 
     static class ByteBufferBase implements PositionAwareChannel, Closeable {
         protected final ByteBuffer buffer;
+        protected boolean isClosed;
 
         ByteBufferBase(ByteBuffer buffer) {
             this.buffer = buffer;
@@ -320,7 +323,9 @@ public class InMemoryClosableChannel
         }
 
         @Override
-        public void close() {}
+        public void close() {
+            isClosed = true;
+        }
 
         @Override
         public LogPositionMarker getCurrentPosition(LogPositionMarker positionMarker) {
@@ -334,8 +339,7 @@ public class InMemoryClosableChannel
         }
     }
 
-    public class Reader extends ByteBufferBase
-            implements ReadableClosablePositionAwareChecksumChannel, PositionableChannel {
+    public class Reader extends ByteBufferBase implements ReadableClosablePositionAwareChannel, PositionableChannel {
         private final Checksum checksum = CHECKSUM_FACTORY.get();
 
         Reader(ByteBuffer buffer) {
@@ -429,9 +433,25 @@ public class InMemoryClosableChannel
         private void updateCrc(int size) {
             checksum.update(buffer.array(), buffer.position(), size);
         }
+
+        @Override
+        public int read(ByteBuffer dst) throws IOException {
+            int remaining = dst.remaining();
+            ensureAvailableToRead(remaining);
+            dst.mark();
+            dst.put(buffer);
+            dst.reset();
+            checksum.update(dst);
+            return remaining;
+        }
+
+        @Override
+        public boolean isOpen() {
+            return !isClosed;
+        }
     }
 
-    public static class Writer extends ByteBufferBase implements FlushablePositionAwareChecksumChannel {
+    public static class Writer extends ByteBufferBase implements FlushablePositionAwareChannel {
         private final Checksum checksum = CHECKSUM_FACTORY.get();
 
         Writer(ByteBuffer buffer) {
@@ -518,8 +538,18 @@ public class InMemoryClosableChannel
         }
 
         @Override
-        public void write(ByteBuffer byteBuffer) throws IOException {
+        public int write(ByteBuffer byteBuffer) throws IOException {
+            int remaining = byteBuffer.remaining();
+            byteBuffer.mark();
             buffer.put(byteBuffer);
+            byteBuffer.reset();
+            checksum.update(byteBuffer);
+            return remaining;
+        }
+
+        @Override
+        public boolean isOpen() {
+            return !isClosed;
         }
     }
 }

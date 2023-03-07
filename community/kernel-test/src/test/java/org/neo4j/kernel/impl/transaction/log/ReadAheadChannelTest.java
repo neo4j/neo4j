@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.fs.ChecksumWriter.CHECKSUM_FACTORY;
@@ -42,30 +43,34 @@ import org.neo4j.io.memory.ByteBuffers;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
+import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 
-@ExtendWith(EphemeralFileSystemExtension.class)
+@ExtendWith({EphemeralFileSystemExtension.class, RandomExtension.class})
 class ReadAheadChannelTest {
     @Inject
-    protected EphemeralFileSystemAbstraction fileSystem;
+    private EphemeralFileSystemAbstraction fileSystem;
+
+    @Inject
+    private RandomSupport random;
 
     @ParameterizedTest
     @EnumSource(Constructors.class)
     void shouldThrowExceptionForReadAfterEOFIfNotEnoughBytesExist(Constructor constructor) throws Exception {
         // Given
         Path bytesReadTestFile = Path.of("bytesReadTest.txt");
-        StoreChannel storeChannel = fileSystem.write(bytesReadTestFile);
-        ByteBuffer buffer = ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE);
-        buffer.put((byte) 1);
-        buffer.flip();
-        storeChannel.writeAll(buffer);
-        storeChannel.force(false);
-        storeChannel.close();
+        try (StoreChannel storeChannel = fileSystem.write(bytesReadTestFile)) {
+            ByteBuffer buffer = ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+            buffer.put((byte) 1);
+            buffer.flip();
+            storeChannel.writeAll(buffer);
+            storeChannel.force(false);
+        }
 
-        storeChannel = fileSystem.read(bytesReadTestFile);
-
-        ReadAheadChannel<StoreChannel> channel = constructor.apply(storeChannel, DEFAULT_READ_AHEAD_SIZE);
+        ReadAheadChannel<StoreChannel> channel =
+                constructor.apply(fileSystem.read(bytesReadTestFile), DEFAULT_READ_AHEAD_SIZE);
         assertEquals((byte) 1, channel.get());
 
         assertThrows(ReadPastEndException.class, channel::get);
@@ -78,17 +83,16 @@ class ReadAheadChannelTest {
             throws Exception {
         // Given
         Path shortReadTestFile = Path.of("shortReadTest.txt");
-        StoreChannel storeChannel = fileSystem.write(shortReadTestFile);
-        ByteBuffer buffer = ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE);
-        buffer.put((byte) 1);
-        buffer.flip();
-        storeChannel.writeAll(buffer);
-        storeChannel.force(false);
-        storeChannel.close();
+        try (StoreChannel storeChannel = fileSystem.write(shortReadTestFile)) {
+            ByteBuffer buffer = ByteBuffers.allocate(1, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+            buffer.put((byte) 1);
+            buffer.flip();
+            storeChannel.writeAll(buffer);
+            storeChannel.force(false);
+        }
 
-        storeChannel = fileSystem.read(shortReadTestFile);
-        ReadAheadChannel<StoreChannel> channel = constructor.apply(storeChannel, DEFAULT_READ_AHEAD_SIZE);
-
+        ReadAheadChannel<StoreChannel> channel =
+                constructor.apply(fileSystem.read(shortReadTestFile), DEFAULT_READ_AHEAD_SIZE);
         assertThrows(ReadPastEndException.class, channel::getShort);
         assertEquals((byte) 1, channel.get());
         assertThrows(ReadPastEndException.class, channel::get);
@@ -98,30 +102,29 @@ class ReadAheadChannelTest {
     @EnumSource(Constructors.class)
     void shouldHandleRunningOutOfBytesWhenRequestSpansMultipleFiles(Constructor constructor) throws Exception {
         // Given
-        StoreChannel storeChannel1 = fileSystem.write(Path.of("foo.1"));
-        ByteBuffer buffer = ByteBuffers.allocate(2, ByteOrder.LITTLE_ENDIAN, INSTANCE);
-        buffer.put((byte) 1);
-        buffer.put((byte) 0);
-        buffer.flip();
-        storeChannel1.writeAll(buffer);
-        storeChannel1.force(false);
-        storeChannel1.close();
 
-        buffer.flip();
+        Path file1 = Path.of("foo.1");
+        try (StoreChannel storeChannel1 = fileSystem.write(file1)) {
+            ByteBuffer buffer = ByteBuffers.allocate(2, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+            buffer.put((byte) 1);
+            buffer.put((byte) 0);
+            buffer.flip();
+            storeChannel1.writeAll(buffer);
+            storeChannel1.force(false);
+        }
 
-        StoreChannel storeChannel2 = fileSystem.read(Path.of("foo.2"));
-        buffer.put((byte) 0);
-        buffer.put((byte) 1);
-        buffer.flip();
-        storeChannel2.writeAll(buffer);
-        storeChannel2.force(false);
-        storeChannel2.close();
+        Path file2 = Path.of("foo.2");
+        try (StoreChannel storeChannel2 = fileSystem.read(file2)) {
+            ByteBuffer buffer = ByteBuffers.allocate(2, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+            buffer.put((byte) 0);
+            buffer.put((byte) 1);
+            buffer.flip();
+            storeChannel2.writeAll(buffer);
+            storeChannel2.force(false);
+        }
 
-        storeChannel1 = fileSystem.read(Path.of("foo.1"));
-        final StoreChannel storeChannel2Copy = fileSystem.read(Path.of("foo.2"));
-
-        HookedReadAheadChannel channel = constructor.apply(storeChannel1, DEFAULT_READ_AHEAD_SIZE);
-        channel.nextChannelHook = storeChannel2Copy;
+        HookedReadAheadChannel channel = constructor.apply(fileSystem.read(file1), DEFAULT_READ_AHEAD_SIZE);
+        channel.nextChannelHook = fileSystem.read(file2);
 
         assertThrows(ReadPastEndException.class, channel::getLong);
         assertEquals(0x0100_0001, channel.getInt());
@@ -235,6 +238,137 @@ class ReadAheadChannelTest {
         for (int i = 0; i < testSize; i++) {
             assertEquals(i, in[i]);
         }
+        assertEquals(checksumValue, bufferedReader.endChecksumAndValidate());
+    }
+
+    @ParameterizedTest
+    @EnumSource(Constructors.class)
+    void readBytes(Constructor constructor) throws IOException {
+        int chunkSize = 64;
+        int totalSize = chunkSize + Byte.BYTES + Byte.BYTES + Integer.BYTES;
+        Checksum checksum = CHECKSUM_FACTORY.get();
+        byte b1 = (byte) random.nextInt();
+        byte b2 = (byte) random.nextInt();
+        byte[] randomBytes = random.nextBytes(new byte[chunkSize]);
+        checksum.update(b1);
+        checksum.update(b2);
+        checksum.update(randomBytes);
+        int checksumValue = (int) checksum.getValue();
+
+        Path file = Path.of("bar.1");
+        try (StoreChannel storeChannel = fileSystem.write(file)) {
+            ByteBuffer buffer = ByteBuffers.allocate(totalSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+
+            buffer.put(b1);
+            buffer.put(b2);
+            buffer.put(randomBytes);
+            buffer.putInt(checksumValue);
+
+            buffer.flip();
+            storeChannel.writeAll(buffer);
+            storeChannel.force(false);
+        }
+
+        ReadAheadChannel<StoreChannel> bufferedReader =
+                constructor.apply(fileSystem.read(file), DEFAULT_READ_AHEAD_SIZE);
+
+        assertEquals(b1, bufferedReader.get());
+        assertEquals(b2, bufferedReader.get());
+        byte[] readBytes = new byte[chunkSize];
+        bufferedReader.read(ByteBuffer.wrap(readBytes));
+        assertThat(readBytes).containsExactly(randomBytes);
+        assertEquals(checksumValue, bufferedReader.endChecksumAndValidate());
+        assertEquals(totalSize, bufferedReader.position());
+    }
+
+    @ParameterizedTest
+    @EnumSource(Constructors.class)
+    void readBytesBiggerThanBuffer(Constructor constructor) throws IOException {
+        int chunkSize = DEFAULT_READ_AHEAD_SIZE * 2;
+        int totalSize = chunkSize + Byte.BYTES + Byte.BYTES + Integer.BYTES;
+        Checksum checksum = CHECKSUM_FACTORY.get();
+        byte b1 = (byte) random.nextInt();
+        byte b2 = (byte) random.nextInt();
+        byte[] randomBytes = random.nextBytes(new byte[chunkSize]);
+        checksum.update(b1);
+        checksum.update(b2);
+        checksum.update(randomBytes);
+        int checksumValue = (int) checksum.getValue();
+
+        Path file = Path.of("baz.1");
+        try (StoreChannel storeChannel = fileSystem.write(file)) {
+            ByteBuffer buffer = ByteBuffers.allocate(totalSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+
+            buffer.put(b1);
+            buffer.put(b2);
+            buffer.put(randomBytes);
+            buffer.putInt(checksumValue);
+
+            buffer.flip();
+            storeChannel.writeAll(buffer);
+            storeChannel.force(false);
+        }
+
+        ReadAheadChannel<StoreChannel> bufferedReader =
+                constructor.apply(fileSystem.read(file), DEFAULT_READ_AHEAD_SIZE);
+
+        assertEquals(b1, bufferedReader.get());
+        assertEquals(b2, bufferedReader.get());
+        byte[] readBytes = new byte[chunkSize];
+        bufferedReader.read(ByteBuffer.wrap(readBytes));
+        assertThat(readBytes).containsExactly(randomBytes);
+        assertEquals(checksumValue, bufferedReader.endChecksumAndValidate());
+        assertEquals(totalSize, bufferedReader.position());
+    }
+
+    @ParameterizedTest
+    @EnumSource(Constructors.class)
+    void readBytesSpanningMultipleFiles(Constructor constructor) throws IOException {
+        int chunkSize = DEFAULT_READ_AHEAD_SIZE * 2;
+        int totalSize = chunkSize + Byte.BYTES + Byte.BYTES + Integer.BYTES;
+        Checksum checksum = CHECKSUM_FACTORY.get();
+        byte b1 = (byte) random.nextInt();
+        byte b2 = (byte) random.nextInt();
+        byte[] randomBytes = random.nextBytes(new byte[chunkSize]);
+        checksum.update(b1);
+        checksum.update(b2);
+        checksum.update(randomBytes);
+        int checksumValue = (int) checksum.getValue();
+
+        Path file1 = Path.of("foobar.1");
+        int firstChunk = DEFAULT_READ_AHEAD_SIZE / 4;
+        try (StoreChannel storeChannel = fileSystem.write(file1)) {
+            ByteBuffer buffer = ByteBuffers.allocate(totalSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+
+            buffer.put(b1);
+            buffer.put(b2);
+            buffer.put(randomBytes, 0, firstChunk);
+
+            buffer.flip();
+            storeChannel.writeAll(buffer);
+            storeChannel.force(false);
+        }
+
+        Path file2 = Path.of("foobar.2");
+        try (StoreChannel storeChannel = fileSystem.write(file2)) {
+            ByteBuffer buffer = ByteBuffers.allocate(totalSize, ByteOrder.LITTLE_ENDIAN, INSTANCE);
+
+            buffer.put(randomBytes, firstChunk, randomBytes.length - firstChunk);
+            buffer.putInt(checksumValue);
+
+            buffer.flip();
+            storeChannel.writeAll(buffer);
+            storeChannel.force(false);
+        }
+
+        HookedReadAheadChannel bufferedReader = constructor.apply(fileSystem.read(file1), DEFAULT_READ_AHEAD_SIZE);
+        bufferedReader.nextChannelHook = fileSystem.read(file2);
+
+        assertEquals(b1, bufferedReader.get());
+        assertEquals(b2, bufferedReader.get());
+        byte[] readBytes = new byte[chunkSize];
+        bufferedReader.read(ByteBuffer.wrap(readBytes));
+        assertThat(readBytes).containsExactly(randomBytes);
         assertEquals(checksumValue, bufferedReader.endChecksumAndValidate());
     }
 

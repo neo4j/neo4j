@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction;
 
 import java.io.IOException;
-import org.neo4j.io.fs.WritableChecksumChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.storageengine.api.CommandBatch;
@@ -29,7 +29,7 @@ public interface CommittedCommandBatch {
 
     CommandBatch commandBatch();
 
-    int serialize(LogEntryWriter<? extends WritableChecksumChannel> writer) throws IOException;
+    int serialize(LogEntryWriter<? extends WritableChannel> writer) throws IOException;
 
     int checksum();
 

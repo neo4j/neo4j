@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.entry.v56;
 
 import java.io.IOException;
-import org.neo4j.io.fs.ReadableChecksumChannel;
+import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -37,7 +37,7 @@ public class RollbackLogEntryParserV5_6 extends LogEntryParser {
     @Override
     public LogEntry parse(
             KernelVersion version,
-            ReadableChecksumChannel channel,
+            ReadableChannel channel,
             LogPositionMarker marker,
             CommandReaderFactory commandReaderFactory)
             throws IOException {
