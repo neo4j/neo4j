@@ -48,7 +48,7 @@ public class LogEntryParserSets {
             if (version == KernelVersion.GLORIOUS_FUTURE && latestRecognizedKernelVersion.isAtLeast(version)) {
                 return new LogEntryParserSetVGloriousFuture();
             }
-            throw new IllegalStateException(format("No log entries version matching %s", version));
+            throw new IllegalArgumentException(format("No log entries version matching %s", version));
         }
         return parserSet;
     }
