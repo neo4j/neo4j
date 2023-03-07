@@ -26,6 +26,7 @@ import static org.neo4j.memory.HeapEstimator.sizeOf;
 import java.util.Arrays;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 public final class BooleanArray extends ArrayValue {
@@ -150,5 +151,14 @@ public final class BooleanArray extends ArrayValue {
         newArray[0] = ((BooleanValue) prepended).booleanValue();
         System.arraycopy(value, 0, newArray, 1, value.length);
         return new BooleanArray(newArray);
+    }
+
+    @Override
+    public boolean equals(SequenceValue other) {
+        if (other instanceof ArrayValue otherArray) {
+            return otherArray.equals(value);
+        } else {
+            return super.equals(other);
+        }
     }
 }

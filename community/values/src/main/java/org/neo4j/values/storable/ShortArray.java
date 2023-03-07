@@ -25,6 +25,7 @@ import static org.neo4j.memory.HeapEstimator.sizeOf;
 
 import java.util.Arrays;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 public class ShortArray extends IntegralArray {
@@ -55,6 +56,15 @@ public class ShortArray extends IntegralArray {
     @Override
     public <T> T map(ValueMapper<T> mapper) {
         return mapper.mapShortArray(this);
+    }
+
+    @Override
+    public boolean equals(SequenceValue other) {
+        if (other instanceof ArrayValue otherArray) {
+            return otherArray.equals(value);
+        } else {
+            return super.equals(other);
+        }
     }
 
     @Override

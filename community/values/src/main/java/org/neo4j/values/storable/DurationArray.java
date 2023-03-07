@@ -24,6 +24,7 @@ import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 
 import java.util.Arrays;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 public class DurationArray extends NonPrimitiveArray<DurationValue> {
@@ -44,6 +45,15 @@ public class DurationArray extends NonPrimitiveArray<DurationValue> {
     @Override
     public <T> T map(ValueMapper<T> mapper) {
         return mapper.mapDurationArray(this);
+    }
+
+    @Override
+    public boolean equals(SequenceValue other) {
+        if (other instanceof ArrayValue otherArray) {
+            return otherArray.equals(value);
+        } else {
+            return super.equals(other);
+        }
     }
 
     @Override

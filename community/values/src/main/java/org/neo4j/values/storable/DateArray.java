@@ -26,6 +26,7 @@ import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 import java.time.LocalDate;
 import java.util.Arrays;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 public final class DateArray extends TemporalArray<LocalDate> {
@@ -103,5 +104,14 @@ public final class DateArray extends TemporalArray<LocalDate> {
         System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((DateValue) prepended).temporal();
         return new DateArray(newArray);
+    }
+
+    @Override
+    public boolean equals(SequenceValue other) {
+        if (other instanceof ArrayValue otherArray) {
+            return otherArray.equals(value);
+        } else {
+            return super.equals(other);
+        }
     }
 }

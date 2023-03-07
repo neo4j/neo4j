@@ -29,6 +29,7 @@ import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 import java.util.Arrays;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 public class StringArray extends TextArray {
@@ -49,6 +50,15 @@ public class StringArray extends TextArray {
     @Override
     public String stringValue(int offset) {
         return value[offset];
+    }
+
+    @Override
+    public boolean equals(SequenceValue other) {
+        if (other instanceof ArrayValue otherArray) {
+            return otherArray.equals(value);
+        } else {
+            return super.equals(other);
+        }
     }
 
     @Override

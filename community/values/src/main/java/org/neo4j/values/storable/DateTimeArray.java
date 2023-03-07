@@ -26,6 +26,7 @@ import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 public final class DateTimeArray extends TemporalArray<ZonedDateTime> {
@@ -103,5 +104,14 @@ public final class DateTimeArray extends TemporalArray<ZonedDateTime> {
         System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = ((DateTimeValue) prepended).temporal();
         return new DateTimeArray(newArray);
+    }
+
+    @Override
+    public boolean equals(SequenceValue other) {
+        if (other instanceof ArrayValue otherArray) {
+            return otherArray.equals(value);
+        } else {
+            return super.equals(other);
+        }
     }
 }

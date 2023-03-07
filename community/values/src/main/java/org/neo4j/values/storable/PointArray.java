@@ -25,6 +25,7 @@ import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 import java.util.Arrays;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 public final class PointArray extends NonPrimitiveArray<PointValue> {
@@ -117,5 +118,14 @@ public final class PointArray extends NonPrimitiveArray<PointValue> {
         System.arraycopy(value, 0, newArray, 1, value.length);
         newArray[0] = (PointValue) prepended;
         return new PointArray(newArray);
+    }
+
+    @Override
+    public boolean equals(SequenceValue other) {
+        if (other instanceof ArrayValue otherArray) {
+            return otherArray.equals(value);
+        } else {
+            return super.equals(other);
+        }
     }
 }

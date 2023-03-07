@@ -26,6 +26,7 @@ import static org.neo4j.memory.HeapEstimator.sizeOfObjectArray;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 
 public class LocalDateTimeArray extends TemporalArray<LocalDateTime> {
@@ -46,6 +47,15 @@ public class LocalDateTimeArray extends TemporalArray<LocalDateTime> {
     @Override
     public <T> T map(ValueMapper<T> mapper) {
         return mapper.mapLocalDateTimeArray(this);
+    }
+
+    @Override
+    public boolean equals(SequenceValue other) {
+        if (other instanceof ArrayValue otherArray) {
+            return otherArray.equals(value);
+        } else {
+            return super.equals(other);
+        }
     }
 
     @Override
