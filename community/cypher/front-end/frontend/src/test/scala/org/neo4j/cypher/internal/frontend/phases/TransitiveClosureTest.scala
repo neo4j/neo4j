@@ -44,7 +44,6 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
           BaseContains[Statement],
           SemanticAnalysisPossible
         )
-
       )
       .steps
       .reduceLeft[Transformer[BaseContext, BaseState, BaseState]]((t1, t2) => t1 andThen t2)
