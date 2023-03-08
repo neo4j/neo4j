@@ -17,6 +17,8 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting.SemanticAnalysisPossible
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizerTest.SemanticWrapper
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
@@ -38,7 +40,11 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
     StepSequencer(ListStepAccumulator[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step]())
       .orderSteps(
         CNFNormalizer.steps ++ Set(SemanticWrapper),
-        Set.empty
+        initialConditions = Set(
+          BaseContains[Statement],
+          SemanticAnalysisPossible
+        )
+
       )
       .steps
       .reduceLeft[Transformer[BaseContext, BaseState, BaseState]]((t1, t2) => t1 andThen t2)
