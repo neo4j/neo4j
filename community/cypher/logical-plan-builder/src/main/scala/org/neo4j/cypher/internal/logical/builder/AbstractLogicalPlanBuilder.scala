@@ -162,6 +162,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
@@ -618,6 +619,35 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
         throw new IllegalArgumentException("This pattern is not compatible with a bfs pruning var expand")
     }
     self
+  }
+
+  def pathPropagatingBFS(
+    pattern: String,
+    projectedDir: SemanticDirection = OUTGOING,
+    nodePredicates: Seq[Predicate] = Seq.empty,
+    relationshipPredicates: Seq[Predicate] = Seq.empty
+  ): IMPL = {
+    val p = patternParser.parse(pattern)
+    val varPatternLength = p.length.asInstanceOf[VarPatternLength]
+
+    newRelationship(varFor(p.relName))
+    newNode(varFor(p.to))
+
+    appendAtCurrentIndent(BinaryOperator((lhs, rhs) =>
+      PathPropagatingBFS(
+        lhs,
+        rhs,
+        p.from,
+        p.dir,
+        projectedDir,
+        p.relTypes,
+        p.to,
+        p.relName,
+        varPatternLength,
+        nodePredicates.map(_.asVariablePredicate),
+        relationshipPredicates.map(_.asVariablePredicate)
+      )(_)
+    ))
   }
 
   def expandInto(pattern: String): IMPL = expand(pattern, ExpandInto)

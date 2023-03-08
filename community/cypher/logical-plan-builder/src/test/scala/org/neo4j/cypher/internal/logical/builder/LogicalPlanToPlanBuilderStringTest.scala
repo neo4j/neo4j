@@ -77,6 +77,35 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   private val testedOperators = mutable.Set[String]()
 
   testPlan(
+    "pathPropagatingBFS",
+    new TestPlanBuilder()
+      .produceResults("b", "c")
+      .pathPropagatingBFS("(a)-[*]->(b)", projectedDir = INCOMING, Seq.empty, Seq.empty)
+      .|.filter("c:C")
+      .|.expand("(b)-[]-(c)")
+      .|.argument("b")
+      .allNodeScan("a")
+      .build()
+  )
+
+  testPlan(
+    "pathPropagatingBFS with extras",
+    new TestPlanBuilder()
+      .produceResults("b", "c")
+      .pathPropagatingBFS(
+        "(a)-[:R*7..99]->(b)",
+        projectedDir = OUTGOING,
+        nodePredicates = Seq(Predicate("n", "id(n) <> 5"), Predicate("n2", "id(n2) > 5")),
+        relationshipPredicates = Seq(Predicate("r", "id(r) <> 5"), Predicate("r2", "id(r2) > 5"))
+      )
+      .|.filter("c:C")
+      .|.expand("(b)-[]-(c)")
+      .|.argument("b")
+      .allNodeScan("a")
+      .build()
+  )
+
+  testPlan(
     "letSelectOrSemiApply",
     new TestPlanBuilder()
       .produceResults("x", "y")

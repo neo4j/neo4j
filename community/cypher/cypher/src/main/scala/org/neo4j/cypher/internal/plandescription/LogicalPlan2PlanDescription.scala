@@ -180,6 +180,7 @@ import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxRange
 import org.neo4j.cypher.internal.logical.plans.PointBoundingBoxSeekRangeWrapper
 import org.neo4j.cypher.internal.logical.plans.PointDistanceRange
@@ -1700,6 +1701,42 @@ case class LogicalPlan2PlanDescription(
           s"VarLengthExpand(Pruning,BFS)",
           children,
           Seq(Details(pretty"$expandDescriptionPrefix$expandInfo$predicatesDescription $depthString")),
+          variables,
+          withRawCardinalities
+        )
+
+      case PathPropagatingBFS(
+          _,
+          _,
+          from,
+          dir,
+          _,
+          types,
+          to,
+          relName,
+          length,
+          nodePredicates,
+          relationshipPredicates
+        ) =>
+        val expandDescription = expandExpressionDescription(
+          from,
+          Some(relName),
+          types.map(_.name),
+          to,
+          dir,
+          minLength = length.min,
+          maxLength = length.max,
+          maybeProperties = None
+        )
+
+        val (expandDescriptionPrefix, predicatesDescription) =
+          varExpandPredicateDescriptions(nodePredicates, relationshipPredicates)
+
+        PlanDescriptionImpl(
+          id,
+          "PathPropagatingBFS",
+          children,
+          Seq(Details(pretty"$expandDescriptionPrefix$expandDescription$predicatesDescription")),
           variables,
           withRawCardinalities
         )

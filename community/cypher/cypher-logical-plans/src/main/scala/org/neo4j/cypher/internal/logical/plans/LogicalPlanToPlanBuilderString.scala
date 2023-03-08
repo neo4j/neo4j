@@ -136,6 +136,7 @@ object LogicalPlanToPlanBuilderString {
       case e: Expand                        => if (e.mode == ExpandAll) "expandAll" else "expandInto"
       case _: VarExpand                     => "expand"
       case _: BFSPruningVarExpand           => "bfsPruningVarExpand"
+      case _: PathPropagatingBFS            => "pathPropagatingBFS"
       case e: OptionalExpand                => if (e.mode == ExpandAll) "optionalExpandAll" else "optionalExpandInto"
       case _: Selection                     => "filter"
       case _: UnwindCollection              => "unwind"
@@ -287,6 +288,28 @@ object LogicalPlanToPlanBuilderString {
         val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
         val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
         s""" "($from)$dirStrA[$relName$typeStr*$lenStr]$dirStrB($to)"$modeStr$pDirStr$nPredStr$rPredStr """.trim
+
+      case PathPropagatingBFS(
+          _,
+          _,
+          from,
+          dir,
+          projectedDir,
+          types,
+          to,
+          relName,
+          length,
+          nodePredicates,
+          relationshipPredicates
+        ) =>
+        val (dirStrA, dirStrB) = arrows(dir)
+        val typeStr = relTypeStr(types)
+        val lenStr = s"${length.min}..${length.max.getOrElse("")}"
+        val pDirStr = s", projectedDir = ${objectName(projectedDir)}"
+        val nPredStr = variablePredicates(nodePredicates, "nodePredicates")
+        val rPredStr = variablePredicates(relationshipPredicates, "relationshipPredicates")
+        s""" "($from)$dirStrA[$relName$typeStr*$lenStr]$dirStrB($to)"$pDirStr$nPredStr$rPredStr """.trim
+
       case FindShortestPaths(
           _,
           shortestPath,

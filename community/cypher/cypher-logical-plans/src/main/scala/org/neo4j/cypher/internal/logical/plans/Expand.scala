@@ -176,6 +176,32 @@ case class BFSPruningVarExpand(
 
 }
 
+case class PathPropagatingBFS(
+  left: LogicalPlan,
+  right: LogicalPlan,
+  from: String,
+  dir: SemanticDirection,
+  projectedDir: SemanticDirection,
+  types: Seq[RelTypeName],
+  to: String,
+  relName: String,
+  length: VarPatternLength,
+  nodePredicates: Seq[VariablePredicate] = Seq.empty,
+  relationshipPredicates: Seq[VariablePredicate] = Seq.empty
+)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) {
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
+
+  override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
+
+  override val availableSymbols: Set[String] = left.availableSymbols + relName + to ++ right.availableSymbols
+
+  def withNewPredicates(
+    newNodePredicates: Seq[VariablePredicate],
+    newRelationshipPredicates: Seq[VariablePredicate]
+  )(idGen: IdGen): PathPropagatingBFS =
+    copy(nodePredicates = newNodePredicates, relationshipPredicates = newRelationshipPredicates)(idGen)
+}
 sealed trait ExpansionMode
 
 /**
