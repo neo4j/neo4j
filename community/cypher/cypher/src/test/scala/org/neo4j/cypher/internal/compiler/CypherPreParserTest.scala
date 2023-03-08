@@ -30,125 +30,124 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.prop.TableFor2
 
-import java.util.List
-
+import java.util
 import scala.language.implicitConversions
 
 class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
-  private def mode(mode: String) = PreParserOption(CypherExecutionMode.name, mode)
-  private def opt(key: String, value: String) = PreParserOption(key, value)
+  private def mode(mode: String, position: InputPosition) = PreParserOption(CypherExecutionMode.name, mode, position)
+  private def opt(key: String, value: String, position: InputPosition) = PreParserOption(key, value, position)
 
   val queries: TableFor2[String, PreParserResult] = Table(
     ("query", "expected"),
-    ("RETURN 1 / 0.5 as number", new PreParserResult(List.of[PreParserOption](), (1, 1, 0))),
-    ("RETURN .1e9 AS literal", new PreParserResult(List.of[PreParserOption](), (1, 1, 0))),
-    ("RETURN '\\uH'", new PreParserResult(List.of[PreParserOption](), (1, 1, 0))),
-    ("PROFILE MATCH", new PreParserResult(List.of[PreParserOption](mode("PROFILE")), (1, 9, 8))),
-    ("EXPLAIN MATCH", new PreParserResult(List.of[PreParserOption](mode("EXPLAIN")), (1, 9, 8))),
-    ("CYPHER WITH YALL", new PreParserResult(List.of[PreParserOption](), (1, 8, 7))),
-    ("CYPHER planner=cost RETURN", new PreParserResult(List.of[PreParserOption](opt("planner", "cost")), (1, 21, 20))),
+    ("RETURN 1 / 0.5 as number", new PreParserResult(util.List.of[PreParserOption](), (1, 1, 0))),
+    ("RETURN .1e9 AS literal", new PreParserResult(util.List.of[PreParserOption](), (1, 1, 0))),
+    ("RETURN '\\uH'", new PreParserResult(util.List.of[PreParserOption](), (1, 1, 0))),
+    ("PROFILE MATCH", new PreParserResult(util.List.of[PreParserOption](mode("PROFILE", (1, 1, 0))), (1, 9, 8))),
+    ("EXPLAIN MATCH", new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 1, 0))), (1, 9, 8))),
+    ("CYPHER WITH YALL", new PreParserResult(util.List.of[PreParserOption](), (1, 8, 7))),
+    ("CYPHER planner=cost RETURN", new PreParserResult(util.List.of[PreParserOption](opt("planner", "cost", (1, 8, 7))), (1, 21, 20))),
     (
       "CYPHER planner = idp RETURN",
-      new PreParserResult(List.of[PreParserOption](opt("planner", "idp")), (1, 22, 21))
+      new PreParserResult(util.List.of[PreParserOption](opt("planner", "idp", (1, 8, 7))), (1, 22, 21))
     ),
-    ("CYPHER planner =dp RETURN", new PreParserResult(List.of[PreParserOption](opt("planner", "dp")), (1, 20, 19))),
+    ("CYPHER planner =dp RETURN", new PreParserResult(util.List.of[PreParserOption](opt("planner", "dp", (1, 8, 7))), (1, 20, 19))),
     (
       "CYPHER runtime=interpreted RETURN",
-      new PreParserResult(List.of[PreParserOption](opt("runtime", "interpreted")), (1, 28, 27))
+      new PreParserResult(util.List.of[PreParserOption](opt("runtime", "interpreted", (1, 8, 7))), (1, 28, 27))
     ),
     (
       "CYPHER planner=cost runtime=interpreted RETURN",
       new PreParserResult(
-        List.of[PreParserOption](opt("planner", "cost"), opt("runtime", "interpreted")),
+        util.List.of[PreParserOption](opt("planner", "cost", (1, 8, 7)), opt("runtime", "interpreted", (1, 21, 20))),
         (1, 41, 40)
       )
     ),
     (
       "CYPHER planner=dp runtime=interpreted RETURN",
       new PreParserResult(
-        List.of[PreParserOption](opt("planner", "dp"), opt("runtime", "interpreted")),
+        util.List.of[PreParserOption](opt("planner", "dp", (1, 8, 7)), opt("runtime", "interpreted", (1, 19, 18))),
         (1, 39, 38)
       )
     ),
     (
       "CYPHER planner=idp runtime=interpreted RETURN",
       new PreParserResult(
-        List.of[PreParserOption](opt("planner", "idp"), opt("runtime", "interpreted")),
+        util.List.of[PreParserOption](opt("planner", "idp", (1, 8, 7)), opt("runtime", "interpreted", (1, 20, 19))),
         (1, 40, 39)
       )
     ),
     (
       "CYPHER planner=idp planner=dp runtime=interpreted RETURN",
       new PreParserResult(
-        List.of[PreParserOption](
-          opt("planner", "idp"),
-          opt("planner", "dp"),
-          opt("runtime", "interpreted")
+        util.List.of[PreParserOption](
+          opt("planner", "idp", (1, 8, 7)),
+          opt("planner", "dp", (1, 20, 19)),
+          opt("runtime", "interpreted", (1, 31, 30))
         ),
         (1, 51, 50)
       )
     ),
     (
       "CYPHER updateStrategy=eager RETURN",
-      new PreParserResult(List.of[PreParserOption](opt("updateStrategy", "eager")), (1, 29, 28))
+      new PreParserResult(util.List.of[PreParserOption](opt("updateStrategy", "eager", (1, 8, 7))), (1, 29, 28))
     ),
     (
       "CYPHER runtime=slotted RETURN",
-      new PreParserResult(List.of[PreParserOption](opt("runtime", "slotted")), (1, 24, 23))
+      new PreParserResult(util.List.of[PreParserOption](opt("runtime", "slotted", (1, 8, 7))), (1, 24, 23))
     ),
     (
       "CYPHER expressionEngine=interpreted RETURN",
-      new PreParserResult(List.of[PreParserOption](opt("expressionEngine", "interpreted")), (1, 37, 36))
+      new PreParserResult(util.List.of[PreParserOption](opt("expressionEngine", "interpreted", (1, 8, 7))), (1, 37, 36))
     ),
     (
       "CYPHER expressionEngine=compiled RETURN",
-      new PreParserResult(List.of[PreParserOption](opt("expressionEngine", "compiled")), (1, 34, 33))
+      new PreParserResult(util.List.of[PreParserOption](opt("expressionEngine", "compiled", (1, 8, 7))), (1, 34, 33))
     ),
-    ("CYPHER replan=force RETURN", new PreParserResult(List.of[PreParserOption](opt("replan", "force")), (1, 21, 20))),
-    ("CYPHER replan=skip RETURN", new PreParserResult(List.of[PreParserOption](opt("replan", "skip")), (1, 20, 19))),
+    ("CYPHER replan=force RETURN", new PreParserResult(util.List.of[PreParserOption](opt("replan", "force", (1, 8, 7))), (1, 21, 20))),
+    ("CYPHER replan=skip RETURN", new PreParserResult(util.List.of[PreParserOption](opt("replan", "skip", (1, 8, 7))), (1, 20, 19))),
     (
       "CYPHER planner=cost MATCH(n:Node) WHERE n.prop = 3 RETURN n",
-      new PreParserResult(List.of[PreParserOption](opt("planner", "cost")), (1, 21, 20))
+      new PreParserResult(util.List.of[PreParserOption](opt("planner", "cost", (1, 8, 7))), (1, 21, 20))
     ),
-    ("CREATE ({name: 'USING PERIODIC COMMIT'})", new PreParserResult(List.of[PreParserOption](), (1, 1, 0))),
+    ("CREATE ({name: 'USING PERIODIC COMMIT'})", new PreParserResult(util.List.of[PreParserOption](), (1, 1, 0))),
     (
       "match (c:CYPHER) WITH c as debug, 'profile' as explain, RETURN debug, explain",
-      new PreParserResult(List.of[PreParserOption](), (1, 1, 0))
+      new PreParserResult(util.List.of[PreParserOption](), (1, 1, 0))
     ),
     (
       "match (runtime:C) WITH 'string' as slotted WHERE runtime=slotted RETURN runtime",
-      new PreParserResult(List.of[PreParserOption](), (1, 1, 0))
+      new PreParserResult(util.List.of[PreParserOption](), (1, 1, 0))
     ),
     (
       "EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE ()-[:T]->()",
-      new PreParserResult(List.of[PreParserOption](mode("EXPLAIN")), (1, 9, 8))
+      new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 1, 0))), (1, 9, 8))
     ),
     (
       "//TESTING \n //TESTING \n EXPLAIN MATCH (n) //TESTING\n MATCH (b:X) return n,b Limit 1",
-      new PreParserResult(List.of[PreParserOption](mode("EXPLAIN")), (3, 10, 32))
+      new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (3, 2, 24))), (3, 10, 32))
     ),
     (
       " EXPLAIN MATCH (n) RETURN",
-      new PreParserResult(List.of[PreParserOption](mode("EXPLAIN")), (1, 10, 9))
+      new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 2, 1))), (1, 10, 9))
     ),
     (
       " /* Some \n comment */ EXPLAIN MATCH (n) RETURN /* Some \n comment */ n",
-      new PreParserResult(List.of[PreParserOption](mode("EXPLAIN")), (2, 21, 30))
+      new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (2, 13, 22))), (2, 21, 30))
     ),
     (
       "EXPLAIN /* Some \n comment */ MATCH (n) RETURN /* Some \n comment */ n",
-      new PreParserResult(List.of[PreParserOption](mode("EXPLAIN")), (2, 13, 29))
+      new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 1, 0))), (2, 13, 29))
     ),
     (
       "//TESTING \n //TESTING \n EXPLAIN MATCH (n)\n MATCH (b:X) return n,b Limit 1",
-      new PreParserResult(List.of[PreParserOption](mode("EXPLAIN")), (3, 10, 32))
+      new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (3, 2, 24))), (3, 10, 32))
     ),
-    (" EXPLAIN/* 2 */ // \n  query", new PreParserResult(List.of[PreParserOption](mode("EXPLAIN")), (2, 3, 22))),
-    ("CYPHER // \n a // \n = b query", new PreParserResult(List.of[PreParserOption](opt("a", "b")), (3, 6, 23))),
+    (" EXPLAIN/* 2 */ // \n  query", new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 2, 1))), (2, 3, 22))),
+    ("CYPHER // \n a // \n = b query", new PreParserResult(util.List.of[PreParserOption](opt("a", "b", (2, 2, 12))), (3, 6, 23))),
     (
       " /* 1 */ EXPLAIN CYPHER\n planner /* 2 */ // \n =  /** 3 */ // \n cost MATCH /* 4 */ s ",
-      new PreParserResult(List.of[PreParserOption](mode("EXPLAIN"), opt("planner", "cost")), (4, 7, 68))
+      new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 10, 9)), opt("planner", "cost", (2, 2, 25))), (4, 7, 68))
     )
   )
 

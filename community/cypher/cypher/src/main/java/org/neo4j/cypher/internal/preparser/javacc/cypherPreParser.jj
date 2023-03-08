@@ -1072,25 +1072,36 @@ void CypherOption(List<PreParserOption> options) throws Exception :
         }
     }
     (
-        LOOKAHEAD(<IDENTIFIER> <EQ>) key=<IDENTIFIER> <EQ> value=<IDENTIFIER> { options.add( PreParserOption.generic( key.image, value.image ) ); }
+        LOOKAHEAD(<IDENTIFIER> <EQ>) key=<IDENTIFIER> <EQ> value=<IDENTIFIER>
+        {
+            InputPosition position = new InputPosition(key.beginOffset, key.beginLine, key.beginColumn);
+            PreParserOption option = PreParserOption.generic( key.image, value.image, position );
+            options.add( option );
+        }
     )*
 }
 
 
 void ExplainOption(List<PreParserOption> options):
-{}
 {
-    <EXPLAIN>
+ Token t;
+}
+{
+    t=<EXPLAIN>
     {
-        options.add( PreParserOption.explain() );
+        InputPosition position = new InputPosition(t.beginOffset, t.beginLine, t.beginColumn);
+        options.add( PreParserOption.explain(position) );
     }
 }
 
 void ProfileOption(List<PreParserOption> options):
-{}
 {
-    <PROFILE>
+ Token t;
+}
+{
+    t=<PROFILE>
     {
-        options.add( PreParserOption.profile() );
+        InputPosition position = new InputPosition(t.beginOffset, t.beginLine, t.beginColumn);
+        options.add( PreParserOption.profile(position) );
     }
 }

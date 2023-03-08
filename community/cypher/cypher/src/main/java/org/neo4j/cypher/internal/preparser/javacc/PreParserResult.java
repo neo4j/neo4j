@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.preparser.javacc;
 
 import java.util.List;
 import java.util.Objects;
+
 import org.neo4j.cypher.internal.PreParserOption;
 import org.neo4j.cypher.internal.util.InputPosition;
 
@@ -58,6 +59,15 @@ public class PreParserResult {
     @Override
     public int hashCode() {
         return Objects.hash(options, position);
+    }
+
+    @Override
+    public String toString() {
+        var sb = new StringBuilder();
+        sb.append("PreParserResult(List(");
+        options.forEach((o) -> sb.append(o.toString()).append(','));
+        sb.append("))");
+        return sb.toString();
     }
 
     public static String getEmptyQueryExceptionMsg() {
