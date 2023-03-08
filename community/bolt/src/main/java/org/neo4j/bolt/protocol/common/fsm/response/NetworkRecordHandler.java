@@ -75,7 +75,7 @@ public class NetworkRecordHandler implements RecordHandler, Closeable {
         this.pendingMessages.add(buffer.readRetainedSlice(buffer.readableBytes()));
         buffer.markWriterIndex();
 
-        if (this.flushThreshold == 0 || this.buffer.getTarget().readableBytes() >= this.flushThreshold) {
+        if (this.flushThreshold == 0 || this.buffer.getTarget().writerIndex() >= this.flushThreshold) {
             // if there is no flush threshold, or we have exceeded the configured amount, we'll flush
             // the record into the network pipeline - this is necessary as writes and especially
             // flushing can be somewhat costly
