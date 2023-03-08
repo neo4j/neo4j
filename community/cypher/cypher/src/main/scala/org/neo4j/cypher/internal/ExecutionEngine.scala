@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -119,6 +121,7 @@ abstract class ExecutionEngine(
   ): QueryExecution = {
     queryMonitor.startProcessing(context.executingQuery())
     val queryTracer = tracer.compileQuery(query.description)
+    val notificationLogger = new RecordingNotificationLogger()
     closing(context, queryTracer) {
       doExecute(
         query,
@@ -129,7 +132,8 @@ abstract class ExecutionEngine(
         input,
         queryMonitor,
         queryTracer,
-        subscriber
+        subscriber,
+        notificationLogger
       )
     }
   }
@@ -160,7 +164,8 @@ abstract class ExecutionEngine(
     val queryTracer = tracer.compileQuery(query)
     closing(context, queryTracer) {
       val couldContainSensitiveFields = isOutermostQuery && masterCompiler.supportsAdministrativeCommands()
-      val preParsedQuery = preParser.preParseQuery(query, profile, couldContainSensitiveFields)
+      val notificationLogger = new RecordingNotificationLogger()
+      val preParsedQuery = preParser.preParseQuery(query, notificationLogger, profile, couldContainSensitiveFields)
       doExecute(
         preParsedQuery,
         params,
@@ -170,7 +175,8 @@ abstract class ExecutionEngine(
         NoInput,
         defaultQueryExecutionMonitor,
         queryTracer,
-        subscriber
+        subscriber,
+        notificationLogger
       )
     }
   }
@@ -192,12 +198,13 @@ abstract class ExecutionEngine(
     input: InputDataStream,
     queryMonitor: QueryExecutionMonitor,
     tracer: QueryCompilationEvent,
-    subscriber: QuerySubscriber
+    subscriber: QuerySubscriber,
+    notificationLogger: InternalNotificationLogger
   ): QueryExecution = {
 
     val executableQuery =
       try {
-        getOrCompile(context, query, tracer, params)
+        getOrCompile(context, query, tracer, params, notificationLogger)
       } catch {
         case up: Throwable =>
           if (isOutermostQuery)
@@ -236,11 +243,26 @@ abstract class ExecutionEngine(
     inputQuery: InputQuery,
     tracer: QueryCompilationEvent,
     transactionalContext: TransactionalContext,
-    params: MapValue
+    params: MapValue,
+    notificationLogger: InternalNotificationLogger
   ): CompilerWithExpressionCodeGenOption[ExecutableQuery] = {
     val compiledExpressionCompiler =
-      () => masterCompiler.compile(inputQuery.withRecompilationLimitReached, tracer, transactionalContext, params)
-    val interpretedExpressionCompiler = () => masterCompiler.compile(inputQuery, tracer, transactionalContext, params)
+      () =>
+        masterCompiler.compile(
+          inputQuery.withRecompilationLimitReached,
+          tracer,
+          transactionalContext,
+          params,
+          notificationLogger
+        )
+    val interpretedExpressionCompiler =
+      () => masterCompiler.compile(
+        inputQuery,
+        tracer,
+        transactionalContext,
+        params,
+        notificationLogger
+      )
 
     new CompilerWithExpressionCodeGenOption[ExecutableQuery] {
       override def compile(): ExecutableQuery = {
@@ -272,7 +294,8 @@ abstract class ExecutionEngine(
     context: TransactionalContext,
     initialInputQuery: InputQuery,
     tracer: QueryCompilationEvent,
-    params: MapValue
+    params: MapValue,
+    notificationLogger: InternalNotificationLogger
   ): ExecutableQuery = {
 
     // create transaction and query context
@@ -296,7 +319,7 @@ abstract class ExecutionEngine(
           forceReplan = false
           inputQuery = inputQuery.withReplanOption(CypherReplanOption.force)
         }
-        val compiler = compilerWithExpressionCodeGenOption(inputQuery, tracer, tc, params)
+        val compiler = compilerWithExpressionCodeGenOption(inputQuery, tracer, tc, params, notificationLogger)
         val executableQuery = queryCache.computeIfAbsentOrStale(
           cacheKey,
           tc,

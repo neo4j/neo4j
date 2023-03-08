@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
+import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.cache.FabricQueryCache
 import org.neo4j.fabric.config.FabricConfig
@@ -72,8 +74,9 @@ case class FabricPlanner(
     catalog: Catalog,
     cancellationChecker: CancellationChecker
   ): PlannerInstance = {
-    val query = frontend.preParsing.preParse(queryString)
-    PlannerInstance(signatureResolver, query, queryParams, defaultGraphName, catalog, cancellationChecker)
+    val notificationLogger = new RecordingNotificationLogger()
+    val query = frontend.preParsing.preParse(queryString, notificationLogger)
+    PlannerInstance(signatureResolver, query, queryParams, defaultGraphName, catalog, cancellationChecker, notificationLogger)
   }
 
   case class PlannerInstance(
@@ -82,10 +85,11 @@ case class FabricPlanner(
     queryParams: MapValue,
     defaultContextName: String,
     catalog: Catalog,
-    cancellationChecker: CancellationChecker
+    cancellationChecker: CancellationChecker,
+    notificationLogger: InternalNotificationLogger
   ) {
 
-    private lazy val pipeline = frontend.Pipeline(signatureResolver, query, queryParams, cancellationChecker)
+    private lazy val pipeline = frontend.Pipeline(signatureResolver, query, queryParams, cancellationChecker, notificationLogger)
 
     private val useHelper = new UseHelper(catalog, defaultContextName)
 

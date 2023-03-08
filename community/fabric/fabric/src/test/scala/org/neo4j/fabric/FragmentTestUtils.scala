@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.symbols.AnyType
 import org.neo4j.cypher.internal.util.symbols.IntegerType
 import org.neo4j.fabric.eval.Catalog
@@ -61,7 +62,6 @@ import org.neo4j.values.virtual.MapValue
 
 import java.util.UUID
 import java.util.concurrent.Executors
-
 import scala.reflect.ClassTag
 
 trait FragmentTestUtils {
@@ -153,7 +153,7 @@ trait FragmentTestUtils {
   val frontend: FabricFrontEnd = FabricFrontEnd(cypherConfig, monitors, cacheFactory)
 
   def pipeline(query: String): frontend.Pipeline =
-    frontend.Pipeline(signatures, frontend.preParsing.preParse(query), params, CancellationChecker.NeverCancelled)
+    frontend.Pipeline(signatures, frontend.preParsing.preParse(query, devNullLogger), params, CancellationChecker.NeverCancelled, devNullLogger)
 
   def fragment(query: String): Fragment = {
     val state = pipeline(query).parseAndPrepare.process()
@@ -165,7 +165,7 @@ trait FragmentTestUtils {
     pipeline(query).parseAndPrepare.process().statement()
 
   def preParse(query: String): PreParsedQuery =
-    frontend.preParsing.preParse(query)
+    frontend.preParsing.preParse(query, devNullLogger)
 
   implicit class FragmentOps[F <: Fragment](fragment: F) {
 

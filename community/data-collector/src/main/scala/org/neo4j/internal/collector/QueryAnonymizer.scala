@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.rewriting.rewriters.anonymizeQuery
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.MapValue
@@ -65,7 +66,7 @@ case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
   private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
   override def queryText(queryText: String): String = {
-    val preParsedQuery = IdAnonymizer.preParser.preParseQuery(queryText)
+    val preParsedQuery = IdAnonymizer.preParser.preParseQuery(queryText, devNullLogger)
     val originalAst = parser.parse(
       preParsedQuery.statement,
       Neo4jCypherExceptionFactory(queryText, Some(preParsedQuery.options.offset))

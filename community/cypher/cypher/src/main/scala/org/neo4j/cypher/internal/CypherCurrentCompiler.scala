@@ -64,6 +64,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InternalException
@@ -83,7 +84,6 @@ import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
 import java.util.function.Supplier
-
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
@@ -119,15 +119,16 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     query: InputQuery,
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
-    params: MapValue
+    params: MapValue,
+    notificationLogger: InternalNotificationLogger
   ): ExecutableQuery = {
 
     // we only pass in the runtime to be able to support checking against the correct CommandManagementRuntime
     val logicalPlanResult = query match {
       case fullyParsedQuery: FullyParsedQuery =>
-        planner.plan(fullyParsedQuery, tracer, transactionalContext, params, runtime)
+        planner.plan(fullyParsedQuery, tracer, transactionalContext, params, runtime, notificationLogger)
       case preParsedQuery: PreParsedQuery =>
-        planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params, runtime)
+        planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params, runtime, notificationLogger)
     }
 
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(

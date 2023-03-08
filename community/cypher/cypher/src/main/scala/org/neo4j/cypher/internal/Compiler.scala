@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
@@ -43,6 +44,7 @@ trait Compiler {
     query: InputQuery,
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
-    params: MapValue
+    params: MapValue,
+    notificationLogger: InternalNotificationLogger
   ): ExecutableQuery
 }

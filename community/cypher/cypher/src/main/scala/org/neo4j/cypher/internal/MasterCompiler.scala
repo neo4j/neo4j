@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
 
@@ -52,7 +53,8 @@ trait MasterCompiler {
     query: InputQuery,
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
-    params: MapValue
+    params: MapValue,
+    notificationLogger: InternalNotificationLogger
   ): ExecutableQuery
 
   def supportsAdministrativeCommands(): Boolean
@@ -77,9 +79,10 @@ class SingleMasterCompiler(compiler: Compiler) extends MasterCompiler {
     query: InputQuery,
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
-    params: MapValue
+    params: MapValue,
+    notificationLogger: InternalNotificationLogger
   ): ExecutableQuery =
-    compiler.compile(query, tracer, transactionalContext, params)
+    compiler.compile(query, tracer, transactionalContext, params, notificationLogger)
 
   def supportsAdministrativeCommands(): Boolean = false
 }
@@ -101,7 +104,8 @@ class LibraryMasterCompiler(compilerLibrary: CompilerLibrary) extends MasterComp
     query: InputQuery,
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
-    params: MapValue
+    params: MapValue,
+    notificationLogger: InternalNotificationLogger
   ): ExecutableQuery = {
 
     // Do the compilation
@@ -111,7 +115,7 @@ class LibraryMasterCompiler(compilerLibrary: CompilerLibrary) extends MasterComp
       query.options.queryOptions.updateStrategy
     )
 
-    compiler.compile(query, tracer, transactionalContext, params)
+    compiler.compile(query, tracer, transactionalContext, params, notificationLogger)
   }
 
   def supportsAdministrativeCommands(): Boolean = compilerLibrary.supportsAdministrativeCommands()

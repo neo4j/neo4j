@@ -40,13 +40,14 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.procedure.impl.GlobalProceduresRegistry
 
 class CypherQueryObfuscatorFactory {
 
   def obfuscatorForQuery(query: String): QueryObfuscator = {
-    val preParsedQuery = preParser.preParseQuery(query)
+    val preParsedQuery = preParser.preParseQuery(query, devNullLogger)
     val state = InitialState(
       preParsedQuery.statement,
       Some(preParsedQuery.options.offset),

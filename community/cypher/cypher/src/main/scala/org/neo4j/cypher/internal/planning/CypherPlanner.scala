@@ -248,11 +248,10 @@ case class CypherPlanner(
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
     params: MapValue,
-    runtime: CypherRuntime[_]
+    runtime: CypherRuntime[_],
+    notificationLogger: InternalNotificationLogger
   ): LogicalPlanResult = {
     val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
-    val notificationLogger = new RecordingNotificationLogger()
-
     val syntacticQuery = getOrParse(
       preParsedQuery,
       params,
@@ -293,10 +292,10 @@ case class CypherPlanner(
     tracer: CompilationPhaseTracer,
     transactionalContext: TransactionalContext,
     params: MapValue,
-    runtime: CypherRuntime[_]
+    runtime: CypherRuntime[_],
+    notificationLogger: InternalNotificationLogger
   ): LogicalPlanResult = {
     val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
-    val notificationLogger = new RecordingNotificationLogger()
     doPlan(
       fullyParsedQuery.state,
       fullyParsedQuery.options,

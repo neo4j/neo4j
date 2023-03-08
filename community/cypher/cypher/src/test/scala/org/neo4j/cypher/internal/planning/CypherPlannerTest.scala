@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -68,7 +69,6 @@ import org.scalatest.prop.TableDrivenPropertyChecks.forAll
 import org.scalatest.prop.TableFor5
 
 import java.time.Clock
-
 import scala.collection.mutable
 
 class CypherPlannerTest extends CypherFunSuite {
@@ -289,7 +289,7 @@ class CypherPlannerTest extends CypherFunSuite {
     val tc = mock[TransactionalContext](org.mockito.Mockito.RETURNS_DEEP_STUBS)
 
     val statement = planner
-      .parseAndPlan(preParserQuery, NO_TRACING, tc, MapValue.EMPTY, InterpretedRuntime)
+      .parseAndPlan(preParserQuery, NO_TRACING, tc, MapValue.EMPTY, InterpretedRuntime, devNullLogger)
       .logicalPlanState
       .statement
 

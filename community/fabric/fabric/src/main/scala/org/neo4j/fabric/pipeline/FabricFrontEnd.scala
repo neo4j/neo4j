@@ -50,7 +50,7 @@ import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
-import org.neo4j.cypher.internal.util.RecordingNotificationLogger
+import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.planning.FabricPlan
 import org.neo4j.fabric.util.Errors
@@ -88,8 +88,8 @@ case class FabricFrontEnd(
         case CypherExecutionMode.profile => FabricPlan.PROFILE
       }
 
-    def preParse(queryString: String): PreParsedQuery = {
-      preParser.preParseQuery(queryString)
+    def preParse(queryString: String, notificationLogger: InternalNotificationLogger): PreParsedQuery = {
+      preParser.preParseQuery(queryString, notificationLogger)
     }
 
   }
@@ -98,7 +98,8 @@ case class FabricFrontEnd(
     signatures: ProcedureSignatureResolver,
     query: PreParsedQuery,
     params: MapValue,
-    cancellationChecker: CancellationChecker
+    cancellationChecker: CancellationChecker,
+    notificationLogger: InternalNotificationLogger
   ) {
 
     def traceStart(): CompilationTracer.QueryCompilationEvent =
@@ -106,7 +107,7 @@ case class FabricFrontEnd(
 
     private val context: BaseContext = BaseContextImpl(
       CompilationPhaseTracer.NO_TRACING,
-      new RecordingNotificationLogger(),
+      notificationLogger,
       query.rawStatement,
       Some(query.options.offset),
       WrappedMonitors(kernelMonitors),

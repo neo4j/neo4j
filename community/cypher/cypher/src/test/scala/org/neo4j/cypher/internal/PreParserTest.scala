@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.SyntaxException
@@ -48,72 +49,74 @@ class PreParserTest extends CypherFunSuite {
 
   private val preParser = preParserWith()
 
+  def preParse(queryText: String): PreParsedQuery = preParser.preParseQuery(queryText, devNullLogger)
+
   test("should not allow inconsistent runtime options") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=slotted runtime=interpreted RETURN 42"))
+    intercept[InvalidArgumentException](preParse("CYPHER runtime=slotted runtime=interpreted RETURN 42"))
   }
 
   test("should not allow both EXPLAIN and PROFILE") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("EXPLAIN PROFILE RETURN 42"))
-    intercept[InvalidArgumentException](preParser.preParseQuery("PROFILE EXPLAIN RETURN 42"))
+    intercept[InvalidArgumentException](preParse("EXPLAIN PROFILE RETURN 42"))
+    intercept[InvalidArgumentException](preParse("PROFILE EXPLAIN RETURN 42"))
   }
 
   test("should not allow CYPHER {version}") {
-    intercept[SyntaxException](preParser.preParseQuery("CYPHER 4.4 RETURN 42"))
+    intercept[SyntaxException](preParse("CYPHER 4.4 RETURN 42"))
       .getMessage should include("Support for setting Cypher Version has been removed (line 1, column 8 (offset: 7))")
   }
 
   test("should not allow unknown options") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER foo=idp RETURN 42"))
+    intercept[InvalidArgumentException](preParse("CYPHER foo=idp RETURN 42"))
       .getMessage should include("foo")
   }
 
   test("should not allow unknown debug flags") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER debug=idp RETURN 42"))
+    intercept[InvalidArgumentException](preParse("CYPHER debug=idp RETURN 42"))
       .getMessage should include("idp")
   }
 
   test("should accept just one operator execution mode") {
-    preParser.preParseQuery(
+    preParse(
       "CYPHER operatorEngine=interpreted RETURN 42"
     ).options.queryOptions.operatorEngine should equal(CypherOperatorEngineOption.interpreted)
   }
 
   test("should accept just one replan strategy") {
-    preParser.preParseQuery("CYPHER replan=force RETURN 42").options.queryOptions.replan should equal(
+    preParse("CYPHER replan=force RETURN 42").options.queryOptions.replan should equal(
       CypherReplanOption.force
     )
-    preParser.preParseQuery("CYPHER replan=skip RETURN 42").options.queryOptions.replan should equal(
+    preParse("CYPHER replan=skip RETURN 42").options.queryOptions.replan should equal(
       CypherReplanOption.skip
     )
-    preParser.preParseQuery("CYPHER replan=default RETURN 42").options.queryOptions.replan should equal(
+    preParse("CYPHER replan=default RETURN 42").options.queryOptions.replan should equal(
       CypherReplanOption.default
     )
   }
 
   test("should accept just one connect components planner") {
-    preParser.preParseQuery(
+    preParse(
       "CYPHER connectComponentsPlanner=idp RETURN 42"
     ).options.queryOptions.connectComponentsPlanner should equal(CypherConnectComponentsPlannerOption.idp)
   }
 
   test("should not allow multiple conflicting replan strategies") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER replan=force replan=skip RETURN 42"))
+    intercept[InvalidArgumentException](preParse("CYPHER replan=force replan=skip RETURN 42"))
   }
 
   test("should accept just one interpreted pipes fallback mode") {
-    preParser.preParseQuery(
+    preParse(
       "CYPHER interpretedPipesFallback=disabled RETURN 42"
     ).options.queryOptions.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.disabled)
-    preParser.preParseQuery(
+    preParse(
       "CYPHER interpretedPipesFallback=default RETURN 42"
     ).options.queryOptions.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.default)
-    preParser.preParseQuery(
+    preParse(
       "CYPHER interpretedPipesFallback=whitelisted_plans_only RETURN 42"
     ).options.queryOptions.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.whitelistedPlansOnly)
-    preParser.preParseQuery(
+    preParse(
       "CYPHER interpretedPipesFallback=all RETURN 42"
     ).options.queryOptions.interpretedPipesFallback should
       equal(CypherInterpretedPipesFallbackOption.allPossiblePlans)
@@ -121,53 +124,60 @@ class PreParserTest extends CypherFunSuite {
 
   test("should not allow multiple conflicting interpreted pipes fallback modes") {
     intercept[InvalidArgumentException](
-      preParser.preParseQuery("CYPHER interpretedPipesFallback=all interpretedPipesFallback=disabled RETURN 42")
+      preParse("CYPHER interpretedPipesFallback=all interpretedPipesFallback=disabled RETURN 42")
     )
     intercept[InvalidArgumentException](
-      preParser.preParseQuery("CYPHER interpretedPipesFallback=default interpretedPipesFallback=disabled RETURN 42")
+      preParse("CYPHER interpretedPipesFallback=default interpretedPipesFallback=disabled RETURN 42")
     )
     intercept[InvalidArgumentException](
-      preParser.preParseQuery("CYPHER interpretedPipesFallback=default interpretedPipesFallback=all RETURN 42")
+      preParse("CYPHER interpretedPipesFallback=default interpretedPipesFallback=all RETURN 42")
     )
   }
 
   test("should only allow interpreted pipes fallback mode in pipelined runtime") {
     intercept[InvalidArgumentException](
-      preParser.preParseQuery("CYPHER runtime=slotted interpretedPipesFallback=all RETURN 42")
+      preParse("CYPHER runtime=slotted interpretedPipesFallback=all RETURN 42")
     )
   }
 
   test("should not allow multiple conflicting connect component planners") {
     intercept[InvalidArgumentException](
-      preParser.preParseQuery("CYPHER connectComponentsPlanner=idp connectComponentsPlanner=greedy RETURN 42")
+      preParse("CYPHER connectComponentsPlanner=idp connectComponentsPlanner=greedy RETURN 42")
     )
     intercept[InvalidArgumentException](
-      preParser.preParseQuery("CYPHER connectComponentsPlanner=greedy connectComponentsPlanner=idp RETURN 42")
+      preParse("CYPHER connectComponentsPlanner=greedy connectComponentsPlanner=idp RETURN 42")
     )
   }
 
   test("should take defaults from config") {
     preParserWith(GraphDatabaseSettings.cypher_planner -> GraphDatabaseSettings.CypherPlanner.COST)
-      .preParseQuery("RETURN 1").options.queryOptions.planner shouldEqual CypherPlannerOption.cost
+      .preParseQuery("RETURN 1", devNullLogger).options.queryOptions.planner shouldEqual CypherPlannerOption.cost
 
     preParserWith(GraphDatabaseInternalSettings.cypher_runtime -> GraphDatabaseInternalSettings.CypherRuntime.PIPELINED)
-      .preParseQuery("RETURN 1").options.queryOptions.runtime shouldEqual CypherRuntimeOption.pipelined
+      .preParseQuery("RETURN 1", devNullLogger).options.queryOptions.runtime shouldEqual CypherRuntimeOption.pipelined
 
     preParserWith(
       GraphDatabaseInternalSettings.cypher_expression_engine -> GraphDatabaseInternalSettings.CypherExpressionEngine.COMPILED
     )
-      .preParseQuery("RETURN 1").options.queryOptions.expressionEngine shouldEqual CypherExpressionEngineOption.compiled
+      .preParseQuery(
+        "RETURN 1",
+        devNullLogger
+      ).options.queryOptions.expressionEngine shouldEqual CypherExpressionEngineOption.compiled
 
     preParserWith(
       GraphDatabaseInternalSettings.cypher_operator_engine -> GraphDatabaseInternalSettings.CypherOperatorEngine.COMPILED
     )
-      .preParseQuery("RETURN 1").options.queryOptions.operatorEngine shouldEqual CypherOperatorEngineOption.compiled
+      .preParseQuery(
+        "RETURN 1",
+        devNullLogger
+      ).options.queryOptions.operatorEngine shouldEqual CypherOperatorEngineOption.compiled
 
     preParserWith(
       GraphDatabaseInternalSettings.cypher_pipelined_interpreted_pipes_fallback -> GraphDatabaseInternalSettings.CypherPipelinedInterpretedPipesFallback.ALL
     )
       .preParseQuery(
-        "RETURN 1"
+        "RETURN 1",
+        devNullLogger
       ).options.queryOptions.interpretedPipesFallback shouldEqual CypherInterpretedPipesFallbackOption.allPossiblePlans
   }
 
@@ -226,7 +236,7 @@ class PreParserTest extends CypherFunSuite {
     def shouldFail(query: String, settings: (Setting[_], AnyRef)*) =
       withClue(s"query: $query, settings: $settings") {
         intercept[InvalidArgumentException](
-          preParserWith(settings: _*).preParseQuery(query)
+          preParserWith(settings: _*).preParseQuery(query, devNullLogger)
         )
       }
 

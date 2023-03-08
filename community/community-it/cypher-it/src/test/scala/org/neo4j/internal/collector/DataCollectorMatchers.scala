@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.cache.TestExecutorCaffeineCacheFactory
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.should.Matchers.equal
 
 import java.time.ZonedDateTime
-
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
@@ -281,7 +281,7 @@ object DataCollectorMatchers {
   case class BeCypherMatcher(expected: String) extends Matcher[AnyRef] {
 
     val parser: JavaCCParser.type = JavaCCParser
-    private val preParsedQuery: PreParsedQuery = preParser.preParseQuery(expected)
+    private val preParsedQuery: PreParsedQuery = preParser.preParseQuery(expected, devNullLogger)
 
     private val expectedAst = parser.parse(
       preParsedQuery.statement,
@@ -292,7 +292,7 @@ object DataCollectorMatchers {
       MatchResult(
         matches = left match {
           case text: String =>
-            val preParsedQuery1 = preParser.preParseQuery(text)
+            val preParsedQuery1 = preParser.preParseQuery(text, devNullLogger)
             parser.parse(
               preParsedQuery1.statement,
               Neo4jCypherExceptionFactory(text, Some(preParsedQuery1.options.offset))

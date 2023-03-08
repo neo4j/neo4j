@@ -49,6 +49,7 @@ import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_ALL
 import org.neo4j.cypher.internal.planner.spi.MinimumGraphStatistics.MIN_NODES_WITH_LABEL
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
+import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.kernel.impl.util.ValueUtils
@@ -142,7 +143,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
       new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 1)
     )
 
-    val preParsedQuery = preParser.preParseQuery(query)
+    val preParsedQuery = preParser.preParseQuery(query, devNullLogger)
 
     graph.withTx { tx =>
       val noTracing = CompilationPhaseTracer.NO_TRACING
@@ -151,7 +152,8 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
         preParsedQuery,
         noTracing,
         context,
-        ValueUtils.asParameterMapValue(asJavaMapDeep(params))
+        ValueUtils.asParameterMapValue(asJavaMapDeep(params)),
+        devNullLogger
       )
       val id = context.executingQuery().id()
       context.close()
