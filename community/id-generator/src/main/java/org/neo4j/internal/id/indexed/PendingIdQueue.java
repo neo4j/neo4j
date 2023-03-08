@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import static java.lang.Integer.min;
+
 import java.util.Arrays;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -33,15 +35,19 @@ class PendingIdQueue {
     private final IdSlotDistribution.Slot[] slots;
     final MutableLongList[] queues;
     private final int[] slotSizes;
+    private final int[] slotIndexBySize;
 
     PendingIdQueue(IdSlotDistribution.Slot... slots) {
         this.slots = slots;
         this.queues = new MutableLongList[slots.length];
         this.slotSizes = new int[slots.length];
+        this.slotIndexBySize = new int[slots[slots.length - 1].slotSize()];
         for (int i = 0; i < slots.length; i++) {
             queues[i] = LongLists.mutable.empty();
             slotSizes[i] = slots[i].slotSize();
+            Arrays.fill(slotIndexBySize, i == 0 ? 0 : slotSizes[i - 1] - 1, slotSizes[i] - 1, i - 1);
         }
+        slotIndexBySize[slotIndexBySize.length - 1] = slots.length - 1;
     }
 
     private boolean cache(int slotIndex, long startId) {
@@ -78,13 +84,7 @@ class PendingIdQueue {
     }
 
     private int largestSlotIndex(int slotSize) {
-        for (int slotIndex = slotSizes.length - 1; slotIndex >= 0; slotIndex--) {
-            if (slotSize >= slotSizes[slotIndex]) {
-                return slotIndex;
-            }
-        }
-        throw new IllegalArgumentException(
-                "No slot size found for " + slotSize + " among " + Arrays.toString(slotSizes));
+        return slotIndexBySize[min(slotSize, slotIndexBySize.length) - 1];
     }
 
     boolean isEmpty() {
