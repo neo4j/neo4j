@@ -20,8 +20,6 @@ package org.neo4j.cypher.internal.util
  * A NotificationLogger records notifications.
  */
 sealed trait InternalNotificationLogger {
-  def offset: Option[InputPosition] = None
-
   def log(notification: InternalNotification): Unit
 
   def notifications: Set[InternalNotification]
@@ -39,11 +37,8 @@ case object devNullLogger extends InternalNotificationLogger {
 /**
  * NotificationLogger that records all notifications for later retrieval.
  */
-class RecordingNotificationLogger(override val offset: Option[InputPosition] = None)
-    extends InternalNotificationLogger {
+class RecordingNotificationLogger() extends InternalNotificationLogger {
   private val builder = Set.newBuilder[InternalNotification]
-
-  def clear(): Unit = builder.clear()
 
   def log(notification: InternalNotification): Unit = builder += notification
 

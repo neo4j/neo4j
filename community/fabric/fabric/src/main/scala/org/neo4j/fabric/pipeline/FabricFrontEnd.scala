@@ -106,7 +106,7 @@ case class FabricFrontEnd(
 
     private val context: BaseContext = BaseContextImpl(
       CompilationPhaseTracer.NO_TRACING,
-      new RecordingNotificationLogger(Some(query.options.offset)),
+      new RecordingNotificationLogger(),
       query.rawStatement,
       Some(query.options.offset),
       WrappedMonitors(kernelMonitors),
