@@ -95,10 +95,10 @@ abstract class TreeNode<KEY, VALUE> {
     static final int NO_KEY_VALUE_SIZE_CAP = -1;
 
     final Layout<KEY, VALUE> layout;
-    final int pageSize;
+    final int payloadSize;
 
-    TreeNode(int pageSize, Layout<KEY, VALUE> layout) {
-        this.pageSize = pageSize;
+    TreeNode(int payloadSize, Layout<KEY, VALUE> layout) {
+        this.payloadSize = payloadSize;
         this.layout = layout;
     }
 

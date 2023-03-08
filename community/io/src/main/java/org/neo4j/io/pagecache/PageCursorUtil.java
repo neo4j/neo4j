@@ -241,6 +241,16 @@ public class PageCursorUtil {
     }
 
     /**
+     * Gets 1 byte and returns that value as an {@code int}, ignoring its sign.
+     *
+     * @param cursor {@link PageCursor} to get from, at the current offset.
+     * @return {@code int} containing the value of the unsigned {@code byte}.
+     */
+    public static int getUnsignedByte(PageCursor cursor) {
+        return cursor.getByte() & _1B_MASK;
+    }
+
+    /**
      * Calls {@link PageCursor#next(long)} with the {@code pageId} and throws {@link IllegalStateException}
      * if that call returns {@code false}.
      * Purpose of this method is to unify exception handling when moving between pages.

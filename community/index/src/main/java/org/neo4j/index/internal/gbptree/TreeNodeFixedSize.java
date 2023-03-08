@@ -696,7 +696,7 @@ class TreeNodeFixedSize<KEY, VALUE> extends TreeNode<KEY, VALUE> {
 
     @Override
     public String toString() {
-        return "TreeNodeFixedSize[pageSize:" + pageSize + ", internalMax:" + internalMaxKeyCount() + ", leafMax:"
+        return "TreeNodeFixedSize[pageSize:" + payloadSize + ", internalMax:" + internalMaxKeyCount() + ", leafMax:"
                 + leafMaxKeyCount() + ", " + "keySize:" + keySize() + ", valueSize:" + valueSize + "]";
     }
 }
