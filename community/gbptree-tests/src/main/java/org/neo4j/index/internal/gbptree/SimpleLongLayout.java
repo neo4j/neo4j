@@ -24,7 +24,6 @@ import org.neo4j.io.pagecache.PageCursor;
 
 public class SimpleLongLayout extends TestLayout<MutableLong, MutableLong> {
     private final int keyPadding;
-    private final boolean bitSetValue;
 
     public static class Builder {
         private int keyPadding;
@@ -32,7 +31,6 @@ public class SimpleLongLayout extends TestLayout<MutableLong, MutableLong> {
         private int majorVersion;
         private int minorVersion;
         private boolean fixedSize = true;
-        private boolean bitSetValue = false;
 
         public Builder withKeyPadding(int keyPadding) {
             this.keyPadding = keyPadding;
@@ -59,13 +57,8 @@ public class SimpleLongLayout extends TestLayout<MutableLong, MutableLong> {
             return this;
         }
 
-        public Builder bitSetValue(boolean bitSetValue) {
-            this.bitSetValue = bitSetValue;
-            return this;
-        }
-
         public SimpleLongLayout build() {
-            return new SimpleLongLayout(keyPadding, fixedSize, identifier, majorVersion, minorVersion, bitSetValue);
+            return new SimpleLongLayout(keyPadding, fixedSize, identifier, majorVersion, minorVersion);
         }
     }
 
@@ -73,16 +66,9 @@ public class SimpleLongLayout extends TestLayout<MutableLong, MutableLong> {
         return new Builder();
     }
 
-    private SimpleLongLayout(
-            int keyPadding,
-            boolean fixedSize,
-            int identifier,
-            int majorVersion,
-            int minorVersion,
-            boolean bitSetValue) {
+    private SimpleLongLayout(int keyPadding, boolean fixedSize, int identifier, int majorVersion, int minorVersion) {
         super(fixedSize, identifier, majorVersion, minorVersion);
         this.keyPadding = keyPadding;
-        this.bitSetValue = bitSetValue;
     }
 
     @Override
@@ -176,10 +162,5 @@ public class SimpleLongLayout extends TestLayout<MutableLong, MutableLong> {
     @Override
     public void initializeAsHighest(MutableLong key) {
         key.setValue(Long.MAX_VALUE);
-    }
-
-    @Override
-    public boolean bitSetValue() {
-        return bitSetValue;
     }
 }

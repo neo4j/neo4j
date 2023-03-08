@@ -129,9 +129,4 @@ public class TokenScanLayout extends Layout.Adapter<TokenScanKey, TokenScanValue
     public void initializeAsHighest(TokenScanKey key) {
         key.set(Integer.MAX_VALUE, Long.MAX_VALUE);
     }
-
-    @Override
-    public boolean bitSetValue() {
-        return true;
-    }
 }

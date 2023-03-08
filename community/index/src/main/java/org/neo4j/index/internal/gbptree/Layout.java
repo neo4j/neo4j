@@ -62,10 +62,6 @@ public interface Layout<KEY, VALUE> extends KeyLayout<KEY> {
      */
     void readValue(PageCursor cursor, VALUE into, int valueSize);
 
-    default boolean bitSetValue() {
-        return false;
-    }
-
     /**
      * Utility method for generating an {@link #identifier()}. Generates an 8-byte identifier from a short name
      * plus a 4-byte identifier.
