@@ -73,7 +73,7 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
 ) {
   self: Product =>
 
-  private val key = OptionReader.canonical(name)
+  val key: String = OptionReader.canonical(name)
 
   /**
    * The default value for this option

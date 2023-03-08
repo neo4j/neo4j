@@ -32,6 +32,9 @@ import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.options.CypherPlannerOption
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
+import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.devNullLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.InvalidArgumentException
@@ -97,6 +100,28 @@ class PreParserTest extends CypherFunSuite {
     preParse(
       "CYPHER connectComponentsPlanner=idp RETURN 42"
     ).options.queryOptions.connectComponentsPlanner should equal(CypherConnectComponentsPlannerOption.idp)
+  }
+
+  test("should issue a notification for connectComponentsPlanner") {
+    val notificationLogger = new RecordingNotificationLogger()
+    preParser.preParseQuery(
+      "CYPHER connectComponentsPlanner=idp RETURN 42",
+      notificationLogger
+    )
+    notificationLogger.notifications should equal (Set(
+      DeprecatedConnectComponentsPlannerPreParserOption(InputPosition(7, 1, 8))
+    ))
+  }
+
+  test("should issue a notification for cOnnectcomPONonentsPlanner") {
+    val notificationLogger = new RecordingNotificationLogger()
+    preParser.preParseQuery(
+      "CYPHER cOnnectcomPONentsPlanner=idp RETURN 42",
+      notificationLogger
+    )
+    notificationLogger.notifications should equal (Set(
+      DeprecatedConnectComponentsPlannerPreParserOption(InputPosition(7, 1, 8))
+    ))
   }
 
   test("should not allow multiple conflicting replan strategies") {
