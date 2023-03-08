@@ -187,11 +187,12 @@ public class HttpCopier implements UploadCommand.Copier {
             UploadCommand.Source source,
             boolean deleteSourceAfterImport,
             String bearerToken) {
+        String version = getClass().getPackage().getImplementationVersion();
+        String bearerTokenHeader = "Bearer " + bearerToken;
         try {
-            String bearerTokenHeader = "Bearer " + bearerToken;
             long crc32Sum = source.crc32Sum();
-            URL signedURL = retryOnUnavailable(() ->
-                    initiateCopy(verbose, safeUrl(consoleURL + "/import"), crc32Sum, source.size(), bearerTokenHeader));
+            URL signedURL = retryOnUnavailable(() -> initiateCopy(
+                    verbose, safeUrl(consoleURL + "/import"), crc32Sum, source.size(), bearerTokenHeader, version));
             URL uploadLocation = retryOnUnavailable(() -> initiateResumableUpload(verbose, signedURL));
             long sourceLength = ctx.fs().getFileSize(source.path());
 
@@ -460,7 +461,8 @@ public class HttpCopier implements UploadCommand.Copier {
     /**
      * Communication with Neo4j's cloud console, resulting in some signed URI to do the actual upload to.
      */
-    private URL initiateCopy(boolean verbose, URL importURL, long crc32Sum, long size, String bearerToken)
+    private URL initiateCopy(
+            boolean verbose, URL importURL, long crc32Sum, long size, String bearerToken, String version)
             throws IOException {
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
         try (Closeable c = connection::disconnect) {
@@ -469,6 +471,7 @@ public class HttpCopier implements UploadCommand.Copier {
             connection.setRequestProperty("Content-Type", "application/json");
             connection.setRequestProperty("Authorization", bearerToken);
             connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("Neo4j-Version", version);
             connection.setDoOutput(true);
 
             try (OutputStream postData = connection.getOutputStream()) {
