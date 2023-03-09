@@ -39,6 +39,9 @@ import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 @TestDirectoryExtension
 @DbmsExtension()
 class DbmsRuntimeVersionTest {
+    private static final DbmsRuntimeVersion OVERRIDDEN_INITIAL_LATEST_VERSION = DbmsRuntimeVersion.V5_0;
+    private static final DbmsRuntimeVersion OLDER_VERSION = DbmsRuntimeVersion.V4_4;
+
     @Inject
     private DatabaseContextProvider<DatabaseContext> databaseContextProvider;
 
@@ -61,8 +64,8 @@ class DbmsRuntimeVersionTest {
         assertSame(LatestVersions.LATEST_RUNTIME_VERSION, dbmsRuntimeRepository.getVersion());
 
         // BTW this should never be manipulated directly outside tests
-        setRuntimeVersion(DbmsRuntimeVersion.V4_2);
-        assertSame(DbmsRuntimeVersion.V4_2, dbmsRuntimeRepository.getVersion());
+        setRuntimeVersion(OLDER_VERSION);
+        assertSame(OLDER_VERSION, dbmsRuntimeRepository.getVersion());
 
         systemDb.executeTransactionally("CALL dbms.upgrade()");
 
@@ -79,21 +82,22 @@ class DbmsRuntimeVersionTest {
     @DbmsExtension(configurationCallback = "configuration")
     void latestVersionCanBeSetThroughConfigForTests() {
         // The system DB should be initialised with what we think is latest
-        assertSame(DbmsRuntimeVersion.V4_4, dbmsRuntimeRepository.getVersion());
+        assertSame(OVERRIDDEN_INITIAL_LATEST_VERSION, dbmsRuntimeRepository.getVersion());
 
         // And will not get upgraded past that "latest" version
         // BTW this should never be manipulated directly outside tests
-        setRuntimeVersion(DbmsRuntimeVersion.V4_2);
-        assertSame(DbmsRuntimeVersion.V4_2, dbmsRuntimeRepository.getVersion());
+        setRuntimeVersion(OLDER_VERSION);
+        assertSame(OLDER_VERSION, dbmsRuntimeRepository.getVersion());
 
         systemDb.executeTransactionally("CALL dbms.upgrade()");
 
-        assertSame(DbmsRuntimeVersion.V4_4, dbmsRuntimeRepository.getVersion());
+        assertSame(OVERRIDDEN_INITIAL_LATEST_VERSION, dbmsRuntimeRepository.getVersion());
     }
 
     @ExtensionCallback
     void configuration(TestDatabaseManagementServiceBuilder builder) {
-        builder.setConfig(GraphDatabaseInternalSettings.latest_runtime_version, DbmsRuntimeVersion.V4_4.getVersion());
+        builder.setConfig(
+                GraphDatabaseInternalSettings.latest_runtime_version, OVERRIDDEN_INITIAL_LATEST_VERSION.getVersion());
     }
 
     private void setRuntimeVersion(DbmsRuntimeVersion runtimeVersion) {
