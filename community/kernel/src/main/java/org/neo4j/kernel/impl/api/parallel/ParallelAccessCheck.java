@@ -48,6 +48,9 @@ public class ParallelAccessCheck {
     }
 
     public static Locks.Client maybeWrapLockClient(Locks.Client wrappedLockClient) {
+        if (!shouldPerformCheck()) {
+            return wrappedLockClient;
+        }
         return new Locks.Client() {
 
             @Override
