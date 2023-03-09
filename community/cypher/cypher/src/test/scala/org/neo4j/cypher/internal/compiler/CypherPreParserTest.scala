@@ -31,6 +31,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.prop.TableFor2
 
 import java.util
+
 import scala.language.implicitConversions
 
 class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks {
@@ -46,12 +47,18 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
     ("PROFILE MATCH", new PreParserResult(util.List.of[PreParserOption](mode("PROFILE", (1, 1, 0))), (1, 9, 8))),
     ("EXPLAIN MATCH", new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 1, 0))), (1, 9, 8))),
     ("CYPHER WITH YALL", new PreParserResult(util.List.of[PreParserOption](), (1, 8, 7))),
-    ("CYPHER planner=cost RETURN", new PreParserResult(util.List.of[PreParserOption](opt("planner", "cost", (1, 8, 7))), (1, 21, 20))),
+    (
+      "CYPHER planner=cost RETURN",
+      new PreParserResult(util.List.of[PreParserOption](opt("planner", "cost", (1, 8, 7))), (1, 21, 20))
+    ),
     (
       "CYPHER planner = idp RETURN",
       new PreParserResult(util.List.of[PreParserOption](opt("planner", "idp", (1, 8, 7))), (1, 22, 21))
     ),
-    ("CYPHER planner =dp RETURN", new PreParserResult(util.List.of[PreParserOption](opt("planner", "dp", (1, 8, 7))), (1, 20, 19))),
+    (
+      "CYPHER planner =dp RETURN",
+      new PreParserResult(util.List.of[PreParserOption](opt("planner", "dp", (1, 8, 7))), (1, 20, 19))
+    ),
     (
       "CYPHER runtime=interpreted RETURN",
       new PreParserResult(util.List.of[PreParserOption](opt("runtime", "interpreted", (1, 8, 7))), (1, 28, 27))
@@ -104,8 +111,14 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
       "CYPHER expressionEngine=compiled RETURN",
       new PreParserResult(util.List.of[PreParserOption](opt("expressionEngine", "compiled", (1, 8, 7))), (1, 34, 33))
     ),
-    ("CYPHER replan=force RETURN", new PreParserResult(util.List.of[PreParserOption](opt("replan", "force", (1, 8, 7))), (1, 21, 20))),
-    ("CYPHER replan=skip RETURN", new PreParserResult(util.List.of[PreParserOption](opt("replan", "skip", (1, 8, 7))), (1, 20, 19))),
+    (
+      "CYPHER replan=force RETURN",
+      new PreParserResult(util.List.of[PreParserOption](opt("replan", "force", (1, 8, 7))), (1, 21, 20))
+    ),
+    (
+      "CYPHER replan=skip RETURN",
+      new PreParserResult(util.List.of[PreParserOption](opt("replan", "skip", (1, 8, 7))), (1, 20, 19))
+    ),
     (
       "CYPHER planner=cost MATCH(n:Node) WHERE n.prop = 3 RETURN n",
       new PreParserResult(util.List.of[PreParserOption](opt("planner", "cost", (1, 8, 7))), (1, 21, 20))
@@ -143,11 +156,20 @@ class CypherPreParserTest extends CypherFunSuite with TableDrivenPropertyChecks 
       "//TESTING \n //TESTING \n EXPLAIN MATCH (n)\n MATCH (b:X) return n,b Limit 1",
       new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (3, 2, 24))), (3, 10, 32))
     ),
-    (" EXPLAIN/* 2 */ // \n  query", new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 2, 1))), (2, 3, 22))),
-    ("CYPHER // \n a // \n = b query", new PreParserResult(util.List.of[PreParserOption](opt("a", "b", (2, 2, 12))), (3, 6, 23))),
+    (
+      " EXPLAIN/* 2 */ // \n  query",
+      new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 2, 1))), (2, 3, 22))
+    ),
+    (
+      "CYPHER // \n a // \n = b query",
+      new PreParserResult(util.List.of[PreParserOption](opt("a", "b", (2, 2, 12))), (3, 6, 23))
+    ),
     (
       " /* 1 */ EXPLAIN CYPHER\n planner /* 2 */ // \n =  /** 3 */ // \n cost MATCH /* 4 */ s ",
-      new PreParserResult(util.List.of[PreParserOption](mode("EXPLAIN", (1, 10, 9)), opt("planner", "cost", (2, 2, 25))), (4, 7, 68))
+      new PreParserResult(
+        util.List.of[PreParserOption](mode("EXPLAIN", (1, 10, 9)), opt("planner", "cost", (2, 2, 25))),
+        (4, 7, 68)
+      )
     )
   )
 

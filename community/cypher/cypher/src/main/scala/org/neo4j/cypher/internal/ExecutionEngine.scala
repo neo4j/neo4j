@@ -256,13 +256,14 @@ abstract class ExecutionEngine(
           notificationLogger
         )
     val interpretedExpressionCompiler =
-      () => masterCompiler.compile(
-        inputQuery,
-        tracer,
-        transactionalContext,
-        params,
-        notificationLogger
-      )
+      () =>
+        masterCompiler.compile(
+          inputQuery,
+          tracer,
+          transactionalContext,
+          params,
+          notificationLogger
+        )
 
     new CompilerWithExpressionCodeGenOption[ExecutableQuery] {
       override def compile(): ExecutableQuery = {

@@ -595,7 +595,8 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION() {
-        Notification notification = DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notification(InputPosition.empty);
+        Notification notification =
+                DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notification(InputPosition.empty);
 
         verifyNotification(
                 notification,
@@ -657,9 +658,9 @@ class NotificationCodeWithDescriptionTest {
 
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
-        byte[] expectedHash = new byte[]{
-                35, 11, 101, -70, 59, -26, -10, 40, -94, 76, -67, -54, -77, 93, -107, -32, -103, -100, 94, -85, 19,
-                100, 4, 27, -67, 39, 69, -113, 45, 17, 51, -65
+        byte[] expectedHash = new byte[] {
+            35, 11, 101, -70, 59, -26, -10, 40, -94, 76, -67, -54, -77, 93, -107, -32, -103, -100, 94, -85, 19, 100, 4,
+            27, -67, 39, 69, -113, 45, 17, 51, -65
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

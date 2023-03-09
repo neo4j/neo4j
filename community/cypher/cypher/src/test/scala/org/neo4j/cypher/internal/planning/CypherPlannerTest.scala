@@ -69,6 +69,7 @@ import org.scalatest.prop.TableDrivenPropertyChecks.forAll
 import org.scalatest.prop.TableFor5
 
 import java.time.Clock
+
 import scala.collection.mutable
 
 class CypherPlannerTest extends CypherFunSuite {

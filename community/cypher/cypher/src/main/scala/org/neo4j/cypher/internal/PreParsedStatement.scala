@@ -27,7 +27,9 @@ final case class PreParserOption(key: String, value: String, position: InputPosi
 object PreParserOption {
   def explain(position: InputPosition): PreParserOption = PreParserOption(CypherExecutionMode.name, "EXPLAIN", position)
   def profile(position: InputPosition): PreParserOption = PreParserOption(CypherExecutionMode.name, "PROFILE", position)
-  def generic(key: String, value: String, position: InputPosition): PreParserOption = PreParserOption(key, value, position)
+
+  def generic(key: String, value: String, position: InputPosition): PreParserOption =
+    PreParserOption(key, value, position)
 }
 
 final case class PreParsedStatement(statement: String, options: List[PreParserOption], offset: InputPosition)

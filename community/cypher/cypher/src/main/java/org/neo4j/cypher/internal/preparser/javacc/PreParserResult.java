@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.preparser.javacc;
 
 import java.util.List;
 import java.util.Objects;
-
 import org.neo4j.cypher.internal.PreParserOption;
 import org.neo4j.cypher.internal.util.InputPosition;
 

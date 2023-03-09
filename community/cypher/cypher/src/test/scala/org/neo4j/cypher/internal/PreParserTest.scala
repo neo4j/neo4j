@@ -108,7 +108,7 @@ class PreParserTest extends CypherFunSuite {
       "CYPHER connectComponentsPlanner=idp RETURN 42",
       notificationLogger
     )
-    notificationLogger.notifications should equal (Set(
+    notificationLogger.notifications should equal(Set(
       DeprecatedConnectComponentsPlannerPreParserOption(InputPosition(7, 1, 8))
     ))
   }
@@ -119,7 +119,7 @@ class PreParserTest extends CypherFunSuite {
       "CYPHER cOnnectcomPONentsPlanner=idp RETURN 42",
       notificationLogger
     )
-    notificationLogger.notifications should equal (Set(
+    notificationLogger.notifications should equal(Set(
       DeprecatedConnectComponentsPlannerPreParserOption(InputPosition(7, 1, 8))
     ))
   }

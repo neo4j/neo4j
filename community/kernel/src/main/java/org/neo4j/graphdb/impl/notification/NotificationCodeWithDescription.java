@@ -139,8 +139,8 @@ public enum NotificationCodeWithDescription {
             "A variable-length relationship variable is bound more than once, which leads to no results because relationships must not occur more than once in each result."),
     DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION(
             Status.Statement.FeatureDeprecationWarning,
-            "The Cypher query option `connectComponentsPlanner` is deprecated. In a future release, the option will be removed. " +
-                    "After removal, the product will behave as if the option was set to `idp`.");
+            "The Cypher query option `connectComponentsPlanner` is deprecated. In a future release, the option will be removed. "
+                    + "After removal, the product will behave as if the option was set to `idp`.");
 
     private final Status status;
     private final String description;

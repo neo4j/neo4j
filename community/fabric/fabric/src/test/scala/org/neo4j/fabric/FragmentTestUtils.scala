@@ -62,6 +62,7 @@ import org.neo4j.values.virtual.MapValue
 
 import java.util.UUID
 import java.util.concurrent.Executors
+
 import scala.reflect.ClassTag
 
 trait FragmentTestUtils {
@@ -153,7 +154,12 @@ trait FragmentTestUtils {
   val frontend: FabricFrontEnd = FabricFrontEnd(cypherConfig, monitors, cacheFactory)
 
   def pipeline(query: String): frontend.Pipeline =
-    frontend.Pipeline(signatures, frontend.preParsing.preParse(query, devNullLogger), params, CancellationChecker.NeverCancelled, devNullLogger)
+    frontend.Pipeline(
+      signatures,frontend.preParsing.preParse(query, devNullLogger),
+      params,
+      CancellationChecker.NeverCancelled,
+      devNullLogger
+    )
 
   def fragment(query: String): Fragment = {
     val state = pipeline(query).parseAndPrepare.process()

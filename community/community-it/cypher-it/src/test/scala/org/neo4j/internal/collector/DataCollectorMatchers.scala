@@ -33,6 +33,7 @@ import org.scalatest.matchers.Matcher
 import org.scalatest.matchers.should.Matchers.equal
 
 import java.time.ZonedDateTime
+
 import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
 
