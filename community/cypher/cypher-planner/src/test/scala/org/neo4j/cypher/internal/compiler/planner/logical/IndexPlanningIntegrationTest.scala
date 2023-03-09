@@ -240,12 +240,6 @@ class IndexPlanningIntegrationTest
     for (op <- List("=", "<", "<=", ">", ">=", "STARTS WITH")) {
       val plan = cfg.plan(s"MATCH (a)-[r]->(b:Label) WHERE b.prop $op a.prop RETURN a").stripProduceResults
 
-      val planWithLabelScan = cfg.subPlanBuilder()
-        .filter(s"b.prop $op a.prop")
-        .expandAll("(b)<-[r]-(a)")
-        .nodeByLabelScan("b", "Label")
-        .build()
-
       val planWithIndexScan = cfg.subPlanBuilder()
         .filter(s"b.prop $op a.prop")
         .expandAll("(b)<-[r]-(a)")
@@ -1875,5 +1869,85 @@ class IndexPlanningIntegrationTest
 
     val actual = planner.planState(query)
     actual should haveSamePlanAndEffectiveCardinalitiesAsBuilder(expected)
+  }
+
+  private def scannablePredicates(prop: String): Seq[String] = {
+    val binaryOpPredicates =
+      Seq("=", ">", ">=", "<", "<=", "STARTS WITH", "ENDS WITH", "CONTAINS", "IN")
+        .map(op => s"$prop $op $$param")
+
+    val pointPredicates = Seq(
+      s"point.withinBBox($prop, $$p1, $$p2)",
+      s"point.distance($prop, $$p1) < $$p2"
+    )
+    binaryOpPredicates ++ pointPredicates
+  }
+
+  test("should plan a node index scan for negated predicates") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop"), 0.1, 0.1)
+      .build()
+
+    for (pred <- scannablePredicates("a.prop")) {
+      val q = s"MATCH (a:A) WHERE NOT $pred RETURN *"
+      val plan = planner.plan(q).stripProduceResults
+      plan shouldEqual planner.subPlanBuilder()
+        .filter(s"NOT $pred")
+        .nodeIndexOperator("a:A(prop)")
+        .build()
+    }
+  }
+
+  test("should plan a composite node index scan for negated predicates") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .addNodeIndex("A", Seq("prop", "otherProp"), 0.1, 0.1)
+      .build()
+
+    for (pred <- scannablePredicates("a.prop")) {
+      val q = s"MATCH (a:A) WHERE NOT $pred AND a.otherProp IS NOT NULL RETURN *"
+      val plan = planner.plan(q).stripProduceResults
+      plan shouldEqual planner.subPlanBuilder()
+        .filter(s"NOT $pred")
+        .nodeIndexOperator("a:A(prop, otherProp)")
+        .build()
+    }
+  }
+
+  test("should plan a relationship index scan for negated predicates") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 500)
+      .addRelationshipIndex("REL", Seq("prop"), 0.1, 0.1)
+      .build()
+
+    for (pred <- scannablePredicates("r.prop")) {
+      val q = s"MATCH (a)-[r:REL]->(b) WHERE NOT $pred RETURN *"
+      val plan = planner.plan(q).stripProduceResults
+      plan shouldEqual planner.subPlanBuilder()
+        .filter(s"NOT $pred")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)")
+        .build()
+    }
+  }
+
+  test("should plan a composite relationship index scan for negated predicates") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setRelationshipCardinality("()-[:REL]->()", 500)
+      .addRelationshipIndex("REL", Seq("prop", "otherProp"), 0.1, 0.1)
+      .build()
+
+    for (pred <- scannablePredicates("r.prop")) {
+      val q = s"MATCH (a)-[r:REL]->(b) WHERE NOT $pred AND r.otherProp IS NOT NULL RETURN *"
+      val plan = planner.plan(q).stripProduceResults
+      plan shouldEqual planner.subPlanBuilder()
+        .filter(s"NOT $pred")
+        .relationshipIndexOperator("(a)-[r:REL(prop, otherProp)]->(b)")
+        .build()
+    }
   }
 }

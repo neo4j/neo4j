@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -37,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -61,7 +64,6 @@ import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SeekRange
 import org.neo4j.cypher.internal.logical.plans.SeekableArgs
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.util.Last
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -133,34 +135,57 @@ object AsPropertyScannable {
     case AsExplicitlyPropertyScannable(scannable) =>
       Some(scannable)
 
+    case AsBoundingBoxSeekable(seekable) =>
+      partialPropertyPredicate(seekable.expr, seekable.property)
+
+    case AsDistanceSeekable(seekable) =>
+      partialPropertyPredicate(seekable.expr, seekable.property)
+
     case expr: Equals =>
-      partialPropertyPredicate(expr, expr.lhs, solves = false)
+      partialPropertyPredicate(expr, expr.lhs)
+
+    case expr: In =>
+      partialPropertyPredicate(expr, expr.lhs)
 
     case expr: InequalityExpression =>
-      partialPropertyPredicate(expr, expr.lhs, solves = false)
+      partialPropertyPredicate(expr, expr.lhs)
 
     case outerExpr @ AndedPropertyInequalities(_, _, NonEmptyList(expr: InequalityExpression)) =>
-      partialPropertyPredicate(outerExpr, expr.lhs, solves = false)
+      partialPropertyPredicate(outerExpr, expr.lhs)
 
     case startsWith: StartsWith =>
-      partialPropertyPredicate(startsWith, startsWith.lhs, solves = false)
+      partialPropertyPredicate(startsWith, startsWith.lhs)
+
+    case contains: Contains =>
+      partialPropertyPredicate(contains, contains.lhs)
+
+    case endsWith: EndsWith =>
+      partialPropertyPredicate(endsWith, endsWith.lhs)
 
     case regex: RegexMatch =>
-      partialPropertyPredicate(regex, regex.lhs, solves = false)
+      partialPropertyPredicate(regex, regex.lhs)
+
+    case not @ Not(AsPropertyScannable(scannable)) =>
+      partialPropertyPredicate(not, scannable.property)
 
     case _ =>
       None
   }
 
-  private def partialPropertyPredicate[P <: Expression](predicate: P, lhs: Expression, solves: Boolean) = lhs match {
-    case property @ Property(ident: LogicalVariable, _) =>
-      PartialPredicate.ifNotEqual(
-        IsNotNull(property)(predicate.position),
-        predicate
-      ).map(ImplicitlyPropertyScannable(_, ident, property, solves))
+  private def partialPropertyPredicate[P <: Expression](
+    predicate: P,
+    lhs: Expression
+  ): Option[ImplicitlyPropertyScannable[IsNotNull]] = {
+    lhs match {
+      case property @ Property(ident: LogicalVariable, _) =>
+        PartialPredicate.ifNotEqual(
+          IsNotNull(property)(predicate.position),
+          predicate
+        ).map(ImplicitlyPropertyScannable(_, ident, property, solvesPredicate = false))
 
-    case _ =>
-      None
+      case _ =>
+        None
+    }
   }
 }
 
@@ -315,18 +340,6 @@ case class PropertySeekable(expr: LogicalProperty, ident: LogicalVariable, args:
             TypeSpec.cypherTypeForTypeSpec(unwrapLists(getTypeSpec(args.expr)))
         }
     }
-  }
-}
-
-object PropertySeekable {
-
-  def findCompatibleIndexTypes(cypherType: CypherType): Set[IndexType] = {
-    val otherIndexTypes = cypherType match {
-      case CTString => Set(IndexType.Text)
-      case CTPoint  => Set(IndexType.Point)
-      case _        => Set.empty
-    }
-    Set[IndexType](IndexType.Range) ++ otherIndexTypes
   }
 }
 

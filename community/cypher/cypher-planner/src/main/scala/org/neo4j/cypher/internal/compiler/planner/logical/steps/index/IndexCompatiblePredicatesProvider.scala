@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialDistanceSeekWrapper
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
@@ -227,20 +228,6 @@ object IndexCompatiblePredicatesProvider {
           cypherType = seekable.propertyValueType(semanticTable)
         )
 
-      // MATCH (n:User) WHERE n.prop IS NOT NULL RETURN n
-      case predicate @ AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty) =>
-        IndexCompatiblePredicate(
-          scannable.ident,
-          scannable.property,
-          predicate,
-          ExistenceQueryExpression(),
-          predicateExactness = NotExactPredicate,
-          solvedPredicate = Some(predicate),
-          dependencies = Set.empty,
-          indexQueryType = IndexQueryType.EXISTS,
-          cypherType = CTAny
-        ).convertToScannable
-
       // n.prop ENDS WITH 'substring'
       case predicate @ EndsWith(prop @ Property(variable: Variable, _), expr) if valid(variable, expr.dependencies) =>
         IndexCompatiblePredicate(
@@ -268,6 +255,20 @@ object IndexCompatiblePredicatesProvider {
           indexQueryType = IndexQueryType.STRING_CONTAINS,
           cypherType = CTString
         )
+
+      // MATCH (n:User) WHERE n.prop IS NOT NULL RETURN n
+      case predicate @ AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty) =>
+        IndexCompatiblePredicate(
+          scannable.ident,
+          scannable.property,
+          predicate,
+          ExistenceQueryExpression(),
+          predicateExactness = NotExactPredicate,
+          solvedPredicate = Some(predicate),
+          dependencies = Set.empty,
+          indexQueryType = IndexQueryType.EXISTS,
+          cypherType = CTAny
+        ).convertToScannable
     }
   }
 }
