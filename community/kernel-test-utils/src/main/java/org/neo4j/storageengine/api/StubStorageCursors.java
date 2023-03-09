@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
@@ -234,6 +235,11 @@ public class StubStorageCursors implements StorageReader {
 
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll() {
+        throw new UnsupportedOperationException("Not implemented yet");
+    }
+
+    @Override
+    public IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 

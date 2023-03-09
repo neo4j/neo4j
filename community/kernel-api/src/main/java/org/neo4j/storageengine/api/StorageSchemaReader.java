@@ -20,6 +20,8 @@
 package org.neo4j.storageengine.api;
 
 import java.util.Iterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
@@ -91,4 +93,20 @@ public interface StorageSchemaReader {
      * @return all stored property constraints.
      */
     Iterator<ConstraintDescriptor> constraintsGetAll();
+
+    /**
+     * Provides access to the property token identifiers that participate as part of a logical key via one or more
+     * {@link ConstraintDescriptor}s. Logical keys are said to exist when produced via the following operations:
+     * <ul>
+     *     <li>when creating a node key constraint</li>
+     *     <li>when creating both a node uniqueness constraint AND existence constraint for the same property</li>
+     *     <li>when creating a relationship key constraint</li>
+     *     <li>when creating both a relationship uniqueness constraint AND existence constraint for the same property</li>
+     * </ul>
+     *
+     * @param token the token ID (i.e. label or relationship type ID)
+     * @param entityType the entity type
+     * @return the property token IDs that act as a logical key for the provided entity/token pairing
+     */
+    IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType);
 }

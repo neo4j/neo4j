@@ -38,7 +38,11 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
 import java.util.function.Function;
+import org.eclipse.collections.api.factory.primitive.IntObjectMaps;
+import org.eclipse.collections.api.factory.primitive.IntSets;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.Sets;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.UnifiedSet;
@@ -201,6 +205,16 @@ public class SchemaCache {
         return schemaCacheState.hasRelatedSchema(token, entityType);
     }
 
+    public IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
+        /* These values are required for Change-Data-Capture as the logical keys for a node/relationship must be
+         * captured for every entity that participates in the change (e.g. the node keys are required even if unchanged
+         * when they are part of a relationship that has changed)
+         * As this needs to be performed for EVERY transaction and EVERY change (when CDC is enabled) computing the
+         * values each time would be way too expensive - hence the caching
+         */
+        return schemaCacheState.constraintsGetPropertyTokensForLogicalKey(token, entityType);
+    }
+
     public SchemaCache snapshot() {
         return new SchemaCache(schemaCacheState);
     }
@@ -224,10 +238,12 @@ public class SchemaCache {
         private final Map<String, ConstraintDescriptor> constrainsByName;
 
         private final Map<Class<?>, Object> dependantState;
-        private final ConcurrentMap<Object, Set<IndexDescriptor>>
-                indexCache; // Cache results of getSchemaRelatedTo queries.
-        private final ConcurrentMap<Object, Set<IndexBackedConstraintDescriptor>>
-                constraintCache; // Cache results of getSchemaRelatedTo queries.
+        // Cache results of getSchemaRelatedTo queries.
+        private final ConcurrentMap<Object, Set<IndexDescriptor>> indexCache;
+        // Cache results of getSchemaRelatedTo queries.
+        private final ConcurrentMap<Object, Set<IndexBackedConstraintDescriptor>> constraintCache;
+        // Cache results of propertyTokensForTokenKeyConstraints queries.
+        private final Map<LogicalEntityKey, LogicalKeyState> logicalKeyConstraints;
 
         SchemaCacheState(
                 ConstraintRuleAccessor constraintSemantics,
@@ -249,6 +265,7 @@ public class SchemaCache {
             this.uniquenessConstraintsByRelationship = new SchemaDescriptorLookupSet<>();
             this.indexesByName = new HashMap<>();
             this.constrainsByName = new HashMap<>();
+            this.logicalKeyConstraints = new HashMap<>();
             this.dependantState = new ConcurrentHashMap<>();
             this.indexCache = new ConcurrentHashMap<>();
             this.constraintCache = new ConcurrentHashMap<>();
@@ -275,6 +292,7 @@ public class SchemaCache {
             this.constraintsById.forEachValue(this::cacheUniquenessConstraint);
             this.indexesByName = new HashMap<>(schemaCacheState.indexesByName);
             this.constrainsByName = new HashMap<>(schemaCacheState.constrainsByName);
+            this.logicalKeyConstraints = new HashMap<>(schemaCacheState.logicalKeyConstraints);
             this.dependantState = new ConcurrentHashMap<>();
             this.indexCache = new ConcurrentHashMap<>();
             this.constraintCache = new ConcurrentHashMap<>();
@@ -285,6 +303,15 @@ public class SchemaCache {
                 selectUniquenessConstraintSetByEntityType(constraint.schema().entityType())
                         .add(constraint.asIndexBackedConstraint());
             }
+        }
+
+        private void cacheConstraint(ConstraintDescriptor constraint) {
+            cacheUniquenessConstraint(constraint);
+
+            logicalKeyConstraints.compute(
+                    LogicalEntityKey.create(constraint.schema()),
+                    (key, state) ->
+                            (state == null) ? new LogicalKeyState(constraint) : state.addConstraint(constraint));
         }
 
         private void load(Iterable<SchemaRule> schemaRuleIterator) {
@@ -488,7 +515,7 @@ public class SchemaCache {
                 constraintsById.put(constraint.getId(), constraint);
                 constrainsByName.put(constraint.getName(), constraint);
                 constraints.add(constraint);
-                cacheUniquenessConstraint(constraint);
+                cacheConstraint(constraint);
             } else if (rule instanceof IndexDescriptor index) {
                 index = indexConfigCompleter.completeConfiguration(index, indexingBehaviour);
                 indexesById.put(index.getId(), index);
@@ -514,6 +541,10 @@ public class SchemaCache {
                                     constraint.schema().entityType())
                             .remove(constraint.asIndexBackedConstraint());
                 }
+
+                logicalKeyConstraints.computeIfPresent(
+                        LogicalEntityKey.create(constraint.schema()),
+                        (key, state) -> state.removeConstraint(constraint));
             } else if (indexesById.containsKey(id)) {
                 IndexDescriptor index = indexesById.remove(id);
                 SchemaDescriptor schema = index.schema();
@@ -523,11 +554,83 @@ public class SchemaCache {
                 selectIndexSetByEntityType(schema.entityType()).remove(index);
             }
         }
+
+        IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
+            final var state = logicalKeyConstraints.get(new LogicalEntityKey(entityType, token));
+            return (state == null) ? IntSets.immutable.empty() : state.propertyIds();
+        }
     }
 
     private static Set<IndexDescriptor> removeFromImmutable(Set<IndexDescriptor> set, IndexDescriptor toRemove) {
         final var result = Sets.mutable.withAll(set).without(toRemove);
         return !result.isEmpty() ? result.asUnmodifiable() : null;
+    }
+
+    private record LogicalEntityKey(EntityType type, int tokenId) {
+        private static LogicalEntityKey create(SchemaDescriptor schema) {
+            final var entityType = schema.entityType();
+            if (entityType == EntityType.NODE) {
+                return new LogicalEntityKey(entityType, schema.getLabelId());
+            } else {
+                return new LogicalEntityKey(entityType, schema.getRelTypeId());
+            }
+        }
+    }
+
+    private static class LogicalKeyState {
+
+        private final Set<ConstraintDescriptor> constraints = Sets.mutable.empty();
+
+        private final MutableIntSet propertyIds = IntSets.mutable.empty();
+
+        public LogicalKeyState(ConstraintDescriptor descriptor) {
+            addConstraint(descriptor);
+        }
+
+        IntSet propertyIds() {
+            return propertyIds;
+        }
+
+        LogicalKeyState addConstraint(ConstraintDescriptor descriptor) {
+            if (constraints.add(descriptor)) {
+                rebuild();
+            }
+            return this;
+        }
+
+        LogicalKeyState removeConstraint(ConstraintDescriptor descriptor) {
+            if (constraints.remove(descriptor)) {
+                rebuild();
+            }
+            return this;
+        }
+
+        private void rebuild() {
+            propertyIds.clear();
+            final var propToConstraintType = IntObjectMaps.mutable.<ConstraintType>empty();
+            for (ConstraintDescriptor descriptor : constraints) {
+                final var constraintType = descriptor.type();
+                for (var property : descriptor.schema().getPropertyIds()) {
+                    final var mergedType = propToConstraintType.updateValue(
+                            property, descriptor::type, type -> merge(constraintType, type));
+                    if (mergedType == ConstraintType.UNIQUE_EXISTS) {
+                        propertyIds.add(property);
+                    }
+                }
+            }
+        }
+
+        private ConstraintType merge(ConstraintType constraintType, ConstraintType currentType) {
+            if (currentType == null) {
+                return constraintType;
+            }
+
+            return switch (currentType) {
+                case EXISTS -> constraintType == ConstraintType.UNIQUE ? ConstraintType.UNIQUE_EXISTS : currentType;
+                case UNIQUE -> constraintType == ConstraintType.EXISTS ? ConstraintType.UNIQUE_EXISTS : currentType;
+                case UNIQUE_EXISTS -> currentType;
+            };
+        }
     }
 
     /**

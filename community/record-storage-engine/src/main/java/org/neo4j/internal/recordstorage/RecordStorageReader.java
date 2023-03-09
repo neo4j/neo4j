@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.OptionalLong;
 import java.util.function.Function;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.counts.CountsAccessor;
@@ -206,6 +207,11 @@ public class RecordStorageReader implements StorageReader {
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll() {
         return schemaCache.constraints().iterator();
+    }
+
+    @Override
+    public IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
+        return schemaCache.constraintsGetPropertyTokensForLogicalKey(token, entityType);
     }
 
     @Override

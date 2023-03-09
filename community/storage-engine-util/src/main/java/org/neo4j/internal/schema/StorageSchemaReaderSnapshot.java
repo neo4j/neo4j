@@ -20,6 +20,8 @@
 package org.neo4j.internal.schema;
 
 import java.util.Iterator;
+import org.eclipse.collections.api.set.primitive.IntSet;
+import org.neo4j.common.EntityType;
 import org.neo4j.storageengine.api.StorageSchemaReader;
 
 public class StorageSchemaReaderSnapshot implements StorageSchemaReader {
@@ -77,5 +79,10 @@ public class StorageSchemaReaderSnapshot implements StorageSchemaReader {
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetAll() {
         return schema.constraints().iterator();
+    }
+
+    @Override
+    public IntSet constraintsGetPropertyTokensForLogicalKey(int token, EntityType entityType) {
+        return schema.constraintsGetPropertyTokensForLogicalKey(token, entityType);
     }
 }
