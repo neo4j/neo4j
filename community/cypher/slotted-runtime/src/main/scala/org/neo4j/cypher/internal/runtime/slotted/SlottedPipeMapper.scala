@@ -1496,7 +1496,7 @@ class SlottedPipeMapper(
           slots(start),
           slots.getLongOffsetFor(end),
           rhsSlots.getLongOffsetFor(innerStart),
-          trailStateMetadataSlot = rhsSlots.getMetaDataOffsetFor(SlotAllocation.TRAIL_STATE_METADATA_KEY),
+          trailStateMetadataSlot = rhsSlots.getMetaDataOffsetFor(SlotAllocation.TRAIL_STATE_METADATA_KEY, id),
           rhsSlots(innerEnd),
           groupNodes.map(n => GroupSlot(rhsSlots(n.singletonName), slots(n.groupName))).toArray,
           groupRelationships.map(r => GroupSlot(rhsSlots(r.singletonName), slots(r.groupName))).toArray,
@@ -1600,8 +1600,8 @@ class SlottedPipeMapper(
         case (VariableSlotKey(k), _) => lhsSlots.get(k).isDefined
         case (CachedPropertySlotKey(k), slot) =>
           slot.offset < argumentSize.nReferences && lhsSlots.hasCachedPropertySlot(k)
-        case (MetaDataSlotKey(k), slot) => slot.offset < argumentSize.nReferences && lhsSlots.hasMetaDataSlot(k)
-        case (key: ApplyPlanSlotKey, _) => throw new InternalException(s"Unexpected slot key $key")
+        case (key: MetaDataSlotKey, slot) => slot.offset < argumentSize.nReferences && lhsSlots.hasMetaDataSlot(key)
+        case (key: ApplyPlanSlotKey, _)   => throw new InternalException(s"Unexpected slot key $key")
         case (key: OuterNestedApplyPlanSlotKey, _) => throw new InternalException(s"Unexpected slot key $key")
       })
 
@@ -1664,9 +1664,9 @@ class SlottedPipeMapper(
         if (slot.offset < argumentSize.nReferences) {
           lhsArgRefSlots += (key.asCanonicalStringVal -> slot)
         }
-      case SlotWithKeyAndAliases(MetaDataSlotKey(key), slot, _) =>
+      case SlotWithKeyAndAliases(key: MetaDataSlotKey, slot, _) =>
         if (slot.offset < argumentSize.nReferences) {
-          lhsArgRefSlots += (key -> slot)
+          lhsArgRefSlots += (key.toString -> slot)
         }
       case SlotWithKeyAndAliases(key: ApplyPlanSlotKey, _, _) =>
         throw new InternalException(s"Unexpected slot key $key")
@@ -1686,9 +1686,9 @@ class SlottedPipeMapper(
         if (slot.offset < argumentSize.nReferences) {
           rhsArgRefSlots += (key.asCanonicalStringVal -> slot)
         }
-      case SlotWithKeyAndAliases(MetaDataSlotKey(key), slot, _) =>
+      case SlotWithKeyAndAliases(key: MetaDataSlotKey, slot, _) =>
         if (slot.offset < argumentSize.nReferences) {
-          rhsArgRefSlots += (key -> slot)
+          rhsArgRefSlots += (key.toString -> slot)
         }
       case SlotWithKeyAndAliases(key: ApplyPlanSlotKey, _, _) =>
         throw new InternalException(s"Unexpected slot key $key")
@@ -1770,7 +1770,7 @@ object SlottedPipeMapper {
         if (offset >= argumentSize.nReferences) {
           cachedPropertyMappings += offset -> toSlots.getCachedPropertyOffsetFor(cnp)
         }
-      case SlotWithKeyAndAliases(MetaDataSlotKey(key), _, _) =>
+      case SlotWithKeyAndAliases(key: MetaDataSlotKey, _, _) =>
         val fromOffset = fromSlots.getMetaDataOffsetFor(key)
         if (fromOffset >= argumentSize.nReferences) {
           val toOffset = toSlots.getMetaDataOffsetFor(key)
@@ -1889,7 +1889,7 @@ object SlottedPipeMapper {
         out.getCachedPropertySlot(cachedProp).map {
           outRefSlot => CopyCachedProperty(inRefSlot.offset, outRefSlot.offset)
         }
-      case (MetaDataSlotKey(key), inRefSlot) =>
+      case (key: MetaDataSlotKey, inRefSlot) =>
         out.getMetaDataSlot(key).map {
           outRefSlot => CopyRefSlot(inRefSlot.offset, outRefSlot.offset)
         }

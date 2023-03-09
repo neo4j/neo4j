@@ -63,7 +63,8 @@ object SlotConfiguration {
   case class CachedPropertySlotKey(property: ASTCachedProperty.RuntimeKey) extends SlotKey
   case class ApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
   case class OuterNestedApplyPlanSlotKey(applyPlanId: Id) extends SlotKey
-  case class MetaDataSlotKey(name: String) extends SlotKey
+
+  case class MetaDataSlotKey(name: String, planId: Id) extends SlotKey
 
   case class SlotWithKeyAndAliases(key: SlotKey, slot: Slot, aliases: collection.Set[String])
 }
@@ -326,9 +327,9 @@ class SlotConfiguration private (
     this
   }
 
-  def newMetaData(key: String): SlotConfiguration = {
+  def newMetaData(key: String, planId: Id = Id.INVALID_ID): SlotConfiguration = {
     require(!finalized)
-    val slotKey = MetaDataSlotKey(key)
+    val slotKey = MetaDataSlotKey(key, planId)
     slots.get(slotKey) match {
       case Some(_) =>
       // For LoadCSV we only support meta data from one clause at a time, so we allow the same key to be
@@ -383,7 +384,9 @@ class SlotConfiguration private (
 
   def getCachedPropertyOffsetFor(key: ASTCachedProperty.RuntimeKey): Int = slots(CachedPropertySlotKey(key)).offset
 
-  def getMetaDataOffsetFor(key: String): Int = slots(MetaDataSlotKey(key)).offset
+  def getMetaDataOffsetFor(key: String, id: Id = Id.INVALID_ID): Int = slots(MetaDataSlotKey(key, id)).offset
+
+  def getMetaDataOffsetFor(key: MetaDataSlotKey): Int = slots(key).offset
 
   def updateAccessorFunctions(
     key: String,
@@ -515,7 +518,7 @@ class SlotConfiguration private (
           }
         case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
           other.newCachedProperty(key, shouldDuplicate = true)
-        case SlotWithKeyAndAliases(MetaDataSlotKey(key), _, _)          => other.newMetaData(key)
+        case SlotWithKeyAndAliases(MetaDataSlotKey(key, id), _, _)      => other.newMetaData(key, id)
         case SlotWithKeyAndAliases(ApplyPlanSlotKey(applyPlanId), _, _) => other.newArgument(applyPlanId)
         case SlotWithKeyAndAliases(OuterNestedApplyPlanSlotKey(applyPlanId), _, _) =>
           other.newNestedArgument(applyPlanId)
@@ -573,9 +576,14 @@ class SlotConfiguration private (
   def getNestedArgumentSlot(applyPlanId: Id): Option[LongSlot] =
     slots.get(OuterNestedApplyPlanSlotKey(applyPlanId)).asInstanceOf[Option[LongSlot]]
 
-  def hasMetaDataSlot(key: String): Boolean = slots.contains(MetaDataSlotKey(key))
+  def hasMetaDataSlot(key: String, id: Id): Boolean = slots.contains(MetaDataSlotKey(key, id))
 
-  def getMetaDataSlot(key: String): Option[RefSlot] = slots.get(MetaDataSlotKey(key)).asInstanceOf[Option[RefSlot]]
+  def hasMetaDataSlot(key: MetaDataSlotKey): Boolean = slots.contains(key)
+
+  def getMetaDataSlot(key: String, id: Id = Id.INVALID_ID): Option[RefSlot] =
+    slots.get(MetaDataSlotKey(key, id)).asInstanceOf[Option[RefSlot]]
+
+  def getMetaDataSlot(key: MetaDataSlotKey): Option[RefSlot] = slots.get(key).asInstanceOf[Option[RefSlot]]
 
   def hasCachedProperties: Boolean = _hasCachedProperties
 

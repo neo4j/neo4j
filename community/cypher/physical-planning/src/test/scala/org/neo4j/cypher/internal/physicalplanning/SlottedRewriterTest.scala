@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.SlotConfigurations
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
 import org.neo4j.cypher.internal.physicalplanning.ast.IdFromSlot
 import org.neo4j.cypher.internal.physicalplanning.ast.IsPrimitiveNull
 import org.neo4j.cypher.internal.physicalplanning.ast.NodeFromSlot
@@ -85,7 +86,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottedRewriter(tokenContext)
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
     result should equal(
       Selection(
         Seq(
@@ -117,7 +118,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottedRewriter(tokenContext)
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
     result should equal(
       Selection(
         Seq(
@@ -146,7 +147,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottedRewriter(tokenContext)
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
     result should equal(
       Selection(
         Seq(
@@ -178,7 +179,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottedRewriter(tokenContext)
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
     result should equal(
       Selection(
         Seq(
@@ -205,7 +206,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val tokenId = 666
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(Some(tokenId))
     val rewriter = new SlottedRewriter(tokenContext)
-    val result = rewriter(produceResult, lookup)
+    val result = rewriter(produceResult, lookup, new TrailPlans)
 
     val newPredicate = greaterThan(NodeProperty(offset, tokenId, "x.prop")(xProp), literalInt(42))
 
@@ -238,7 +239,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val rewriter = new SlottedRewriter(tokenContext)
 
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
 
     // then
     result should equal(Selection(Seq(not(PrimitiveEquals(IdFromSlot(2), IdFromSlot(4)))), argument))
@@ -270,7 +271,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val rewriter = new SlottedRewriter(tokenContext)
 
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
 
     // then
     val rewrittenPredicate =
@@ -312,7 +313,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val rewriter = new SlottedRewriter(tokenContext)
 
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
 
     // then since we are doing a not(t1 = t2), we shortcut to True if neither value is null
     val rewrittenPredicate =
@@ -340,7 +341,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val rewriter = new SlottedRewriter(tokenContext)
 
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
 
     // then
     val expectedPredicate = equals(NullCheckProperty(0, NodeProperty(0, 666, "a.prop")(aProp)), literalInt(42))
@@ -362,7 +363,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val tokenContext = mock[ReadTokenContext]
     when(tokenContext.getOptPropertyKeyId("prop")).thenReturn(None)
     val rewriter = new SlottedRewriter(tokenContext)
-    val result = rewriter(produceResult, lookup)
+    val result = rewriter(produceResult, lookup, new TrailPlans)
 
     val newPredicate = greaterThan(NodePropertyLate(offset, "prop", "x.prop")(xProp), literalInt(42))
 
@@ -393,7 +394,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val rewriter = new SlottedRewriter(tokenContext)
 
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
 
     result should equal(Selection(
       Seq(equals(RelationshipPropertyLate(2, "prop", "r.prop")(rProp), literalInt(42))),
@@ -420,7 +421,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val rewriter = new SlottedRewriter(tokenContext)
 
     // when
-    val result = rewriter(produceResult, lookup)
+    val result = rewriter(produceResult, lookup, new TrailPlans)
 
     // then
     val newProjection =
@@ -449,7 +450,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
     // when
     val rewriter = new SlottedRewriter(tokenContext)
-    val resultPlan = rewriter(projection, lookup)
+    val resultPlan = rewriter(projection, lookup, new TrailPlans)
 
     // then
     resultPlan should equal(
@@ -482,7 +483,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
     // when
     val rewriter = new SlottedRewriter(tokenContext)
-    val resultPlan = rewriter(projection, lookup)
+    val resultPlan = rewriter(projection, lookup, new TrailPlans)
 
     // then
     val nodeOffset = slots.getLongOffsetFor("x")
@@ -521,7 +522,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
 
     // when
     val rewriter = new SlottedRewriter(mock[ReadTokenContext])
-    val resultPlan = rewriter(apply, lookup)
+    val resultPlan = rewriter(apply, lookup, new TrailPlans)
 
     // then
 
@@ -561,7 +562,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     lookup.set(leafA.id, lhsPipeline)
     lookup.set(leafB.id, rhsPipeline)
     lookup.set(join.id, joinPipeline)
-    val resultPlan = rewriter(join, lookup)
+    val resultPlan = rewriter(join, lookup, new TrailPlans)
 
     // then
     val lhsExpAfterRewrite = NodeProperty(0, tokenId, "a.prop")(aProp)
@@ -594,7 +595,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val rewriter = new SlottedRewriter(tokenContext)
 
     // when
-    val result = rewriter(produceResult, lookup)
+    val result = rewriter(produceResult, lookup, new TrailPlans)
 
     // then
     val newPredicate = IsPrimitiveNull(offset)
@@ -622,7 +623,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val rewriter = new SlottedRewriter(tokenContext)
 
     // when
-    val result = rewriter(produceResult, lookup)
+    val result = rewriter(produceResult, lookup, new TrailPlans)
 
     // then
     val newPred1 = equals(ReferenceFromSlot(offsetX, "x"), ReferenceFromSlot(offsetZ, "z"))
@@ -649,7 +650,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     val rewriter = new SlottedRewriter(tokenContext)
 
     // when
-    val result = rewriter(selection, lookup)
+    val result = rewriter(selection, lookup, new TrailPlans)
 
     // then
     val newPred = AndedPropertyInequalities(
@@ -685,7 +686,7 @@ class SlottedRewriterTest extends CypherFunSuite with AstConstructionTestSupport
     lookup.set(properties.id, slots)
 
     // when
-    val result = rewriter(properties, lookup)
+    val result = rewriter(properties, lookup, new TrailPlans)
 
     // then
     result should equal {

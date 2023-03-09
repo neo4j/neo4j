@@ -452,7 +452,7 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
           case (CachedPropertySlotKey(property), refSlot) =>
             setCachedProperty(property, other.getCachedPropertyAt(refSlot.offset))
 
-          case (MetaDataSlotKey(key), refSlot) =>
+          case (key: MetaDataSlotKey, refSlot) =>
             val thisOffset = slots.getMetaDataOffsetFor(key)
             // Do not overwrite existing meta data here (preserves backwards compatibility with MapCypherRow)
             if (!isRefInitialized(thisOffset) || (getRefAtWithoutCheckingInitialized(thisOffset) eq Values.NO_VALUE)) {
@@ -502,7 +502,8 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
         tuples ::= ((prettyKey(key, aliases), Values.longValue(longs(offset))))
       case SlotWithKeyAndAliases(CachedPropertySlotKey(cachedProperty), slot, _) =>
         tuples ::= ((cachedProperty.asCanonicalStringVal, refs(slot.offset)))
-      case SlotWithKeyAndAliases(MetaDataSlotKey(key), slot, _) => tuples ::= ((s"MetaData($key)", refs(slot.offset)))
+      case SlotWithKeyAndAliases(MetaDataSlotKey(key, id), slot, _) =>
+        tuples ::= ((s"MetaData($key, $id)", refs(slot.offset)))
       case SlotWithKeyAndAliases(ApplyPlanSlotKey(id), slot, _) =>
         tuples ::= ((s"Apply-Plan($id)", Values.longValue(longs(slot.offset))))
       case SlotWithKeyAndAliases(OuterNestedApplyPlanSlotKey(id), slot, _) =>

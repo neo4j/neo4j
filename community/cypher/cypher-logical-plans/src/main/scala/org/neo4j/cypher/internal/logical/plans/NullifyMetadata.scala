@@ -17,21 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.physicalplanning
+package org.neo4j.cypher.internal.logical.plans
 
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.Size
-import org.neo4j.cypher.internal.util.attribution.Attribute
-import org.neo4j.cypher.internal.util.attribution.Id
+import org.neo4j.cypher.internal.util.attribution.IdGen
 
-object PhysicalPlanningAttributes {
-  class SlotConfigurations extends Attribute[LogicalPlan, SlotConfiguration]
-  class ArgumentSizes extends Attribute[LogicalPlan, Size]
+case class NullifyMetadata(override val source: LogicalPlan, key: String, planId: Int)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
 
-  class ApplyPlans extends Attribute[LogicalPlan, Id]
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  class TrailPlans extends Attribute[LogicalPlan, Id]
-
-  class NestedPlanArgumentConfigurations extends Attribute[LogicalPlan, SlotConfiguration]
-
+  override def availableSymbols: Set[String] = source.availableSymbols
 }

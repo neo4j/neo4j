@@ -120,6 +120,43 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
     slots("x") should equal(RefSlot(0, nullable = true, CTList(CTNumber)))
   }
 
+  test("allocating metadata with plan id should create new slot") {
+    // given
+    val slots = SlotConfiguration.empty
+
+    // when
+    slots.newMetaData("meta", Id(1))
+
+    // then
+    slots.getMetaDataSlot(MetaDataSlotKey("meta", Id(1))) should equal(Some(RefSlot(0, nullable = false, CTAny)))
+  }
+
+  test("allocating metadata with same name and plan id should not create new slot") {
+    // given
+    val slots = SlotConfiguration.empty
+    slots.newMetaData("meta", Id(1))
+
+    // when
+    slots.newMetaData("meta", Id(1))
+
+    // then
+    slots.numberOfReferences should equal(1)
+  }
+
+  test("allocating metadata with new plan id should create new slot") {
+    // given
+    val slots = SlotConfiguration.empty
+    slots.newMetaData("meta", Id(1))
+
+    // when
+    slots.newMetaData("meta", Id(2))
+
+    // then
+    slots.numberOfReferences should equal(2)
+    slots.getMetaDataSlot("meta", Id(1)) should equal(Some(RefSlot(0, nullable = false, CTAny)))
+    slots.getMetaDataSlot("meta", Id(2)) should equal(Some(RefSlot(1, nullable = false, CTAny)))
+  }
+
   test("can't overwrite variable name by mistake1") {
     // given
     val slots = SlotConfiguration.empty
@@ -527,7 +564,7 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
           }
         case CachedPropertySlotKey(cp) =>
           refEvents += OnCachedProp(cp)
-        case MetaDataSlotKey(key) =>
+        case MetaDataSlotKey(key, id) =>
           refEvents += OnRefVar(key, slot, aliases)
         case ApplyPlanSlotKey(id) =>
           longEvents += OnApplyPlanId(id)
@@ -547,7 +584,7 @@ class SlotConfigurationTest extends CypherFunSuite with AstConstructionTestSuppo
           }
         case CachedPropertySlotKey(cp) =>
           refEvents += OnCachedProp(cp)
-        case MetaDataSlotKey(key) =>
+        case MetaDataSlotKey(key, id) =>
           refEvents += OnRefVar(key, slot, Set.empty[String])
         case ApplyPlanSlotKey(id) =>
           longEvents += OnApplyPlanId(id)

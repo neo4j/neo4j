@@ -23,17 +23,34 @@ import org.neo4j.cypher.internal.runtime.ReadWriteRow
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedCommandProjection.projectFunctions
 
 case class SlottedCommandProjection(introducedExpressions: Map[Int, Expression]) extends CommandProjection {
 
   override def isEmpty: Boolean = introducedExpressions.isEmpty
 
-  private val projectionFunctions: Iterable[(ReadWriteRow, QueryState) => Unit] = introducedExpressions map {
-    case (offset, expression) =>
-      (ctx: ReadWriteRow, state: QueryState) =>
-        val result = expression(ctx, state)
-        ctx.setRefAt(offset, result)
+  private val projectionFunctions: Array[(ReadWriteRow, QueryState) => Unit] =
+    projectFunctions(introducedExpressions).toArray
+
+  override def project(ctx: ReadWriteRow, state: QueryState): Unit = {
+    var i = 0
+    val length = projectionFunctions.length
+    while (i < length) {
+      projectionFunctions(i).apply(ctx, state)
+      i += 1
+    }
+  }
+}
+
+object SlottedCommandProjection {
+
+  def projectFunctions(expressions: Map[Int, Expression]): Iterable[(ReadWriteRow, QueryState) => Unit] = {
+    expressions map {
+      case (offset, expression) =>
+        (ctx: ReadWriteRow, state: QueryState) =>
+          val result = expression(ctx, state)
+          ctx.setRefAt(offset, result)
+    }
   }
 
-  override def project(ctx: ReadWriteRow, state: QueryState): Unit = projectionFunctions.foreach(_(ctx, state))
 }

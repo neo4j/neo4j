@@ -28,15 +28,19 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.GraphCreation.ComplexGraph
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(aa) ((e)<-[rrr]-(f)){1,}) (g)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(b) ((d)-[rr]->(aa:A) WHERE EXISTS {...} ){1,} (a)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(b_inner)((bb)-[rr]->(aa:A)){0,}(a)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) ((b)-[r]->(c) WHERE EXISTS {...} ){1,} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->()-[]->(b)]{0,*} (you)`
-import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)<-[rr]-(c)]{0,1} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,*} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,1} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,2} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{0,3} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{1,2} (you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me) [(a)-[r]->(b)]{2,2} (you)`
+import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(start:START) [()-[]->(:MIDDLE)]{1, 1} (firstMiddle:MIDDLE)`
 import org.neo4j.cypher.internal.runtime.spec.tests.TrailTestBase.`(you) [(b)<-[r]-(a)]{0, *} (me)`
@@ -50,6 +54,7 @@ import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.RelationshipType.withName
 
 import java.util
 import java.util.Collections.emptyList
@@ -1456,6 +1461,100 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     ))
   }
 
+  test("should work with nested trails on rhs") {
+    // (n1:A) <- (n2) -> (n3)
+    val (n1, n2, n3, r21, r23) = given {
+      val n1 = tx.createNode(label("A"))
+      val n2 = tx.createNode()
+      val n3 = tx.createNode()
+      val r21 = n2.createRelationshipTo(n1, withName("R"))
+      val r23 = n2.createRelationshipTo(n3, withName("R"))
+      (n1, n2, n3, r21, r23)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me", "you", "b", "c", "r")
+      .trail(`(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)`)
+      .|.apply()
+      .|.|.limit(1)
+      .|.|.filter("a:A")
+      .|.|.trail(`(b_inner)((bb)-[rr]->(aa:A)){0,}(a)`)
+      .|.|.|.filter("aa_inner:A")
+      .|.|.|.filterExpressionOrString(isRepeatTrailUnique("rr_inner"))
+      .|.|.|.expandAll("(bb_inner)-[rr_inner]->(aa_inner)")
+      .|.|.|.argument("bb_inner", "b_inner")
+      .|.|.argument("b_inner")
+      .|.filterExpressionOrString(isRepeatTrailUnique("r_inner"))
+      .|.expandAll("(b_inner)-[r_inner]->(c_inner)")
+      .|.argument("b_inner")
+      .allNodeScan("me")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("me", "you", "b", "c", "r").withRows(
+      inAnyOrder(
+        Seq(
+          Array(n1, n1, emptyList(), emptyList(), emptyList()),
+          Array(n2, n2, emptyList(), emptyList(), emptyList()),
+          Array(n3, n3, emptyList(), emptyList(), emptyList()),
+          Array(n2, n1, listOf(n2), listOf(n1), listOf(r21)),
+          Array(n2, n3, listOf(n2), listOf(n3), listOf(r23))
+        )
+      )
+    )
+  }
+
+  test("should work with multiple nested trails on rhs") {
+    // (n1:A) <- (n2) -> (n3)
+    val (n1, n2, n3, r21, r23) = given {
+      val n1 = tx.createNode(label("A"))
+      val n2 = tx.createNode()
+      val n3 = tx.createNode()
+      val r21 = n2.createRelationshipTo(n1, withName("R"))
+      val r23 = n2.createRelationshipTo(n3, withName("R"))
+      (n1, n2, n3, r21, r23)
+    }
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me", "you", "b", "c", "r")
+      .trail(`(me) ((b)-[r]->(c) WHERE EXISTS {...} ){1,} (you)`)
+      .|.apply()
+      .|.|.limit(1)
+      .|.|.filter("a:A")
+      .|.|.trail(`(b) ((d)-[rr]->(aa:A) WHERE EXISTS {...} ){1,} (a)`)
+      .|.|.|.filter("aa_inner:A")
+      .|.|.|.apply()
+      .|.|.|.|.limit(1)
+      .|.|.|.|.trail(`(aa) ((e)<-[rrr]-(f)){1,}) (g)`)
+      .|.|.|.|.|.filterExpressionOrString(isRepeatTrailUnique("rrr_inner"))
+      .|.|.|.|.|.expandAll("(e_inner)<-[rrr_inner]-(f_inner)")
+      .|.|.|.|.|.argument("aa_inner", "e_inner")
+      .|.|.|.|.argument("aa_inner")
+      .|.|.|.filterExpressionOrString(isRepeatTrailUnique("rr_inner"))
+      .|.|.|.expandAll("(d_inner)-[rr_inner]->(aa_inner)")
+      .|.|.|.argument("b_inner", "d_inner")
+      .|.|.argument("b_inner")
+      .|.filterExpressionOrString(isRepeatTrailUnique("r_inner"))
+      .|.expandAll("(b_inner)-[r_inner]->(c_inner)")
+      .|.argument("b_inner")
+      .allNodeScan("me")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("me", "you", "b", "c", "r").withRows(
+      inAnyOrder(
+        Seq(
+          Array(n2, n1, listOf(n2), listOf(n1), listOf(r21)),
+          Array(n2, n3, listOf(n2), listOf(n3), listOf(r23))
+        )
+      )
+    )
+
+  }
+
   protected def listOf(values: AnyRef*): util.List[AnyRef] = TrailTestBase.listOf(values: _*)
 
   //  (n0:START)                                                  (n6:LOOP)
@@ -2135,6 +2234,67 @@ object TrailTestBase {
       reverseGroupVariableProjections = false
     )
 
+  val `(me) ((b)-[r]->(c) WHERE EXISTS {...} ){1,} (you)` : TrailParameters = TrailParameters(
+    1,
+    UpperBound.Unlimited,
+    "me",
+    "you",
+    "b_inner",
+    "c_inner",
+    Set(("b_inner", "b"), ("c_inner", "c")),
+    Set(("r_inner", "r")),
+    Set("r_inner"),
+    Set(),
+    Set(),
+    false
+  )
+
+  val `(b) ((d)-[rr]->(aa:A) WHERE EXISTS {...} ){1,} (a)` : TrailParameters = TrailParameters(
+    1,
+    UpperBound.Unlimited,
+    "b_inner",
+    "a",
+    "d_inner",
+    "aa_inner",
+    Set(("d_inner", "d"), ("aa_inner", "aa")),
+    Set(("rr_inner", "rr")),
+    Set("rr_inner"),
+    Set(),
+    Set(),
+    false
+  )
+
+  val `(aa) ((e)<-[rrr]-(f)){1,}) (g)` : TrailParameters = TrailParameters(
+    1,
+    UpperBound.Unlimited,
+    "aa_inner",
+    "g",
+    "e_inner",
+    "f_inner",
+    Set(("e_inner", "e"), ("f_inner", "f")),
+    Set(("rrr_inner", "rrr")),
+    Set("rrr_inner"),
+    Set(),
+    Set(),
+    false
+  )
+
+  val `(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)` : TrailParameters =
+    TrailParameters(
+      min = 0,
+      max = UpperBound.Unlimited,
+      start = "me",
+      end = "you",
+      innerStart = "b_inner",
+      innerEnd = "c_inner",
+      groupNodes = Set(("b_inner", "b"), ("c_inner", "c")),
+      groupRelationships = Set(("r_inner", "r")),
+      innerRelationships = Set("r_inner"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
   val `(me) [(a)-[r]->(b)-[rr]->(c)<-[rrr]-(d)]{0,1} (you)` : TrailParameters =
     TrailParameters(
       min = 0,
@@ -2150,10 +2310,129 @@ object TrailTestBase {
       previouslyBoundRelationshipGroups = Set.empty,
       reverseGroupVariableProjections = false
     )
+
+  val `(b_inner)((bb)-[rr]->(aa:A)){0,}(a)` : TrailParameters = TrailParameters(
+    min = 0,
+    max = UpperBound.Unlimited,
+    start = "b_inner",
+    end = "a",
+    innerStart = "bb_inner",
+    innerEnd = "aa_inner",
+    groupNodes = Set(("bb_inner", "bb"), ("aa_inner", "aa")),
+    groupRelationships = Set(("rr_inner", "rr")),
+    innerRelationships = Set("rr_inner"),
+    previouslyBoundRelationships = Set.empty,
+    previouslyBoundRelationshipGroups = Set.empty,
+    reverseGroupVariableProjections = false
+  )
 }
 
 trait OrderedTrailTestBase[CONTEXT <: RuntimeContext] {
   self: TrailTestBase[CONTEXT] =>
+
+  test("should work with multiple nested trails - with leveraged order on lhs") {
+    // (n1:A) <- (n2) -> (n3)
+    val (n1, n2, n3, r21, r23) = smallTreeGraph
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me", "you", "b", "c", "r")
+      .trail(`(me) ((b)-[r]->(c) WHERE EXISTS {...} ){1,} (you)`).withLeveragedOrder()
+      .|.apply()
+      .|.|.limit(1)
+      .|.|.filter("a:A")
+      .|.|.trail(`(b) ((d)-[rr]->(aa:A) WHERE EXISTS {...} ){1,} (a)`).withLeveragedOrder()
+      .|.|.|.filter("aa_inner:A")
+      .|.|.|.apply()
+      .|.|.|.|.limit(1)
+      .|.|.|.|.trail(`(aa) ((e)<-[rrr]-(f)){1,}) (g)`).withLeveragedOrder()
+      .|.|.|.|.|.filterExpressionOrString(isRepeatTrailUnique("rrr_inner"))
+      .|.|.|.|.|.expandAll("(e_inner)<-[rrr_inner]-(f_inner)")
+      .|.|.|.|.|.argument("aa_inner", "e_inner")
+      .|.|.|.|.argument("aa_inner")
+      .|.|.|.filterExpressionOrString(isRepeatTrailUnique("rr_inner"))
+      .|.|.|.expandAll("(d_inner)-[rr_inner]->(aa_inner)")
+      .|.|.|.argument("b_inner", "d_inner")
+      .|.|.argument("b_inner")
+      .|.filterExpressionOrString(isRepeatTrailUnique("r_inner"))
+      .|.expandAll("(b_inner)-[r_inner]->(c_inner)")
+      .|.argument("b_inner")
+      .sort(Seq(Ascending("foo")))
+      .projection("me.foo AS foo")
+      .allNodeScan("me")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("me", "you", "b", "c", "r").withRows(
+      inPartialOrder(
+        Seq(Seq(
+          Array(n2, n3, listOf(n2), listOf(n3), listOf(r23)),
+          Array(n2, n1, listOf(n2), listOf(n1), listOf(r21))
+        ))
+      )
+    )
+  }
+
+  test("should work with nested trails on rhs - with leveraged order on lhs") {
+    // (n1:A) <- (n2) -> (n3)
+    val (n1, n2, n3, r21, r23) = smallTreeGraph
+
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("me", "you", "b", "c", "r")
+      .trail(`(me)( (b)-[r]->(c) WHERE EXISTS { (b)( (bb)-[rr]->(aa:A) ){0,}(a) } ){0,}(you)`).withLeveragedOrder()
+      .|.apply()
+      .|.|.limit(1)
+      .|.|.filter("a:A")
+      .|.|.trail(`(b_inner)((bb)-[rr]->(aa:A)){0,}(a)`)
+      .|.|.|.filter("aa_inner:A")
+      .|.|.|.filterExpressionOrString(isRepeatTrailUnique("rr_inner"))
+      .|.|.|.expandAll("(bb_inner)-[rr_inner]->(aa_inner)")
+      .|.|.|.argument("bb_inner", "b_inner")
+      .|.|.argument("b_inner")
+      .|.filterExpressionOrString(isRepeatTrailUnique("r_inner"))
+      .|.expandAll("(b_inner)-[r_inner]->(c_inner)")
+      .|.argument("b_inner")
+      .sort(Seq(Ascending("foo")))
+      .projection("me.foo AS foo")
+      .allNodeScan("me")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    runtimeResult should beColumns("me", "you", "b", "c", "r").withRows(
+      inPartialOrder(
+        Seq(
+          Seq(
+            Array(n1, n1, emptyList(), emptyList(), emptyList())
+          ),
+          Seq(
+            Array(n2, n2, emptyList(), emptyList(), emptyList()),
+            Array(n2, n1, listOf(n2), listOf(n1), listOf(r21)),
+            Array(n2, n3, listOf(n2), listOf(n3), listOf(r23))
+          ),
+          Seq(
+            Array(n3, n3, emptyList(), emptyList(), emptyList())
+          )
+        )
+      )
+    )
+  }
+
+  // (n1:A) <- (n2) -> (n3)
+  private def smallTreeGraph = {
+    given {
+      val n1 = tx.createNode(label("A"))
+      val n2 = tx.createNode()
+      val n3 = tx.createNode()
+      n1.setProperty("foo", 0)
+      n2.setProperty("foo", 1)
+      n3.setProperty("foo", 2)
+      val r21 = n2.createRelationshipTo(n1, withName("R"))
+      val r23 = n2.createRelationshipTo(n3, withName("R"))
+      (n1, n2, n3, r21, r23)
+    }
+  }
 
   test("should handle unused anonymous end-node - with leveraged order on LHS") {
     // (n0:START) ↘

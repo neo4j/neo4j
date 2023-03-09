@@ -63,6 +63,7 @@ import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.SlotConfigurations
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
 import org.neo4j.cypher.internal.physicalplanning.ast.ElementIdFromSlot
 import org.neo4j.cypher.internal.physicalplanning.ast.GetDegreePrimitive
 import org.neo4j.cypher.internal.physicalplanning.ast.HasALabelFromSlot
@@ -100,6 +101,7 @@ import org.neo4j.cypher.internal.runtime.ast.RuntimeProperty
 import org.neo4j.cypher.internal.runtime.ast.RuntimeVariable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterStopper
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTNode
@@ -120,7 +122,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
     case _                  => false
   }
 
-  def apply(in: LogicalPlan, slotConfigurations: SlotConfigurations): LogicalPlan = {
+  def apply(in: LogicalPlan, slotConfigurations: SlotConfigurations, trailPlans: TrailPlans): LogicalPlan = {
     val rewritePlanWithSlots = topDown(Rewriter.lift {
       /*
       Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
@@ -128,7 +130,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
        */
       case oldPlan @ Projection(_, _, expressions) =>
         val slotConfiguration = slotConfigurations(oldPlan.id)
-        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations)
+        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations, trailPlans)
 
         val newExpressions = expressions collect {
           case (column, expression) => column -> expression.endoRewrite(rewriter)
@@ -144,7 +146,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         We need to use the incoming slot configuration for predicate rewriting
          */
         val incomingSlotConfiguration = slotConfigurations(oldPlan.source.id)
-        val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations)
+        val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations, trailPlans)
 
         val newNodePredicates =
           oldPlan.nodePredicates.map(x => VariablePredicate(x.variable, x.predicate.endoRewrite(rewriter)))
@@ -156,8 +158,8 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         newPlan
 
       case plan @ ValueHashJoin(lhs, rhs, e @ Equals(lhsExp, rhsExp)) =>
-        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.id), plan, slotConfigurations)
-        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.id), plan, slotConfigurations)
+        val lhsRewriter = rewriteCreator(slotConfigurations(lhs.id), plan, slotConfigurations, trailPlans)
+        val rhsRewriter = rewriteCreator(slotConfigurations(rhs.id), plan, slotConfigurations, trailPlans)
         val lhsExpAfterRewrite = lhsExp.endoRewrite(lhsRewriter)
         val rhsExpAfterRewrite = rhsExp.endoRewrite(rhsRewriter)
         plan.copy(join = Equals(lhsExpAfterRewrite, rhsExpAfterRewrite)(e.position))(SameId(plan.id))
@@ -165,14 +167,14 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
       case oldPlan: LogicalPlan if rewriteUsingIncoming(oldPlan) =>
         val leftPlan = oldPlan.lhs.getOrElse(throw new InternalException("Leaf plans cannot be rewritten this way"))
         val incomingSlotConfiguration = slotConfigurations(leftPlan.id)
-        val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations)
+        val rewriter = rewriteCreator(incomingSlotConfiguration, oldPlan, slotConfigurations, trailPlans)
         val newPlan = oldPlan.endoRewrite(rewriter)
 
         newPlan
 
       case oldPlan: LogicalPlan =>
         val slotConfiguration = slotConfigurations(oldPlan.id)
-        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations)
+        val rewriter = rewriteCreator(slotConfiguration, oldPlan, slotConfigurations, trailPlans)
         val newPlan = oldPlan.endoRewrite(rewriter)
 
         newPlan
@@ -192,17 +194,18 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
   private def rewriteCreator(
     slotConfiguration: SlotConfiguration,
     thisPlan: LogicalPlan,
-    slotConfigurations: SlotConfigurations
+    slotConfigurations: SlotConfigurations,
+    trailPlans: TrailPlans
   ): Rewriter = {
     val innerRewriter = Rewriter.lift {
       case e: NestedPlanExpression =>
         // Rewrite expressions within the nested plan
-        val rewrittenPlan = this.apply(e.plan, slotConfigurations)
+        val rewrittenPlan = this.apply(e.plan, slotConfigurations, trailPlans)
         val innerSlotConf = slotConfigurations.getOrElse(
           e.plan.id,
           throw new InternalException(s"Missing slot configuration for plan with ${e.plan.id}")
         )
-        val rewriter = rewriteCreator(innerSlotConf, thisPlan, slotConfigurations)
+        val rewriter = rewriteCreator(innerSlotConf, thisPlan, slotConfigurations, trailPlans)
         e match {
           case ce @ NestedPlanCollectExpression(_, projection, _) =>
             val rewrittenProjection = projection.endoRewrite(rewriter)
@@ -505,7 +508,11 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
           e
 
       case IsRepeatTrailUnique(Variable(name)) =>
-        ast.TrailRelationshipUniqueness(SlotAllocation.TRAIL_STATE_METADATA_KEY, name)
+        val trailId: Id = trailPlans.getOrElse(
+          thisPlan.id,
+          throw new InternalException("Expected IsRepeatTrailUnique to be under Trail")
+        )
+        ast.TrailRelationshipUniqueness(SlotAllocation.TRAIL_STATE_METADATA_KEY, trailId.x, name)
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }

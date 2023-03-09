@@ -173,6 +173,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
+import org.neo4j.cypher.internal.logical.plans.NullifyMetadata
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -2095,6 +2096,8 @@ case class LogicalPlan2PlanDescription(
       case ArgumentTracker(_) =>
         PlanDescriptionImpl(id, "ArgumentTracker", children, Seq(), variables, withRawCardinalities)
 
+      case NullifyMetadata(_, _, _) =>
+        PlanDescriptionImpl(id, "NullifyMetadata", children, arguments = Seq.empty, variables, withRawCardinalities)
       case x => throw new InternalException(s"Unknown plan type: ${x.getClass.getSimpleName}. Missing a case?")
     }
 

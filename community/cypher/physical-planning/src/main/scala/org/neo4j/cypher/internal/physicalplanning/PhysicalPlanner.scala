@@ -63,7 +63,8 @@ object PhysicalPlanner {
       allocatePipelinedSlots
     )
     val slottedRewriter = new SlottedRewriter(tokenContext)
-    val finalLogicalPlan = slottedRewriter(withSlottedParameters, slotMetaData.slotConfigurations)
+    val finalLogicalPlan =
+      slottedRewriter(withSlottedParameters, slotMetaData.slotConfigurations, slotMetaData.trailPlans)
     DebugSupport.PHYSICAL_PLANNING.log(
       "======== END Physical Planning =================================================================="
     )

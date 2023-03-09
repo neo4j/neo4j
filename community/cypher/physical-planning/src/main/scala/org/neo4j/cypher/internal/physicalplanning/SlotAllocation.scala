@@ -90,6 +90,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NonFuseable
 import org.neo4j.cypher.internal.logical.plans.NonPipelined
+import org.neo4j.cypher.internal.logical.plans.NullifyMetadata
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
@@ -140,6 +141,7 @@ import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.App
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ArgumentSizes
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.NestedPlanArgumentConfigurations
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.SlotConfigurations
+import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.TrailPlans
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.LOAD_CSV_METADATA_KEY
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.NO_ARGUMENT
 import org.neo4j.cypher.internal.physicalplanning.SlotAllocation.SlotMetaData
@@ -193,12 +195,13 @@ object SlotAllocation {
    * @param argumentSize the prefix size of `slotConfiguration` that holds the argument.
    * @param argumentPlan the plan which introduced this argument
    */
-  case class SlotsAndArgument(slotConfiguration: SlotConfiguration, argumentSize: Size, argumentPlan: Id)
+  case class SlotsAndArgument(slotConfiguration: SlotConfiguration, argumentSize: Size, argumentPlan: Id, trailPlan: Id)
 
   case class SlotMetaData(
     slotConfigurations: SlotConfigurations,
     argumentSizes: ArgumentSizes,
     applyPlans: ApplyPlans,
+    trailPlans: TrailPlans,
     nestedPlanArgumentConfigurations: NestedPlanArgumentConfigurations
   )
 
@@ -207,7 +210,7 @@ object SlotAllocation {
     if (allocateArgumentSlots) {
       slots.newArgument(Id.INVALID_ID)
     }
-    SlotsAndArgument(slots, Size.zero, Id.INVALID_ID)
+    SlotsAndArgument(slots, Size.zero, Id.INVALID_ID, Id.INVALID_ID)
   }
 
   final val INITIAL_SLOT_CONFIGURATION: SlotConfiguration = NO_ARGUMENT(true).slotConfiguration
@@ -230,7 +233,9 @@ object SlotAllocation {
     ).allocateSlots(lp, semanticTable, None)
 
   final val LOAD_CSV_METADATA_KEY: String = "csv"
+
   final val TRAIL_STATE_METADATA_KEY = "trailState"
+
 }
 
 /**
@@ -246,6 +251,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   private val allocations: SlotConfigurations = new SlotConfigurations,
   private val argumentSizes: ArgumentSizes = new ArgumentSizes,
   private val applyPlans: ApplyPlans = new ApplyPlans,
+  private val trailPlans: TrailPlans = new TrailPlans,
   private val nestedPlanArgumentConfigurations: NestedPlanArgumentConfigurations = new NestedPlanArgumentConfigurations
 ) {
 
@@ -277,6 +283,14 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       argumentSizes.set(plan.id, argument.argumentSize)
     }
 
+    def getArgument(): SlotsAndArgument = {
+      if (argumentStack.isEmpty) {
+        NO_ARGUMENT(allocateArgumentSlots)
+      } else {
+        argumentStack.getFirst
+      }
+    }
+
     /**
      * Eagerly populate the stack using all the lhs children.
      */
@@ -300,17 +314,15 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     while (!planStack.isEmpty) {
       val (nullable, current) = planStack.pop()
 
-      val outerApplyPlan = if (argumentStack.isEmpty) Id.INVALID_ID else argumentStack.getFirst.argumentPlan
+      val (outerApplyPlan, outerTrailPlan) = if (argumentStack.isEmpty) (Id.INVALID_ID, Id.INVALID_ID)
+      else (argumentStack.getFirst.argumentPlan, argumentStack.getFirst.trailPlan)
+
       applyPlans.set(current.id, outerApplyPlan)
+      trailPlans.set(current.id, outerTrailPlan)
 
       (current.lhs, current.rhs) match {
         case (None, None) =>
-          val argument =
-            if (argumentStack.isEmpty) {
-              NO_ARGUMENT(allocateArgumentSlots)
-            } else {
-              argumentStack.getFirst
-            }
+          val argument = getArgument()
           recordArgument(current, argument)
 
           val slots = breakingPolicy.invoke(
@@ -327,12 +339,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
         case (Some(_), None) =>
           val sourceSlots = resultStack.pop()
-          val argument =
-            if (argumentStack.isEmpty) {
-              NO_ARGUMENT(allocateArgumentSlots)
-            } else {
-              argumentStack.getFirst
-            }
+          val argument = getArgument()
           allocateExpressionsOneChildOnInput(current, nullable, sourceSlots, semanticTable)
 
           val slots = breakingPolicy.invoke(current, sourceSlots, argument.slotConfiguration, applyPlans(current.id))
@@ -344,6 +351,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         case (Some(left), Some(right)) if (comingFrom eq left) && current.isInstanceOf[ApplyPlan] =>
           planStack.push((nullable, current))
           val argumentSlots = resultStack.getFirst
+          val argument = getArgument()
+          val trailPlanId = if (current.isInstanceOf[Trail]) current.id else argument.trailPlan
           if (allocateArgumentSlots) {
             current match {
               case _: Trail =>
@@ -357,18 +366,22 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           allocateLhsOfApply(current, nullable, argumentSlots, semanticTable)
           val lhsSlots = allocations.get(left.id)
           allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true)
-          argumentStack.push(SlotsAndArgument(argumentSlots, argumentSlots.size(), current.id))
+          argumentStack.push(SlotsAndArgument(argumentSlots, argumentSlots.size(), current.id, trailPlanId))
           populate(right, nullable)
 
         case (Some(left), Some(right)) if comingFrom eq left =>
           planStack.push((nullable, current))
           if (argumentRowIdSlotForCartesianProductNeeded(current)) {
-            val previousArgument =
-              if (argumentStack.isEmpty) NO_ARGUMENT(allocateArgumentSlots) else argumentStack.getFirst
+            val previousArgument = getArgument()
             // We put a new argument on the argument stack, but in contrast to Apply, we create a copy of the previous argument, because
             // the RHS does not need any slots from the LHS.
             val newArgument = previousArgument.slotConfiguration.copy().newArgument(current.id)
-            argumentStack.push(SlotsAndArgument(newArgument, newArgument.size(), current.id))
+            argumentStack.push(SlotsAndArgument(
+              newArgument,
+              newArgument.size(),
+              current.id,
+              previousArgument.trailPlan
+            ))
           }
           val lhsSlots = allocations.get(left.id)
           allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true)
@@ -378,12 +391,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         case (Some(_), Some(right)) if comingFrom eq right =>
           val rhsSlots = resultStack.pop()
           val lhsSlots = resultStack.pop()
-          val argument =
-            if (argumentStack.isEmpty) {
-              NO_ARGUMENT(allocateArgumentSlots)
-            } else {
-              argumentStack.getFirst
-            }
+          val argument = getArgument()
           // NOTE: If we introduce a two sourced logical plan with an expression that needs to be evaluated in a
           //       particular scope (lhs or rhs) we need to add handling of it to allocateExpressionsTwoChild.
           allocateExpressionsTwoChild(current, rhsSlots, semanticTable, comingFromLeft = false)
@@ -399,7 +407,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       comingFrom = current
     }
 
-    SlotMetaData(allocations, argumentSizes, applyPlans, nestedPlanArgumentConfigurations)
+    SlotMetaData(allocations, argumentSizes, applyPlans, trailPlans, nestedPlanArgumentConfigurations)
   }
 
   case class Accumulator(doNotTraverseExpression: Option[Expression])
@@ -528,8 +536,18 @@ class SingleQuerySlotAllocator private[physicalplanning] (
              *
              */
             val argumentPlanId = Id.INVALID_ID
+            /*
+             * We don't think we need to propagate the Trail plan id since
+             * nested plans are only ever run with slotted pipes.
+             */
+            val trailPlanId = Id.INVALID_ID
             val slotsAndArgument =
-              SlotsAndArgument(argumentSlotConfiguration.copy(), argumentSlotConfiguration.size(), argumentPlanId)
+              SlotsAndArgument(
+                argumentSlotConfiguration.copy(),
+                argumentSlotConfiguration.size(),
+                argumentPlanId,
+                trailPlanId
+              )
 
             // Allocate slots for nested plan
             // Pass in mutable attributes to be modified by recursive call
@@ -584,6 +602,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       allocations,
       argumentSizes,
       applyPlans,
+      trailPlans,
       nestedPlanArgumentConfigurations
     )
 
@@ -852,6 +871,10 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           case _             => slots.newReference(variableName, true, CTAny)
         }
 
+      case p: NullifyMetadata =>
+        if (slots.getMetaDataSlot(p.key, Id(p.planId)).isEmpty) {
+          throw new IllegalStateException(s"Expected MetaDataSlot for (${p.key}, ${p.planId}) to already exist.")
+        }
       case p =>
         throw new SlotAllocationFailed(s"Don't know how to handle $p")
     }
@@ -941,8 +964,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
             result.newCachedProperty(key)
 
-          case SlotWithKeyAndAliases(MetaDataSlotKey(key), _, _) =>
-            result.newMetaData(key)
+          case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
+            result.newMetaData(key, planId)
 
           case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
           // apply plan slots are already in the argument, and don't have to be added here
@@ -969,8 +992,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
             result.newCachedProperty(key)
 
-          case SlotWithKeyAndAliases(MetaDataSlotKey(key), _, _) =>
-            result.newMetaData(key)
+          case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
+            result.newMetaData(key, planId)
 
           case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
           // apply plan slots are already in the argument, and don't have to be added here
@@ -997,8 +1020,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
             result.newCachedProperty(key)
 
-          case SlotWithKeyAndAliases(MetaDataSlotKey(key), _, _) =>
-            result.newMetaData(key)
+          case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
+            result.newMetaData(key, planId)
 
           case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
           // apply plan slots are already in the argument, and don't have to be added here
@@ -1022,8 +1045,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
               aliases.foreach(alias => result.addAlias(alias, key))
             case SlotWithKeyAndAliases(CachedPropertySlotKey(key), _, _) =>
               result.newCachedProperty(key, shouldDuplicate = true)
-            case SlotWithKeyAndAliases(MetaDataSlotKey(key), _, _) =>
-              result.newMetaData(key)
+            case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
+              result.newMetaData(key, planId)
             case SlotWithKeyAndAliases(_: ApplyPlanSlotKey, _, _) =>
             // apply plan slots are already in the argument, and don't have to be added here
             case SlotWithKeyAndAliases(_: OuterNestedApplyPlanSlotKey, _, _) =>
@@ -1072,9 +1095,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
             if (rhs.hasCachedPropertySlot(key)) {
               result.newCachedProperty(key)
             }
-          case SlotWithKeyAndAliases(MetaDataSlotKey(key), _, _) =>
-            if (rhs.hasMetaDataSlot(key)) {
-              result.newMetaData(key)
+          case SlotWithKeyAndAliases(MetaDataSlotKey(key, planId), _, _) =>
+            if (rhs.hasMetaDataSlot(key, planId)) {
+              result.newMetaData(key, planId)
             }
           case SlotWithKeyAndAliases(ApplyPlanSlotKey(id), _, _) =>
             // apply plan slots need to be copied if both sides have them,
@@ -1181,7 +1204,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         lhs.newLong(end, nullable, CTNode)
         groupNodes.foreach(n => lhs.newReference(n.groupName, false, CTList(CTNode)))
         groupRelationships.foreach(r => lhs.newReference(r.groupName, false, CTList(CTRelationship)))
-        lhs.newMetaData(TRAIL_STATE_METADATA_KEY)
+        lhs.newMetaData(TRAIL_STATE_METADATA_KEY, plan.id)
 
       case _ =>
     }
