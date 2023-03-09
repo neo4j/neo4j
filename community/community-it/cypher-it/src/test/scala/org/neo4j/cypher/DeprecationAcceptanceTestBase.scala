@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestFunctions
 import org.neo4j.cypher.internal.javacompat.NotificationTestSupport.TestProcedures
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FUNCTION
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE
@@ -280,6 +281,18 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       shouldContainNotification = true,
       DEPRECATED_FUNCTION,
       detail
+    )
+  }
+
+  test("connectComponentsPlanner pre parser option is deprecated") {
+    val queries = Seq(
+      "CYPHER connectComponentsPlanner=idp RETURN 1",
+      "CYPHER connectComponentsPlanner=greedy RETURN 1"
+    )
+    assertNotification(
+      queries,
+      shouldContainNotification = true,
+      DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION
     )
   }
 }

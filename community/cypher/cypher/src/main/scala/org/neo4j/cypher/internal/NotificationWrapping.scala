@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.compiler.ProcedureWarningNotification
 import org.neo4j.cypher.internal.compiler.RelationshipIndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
@@ -235,6 +236,13 @@ object NotificationWrapping {
       NotificationCodeWithDescription.REPEATED_VAR_LENGTH_RELATIONSHIP_REFERENCE.notification(
         position.withOffset(offset).asInputPosition,
         NotificationDetail.Factory.repeatedVarLengthRel(relName)
+      )
+
+    case DeprecatedConnectComponentsPlannerPreParserOption(position) =>
+      // Not using .withOffset(offset) is intentional.
+      // This notification is generated from the pre-parser and thus should not be offset.
+      NotificationCodeWithDescription.DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notification(
+        position.asInputPosition
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

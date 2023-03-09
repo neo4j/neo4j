@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CARTESIAN_PRODUCT;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CODE_GENERATION_FAILED;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_DATABASE_NAME;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FORMAT;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FUNCTION;
@@ -592,6 +593,19 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION);
     }
 
+    @Test
+    void shouldConstructNotificationsFor_DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION() {
+        Notification notification = DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notification(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                "The Cypher query option `connectComponentsPlanner` is deprecated. In a future release, the option will be removed. After removal, the product will behave as if the option was set to `idp`.",
+                NotificationCategory.DEPRECATION);
+    }
+
     private void verifyNotification(
             Notification notification,
             String title,
@@ -643,9 +657,9 @@ class NotificationCodeWithDescriptionTest {
 
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
-        byte[] expectedHash = new byte[] {
-            -121, 48, -20, 36, 20, 117, -12, -72, 36, 0, -36, -5, -81, -84, -78, 121, 18, 20, -9, 30, 49, -96, 29, -30,
-            76, -65, -87, 118, 56, -49, -50, -61
+        byte[] expectedHash = new byte[]{
+                35, 11, 101, -70, 59, -26, -10, 40, -94, 76, -67, -54, -77, 93, -107, -32, -103, -100, 94, -85, 19,
+                100, 4, 27, -67, 39, 69, -113, 45, 17, 51, -65
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {
