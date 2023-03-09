@@ -633,6 +633,8 @@ public final class SettingMigrators {
             migrateSettingNameChange(values, log, "dbms.memory.pagecache.directio", pagecache_direct_io);
 
             migrateSettingNameChange(values, log, "dbms.memory.off_heap.max_size", tx_state_max_off_heap_memory);
+            // renaming the previous 5.x setting
+            migrateSettingNameChange(values, log, "server.memory.off_heap.max_size", tx_state_max_off_heap_memory);
             migrateSettingNameChange(
                     values,
                     log,

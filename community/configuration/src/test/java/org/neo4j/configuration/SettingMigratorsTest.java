@@ -221,6 +221,27 @@ class SettingMigratorsTest {
     }
 
     @Test
+    void testLegacyOffHeapMemorySettingsRename() throws IOException {
+        final var legacySetting = "server.memory.off_heap.max_size";
+
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of(legacySetting + "=6g"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertThat(logProvider)
+                .forClass(Config.class)
+                .forLevel(WARN)
+                .containsMessageWithArguments(
+                        "Use of deprecated setting '%s'. It is replaced by '%s'.",
+                        legacySetting, tx_state_max_off_heap_memory.name());
+
+        assertEquals(BYTES.parse("6g"), config.get(tx_state_max_off_heap_memory));
+    }
+
+    @Test
     void transactionCypherMaxAllocations() throws IOException {
         Path confFile = testDirectory.createFile("test.conf");
         Files.write(confFile, List.of("cypher.query_max_allocations=6g"));
