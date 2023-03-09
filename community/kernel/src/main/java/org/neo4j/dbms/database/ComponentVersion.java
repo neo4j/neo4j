@@ -32,7 +32,6 @@ public interface ComponentVersion {
     SystemGraphComponent.Name TOPOLOGY_GRAPH_COMPONENT = new SystemGraphComponent.Name("topology-graph");
     SystemGraphComponent.Name COMMUNITY_TOPOLOGY_GRAPH_COMPONENT =
             new SystemGraphComponent.Name("community-topology-graph");
-    SystemGraphComponent.Name FABRIC_DATABASE_COMPONENT = new SystemGraphComponent.Name("fabric-database");
     SystemGraphComponent.Name MULTI_DATABASE_COMPONENT = new SystemGraphComponent.Name("multi-database");
     SystemGraphComponent.Name SYSTEM_GRAPH_COMPONENT = new SystemGraphComponent.Name("system-graph");
 
