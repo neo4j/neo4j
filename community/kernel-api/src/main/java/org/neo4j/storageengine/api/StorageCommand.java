@@ -57,4 +57,9 @@ public interface StorageCommand extends KernelVersionProvider {
          */
         boolean isInternal();
     }
+
+    /**
+     * A marker interface for commands upgrading kernel version.
+     */
+    interface VersionUpgradeCommand extends StorageCommand {}
 }

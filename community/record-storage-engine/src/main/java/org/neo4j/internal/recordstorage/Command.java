@@ -248,7 +248,7 @@ public abstract class Command implements StorageCommand {
         }
     }
 
-    public static class MetaDataCommand extends BaseCommand<MetaDataRecord> {
+    public static class MetaDataCommand extends BaseCommand<MetaDataRecord> implements VersionUpgradeCommand {
         MetaDataCommand(LogCommandSerialization serialization, MetaDataRecord before, MetaDataRecord after) {
             super(serialization, before, after);
         }

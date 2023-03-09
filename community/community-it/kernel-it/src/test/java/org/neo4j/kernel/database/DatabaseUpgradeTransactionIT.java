@@ -59,7 +59,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.recordstorage.Command.MetaDataCommand;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -115,10 +114,6 @@ public class DatabaseUpgradeTransactionIT {
         return builder.setDatabaseRootDirectory(testDirectory.homePath())
                 .setInternalLogProvider(logProvider)
                 .setConfig(allow_single_automatic_upgrade, false);
-    }
-
-    protected Class<? extends StorageCommand> upgradeCommandClass() {
-        return MetaDataCommand.class;
     }
 
     @Test
@@ -436,7 +431,7 @@ public class DatabaseUpgradeTransactionIT {
         CommittedCommandBatch upgradeTransaction = transactions.get(transactionVersions.indexOf(to));
         var commands = upgradeTransaction.commandBatch();
         for (StorageCommand command : commands) {
-            assertThat(command).isInstanceOf(upgradeCommandClass());
+            assertThat(command).isInstanceOf(StorageCommand.VersionUpgradeCommand.class);
         }
     }
 

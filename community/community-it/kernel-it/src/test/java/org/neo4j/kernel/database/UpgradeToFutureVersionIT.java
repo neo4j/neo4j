@@ -46,7 +46,6 @@ import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.internal.recordstorage.Command.MetaDataCommand;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
@@ -381,7 +380,7 @@ class UpgradeToFutureVersionIT {
                 transactions.get(transactionVersions.indexOf(KernelVersion.GLORIOUS_FUTURE));
         var commands = upgradeTransaction.commandBatch();
         for (StorageCommand command : commands) {
-            assertThat(command).isInstanceOf(MetaDataCommand.class);
+            assertThat(command).isInstanceOf(StorageCommand.VersionUpgradeCommand.class);
         }
     }
 
