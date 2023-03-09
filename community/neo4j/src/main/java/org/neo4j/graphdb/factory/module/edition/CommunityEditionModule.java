@@ -34,6 +34,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.configuration.database.readonly.ConfigReadOnlyDatabaseListener;
 import org.neo4j.dbms.CommunityDatabaseStateService;
+import org.neo4j.dbms.CommunityKernelPanicListener;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContextProvider;
@@ -168,6 +169,10 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         databaseIdRepo.setDelegate(rootDatabaseIdRepository);
         databaseReferenceRepo.setDelegate(rootDatabaseReferenceRepository);
         var databaseIdCacheCleaner = new DatabaseReferenceCacheClearingListener(databaseIdRepo, databaseReferenceRepo);
+
+        var kernelPanicListener =
+                new CommunityKernelPanicListener(globalModule.getDatabaseEventListeners(), databaseRepository);
+        globalModule.getGlobalLife().add(kernelPanicListener);
 
         fabricServicesBootstrap = new FabricServicesBootstrap.Community(
                 globalModule.getGlobalLife(),

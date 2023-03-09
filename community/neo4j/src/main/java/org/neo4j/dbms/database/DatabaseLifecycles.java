@@ -99,6 +99,9 @@ public final class DatabaseLifecycles {
 
     private void stopDatabase(StandaloneDatabaseContext context) {
         var namedDatabaseId = context.database().getNamedDatabaseId();
+        // Make sure that any failure (typically database panic) that happened until now is not interpreted as shutdown
+        // failure
+        context.clearFailure();
         try {
             log.info("Stopping '%s'.", namedDatabaseId);
             Database database = context.database();

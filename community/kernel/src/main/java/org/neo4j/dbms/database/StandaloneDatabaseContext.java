@@ -56,4 +56,8 @@ public class StandaloneDatabaseContext implements DatabaseContext {
     public Throwable failureCause() {
         return failureCause;
     }
+
+    public void clearFailure() {
+        failureCause = null;
+    }
 }
