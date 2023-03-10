@@ -27,6 +27,7 @@ import static org.neo4j.memory.MemoryGroup.PAGE_CACHE;
 
 import java.util.function.Function;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.pagecache.ConfigurableIOBufferFactory;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
@@ -118,7 +119,8 @@ public class ConfiguringPageCacheFactory {
                 .reservedPageBytes(PageCache.RESERVED_BYTES)
                 .preallocateStoreFiles(config.get(preallocate_store_files))
                 .clock(clock)
-                .pageCacheTracer(pageCacheTracer);
+                .pageCacheTracer(pageCacheTracer)
+                .closeAllocatorOnShutdown(config.get(GraphDatabaseInternalSettings.close_allocator_on_shutdown));
         configuration = pageCacheConfigurator.apply(configuration);
         return new MuninnPageCache(swapperFactory, scheduler, configuration);
     }

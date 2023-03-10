@@ -168,6 +168,8 @@ public class MuninnPageCache implements PageCache {
     private final int faultLockStriping;
     private final boolean preallocateStoreFiles;
     private final boolean enableEvictionThread;
+    private final MemoryAllocator memoryAllocator;
+    private final boolean closeAllocatorOnShutdown;
     final PageList pages;
     // All PageCursors are initialised with their pointers pointing to the victim page. This way, we don't have to throw
     // exceptions on bounds checking failures; we can instead return the victim page pointer, and permit the page
@@ -237,6 +239,7 @@ public class MuninnPageCache implements PageCache {
         private final boolean enableEvictionThread;
         private final boolean preallocateStoreFiles;
         private final int reservedPageSize;
+        private final boolean closeAllocatorOnShutdown;
 
         private Configuration(
                 MemoryAllocator memoryAllocator,
@@ -248,7 +251,8 @@ public class MuninnPageCache implements PageCache {
                 int faultLockStriping,
                 boolean enableEvictionThread,
                 boolean preallocateStoreFiles,
-                int reservedPageSize) {
+                int reservedPageSize,
+                boolean closeAllocatorOnShutdown) {
             this.memoryAllocator = memoryAllocator;
             this.clock = clock;
             this.memoryTracker = memoryTracker;
@@ -259,6 +263,7 @@ public class MuninnPageCache implements PageCache {
             this.faultLockStriping = faultLockStriping;
             this.enableEvictionThread = enableEvictionThread;
             this.preallocateStoreFiles = preallocateStoreFiles;
+            this.closeAllocatorOnShutdown = closeAllocatorOnShutdown;
         }
 
         /**
@@ -275,7 +280,8 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     enableEvictionThread,
                     preallocateStoreFiles,
-                    reservedPageSize);
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
         }
 
         /**
@@ -292,7 +298,8 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     enableEvictionThread,
                     preallocateStoreFiles,
-                    reservedPageSize);
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
         }
 
         /**
@@ -309,7 +316,8 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     enableEvictionThread,
                     preallocateStoreFiles,
-                    reservedPageSize);
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
         }
 
         /**
@@ -326,7 +334,8 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     enableEvictionThread,
                     preallocateStoreFiles,
-                    reservedPageSize);
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
         }
 
         /**
@@ -343,7 +352,8 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     enableEvictionThread,
                     preallocateStoreFiles,
-                    reservedPageSize);
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
         }
 
         /**
@@ -360,7 +370,8 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     enableEvictionThread,
                     preallocateStoreFiles,
-                    reservedPageSize);
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
         }
 
         /**
@@ -377,7 +388,8 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     enableEvictionThread,
                     preallocateStoreFiles,
-                    reservedPageBytes);
+                    reservedPageBytes,
+                    closeAllocatorOnShutdown);
         }
 
         /**
@@ -394,7 +406,8 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     enableEvictionThread,
                     preallocateStoreFiles,
-                    reservedPageSize);
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
         }
 
         /**
@@ -411,7 +424,8 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     false,
                     preallocateStoreFiles,
-                    reservedPageSize);
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
         }
 
         /**
@@ -428,7 +442,27 @@ public class MuninnPageCache implements PageCache {
                     faultLockStriping,
                     enableEvictionThread,
                     preallocateStoreFiles,
-                    reservedPageSize);
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
+        }
+
+        /**
+         * Close memory allocator on page cache shutdown.
+         * WARNING: when this option is set to true, leaked cursors can result in bad access and vm crash
+         */
+        public Configuration closeAllocatorOnShutdown(boolean closeAllocatorOnShutdown) {
+            return new Configuration(
+                    memoryAllocator,
+                    clock,
+                    memoryTracker,
+                    pageCacheTracer,
+                    pageSize,
+                    bufferFactory,
+                    faultLockStriping,
+                    enableEvictionThread,
+                    preallocateStoreFiles,
+                    reservedPageSize,
+                    closeAllocatorOnShutdown);
         }
     }
 
@@ -455,7 +489,8 @@ public class MuninnPageCache implements PageCache {
                 LatchMap.faultLockStriping,
                 true,
                 true,
-                RESERVED_BYTES);
+                RESERVED_BYTES,
+                false);
     }
 
     /**
@@ -491,6 +526,8 @@ public class MuninnPageCache implements PageCache {
         this.faultLockStriping = configuration.faultLockStriping;
         this.enableEvictionThread = configuration.enableEvictionThread;
         this.preallocateStoreFiles = configuration.preallocateStoreFiles;
+        this.memoryAllocator = configuration.memoryAllocator;
+        this.closeAllocatorOnShutdown = configuration.closeAllocatorOnShutdown;
         setFreelistHead(new AtomicInteger());
 
         // Expose the total number of pages
@@ -832,6 +869,9 @@ public class MuninnPageCache implements PageCache {
 
         interrupt(evictionThread);
         evictionThread = null;
+        if (closeAllocatorOnShutdown) {
+            memoryAllocator.close();
+        }
     }
 
     private static void interrupt(Thread thread) {
