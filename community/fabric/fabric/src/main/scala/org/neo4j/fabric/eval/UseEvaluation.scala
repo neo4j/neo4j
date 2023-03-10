@@ -46,7 +46,7 @@ class UseEvaluation(
   signatureResolver: ProcedureSignatureResolver
 ) {
 
-  private val evaluator = new StaticEvaluation.StaticEvaluator(proceduresSupplier)
+  private val evaluator = StaticEvaluation.from(proceduresSupplier)
 
   def instance(query: String, catalog: Catalog) =
     new UseEvaluation.Instance(query, catalog, evaluator, signatureResolver)

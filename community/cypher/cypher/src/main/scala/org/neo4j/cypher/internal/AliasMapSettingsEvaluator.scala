@@ -43,7 +43,7 @@ import java.util.function.Supplier
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 class AliasMapSettingsEvaluator(proceduresSupplier: Supplier[GlobalProcedures]) {
-  private val evaluator = new StaticEvaluation.StaticEvaluator(proceduresSupplier)
+  private val evaluator = StaticEvaluation.from(proceduresSupplier)
 
   type ExpressionMapOrParamValue = Either[Map[String, Expression], AnyValue]
 

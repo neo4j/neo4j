@@ -54,6 +54,7 @@ import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.internal.kernel.api.PropertyIndexQuery
 import org.neo4j.internal.kernel.api.RelationshipScanCursor
@@ -93,10 +94,15 @@ import java.util.function.Supplier
 
 object StaticEvaluation {
 
-  class StaticEvaluator(proceduresSupplier: Supplier[GlobalProcedures]) extends SimpleInternalExpressionEvaluator {
+  def from(proceduresSupplier: Supplier[GlobalProcedures]) =
+    new StaticEvaluator(() => new StaticQueryContext(proceduresSupplier.get()))
+
+  def from(procedures: Procedures) = new StaticEvaluator(() => new SimplifiedStaticQueryContext(procedures))
+
+  class StaticEvaluator(makeQueryContext: () => QueryContext) extends SimpleInternalExpressionEvaluator {
 
     override def queryState(nExpressionSlots: Int, slottedParams: Array[AnyValue]) = new QueryState(
-      query = new StaticQueryContext(proceduresSupplier.get()),
+      query = makeQueryContext(),
       resources = null,
       params = slottedParams,
       cursors = null,
@@ -133,6 +139,16 @@ object StaticEvaluation {
             throw e
           }
       }
+    }
+  }
+
+  private class SimplifiedStaticQueryContext(procedures: Procedures) extends EmptyQueryContext {
+
+    override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
+      procedures.functionCall(id, args)
+
+    override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue = {
+      procedures.builtInFunctionCall(id, args)
     }
   }
 
