@@ -288,7 +288,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                         ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
                         root,
                         contextFactory)
-                .check(isRootTreeClean);
+                .check(isRootTreeClean, state.progress);
 
         if (!isRootTreeClean.isConsistent()) {
             // The root tree has inconsistencies, we essentially cannot trust to read it in order to get
@@ -319,7 +319,8 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                                 partitionLow,
                                 partitionHigh,
                                 DEFAULT_MAX_READ_AHEAD,
-                                LEAF_LEVEL)) {
+                                LEAF_LEVEL);
+                        var partitionProgress = state.progress.threadLocalReporter()) {
                     while (partitionSeek.next()) {
                         var dataRoot = partitionSeek.value().asRoot();
                         new GBPTreeConsistencyChecker<>(
@@ -334,7 +335,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                                         ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
                                         dataRoot,
                                         contextFactory)
-                                .check(visitor);
+                                .check(visitor, partitionProgress);
                     }
                 }
                 return null;

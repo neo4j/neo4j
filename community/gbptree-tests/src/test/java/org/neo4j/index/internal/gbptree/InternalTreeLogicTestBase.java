@@ -54,6 +54,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.test.RandomSupport;
@@ -1719,8 +1720,8 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
         root.goTo(readCursor);
         ThrowingConsistencyCheckVisitor visitor = new ThrowingConsistencyCheckVisitor();
         var numThreads = Runtime.getRuntime().availableProcessors();
-        try (ConsistencyCheckState state =
-                new ConsistencyCheckState(null, id, visitor, CursorCreator.bind(readCursor), numThreads)) {
+        try (ConsistencyCheckState state = new ConsistencyCheckState(
+                null, id, visitor, CursorCreator.bind(readCursor), numThreads, ProgressMonitorFactory.NONE)) {
             GBPTreeConsistencyChecker<KEY> consistencyChecker = new GBPTreeConsistencyChecker<>(
                     node,
                     layout,
@@ -1733,7 +1734,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                     ctx -> cursor.duplicate(),
                     root,
                     NULL_CONTEXT_FACTORY);
-            consistencyChecker.check(visitor);
+            consistencyChecker.check(visitor, state.progress);
         }
         goTo(readCursor, currentPageId);
     }

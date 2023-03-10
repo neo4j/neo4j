@@ -61,6 +61,7 @@ import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyChe
 import org.neo4j.index.internal.gbptree.Header.Reader;
 import org.neo4j.index.internal.gbptree.RootLayer.TreeRootsVisitor;
 import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.NativeScopedBuffer;
@@ -1306,13 +1307,13 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     public boolean consistencyCheck(boolean reportDirty, CursorContextFactory contextFactory, int numThreads)
             throws IOException {
         ThrowingConsistencyCheckVisitor reporter = new ThrowingConsistencyCheckVisitor();
-        return consistencyCheck(reporter, reportDirty, contextFactory, numThreads);
+        return consistencyCheck(reporter, reportDirty, contextFactory, numThreads, ProgressMonitorFactory.NONE);
     }
 
     public boolean consistencyCheck(
             GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads)
             throws IOException {
-        return consistencyCheck(visitor, true, contextFactory, numThreads);
+        return consistencyCheck(visitor, true, contextFactory, numThreads, ProgressMonitorFactory.NONE);
     }
 
     // Utility method
@@ -1320,12 +1321,18 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             GBPTreeConsistencyCheckVisitor visitor,
             boolean reportDirty,
             CursorContextFactory contextFactory,
-            int numThreads)
+            int numThreads,
+            ProgressMonitorFactory progressMonitorFactory)
             throws IOException {
         CleanTrackingConsistencyCheckVisitor cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor(visitor);
         try (var context = contextFactory.create("consistencyCheck");
                 var state = new ConsistencyCheckState(
-                        indexFile, freeList, visitor, bind(pagedFile, PF_SHARED_READ_LOCK, context), numThreads)) {
+                        indexFile,
+                        freeList,
+                        visitor,
+                        bind(pagedFile, PF_SHARED_READ_LOCK, context),
+                        numThreads,
+                        progressMonitorFactory)) {
             if (dirtyOnStartup && reportDirty) {
                 cleanTrackingVisitor.dirtyOnStartup(indexFile);
             }

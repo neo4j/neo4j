@@ -49,6 +49,8 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.NamedThreadFactory;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.CursorException;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -113,7 +115,7 @@ class GBPTreeConsistencyChecker<KEY> {
      * @param visitor {@link GBPTreeConsistencyCheckVisitor} visitor to report inconsistencies to.
      * @throws IOException on {@link PageCursor} error.
      */
-    void check(GBPTreeConsistencyCheckVisitor visitor) throws IOException {
+    void check(GBPTreeConsistencyCheckVisitor visitor, ProgressListener progress) throws IOException {
         try (var context = contextFactory.create(TAG_CHECK);
                 var cursor = cursorFactory.apply(context)) {
             long rootGeneration = root.goTo(cursor);
@@ -129,7 +131,8 @@ class GBPTreeConsistencyChecker<KEY> {
                     visitor,
                     state.seenIds,
                     context,
-                    rightmostPerLevel);
+                    rightmostPerLevel,
+                    progress);
             rightmostPerLevel.assertLast(visitor);
         }
     }
@@ -156,10 +159,12 @@ class GBPTreeConsistencyChecker<KEY> {
             GBPTreeConsistencyCheckVisitor visitor,
             BitSet seenIds,
             CursorContext cursorContext,
-            RightmostInChainShard rightmostPerLevel)
+            RightmostInChainShard rightmostPerLevel,
+            ProgressListener progress)
             throws IOException {
         long pageId = cursor.getCurrentPageId();
         addToSeenList(file, seenIds, pageId, state.lastId, visitor);
+        progress.add(1);
         if (range.hasPageIdInStack(pageId)) {
             visitor.childNodeFoundAmongParentNodes(range, level, pageId, file);
             return;
@@ -292,7 +297,8 @@ class GBPTreeConsistencyChecker<KEY> {
                         rightmostPerLevelFromShards.add(shardRightmostPerLevel);
                         futures.add(state.executor.submit(() -> {
                             try (var shardContext = contextFactory.create(TAG_CHECK);
-                                    var shardCursor = cursorFactory.apply(shardContext)) {
+                                    var shardCursor = cursorFactory.apply(shardContext);
+                                    var shardProgress = progress.threadLocalReporter()) {
                                 goTo(shardCursor, "child at pos " + pos, treeNodeId);
                                 var shardSeenIds = new BitSet(toIntExact(state.highId()));
                                 checkSubtree(
@@ -305,7 +311,8 @@ class GBPTreeConsistencyChecker<KEY> {
                                         visitor,
                                         shardSeenIds,
                                         cursorContext,
-                                        shardRightmostPerLevel);
+                                        shardRightmostPerLevel,
+                                        shardProgress);
                                 synchronized (seenIds) {
                                     shardSeenIds.stream()
                                             .forEach(id -> addToSeenList(file, seenIds, id, state.lastId, visitor));
@@ -337,7 +344,8 @@ class GBPTreeConsistencyChecker<KEY> {
                                 visitor,
                                 seenIds,
                                 cursorContext,
-                                rightmostPerLevel);
+                                rightmostPerLevel,
+                                progress);
                         goTo(cursor, "parent", pageId);
                     });
         }
@@ -633,17 +641,25 @@ class GBPTreeConsistencyChecker<KEY> {
         private final BitSet seenIds;
         private final long lastId;
         private final GBPTreeConsistencyCheckVisitor visitor;
+        private final ProgressListener progress;
 
-        private FreelistSeenIdsVisitor(Path path, BitSet seenIds, long lastId, GBPTreeConsistencyCheckVisitor visitor) {
+        private FreelistSeenIdsVisitor(
+                Path path,
+                BitSet seenIds,
+                long lastId,
+                GBPTreeConsistencyCheckVisitor visitor,
+                ProgressListener progress) {
             this.path = path;
             this.seenIds = seenIds;
             this.lastId = lastId;
             this.visitor = visitor;
+            this.progress = progress;
         }
 
         @Override
         public void beginFreelistPage(long pageId) {
             addToSeenList(path, seenIds, pageId, lastId, visitor);
+            progress.add(1);
         }
 
         @Override
@@ -670,13 +686,15 @@ class GBPTreeConsistencyChecker<KEY> {
         private final BitSet seenIds;
         private final GBPTreeConsistencyCheckVisitor visitor;
         final ExecutorService executor;
+        final ProgressListener progress;
 
         ConsistencyCheckState(
                 Path file,
                 IdProvider idProvider,
                 GBPTreeConsistencyCheckVisitor visitor,
                 CursorCreator cursorCreator,
-                int numThreads)
+                int numThreads,
+                ProgressMonitorFactory progressMonitorFactory)
                 throws IOException {
             this.file = file;
             this.lastId = idProvider.lastId();
@@ -693,9 +711,10 @@ class GBPTreeConsistencyChecker<KEY> {
                     new ArrayBlockingQueue<>(numSpawnedThreads),
                     new NamedThreadFactory("GBPTreeConsistencyChecker"),
                     new ThreadPoolExecutor.CallerRunsPolicy());
+            this.progress = progressMonitorFactory.singlePart("Check GBPTree consistency", lastId);
 
             IdProvider.IdProviderVisitor freelistSeenIdsVisitor =
-                    new FreelistSeenIdsVisitor(file, seenIds, lastId, visitor);
+                    new FreelistSeenIdsVisitor(file, seenIds, lastId, visitor, progress);
             idProvider.visitFreelist(freelistSeenIdsVisitor, cursorCreator);
         }
 
@@ -718,6 +737,7 @@ class GBPTreeConsistencyChecker<KEY> {
                 }
             }
             this.executor.shutdown();
+            progress.close();
         }
     }
 

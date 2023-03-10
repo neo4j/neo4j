@@ -109,7 +109,7 @@ public interface ProgressListener extends AutoCloseable {
 
         @Override
         public ProgressListener threadLocalReporter(int threshold) {
-            return this;
+            return new ThreadLocalReporter(threshold, this);
         }
     }
 
