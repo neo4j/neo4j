@@ -83,6 +83,34 @@ public abstract class ProgressMonitorFactory {
         };
     }
 
+    /**
+     * A way to, instead of e.g. printing dots, call {@link ProgressListener#add(long)}
+     * which can be used to map a progress report from one range to another.
+     *
+     * @param target {@link ProgressListener} to use as target 'dot' receiver.
+     * @param resolution number of 'dots' in the target progress which the source progress writes.
+     * @return ProgressMonitorFactory able to map a progress report from one range to another.
+     */
+    public static ProgressMonitorFactory mapped(ProgressListener target, int resolution) {
+        return new ProgressMonitorFactory() {
+            @Override
+            protected Indicator newIndicator(String process) {
+                return new Indicator(resolution) {
+                    @Override
+                    protected void progress(int from, int to) {
+                        // Even tho the Indicator synchronizes internally around this call there may be
+                        // multiple mapped progresses on the same target so synchronize on the target.
+                        // The resolution is typically/hopefully quite small (like 100 or 1000 or so),
+                        // so the synchronization cost should still be minimal.
+                        synchronized (target) {
+                            target.add(to - from);
+                        }
+                    }
+                };
+            }
+        };
+    }
+
     public final MultiPartBuilder multipleParts(String process) {
         return new MultiPartBuilder(newIndicator(process));
     }
