@@ -55,6 +55,7 @@ import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPat
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPath.multiUndirectedRelationshipProjector
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPath.multiUndirectedRelationshipWithKnownTargetProjector
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPath.nilProjector
+import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPath.quantifiedPathProjector
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPath.singleIncomingRelationshipProjector
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPath.singleNodeProjector
 import org.neo4j.cypher.internal.runtime.slotted.expressions.SlottedProjectedPath.singleOutgoingRelationshipProjector
@@ -541,7 +542,9 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan, maybeOwningPi
         nilProjector
 
       case RepeatPathStep(variables, toNode, next) =>
-        throw new NotImplementedError("RepeatPathStep is not yet supported.")
+        val groupVariables = variables.flatMap(_.variables).map(toCommandExpression(id, _, self).get)
+        val toVariable = toCommandExpression(id, toNode, self).get
+        quantifiedPathProjector(groupVariables, toVariable, project(next))
     }
 
     SlottedProjectedPath(project(e.step))

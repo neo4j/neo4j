@@ -193,6 +193,49 @@ object SlottedProjectedPath {
     override def arguments: Seq[Expression] = Seq(rel) ++ tailProjector.arguments
   }
 
+  case class quantifiedPathProjector(groupVariables: Seq[Expression], toNode: Expression, tailProjector: Projector)
+      extends Projector {
+
+    override def apply(ctx: ReadableRow, state: QueryState, builder: PathValueBuilder): PathValueBuilder = {
+
+      /**
+       * Given a pattern: (from)( (a)-[r1]-(b)-[r2]-(c) ){2,2}(to)
+       *
+       * We could have:
+       * variables = [ [from/a_1, a_2] [r1_1,r1_2] , [b_1, b_2] , [r2_1,r2_2] ]
+       * toNode = to
+       *
+       * And therefore:
+       * path = [from/a_1 , r1_1, b_1, r2_1, a_2, r1_2, b_2, r2_2, to]
+       */
+      val values = groupVariables.map(_.apply(ctx, state).asInstanceOf[ListValue])
+      val patternSize = values.size
+      val repetitions = values.head.size()
+      if (patternSize * repetitions > 0) {
+        var repetitionOffset = 0
+        while (repetitionOffset < repetitions) {
+          // Skip first node, was added by previous Projector
+          var patternOffset = if (repetitionOffset == 0) 1 else 0
+          while (patternOffset < patternSize) {
+            if (patternOffset % 2 == 0) {
+              // Node
+              builder.addNode(values(patternOffset).value(repetitionOffset))
+            } else {
+              // Relationship
+              builder.addRelationship(values(patternOffset).value(repetitionOffset))
+            }
+            patternOffset += 1
+          }
+          repetitionOffset += 1
+        }
+        builder.addNode(toNode.apply(ctx, state))
+      }
+      tailProjector(ctx, state, builder)
+    }
+
+    override def arguments: Seq[Expression] = groupVariables ++ Seq(toNode) ++ tailProjector.arguments
+  }
+
   private def addIncoming(relValue: AnyValue, state: QueryState, builder: PathValueBuilder) = relValue match {
     case r: VirtualRelationshipValue =>
       builder.addRelationship(r).addNode(startNode(r, state.query, state.cursors.relationshipScanCursor))
