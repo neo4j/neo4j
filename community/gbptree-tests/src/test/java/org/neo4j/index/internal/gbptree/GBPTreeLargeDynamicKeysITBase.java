@@ -25,9 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.calculatePayloadSize;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheckStrict;
 import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 import java.io.IOException;
 import java.nio.file.OpenOption;
@@ -138,9 +138,9 @@ abstract class GBPTreeLargeDynamicKeysITBase {
             }
             Collections.shuffle(entries, random.random());
             insertAndValidate(tree, entries);
-            tree.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
+            consistencyCheckStrict(tree);
             removeAndValidate(tree, entries);
-            tree.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
+            consistencyCheckStrict(tree);
         }
     }
 
@@ -167,7 +167,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
             }
 
             insertAndValidate(index, entries);
-            index.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
+            consistencyCheckStrict(index);
         }
     }
 
@@ -223,7 +223,7 @@ abstract class GBPTreeLargeDynamicKeysITBase {
             }
 
             insertAndValidate(tree, entries);
-            tree.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
+            consistencyCheckStrict(tree);
         }
     }
 

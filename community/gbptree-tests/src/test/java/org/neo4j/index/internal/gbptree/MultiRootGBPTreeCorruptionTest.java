@@ -21,9 +21,9 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheck;
 import static org.neo4j.io.IOUtils.closeAll;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.impl.muninn.MuninnPageCache.config;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -183,14 +183,9 @@ class MultiRootGBPTreeCorruptionTest {
         } while (inspect().dataTrees().findFirst().orElseThrow().lastLevel() < height);
     }
 
-    private void assertInconsistency(Function<MutableBoolean, GBPTreeConsistencyCheckVisitor> visitorFunction)
-            throws IOException {
+    private void assertInconsistency(Function<MutableBoolean, GBPTreeConsistencyCheckVisitor> visitorFunction) {
         var check = new MutableBoolean();
-        assertThat(tree.consistencyCheck(
-                        visitorFunction.apply(check),
-                        NULL_CONTEXT_FACTORY,
-                        Runtime.getRuntime().availableProcessors()))
-                .isFalse();
+        assertThat(consistencyCheck(tree, visitorFunction.apply(check))).isFalse();
         assertThat(check.booleanValue()).isTrue();
     }
 }

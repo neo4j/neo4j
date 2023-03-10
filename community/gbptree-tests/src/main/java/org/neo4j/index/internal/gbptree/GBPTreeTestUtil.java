@@ -19,6 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
+
+import java.io.IOException;
 import java.nio.file.OpenOption;
 import java.util.Comparator;
 import java.util.List;
@@ -26,6 +29,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.PageCache;
 
 class GBPTreeTestUtil {
@@ -40,5 +44,23 @@ class GBPTreeTestUtil {
     static int calculatePayloadSize(PageCache pageCache, ImmutableSet<OpenOption> openOptions) {
         var reservedBytes = pageCache.pageReservedBytes(openOptions);
         return pageCache.pageSize() - reservedBytes;
+    }
+
+    static boolean consistencyCheckStrict(MultiRootGBPTree<?, ?, ?> tree) throws IOException {
+        return tree.consistencyCheck(
+                new ThrowingConsistencyCheckVisitor(),
+                true,
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors(),
+                ProgressMonitorFactory.NONE);
+    }
+
+    static boolean consistencyCheck(MultiRootGBPTree<?, ?, ?> tree, GBPTreeConsistencyCheckVisitor visitor) {
+        return tree.consistencyCheck(
+                visitor,
+                true,
+                NULL_CONTEXT_FACTORY,
+                Runtime.getRuntime().availableProcessors(),
+                ProgressMonitorFactory.NONE);
     }
 }

@@ -34,11 +34,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTreeStructure.visitState;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheck;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.io.fs.FileUtils.blockSize;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.utils.PageCacheConfig.config;
@@ -975,15 +975,12 @@ class GBPTreeTest {
                 GBPTree<MutableLong, MutableLong> index = index(pageCache)
                         .with(RecoveryCleanupWorkCollector.ignore())
                         .build()) {
-            index.consistencyCheck(
-                    new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                        @Override
-                        public void dirtyOnStartup(Path file) {
-                            cleanOnStartup.setFalse();
-                        }
-                    },
-                    NULL_CONTEXT_FACTORY,
-                    Runtime.getRuntime().availableProcessors());
+            consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+                @Override
+                public void dirtyOnStartup(Path file) {
+                    cleanOnStartup.setFalse();
+                }
+            });
             assertEquals(expected, cleanOnStartup.booleanValue());
         }
     }

@@ -21,8 +21,8 @@ package org.neo4j.index.internal.gbptree;
 
 import static java.lang.Integer.min;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheckStrict;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.test.Race.throwing;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
@@ -234,7 +234,7 @@ abstract class GBPTreeParallelWritesIT<KEY, VALUE> {
             race.goUnchecked();
 
             // then
-            tree.consistencyCheck(NULL_CONTEXT_FACTORY, Runtime.getRuntime().availableProcessors());
+            consistencyCheckStrict(tree);
             try (var seek = allEntriesSeek(tree, layout)) {
                 for (long id : committedIds.created.toSortedArray()) {
                     assertThat(seek.next()).isTrue();

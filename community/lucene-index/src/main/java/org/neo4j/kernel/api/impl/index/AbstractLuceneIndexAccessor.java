@@ -34,6 +34,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -212,7 +213,10 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
 
     @Override
     public boolean consistencyCheck(
-            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
+            ReporterFactory reporterFactory,
+            CursorContextFactory contextFactory,
+            int numThreads,
+            ProgressMonitorFactory progressMonitorFactory) {
         final LuceneIndexConsistencyCheckVisitor visitor =
                 reporterFactory.getClass(LuceneIndexConsistencyCheckVisitor.class);
         final boolean isConsistent = luceneIndex.isValid();

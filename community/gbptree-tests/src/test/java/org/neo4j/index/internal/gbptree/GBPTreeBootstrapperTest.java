@@ -21,8 +21,9 @@ package org.neo4j.index.internal.gbptree;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheckStrict;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
-import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,7 +41,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
@@ -121,16 +121,14 @@ class GBPTreeBootstrapperTest {
 
         LayoutBootstrapper layoutBootstrapper =
                 meta -> new LayoutBootstrapper.Layouts(layout, RootLayerConfiguration.singleRoot());
-        var contextFactory = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
         try (JobScheduler scheduler = new ThreadPoolJobScheduler();
                 GBPTreeBootstrapper bootstrapper = new GBPTreeBootstrapper(
-                        fs, scheduler, layoutBootstrapper, true, contextFactory, PageCacheTracer.NULL)) {
+                        fs, scheduler, layoutBootstrapper, true, NULL_CONTEXT_FACTORY, PageCacheTracer.NULL)) {
             GBPTreeBootstrapper.Bootstrap bootstrap =
                     bootstrapper.bootstrapTree(storeFile, PageCacheOpenOptions.BIG_ENDIAN);
             assertTrue(bootstrap.isTree());
             try (MultiRootGBPTree<?, ?, ?> tree = bootstrap.tree()) {
-                assertTrue(tree.consistencyCheck(
-                        contextFactory, Runtime.getRuntime().availableProcessors()));
+                consistencyCheckStrict(tree);
             }
         }
     }

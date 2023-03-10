@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -316,8 +317,11 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         @Override
         public boolean consistencyCheck(
-                ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
-            return delegate.consistencyCheck(reporterFactory, contextFactory, numThreads);
+                ReporterFactory reporterFactory,
+                CursorContextFactory contextFactory,
+                int numThreads,
+                ProgressMonitorFactory progressMonitorFactory) {
+            return delegate.consistencyCheck(reporterFactory, contextFactory, numThreads, progressMonitorFactory);
         }
     }
 

@@ -55,6 +55,7 @@ import java.util.function.LongSupplier;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EmptyDependencyResolver;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
@@ -1300,20 +1301,17 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         }
     }
 
-    public boolean consistencyCheck(CursorContextFactory contextFactory, int numThreads) throws IOException {
-        return consistencyCheck(true, contextFactory, numThreads);
-    }
-
-    public boolean consistencyCheck(boolean reportDirty, CursorContextFactory contextFactory, int numThreads)
-            throws IOException {
-        ThrowingConsistencyCheckVisitor reporter = new ThrowingConsistencyCheckVisitor();
-        return consistencyCheck(reporter, reportDirty, contextFactory, numThreads, ProgressMonitorFactory.NONE);
-    }
-
     public boolean consistencyCheck(
-            GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads)
-            throws IOException {
-        return consistencyCheck(visitor, true, contextFactory, numThreads, ProgressMonitorFactory.NONE);
+            ReporterFactory reporterFactory,
+            CursorContextFactory contextFactory,
+            int numThreads,
+            ProgressMonitorFactory progressMonitorFactory) {
+        return consistencyCheck(
+                reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class),
+                true,
+                contextFactory,
+                numThreads,
+                progressMonitorFactory);
     }
 
     // Utility method
@@ -1322,8 +1320,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             boolean reportDirty,
             CursorContextFactory contextFactory,
             int numThreads,
-            ProgressMonitorFactory progressMonitorFactory)
-            throws IOException {
+            ProgressMonitorFactory progressMonitorFactory) {
         CleanTrackingConsistencyCheckVisitor cleanTrackingVisitor = new CleanTrackingConsistencyCheckVisitor(visitor);
         try (var context = contextFactory.create("consistencyCheck");
                 var state = new ConsistencyCheckState(
@@ -1339,6 +1336,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             rootLayer.consistencyCheck(state, cleanTrackingVisitor, reportDirty, contextFactory, numThreads);
         } catch (TreeInconsistencyException | MetadataMismatchException | CursorException e) {
             cleanTrackingVisitor.exception(e);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
         return cleanTrackingVisitor.isConsistent();
     }

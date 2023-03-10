@@ -49,7 +49,7 @@ import org.neo4j.values.storable.Value;
  * @param <KEY> type of {@link NativeIndexKey}.
  */
 public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>> extends NativeIndex<KEY>
-        implements IndexPopulator, ConsistencyCheckable {
+        implements IndexPopulator {
     public static final byte BYTE_FAILED = 0;
     static final byte BYTE_ONLINE = 1;
     static final byte BYTE_POPULATING = 2;

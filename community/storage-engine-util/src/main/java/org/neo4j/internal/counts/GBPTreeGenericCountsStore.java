@@ -51,7 +51,6 @@ import org.neo4j.counts.CountsStorage;
 import org.neo4j.counts.InvalidCountException;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -59,6 +58,7 @@ import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.internal.counts.CountsHeader.Reader;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
@@ -502,18 +502,11 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
 
     @Override
     public boolean consistencyCheck(
-            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
-        return consistencyCheck(
-                reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), contextFactory, numThreads);
-    }
-
-    private boolean consistencyCheck(
-            GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads) {
-        try {
-            return tree.consistencyCheck(visitor, contextFactory, numThreads);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+            ReporterFactory reporterFactory,
+            CursorContextFactory contextFactory,
+            int numThreads,
+            ProgressMonitorFactory progressMonitorFactory) {
+        return tree.consistencyCheck(reporterFactory, contextFactory, numThreads, progressMonitorFactory);
     }
 
     /**

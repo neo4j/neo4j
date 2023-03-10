@@ -35,10 +35,10 @@ import java.util.function.Function;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -278,18 +278,11 @@ public class IndexStatisticsStore extends LifecycleAdapter
 
     @Override
     public boolean consistencyCheck(
-            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
-        return consistencyCheck(
-                reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), contextFactory, numThreads);
-    }
-
-    private boolean consistencyCheck(
-            GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads) {
-        try {
-            return tree.consistencyCheck(visitor, contextFactory, numThreads);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+            ReporterFactory reporterFactory,
+            CursorContextFactory contextFactory,
+            int numThreads,
+            ProgressMonitorFactory progressMonitorFactory) {
+        return tree.consistencyCheck(reporterFactory, contextFactory, numThreads, progressMonitorFactory);
     }
 
     private void scanTree(BiConsumer<IndexStatisticsKey, IndexStatisticsValue> consumer, CursorContext cursorContext)

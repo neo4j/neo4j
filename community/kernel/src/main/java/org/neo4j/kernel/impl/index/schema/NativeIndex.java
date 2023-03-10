@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import org.eclipse.collections.api.set.ImmutableSet;
@@ -30,9 +28,9 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -138,17 +136,10 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>> implements Consisten
 
     @Override
     public boolean consistencyCheck(
-            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
-        return consistencyCheck(
-                reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), contextFactory, numThreads);
-    }
-
-    private boolean consistencyCheck(
-            GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads) {
-        try {
-            return tree.consistencyCheck(visitor, contextFactory, numThreads);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+            ReporterFactory reporterFactory,
+            CursorContextFactory contextFactory,
+            int numThreads,
+            ProgressMonitorFactory progressMonitorFactory) {
+        return tree.consistencyCheck(reporterFactory, contextFactory, numThreads, progressMonitorFactory);
     }
 }

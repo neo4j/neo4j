@@ -46,12 +46,12 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
-import org.neo4j.index.internal.gbptree.GBPTreeConsistencyCheckVisitor;
 import org.neo4j.index.internal.gbptree.GBPTreeVisitor;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution;
@@ -825,18 +825,11 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public boolean consistencyCheck(
-            ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
-        return consistencyCheck(
-                reporterFactory.getClass(GBPTreeConsistencyCheckVisitor.class), contextFactory, numThreads);
-    }
-
-    private boolean consistencyCheck(
-            GBPTreeConsistencyCheckVisitor visitor, CursorContextFactory contextFactory, int numThreads) {
-        try {
-            return tree.consistencyCheck(visitor, contextFactory, numThreads);
-        } catch (IOException e) {
-            throw new UncheckedIOException(e);
-        }
+            ReporterFactory reporterFactory,
+            CursorContextFactory contextFactory,
+            int numThreads,
+            ProgressMonitorFactory progressMonitorFactory) {
+        return tree.consistencyCheck(reporterFactory, contextFactory, numThreads, progressMonitorFactory);
     }
 
     private void assertNotReadOnly() {

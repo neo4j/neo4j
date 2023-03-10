@@ -30,6 +30,7 @@ import java.util.function.LongSupplier;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -176,7 +177,10 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
 
         @Override
         public boolean consistencyCheck(
-                ReporterFactory reporterFactory, CursorContextFactory contextFactory, int numThreads) {
+                ReporterFactory reporterFactory,
+                CursorContextFactory contextFactory,
+                int numThreads,
+                ProgressMonitorFactory progressMonitorFactory) {
             return true;
         }
     }

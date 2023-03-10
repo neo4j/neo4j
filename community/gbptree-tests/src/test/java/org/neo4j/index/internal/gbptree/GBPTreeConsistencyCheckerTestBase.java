@@ -25,8 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTreeOpenOptions.NO_FLUSH_ON_CLOSE;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheck;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 
 import java.io.IOException;
@@ -889,422 +889,346 @@ abstract class GBPTreeConsistencyCheckerTestBase<KEY, VALUE> {
         return index.visit(new InspectingVisitor<>(), NULL_CONTEXT).get();
     }
 
-    private static <KEY, VALUE> void assertReportNotATreeNode(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportNotATreeNode(GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void notATreeNode(long pageId, Path file) {
-                        called.setTrue();
-                        assertEquals(pageId, targetNode);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void notATreeNode(long pageId, Path file) {
+                called.setTrue();
+                assertEquals(pageId, targetNode);
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportUnknownTreeNodeType(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportUnknownTreeNodeType(GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void unknownTreeNodeType(long pageId, byte treeNodeType, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void unknownTreeNodeType(long pageId, byte treeNodeType, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportMisalignedSiblingPointers(GBPTree<KEY, VALUE> index)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportMisalignedSiblingPointers(GBPTree<KEY, VALUE> index) {
         MutableBoolean corruptedSiblingPointerCalled = new MutableBoolean();
         MutableBoolean rightmostNodeHasRightSiblingCalled = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void siblingsDontPointToEachOther(
-                            long leftNode,
-                            long leftNodeGeneration,
-                            long leftRightSiblingPointerGeneration,
-                            long leftRightSiblingPointer,
-                            long rightLeftSiblingPointer,
-                            long rightLeftSiblingPointerGeneration,
-                            long rightNode,
-                            long rightNodeGeneration,
-                            Path file) {
-                        corruptedSiblingPointerCalled.setTrue();
-                    }
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void siblingsDontPointToEachOther(
+                    long leftNode,
+                    long leftNodeGeneration,
+                    long leftRightSiblingPointerGeneration,
+                    long leftRightSiblingPointer,
+                    long rightLeftSiblingPointer,
+                    long rightLeftSiblingPointerGeneration,
+                    long rightNode,
+                    long rightNodeGeneration,
+                    Path file) {
+                corruptedSiblingPointerCalled.setTrue();
+            }
 
-                    @Override
-                    public void rightmostNodeHasRightSibling(long rightSiblingPointer, long rightmostNode, Path file) {
-                        rightmostNodeHasRightSiblingCalled.setTrue();
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+            @Override
+            public void rightmostNodeHasRightSibling(long rightSiblingPointer, long rightmostNode, Path file) {
+                rightmostNodeHasRightSiblingCalled.setTrue();
+            }
+        });
         assertTrue(corruptedSiblingPointerCalled.getValue() || rightmostNodeHasRightSiblingCalled.getValue());
     }
 
     private static <KEY, VALUE> void assertReportPointerToOldVersionOfTreeNode(
-            GBPTree<KEY, VALUE> index, long targetNode) throws IOException {
+            GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void pointerToOldVersionOfTreeNode(long pageId, long successorPointer, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                        assertEquals(GenerationSafePointer.MAX_POINTER, successorPointer);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void pointerToOldVersionOfTreeNode(long pageId, long successorPointer, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+                assertEquals(GenerationSafePointer.MAX_POINTER, successorPointer);
+            }
+        });
         assertCalled(called);
     }
 
     private static <KEY, VALUE> void assertReportPointerGenerationLowerThanNodeGeneration(
-            GBPTree<KEY, VALUE> index, long targetNode, GBPTreePointerType expectedPointerType) throws IOException {
+            GBPTree<KEY, VALUE> index, long targetNode, GBPTreePointerType expectedPointerType) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void pointerHasLowerGenerationThanNode(
-                            GBPTreePointerType pointerType,
-                            long sourceNode,
-                            long pointerGeneration,
-                            long pointer,
-                            long targetNodeGeneration,
-                            Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, sourceNode);
-                        assertEquals(expectedPointerType, pointerType);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void pointerHasLowerGenerationThanNode(
+                    GBPTreePointerType pointerType,
+                    long sourceNode,
+                    long pointerGeneration,
+                    long pointer,
+                    long targetNodeGeneration,
+                    Path file) {
+                called.setTrue();
+                assertEquals(targetNode, sourceNode);
+                assertEquals(expectedPointerType, pointerType);
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportKeysOutOfOrderInNode(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportKeysOutOfOrderInNode(GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void keysOutOfOrderInNode(long pageId, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void keysOutOfOrderInNode(long pageId, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportKeysLocatedInWrongNode(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportKeysLocatedInWrongNode(GBPTree<KEY, VALUE> index, long targetNode) {
         Set<Long> allNodesWithKeysLocatedInWrongNode = new HashSet<>();
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void keysLocatedInWrongNode(
-                            KeyRange<?> range, Object key, int pos, int keyCount, long pageId, Path file) {
-                        called.setTrue();
-                        allNodesWithKeysLocatedInWrongNode.add(pageId);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void keysLocatedInWrongNode(
+                    KeyRange<?> range, Object key, int pos, int keyCount, long pageId, Path file) {
+                called.setTrue();
+                allNodesWithKeysLocatedInWrongNode.add(pageId);
+            }
+        });
         assertCalled(called);
         assertTrue(allNodesWithKeysLocatedInWrongNode.contains(targetNode));
     }
 
-    private static <KEY, VALUE> void assertReportAllocSpaceOverlapActiveKeys(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportAllocSpaceOverlapActiveKeys(
+            GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void nodeMetaInconsistency(long pageId, String message, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                        assertThat(message).contains("Overlap between allocSpace and active keys");
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void nodeMetaInconsistency(long pageId, String message, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+                assertThat(message).contains("Overlap between allocSpace and active keys");
+            }
+        });
         assertCalled(called);
     }
 
     private static <KEY, VALUE> void assertReportAllocSpaceOverlapOffsetArray(
-            GBPTree<KEY, VALUE> index, long targetNode) throws IOException {
+            GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void nodeMetaInconsistency(long pageId, String message, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                        assertThat(message).contains("Overlap between offsetArray and allocSpace");
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void nodeMetaInconsistency(long pageId, String message, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+                assertThat(message).contains("Overlap between offsetArray and allocSpace");
+            }
+        });
         assertCalled(called);
     }
 
     private static <KEY, VALUE> void assertReportSpaceAreasNotSummingToTotalSpace(
-            GBPTree<KEY, VALUE> index, long targetNode) throws IOException {
+            GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void nodeMetaInconsistency(long pageId, String message, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                        assertThat(message).contains("Space areas did not sum to total space");
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void nodeMetaInconsistency(long pageId, String message, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+                assertThat(message).contains("Space areas did not sum to total space");
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportAllocOffsetMisplaced(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportAllocOffsetMisplaced(GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void nodeMetaInconsistency(long pageId, String message, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                        assertThat(message)
-                                .contains("Pointer to allocSpace is misplaced, it should point to start of key");
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void nodeMetaInconsistency(long pageId, String message, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+                assertThat(message).contains("Pointer to allocSpace is misplaced, it should point to start of key");
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportUnusedPage(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportUnusedPage(GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void unusedPage(long pageId, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void unusedPage(long pageId, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportActiveTreeNodeInFreelist(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportActiveTreeNodeInFreelist(GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void pageIdSeenMultipleTimes(long pageId, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void pageIdSeenMultipleTimes(long pageId, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+            }
+        });
         assertCalled(called);
     }
 
     private static <KEY, VALUE> void assertReportIdExceedLastId(
-            GBPTree<KEY, VALUE> index, long targetLastId, long targetPageId) throws IOException {
+            GBPTree<KEY, VALUE> index, long targetLastId, long targetPageId) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void pageIdExceedLastId(long lastId, long pageId, Path file) {
-                        called.setTrue();
-                        assertEquals(targetLastId, lastId);
-                        assertEquals(targetPageId, pageId);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void pageIdExceedLastId(long lastId, long pageId, Path file) {
+                called.setTrue();
+                assertEquals(targetLastId, lastId);
+                assertEquals(targetPageId, pageId);
+            }
+        });
         assertCalled(called);
     }
 
     private static <KEY, VALUE> void assertReportCrashedGSPP(
-            GBPTree<KEY, VALUE> index, long targetNode, GBPTreePointerType targetPointerType) throws IOException {
+            GBPTree<KEY, VALUE> index, long targetNode, GBPTreePointerType targetPointerType) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void crashedPointer(
-                            long pageId,
-                            GBPTreePointerType pointerType,
-                            long generationA,
-                            long readPointerA,
-                            long pointerA,
-                            byte stateA,
-                            long generationB,
-                            long readPointerB,
-                            long pointerB,
-                            byte stateB,
-                            Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                        assertEquals(targetPointerType, pointerType);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void crashedPointer(
+                    long pageId,
+                    GBPTreePointerType pointerType,
+                    long generationA,
+                    long readPointerA,
+                    long pointerA,
+                    byte stateA,
+                    long generationB,
+                    long readPointerB,
+                    long pointerB,
+                    byte stateB,
+                    Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+                assertEquals(targetPointerType, pointerType);
+            }
+        });
         assertCalled(called);
     }
 
     private static <KEY, VALUE> void assertReportBrokenGSPP(
-            GBPTree<KEY, VALUE> index, long targetNode, GBPTreePointerType targetPointerType) throws IOException {
+            GBPTree<KEY, VALUE> index, long targetNode, GBPTreePointerType targetPointerType) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void brokenPointer(
-                            long pageId,
-                            GBPTreePointerType pointerType,
-                            long generationA,
-                            long readPointerA,
-                            long pointerA,
-                            byte stateA,
-                            long generationB,
-                            long readPointerB,
-                            long pointerB,
-                            byte stateB,
-                            Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                        assertEquals(targetPointerType, pointerType);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void brokenPointer(
+                    long pageId,
+                    GBPTreePointerType pointerType,
+                    long generationA,
+                    long readPointerA,
+                    long pointerA,
+                    byte stateA,
+                    long generationB,
+                    long readPointerB,
+                    long pointerB,
+                    byte stateB,
+                    Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+                assertEquals(targetPointerType, pointerType);
+            }
+        });
         assertCalled(called);
     }
 
     private static <KEY, VALUE> void assertReportUnreasonableKeyCount(
-            GBPTree<KEY, VALUE> index, long targetNode, int targetKeyCount) throws IOException {
+            GBPTree<KEY, VALUE> index, long targetNode, int targetKeyCount) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void unreasonableKeyCount(long pageId, int keyCount, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                        assertEquals(targetKeyCount, keyCount);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void unreasonableKeyCount(long pageId, int keyCount, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+                assertEquals(targetKeyCount, keyCount);
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportAnyStructuralInconsistency(GBPTree<KEY, VALUE> index)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportAnyStructuralInconsistency(GBPTree<KEY, VALUE> index) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void rightmostNodeHasRightSibling(long rightSiblingPointer, long rightmostNode, Path file) {
-                        called.setTrue();
-                    }
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void rightmostNodeHasRightSibling(long rightSiblingPointer, long rightmostNode, Path file) {
+                called.setTrue();
+            }
 
-                    @Override
-                    public void siblingsDontPointToEachOther(
-                            long leftNode,
-                            long leftNodeGeneration,
-                            long leftRightSiblingPointerGeneration,
-                            long leftRightSiblingPointer,
-                            long rightLeftSiblingPointer,
-                            long rightLeftSiblingPointerGeneration,
-                            long rightNode,
-                            long rightNodeGeneration,
-                            Path file) {
-                        called.setTrue();
-                    }
+            @Override
+            public void siblingsDontPointToEachOther(
+                    long leftNode,
+                    long leftNodeGeneration,
+                    long leftRightSiblingPointerGeneration,
+                    long leftRightSiblingPointer,
+                    long rightLeftSiblingPointer,
+                    long rightLeftSiblingPointerGeneration,
+                    long rightNode,
+                    long rightNodeGeneration,
+                    Path file) {
+                called.setTrue();
+            }
 
-                    @Override
-                    public void keysLocatedInWrongNode(
-                            KeyRange<?> range, Object key, int pos, int keyCount, long pageId, Path file) {
-                        called.setTrue();
-                    }
+            @Override
+            public void keysLocatedInWrongNode(
+                    KeyRange<?> range, Object key, int pos, int keyCount, long pageId, Path file) {
+                called.setTrue();
+            }
 
-                    @Override
-                    public void pageIdSeenMultipleTimes(long pageId, Path file) {
-                        called.setTrue();
-                    }
+            @Override
+            public void pageIdSeenMultipleTimes(long pageId, Path file) {
+                called.setTrue();
+            }
 
-                    @Override
-                    public void childNodeFoundAmongParentNodes(
-                            KeyRange<?> superRange, int level, long pageId, Path file) {
-                        called.setTrue();
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+            @Override
+            public void childNodeFoundAmongParentNodes(KeyRange<?> superRange, int level, long pageId, Path file) {
+                called.setTrue();
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportCircularChildPointer(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportCircularChildPointer(GBPTree<KEY, VALUE> index, long targetNode) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void childNodeFoundAmongParentNodes(
-                            KeyRange<?> superRange, int level, long pageId, Path file) {
-                        called.setTrue();
-                        assertEquals(targetNode, pageId);
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void childNodeFoundAmongParentNodes(KeyRange<?> superRange, int level, long pageId, Path file) {
+                called.setTrue();
+                assertEquals(targetNode, pageId);
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportException(GBPTree<KEY, VALUE> index) throws IOException {
+    private static <KEY, VALUE> void assertReportException(GBPTree<KEY, VALUE> index) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void exception(Exception e) {
-                        called.setTrue();
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void exception(Exception e) {
+                called.setTrue();
+            }
+        });
         assertCalled(called);
     }
 
-    private static <KEY, VALUE> void assertReportDirtyOnStartup(GBPTree<KEY, VALUE> index) throws IOException {
+    private static <KEY, VALUE> void assertReportDirtyOnStartup(GBPTree<KEY, VALUE> index) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void dirtyOnStartup(Path file) {
-                        called.setTrue();
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void dirtyOnStartup(Path file) {
+                called.setTrue();
+            }
+        });
         assertCalled(called);
     }
 

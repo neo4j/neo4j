@@ -23,8 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.notAnOffloadNode;
 import static org.neo4j.index.internal.gbptree.GBPTreeCorruption.pageSpecificCorruption;
+import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheck;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
-import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 
 import java.io.IOException;
 import org.apache.commons.lang3.mutable.MutableBoolean;
@@ -53,7 +53,7 @@ public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistency
 
             index.unsafe(pageSpecificCorruption(offloadNode, notAnOffloadNode()), NULL_CONTEXT);
 
-            assertReportException(index, offloadNode);
+            assertReportException(index);
         }
     }
 
@@ -72,20 +72,16 @@ public class GBPTreeConsistencyCheckerDynamicSizeTest extends GBPTreeConsistency
         return value;
     }
 
-    private static <KEY, VALUE> void assertReportException(GBPTree<KEY, VALUE> index, long targetNode)
-            throws IOException {
+    private static <KEY, VALUE> void assertReportException(GBPTree<KEY, VALUE> index) {
         MutableBoolean called = new MutableBoolean();
-        index.consistencyCheck(
-                new GBPTreeConsistencyCheckVisitor.Adaptor() {
-                    @Override
-                    public void exception(Exception e) {
-                        called.setTrue();
-                        assertThat(e.getMessage())
-                                .contains("Tried to read from offload store but page is not an offload page.");
-                    }
-                },
-                NULL_CONTEXT_FACTORY,
-                Runtime.getRuntime().availableProcessors());
+        consistencyCheck(index, new GBPTreeConsistencyCheckVisitor.Adaptor() {
+            @Override
+            public void exception(Exception e) {
+                called.setTrue();
+                assertThat(e.getMessage())
+                        .contains("Tried to read from offload store but page is not an offload page.");
+            }
+        });
         assertCalled(called);
     }
 }
