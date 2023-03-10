@@ -342,9 +342,12 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
 
     private TrialStatus getTrialStatus() {
         try {
-            final var record = session.run("CALL dbms.acceptedLicenseAgreement()", SYSTEM_TX_CONF)
+            final var record = session.run("CALL dbms.licenseAgreementDetails()", SYSTEM_TX_CONF)
                     .single();
-            return TrialStatus.parse(record.get(0).asString());
+            return TrialStatus.parse(
+                    record.get("status").asString(),
+                    record.get("daysLeftOnTrial", 0L),
+                    record.get("totalTrialDays", 0L));
         } catch (Exception e) {
             log.warn("Failed to fetch trial status", e);
             return NOT_EXPIRED;

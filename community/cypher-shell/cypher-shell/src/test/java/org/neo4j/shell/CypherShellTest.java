@@ -169,15 +169,15 @@ class CypherShellTest {
 
     @Test
     void printLicenseExpired() {
-        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("expired"));
+        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("expired", -1, 120));
         offlineTestShell.printLicenseWarnings();
-        verify(printer).printOut(contains("This is a time limited trial, and the\n30 days has expired"));
+        verify(printer).printOut(contains("This is a time limited trial, and the\n120 days have expired"));
         verify(printer, times(0)).printIfVerbose(anyString());
     }
 
     @Test
     void printLicenseAccepted() {
-        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("yes"));
+        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("yes", 0, 0));
         offlineTestShell.printLicenseWarnings();
         verify(printer, times(0)).printOut(anyString());
         verify(printer, times(0)).printIfVerbose(anyString());
@@ -185,9 +185,9 @@ class CypherShellTest {
 
     @Test
     void printLicenseDaysLeft() {
-        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("2"));
+        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("eval", 2, 30));
         offlineTestShell.printLicenseWarnings();
-        verify(printer).printOut(contains("This is a time limited trial, you\nhave 2 days remaining"));
+        verify(printer).printOut(contains("This is a time limited trial.\nYou have 2 days remaining out of 30 days."));
         verify(printer, times(0)).printIfVerbose(anyString());
     }
 

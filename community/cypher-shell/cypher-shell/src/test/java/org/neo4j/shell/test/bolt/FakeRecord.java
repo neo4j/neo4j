@@ -26,6 +26,7 @@ import java.util.TreeMap;
 import java.util.function.Function;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.Value;
+import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.types.Entity;
 import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
@@ -39,8 +40,6 @@ import org.neo4j.shell.test.Util;
 public class FakeRecord implements Record {
 
     private final TreeMap<String, Value> valueMap = new TreeMap<>();
-
-    private FakeRecord() {}
 
     public static FakeRecord of(String key, String value) {
         return of(key, new FakeValue() {
@@ -134,6 +133,13 @@ public class FakeRecord implements Record {
     public static FakeRecord of(String key, Value value) {
         FakeRecord record = new FakeRecord();
         record.valueMap.put(key, value);
+
+        return record;
+    }
+
+    public static FakeRecord of(Map<String, Value> values) {
+        FakeRecord record = new FakeRecord();
+        record.valueMap.putAll(values);
 
         return record;
     }
@@ -255,7 +261,7 @@ public class FakeRecord implements Record {
 
     @Override
     public long get(String key, long defaultValue) {
-        return 0;
+        return valueMap.getOrDefault(key, new IntegerValue(defaultValue)).asLong();
     }
 
     @Override

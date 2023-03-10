@@ -49,16 +49,16 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     private static final String LICENSE_EXPIRED_WARNING =
             """
             Thank you for installing Neo4j. This is a time limited trial, and the
-            30 days has expired. Please contact sales@neo4j.com or
-            licensing@neo4j.com to continue using the software. Use of this
-            Software without a proper commercial or evaluation license with
-            Neo4j,Inc. or its affiliates is prohibited.
+            %d days have expired. Please contact https://neo4j.com/contact-us/
+            to continue using the software. Use of this Software without
+            a proper commercial or evaluation license with Neo4j, Inc. or
+            its affiliates is prohibited.
             """;
     private static final String LICENSE_DAYS_LEFT_WARNING =
             """
-            Thank you for installing Neo4j. This is a time limited trial, you
-            have %d days remaining out of 30 days. Please
-            contact sales@neo4j.com if you require more time.
+            Thank you for installing Neo4j. This is a time limited trial.
+            You have %d days remaining out of %d days. Please
+            contact https://neo4j.com/contact-us/ if you require more time.
             """;
     private final ParameterService parameters;
     private final Printer printer;
@@ -300,11 +300,15 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
 
     public void printLicenseWarnings() {
         final var status = boltStateHandler.trialStatus();
-        if (status.expired()) {
-            printer.printOut(
-                    AnsiFormattedText.s().orange(LICENSE_EXPIRED_WARNING).formattedString());
-        } else if (status.daysLeft().isPresent()) {
-            printer.printOut(format(LICENSE_DAYS_LEFT_WARNING, status.daysLeft().get()));
+        if (status.expired() && status.trialDays().isPresent()) {
+            printer.printOut(AnsiFormattedText.s()
+                    .orange(format(LICENSE_EXPIRED_WARNING, status.trialDays().get()))
+                    .formattedString());
+        } else if (status.daysLeft().isPresent() && status.trialDays().isPresent()) {
+            printer.printOut(format(
+                    LICENSE_DAYS_LEFT_WARNING,
+                    status.daysLeft().get(),
+                    status.trialDays().get()));
         }
     }
 }

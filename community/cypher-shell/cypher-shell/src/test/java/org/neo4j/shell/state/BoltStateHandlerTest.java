@@ -62,6 +62,7 @@ import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.exceptions.SessionExpiredException;
 import org.neo4j.driver.internal.InternalBookmark;
+import org.neo4j.driver.internal.value.IntegerValue;
 import org.neo4j.driver.internal.value.StringValue;
 import org.neo4j.driver.summary.DatabaseInfo;
 import org.neo4j.driver.summary.ResultSummary;
@@ -382,7 +383,7 @@ class BoltStateHandlerTest {
 
         // then
         verify(sessionMock, times(1)).run(eq("CALL db.ping()"), eq(systemTxConf));
-        verify(sessionMock, times(1)).run(eq("CALL dbms.acceptedLicenseAgreement()"), eq(systemTxConf));
+        verify(sessionMock, times(1)).run(eq("CALL dbms.licenseAgreementDetails()"), eq(systemTxConf));
         verify(sessionMock, times(2)).isOpen();
         verify(sessionMock, times(1)).beginTransaction(eq(userTxConf));
         verifyNoMoreInteractions(sessionMock);
@@ -661,7 +662,7 @@ class BoltStateHandlerTest {
 
     @Test
     void licenseStatusExpired() throws CommandException {
-        final var session = mockSessionWithLicensing("expired");
+        final var session = mockSessionWithLicensing("expired", -1);
         Driver driverMock =
                 stubResultSummaryInAnOpenSession(mock(Result.class), session, "5.4.0", DEFAULT_DEFAULT_DB_NAME);
 
@@ -669,12 +670,12 @@ class BoltStateHandlerTest {
         handler.connect(config);
 
         assertThat(handler.trialStatus().expired()).isTrue();
-        assertThat(handler.trialStatus().daysLeft()).isEmpty();
+        assertThat(handler.trialStatus().daysLeft()).contains(-1L);
     }
 
     @Test
     void licenseStatusDaysLeft() throws CommandException {
-        final var session = mockSessionWithLicensing("5");
+        final var session = mockSessionWithLicensing("eval", 5);
         Driver driverMock =
                 stubResultSummaryInAnOpenSession(mock(Result.class), session, "5.4.0", DEFAULT_DEFAULT_DB_NAME);
 
@@ -687,7 +688,7 @@ class BoltStateHandlerTest {
 
     @Test
     void licenseStatusUnknown() throws CommandException {
-        final var session = mockSessionWithLicensing("unexpected");
+        final var session = mockSessionWithLicensing("unexpected", 0);
         Driver driverMock =
                 stubResultSummaryInAnOpenSession(mock(Result.class), session, "5.4.0", DEFAULT_DEFAULT_DB_NAME);
 
@@ -698,11 +699,14 @@ class BoltStateHandlerTest {
         assertThat(handler.trialStatus().daysLeft()).isEmpty();
     }
 
-    private Session mockSessionWithLicensing(String license) {
+    private Session mockSessionWithLicensing(String status, long daysLeftOnTrial) {
         final var session = mock(Session.class);
-        final var licenseResult =
-                new FakeResult(Collections.singletonList(FakeRecord.of("value", new StringValue(license))));
-        when(session.run(eq("CALL dbms.acceptedLicenseAgreement()"), eq(systemTxConf)))
+        FakeRecord record = FakeRecord.of(Map.of(
+                "status", new StringValue(status),
+                "daysLeftOnTrial", new IntegerValue(daysLeftOnTrial),
+                "totalTrialDays", new IntegerValue(30)));
+        final var licenseResult = new FakeResult(Collections.singletonList(record));
+        when(session.run(eq("CALL dbms.licenseAgreementDetails()"), eq(systemTxConf)))
                 .thenReturn(licenseResult);
         return session;
     }

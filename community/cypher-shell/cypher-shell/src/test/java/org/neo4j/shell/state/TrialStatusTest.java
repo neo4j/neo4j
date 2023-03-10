@@ -30,39 +30,43 @@ import org.junit.jupiter.api.Test;
 class TrialStatusTest {
     @Test
     void parseYes() {
-        final var status = TrialStatus.parse("yes");
+        final var status = TrialStatus.parse("yes", 0, 0);
         assertFalse(status.expired());
         assertEquals(Optional.empty(), status.daysLeft());
+        assertEquals(Optional.empty(), status.trialDays());
     }
 
     @Test
     void parseDays() {
-        final var status = TrialStatus.parse("12");
+        final var status = TrialStatus.parse("eval", 12, 30);
         assertFalse(status.expired());
         assertEquals(Optional.of(12L), status.daysLeft());
+        assertEquals(Optional.of(30L), status.trialDays());
     }
 
     @Test
     void parseExpired() {
-        final var status = TrialStatus.parse("expired");
+        final var status = TrialStatus.parse("expired", -1, 120);
         assertTrue(status.expired());
-        assertEquals(Optional.empty(), status.daysLeft());
+        assertEquals(Optional.of(-1L), status.daysLeft());
+        assertEquals(Optional.of(120L), status.trialDays());
     }
 
     @Test
     void parseNo() {
-        final var status = TrialStatus.parse("no");
+        final var status = TrialStatus.parse("no", 0, 0);
         assertFalse(status.expired());
         assertEquals(Optional.empty(), status.daysLeft());
+        assertEquals(Optional.empty(), status.trialDays());
     }
 
     @Test
     void parseEmptyString() {
-        assertThrows(NumberFormatException.class, () -> TrialStatus.parse(""));
+        assertThrows(IllegalArgumentException.class, () -> TrialStatus.parse("", 0, 0));
     }
 
     @Test
-    void parseOther() {
-        assertThrows(NumberFormatException.class, () -> TrialStatus.parse("other"));
+    void parseOtherStatus() {
+        assertThrows(IllegalArgumentException.class, () -> TrialStatus.parse("other", 0, 0));
     }
 }

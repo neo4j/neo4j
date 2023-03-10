@@ -26,28 +26,33 @@ public interface TrialStatus {
 
     Optional<Long> daysLeft();
 
-    static TrialStatus parse(String status) {
+    Optional<Long> trialDays();
+
+    static TrialStatus parse(String status, long daysLeftOnTrial, long totalTrialDays) {
         if ("yes".equals(status)) return TrialStatusImpl.NOT_EXPIRED;
-        if ("expired".equals(status)) return TrialStatusImpl.EXPIRED;
         if ("no".equals(status)) return TrialStatusImpl.NOT_EXPIRED;
-        else return new TrialStatusImpl(false, Long.parseLong(status));
+        if ("expired".equals(status)) return new TrialStatusImpl(true, daysLeftOnTrial, totalTrialDays);
+        if ("eval".equals(status)) return new TrialStatusImpl(false, daysLeftOnTrial, totalTrialDays);
+        throw new IllegalArgumentException("invalid license status " + status);
     }
 }
 
 class TrialStatusImpl implements TrialStatus {
-    protected static TrialStatus NOT_EXPIRED = new TrialStatusImpl(false);
-    protected static TrialStatus EXPIRED = new TrialStatusImpl(true);
+    protected static TrialStatus NOT_EXPIRED = new TrialStatusImpl();
     private final boolean expired;
     private final Long daysLeft;
+    private final Long trialDays;
 
-    TrialStatusImpl(boolean expired) {
-        this.expired = expired;
+    TrialStatusImpl() {
+        this.expired = false;
         this.daysLeft = null;
+        this.trialDays = null;
     }
 
-    TrialStatusImpl(boolean expired, long daysLeft) {
+    TrialStatusImpl(boolean expired, long daysLeft, long trialDays) {
         this.expired = expired;
         this.daysLeft = daysLeft;
+        this.trialDays = trialDays;
     }
 
     @Override
@@ -58,5 +63,10 @@ class TrialStatusImpl implements TrialStatus {
     @Override
     public Optional<Long> daysLeft() {
         return Optional.ofNullable(daysLeft);
+    }
+
+    @Override
+    public Optional<Long> trialDays() {
+        return Optional.ofNullable(trialDays);
     }
 }
