@@ -80,7 +80,6 @@ public final class UnsafeUtil {
     private static final VarHandle BYTE_BUFFER_LIMIT;
     private static final VarHandle BYTE_BUFFER_CAPACITY;
     private static final VarHandle BYTE_BUFFER_ADDRESS;
-    private static final VarHandle DIRECT_BYTE_BUFFER_ATTACHMENT;
     private static final MethodHandle DIRECT_BYTE_BUFFER_CONSTRUCTOR;
 
     private static final int pageSize;
@@ -114,7 +113,6 @@ public final class UnsafeUtil {
         VarHandle bbLimit = null;
         VarHandle bbCapacity = null;
         VarHandle bbAddress = null;
-        VarHandle dbbAttachment = null;
         MethodHandle dbbCtor = null;
         try {
             var bufferLookup = MethodHandles.privateLookupIn(Buffer.class, MethodHandles.lookup());
@@ -125,9 +123,6 @@ public final class UnsafeUtil {
             bbAddress = bufferLookup.findVarHandle(Buffer.class, "address", long.class);
 
             dbbClass = Class.forName("java.nio.DirectByteBuffer");
-            MethodHandles.Lookup directByteBufferLookup =
-                    MethodHandles.privateLookupIn(dbbClass, MethodHandles.lookup());
-            dbbAttachment = directByteBufferLookup.findVarHandle(dbbClass, "att", Object.class);
         } catch (Throwable e) {
             if (dbbClass != null) {
                 try {
@@ -146,7 +141,6 @@ public final class UnsafeUtil {
         BYTE_BUFFER_LIMIT = bbLimit;
         BYTE_BUFFER_CAPACITY = bbCapacity;
         BYTE_BUFFER_ADDRESS = bbAddress;
-        DIRECT_BYTE_BUFFER_ATTACHMENT = dbbAttachment;
         DIRECT_BYTE_BUFFER_CONSTRUCTOR = dbbCtor;
     }
 
@@ -642,19 +636,6 @@ public final class UnsafeUtil {
         BYTE_BUFFER_LIMIT.set(byteBuffer, 0);
         BYTE_BUFFER_CAPACITY.set(byteBuffer, 0);
         BYTE_BUFFER_ADDRESS.set(byteBuffer, 0L);
-    }
-
-    /**
-     * Unwraps an original buffer from a suspected buffer slice. If the submitted buffer is not a slice, {@code null} will be returned.
-     * <p>
-     * This method works only with direct buffers and an exception will be thrown if a heap buffer is submitted.
-     */
-    public static ByteBuffer getOriginalBufferFromSlice(ByteBuffer byteBuffer) {
-        assertUnsafeByteBufferAccess();
-        if (!byteBuffer.isDirect()) {
-            throw new IllegalArgumentException("The submitted buffer is not a direct one:" + byteBuffer);
-        }
-        return (ByteBuffer) DIRECT_BYTE_BUFFER_ATTACHMENT.get(byteBuffer);
     }
 
     /**
