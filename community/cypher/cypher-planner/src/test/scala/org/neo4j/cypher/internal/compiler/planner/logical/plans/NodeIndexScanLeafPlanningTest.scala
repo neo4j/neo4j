@@ -66,7 +66,7 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val propIsNotNull = isNotNull(prop("n", "prop"))
   private val propStartsWithEmpty = startsWith(prop("n", "prop"), literalString(""))
   private val propLessThan12 = lessThan(prop("n", "prop"), lit12)
-  private val propNotEquals12 = notEquals(prop("n", "prop"), lit12)
+  private val propNotEquals12 = not(equals(prop("n", "prop"), lit12))
   private val propEquals12 = equals(prop("n", "prop"), lit12)
   private val propRegexMatchJohnny = regex(prop("n", "prop"), literalString("Johnny"))
   private val propContainsApa = contains(prop("n", "prop"), litApa)

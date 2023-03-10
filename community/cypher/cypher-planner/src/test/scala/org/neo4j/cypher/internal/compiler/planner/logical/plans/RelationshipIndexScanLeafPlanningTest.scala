@@ -75,7 +75,7 @@ class RelationshipIndexScanLeafPlanningTest extends CypherFunSuite with LogicalP
   private val propEndsWithApa = endsWith(prop(relName, prop), litApa)
   private val propEndsWithBepa = endsWith(prop(relName, prop), litBepa)
   private val propLessThan12 = lessThan(prop(relName, prop), lit12)
-  private val propNotEquals12 = notEquals(prop(relName, prop), lit12)
+  private val propNotEquals12 = not(equals(prop(relName, prop), lit12))
   private val propRegexMatchJohnny = regex(prop(relName, prop), literalString("Johnny"))
 
   private val fooIsNotNull = isNotNull(prop(relName, foo))

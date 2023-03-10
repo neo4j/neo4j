@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -148,9 +147,6 @@ object AsPropertyScannable {
 
     case regex: RegexMatch =>
       partialPropertyPredicate(regex, regex.lhs, solves = false)
-
-    case expr: NotEquals =>
-      partialPropertyPredicate(expr, expr.lhs, solves = false)
 
     case _ =>
       None

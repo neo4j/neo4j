@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
-import org.neo4j.cypher.internal.expressions.NotEquals
 import org.neo4j.cypher.internal.expressions.RegexMatch
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.Variable
@@ -72,9 +71,6 @@ object AsDynamicPropertyNonScannable {
       Some(variable)
 
     case RegexMatch(ContainerIndex(variable: Variable, _), _) =>
-      Some(variable)
-
-    case NotEquals(ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
 
     case _ =>
