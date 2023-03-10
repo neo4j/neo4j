@@ -47,17 +47,12 @@ object SemanticFeature {
     override def name: String = "Quantified path patterns"
   }
 
-  case object QuantifiedPathPatternPathAssignment extends SemanticFeature with FeatureToString {
-    override def name: String = "Assigning Quantified Path Pattern to Paths"
-  }
-
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
     UseGraphSelector,
     ExpressionsInViewInvocations,
     QuantifiedPathPatterns,
-    QuantifiedPathPatternPathAssignment,
     ShowSetting
   )
 

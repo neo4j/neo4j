@@ -41,8 +41,7 @@ class InterpretedAcceptanceTests extends BaseAcceptanceTest {
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
     case "QuantifiedPathPatternAcceptance" =>
       enableSemanticFeatures(Set(
-        SemanticFeature.QuantifiedPathPatterns,
-        SemanticFeature.QuantifiedPathPatternPathAssignment
+        SemanticFeature.QuantifiedPathPatterns
       ))
     case _ => Map.empty
   }

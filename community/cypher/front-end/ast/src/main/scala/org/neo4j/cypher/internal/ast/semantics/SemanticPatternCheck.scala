@@ -118,10 +118,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
   def check(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
       case x: NamedPatternPart =>
-        check(ctx)(x.patternPart) chain
-          whenState(!_.features.contains(SemanticFeature.QuantifiedPathPatternPathAssignment)) {
-            checkNoQuantifiedPathPatterns(x.patternPart)
-          }
+        check(ctx)(x.patternPart)
 
       case x: EveryPath =>
         check(ctx, x.element)
