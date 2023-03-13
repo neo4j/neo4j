@@ -27,28 +27,28 @@ import org.neo4j.io.fs.PhysicalFlushableChannel;
 import org.neo4j.io.memory.ScopedBuffer;
 
 /**
- * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushablePositionAwareChannel}. This
+ * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushableLogPositionAwareChannel}. This
  * implementation uses a {@link PhysicalFlushableChannel}, which provides buffering for write operations over the
  * decorated channel.
  */
-public class PositionAwarePhysicalFlushableChannel implements FlushablePositionAwareChannel {
+public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPositionAwareChannel {
     private LogVersionedStoreChannel logVersionedStoreChannel;
     private final PhysicalFlushableLogChannel channel;
 
-    public PositionAwarePhysicalFlushableChannel(
+    public PhysicalFlushableLogPositionAwareChannel(
             LogVersionedStoreChannel logVersionedStoreChannel, ScopedBuffer buffer) {
         this.logVersionedStoreChannel = logVersionedStoreChannel;
         this.channel = new PhysicalFlushableLogChannel(logVersionedStoreChannel, buffer);
     }
 
     @Override
-    public LogPositionMarker getCurrentPosition(LogPositionMarker positionMarker) throws IOException {
+    public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) throws IOException {
         positionMarker.mark(logVersionedStoreChannel.getVersion(), channel.position());
         return positionMarker;
     }
 
     @Override
-    public LogPosition getCurrentPosition() throws IOException {
+    public LogPosition getCurrentLogPosition() throws IOException {
         return new LogPosition(logVersionedStoreChannel.getVersion(), channel.position());
     }
 

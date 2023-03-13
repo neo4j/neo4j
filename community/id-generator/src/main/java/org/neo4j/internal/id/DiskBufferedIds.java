@@ -135,7 +135,7 @@ class DiskBufferedIds implements BufferedIds {
         while (hasMoreToRead()) {
             // Read one entire chunk and hand over to the visitor as we go
             var segment = readPosition.segment;
-            segment.setCurrentPosition(readPosition.offset);
+            segment.position(readPosition.offset);
             var header = segment.get();
             Preconditions.checkState(header == HEADER_CHUNK, "Expecting to read header, but instead read %d", header);
             var timeMillis = segment.getLong();

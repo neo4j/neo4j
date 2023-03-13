@@ -30,16 +30,16 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 import java.util.zip.Checksum;
 import org.neo4j.io.fs.ChecksumMismatchException;
-import org.neo4j.io.fs.PositionableChannel;
 import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.io.fs.SeekableChannel;
 
 /**
- * Implementation of {@link ReadableClosablePositionAwareChannel} operating over a {@code byte[]} in memory.
+ * Implementation of {@link ReadableLogPositionAwareChannel} operating over a {@code byte[]} in memory.
  */
 public class InMemoryClosableChannel
-        implements ReadableClosablePositionAwareChannel,
-                FlushablePositionAwareChannel,
-                PositionableChannel,
+        implements ReadableLogPositionAwareChannel,
+                FlushableLogPositionAwareChannel,
+                SeekableChannel,
                 ReadableByteChannel {
     private final byte[] bytes;
     private final Reader reader;
@@ -202,15 +202,15 @@ public class InMemoryClosableChannel
     }
 
     @Override
-    public LogPositionMarker getCurrentPosition(LogPositionMarker positionMarker) {
+    public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) {
         var buffer = isReader ? reader : writer;
-        return buffer.getCurrentPosition(positionMarker);
+        return buffer.getCurrentLogPosition(positionMarker);
     }
 
     @Override
-    public LogPosition getCurrentPosition() throws IOException {
+    public LogPosition getCurrentLogPosition() throws IOException {
         var buffer = isReader ? reader : writer;
-        return buffer.getCurrentPosition();
+        return buffer.getCurrentLogPosition();
     }
 
     @Override
@@ -230,23 +230,23 @@ public class InMemoryClosableChannel
     }
 
     public int positionWriter(int position) {
-        int previous = writer.position();
+        int previous = (int) writer.position();
         writer.position(position);
         return previous;
     }
 
     public int positionReader(int position) {
-        int previous = reader.position();
+        int previous = (int) reader.position();
         reader.position(position);
         return previous;
     }
 
     public int readerPosition() {
-        return reader.position();
+        return (int) reader.position();
     }
 
     public int writerPosition() {
-        return writer.position();
+        return (int) writer.position();
     }
 
     public void truncateTo(int offset) {
@@ -268,7 +268,13 @@ public class InMemoryClosableChannel
     private static final Flushable NO_OP_FLUSHABLE = () -> {};
 
     @Override
-    public void setCurrentPosition(long byteOffset) {
+    public long position() throws IOException {
+        var buffer = isReader ? reader : writer;
+        return buffer.position();
+    }
+
+    @Override
+    public void position(long byteOffset) {
         var buffer = isReader ? reader : writer;
         buffer.position((int) byteOffset);
     }
@@ -294,7 +300,7 @@ public class InMemoryClosableChannel
         return readerRemaining;
     }
 
-    static class ByteBufferBase implements PositionAwareChannel, Closeable {
+    static class ByteBufferBase implements LogPositionAwareChannel, Closeable {
         protected final ByteBuffer buffer;
         protected boolean isClosed;
 
@@ -306,12 +312,12 @@ public class InMemoryClosableChannel
             buffer.clear();
         }
 
-        int position() {
+        long position() {
             return buffer.position();
         }
 
-        void position(int position) {
-            buffer.position(position);
+        void position(long position) {
+            buffer.position((int) position);
         }
 
         int remaining() {
@@ -328,18 +334,18 @@ public class InMemoryClosableChannel
         }
 
         @Override
-        public LogPositionMarker getCurrentPosition(LogPositionMarker positionMarker) {
+        public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) {
             positionMarker.mark(0, buffer.position());
             return positionMarker;
         }
 
         @Override
-        public LogPosition getCurrentPosition() {
+        public LogPosition getCurrentLogPosition() {
             return new LogPosition(0, buffer.position());
         }
     }
 
-    public class Reader extends ByteBufferBase implements ReadableClosablePositionAwareChannel, PositionableChannel {
+    public class Reader extends ByteBufferBase implements ReadableLogPositionAwareChannel, SeekableChannel {
         private final Checksum checksum = CHECKSUM_FACTORY.get();
 
         Reader(ByteBuffer buffer) {
@@ -419,7 +425,12 @@ public class InMemoryClosableChannel
         }
 
         @Override
-        public void setCurrentPosition(long byteOffset) {
+        public long position() {
+            return buffer.position();
+        }
+
+        @Override
+        public void position(long byteOffset) {
             buffer.position(toIntExact(byteOffset));
             beginChecksum();
         }
@@ -451,7 +462,7 @@ public class InMemoryClosableChannel
         }
     }
 
-    public static class Writer extends ByteBufferBase implements FlushablePositionAwareChannel {
+    public static class Writer extends ByteBufferBase implements FlushableLogPositionAwareChannel {
         private final Checksum checksum = CHECKSUM_FACTORY.get();
 
         Writer(ByteBuffer buffer) {

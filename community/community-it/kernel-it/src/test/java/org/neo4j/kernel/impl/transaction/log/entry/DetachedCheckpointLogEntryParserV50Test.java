@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -122,8 +122,7 @@ class DetachedCheckpointLogEntryParserV50Test {
     }
 
     private LogEntryDetachedCheckpointV5_0 readCheckpoint(
-            VersionAwareLogEntryReader entryReader, ReadableClosablePositionAwareChannel readChannel)
-            throws IOException {
+            VersionAwareLogEntryReader entryReader, ReadableLogPositionAwareChannel readChannel) throws IOException {
         return (LogEntryDetachedCheckpointV5_0) entryReader.readLogEntry(readChannel);
     }
 

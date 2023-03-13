@@ -29,11 +29,11 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
  */
 public class LogEntryCursor implements IOCursor<LogEntry> {
     private final LogEntryReader logEntryReader;
-    private final ReadableClosablePositionAwareChannel channel;
+    private final ReadableLogPositionAwareChannel channel;
     private final LogPositionMarker position = new LogPositionMarker();
     private LogEntry entry;
 
-    public LogEntryCursor(LogEntryReader logEntryReader, ReadableClosablePositionAwareChannel channel) {
+    public LogEntryCursor(LogEntryReader logEntryReader, ReadableLogPositionAwareChannel channel) {
         this.logEntryReader = logEntryReader;
         this.channel = channel;
     }
@@ -62,7 +62,7 @@ public class LogEntryCursor implements IOCursor<LogEntry> {
      * @return the log version of the most recent {@link LogEntry} returned from {@link #next()}.
      */
     public long getCurrentLogVersion() throws IOException {
-        channel.getCurrentPosition(position);
+        channel.getCurrentLogPosition(position);
         return position.getLogVersion();
     }
 }

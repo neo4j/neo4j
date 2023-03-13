@@ -37,16 +37,16 @@ import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryRollback;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class CommittedCommandBatchCursor implements CommandBatchCursor {
-    private final ReadableClosablePositionAwareChannel channel;
+    private final ReadableLogPositionAwareChannel channel;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
     private CommittedCommandBatch current;
 
-    public CommittedCommandBatchCursor(ReadableClosablePositionAwareChannel channel, LogEntryReader entryReader)
+    public CommittedCommandBatchCursor(ReadableLogPositionAwareChannel channel, LogEntryReader entryReader)
             throws IOException {
         this.channel = channel;
-        channel.getCurrentPosition(lastGoodPositionMarker);
+        channel.getCurrentLogPosition(lastGoodPositionMarker);
         this.logEntryCursor = new LogEntryCursor(entryReader, channel);
     }
 
@@ -96,7 +96,7 @@ public class CommittedCommandBatchCursor implements CommandBatchCursor {
         } else {
             throw new IllegalStateException("Was expecting transaction or chunk start but got: " + entry);
         }
-        channel.getCurrentPosition(lastGoodPositionMarker);
+        channel.getCurrentLogPosition(lastGoodPositionMarker);
         return true;
     }
 

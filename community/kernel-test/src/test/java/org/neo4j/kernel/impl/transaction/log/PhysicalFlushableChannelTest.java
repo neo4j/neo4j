@@ -300,14 +300,14 @@ class PhysicalFlushableChannelTest {
         StoreChannel storeChannel = fileSystem.write(file);
         PhysicalLogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
                 storeChannel, 1, (byte) -1, file, nativeChannelAccessor, databaseTracer);
-        try (var channel = new PositionAwarePhysicalFlushableChannel(
+        try (var channel = new PhysicalFlushableLogPositionAwareChannel(
                 versionedStoreChannel, new NativeScopedBuffer(1024, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
-            LogPosition initialPosition = channel.getCurrentPosition();
+            LogPosition initialPosition = channel.getCurrentLogPosition();
 
             // WHEN
             channel.putLong(67);
             channel.putInt(1234);
-            LogPosition positionAfterSomeData = channel.getCurrentPosition();
+            LogPosition positionAfterSomeData = channel.getCurrentLogPosition();
 
             // THEN
             assertEquals(12, positionAfterSomeData.getByteOffset() - initialPosition.getByteOffset());

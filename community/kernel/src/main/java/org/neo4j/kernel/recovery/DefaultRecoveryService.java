@@ -37,8 +37,8 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.CommandBatchCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -115,13 +115,13 @@ public class DefaultRecoveryService implements RecoveryService {
         channel.position(writePosition.getByteOffset());
         try (var tempRollbackBuffer = new HeapScopedBuffer(
                         DEFAULT_BUFFER_SIZE, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
-                var writerChannel = new PositionAwarePhysicalFlushableChannel(channel, tempRollbackBuffer)) {
+                var writerChannel = new PhysicalFlushableLogPositionAwareChannel(channel, tempRollbackBuffer)) {
             var entryWriter = new LogEntryWriter<>(writerChannel);
             long time = clock.millis();
             for (long notCompletedTransaction : notCompletedTransactions) {
                 entryWriter.writeRollbackEntry(version, notCompletedTransaction, time);
             }
-            return writerChannel.getCurrentPosition();
+            return writerChannel.getCurrentLogPosition();
         }
     }
 

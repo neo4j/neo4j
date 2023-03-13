@@ -57,8 +57,8 @@ import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.log.LogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
@@ -98,7 +98,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
     private final LogRotation logRotation;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
-    private PositionAwarePhysicalFlushableChannel writer;
+    private PhysicalFlushableLogPositionAwareChannel writer;
     private LogVersionRepository logVersionRepository;
     private final LogHeaderCache logHeaderCache;
     private final FileSystemAbstraction fileSystem;
@@ -138,7 +138,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         // try to set position
         seekChannelPosition(currentLogVersion);
 
-        writer = new PositionAwarePhysicalFlushableChannel(
+        writer = new PhysicalFlushableLogPositionAwareChannel(
                 channel,
                 new NativeScopedBuffer(
                         context.getConfig().get(transaction_log_buffer_size), ByteOrder.LITTLE_ENDIAN, memoryTracker));
@@ -182,17 +182,17 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
 
     @Override
     public boolean rotationNeeded() throws IOException {
-        return writer.getCurrentPosition().getByteOffset() >= rotateAtSize.get();
+        return writer.getCurrentLogPosition().getByteOffset() >= rotateAtSize.get();
     }
 
     @Override
     public void truncate() throws IOException {
-        truncate(writer.getCurrentPosition());
+        truncate(writer.getCurrentLogPosition());
     }
 
     @Override
     public synchronized void truncate(LogPosition targetPosition) throws IOException {
-        long currentVersion = writer.getCurrentPosition().getLogVersion();
+        long currentVersion = writer.getCurrentLogPosition().getLogVersion();
         long targetVersion = targetPosition.getLogVersion();
         if (currentVersion < targetVersion) {
             throw new IllegalArgumentException(

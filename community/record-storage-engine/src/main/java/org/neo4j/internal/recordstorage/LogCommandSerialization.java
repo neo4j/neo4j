@@ -23,7 +23,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.impl.transaction.log.PositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.LogPositionAwareChannel;
 import org.neo4j.storageengine.api.CommandReader;
 
 public abstract class LogCommandSerialization implements CommandReader, KernelVersionProvider {
@@ -203,8 +203,8 @@ public abstract class LogCommandSerialization implements CommandReader, KernelVe
 
     protected static IOException unknownCommandType(byte commandType, ReadableChannel channel) throws IOException {
         String message = "Unknown command type[" + commandType + "]";
-        if (channel instanceof PositionAwareChannel logChannel) {
-            message += " near " + logChannel.getCurrentPosition();
+        if (channel instanceof LogPositionAwareChannel logChannel) {
+            message += " near " + logChannel.getCurrentLogPosition();
         }
         return new IOException(message);
     }

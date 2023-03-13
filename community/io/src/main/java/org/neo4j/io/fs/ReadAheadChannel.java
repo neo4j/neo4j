@@ -36,7 +36,7 @@ import org.neo4j.io.memory.ScopedBuffer;
  * spanning more than one file, by properly implementing {@link #next(StoreChannel)}.
  * @param <T> The type of StoreChannel wrapped
  */
-public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel, PositionableChannel {
+public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel, SeekableChannel {
     public static final int DEFAULT_READ_AHEAD_SIZE = toIntExact(kibiBytes(4));
     private final ScopedBuffer scopedBuffer;
 
@@ -274,7 +274,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
     }
 
     @Override
-    public void setCurrentPosition(long byteOffset) throws IOException {
+    public void position(long byteOffset) throws IOException {
         long positionRelativeToAheadBuffer = byteOffset - (channel.position() - aheadBuffer.limit());
         if (positionRelativeToAheadBuffer >= aheadBuffer.limit() || positionRelativeToAheadBuffer < 0) {
             // Beyond what we currently have buffered

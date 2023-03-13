@@ -118,7 +118,7 @@ public class CheckpointInfoFactory {
                 if (logEntry instanceof LogEntryStart) {
                     logEntryStart = (LogEntryStart) logEntry;
                 }
-                checkedPosition = reader.getCurrentPosition();
+                checkedPosition = reader.getCurrentLogPosition();
                 if (logEntry instanceof LogEntryCommit commit && checkedPosition.equals(transactionPosition)) {
                     if (logEntryStart == null) {
                         throw new IllegalStateException("Transaction commit entry for tx id: " + commit.getTxId()

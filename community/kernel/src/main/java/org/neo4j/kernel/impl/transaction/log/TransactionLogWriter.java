@@ -31,18 +31,18 @@ import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.util.VisibleForTesting;
 
 public class TransactionLogWriter {
-    private final FlushablePositionAwareChannel channel;
-    private final LogEntryWriter<FlushablePositionAwareChannel> writer;
+    private final FlushableLogPositionAwareChannel channel;
+    private final LogEntryWriter<FlushableLogPositionAwareChannel> writer;
     private final KernelVersionProvider versionProvider;
 
-    public TransactionLogWriter(FlushablePositionAwareChannel channel, KernelVersionProvider versionProvider) {
+    public TransactionLogWriter(FlushableLogPositionAwareChannel channel, KernelVersionProvider versionProvider) {
         this(channel, new LogEntryWriter<>(channel), versionProvider);
     }
 
     @VisibleForTesting
     public TransactionLogWriter(
-            FlushablePositionAwareChannel channel,
-            LogEntryWriter<FlushablePositionAwareChannel> writer,
+            FlushableLogPositionAwareChannel channel,
+            LogEntryWriter<FlushableLogPositionAwareChannel> writer,
             KernelVersionProvider versionProvider) {
         this.channel = channel;
         this.writer = writer;
@@ -104,15 +104,15 @@ public class TransactionLogWriter {
     }
 
     public LogPosition getCurrentPosition() throws IOException {
-        return channel.getCurrentPosition();
+        return channel.getCurrentLogPosition();
     }
 
     public LogPositionMarker getCurrentPosition(LogPositionMarker logPositionMarker) throws IOException {
-        return channel.getCurrentPosition(logPositionMarker);
+        return channel.getCurrentLogPosition(logPositionMarker);
     }
 
     @VisibleForTesting
-    public FlushablePositionAwareChannel getChannel() {
+    public FlushableLogPositionAwareChannel getChannel() {
         return channel;
     }
 
@@ -121,7 +121,7 @@ public class TransactionLogWriter {
     }
 
     @VisibleForTesting
-    public LogEntryWriter<FlushablePositionAwareChannel> getWriter() {
+    public LogEntryWriter<FlushableLogPositionAwareChannel> getWriter() {
         return writer;
     }
 }

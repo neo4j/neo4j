@@ -19,12 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
+import static org.neo4j.util.Preconditions.checkArgument;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.fs.SeekableChannel;
 
-public class DelegateReadableChannel implements ReadableClosablePositionAwareChannel {
+public class DelegateReadableChannel implements ReadableLogPositionAwareChannel {
     private ReadableChannel delegate;
+
+    public DelegateReadableChannel() {}
+
+    public DelegateReadableChannel(ReadableChannel delegate) {
+        this.delegate = delegate;
+    }
 
     public void delegateTo(ReadableChannel delegate) {
         this.delegate = delegate;
@@ -74,29 +83,23 @@ public class DelegateReadableChannel implements ReadableClosablePositionAwareCha
 
     @Override
     public byte markAndGet(LogPositionMarker marker) throws IOException {
-        if (delegate instanceof ReadableClosablePositionAwareChannel posChannel) {
+        if (delegate instanceof ReadableLogPositionAwareChannel posChannel) {
             return posChannel.markAndGet(marker);
         }
-        return ReadableClosablePositionAwareChannel.super.markAndGet(marker);
+        return ReadableLogPositionAwareChannel.super.markAndGet(marker);
     }
 
     @Override
-    public LogPositionMarker getCurrentPosition(LogPositionMarker positionMarker) {
+    public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) {
         assertAssigned();
         positionMarker.unspecified();
         return positionMarker;
     }
 
     @Override
-    public LogPosition getCurrentPosition() {
+    public LogPosition getCurrentLogPosition() {
         assertAssigned();
         return LogPosition.UNSPECIFIED;
-    }
-
-    private void assertAssigned() {
-        if (delegate == null) {
-            throw new IllegalArgumentException("No assigned channel to delegate reads");
-        }
     }
 
     @Override
@@ -131,5 +134,21 @@ public class DelegateReadableChannel implements ReadableClosablePositionAwareCha
     public int read(ByteBuffer dst) throws IOException {
         assertAssigned();
         return delegate.read(dst);
+    }
+
+    @Override
+    public long position() throws IOException {
+        assertAssigned();
+        return ((SeekableChannel) delegate).position();
+    }
+
+    @Override
+    public void position(long byteOffset) throws IOException {
+        assertAssigned();
+        ((SeekableChannel) delegate).position(byteOffset);
+    }
+
+    private void assertAssigned() {
+        checkArgument(delegate != null, "No assigned channel to delegate reads");
     }
 }

@@ -21,12 +21,12 @@ package org.neo4j.io.marshal;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import org.junit.jupiter.api.Test;
-import org.neo4j.io.fs.InputStreamReadableChannel;
+import org.neo4j.io.fs.ByteBufferReadableChannel;
 import org.neo4j.io.fs.OutputStreamWritableChannel;
 
 class LimitedStringChannelMarshalTest {
@@ -40,7 +40,7 @@ class LimitedStringChannelMarshalTest {
 
         // when
         stringChannelMarshal.marshal(inputString, writableChannel);
-        var readableChannel = new InputStreamReadableChannel(new ByteArrayInputStream(outputStream.toByteArray()));
+        var readableChannel = new ByteBufferReadableChannel(ByteBuffer.wrap(outputStream.toByteArray()));
         var unmarshalledString = stringChannelMarshal.unmarshal(readableChannel);
 
         // then
@@ -56,11 +56,11 @@ class LimitedStringChannelMarshalTest {
 
         // when
         stringChannelMarshal.marshal(inputString, writableChannel);
-        var readableChannel = new InputStreamReadableChannel(new ByteArrayInputStream(outputStream.toByteArray()));
+        var readableChannel = new ByteBufferReadableChannel(ByteBuffer.wrap(outputStream.toByteArray()));
         var unmarshalledString = stringChannelMarshal.unmarshal(readableChannel);
 
         // then
-        assertThat("ab").isEqualTo(unmarshalledString);
+        assertThat(unmarshalledString).isEqualTo("ab");
     }
 
     @Test
@@ -74,7 +74,7 @@ class LimitedStringChannelMarshalTest {
         writableChannel.put("abc".getBytes(StandardCharsets.UTF_8), 3);
 
         // when
-        var readableChannel = new InputStreamReadableChannel(new ByteArrayInputStream(outputStream.toByteArray()));
+        var readableChannel = new ByteBufferReadableChannel(ByteBuffer.wrap(outputStream.toByteArray()));
         var unmarshalledString = new LimitedStringChannelMarshal(2).unmarshal(readableChannel);
 
         // then

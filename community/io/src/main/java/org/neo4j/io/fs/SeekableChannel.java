@@ -21,6 +21,8 @@ package org.neo4j.io.fs;
 
 import java.io.IOException;
 
-public interface PositionableChannel {
-    void setCurrentPosition(long byteOffset) throws IOException;
+public interface SeekableChannel {
+    long position() throws IOException;
+
+    void position(long byteOffset) throws IOException;
 }

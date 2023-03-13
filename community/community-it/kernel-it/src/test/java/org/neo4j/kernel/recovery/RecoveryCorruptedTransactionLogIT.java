@@ -80,7 +80,7 @@ import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.InMemoryVersionableReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
@@ -1090,9 +1090,9 @@ class RecoveryCorruptedTransactionLogIT {
                 .build();
         try (Lifespan lifespan = new Lifespan(internalLogFiles)) {
             LogFile transactionLogFile = internalLogFiles.getLogFile();
-            LogEntryWriter<FlushablePositionAwareChannel> realLogEntryWriter =
+            LogEntryWriter<FlushableLogPositionAwareChannel> realLogEntryWriter =
                     transactionLogFile.getTransactionLogWriter().getWriter();
-            LogEntryWriter<FlushablePositionAwareChannel> wrappedLogEntryWriter =
+            LogEntryWriter<FlushableLogPositionAwareChannel> wrappedLogEntryWriter =
                     logEntryWriterWrapper.wrap(realLogEntryWriter);
             TransactionLogWriter writer = new TransactionLogWriter(
                     realLogEntryWriter.getChannel(), wrappedLogEntryWriter, LATEST_KERNEL_VERSION_PROVIDER);

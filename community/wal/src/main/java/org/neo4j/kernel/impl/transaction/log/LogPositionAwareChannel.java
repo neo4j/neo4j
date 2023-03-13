@@ -25,8 +25,8 @@ import java.io.IOException;
  * Something that is able to report current position when asked. The supplied {@link LogPositionMarker} is
  * filled with the details, which later can create a {@link LogPositionMarker#newPosition() new} {@link LogPosition}.
  */
-public interface PositionAwareChannel {
-    LogPositionMarker getCurrentPosition(LogPositionMarker positionMarker) throws IOException;
+public interface LogPositionAwareChannel {
+    LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) throws IOException;
 
-    LogPosition getCurrentPosition() throws IOException;
+    LogPosition getCurrentLogPosition() throws IOException;
 }

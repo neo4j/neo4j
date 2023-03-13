@@ -124,12 +124,12 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     var logEntryCursor = new LogEntryCursor(checkpointReader, reader)) {
                 log.info("Scanning log file with version %d for checkpoint entries", currentVersion);
                 try {
-                    var lastCheckpointLocation = reader.getCurrentPosition();
+                    var lastCheckpointLocation = reader.getCurrentLogPosition();
                     while (logEntryCursor.next()) {
                         var checkpoint = logEntryCursor.get();
                         checkpointEntry = new CheckpointEntryInfo(
-                                checkpoint, lastCheckpointLocation, reader.getCurrentPosition());
-                        lastCheckpointLocation = reader.getCurrentPosition();
+                                checkpoint, lastCheckpointLocation, reader.getCurrentLogPosition());
+                        lastCheckpointLocation = reader.getCurrentLogPosition();
                     }
                     if (checkpointEntry != null) {
                         return Optional.of(createCheckpointInfo(checkpointEntry, reader));
@@ -154,7 +154,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                 checkpointEntry.checkpoint,
                 checkpointEntry.checkpointEntryPosition,
                 checkpointEntry.channelPositionAfterCheckpoint,
-                reader.getCurrentPosition(),
+                reader.getCurrentLogPosition(),
                 context,
                 logFiles.getLogFile());
     }
@@ -179,12 +179,12 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
                     var logEntryCursor = new LogEntryCursor(checkpointReader, reader)) {
                 log.info("Scanning log file with version %d for checkpoint entries", currentVersion);
                 LogEntry checkpoint;
-                var lastCheckpointLocation = reader.getCurrentPosition();
+                var lastCheckpointLocation = reader.getCurrentLogPosition();
                 var lastLocation = lastCheckpointLocation;
                 while (logEntryCursor.next()) {
                     lastCheckpointLocation = lastLocation;
                     checkpoint = logEntryCursor.get();
-                    lastLocation = reader.getCurrentPosition();
+                    lastLocation = reader.getCurrentLogPosition();
                     checkpoints.add(ofLogEntry(
                             checkpoint,
                             lastCheckpointLocation,

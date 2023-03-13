@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.ReadableLogPositionAwareChannel;
 
 /**
  * Reads {@link LogEntry} instances from a {@link ReadableChannel source}. Instances are expected to be
@@ -36,7 +36,7 @@ public interface LogEntryReader {
      * @return the read {@link LogEntry} or {@code null} if there were no more complete entries in the given source.
      * @throws IOException if source throws exception.
      */
-    LogEntry readLogEntry(ReadableClosablePositionAwareChannel source) throws IOException;
+    LogEntry readLogEntry(ReadableLogPositionAwareChannel source) throws IOException;
 
     LogPosition lastPosition();
 }

@@ -35,8 +35,8 @@ import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
-import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -64,7 +64,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final Panic databasePanic;
     private final LogRotation logRotation;
     private StoreId storeId;
-    private PositionAwarePhysicalFlushableChannel writer;
+    private PhysicalFlushableLogPositionAwareChannel writer;
     private CheckpointWriters checkpointWriters;
     private NativeScopedBuffer buffer;
     private PhysicalLogVersionedStoreChannel channel;
@@ -100,7 +100,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         context.getMonitors().newMonitor(LogRotationMonitor.class).started(channel.getPath(), version);
         seekCheckpointChannel(version);
         buffer = new NativeScopedBuffer(kibiBytes(1), ByteOrder.LITTLE_ENDIAN, context.getMemoryTracker());
-        writer = new PositionAwarePhysicalFlushableChannel(channel, buffer);
+        writer = new PhysicalFlushableLogPositionAwareChannel(channel, buffer);
         checkpointWriters = new CheckpointWriters(writer);
     }
 
@@ -134,7 +134,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             while (logEntryCursor.next()) {
                 logEntryCursor.get();
             }
-            return reader.getCurrentPosition().getByteOffset();
+            return reader.getCurrentLogPosition().getByteOffset();
         }
     }
 
@@ -163,11 +163,11 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         synchronized (checkpointFile) {
             try {
                 databasePanic.assertNoPanic(IOException.class);
-                var logPositionBeforeCheckpoint = writer.getCurrentPosition();
+                var logPositionBeforeCheckpoint = writer.getCurrentLogPosition();
                 getCheckpointLogEntryWriter(kernelVersion)
                         .writeCheckPointEntry(
                                 transactionId, kernelVersion, logPosition, checkpointTime, storeId, reason);
-                var logPositionAfterCheckpoint = writer.getCurrentPosition();
+                var logPositionAfterCheckpoint = writer.getCurrentLogPosition();
                 logCheckPointEvent.appendToLogFile(logPositionBeforeCheckpoint, logPositionAfterCheckpoint);
                 forceAfterAppend(logCheckPointEvent);
                 logRotation.rotateLogIfNeeded(logCheckPointEvent);

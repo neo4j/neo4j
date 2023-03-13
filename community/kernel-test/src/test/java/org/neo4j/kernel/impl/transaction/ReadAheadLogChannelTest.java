@@ -175,7 +175,7 @@ class ReadAheadLogChannelTest {
             }
 
             final var marker = new LogPositionMarker();
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
             assertEquals(new LogPosition(0, channelSize1), marker.newPosition());
 
             assertEquals(byteValue, channel.markAndGet(marker));
@@ -185,7 +185,7 @@ class ReadAheadLogChannelTest {
                 assertEquals(i, channel.getLong());
             }
 
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
             assertEquals(new LogPosition(1, channelSize2), marker.newPosition());
         }
     }

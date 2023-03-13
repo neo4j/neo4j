@@ -51,7 +51,7 @@ import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
-import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
+import org.neo4j.kernel.impl.transaction.log.FlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -150,7 +150,7 @@ class CorruptedLogsTruncatorTest {
         long fileSizeBeforeAppend = Files.size(logFile.getHighestLogFile());
         LogPosition endOfLogsPosition = new LogPosition(highestLogVersion, fileSizeBeforeAppend);
 
-        FlushablePositionAwareChannel channel =
+        FlushableLogPositionAwareChannel channel =
                 logFile.getTransactionLogWriter().getChannel();
         for (int i = 0; i < RandomUtils.nextInt(100, 10240); i++) {
             channel.putLong(0);
@@ -179,7 +179,7 @@ class CorruptedLogsTruncatorTest {
         long fileSizeBeforeAppend = Files.size(logFile.getHighestLogFile());
         LogPosition endOfLogsPosition = new LogPosition(highestLogVersion, fileSizeBeforeAppend);
 
-        FlushablePositionAwareChannel channel =
+        FlushableLogPositionAwareChannel channel =
                 logFile.getTransactionLogWriter().getChannel();
         for (int i = 0; i < RandomUtils.nextInt(100, 10240); i++) {
             channel.putLong(0);
@@ -346,7 +346,8 @@ class CorruptedLogsTruncatorTest {
 
     private static void generateTransactionLogFiles(LogFiles logFiles) throws IOException {
         LogFile logFile = logFiles.getLogFile();
-        FlushablePositionAwareChannel writer = logFile.getTransactionLogWriter().getChannel();
+        FlushableLogPositionAwareChannel writer =
+                logFile.getTransactionLogWriter().getChannel();
         for (byte i = 0; i < 107; i++) {
             writer.put(i);
             writer.prepareForFlush();

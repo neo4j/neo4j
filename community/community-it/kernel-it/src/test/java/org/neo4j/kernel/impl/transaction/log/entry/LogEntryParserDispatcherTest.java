@@ -125,7 +125,7 @@ class LogEntryParserDispatcherTest {
         channel.putInt(start.getAdditionalHeader().length);
         channel.put(start.getAdditionalHeader(), start.getAdditionalHeader().length);
 
-        channel.getCurrentPosition(marker);
+        channel.getCurrentLogPosition(marker);
 
         // when
         final LogEntryParser parser = parserSet(
@@ -147,7 +147,7 @@ class LogEntryParserDispatcherTest {
         channel.putLong(commit.getTimeWritten());
         channel.putChecksum();
 
-        channel.getCurrentPosition(marker);
+        channel.getCurrentLogPosition(marker);
 
         // when
         final LogEntryParser parser = parserSet(
@@ -167,7 +167,7 @@ class LogEntryParserDispatcherTest {
         final LogEntryCommand command = new LogEntryCommand(testCommand);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
         testCommand.serialize(channel);
-        channel.getCurrentPosition(marker);
+        channel.getCurrentLogPosition(marker);
 
         // when
         final LogEntryParser parser = parserSet(

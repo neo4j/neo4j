@@ -31,14 +31,14 @@ import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryRollback;
 
 public class SketchingCommandBatchCursor implements CommandBatchCursor {
-    private final ReadableClosablePositionAwareChannel channel;
+    private final ReadableLogPositionAwareChannel channel;
     private final LogEntryCursor logEntryCursor;
     private final LogPositionMarker lastGoodPositionMarker = new LogPositionMarker();
 
-    public SketchingCommandBatchCursor(ReadableClosablePositionAwareChannel channel, LogEntryReader entryReader)
+    public SketchingCommandBatchCursor(ReadableLogPositionAwareChannel channel, LogEntryReader entryReader)
             throws IOException {
         this.channel = channel;
-        channel.getCurrentPosition(lastGoodPositionMarker);
+        channel.getCurrentLogPosition(lastGoodPositionMarker);
         this.logEntryCursor = new LogEntryCursor(entryReader, channel);
     }
 
@@ -52,7 +52,7 @@ public class SketchingCommandBatchCursor implements CommandBatchCursor {
         while (hasEntries()) {
             LogEntry entry = logEntryCursor.get();
             if (entry instanceof LogEntryRollback) {
-                channel.getCurrentPosition(lastGoodPositionMarker);
+                channel.getCurrentLogPosition(lastGoodPositionMarker);
                 return true;
             }
             assert entry instanceof LogEntryStart || entry instanceof LogEntryChunkStart
@@ -63,7 +63,7 @@ public class SketchingCommandBatchCursor implements CommandBatchCursor {
                 entry = logEntryCursor.get();
 
                 if (isBatchEnd(entry)) {
-                    channel.getCurrentPosition(lastGoodPositionMarker);
+                    channel.getCurrentLogPosition(lastGoodPositionMarker);
                     return true;
                 }
             }

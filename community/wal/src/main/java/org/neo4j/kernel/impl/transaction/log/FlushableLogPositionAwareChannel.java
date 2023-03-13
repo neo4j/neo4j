@@ -21,4 +21,4 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import org.neo4j.io.fs.FlushableChannel;
 
-public interface FlushablePositionAwareChannel extends FlushableChannel, PositionAwareChannel {}
+public interface FlushableLogPositionAwareChannel extends FlushableChannel, LogPositionAwareChannel {}

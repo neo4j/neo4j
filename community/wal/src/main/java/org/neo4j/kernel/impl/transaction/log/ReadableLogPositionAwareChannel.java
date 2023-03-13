@@ -21,11 +21,12 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.fs.SeekableChannel;
 
-public interface ReadableClosablePositionAwareChannel extends ReadableChannel, PositionAwareChannel {
+public interface ReadableLogPositionAwareChannel extends ReadableChannel, LogPositionAwareChannel, SeekableChannel {
     /**
      * Logically, this method is the same as calling
-     * {@link PositionAwareChannel#getCurrentPosition(LogPositionMarker)} followed by a call to
+     * {@link LogPositionAwareChannel#getCurrentLogPosition(LogPositionMarker)} followed by a call to
      * {@link ReadableChannel#get()}. However, in some circumstances the call to get can cause the channel to
      * rollover into the next version when the marker has been positioned in the PREVIOUS channel, giving an
      * inconsistent reading. Implementations should ensure that the positioned marker is correct for the location of
@@ -35,7 +36,7 @@ public interface ReadableClosablePositionAwareChannel extends ReadableChannel, P
      * @throws IOException if unable to read the channel for data
      */
     default byte markAndGet(LogPositionMarker marker) throws IOException {
-        getCurrentPosition(marker);
+        getCurrentLogPosition(marker);
         return get();
     }
 }

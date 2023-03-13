@@ -79,12 +79,12 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.SimpleLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.LogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.log.PositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.PositionAwarePhysicalFlushableChannel;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
@@ -166,12 +166,12 @@ class TransactionLogsRecoveryTest {
 
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
-            PositionAwareChannel channel = dataWriters.channel();
+            LogPositionAwareChannel channel = dataWriters.channel();
             LogPositionMarker marker = new LogPositionMarker();
 
             // last committed tx
             int previousChecksum = BASE_TX_CHECKSUM;
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
             LogPosition lastCommittedTxPosition = marker.newPosition();
             byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
             byte[] headerData = encodeLogIndex(1);
@@ -198,7 +198,7 @@ class TransactionLogsRecoveryTest {
                     "test");
 
             // tx committed after checkpoint
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
             writer.writeStartEntry(version, 6L, 4L, previousChecksum, headerData);
             expectedStartEntry = new LogEntryStart(
                     LatestVersions.LATEST_KERNEL_VERSION, 6L, 4L, previousChecksum, headerData, marker.newPosition());
@@ -301,17 +301,17 @@ class TransactionLogsRecoveryTest {
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeDataWithVersion(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
-            PositionAwareChannel channel = dataWriters.channel();
+            LogPositionAwareChannel channel = dataWriters.channel();
             byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
             TransactionId transactionId = new TransactionId(4L, BASE_TX_CHECKSUM, 5L, 6L);
 
             // last committed tx
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
             writer.writeStartEntry(version, 2L, 3L, BASE_TX_CHECKSUM, new byte[0]);
             writer.writeCommitEntry(version, 4L, 5L);
 
             // check point
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
@@ -378,10 +378,10 @@ class TransactionLogsRecoveryTest {
         writeSomeData(file, dataWriters -> {
             byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
             LogEntryWriter<?> writer = dataWriters.writer();
-            PositionAwareChannel channel = dataWriters.channel();
+            LogPositionAwareChannel channel = dataWriters.channel();
 
             // incomplete tx
-            channel.getCurrentPosition(marker); // <-- marker has the last good position
+            channel.getCurrentLogPosition(marker); // <-- marker has the last good position
             writer.writeStartEntry(version, 5L, 4L, 0, new byte[0]);
 
             return true;
@@ -401,13 +401,13 @@ class TransactionLogsRecoveryTest {
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
-            PositionAwareChannel channel = dataWriters.channel();
+            LogPositionAwareChannel channel = dataWriters.channel();
             byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
             writer.writeStartEntry(version, 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
             TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L, 4L);
 
             writer.writeCommitEntry(version, 1L, 2L);
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
@@ -447,13 +447,13 @@ class TransactionLogsRecoveryTest {
         LogPositionMarker marker = new LogPositionMarker();
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
-            PositionAwareChannel channel = dataWriters.channel();
+            LogPositionAwareChannel channel = dataWriters.channel();
             byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
             writer.writeStartEntry(version, 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
             writer.writeCommitEntry(version, 1L, 2L);
             TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L, 3L);
 
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
@@ -491,7 +491,7 @@ class TransactionLogsRecoveryTest {
 
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
-            PositionAwareChannel channel = dataWriters.channel();
+            LogPositionAwareChannel channel = dataWriters.channel();
             byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
 
             // last committed tx
@@ -500,7 +500,7 @@ class TransactionLogsRecoveryTest {
             previousChecksum = writer.writeCommitEntry(version, 4L, 5L);
 
             // incomplete tx
-            channel.getCurrentPosition(marker); // <-- marker has the last good position
+            channel.getCurrentLogPosition(marker); // <-- marker has the last good position
             writer.writeStartEntry(version, 5L, 4L, previousChecksum, new byte[0]);
 
             return true;
@@ -525,13 +525,13 @@ class TransactionLogsRecoveryTest {
         final long commitTimestamp = 5;
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
-            PositionAwareChannel channel = dataWriters.channel();
+            LogPositionAwareChannel channel = dataWriters.channel();
             byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
 
             // last committed tx
             writer.writeStartEntry(version, 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
             writer.writeCommitEntry(version, transactionId, commitTimestamp);
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
 
             return true;
         });
@@ -589,13 +589,13 @@ class TransactionLogsRecoveryTest {
         final long commitTimestamp = 5;
         writeSomeData(file, writers -> {
             LogEntryWriter<?> writer = writers.writer();
-            PositionAwareChannel channel = writers.channel();
+            LogPositionAwareChannel channel = writers.channel();
             byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
 
             // last committed tx
             writer.writeStartEntry(version, 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
             writer.writeCommitEntry(version, transactionId, commitTimestamp);
-            channel.getCurrentPosition(marker);
+            channel.getCurrentLogPosition(marker);
 
             return true;
         });
@@ -682,7 +682,7 @@ class TransactionLogsRecoveryTest {
                         file,
                         EMPTY_ACCESSOR,
                         DatabaseTracer.NULL);
-                var writableLogChannel = new PositionAwarePhysicalFlushableChannel(
+                var writableLogChannel = new PhysicalFlushableLogPositionAwareChannel(
                         versionedStoreChannel,
                         new HeapScopedBuffer(toIntExact(KibiByte.toBytes(1)), ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             writeLogHeader(
@@ -701,7 +701,7 @@ class TransactionLogsRecoveryTest {
         }
     }
 
-    private record DataWriters(LogEntryWriter<?> writer, PositionAwareChannel channel) {}
+    private record DataWriters(LogEntryWriter<?> writer, LogPositionAwareChannel channel) {}
 
     private LogFiles buildLogFiles() throws IOException {
         return LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)

@@ -163,7 +163,7 @@ public class ReversedSingleFileCommandBatchCursor implements CommandBatchCursor 
         // chunk into actual transaction objects
         int chunkLength = chunkStartOffsetIndex - newLowOffsetIndex;
         chunkStartOffsetIndex = newLowOffsetIndex;
-        channel.setCurrentPosition(offsets[chunkStartOffsetIndex]);
+        channel.position(offsets[chunkStartOffsetIndex]);
         assert chunkBatches.isEmpty();
         for (int i = 0; i < chunkLength; i++) {
             boolean success = commandBatchCursor.next();
