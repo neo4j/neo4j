@@ -134,6 +134,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
             // Request can be satisfied by already buffered data
             dst.put(dst.position(), aheadBuffer, aheadBuffer.position(), length);
             aheadBuffer.position(aheadBuffer.position() + length);
+            dst.position(dst.position() + length);
             return length;
         }
 

@@ -275,8 +275,10 @@ class ReadAheadChannelTest {
         assertEquals(b1, bufferedReader.get());
         assertEquals(b2, bufferedReader.get());
         byte[] readBytes = new byte[chunkSize];
-        bufferedReader.read(ByteBuffer.wrap(readBytes));
+        ByteBuffer buffer = ByteBuffer.wrap(readBytes);
+        bufferedReader.read(buffer);
         assertThat(readBytes).containsExactly(randomBytes);
+        assertThat(buffer.position()).isEqualTo(readBytes.length);
         assertEquals(checksumValue, bufferedReader.endChecksumAndValidate());
         assertEquals(totalSize, bufferedReader.position());
     }
@@ -315,8 +317,10 @@ class ReadAheadChannelTest {
         assertEquals(b1, bufferedReader.get());
         assertEquals(b2, bufferedReader.get());
         byte[] readBytes = new byte[chunkSize];
-        bufferedReader.read(ByteBuffer.wrap(readBytes));
+        ByteBuffer buffer = ByteBuffer.wrap(readBytes);
+        bufferedReader.read(buffer);
         assertThat(readBytes).containsExactly(randomBytes);
+        assertThat(buffer.position()).isEqualTo(readBytes.length);
         assertEquals(checksumValue, bufferedReader.endChecksumAndValidate());
         assertEquals(totalSize, bufferedReader.position());
     }
@@ -367,8 +371,10 @@ class ReadAheadChannelTest {
         assertEquals(b1, bufferedReader.get());
         assertEquals(b2, bufferedReader.get());
         byte[] readBytes = new byte[chunkSize];
-        bufferedReader.read(ByteBuffer.wrap(readBytes));
+        ByteBuffer buffer = ByteBuffer.wrap(readBytes);
+        bufferedReader.read(buffer);
         assertThat(readBytes).containsExactly(randomBytes);
+        assertThat(buffer.position()).isEqualTo(readBytes.length);
         assertEquals(checksumValue, bufferedReader.endChecksumAndValidate());
     }
 
