@@ -564,6 +564,13 @@ public enum ShortStringCodec {
     // lookup table by encoding header
     // +2 because of ENCODING_LATIN1 gap and one based index
     private static final ShortStringCodec[] CODEC_BY_ID = new ShortStringCodec[CODEC_COUNT + 2];
+    // Why are LOWERHEX/UPPERHEX special? Originally these didn't exist and all in existence are ordered
+    // such that the lower the codec ID, the smaller bits-per-character they had. Codec selection is done
+    // by selecting the compatible codec with the smallest codec ID.
+    // These two were added while keeping backwards-compatibility and are therefore out-of-order so needs
+    // additional logic to be selected.
+    private static final int HEX_CODECS_COMPATIBILITY_MASK = LOWERHEX.bitMask() | UPPERHEX.bitMask();
+    private static final int HEX_CODECS_FILTER;
 
     private static void setUp(char pos, int value, ShortStringCodec... removeCodecs) {
         TRANSLATION[pos] = (byte) value;
@@ -622,18 +629,28 @@ public enum ShortStringCodec {
                 setUp(c, (byte) c, NUMERICAL, DATE, UPPER, LOWER, EMAIL, URI, ALPHANUM, ALPHASYM, LOWERHEX, UPPERHEX);
             }
         }
+
+        int hexCodecsFilter = 0;
+        for (var codec : CODECS) {
+            if (codec.step <= LOWERHEX.step) {
+                hexCodecsFilter |= codec.bitMask();
+            }
+        }
+        HEX_CODECS_FILTER = hexCodecsFilter;
     }
 
     final int codecId;
     final long mask;
     final int step;
     final boolean needsChars;
+    private final int bitMask;
 
     ShortStringCodec(int codecId, int step, boolean needsChars) {
         this.codecId = codecId;
         this.mask = Bits.rightOverflowMask(step);
         this.step = step;
         this.needsChars = needsChars;
+        this.bitMask = (1 << (codecId - 1));
     }
 
     public static ShortStringCodec lowestCodec(int compatibleCodecs) {
@@ -641,7 +658,7 @@ public enum ShortStringCodec {
     }
 
     public int bitMask() {
-        return 1 << ordinal();
+        return bitMask;
     }
 
     public int bitsPerCharacter() {
@@ -697,7 +714,7 @@ public enum ShortStringCodec {
 
     public abstract byte decTranslate(byte codePoint);
 
-    public static int prepareEncode(String string, byte[] data, int stringLength) {
+    public static int prepareEncode(String string, byte[] data, int stringLength, boolean additionalCodecs) {
         if (stringLength == 0) {
             return 0;
         }
@@ -716,6 +733,13 @@ public enum ShortStringCodec {
                 return 0;
             }
         }
+
+        // This is hard-coded for the out-of-order UPPERHEX/LOWERHEX codecs and makes them prioritized over
+        // other (larger bits-per-character) codecs that can also encode them
+        if (additionalCodecs && (encodings & HEX_CODECS_COMPATIBILITY_MASK) != 0) {
+            encodings &= HEX_CODECS_FILTER;
+        }
+
         return encodings;
     }
 

@@ -90,7 +90,7 @@ public class LongerShortString {
 
         // Keep track of the possible encodings that can be used for the string
         // 0 means none applies
-        int codecs = prepareEncode(string, data, dataLength);
+        int codecs = prepareEncode(string, data, dataLength, false);
         if (dataLength > maxLength(ALPHANUM, payloadSize)) {
             codecs &= REMOVE_LARGE_ENCODINGS_MASK;
         }
