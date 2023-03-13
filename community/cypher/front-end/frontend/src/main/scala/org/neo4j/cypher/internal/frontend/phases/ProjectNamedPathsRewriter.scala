@@ -44,7 +44,10 @@ case object ProjectNamedPathsRewriter extends Phase[BaseContext, BaseState, Base
   override def postConditions: Set[StepSequencer.Condition] =
     projectNamedPaths.postConditions.map(StatementCondition.wrap)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+  override def invalidatedConditions: Set[StepSequencer.Condition] =
+    SemanticInfoAvailable +
+      // We may duplicate grouping variables of QPPs
+      AmbiguousNamesDisambiguated
 
   override def getTransformer(
     pushdownPropertyReads: Boolean,

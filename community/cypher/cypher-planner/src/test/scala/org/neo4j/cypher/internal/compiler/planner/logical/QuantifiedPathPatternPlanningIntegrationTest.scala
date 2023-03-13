@@ -23,6 +23,12 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.AssertIsNode
+import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.NodeRelPair
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -32,6 +38,7 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.crea
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.ExpandAll
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -1573,6 +1580,104 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     plan shouldEqual planner.subPlanBuilder()
       .projection(project = Seq("1 AS 1"), discard = Set("anon_0", "r", "anon_1"))
       .expandAll("(anon_0)-[r*1..]->(anon_1)")
+      .allNodeScan("anon_0")
+      .build()
+  }
+
+  test(
+    "Should plan Trail with unique group variable names after group variable optimisation"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(10)
+      .setLabelCardinality("A", 10)
+      .setRelationshipCardinality("(:A)-[]->()", 10)
+      .setRelationshipCardinality("(:A)-[]->(:A)", 5)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatternPathAssignment)
+      .build()
+    val query = "MATCH p=(()-[y]->(z))+ RETURN p"
+    val plan = planner.plan(query).stripProduceResults
+    val `(()-[y]->(z))+` = {
+      TrailParameters(
+        min = 1,
+        max = UpperBound.Unlimited,
+        start = "anon_0",
+        end = "anon_2",
+        innerStart = "anon_7",
+        innerEnd = "z",
+        groupNodes = Set(("anon_7", "anon_8")),
+        groupRelationships = Set(("y", "y")),
+        innerRelationships = Set("y"),
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
+      )
+    }
+    val path = PathExpression(NodePathStep(
+      varFor("anon_0"),
+      RepeatPathStep(
+        List(NodeRelPair(varFor("anon_8"), varFor("y"))),
+        varFor("anon_2"),
+        NilPathStep()(pos)
+      )(pos)
+    )(pos))(pos)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .projection(project = Map("p" -> path), discard = Set("anon_2", "anon_0", "anon_8", "y"))
+      .trail(`(()-[y]->(z))+`)
+      .|.filterExpression(isRepeatTrailUnique("y"))
+      .|.expandAll("(anon_7)-[y]->(z)")
+      .|.argument("anon_7")
+      .allNodeScan("anon_0")
+      .build()
+  }
+
+  test(
+    "Should plan Trail with unique group variable names after group variable optimisation with anonymous relationship"
+  ) {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setAllRelationshipsCardinality(10)
+      .setLabelCardinality("A", 10)
+      .setRelationshipCardinality("(:A)-[]->()", 10)
+      .setRelationshipCardinality("(:A)-[]->(:A)", 5)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
+      .addSemanticFeature(SemanticFeature.QuantifiedPathPatternPathAssignment)
+      .build()
+    val query = "MATCH p=(()-[]->(z))+ RETURN p"
+    val plan = planner.plan(query).stripProduceResults
+    val `(()-[y]->(z))+` = {
+      TrailParameters(
+        min = 1,
+        max = UpperBound.Unlimited,
+        start = "anon_0",
+        end = "anon_3",
+        innerStart = "anon_8",
+        innerEnd = "z",
+        groupNodes = Set(("anon_8", "anon_9")),
+        groupRelationships = Set(("anon_4", "anon_7")),
+        innerRelationships = Set("anon_4"),
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
+      )
+    }
+    val path = PathExpression(NodePathStep(
+      varFor("anon_0"),
+      RepeatPathStep(
+        List(NodeRelPair(varFor("anon_9"), varFor("anon_7"))),
+        varFor("anon_3"),
+        NilPathStep()(pos)
+      )(pos)
+    )(pos))(pos)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .projection(project = Map("p" -> path), discard = Set("anon_0", "anon_3", "anon_9", "anon_7"))
+      .trail(`(()-[y]->(z))+`)
+      .|.filterExpression(isRepeatTrailUnique("anon_4"))
+      .|.expandAll("(anon_8)-[anon_4]->(z)")
+      .|.argument("anon_8")
       .allNodeScan("anon_0")
       .build()
   }
