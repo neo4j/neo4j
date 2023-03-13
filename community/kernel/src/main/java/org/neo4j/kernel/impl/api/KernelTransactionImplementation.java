@@ -385,6 +385,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 config,
                 memoryTracker);
         traceProvider = getTraceProvider(config);
+        initializationTrace = NONE;
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);
         this.collectionsFactory = collectionsFactorySupplier.create();
         this.kernelTransactions = kernelTransactions;
