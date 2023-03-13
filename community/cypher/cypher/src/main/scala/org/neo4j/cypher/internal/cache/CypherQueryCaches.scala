@@ -172,11 +172,11 @@ object CypherQueryCaches {
     }
   }
 
-  case class AstCacheKey(key: String, parameterTypes: ParameterTypeMap)
-
   object AstCache extends CacheCompanion("ast") with CacheMonitorHelpers {
     type Key = AstCacheKey
     type Value = BaseState
+
+    case class AstCacheKey(key: String, parameterTypes: ParameterTypeMap)
 
     def key(preParsedQuery: PreParsedQuery, params: MapValue, useParameterSizeHint: Boolean): AstCache.Key =
       AstCacheKey(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params, useParameterSizeHint))

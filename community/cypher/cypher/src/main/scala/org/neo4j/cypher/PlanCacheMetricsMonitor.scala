@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.QueryCache.CacheKey
-import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
 
@@ -62,27 +61,27 @@ abstract class CacheMetricsMonitor[KEY] extends CacheTracer[KEY] {
   def getCacheFlushes: Long = cacheFlushes.get()
 }
 
-class PreParserCacheMetricsMonitor extends CacheMetricsMonitor[String] {
+class PreParserCacheMetricsMonitor extends CacheMetricsMonitor[CypherQueryCaches.PreParserCache.Key] {
   override val monitorTag: String = CypherQueryCaches.PreParserCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.PreParserCache.kind
 }
 
-class ASTCacheMetricsMonitor extends CacheMetricsMonitor[CypherQueryCaches.AstCacheKey] {
+class ASTCacheMetricsMonitor extends CacheMetricsMonitor[CypherQueryCaches.AstCache.Key] {
   override val monitorTag: String = CypherQueryCaches.AstCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.AstCache.kind
 }
 
-class LogicalPlanCacheMetricsMonitor extends CacheMetricsMonitor[CacheKey[Statement]] {
+class LogicalPlanCacheMetricsMonitor extends CacheMetricsMonitor[CypherQueryCaches.LogicalPlanCache.Key] {
   override val monitorTag: String = CypherQueryCaches.LogicalPlanCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.LogicalPlanCache.kind
 }
 
-class ExecutionPlanCacheMetricsMonitor extends CacheMetricsMonitor[CypherQueryCaches.ExecutionPlanCacheKey] {
+class ExecutionPlanCacheMetricsMonitor extends CacheMetricsMonitor[CypherQueryCaches.ExecutionPlanCache.Key] {
   override val monitorTag: String = CypherQueryCaches.ExecutionPlanCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.ExecutionPlanCache.kind
 }
 
-class ExecutableQueryCacheMetricsMonitor extends CacheMetricsMonitor[CacheKey[String]] {
+class ExecutableQueryCacheMetricsMonitor extends CacheMetricsMonitor[CypherQueryCaches.ExecutableQueryCache.Key] {
   override val monitorTag: String = CypherQueryCaches.ExecutableQueryCache.monitorTag
   override val cacheKind: String = CypherQueryCaches.ExecutableQueryCache.kind
 
