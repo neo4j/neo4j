@@ -69,6 +69,9 @@ public abstract class AbstractHeapTrackingConcurrentHash {
             AtomicIntegerFieldUpdater.newUpdater(AbstractHeapTrackingConcurrentHash.class, "size");
     static final Object RESIZED = new Object();
     static final Object RESIZING = new Object();
+
+    static final Object RESERVED = new Object();
+
     static final int PARTITIONED_SIZE_THRESHOLD = 4096; // chosen to keep size below 1% of the total size of the map
     static final int SIZE_BUCKETS = 7;
     static final int PARTITIONED_SIZE = SIZE_BUCKETS * 16;
@@ -412,6 +415,10 @@ public abstract class AbstractHeapTrackingConcurrentHash {
         final void findNext() {
             while (this.index < this.currentState.end) {
                 Object o = this.currentState.currentTable.get(this.index);
+                while (o == RESERVED) {
+                    o = this.currentState.currentTable.get(this.index);
+                }
+
                 if (o == RESIZED || o == RESIZING) {
                     AtomicReferenceArray<Object> nextArray =
                             helpWithResizeWhileCurrentIndex(this.currentState.currentTable, this.index);

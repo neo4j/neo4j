@@ -25,9 +25,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 import org.eclipse.collections.impl.list.Interval;
 import org.eclipse.collections.impl.parallel.ParallelIterate;
 import org.eclipse.collections.impl.tuple.ImmutableEntry;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.neo4j.memory.EmptyMemoryTracker;
 
@@ -183,6 +188,68 @@ public class HeapTrackingConcurrentHashMapTest {
                 },
                 1,
                 executor());
+    }
+
+    @RepeatedTest(100)
+    void computeIfAbsentShouldOnlyInvokeFunctionOnceTest() throws Throwable {
+        HeapTrackingConcurrentHashMap<Integer, Integer> map =
+                HeapTrackingConcurrentHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
+        int threads = random.nextInt(1, 2 * Runtime.getRuntime().availableProcessors());
+        var executor = Executors.newFixedThreadPool(threads);
+        int key = 42;
+        int value = 1337;
+
+        final AtomicBoolean hasBeenCalledMultipleTimes = new AtomicBoolean(false);
+        var callOnce = new Function<Integer, Integer>() {
+            private final AtomicBoolean hasBeenCalled = new AtomicBoolean(false);
+
+            @Override
+            public Integer apply(Integer anInt) {
+                if (hasBeenCalled.compareAndSet(false, true)) {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    hasBeenCalledMultipleTimes.set(true);
+                }
+
+                return value;
+            }
+        };
+        var getFailed = new AtomicBoolean(false);
+        executor.submit(new GetContestant(map, key, value, getFailed));
+        for (int i = 0; i < threads; i++) {
+            executor.submit(() -> {
+                map.computeIfAbsent(key, callOnce);
+            });
+        }
+
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
+        assertThat(map.size()).isEqualTo(1);
+        assertThat(hasBeenCalledMultipleTimes.get()).isFalse();
+        assertThat(getFailed.get()).isFalse();
+    }
+
+    private record GetContestant(
+            HeapTrackingConcurrentHashMap<Integer, Integer> map, int key, int expectedValue, AtomicBoolean hasFailed)
+            implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                var getValue = map.get(key);
+                if (getValue != null && getValue != expectedValue) {
+                    hasFailed.set(true);
+                }
+            } catch (Exception e) {
+                hasFailed.set(true);
+            }
+        }
     }
 
     private <K, V> HeapTrackingConcurrentHashMap<K, V> newMapWithKeysValues(K key1, V value1, K key2, V value2) {

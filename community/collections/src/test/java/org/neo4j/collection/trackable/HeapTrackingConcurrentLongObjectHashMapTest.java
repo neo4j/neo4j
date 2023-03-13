@@ -25,6 +25,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.LongFunction;
 import org.eclipse.collections.impl.list.Interval;
 import org.eclipse.collections.impl.parallel.ParallelIterate;
 import org.junit.jupiter.api.RepeatedTest;
@@ -162,7 +164,7 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
         var executor = Executors.newFixedThreadPool(threads);
 
         for (int i = 0; i < threads; i++) {
-            executor.submit(new Contestant(map, 0, max));
+            executor.submit(new RangeComputeContestant(map, 0, max));
         }
         executor.shutdown();
         assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
@@ -173,7 +175,69 @@ public class HeapTrackingConcurrentLongObjectHashMapTest {
         }
     }
 
-    private record Contestant(HeapTrackingConcurrentLongObjectHashMap<Integer> map, int start, int end)
+    @RepeatedTest(100)
+    void computeIfAbsentShouldOnlyInvokeFunctionOnceTest() throws Throwable {
+        HeapTrackingConcurrentLongObjectHashMap<Integer> map =
+                HeapTrackingConcurrentLongObjectHashMap.newMap(EmptyMemoryTracker.INSTANCE);
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+
+        int threads = random.nextInt(1, 2 * Runtime.getRuntime().availableProcessors());
+        var executor = Executors.newFixedThreadPool(threads);
+        int key = 42;
+        int value = 1337;
+
+        final AtomicBoolean hasBeenCalledMultipleTimes = new AtomicBoolean(false);
+        var callOnce = new LongFunction<Integer>() {
+            private final AtomicBoolean hasBeenCalled = new AtomicBoolean(false);
+
+            @Override
+            public Integer apply(long aLong) {
+                if (hasBeenCalled.compareAndSet(false, true)) {
+                    try {
+                        Thread.sleep(10);
+                    } catch (InterruptedException e) {
+                        throw new RuntimeException(e);
+                    }
+                } else {
+                    hasBeenCalledMultipleTimes.set(true);
+                }
+
+                return value;
+            }
+        };
+        var getFailed = new AtomicBoolean(false);
+        executor.submit(new GetContestant(map, key, value, getFailed));
+        for (int i = 0; i < threads; i++) {
+            executor.submit(() -> {
+                map.computeIfAbsent(key, callOnce);
+            });
+        }
+
+        executor.shutdown();
+        assertThat(executor.awaitTermination(1, TimeUnit.MINUTES)).isTrue();
+        assertThat(map.size()).isEqualTo(1);
+        assertThat(hasBeenCalledMultipleTimes.get()).isFalse();
+        assertThat(getFailed.get()).isFalse();
+    }
+
+    private record GetContestant(
+            HeapTrackingConcurrentLongObjectHashMap<Integer> map, long key, int expectedValue, AtomicBoolean hasFailed)
+            implements Runnable {
+
+        @Override
+        public void run() {
+            try {
+                var getValue = map.get(key);
+                if (getValue != null && getValue != expectedValue) {
+                    hasFailed.set(true);
+                }
+            } catch (Exception e) {
+                hasFailed.set(true);
+            }
+        }
+    }
+
+    private record RangeComputeContestant(HeapTrackingConcurrentLongObjectHashMap<Integer> map, int start, int end)
             implements Runnable {
 
         @Override
