@@ -99,6 +99,7 @@ public interface ProcedureITBase {
                                 + "returned for each label. The properties represented on the node include: `name` "
                                 + "(label name), `indexes` (list of indexes), and `constraints` (list of constraints). "
                                 + "A relationship of a given type is returned for all possible combinations of start and end nodes. "
+                                + "The properties represented on the relationship include: `name` (type name). "
                                 + "Note that this may include additional relationships that do not exist in the data due to "
                                 + "the information available in the count store. ",
                         stringArray("reader", "editor", "publisher", "architect", "admin"),

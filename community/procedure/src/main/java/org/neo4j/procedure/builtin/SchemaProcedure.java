@@ -206,11 +206,13 @@ public class SchemaProcedure {
         private final Node startNode;
         private final Node endNode;
         private final RelationshipType relationshipType;
+        private final Map<String, Object> propertyMap = new HashMap<>();
 
         VirtualRelationshipHack(final VirtualNodeHack startNode, final VirtualNodeHack endNode, final String type) {
             this.id = MIN_ID.getAndDecrement();
             this.startNode = startNode;
             this.endNode = endNode;
+            propertyMap.put("name", type);
             relationshipType = () -> type;
         }
 
@@ -241,7 +243,7 @@ public class SchemaProcedure {
 
         @Override
         public Map<String, Object> getAllProperties() {
-            return new HashMap<>();
+            return propertyMap;
         }
 
         @Override
