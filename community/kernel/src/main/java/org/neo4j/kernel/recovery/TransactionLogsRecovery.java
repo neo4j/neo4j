@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.neo4j.kernel.recovery.Recovery.throwUnableToCleanRecover;
+import static org.neo4j.kernel.recovery.RecoveryMode.FORWARD;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 
@@ -99,33 +100,9 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
         LogPosition recoveryToPosition = recoveryStartPosition;
         LogPosition lastTransactionPosition = recoveryStartPosition;
         CommittedCommandBatch lastCommandBatch = null;
-        CommittedCommandBatch lastReversedCommandBatch = null;
         if (!recoveryStartInformation.isMissingLogs()) {
             try {
-                switch (mode) {
-                    case FORWARD -> initProgressReporter(recoveryStartInformation, recoveryStartPosition);
-                    case FULL -> {
-                        long lowestRecoveredTxId = recoveryStartInformation.getFirstTxIdAfterLastCheckPoint();
-                        try (var transactionsToRecover =
-                                        recoveryService.getCommandBatchesInReverseOrder(recoveryStartPosition);
-                                var recoveryVisitor = recoveryService.getRecoveryApplier(
-                                        REVERSE_RECOVERY, contextFactory, REVERSE_RECOVERY_TAG)) {
-                            while (transactionsToRecover.next()) {
-                                recoveryStartupChecker.checkIfCanceled();
-                                CommittedCommandBatch commandBatch = transactionsToRecover.get();
-                                if (lastReversedCommandBatch == null) {
-                                    lastReversedCommandBatch = commandBatch;
-                                    initProgressReporter(recoveryStartInformation, lastReversedCommandBatch, mode);
-                                }
-                                recoveryVisitor.visit(commandBatch);
-                                transactionIdTracker.trackBatch(commandBatch);
-                                lowestRecoveredTxId = commandBatch.txId();
-                                reportProgress();
-                            }
-                        }
-                        monitor.reverseStoreRecoveryCompleted(lowestRecoveredTxId);
-                    }
-                }
+                reverseRecovery(recoveryStartInformation, transactionIdTracker, recoveryStartPosition);
 
                 // We cannot initialise the schema (tokens, schema cache, indexing service, etc.) until we have returned
                 // the store to a consistent state.
@@ -242,6 +219,38 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                     cursorContext);
         }
         monitor.recoveryCompleted(recoveryStartTime.elapsed(MILLISECONDS), mode);
+    }
+
+    private void reverseRecovery(
+            RecoveryStartInformation recoveryStartInformation,
+            TransactionIdTracker transactionIdTracker,
+            LogPosition recoveryStartPosition)
+            throws Exception {
+
+        if (mode == FORWARD) {
+            // nothing to do, update the progress to match this
+            initProgressReporter(recoveryStartInformation, recoveryStartPosition);
+            return;
+        }
+        CommittedCommandBatch lastReversedCommandBatch = null;
+        long lowestRecoveredTxId = recoveryStartInformation.getFirstTxIdAfterLastCheckPoint();
+        try (var transactionsToRecover = recoveryService.getCommandBatchesInReverseOrder(recoveryStartPosition);
+                var recoveryVisitor =
+                        recoveryService.getRecoveryApplier(REVERSE_RECOVERY, contextFactory, REVERSE_RECOVERY_TAG)) {
+            while (transactionsToRecover.next()) {
+                recoveryStartupChecker.checkIfCanceled();
+                CommittedCommandBatch commandBatch = transactionsToRecover.get();
+                if (lastReversedCommandBatch == null) {
+                    lastReversedCommandBatch = commandBatch;
+                    initProgressReporter(recoveryStartInformation, lastReversedCommandBatch, mode);
+                }
+                recoveryVisitor.visit(commandBatch);
+                transactionIdTracker.trackBatch(commandBatch);
+                lowestRecoveredTxId = commandBatch.txId();
+                reportProgress();
+            }
+        }
+        monitor.reverseStoreRecoveryCompleted(lowestRecoveredTxId);
     }
 
     private void initProgressReporter(
