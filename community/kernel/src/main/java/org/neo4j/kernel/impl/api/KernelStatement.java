@@ -30,19 +30,14 @@ import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -68,7 +63,7 @@ import org.neo4j.resources.CpuClock;
  * instance again, when it's initialized.</li>
  * </ol>
  */
-public class KernelStatement extends QueryStatement implements AssertOpen, StatementInfo {
+public class KernelStatement extends QueryStatement {
     private static final int EMPTY_COUNTER = 0;
     private static final int STATEMENT_TRACK_HISTORY_MAX_SIZE = 100;
     private static final Deque<StackTraceElement[]> EMPTY_STATEMENT_HISTORY = new ArrayDeque<>(0);
@@ -132,18 +127,6 @@ public class KernelStatement extends QueryStatement implements AssertOpen, State
             cleanupResources();
         }
         recordOpenCloseMethods();
-    }
-
-    @Override
-    public void assertOpen() {
-        if (referenceCount == 0) {
-            throw new NotInTransactionException("The statement has been closed.");
-        }
-
-        Optional<Status> terminationReason = transaction.getReasonIfTerminated();
-        terminationReason.ifPresent(status -> {
-            throw new TransactionTerminatedException(status);
-        });
     }
 
     public void initialize(Locks.Client lockClient, CursorContext cursorContext, long startTimeMillis) {

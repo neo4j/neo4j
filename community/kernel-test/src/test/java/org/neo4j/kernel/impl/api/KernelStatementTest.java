@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -70,14 +69,6 @@ class KernelStatementTest {
 
         // then
         verify(transaction).releaseStatementResources();
-    }
-
-    @Test
-    void assertStatementIsNotOpenWhileAcquireIsNotInvoked() {
-        KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
-        KernelStatement statement = createStatement(transaction);
-
-        assertThrows(NotInTransactionException.class, statement::assertOpen);
     }
 
     @Test
