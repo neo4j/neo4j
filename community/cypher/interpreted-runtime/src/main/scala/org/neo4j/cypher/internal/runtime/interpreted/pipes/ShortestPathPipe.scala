@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
-import org.neo4j.internal.kernel.api.helpers.BiDirectionalBFS
+import org.neo4j.internal.kernel.api.helpers.traversal.BiDirectionalBFS
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualPathValue
 import org.neo4j.values.virtual.VirtualValues
@@ -46,7 +46,8 @@ case class ShortestPathPipe(
   returnOneShortestPathOnly: Boolean,
   disallowSameNode: Boolean,
   allowZeroLength: Boolean,
-  maxDepth: Option[Int]
+  maxDepth: Option[Int],
+  needOnlyOnePath: Boolean
 )(val id: Id = Id.INVALID_ID)
     extends PipeWithSource(source) {
   self =>
@@ -75,7 +76,8 @@ case class ShortestPathPipe(
         state.query.transactionalContext.dataRead,
         nodeCursor,
         traversalCursor,
-        memoryTracker
+        memoryTracker,
+        needOnlyOnePath
       )
       val pathPredicate = pathPredicates.foldLeft(True(): commands.predicates.Predicate)(_.andWith(_))
       val output = input.flatMap {

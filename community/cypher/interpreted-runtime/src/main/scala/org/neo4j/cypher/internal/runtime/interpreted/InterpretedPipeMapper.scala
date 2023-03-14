@@ -1171,7 +1171,7 @@ case class InterpretedPipeMapper(
           perStepNodePredicates,
           perStepRelPredicates,
           pathPredicates,
-          _,
+          withFallBack,
           disallowSameNode
         ) =>
         val single = shortestPathPattern.expr.single
@@ -1211,7 +1211,8 @@ case class InterpretedPipeMapper(
           single,
           disallowSameNode,
           allowZeroLength,
-          maxDepth
+          maxDepth,
+          single && !withFallBack
         )(id)
 
       case LegacyFindShortestPaths(_, shortestPathPattern, predicates, withFallBack, disallowSameNode) =>

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.helpers;
+package org.neo4j.internal.kernel.api.helpers.traversal;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
@@ -29,8 +29,8 @@ import org.neo4j.values.virtual.VirtualValues;
 /**
  * This class meant to be used with {@link BiDirectionalBFS}. When {@link BiDirectionalBFS} has found an intersection,
  * it will use this class to retrace the paths through that intersection.
- *
- *
+ * <p>
+ * <p>
  * Implementation details (assumes usage from {@link BiDirectionalBFS}):
  * <p>
  * Retracing paths is done in two parts. The first part consists of retracing
@@ -46,13 +46,13 @@ import org.neo4j.values.virtual.VirtualValues;
  * don't maintain their own arrays to store the paths. They modify {@link PathTracingIterator#internalNodes}
  * and {@link PathTracingIterator#internalRels} directly.
  */
-public class PathTracingIterator extends PrefetchingIterator<PathReference> {
+public class PathTracingIterator<STEPS> extends PrefetchingIterator<PathReference> {
     private final int pathLength;
 
     private final int intersectionNodeIndex;
     private final LongIterator intersectionIterator;
-    private final PathIteratorPart innerLoopPathPart;
-    private final PathIteratorPart outerLoopPathPart;
+    private final PathIteratorPart<STEPS> innerLoopPathPart;
+    private final PathIteratorPart<STEPS> outerLoopPathPart;
     private final long[] internalNodes;
     private final long[] internalRels;
 
@@ -63,16 +63,19 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
             LongIterator intersectionIterator,
             int sourceBFSDepth,
             int targetBFSDepth,
-            HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> sourcePathTraceData,
-            HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> targetPathTraceData) {
+            HeapTrackingLongObjectHashMap<STEPS> sourcePathTraceData,
+            HeapTrackingLongObjectHashMap<STEPS> targetPathTraceData,
+            boolean needOnlyOnePath) {
         this.intersectionIterator = intersectionIterator;
         this.pathLength = sourceBFSDepth + targetBFSDepth;
         this.intersectionNodeIndex = sourceBFSDepth;
         this.internalNodes = new long[pathLength + 1];
         this.internalRels = new long[pathLength];
 
-        PathIteratorPart sourcePathPart = new PathIteratorPart(sourcePathTraceData, sourceBFSDepth, false);
-        PathIteratorPart targetPathPart = new PathIteratorPart(targetPathTraceData, targetBFSDepth, true);
+        PathIteratorPart sourcePathPart =
+                constructPathIteratorPart(sourcePathTraceData, sourceBFSDepth, false, needOnlyOnePath);
+        PathIteratorPart targetPathPart =
+                constructPathIteratorPart(targetPathTraceData, targetBFSDepth, true, needOnlyOnePath);
 
         setNextIntersectionNode();
         sourcePathPart.resetPathPartToIntersection();
@@ -85,6 +88,13 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
             innerLoopPathPart = sourcePathPart;
             outerLoopPathPart = targetPathPart;
         }
+    }
+
+    private PathIteratorPart constructPathIteratorPart(
+            HeapTrackingLongObjectHashMap pathTraceData, int depth, boolean reversed, boolean needOnlyOnePath) {
+        return needOnlyOnePath
+                ? new SinglePathIteratorPart(pathTraceData, depth, reversed)
+                : new MultiPathIteratorPart(pathTraceData, depth, reversed);
     }
 
     @Override
@@ -127,17 +137,14 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
         return VirtualValues.pathReference(internalNodes.clone(), internalRels.clone());
     }
 
-    private class PathIteratorPart {
-        private final int pathPartLength;
-        private final HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>>
-                pathTraceData;
-        private final boolean reversed;
-        private final int[] pathsToHereActiveIndices;
+    private abstract class PathIteratorPart<STEPS> {
+        protected final int pathPartLength;
+        protected final HeapTrackingLongObjectHashMap<STEPS> pathTraceData;
+        protected final boolean reversed;
+        protected final int[] pathsToHereActiveIndices;
 
         public PathIteratorPart(
-                HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pathTraceData,
-                int pathPartLength,
-                boolean reversed) {
+                HeapTrackingLongObjectHashMap<STEPS> pathTraceData, int pathPartLength, boolean reversed) {
 
             this.pathTraceData = pathTraceData;
             this.reversed = reversed;
@@ -146,32 +153,29 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
             this.pathsToHereActiveIndices = new int[pathPartLength];
         }
 
+        protected abstract boolean hasMoreStepsToNode(int pathPartIndexOfNode);
+
+        protected abstract BiDirectionalBFS.PathTraceStep getActivePathToNode(int pathPartIndexOfNode);
+
         // Lots of confusing indexing going on when we are in the reversed pattern part. We compartmentalize
         // it all in the following 3 methods.
-        private void updateInternalNodes(long nodeId, int pathPartIndexOfNode) {
+        protected void updateInternalNodes(long nodeId, int pathPartIndexOfNode) {
             int internalNodesIndex = reversed ? pathLength - pathPartIndexOfNode : pathPartIndexOfNode;
             internalNodes[internalNodesIndex] = nodeId;
         }
 
-        private long getInternalNode(int pathPartIndexOfNode) {
+        protected long getInternalNode(int pathPartIndexOfNode) {
             int internalNodesIndex = reversed ? pathLength - pathPartIndexOfNode : pathPartIndexOfNode;
             return internalNodes[internalNodesIndex];
         }
 
-        private void updateInternalRelsToNode(long relId, int pathPartIndexOfNode) {
+        protected void updateInternalRelsToNode(long relId, int pathPartIndexOfNode) {
             int internalRelsIndex = reversed ? (pathLength - 1) - (pathPartIndexOfNode - 1) : pathPartIndexOfNode - 1;
             internalRels[internalRelsIndex] = relId;
         }
 
-        private BiDirectionalBFS.PathTraceStep getActivePathToNode(int pathPartIndexOfNode) {
-            long node = getInternalNode(pathPartIndexOfNode);
-            return pathTraceData.get(node).get(pathsToHereActiveIndices[pathPartIndexOfNode - 1]);
-        }
-
-        private boolean activateNextPathPartToNode(int pathPartIndexOfNode) {
-            long node = getInternalNode(pathPartIndexOfNode);
-            HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep> pathsToNode = pathTraceData.get(node);
-            if (pathsToHereActiveIndices[pathPartIndexOfNode - 1] == pathsToNode.size() - 1) {
+        protected boolean activateNextPathPartToNode(int pathPartIndexOfNode) {
+            if (!hasMoreStepsToNode(pathPartIndexOfNode)) {
                 return false;
             }
             pathsToHereActiveIndices[pathPartIndexOfNode - 1]++;
@@ -181,7 +185,7 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
             return true;
         }
 
-        private void activateFirstPathStepToNode(int pathPartIndexOfNode) {
+        protected void activateFirstPathStepToNode(int pathPartIndexOfNode) {
             pathsToHereActiveIndices[pathPartIndexOfNode - 1] = 0;
             BiDirectionalBFS.PathTraceStep pathToHere = getActivePathToNode(pathPartIndexOfNode);
             updateInternalRelsToNode(pathToHere.relId, pathPartIndexOfNode);
@@ -201,7 +205,7 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
             }
         }
 
-        public boolean viewNextPath() {
+        protected boolean viewNextPath() {
             if (pathPartLength == 0) {
                 return false;
             }
@@ -218,6 +222,53 @@ public class PathTracingIterator extends PrefetchingIterator<PathReference> {
             }
             resetPathPartToNodeAtIndex(indexToIterate - 1);
             return true;
+        }
+    }
+
+    private class MultiPathIteratorPart
+            extends PathIteratorPart<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> {
+        public MultiPathIteratorPart(
+                HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pathTraceData,
+                int pathPartLength,
+                boolean reversed) {
+            super(pathTraceData, pathPartLength, reversed);
+        }
+
+        @Override
+        protected BiDirectionalBFS.PathTraceStep getActivePathToNode(int pathPartIndexOfNode) {
+            long node = getInternalNode(pathPartIndexOfNode);
+            return pathTraceData.get(node).get(pathsToHereActiveIndices[pathPartIndexOfNode - 1]);
+        }
+
+        @Override
+        protected boolean hasMoreStepsToNode(int pathPartIndexOfNode) {
+            return pathsToHereActiveIndices[pathPartIndexOfNode - 1]
+                    < pathTraceData.get(getInternalNode(pathPartIndexOfNode)).size() - 1;
+        }
+    }
+
+    private class SinglePathIteratorPart extends PathIteratorPart<BiDirectionalBFS.PathTraceStep> {
+
+        public SinglePathIteratorPart(
+                HeapTrackingLongObjectHashMap<BiDirectionalBFS.PathTraceStep> pathTraceData,
+                int pathPartLength,
+                boolean reversed) {
+            super(pathTraceData, pathPartLength, reversed);
+        }
+
+        @Override
+        protected boolean viewNextPath() {
+            return false;
+        }
+
+        @Override
+        protected BiDirectionalBFS.PathTraceStep getActivePathToNode(int pathPartIndexOfNode) {
+            return pathTraceData.get(getInternalNode(pathPartIndexOfNode));
+        }
+
+        @Override
+        protected boolean hasMoreStepsToNode(int pathPartIndexOfNode) {
+            return false;
         }
     }
 }

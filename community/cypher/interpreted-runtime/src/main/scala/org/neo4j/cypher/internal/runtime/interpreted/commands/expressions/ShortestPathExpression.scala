@@ -33,7 +33,7 @@ import org.neo4j.exceptions.SyntaxException
 import org.neo4j.graphdb.NotFoundException
 import org.neo4j.graphdb.Relationship
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
-import org.neo4j.internal.kernel.api.helpers.BiDirectionalBFS
+import org.neo4j.internal.kernel.api.helpers.traversal.BiDirectionalBFS
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -90,7 +90,8 @@ case class ShortestPathExpression(
       traversalCursor,
       memoryTracker,
       LongPredicates.alwaysTrue(),
-      (_: RelationshipTraversalCursor) => true
+      (_: RelationshipTraversalCursor) => true,
+      true
     )
     val shortestPathIterator = biDirectionalBFS.shortestPathIterator()
 

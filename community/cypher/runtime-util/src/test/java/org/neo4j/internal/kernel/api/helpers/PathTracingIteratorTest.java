@@ -29,6 +29,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
+import org.neo4j.internal.kernel.api.helpers.traversal.BiDirectionalBFS;
+import org.neo4j.internal.kernel.api.helpers.traversal.PathTracingIterator;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.virtual.PathReference;
@@ -43,7 +45,8 @@ class PathTracingIteratorTest {
 
         LongIterator intersection = longIterator(10);
 
-        PathTracingIterator pti = new PathTracingIterator(intersection, 0, 0, emptyPathTraceData, emptyPathTraceData);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                new PathTracingIterator(intersection, 0, 0, emptyPathTraceData, emptyPathTraceData, false);
 
         assertThat(pti.hasNext()).isTrue();
         assertThat(pti.next()).isEqualTo(VirtualValues.pathReference(new long[] {10}, new long[] {}));
@@ -56,7 +59,8 @@ class PathTracingIteratorTest {
         int targetLength = 5;
         int totalLength = sourceLength + targetLength;
 
-        PathTracingIterator pti = singlePath(sourceLength, targetLength);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                singlePath(sourceLength, targetLength);
 
         assertThat(pti.hasNext()).isTrue();
         assertThat(pti.next())
@@ -70,7 +74,8 @@ class PathTracingIteratorTest {
         int targetLength = 15;
         int totalLength = sourceLength + targetLength;
 
-        PathTracingIterator pti = singlePath(sourceLength, targetLength);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                singlePath(sourceLength, targetLength);
 
         assertThat(pti.hasNext()).isTrue();
         assertThat(pti.next())
@@ -84,7 +89,8 @@ class PathTracingIteratorTest {
         int targetLength = 0;
         int totalLength = sourceLength + targetLength;
 
-        PathTracingIterator pti = singlePath(sourceLength, targetLength);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                singlePath(sourceLength, targetLength);
 
         assertThat(pti.hasNext()).isTrue();
         assertThat(pti.next())
@@ -101,7 +107,8 @@ class PathTracingIteratorTest {
         int degree = 3;
 
         int expectedCardinality = expectedCardinalityOfRectangularPathSet(sourceLength, targetLength, width, degree);
-        PathTracingIterator pti = rectangularPathSet(sourceLength, targetLength, width, degree);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                rectangularPathSet(sourceLength, targetLength, width, degree);
 
         Set<PathReference> paths = new HashSet<>(expectedCardinality);
         for (int i = 0; i < expectedCardinality; i++) {
@@ -122,7 +129,8 @@ class PathTracingIteratorTest {
         int degree = 3;
 
         int expectedCardinality = expectedCardinalityOfRectangularPathSet(sourceLength, targetLength, width, degree);
-        PathTracingIterator pti = rectangularPathSet(sourceLength, targetLength, width, degree);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                rectangularPathSet(sourceLength, targetLength, width, degree);
 
         Set<PathReference> paths = new HashSet<>(expectedCardinality);
         for (int i = 0; i < expectedCardinality; i++) {
@@ -143,7 +151,8 @@ class PathTracingIteratorTest {
         int degree = 3;
 
         int expectedCardinality = expectedCardinalityOfRectangularPathSet(sourceLength, targetLength, width, degree);
-        PathTracingIterator pti = rectangularPathSet(sourceLength, targetLength, width, degree);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                rectangularPathSet(sourceLength, targetLength, width, degree);
 
         Set<PathReference> paths = new HashSet<>(expectedCardinality);
         for (int i = 0; i < expectedCardinality; i++) {
@@ -164,7 +173,8 @@ class PathTracingIteratorTest {
         int degree = 3;
 
         int expectedCardinality = expectedCardinalityOfRectangularPathSet(sourceLength, targetLength, width, degree);
-        PathTracingIterator pti = rectangularPathSet(sourceLength, targetLength, width, degree);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                rectangularPathSet(sourceLength, targetLength, width, degree);
 
         Set<PathReference> paths = new HashSet<>(expectedCardinality);
         for (int i = 0; i < expectedCardinality; i++) {
@@ -185,7 +195,8 @@ class PathTracingIteratorTest {
         int degree = 3;
 
         int expectedCardinality = expectedCardinalityOfRectangularPathSet(sourceLength, targetLength, width, degree);
-        PathTracingIterator pti = rectangularPathSet(sourceLength, targetLength, width, degree);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                rectangularPathSet(sourceLength, targetLength, width, degree);
 
         Set<PathReference> paths = new HashSet<>(expectedCardinality);
         for (int i = 0; i < expectedCardinality; i++) {
@@ -206,7 +217,8 @@ class PathTracingIteratorTest {
         int degree = 4;
 
         int expectedCardinality = expectedCardinalityOfRectangularPathSet(sourceLength, targetLength, width, degree);
-        PathTracingIterator pti = rectangularPathSet(sourceLength, targetLength, width, degree);
+        PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> pti =
+                rectangularPathSet(sourceLength, targetLength, width, degree);
 
         Set<PathReference> paths = new HashSet<>(expectedCardinality);
         for (int i = 0; i < expectedCardinality; i++) {
@@ -218,7 +230,8 @@ class PathTracingIteratorTest {
         assertThat(pti.hasNext()).isFalse();
     }
 
-    private PathTracingIterator singlePath(int sourceLength, int targetLength) {
+    private PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> singlePath(
+            int sourceLength, int targetLength) {
         int totalLength = sourceLength + targetLength;
 
         MemoryTracker mt = new LocalMemoryTracker();
@@ -243,12 +256,13 @@ class PathTracingIteratorTest {
             targetPathTraceData.put(i, targetStep);
         }
 
-        PathTracingIterator pti =
-                new PathTracingIterator(single, sourceLength, targetLength, sourcePathTraceData, targetPathTraceData);
+        PathTracingIterator pti = new PathTracingIterator(
+                single, sourceLength, targetLength, sourcePathTraceData, targetPathTraceData, false);
         return pti;
     }
 
-    private PathTracingIterator rectangularPathSet(int sourceLength, int targetLength, int width, int degree) {
+    private PathTracingIterator<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> rectangularPathSet(
+            int sourceLength, int targetLength, int width, int degree) {
         MemoryTracker mt = new LocalMemoryTracker();
 
         HeapTrackingLongObjectHashMap<HeapTrackingArrayList<BiDirectionalBFS.PathTraceStep>> sourcePathTraceData =
@@ -339,7 +353,7 @@ class PathTracingIteratorTest {
 
         LongIterator intersectionIterator = longIterator(currentLevel);
         return new PathTracingIterator(
-                intersectionIterator, sourceLength, targetLength, sourcePathTraceData, targetPathTraceData);
+                intersectionIterator, sourceLength, targetLength, sourcePathTraceData, targetPathTraceData, false);
     }
 
     private int expectedCardinalityOfRectangularPathSet(int sourceLength, int targetLength, int width, int degree) {

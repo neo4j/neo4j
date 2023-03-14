@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.helpers;
+package org.neo4j.internal.kernel.api.helpers.traversal;
 
 import java.util.Iterator;
 import java.util.Objects;
@@ -36,8 +36,10 @@ import org.neo4j.internal.kernel.api.KernelReadTracer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.virtual.PathReference;
 
 /**
@@ -76,9 +78,6 @@ import org.neo4j.values.virtual.PathReference;
  * Iteration and retracing of paths is done with a PathsIterator which is described in more detail at its declaration.
  */
 public class BiDirectionalBFS implements AutoCloseable {
-    private static final int PATHS_TO_NODE_INIT_SIZE = 4; // Base this on database stats?
-    private static final int LEVEL_INIT_CAPACITY = 16; // Base this on database stats?
-    private static final int PATH_TRACE_DATA_INIT_CAPACITY = LEVEL_INIT_CAPACITY * 4; // Base this on database stats?
     final int maxDepth;
     private final BFS sourceBFS;
     private final BFS targetBFS;
@@ -124,51 +123,80 @@ public class BiDirectionalBFS implements AutoCloseable {
             RelationshipTraversalCursor relCursor,
             MemoryTracker memoryTracker,
             LongPredicate nodeFilter,
-            Predicate<RelationshipTraversalCursor> relFilter) {
+            Predicate<RelationshipTraversalCursor> relFilter,
+            boolean needOnlyOnePath) {
         this.maxDepth = maxDepth;
 
-        this.sourceBFS = stopAsapAtIntersect
-                ? new LazyBFS(
-                        sourceNodeId,
-                        types,
-                        direction,
-                        read,
-                        nodeCursor,
-                        relCursor,
-                        memoryTracker,
-                        nodeFilter,
-                        relFilter)
-                : new EagerBFS(
-                        sourceNodeId,
-                        types,
-                        direction,
-                        read,
-                        nodeCursor,
-                        relCursor,
-                        memoryTracker,
-                        nodeFilter,
-                        relFilter);
-        this.targetBFS = stopAsapAtIntersect
-                ? new LazyBFS(
-                        targetNodeId,
-                        types,
-                        direction.reversed(),
-                        read,
-                        nodeCursor,
-                        relCursor,
-                        memoryTracker,
-                        nodeFilter,
-                        relFilter)
-                : new EagerBFS(
-                        targetNodeId,
-                        types,
-                        direction.reversed(),
-                        read,
-                        nodeCursor,
-                        relCursor,
-                        memoryTracker,
-                        nodeFilter,
-                        relFilter);
+        if (needOnlyOnePath) {
+            this.sourceBFS = new SinglePathBFS(
+                    sourceNodeId,
+                    types,
+                    direction,
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    needOnlyOnePath);
+            this.targetBFS = new SinglePathBFS(
+                    targetNodeId,
+                    types,
+                    direction.reversed(),
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    needOnlyOnePath);
+        } else if (stopAsapAtIntersect) {
+            this.sourceBFS = new LazyBFS(
+                    sourceNodeId,
+                    types,
+                    direction,
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    needOnlyOnePath);
+            this.targetBFS = new LazyBFS(
+                    targetNodeId,
+                    types,
+                    direction.reversed(),
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    needOnlyOnePath);
+        } else {
+            this.sourceBFS = new EagerBFS(
+                    sourceNodeId,
+                    types,
+                    direction,
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    needOnlyOnePath);
+            this.targetBFS = new EagerBFS(
+                    targetNodeId,
+                    types,
+                    direction.reversed(),
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    needOnlyOnePath);
+        }
         sourceBFS.setOther(targetBFS);
         targetBFS.setOther(sourceBFS);
 
@@ -183,7 +211,8 @@ public class BiDirectionalBFS implements AutoCloseable {
             Read read,
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            Boolean needOnlyOnePath) {
         this(
                 StatementConstants.NO_SUCH_NODE,
                 StatementConstants.NO_SUCH_NODE,
@@ -196,7 +225,8 @@ public class BiDirectionalBFS implements AutoCloseable {
                 relCursor,
                 memoryTracker,
                 null,
-                null);
+                null,
+                needOnlyOnePath);
         algorithmState = State.NOT_INITIALIZED_WITH_NODES;
     }
 
@@ -224,19 +254,31 @@ public class BiDirectionalBFS implements AutoCloseable {
             Read read,
             NodeCursor nodeCursor,
             RelationshipTraversalCursor relCursor,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            boolean needOnlyOnePath) {
         return new BiDirectionalBFS(
-                types, direction, maxDepth, stopAsapAtIntersect, read, nodeCursor, relCursor, memoryTracker);
+                types,
+                direction,
+                maxDepth,
+                stopAsapAtIntersect,
+                read,
+                nodeCursor,
+                relCursor,
+                memoryTracker,
+                needOnlyOnePath);
     }
 
+    @CalledFromGeneratedCode
     public static BiDirectionalBFS newEmptyBiDirectionalBFS(
             int[] types,
             SemanticDirection direction,
             int maxDepth,
             boolean stopAsapAtIntersect,
             Read read,
-            MemoryTracker memoryTracker) {
-        return new BiDirectionalBFS(types, direction, maxDepth, stopAsapAtIntersect, read, null, null, memoryTracker);
+            MemoryTracker memoryTracker,
+            boolean needOnlyOnePath) {
+        return new BiDirectionalBFS(
+                types, direction, maxDepth, stopAsapAtIntersect, read, null, null, memoryTracker, needOnlyOnePath);
     }
 
     /**
@@ -283,7 +325,8 @@ public class BiDirectionalBFS implements AutoCloseable {
                     sourceBFS.currentDepth,
                     targetBFS.currentDepth,
                     sourceBFS.pathTraceData,
-                    targetBFS.pathTraceData);
+                    targetBFS.pathTraceData,
+                    sourceBFS.needOnlyOnePath);
         }
 
         BFS bfsToAdvance = null;
@@ -307,7 +350,8 @@ public class BiDirectionalBFS implements AutoCloseable {
                 sourceBFS.currentDepth,
                 targetBFS.currentDepth,
                 sourceBFS.pathTraceData,
-                targetBFS.pathTraceData);
+                targetBFS.pathTraceData,
+                sourceBFS.needOnlyOnePath);
     }
 
     private static BFS pickBFSWithSmallestCurrentLevelSet(BFS bfs1, BFS bfs2) {
@@ -325,7 +369,11 @@ public class BiDirectionalBFS implements AutoCloseable {
         targetBFS.setTracer(tracer);
     }
 
-    private abstract static class BFS implements AutoCloseable {
+    private abstract static class BFS<STEPS> implements AutoCloseable {
+
+        protected static final int PATHS_TO_NODE_INIT_SIZE = 4;
+        protected static final int LEVEL_INIT_CAPACITY = 16;
+        protected static final int PATH_TRACE_DATA_INIT_CAPACITY = LEVEL_INIT_CAPACITY * 4;
 
         // While we use the terminology source/target node when talking about the end nodes
         // of a path, we will use 'start node' to refer to the start (source) of a BFS. This is done to not
@@ -347,16 +395,12 @@ public class BiDirectionalBFS implements AutoCloseable {
         protected HeapTrackingLongHashSet nextLevel;
         protected BFS other;
         protected LongIterator intersectionIterator = null;
-        protected HeapTrackingLongObjectHashMap<HeapTrackingArrayList<PathTraceStep>> pathTraceData;
-
-        // Some data that helps us in reusing the lists of PathTraceSteps between rows
-        protected HeapTrackingArrayList<HeapTrackingArrayList<PathTraceStep>> availableArrayLists;
-        protected int availableArrayListsCurrentIndex = 0;
-        protected int availableArrayListsEnd = 0;
+        protected HeapTrackingLongObjectHashMap<STEPS> pathTraceData;
 
         protected SemanticDirection direction;
         protected RelationshipTraversalCursorRetriever retriever;
         boolean closed = false;
+        final boolean needOnlyOnePath;
 
         @FunctionalInterface
         private interface RelationshipTraversalCursorRetriever {
@@ -373,7 +417,9 @@ public class BiDirectionalBFS implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
+                Predicate<RelationshipTraversalCursor> relFilter,
+                boolean needOnlyOnePath) {
+            this.needOnlyOnePath = needOnlyOnePath;
             this.startNodeId = startNodeId;
             this.types = types;
             this.read = read;
@@ -388,8 +434,6 @@ public class BiDirectionalBFS implements AutoCloseable {
             this.nextLevel = HeapTrackingCollections.newLongSet(memoryTracker, LEVEL_INIT_CAPACITY);
             this.currentDepth = 0;
             this.pathTraceData = HeapTrackingCollections.newLongObjectMap(memoryTracker, PATH_TRACE_DATA_INIT_CAPACITY);
-            this.availableArrayLists =
-                    HeapTrackingCollections.newArrayList(PATH_TRACE_DATA_INIT_CAPACITY, memoryTracker);
 
             if (direction.equals(SemanticDirection.BOTH$.MODULE$)) {
                 this.retriever = RelationshipSelections::allCursor;
@@ -404,31 +448,7 @@ public class BiDirectionalBFS implements AutoCloseable {
 
         public abstract LongIterator intersectionIterator();
 
-        protected boolean addNodeToNextLevelIfQualifies(long currentNode, long foundNode) {
-            if (!hasSeenNode(foundNode) && nodeFilter.test(foundNode)) {
-                nextLevel.add(foundNode);
-                HeapTrackingArrayList<PathTraceStep> pathsToHere;
-
-                // Can we reuse an arraylist which we initialized for an earlier input row?
-                if (availableArrayListsCurrentIndex < availableArrayListsEnd) {
-                    pathsToHere = availableArrayLists.get(availableArrayListsCurrentIndex++);
-                    pathsToHere.clear();
-                } else {
-                    pathsToHere = HeapTrackingCollections.newArrayList(PATHS_TO_NODE_INIT_SIZE, memoryTracker);
-                    availableArrayLists.add(pathsToHere);
-                }
-                pathsToHere.add(new PathTraceStep(selectionCursor.reference(), currentNode));
-                pathTraceData.put(foundNode, pathsToHere);
-                return true;
-
-            } else if (nextLevel.contains(foundNode)) {
-                // foundNode has already been seen, but it was seen at this level with a different currentNode, so we
-                // have multiple shortest paths to foundNode from startNode.
-                pathTraceData.get(foundNode).add(new PathTraceStep(selectionCursor.reference(), currentNode));
-                return true;
-            }
-            return false;
-        }
+        protected abstract boolean addNodeToNextLevelIfQualifies(long currentNode, long foundNode);
 
         public boolean hasSeenNode(long nodeId) {
             return pathTraceData.containsKey(nodeId);
@@ -445,8 +465,6 @@ public class BiDirectionalBFS implements AutoCloseable {
             currentLevel.add(startNodeId);
             this.currentLevelItr = currentLevel.longIterator();
             this.currentDepth = 0;
-            this.availableArrayListsCurrentIndex = 0;
-            this.availableArrayListsEnd = this.availableArrayLists.size();
         }
 
         public void resetWithStartNode(
@@ -467,8 +485,6 @@ public class BiDirectionalBFS implements AutoCloseable {
         @Override
         public void close() {
             assert (!closed);
-            availableArrayLists.forEach(HeapTrackingArrayList::close);
-            availableArrayLists.close();
             pathTraceData.close();
             currentLevel.close();
             nextLevel.close();
@@ -492,7 +508,204 @@ public class BiDirectionalBFS implements AutoCloseable {
         }
     }
 
-    private static class EagerBFS extends BFS {
+    private static class SinglePathBFS extends BFS<PathTraceStep> {
+
+        private long foundIntersectionNode = StatementConstants.NO_SUCH_NODE;
+
+        public SinglePathBFS(
+                long startNodeId,
+                int[] types,
+                SemanticDirection direction,
+                Read read,
+                NodeCursor nodeCursor,
+                RelationshipTraversalCursor relCursor,
+                MemoryTracker memoryTracker,
+                LongPredicate nodeFilter,
+                Predicate<RelationshipTraversalCursor> relFilter,
+                boolean needOnlyOnePath) {
+            super(
+                    startNodeId,
+                    types,
+                    direction,
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    needOnlyOnePath);
+        }
+
+        @Override
+        public State searchForIntersectionInNextLevel() {
+            if (currentLevel.size() == 0) {
+                return State.THERE_IS_NO_INTERSECTION;
+            }
+
+            populateNextLevelOrStopWhenFoundFirstIntersectionNode();
+
+            if (this.foundIntersectionNode != StatementConstants.NO_SUCH_NODE) {
+                currentDepth++;
+                return State.FOUND_INTERSECTION;
+            }
+
+            advanceLevel();
+
+            return State.CAN_SEARCH_FOR_INTERSECTION;
+        }
+
+        @Override
+        public LongIterator intersectionIterator() {
+            return new LongIterator() {
+                boolean consumedFirst = false;
+
+                @Override
+                public long next() {
+                    return foundIntersectionNode;
+                }
+
+                @Override
+                public boolean hasNext() {
+                    if (!consumedFirst) {
+                        consumedFirst = true;
+                        return true;
+                    }
+
+                    return false;
+                }
+            };
+        }
+
+        @Override
+        protected boolean addNodeToNextLevelIfQualifies(long currentNode, long foundNode) {
+            if (hasSeenNode(foundNode) || !nodeFilter.test(foundNode)) {
+                return false;
+            }
+
+            nextLevel.add(foundNode);
+
+            pathTraceData.put(foundNode, new PathTraceStep(selectionCursor.reference(), currentNode));
+            return true;
+        }
+
+        private void populateNextLevelOrStopWhenFoundFirstIntersectionNode() {
+            while (currentLevelItr.hasNext()) {
+                long currentNode = currentLevelItr.next();
+                read.singleNode(currentNode, nodeCursor);
+                if (!nodeCursor.next()) {
+                    throw new EntityNotFoundException("Node " + currentNode + " was unexpectedly deleted");
+                }
+                selectionCursor = retriever.selectionCursor(relCursor, nodeCursor, types);
+                while (selectionCursor.next()) {
+                    if (relFilter.test(selectionCursor)) {
+                        long foundNode = selectionCursor.otherNodeReference();
+                        if (addNodeToNextLevelIfQualifies(currentNode, foundNode)
+                                && other.currentLevel.contains(foundNode)) {
+                            this.foundIntersectionNode = foundNode;
+                            return;
+                        }
+                    }
+                }
+            }
+        }
+
+        private void advanceLevel() {
+            var tmp = currentLevel;
+            currentLevel = nextLevel;
+            currentLevelItr = currentLevel.longIterator();
+            nextLevel = tmp;
+            nextLevel.clear();
+            currentDepth++;
+        }
+
+        @Override
+        public void resetWithStartNode(
+                long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalCursor> relFilter) {
+            this.foundIntersectionNode = StatementConstants.NO_SUCH_NODE;
+            super.resetWithStartNode(startNodeId, nodeFilter, relFilter);
+        }
+    }
+
+    private abstract static class ManyPathsBFS extends BFS<HeapTrackingArrayList<PathTraceStep>> {
+        // Some data that helps us in reusing the lists of PathTraceSteps between rows
+        protected HeapTrackingArrayList<HeapTrackingArrayList<PathTraceStep>> availableArrayLists;
+        protected int availableArrayListsCurrentIndex = 0;
+        protected int availableArrayListsEnd = 0;
+
+        public ManyPathsBFS(
+                long startNodeId,
+                int[] types,
+                SemanticDirection direction,
+                Read read,
+                NodeCursor nodeCursor,
+                RelationshipTraversalCursor relCursor,
+                MemoryTracker memoryTracker,
+                LongPredicate nodeFilter,
+                Predicate<RelationshipTraversalCursor> relFilter,
+                boolean needOnlyOnePath) {
+            super(
+                    startNodeId,
+                    types,
+                    direction,
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    needOnlyOnePath);
+            this.availableArrayLists =
+                    HeapTrackingCollections.newArrayList(PATH_TRACE_DATA_INIT_CAPACITY, memoryTracker);
+        }
+
+        @Override
+        protected boolean addNodeToNextLevelIfQualifies(long currentNode, long foundNode) {
+            if (!hasSeenNode(foundNode) && nodeFilter.test(foundNode)) {
+                nextLevel.add(foundNode);
+                HeapTrackingArrayList<PathTraceStep> pathsToHere;
+
+                // Can we reuse an arraylist which we initialized for an earlier input row?
+                if (availableArrayListsCurrentIndex < availableArrayListsEnd) {
+                    pathsToHere = availableArrayLists.get(availableArrayListsCurrentIndex++);
+                    pathsToHere.clear();
+                } else {
+                    pathsToHere = HeapTrackingCollections.newArrayList(PATHS_TO_NODE_INIT_SIZE, memoryTracker);
+                    availableArrayLists.add(pathsToHere);
+                }
+                pathsToHere.add(new PathTraceStep(selectionCursor.reference(), currentNode));
+                pathTraceData.put(foundNode, pathsToHere);
+                return true;
+
+            } else if (!needOnlyOnePath && nextLevel.contains(foundNode)) {
+                // foundNode has already been seen, but it was seen at this level with a different currentNode, so we
+                // have multiple shortest paths to foundNode from startNode.
+                pathTraceData.get(foundNode).add(new PathTraceStep(selectionCursor.reference(), currentNode));
+                return true;
+            }
+            return false;
+        }
+
+        @Override
+        public void resetWithStartNode(
+                long startNodeId,
+                NodeCursor nodeCursor,
+                RelationshipTraversalCursor relCursor,
+                LongPredicate nodeFilter,
+                Predicate<RelationshipTraversalCursor> relFilter) {
+            super.resetWithStartNode(startNodeId, nodeCursor, relCursor, nodeFilter, relFilter);
+            this.availableArrayListsCurrentIndex = 0;
+            this.availableArrayListsEnd = this.availableArrayLists.size();
+        }
+
+        @Override
+        public void close() {
+            availableArrayLists.forEach(HeapTrackingArrayList::close);
+            availableArrayLists.close();
+            super.close();
+        }
+    }
+
+    private static class EagerBFS extends ManyPathsBFS {
         public EagerBFS(
                 long startNodeId,
                 int[] types,
@@ -502,8 +715,19 @@ public class BiDirectionalBFS implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
-            super(startNodeId, types, direction, read, nodeCursor, relCursor, memoryTracker, nodeFilter, relFilter);
+                Predicate<RelationshipTraversalCursor> relFilter,
+                boolean withFallback) {
+            super(
+                    startNodeId,
+                    types,
+                    direction,
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    withFallback);
         }
 
         private void fullyPopulateNextLevel() {
@@ -559,7 +783,7 @@ public class BiDirectionalBFS implements AutoCloseable {
         }
     }
 
-    private static class LazyBFS extends BFS {
+    private static class LazyBFS extends ManyPathsBFS {
 
         private long foundIntersectionNode = StatementConstants.NO_SUCH_NODE; // A node that has been found by both BFSs
         private long currentNode = StatementConstants.NO_SUCH_NODE;
@@ -573,8 +797,19 @@ public class BiDirectionalBFS implements AutoCloseable {
                 RelationshipTraversalCursor relCursor,
                 MemoryTracker memoryTracker,
                 LongPredicate nodeFilter,
-                Predicate<RelationshipTraversalCursor> relFilter) {
-            super(startNodeId, types, direction, read, nodeCursor, relCursor, memoryTracker, nodeFilter, relFilter);
+                Predicate<RelationshipTraversalCursor> relFilter,
+                boolean withFallback) {
+            super(
+                    startNodeId,
+                    types,
+                    direction,
+                    read,
+                    nodeCursor,
+                    relCursor,
+                    memoryTracker,
+                    nodeFilter,
+                    relFilter,
+                    withFallback);
         }
 
         @Override

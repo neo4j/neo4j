@@ -59,7 +59,8 @@ class ShortestPathPipeTest extends CypherFunSuite {
       true,
       true,
       true,
-      None
+      None,
+      true
     )()
     val context = mock[QueryContext](Mockito.RETURNS_DEEP_STUBS)
     val p = mock[Path]
