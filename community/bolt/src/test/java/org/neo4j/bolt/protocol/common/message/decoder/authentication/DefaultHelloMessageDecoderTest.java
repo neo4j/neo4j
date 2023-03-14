@@ -19,15 +19,18 @@
  */
 package org.neo4j.bolt.protocol.common.message.decoder.authentication;
 
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.neo4j.bolt.protocol.common.message.notifications.SelectiveNotificationsConfig;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValueBuilder;
 
 public class DefaultHelloMessageDecoderTest extends AbstractHelloMessageDecoderTest<DefaultHelloMessageDecoder> {
@@ -54,6 +57,10 @@ public class DefaultHelloMessageDecoderTest extends AbstractHelloMessageDecoderT
         var meta = new MapValueBuilder();
         meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
         meta.add("routing", routing);
+        var list = ListValueBuilder.newListBuilder(1);
+        list.add(Values.stringValue("HINT"));
+        meta.add("notifications_minimum_severity", Values.stringValue("WARNING"));
+        meta.add("notifications_disabled_categories", list.build());
 
         Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
 
@@ -71,6 +78,8 @@ public class DefaultHelloMessageDecoderTest extends AbstractHelloMessageDecoderT
 
             Assertions.assertThat(ctx.getParameters()).hasSize(1).containsEntry("address", "localhost");
         });
+        Assertions.assertThat(msg.notificationsConfig())
+                .isEqualTo(new SelectiveNotificationsConfig("WARNING", List.of("HINT")));
 
         // ensure that readPrimitiveMap is the only interaction point on PackstreamValueReader as HELLO explicitly
         // forbids the use of complex structures (such as dates, points, etc) to reduce potential attack vectors that

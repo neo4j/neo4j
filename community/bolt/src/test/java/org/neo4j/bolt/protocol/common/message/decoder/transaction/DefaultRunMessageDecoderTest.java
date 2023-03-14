@@ -20,10 +20,12 @@
 package org.neo4j.bolt.protocol.common.message.decoder.transaction;
 
 import java.time.Duration;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.protocol.common.message.notifications.SelectiveNotificationsConfig;
 import org.neo4j.bolt.testing.assertions.MapValueAssertions;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
@@ -31,6 +33,7 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
@@ -72,6 +75,10 @@ public class DefaultRunMessageDecoderTest extends AbstractRunMessageDecoderTest<
         meta.add("tx_metadata", txMeta.build());
         meta.add("db", Values.stringValue("neo4j"));
         meta.add("imp_user", Values.stringValue("bob"));
+        var list = ListValueBuilder.newListBuilder(1);
+        list.add(Values.stringValue("HINT"));
+        meta.add("notifications_minimum_severity", Values.stringValue("WARNING"));
+        meta.add("notifications_disabled_categories", list.build());
 
         Mockito.doReturn(params.build(), meta.build()).when(reader).readMap();
 
@@ -92,6 +99,8 @@ public class DefaultRunMessageDecoderTest extends AbstractRunMessageDecoderTest<
                 .containsEntry("the_answer", 42L);
         Assertions.assertThat(msg.databaseName()).isEqualTo("neo4j");
         Assertions.assertThat(msg.impersonatedUser()).isEqualTo("bob");
+        Assertions.assertThat(msg.notificationsConfig())
+                .isEqualTo(new SelectiveNotificationsConfig("WARNING", List.of("HINT")));
     }
 
     @Test

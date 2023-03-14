@@ -63,7 +63,8 @@ public class ReadyState extends org.neo4j.bolt.protocol.v40.fsm.state.ReadyState
                         AccessMode.READ,
                         message.getBookmarks(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         try {
             routingTableGetter
                     .get(tx, message.getRequestContext(), message.getDatabaseName())

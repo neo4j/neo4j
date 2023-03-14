@@ -26,11 +26,11 @@ import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.DefaultMetadataHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.metadata.MetadataHandler;
 import org.neo4j.bolt.protocol.common.message.decoder.connection.DefaultRouteMessageDecoder;
-import org.neo4j.bolt.protocol.common.message.decoder.transaction.DefaultRunMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v43.BoltProtocolV43;
 import org.neo4j.bolt.protocol.v44.fsm.StateMachineV44;
 import org.neo4j.bolt.protocol.v44.message.decoder.transaction.BeginMessageDecoderV44;
+import org.neo4j.bolt.protocol.v44.message.decoder.transaction.RunMessageDecoderV44;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.time.SystemNanoClock;
@@ -55,7 +55,7 @@ public class BoltProtocolV44 extends BoltProtocolV43 {
         return super.createRequestMessageRegistry()
                 .register(BeginMessageDecoderV44.getInstance())
                 .register(DefaultRouteMessageDecoder.getInstance())
-                .register(DefaultRunMessageDecoder.getInstance());
+                .register(RunMessageDecoderV44.getInstance());
     }
 
     @Override

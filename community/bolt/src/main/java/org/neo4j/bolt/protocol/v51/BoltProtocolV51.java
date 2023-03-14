@@ -26,8 +26,13 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
+import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
+import org.neo4j.bolt.protocol.v44.message.decoder.transaction.RunMessageDecoderV44;
+import org.neo4j.bolt.protocol.v50.message.decoder.transaction.BeginMessageDecoderV50;
 import org.neo4j.bolt.protocol.v51.fsm.StateMachineV51;
+import org.neo4j.bolt.protocol.v51.message.decoder.authentication.HelloMessageDecoderV51;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.time.SystemNanoClock;
 
 public class BoltProtocolV51 extends AbstractBoltProtocol {
@@ -45,6 +50,16 @@ public class BoltProtocolV51 extends AbstractBoltProtocol {
     @Override
     public Set<Feature> features() {
         return Set.of(Feature.UTC_DATETIME);
+    }
+
+    @Override
+    protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
+        return super.createRequestMessageRegistry()
+                // Authentication
+                .register(HelloMessageDecoderV51.getInstance())
+                // Transaction
+                .register(BeginMessageDecoderV50.getInstance())
+                .register(RunMessageDecoderV44.getInstance());
     }
 
     @Override

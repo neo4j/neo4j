@@ -20,9 +20,11 @@
 package org.neo4j.bolt.protocol.v44.message.decoder.transaction;
 
 import org.neo4j.bolt.protocol.common.message.decoder.transaction.DefaultBeginMessageDecoder;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.transaction.BeginMessage;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
+import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.values.virtual.MapValue;
 
 public final class BeginMessageDecoderV44 extends DefaultBeginMessageDecoder {
@@ -41,6 +43,11 @@ public final class BeginMessageDecoderV44 extends DefaultBeginMessageDecoder {
 
     @Override
     protected TransactionType readType(MapValue meta) throws PackstreamReaderException {
+        return null;
+    }
+
+    @Override
+    protected NotificationsConfig readNotificationsConfig(MapValue metadata) throws IllegalStructArgumentException {
         return null;
     }
 }

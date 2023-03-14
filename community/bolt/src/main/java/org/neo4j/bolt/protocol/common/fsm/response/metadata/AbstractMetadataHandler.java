@@ -188,6 +188,8 @@ public abstract class AbstractMetadataHandler implements MetadataHandler {
             builder.add("title", Values.utf8Value(notification.getTitle()));
             builder.add("description", Values.utf8Value(notification.getDescription()));
             builder.add("severity", Values.utf8Value(notification.getSeverity().toString()));
+            builder.add(
+                    "category", Values.stringValue(notification.getCategory().toString()));
 
             if (includePosition) {
                 // only add the position if it is not empty

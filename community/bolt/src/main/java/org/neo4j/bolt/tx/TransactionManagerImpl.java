@@ -37,6 +37,7 @@ import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.availability.UnavailableException;
+import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 
 public class TransactionManagerImpl implements TransactionManager {
@@ -70,7 +71,8 @@ public class TransactionManagerImpl implements TransactionManager {
             AccessMode mode,
             List<Bookmark> bookmarks,
             Duration timeout,
-            Map<String, Object> metadata)
+            Map<String, Object> metadata,
+            NotificationConfiguration notificationsConfig)
             throws TransactionException {
         // TODO: Currently we consider both null and empty string to be a magic value relating to
         //       the default database. This is a left-over from older protocol revisions and should
@@ -95,6 +97,10 @@ public class TransactionManagerImpl implements TransactionManager {
             throw new DatabaseUnavailableTransactionCreationException(databaseName, ex);
         }
 
+        var executionConfig = notificationsConfig != null
+                ? new QueryExecutionConfiguration(notificationsConfig)
+                : QueryExecutionConfiguration.DEFAULT_CONFIG;
+
         var id = "bolt-" + this.nextTransactionId.getAndIncrement();
         var tx = databaseService.beginTransaction(
                 kernelType,
@@ -105,7 +111,7 @@ public class TransactionManagerImpl implements TransactionManager {
                 mode,
                 metadata,
                 owner.routingContext(),
-                QueryExecutionConfiguration.DEFAULT_CONFIG); // todo This is where notification impl goes.
+                executionConfig);
 
         var handle = new TransactionImpl(id, type, databaseService.getDatabaseReference(), this.clock, tx);
         handle.registerListener(this.cleanupListener);

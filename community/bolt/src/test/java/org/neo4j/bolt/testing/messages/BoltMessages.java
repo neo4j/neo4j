@@ -55,6 +55,8 @@ public interface BoltMessages {
      */
     ProtocolVersion version();
 
+    String getUserAgent();
+
     default boolean supportsLogonMessage() {
         return false;
     }
@@ -192,6 +194,14 @@ public interface BoltMessages {
 
     default RequestMessage run(String statement, String db, MapValue params) {
         return new RunMessage(
-                statement, params, Collections.emptyList(), null, AccessMode.WRITE, Collections.emptyMap(), db, null);
+                statement,
+                params,
+                Collections.emptyList(),
+                null,
+                AccessMode.WRITE,
+                Collections.emptyMap(),
+                db,
+                null,
+                null);
     }
 }

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.values.virtual.MapValue;
 
@@ -53,8 +54,9 @@ public final class RunMessage extends AbstractTransactionInitiatingMessage {
             AccessMode accessMode,
             Map<String, Object> txMetadata,
             String databaseName,
-            String impersonatedUser) {
-        super(bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser);
+            String impersonatedUser,
+            NotificationsConfig notificationsConfig) {
+        super(bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser, notificationsConfig);
         this.statement = statement;
         this.params = params;
     }

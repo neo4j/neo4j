@@ -152,7 +152,7 @@ class AtomicSchedulingConnectionTest {
 
         // this is to set useragent
         this.connection.negotiate(
-                Collections.emptyList(), USER_AGENT, new RoutingContext(false, Collections.emptyMap()));
+                Collections.emptyList(), USER_AGENT, new RoutingContext(false, Collections.emptyMap()), null);
     }
 
     private void selectProtocol() {

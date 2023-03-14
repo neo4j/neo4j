@@ -25,8 +25,6 @@ import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 
 public class BoltV50Messages extends BoltV44Messages {
-    private static final String USER_AGENT = "BoltV51Wire/0.0";
-
     private static final BoltV50Messages INSTANCE = new BoltV50Messages();
 
     protected BoltV50Messages() {}

@@ -37,7 +37,7 @@ import org.neo4j.kernel.internal.Version;
 @CommunityStateMachineTestExtension
 public class NegotiationStateIT {
 
-    @StateMachineTest(include = @org.neo4j.bolt.testing.annotation.Version(major = 5, minor = 1))
+    @StateMachineTest(since = @org.neo4j.bolt.testing.annotation.Version(major = 5, minor = 1))
     void shouldHandleHelloMessageAndMoveToAuthenticatedState(
             StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
         // When

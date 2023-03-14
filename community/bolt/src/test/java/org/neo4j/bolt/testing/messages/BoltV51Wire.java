@@ -21,11 +21,17 @@ package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
 import java.util.Map;
+import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 
 public class BoltV51Wire extends BoltV50Wire {
+
+    protected BoltV51Wire(ProtocolVersion version) {
+        super(version);
+    }
+
     public BoltV51Wire() {
         super(BoltProtocolV51.VERSION);
     }

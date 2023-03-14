@@ -33,6 +33,8 @@ import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
 import org.neo4j.bolt.protocol.v41.message.decoder.authentication.HelloMessageDecoderV41;
 import org.neo4j.bolt.protocol.v44.fsm.StateMachineV44;
+import org.neo4j.bolt.protocol.v44.message.decoder.transaction.RunMessageDecoderV44;
+import org.neo4j.bolt.protocol.v50.message.decoder.transaction.BeginMessageDecoderV50;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.time.SystemNanoClock;
@@ -62,9 +64,11 @@ public class BoltProtocolV50 extends AbstractBoltProtocol {
     @Override
     protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
         return super.createRequestMessageRegistry()
-                .register(HelloMessageDecoderV41.getInstance())
                 .unregister(DefaultLogonMessageDecoder.getInstance())
-                .unregister(DefaultLogoffMessageDecoder.getInstance());
+                .unregister(DefaultLogoffMessageDecoder.getInstance())
+                .register(HelloMessageDecoderV41.getInstance())
+                .register(BeginMessageDecoderV50.getInstance())
+                .register(RunMessageDecoderV44.getInstance());
     }
 
     @Override

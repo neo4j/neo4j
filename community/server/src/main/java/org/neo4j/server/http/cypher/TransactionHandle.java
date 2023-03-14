@@ -212,7 +212,8 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
                 readByDefault ? AccessMode.READ : AccessMode.WRITE,
                 inputBookmarks,
                 this.customTransactionTimeout,
-                Collections.emptyMap());
+                Collections.emptyMap(),
+                null);
     }
 
     public TransactionManager transactionManager() {

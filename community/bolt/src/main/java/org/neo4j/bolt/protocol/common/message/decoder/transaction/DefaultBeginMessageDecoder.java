@@ -68,8 +68,17 @@ public class DefaultBeginMessageDecoder extends AbstractTransactionInitiatingMes
             var databaseName = TransactionInitiatingMetadataParser.readDatabaseName(metadata);
             var impersonatedUser = this.readImpersonatedUser(metadata);
             var type = this.readType(metadata);
+            var notificationsConfig = this.readNotificationsConfig(metadata);
 
-            return new BeginMessage(bookmarks, timeout, accessMode, txMetadata, databaseName, impersonatedUser, type);
+            return new BeginMessage(
+                    bookmarks,
+                    timeout,
+                    accessMode,
+                    txMetadata,
+                    databaseName,
+                    impersonatedUser,
+                    type,
+                    notificationsConfig);
         } catch (PackstreamReaderException ex) {
             throw new IllegalStructArgumentException("metadata", ex);
         }

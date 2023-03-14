@@ -29,7 +29,9 @@ public final class HelloMessageDecoderV41 extends AbstractLegacyHelloMessageDeco
     private static final List<String> FIELDS = List.of(
             DefaultHelloMessageDecoder.FIELD_FEATURES,
             DefaultHelloMessageDecoder.FIELD_ROUTING,
-            DefaultHelloMessageDecoder.FIELD_USER_AGENT);
+            DefaultHelloMessageDecoder.FIELD_USER_AGENT,
+            DefaultHelloMessageDecoder.FILED_NOTIFICATIONS_MIN_SEVERITY,
+            DefaultHelloMessageDecoder.FILED_NOTIFICATIONS_DISABLED_CATEGORIES);
 
     private HelloMessageDecoderV41() {}
 

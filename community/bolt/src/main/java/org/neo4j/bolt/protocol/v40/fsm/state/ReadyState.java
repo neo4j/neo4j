@@ -87,7 +87,8 @@ public class ReadyState extends AbstractState {
                         message.getAccessMode(),
                         message.bookmarks(),
                         message.transactionTimeout(),
-                        message.transactionMetadata());
+                        message.transactionMetadata(),
+                        message.notificationsConfig());
         var statement = tx.run(message.statement(), message.params());
 
         long end = context.clock().millis();
@@ -116,7 +117,8 @@ public class ReadyState extends AbstractState {
                         message.getAccessMode(),
                         message.bookmarks(),
                         message.transactionTimeout(),
-                        message.transactionMetadata());
+                        message.transactionMetadata(),
+                        message.notificationsConfig());
 
         // TODO: Remove along with ENTER_STREAMING
         context.connection().write(StateSignal.ENTER_STREAMING);

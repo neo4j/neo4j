@@ -27,7 +27,9 @@ import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.decoder.MessageDecoder;
+import org.neo4j.bolt.protocol.common.message.decoder.util.NotificationsConfigMetadataReader;
 import org.neo4j.bolt.protocol.common.message.decoder.util.TransactionInitiatingMetadataParser;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.transaction.AbstractTransactionInitiatingMessage;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -68,6 +70,10 @@ public abstract class AbstractTransactionInitiatingMessageDecoder<M extends Abst
 
         var parser = ctx.connector().bookmarkParser();
         return parser.parseBookmarks(listValue);
+    }
+
+    protected NotificationsConfig readNotificationsConfig(MapValue metadata) throws IllegalStructArgumentException {
+        return NotificationsConfigMetadataReader.readFromMapValue(metadata);
     }
 
     protected String readImpersonatedUser(MapValue meta) throws PackstreamReaderException {

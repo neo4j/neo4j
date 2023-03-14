@@ -22,6 +22,7 @@ package org.neo4j.bolt.protocol.common.message.decoder.authentication;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.message.decoder.util.AuthenticationMetadataUtils;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 
 public abstract class AbstractLegacyHelloMessageDecoder extends DefaultHelloMessageDecoder {
 
@@ -30,5 +31,10 @@ public abstract class AbstractLegacyHelloMessageDecoder extends DefaultHelloMess
     @Override
     protected Map<String, Object> readAuthToken(Map<String, Object> meta) {
         return AuthenticationMetadataUtils.extractAuthToken(this.providedFields(), meta);
+    }
+
+    @Override
+    protected NotificationsConfig readNotificationsConfig(Map<String, Object> meta) {
+        return null;
     }
 }

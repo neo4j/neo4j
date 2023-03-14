@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.tx.TransactionType;
 
@@ -36,9 +37,10 @@ public abstract sealed class AbstractTransactionInitiatingMessage implements Req
     private final Map<String, Object> txMetadata;
     private final String databaseName;
     private final String impersonatedUser;
+    private final NotificationsConfig notificationsConfig;
 
     protected AbstractTransactionInitiatingMessage() {
-        this(List.of(), null, AccessMode.WRITE, Map.of(), null, null);
+        this(List.of(), null, AccessMode.WRITE, Map.of(), null, null, null);
     }
 
     protected AbstractTransactionInitiatingMessage(
@@ -47,13 +49,15 @@ public abstract sealed class AbstractTransactionInitiatingMessage implements Req
             AccessMode accessMode,
             Map<String, Object> txMetadata,
             String databaseName,
-            String impersonatedUser) {
+            String impersonatedUser,
+            NotificationsConfig notificationsConfig) {
         this.bookmarks = bookmarks;
         this.txTimeout = txTimeout;
         this.accessMode = accessMode;
         this.txMetadata = txMetadata;
         this.databaseName = databaseName;
         this.impersonatedUser = impersonatedUser;
+        this.notificationsConfig = notificationsConfig;
     }
 
     public List<Bookmark> bookmarks() {
@@ -82,6 +86,10 @@ public abstract sealed class AbstractTransactionInitiatingMessage implements Req
 
     public abstract TransactionType type();
 
+    public NotificationsConfig notificationsConfig() {
+        return notificationsConfig;
+    }
+
     @Override
     public boolean safeToProcessInAnyState() {
         return false;
@@ -101,21 +109,25 @@ public abstract sealed class AbstractTransactionInitiatingMessage implements Req
                 && accessMode == that.accessMode
                 && Objects.equals(txMetadata, that.txMetadata)
                 && Objects.equals(databaseName, that.databaseName)
-                && Objects.equals(impersonatedUser, that.impersonatedUser);
+                && Objects.equals(impersonatedUser, that.impersonatedUser)
+                && Objects.equals(notificationsConfig, that.notificationsConfig);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser);
+        return Objects.hash(
+                bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser, notificationsConfig);
     }
 
     @Override
     public String toString() {
+        var notifications = notificationsConfig != null ? notificationsConfig.toString() : "null";
         return "bookmarks=" + bookmarks + ", txTimeout="
                 + txTimeout + ", accessMode="
                 + accessMode + ", txMetadata="
                 + txMetadata + ", databaseName='"
                 + databaseName + '\'' + ", impersonatedUser='"
-                + impersonatedUser + '\'';
+                + impersonatedUser + '\'' + ", notificationsConfig="
+                + notifications;
     }
 }

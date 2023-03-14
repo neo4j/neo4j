@@ -46,6 +46,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.error.AuthenticationException;
@@ -340,12 +341,19 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                                 Mockito.any(),
                                 Mockito.any(),
                                 Mockito.any(),
+                                Mockito.any(),
                                 Mockito.any());
                     } catch (TransactionException ignore) {
                         // Stubbing invocation - never occurs
                     }
                 },
                 invocation -> {
+                    var config = invocation.getArgument(6) == null
+                            ? null
+                            : invocation
+                                    .getArgument(6, NotificationsConfig.class)
+                                    .buildConfiguration(null);
+
                     var newTransaction = transactionManager.create(
                             invocation.getArgument(0),
                             (Connection) invocation.getMock(),
@@ -353,7 +361,8 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                             invocation.getArgument(2),
                             invocation.getArgument(3),
                             invocation.getArgument(4),
-                            invocation.getArgument(5));
+                            invocation.getArgument(5),
+                            config);
                     transaction.set(newTransaction);
                     return newTransaction;
                 });

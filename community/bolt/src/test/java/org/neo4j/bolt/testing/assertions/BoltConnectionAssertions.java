@@ -32,6 +32,7 @@ import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.assertj.core.api.InstanceOfAssertFactory;
 import org.neo4j.bolt.testing.client.TransportConnection;
+import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.packstream.error.reader.LimitExceededException;
@@ -167,6 +168,30 @@ public final class BoltConnectionAssertions
                 .containsEntry("code", code)
                 .containsEntry("title", title)
                 .containsEntry("description", description)
+                .containsEntry("severity", severity.toString())
+                .hasEntrySatisfying("position", position -> Assertions.assertThat(position)
+                        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
+                        .containsEntry("offset", (long) offset)
+                        .containsEntry("line", (long) line)
+                        .containsEntry("column", (long) column))));
+    }
+
+    public BoltConnectionAssertions receivesSuccessWithNotification(
+            String code,
+            String title,
+            String description,
+            SeverityLevel severity,
+            NotificationCategory category,
+            int offset,
+            int line,
+            int column) {
+        return receivesSuccessWithNotification(notification -> assertSoftly(soft -> soft.assertThat(notification)
+                .as("contains notification")
+                .containsEntry("code", code)
+                .containsEntry("title", title)
+                .containsEntry("description", description)
+                .containsEntry("severity", severity.toString())
+                .containsEntry("category", category.toString())
                 .hasEntrySatisfying("position", position -> Assertions.assertThat(position)
                         .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
                         .containsEntry("offset", (long) offset)

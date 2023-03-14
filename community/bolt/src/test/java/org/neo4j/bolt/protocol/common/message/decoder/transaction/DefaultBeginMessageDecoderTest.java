@@ -20,10 +20,12 @@
 package org.neo4j.bolt.protocol.common.message.decoder.transaction;
 
 import java.time.Duration;
+import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.protocol.common.message.notifications.SelectiveNotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.transaction.BeginMessage;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.bolt.tx.TransactionType;
@@ -32,6 +34,7 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
@@ -68,6 +71,10 @@ public class DefaultBeginMessageDecoderTest extends AbstractBeginMessageDecoderT
         meta.add("db", Values.stringValue("neo4j"));
         meta.add("imp_user", Values.stringValue("bob"));
         meta.add("tx_type", Values.stringValue("IMPLICIT"));
+        var list = ListValueBuilder.newListBuilder(1);
+        list.add(Values.stringValue("HINT"));
+        meta.add("notifications_minimum_severity", Values.stringValue("WARNING"));
+        meta.add("notifications_disabled_categories", list.build());
 
         Mockito.doReturn(meta.build()).when(reader).readMap();
 
@@ -86,6 +93,8 @@ public class DefaultBeginMessageDecoderTest extends AbstractBeginMessageDecoderT
         Assertions.assertThat(msg.databaseName()).isEqualTo("neo4j");
         Assertions.assertThat(msg.impersonatedUser()).isEqualTo("bob");
         Assertions.assertThat(msg.type()).isEqualTo(TransactionType.IMPLICIT);
+        Assertions.assertThat(msg.notificationsConfig())
+                .isEqualTo(new SelectiveNotificationsConfig("WARNING", List.of("HINT")));
     }
 
     @Test

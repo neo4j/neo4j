@@ -27,6 +27,7 @@ import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.tx.error.TransactionException;
+import org.neo4j.kernel.impl.query.NotificationConfiguration;
 
 public interface TransactionManager {
 
@@ -48,9 +49,14 @@ public interface TransactionManager {
     /**
      * Creates an explicit transaction capable of encapsulating the state of one or more statements.
      *
-     * @param mode an access mode hint.
-     * @param timeout a maximum transaction lifetime.
-     * @param metadata a map of user defined metadata.
+     * @param type                type of transaction.
+     * @param owner               owner of transaction.
+     * @param databaseName        name of which database the transaction will be executed.
+     * @param mode                an access mode hint.
+     * @param bookmarks           which bookmarks are required to execute this transaction.
+     * @param timeout             a maximum transaction lifetime.
+     * @param metadata            a map of user defined metadata.
+     * @param notificationsConfig which notifications the transaction can create.
      * @return a transaction.
      */
     Transaction create(
@@ -60,6 +66,7 @@ public interface TransactionManager {
             AccessMode mode,
             List<Bookmark> bookmarks,
             Duration timeout,
-            Map<String, Object> metadata)
+            Map<String, Object> metadata,
+            NotificationConfiguration notificationsConfig)
             throws TransactionException;
 }

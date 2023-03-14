@@ -89,7 +89,7 @@ class ReadyStateTest {
         when(this.transaction.run(anyString(), any())).thenReturn(this.statement);
 
         this.transactionManager = mock(TransactionManager.class, RETURNS_MOCKS);
-        when(this.transactionManager.create(any(), any(), anyString(), any(), anyList(), any(), anyMap()))
+        when(this.transactionManager.create(any(), any(), anyString(), any(), anyList(), any(), anyMap(), any()))
                 .thenReturn(this.transaction);
 
         this.routingTableGetter = mock(RoutingTableGetter.class, RETURNS_MOCKS);
@@ -114,7 +114,7 @@ class ReadyStateTest {
                 .withAnswer(
                         c -> {
                             try {
-                                c.beginTransaction(any(), anyString(), any(), anyList(), any(), anyMap());
+                                c.beginTransaction(any(), anyString(), any(), anyList(), any(), anyMap(), any());
                             } catch (TransactionException ignore) {
                                 // Stubbing invocation - Never occurs
                             }
@@ -165,7 +165,8 @@ class ReadyStateTest {
                         eq(AccessMode.WRITE),
                         eq(Collections.emptyList()),
                         Mockito.isNull(),
-                        eq(Collections.emptyMap()));
+                        eq(Collections.emptyMap()),
+                        eq(null));
         inOrder.verify(this.connection).write(StateSignal.ENTER_STREAMING);
 
         // impersonation is cleared when leaving transaction state
@@ -184,7 +185,8 @@ class ReadyStateTest {
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection).impersonate("bob");
         inOrder.verify(this.connection)
-                .beginTransaction(eq(TransactionType.EXPLICIT), eq("system"), eq(AccessMode.READ), any(), any(), any());
+                .beginTransaction(
+                        eq(TransactionType.EXPLICIT), eq("system"), eq(AccessMode.READ), any(), any(), any(), any());
 
         // in 4.3 implementation
         inOrder.verify(this.routingTableGetter).get(any(), any(), eq("neo4j"));
@@ -202,7 +204,8 @@ class ReadyStateTest {
                 AccessMode.WRITE,
                 Collections.emptyMap(),
                 "neo4j",
-                "bob");
+                "bob",
+                null);
         var nextState = this.state.process(message, this.context);
 
         assertSame(this.streamingState, nextState);
@@ -223,7 +226,8 @@ class ReadyStateTest {
                         AccessMode.WRITE,
                         Collections.emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         inOrder.verify(this.transaction).run(eq("RUN FANCY QUERY"), any());
         inOrder.verify(this.context).clock();
         inOrder.verify(this.statement).id();

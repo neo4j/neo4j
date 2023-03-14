@@ -36,7 +36,7 @@ import org.neo4j.kernel.internal.Version;
 @CommunityStateMachineTestExtension
 class ConnectedStateAnonymousIT {
 
-    @StateMachineTest(exclude = @org.neo4j.bolt.testing.annotation.Version(major = 5, minor = 1))
+    @StateMachineTest(until = @org.neo4j.bolt.testing.annotation.Version(major = 5, minor = 1))
     void shouldHandleHelloMessage(StateMachine fsm, BoltMessages messages, ResponseRecorder recorder) throws Throwable {
         fsm.process(messages.hello(), recorder);
 

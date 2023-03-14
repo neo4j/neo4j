@@ -20,7 +20,9 @@
 package org.neo4j.bolt.protocol.v40.message.decoder.transaction;
 
 import org.neo4j.bolt.protocol.common.message.decoder.transaction.DefaultRunMessageDecoder;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
+import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.values.virtual.MapValue;
 
 public final class RunMessageDecoderV40 extends DefaultRunMessageDecoder {
@@ -34,6 +36,11 @@ public final class RunMessageDecoderV40 extends DefaultRunMessageDecoder {
 
     @Override
     protected String readImpersonatedUser(MapValue meta) throws PackstreamReaderException {
+        return null;
+    }
+
+    @Override
+    protected NotificationsConfig readNotificationsConfig(MapValue metadata) throws IllegalStructArgumentException {
         return null;
     }
 }

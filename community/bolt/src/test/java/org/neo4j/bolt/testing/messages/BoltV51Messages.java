@@ -47,7 +47,7 @@ public class BoltV51Messages extends AbstractBoltMessages {
     }
 
     @Override
-    protected String getUserAgent() {
+    public String getUserAgent() {
         return USER_AGENT;
     }
 

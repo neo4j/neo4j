@@ -28,6 +28,8 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.decoder.MessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.util.AuthenticationMetadataUtils;
+import org.neo4j.bolt.protocol.common.message.decoder.util.NotificationsConfigMetadataReader;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.authentication.HelloMessage;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
@@ -42,6 +44,8 @@ public class DefaultHelloMessageDecoder implements MessageDecoder<HelloMessage> 
     protected static final String FIELD_FEATURES = "patch_bolt";
     protected static final String FIELD_USER_AGENT = "user_agent";
     protected static final String FIELD_ROUTING = "routing";
+    protected static final String FILED_NOTIFICATIONS_MIN_SEVERITY = "notifications_minimum_severity";
+    protected static final String FILED_NOTIFICATIONS_DISABLED_CATEGORIES = "notifications_disabled_categories";
 
     private static final DefaultHelloMessageDecoder INSTANCE = new DefaultHelloMessageDecoder();
 
@@ -69,8 +73,13 @@ public class DefaultHelloMessageDecoder implements MessageDecoder<HelloMessage> 
         var features = this.readFeatures(meta);
         var routingContext = this.readRoutingContext(meta);
         var authToken = this.readAuthToken(meta);
+        var notificationsConfig = this.readNotificationsConfig(meta);
 
-        return new HelloMessage(userAgent, features, routingContext, authToken);
+        return new HelloMessage(userAgent, features, routingContext, authToken, notificationsConfig);
+    }
+
+    protected NotificationsConfig readNotificationsConfig(Map<String, Object> meta) throws PackstreamReaderException {
+        return NotificationsConfigMetadataReader.readFromMap(meta);
     }
 
     protected String readUserAgent(Map<String, Object> meta) throws PackstreamReaderException {

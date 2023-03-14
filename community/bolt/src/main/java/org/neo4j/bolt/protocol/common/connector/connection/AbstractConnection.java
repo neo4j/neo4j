@@ -39,6 +39,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionLi
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.response.NetworkResponseHandler;
 import org.neo4j.bolt.protocol.common.fsm.response.ResponseHandler;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
 import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
@@ -89,6 +90,7 @@ public abstract class AbstractConnection implements Connection {
     private volatile String userAgent;
     private String defaultDatabase;
     private String impersonatedDefaultDatabase;
+    protected NotificationsConfig notificationsConfig;
 
     public AbstractConnection(
             Connector connector,
@@ -310,9 +312,14 @@ public abstract class AbstractConnection implements Connection {
     }
 
     @Override
-    public List<Feature> negotiate(List<Feature> features, String userAgent, RoutingContext routingContext) {
+    public List<Feature> negotiate(
+            List<Feature> features,
+            String userAgent,
+            RoutingContext routingContext,
+            NotificationsConfig notificationsConfig) {
         this.userAgent = userAgent;
         this.routingContext = routingContext;
+        this.notificationsConfig = notificationsConfig;
         return features.stream().filter(this::enableFeature).toList();
     }
 

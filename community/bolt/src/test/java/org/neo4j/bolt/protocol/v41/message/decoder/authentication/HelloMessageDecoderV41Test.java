@@ -29,6 +29,7 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValueBuilder;
 
 class HelloMessageDecoderV41Test extends AbstractHelloMessageDecoderTest<HelloMessageDecoderV41> {
@@ -50,6 +51,11 @@ class HelloMessageDecoderV41Test extends AbstractHelloMessageDecoderTest<HelloMe
         var meta = new MapValueBuilder();
         meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
         meta.add("routing", routing);
+        meta.add("scheme", Values.stringValue("none"));
+        var list = ListValueBuilder.newListBuilder(1);
+        list.add(Values.stringValue("HINT"));
+        meta.add("notifications_minimum_severity", Values.stringValue("WARNING"));
+        meta.add("notifications_disabled_categories", list.build());
 
         Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
 
@@ -61,12 +67,13 @@ class HelloMessageDecoderV41Test extends AbstractHelloMessageDecoderTest<HelloMe
         Assertions.assertThat(msg).isNotNull();
         // This assumes that it will be a Normal String and not a neo StringValue.
         Assertions.assertThat(msg.userAgent()).isEqualTo("Example/1.0 (+https://github.com/neo4j)");
-
+        Assertions.assertThat(msg.authToken()).hasSize(1).containsEntry("scheme", "none");
         Assertions.assertThat(msg.routingContext()).isNotNull().satisfies(ctx -> {
             Assertions.assertThat(ctx.isServerRoutingEnabled()).isTrue();
 
             Assertions.assertThat(ctx.getParameters()).hasSize(1).containsEntry("address", "localhost");
         });
+        Assertions.assertThat(msg.notificationsConfig()).isNull();
 
         // ensure that readPrimitiveMap is the only interaction point on PackstreamValueReader as HELLO explicitly
         // forbids the use of complex structures (such as dates, points, etc) to reduce potential attack vectors that

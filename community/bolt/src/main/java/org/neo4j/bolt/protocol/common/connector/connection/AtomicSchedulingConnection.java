@@ -43,6 +43,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionLi
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.Error;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.response.FailureMessage;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
@@ -54,6 +55,7 @@ import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
@@ -372,7 +374,8 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             AccessMode mode,
             List<Bookmark> bookmarks,
             Duration timeout,
-            Map<String, Object> metadata)
+            Map<String, Object> metadata,
+            NotificationsConfig transactionNotificationsConfig)
             throws TransactionException {
         // if no database name was given explicitly, we'll substitute it with the current default
         // database on this connection (e.g. either a pre-selected database, the user home database
@@ -381,11 +384,13 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             databaseName = this.selectedDefaultDatabase();
         }
 
+        var notificationsConfig = resolveNotificationsConfig(transactionNotificationsConfig);
+
         // optimistically create the transaction as we do not know what state the connection is in
         // at the moment
         var transaction = this.connector()
                 .transactionManager()
-                .create(type, this, databaseName, mode, bookmarks, timeout, metadata);
+                .create(type, this, databaseName, mode, bookmarks, timeout, metadata, notificationsConfig);
 
         // if another transaction has been created in the meantime or was already present when the
         // method was originally invoked, we'll destroy the optimistically created transaction and
@@ -400,6 +405,18 @@ public class AtomicSchedulingConnection extends AbstractConnection {
         }
 
         return transaction;
+    }
+
+    private NotificationConfiguration resolveNotificationsConfig(NotificationsConfig txConfig) {
+        if (txConfig != null) {
+            return txConfig.buildConfiguration(this.notificationsConfig);
+        }
+
+        if (this.notificationsConfig != null) {
+            this.notificationsConfig.buildConfiguration(null);
+        }
+
+        return null;
     }
 
     @Override

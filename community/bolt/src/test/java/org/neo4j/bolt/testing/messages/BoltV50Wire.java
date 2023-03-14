@@ -32,7 +32,7 @@ import org.neo4j.packstream.struct.StructHeader;
 
 public class BoltV50Wire extends AbstractBoltWire {
 
-    public BoltV50Wire(ProtocolVersion version) {
+    protected BoltV50Wire(ProtocolVersion version) {
         super(version, Feature.UTC_DATETIME);
     }
 

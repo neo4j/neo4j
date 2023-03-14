@@ -75,9 +75,17 @@ public class DefaultRunMessageDecoder extends AbstractTransactionInitiatingMessa
             var txMetadata = this.readMetadata(metadata);
             var databaseName = TransactionInitiatingMetadataParser.readDatabaseName(metadata);
             var impersonatedUser = this.readImpersonatedUser(metadata);
-
+            var notificationsConfig = this.readNotificationsConfig(metadata);
             return new RunMessage(
-                    statement, params, bookmarks, txTimeout, accessMode, txMetadata, databaseName, impersonatedUser);
+                    statement,
+                    params,
+                    bookmarks,
+                    txTimeout,
+                    accessMode,
+                    txMetadata,
+                    databaseName,
+                    impersonatedUser,
+                    notificationsConfig);
         } catch (PackstreamReaderException ex) {
             throw new IllegalStructArgumentException("metadata", ex);
         }

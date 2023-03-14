@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 
@@ -34,17 +35,24 @@ public final class HelloMessage implements RequestMessage {
     private final List<Feature> features;
     private final RoutingContext routingContext;
     private final Map<String, Object> authToken;
+    private final NotificationsConfig notificationsConfig;
 
     public HelloMessage(
-            String userAgent, List<Feature> features, RoutingContext routingContext, Map<String, Object> authToken) {
+            String userAgent,
+            List<Feature> features,
+            RoutingContext routingContext,
+            Map<String, Object> authToken,
+            NotificationsConfig notificationsConfig) {
         this.userAgent = userAgent;
         this.features = features;
         this.routingContext = routingContext;
         this.authToken = authToken;
+        this.notificationsConfig = notificationsConfig;
     }
 
-    public HelloMessage(String userAgent, List<Feature> features, RoutingContext routingContext) {
-        this(userAgent, features, routingContext, null);
+    public HelloMessage(
+            String userAgent, List<Feature> features, RoutingContext routingContext, Map<String, Object> authToken) {
+        this(userAgent, features, routingContext, authToken, null);
     }
 
     public Map<String, Object> authToken() {
@@ -61,6 +69,10 @@ public final class HelloMessage implements RequestMessage {
 
     public List<Feature> features() {
         return this.features;
+    }
+
+    public NotificationsConfig notificationsConfig() {
+        return this.notificationsConfig;
     }
 
     @Override
@@ -80,7 +92,8 @@ public final class HelloMessage implements RequestMessage {
         return Objects.equals(userAgent, that.userAgent)
                 && Objects.equals(features, that.features)
                 && Objects.equals(authToken, that.authToken)
-                && Objects.equals(routingContext, that.routingContext);
+                && Objects.equals(routingContext, that.routingContext)
+                && Objects.equals(notificationsConfig, that.notificationsConfig);
     }
 
     @Override
@@ -90,10 +103,12 @@ public final class HelloMessage implements RequestMessage {
 
     @Override
     public String toString() {
+        var notifications = notificationsConfig != null ? notificationsConfig.toString() : "null";
         return "HelloMessage{" + "userAgent='"
                 + userAgent + '\'' + ", features="
                 + features + ", authToken="
                 + authToken + ", routingContext="
-                + routingContext + '}';
+                + routingContext + ", notificationsConfig="
+                + notifications + '}';
     }
 }

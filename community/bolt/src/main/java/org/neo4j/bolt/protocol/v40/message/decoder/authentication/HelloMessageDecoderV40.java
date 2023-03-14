@@ -24,14 +24,18 @@ import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.AbstractLegacyHelloMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultHelloMessageDecoder;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 
 public final class HelloMessageDecoderV40 extends AbstractLegacyHelloMessageDecoder {
     private static final HelloMessageDecoderV40 INSTANCE = new HelloMessageDecoderV40();
 
-    private static final List<String> FIELDS =
-            List.of(DefaultHelloMessageDecoder.FIELD_FEATURES, DefaultHelloMessageDecoder.FIELD_USER_AGENT);
+    private static final List<String> FIELDS = List.of(
+            DefaultHelloMessageDecoder.FIELD_FEATURES,
+            DefaultHelloMessageDecoder.FIELD_USER_AGENT,
+            DefaultHelloMessageDecoder.FILED_NOTIFICATIONS_MIN_SEVERITY,
+            DefaultHelloMessageDecoder.FILED_NOTIFICATIONS_DISABLED_CATEGORIES);
 
     private HelloMessageDecoderV40() {}
 
@@ -47,5 +51,10 @@ public final class HelloMessageDecoderV40 extends AbstractLegacyHelloMessageDeco
     @Override
     protected RoutingContext readRoutingContext(Map<String, Object> meta) throws PackstreamReaderException {
         return new RoutingContext(false, Collections.emptyMap());
+    }
+
+    @Override
+    protected NotificationsConfig readNotificationsConfig(Map<String, Object> meta) {
+        return null;
     }
 }

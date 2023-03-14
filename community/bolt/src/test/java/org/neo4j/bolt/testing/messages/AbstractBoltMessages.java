@@ -27,8 +27,8 @@ import org.neo4j.bolt.protocol.common.message.request.authentication.HelloMessag
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 
 public abstract class AbstractBoltMessages implements BoltMessages {
-
-    protected String getUserAgent() {
+    @Override
+    public String getUserAgent() {
         return this.getClass().getSimpleName() + "/0.0";
     }
 

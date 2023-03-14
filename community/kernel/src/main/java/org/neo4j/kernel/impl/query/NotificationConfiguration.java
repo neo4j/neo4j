@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import java.util.Collections;
 import java.util.Set;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.NotificationCategory;
@@ -50,13 +51,14 @@ public record NotificationConfiguration(Severity severityLevel, Set<Category> di
     }
 
     public static final NotificationConfiguration DEFAULT_FILTER = all();
+    public static final NotificationConfiguration NONE = none();
 
     public static NotificationConfiguration all() {
-        return new NotificationConfiguration(Severity.INFORMATION, Set.of());
+        return new NotificationConfiguration(Severity.INFORMATION, Collections.emptySet());
     }
 
     public static NotificationConfiguration none() {
-        return new NotificationConfiguration(Severity.NONE, Set.of());
+        return new NotificationConfiguration(Severity.NONE, Collections.emptySet());
     }
 
     public boolean includes(Notification notification) {

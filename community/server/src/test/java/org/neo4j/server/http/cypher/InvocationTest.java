@@ -75,6 +75,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AuthManager;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryPool;
@@ -119,7 +120,8 @@ class InvocationTest {
                         any(AccessMode.class),
                         anyList(),
                         nullable(Duration.class),
-                        anyMap()))
+                        anyMap(),
+                        nullable(NotificationConfiguration.class)))
                 .thenReturn(transaction);
 
         when(bookmark.serialize()).thenReturn(SERIALIZED_BOOKMARK);
@@ -161,7 +163,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
         txManagerOrder.verify(transaction).commit();
@@ -223,7 +226,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
         txManagerOrder.verifyNoMoreInteractions();
@@ -276,7 +280,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("queryA", MapValue.EMPTY);
         txManagerOrder.verify(statement1).consume(any(ResponseHandler.class), anyLong());
 
@@ -351,7 +356,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(transaction).commit();
         txManagerOrder.verify(transaction).close();
@@ -428,7 +434,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
         txManagerOrder.verify(transaction).commit();
@@ -482,7 +489,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(transaction).rollback();
         txManagerOrder.verify(transaction).close();
@@ -539,7 +547,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
         txManagerOrder.verify(transaction).commit();
@@ -569,7 +578,8 @@ class InvocationTest {
                         any(AccessMode.class),
                         anyList(),
                         nullable(Duration.class),
-                        anyMap()))
+                        anyMap(),
+                        nullable(NotificationConfiguration.class)))
                 .thenThrow(mock(TransactionException.class));
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(123L);
@@ -612,7 +622,8 @@ class InvocationTest {
                         any(AccessMode.class),
                         anyList(),
                         nullable(Duration.class),
-                        anyMap()))
+                        anyMap(),
+                        nullable(NotificationConfiguration.class)))
                 .thenThrow(new AuthorizationViolationException("Forbidden"));
 
         when(registry.begin(any(TransactionHandle.class))).thenReturn(1337L);
@@ -684,7 +695,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run(queryText, MapValue.EMPTY);
         txManagerOrder.verify(transaction).rollback();
         txManagerOrder.verify(transaction).close();
@@ -735,7 +747,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(transaction).rollback();
         txManagerOrder.verify(transaction).close();
@@ -789,7 +802,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(transaction).rollback();
         txManagerOrder.verify(transaction).close();
@@ -870,7 +884,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(transaction).rollback();
         txManagerOrder.verify(transaction).close();
@@ -926,7 +941,8 @@ class InvocationTest {
                         AccessMode.READ,
                         emptyList(),
                         Duration.ofMillis(100),
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
     }
 
     @Test
@@ -1182,7 +1198,8 @@ class InvocationTest {
                         AccessMode.WRITE,
                         emptyList(),
                         null,
-                        Collections.emptyMap());
+                        Collections.emptyMap(),
+                        null);
         txManagerOrder.verify(transaction).run("query", MapValue.EMPTY);
         txManagerOrder.verify(this.statement).consume(any(ResponseHandler.class), anyLong());
         txManagerOrder.verify(transaction).commit();

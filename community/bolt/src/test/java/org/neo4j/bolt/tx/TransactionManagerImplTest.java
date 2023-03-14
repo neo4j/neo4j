@@ -71,7 +71,8 @@ class TransactionManagerImplTest {
                 AccessMode.WRITE,
                 Collections.emptyList(),
                 Duration.ofSeconds(42),
-                Collections.emptyMap());
+                Collections.emptyMap(),
+                null);
 
         var inOrder =
                 Mockito.inOrder(this.transactionOwner, this.graphDatabaseManagementService, this.graphDatabaseService);

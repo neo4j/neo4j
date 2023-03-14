@@ -39,6 +39,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionLi
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
+import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
@@ -215,7 +216,11 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
      *                       selected routing policies.
      * @return a list of enabled features
      */
-    List<Feature> negotiate(List<Feature> features, String userAgent, RoutingContext routingContext);
+    List<Feature> negotiate(
+            List<Feature> features,
+            String userAgent,
+            RoutingContext routingContext,
+            NotificationsConfig notificationsConfig);
 
     /**
      * Retrieves the finite state machine for this connection.
@@ -329,7 +334,8 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
             AccessMode mode,
             List<Bookmark> bookmarks,
             Duration timeout,
-            Map<String, Object> metadata)
+            Map<String, Object> metadata,
+            NotificationsConfig transactionNotificationsConfig)
             throws TransactionException;
 
     Optional<Transaction> transaction();

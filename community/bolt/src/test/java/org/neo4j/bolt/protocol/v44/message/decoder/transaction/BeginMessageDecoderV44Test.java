@@ -32,6 +32,7 @@ import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -102,5 +103,25 @@ class BeginMessageDecoderV44Test extends AbstractBeginMessageDecoderTest<BeginMe
 
         Assertions.assertThat(msg).isNotNull();
         Assertions.assertThat(msg.type()).isEqualTo(TransactionType.EXPLICIT);
+    }
+
+    @Test
+    void shouldIgnoreNotifications() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        var list = ListValueBuilder.newListBuilder(1);
+        list.add(Values.stringValue("HINT"));
+        meta.add("notifications_minimum_severity", Values.stringValue("WARNING"));
+        meta.add("notifications_disabled_categories", list.build());
+
+        Mockito.doReturn(meta.build()).when(reader).readMap();
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+        var msg = this.getDecoder().read(connection, buf, new StructHeader(1, (short) 0x42));
+        Assertions.assertThat(msg).isNotNull();
+        Assertions.assertThat(msg.notificationsConfig()).isNull();
     }
 }

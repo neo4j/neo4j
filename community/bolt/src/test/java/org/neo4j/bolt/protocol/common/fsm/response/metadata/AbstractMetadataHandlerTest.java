@@ -37,6 +37,7 @@ import org.neo4j.bolt.testing.assertions.MapValueAssertions;
 import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
+import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -481,12 +482,14 @@ abstract class AbstractMetadataHandlerTest {
                 .when(notification1)
                 .getDescription();
         Mockito.doReturn(SeverityLevel.WARNING).when(notification1).getSeverity();
+        Mockito.doReturn(NotificationCategory.DEPRECATION).when(notification1).getCategory();
 
         Mockito.doReturn(InputPosition.empty).when(notification2).getPosition();
         Mockito.doReturn("Neo4j.Test.OtherThings").when(notification2).getCode();
         Mockito.doReturn("Something else").when(notification2).getTitle();
         Mockito.doReturn("Oh boy").when(notification2).getDescription();
         Mockito.doReturn(SeverityLevel.INFORMATION).when(notification2).getSeverity();
+        Mockito.doReturn(NotificationCategory.HINT).when(notification2).getCategory();
 
         this.handler.onNotifications(this.consumer, List.of(notification1, notification2));
 
@@ -498,13 +501,14 @@ abstract class AbstractMetadataHandlerTest {
                 .satisfies(
                         notification -> Assertions.assertThat(notification)
                                 .asInstanceOf(MapValueAssertions.mapValue())
-                                .hasSize(5)
+                                .hasSize(6)
                                 .containsEntry("code", Values.utf8Value("Neo4j.Test.ThingsHappened"))
                                 .containsEntry("title", Values.utf8Value("Something Happened"))
                                 .containsEntry(
                                         "description",
                                         Values.utf8Value("Things may have happened and you have been notified"))
                                 .containsEntry("severity", Values.utf8Value("WARNING"))
+                                .containsEntry("category", Values.utf8Value("DEPRECATION"))
                                 .containsEntry("position", position -> Assertions.assertThat(position)
                                         .asInstanceOf(MapValueAssertions.mapValue())
                                         .hasSize(3)
@@ -515,11 +519,12 @@ abstract class AbstractMetadataHandlerTest {
                 .satisfies(
                         notification -> Assertions.assertThat(notification)
                                 .asInstanceOf(MapValueAssertions.mapValue())
-                                .hasSize(4)
+                                .hasSize(5)
                                 .containsEntry("code", Values.utf8Value("Neo4j.Test.OtherThings"))
                                 .containsEntry("title", Values.utf8Value("Something else"))
                                 .containsEntry("description", Values.utf8Value("Oh boy"))
                                 .containsEntry("severity", Values.utf8Value("INFORMATION"))
+                                .containsEntry("category", Values.utf8Value("HINT"))
                                 .doesNotContainKey("position"),
                         Index.atIndex(1));
     }
