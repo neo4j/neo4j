@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck.Filtering
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck.error
-import org.neo4j.cypher.internal.ast.semantics.SemanticPatternCheck.whenState
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.TypeGenerator
 import org.neo4j.cypher.internal.ast.semantics.iterableOnceSemanticChecking
@@ -1742,42 +1741,23 @@ object SubqueryCall {
 
     override def semanticCheck: SemanticCheck = {
       val checkBatchParams = batchParams.foldSemanticCheck(_.semanticCheck)
-
-      val checkErrorParams: SemanticCheck = errorParams match {
-        case Some(params) => whenState(!_.features.contains(SemanticFeature.CallInTxsStatusAndErrorHandling)) {
-            error("CALL IN TRANSACTIONS does not support ON ERROR behaviour yet", params.position)
-          }
-        case None =>
-          SemanticCheck.success
-      }
-
-      val checkReportParams: SemanticCheck = reportParams match {
-        case Some(params) => whenState(!_.features.contains(SemanticFeature.CallInTxsStatusAndErrorHandling)) {
-            error("CALL IN TRANSACTIONS does not support REPORT STATUS yet", params.position)
-          } chain params.semanticCheck
-        case None =>
-          SemanticCheck.success
-      }
+      val checkReportParams = reportParams.foldSemanticCheck(_.semanticCheck)
 
       val checkErrorReportCombination: SemanticCheck = (errorParams, reportParams) match {
         case (None, Some(reportParams)) =>
-          whenState(_.features.contains(SemanticFeature.CallInTxsStatusAndErrorHandling)) {
-            error(
-              "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
-              reportParams.position
-            )
-          }
+          error(
+            "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
+            reportParams.position
+          )
         case (Some(InTransactionsErrorParameters(OnErrorFail)), Some(reportParams)) =>
-          whenState(_.features.contains(SemanticFeature.CallInTxsStatusAndErrorHandling)) {
-            error(
-              "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
-              reportParams.position
-            )
-          }
+          error(
+            "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
+            reportParams.position
+          )
         case _ => SemanticCheck.success
       }
 
-      checkBatchParams chain checkErrorParams chain checkReportParams chain checkErrorReportCombination
+      checkBatchParams chain checkReportParams chain checkErrorReportCombination
     }
   }
 

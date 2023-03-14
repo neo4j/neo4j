@@ -54,7 +54,6 @@ class SubqueryCallPlanningIntegrationTest
   private def plannerCfgBuilder: StatisticsBackedLogicalPlanningConfigurationBuilder = {
     plannerBuilder()
       .setAllNodesCardinality(1000)
-      .addSemanticFeature(SemanticFeature.CallInTxsStatusAndErrorHandling)
   }
 
   // Uncorrelated subqueries

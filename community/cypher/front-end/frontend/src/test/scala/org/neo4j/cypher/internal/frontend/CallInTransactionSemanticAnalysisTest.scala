@@ -22,10 +22,6 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
 
-  private val pipelineWithCallInTxsEnhancements = pipelineWithSemanticFeatures(
-    SemanticFeature.CallInTxsStatusAndErrorHandling
-  )
-
   test("nested CALL { ... } IN TRANSACTIONS") {
     val query = "CALL { CALL { CREATE (x) } IN TRANSACTIONS } IN TRANSACTIONS RETURN 1 AS result"
     expectErrorsFrom(
@@ -339,7 +335,7 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |  ON ERROR BREAK 
         |  RETURN v
         |""".stripMargin
-    expectNoErrorsFrom(query, pipelineWithCallInTxsEnhancements)
+    expectNoErrorsFrom(query)
   }
 
   test("CALL IN TRANSACTIONS ON ERROR BREAK without inner and outer return should pass semantic check") {
@@ -349,7 +345,7 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |} IN TRANSACTIONS 
         |  ON ERROR BREAK 
         |""".stripMargin
-    expectNoErrorsFrom(query, pipelineWithCallInTxsEnhancements)
+    expectNoErrorsFrom(query)
   }
 
   test("CALL IN TRANSACTIONS ON ERROR BREAK with inner return and no outer return should fail semantic check") {
@@ -366,8 +362,7 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
           "Query cannot conclude with CALL (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
           InputPosition(0, 1, 1)
         )
-      ),
-      pipelineWithCallInTxsEnhancements
+      )
     )
   }
 
@@ -380,7 +375,7 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |  REPORT STATUS AS status
         |  RETURN v, status
         |""".stripMargin
-    expectNoErrorsFrom(query, pipelineWithCallInTxsEnhancements)
+    expectNoErrorsFrom(query)
   }
 
   test("CALL IN TRANSACTIONS ON ERROR CONTINUE REPORT STATUS without outer RETURN should fail semantic check") {
@@ -396,8 +391,7 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
           "Query cannot conclude with CALL (must be a RETURN clause, an update clause, a unit subquery call, or a procedure call with no YIELD)",
           InputPosition(0, 1, 1)
         )
-      ),
-      pipelineWithCallInTxsEnhancements
+      )
     )
   }
 
@@ -417,8 +411,7 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
           "Variable `v` already declared",
           InputPosition(85, 4, 54)
         )
-      ),
-      pipelineWithCallInTxsEnhancements
+      )
     )
   }
 
@@ -431,7 +424,7 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
         |  REPORT STATUS AS status
         |  RETURN v, status
         |""".stripMargin
-    expectNoErrorsFrom(query, pipelineWithCallInTxsEnhancements)
+    expectNoErrorsFrom(query)
   }
 
   test("CALL IN TRANSACTIONS REPORT STATUS should fail semantic check") {
@@ -449,8 +442,7 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
           "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
           InputPosition(43, 4, 3)
         )
-      ),
-      pipelineWithCallInTxsEnhancements
+      )
     )
   }
 
@@ -470,60 +462,6 @@ class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
           "REPORT STATUS can only be used when specifying ON ERROR CONTINUE or ON ERROR BREAK",
           InputPosition(59, 5, 3)
         )
-      ),
-      pipelineWithCallInTxsEnhancements
-    )
-  }
-
-  test("CALL IN TRANSACTIONS ON ERROR <behaviour> should be a disabled feature") {
-    val query =
-      """CALL {
-        |  RETURN 1 AS v
-        |} IN TRANSACTIONS 
-        |  ON ERROR FAIL 
-        |  RETURN v
-        |""".stripMargin
-
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError("CALL IN TRANSACTIONS does not support ON ERROR behaviour yet", InputPosition(44, 4, 3))
-      )
-    )
-  }
-
-  test("CALL IN TRANSACTIONS REPORT STATUS should be a disabled feature") {
-    val query =
-      """CALL {
-        |  RETURN 1 AS v
-        |} IN TRANSACTIONS 
-        |  REPORT STATUS AS s
-        |  RETURN v, s
-        |""".stripMargin
-
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError("CALL IN TRANSACTIONS does not support REPORT STATUS yet", InputPosition(44, 4, 3))
-      )
-    )
-  }
-
-  test("CALL IN TRANSACTIONS ON ERROR <behaviour> REPORT STATUS should be disabled features") {
-    val query =
-      """CALL {
-        |  RETURN 1 AS v
-        |} IN TRANSACTIONS 
-        |  ON ERROR CONTINUE 
-        |  REPORT STATUS AS status
-        |  RETURN v, status
-        |""".stripMargin
-
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError("CALL IN TRANSACTIONS does not support ON ERROR behaviour yet", InputPosition(44, 4, 3)),
-        SemanticError("CALL IN TRANSACTIONS does not support REPORT STATUS yet", InputPosition(65, 5, 3))
       )
     )
   }
