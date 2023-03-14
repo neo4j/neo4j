@@ -216,12 +216,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           check(ctx, x.element)
     }
 
-  private def checkNoQuantifiedPathPatterns(x: PatternPart): SemanticCheck = {
-    x.folder.treeFindByClass[QuantifiedPath].foldSemanticCheck(qpp =>
-      error("Assigning a path with a quantified path pattern is not yet supported.", qpp.position)
-    )
-  }
-
   private val stringifier = ExpressionStringifier()
 
   private def checkMinimumNodeCount(x: PatternPart): SemanticCheck = {

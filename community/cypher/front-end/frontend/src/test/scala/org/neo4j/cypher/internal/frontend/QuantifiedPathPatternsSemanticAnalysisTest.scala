@@ -112,8 +112,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
   test("MATCH p = (p = (a)--(b))+ (c)--(d) RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "Assigning a path in a quantified path pattern is not yet supported.",
-      "Variable `p` already declared",
-      "Assigning a path with a quantified path pattern is not yet supported."
+      "Variable `p` already declared"
     )
   }
 
@@ -518,15 +517,11 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
 
   // path assignment with quantified path patterns
   test("MATCH p = ((a)-[]->(b))+ RETURN count(*)") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Assigning a path with a quantified path pattern is not yet supported."
-    )
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldBe empty
   }
 
   test("MATCH p = (x)-->(y) ((a)-[]->(b))+ RETURN count(*)") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Assigning a path with a quantified path pattern is not yet supported."
-    )
+    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldBe empty
   }
 
   // Mixing with legacy var-length
