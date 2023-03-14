@@ -49,6 +49,7 @@ import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.api.Kernel
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
 import org.neo4j.kernel.api.procedure.CallableUserFunction
@@ -311,7 +312,7 @@ abstract class RuntimeTestSuite[CONTEXT <: RuntimeContext](edition: Edition[CONT
    * use data from the previous tx afterwards. If you need to, get them again from the new
    * tx by id.
    */
-  def restartTx(): Unit = runtimeTestSupport.restartTx()
+  def restartTx(txType: KernelTransaction.Type = runtimeTestSupport.getTransactionType): Unit = runtimeTestSupport.restartTx(txType)
 
   // MATCHERS
 
