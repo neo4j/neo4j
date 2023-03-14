@@ -121,7 +121,7 @@ public class TransactionImpl implements Transaction {
             // thus causing errors to be surfaced prior to "actual" execution
             subscriber.assertSuccess();
         } catch (Exception ex) {
-            throw new StatementExecutionException("Failed to execute query in transaction \"" + this.id + "\"", ex);
+            throw new StatementExecutionException(ex);
         }
         var handle = new StatementImpl(statementId, this.database, this.clock, query, subscriber);
 

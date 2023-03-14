@@ -300,4 +300,12 @@ public class BasicOperationIT {
                         "Unable to drop index called `my_index`. There is no such index.")
                 .receivesIgnored();
     }
+
+    @ProtocolTest
+    void shouldFailNicelyWhenSubmittingInvalidStatement(BoltWire wire, @Authenticated TransportConnection connection)
+            throws IOException {
+        connection.send(wire.run("MATCH (:Movie{title:'"));
+
+        assertThat(connection).receivesFailureFuzzy(Status.Database.General.UnknownError, "Lexical error");
+    }
 }

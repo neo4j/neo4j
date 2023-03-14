@@ -32,6 +32,6 @@ public class StatementExecutionException extends StatementException {
     }
 
     public StatementExecutionException(Throwable cause) {
-        super(cause);
+        super(cause.getMessage(), cause);
     }
 }
