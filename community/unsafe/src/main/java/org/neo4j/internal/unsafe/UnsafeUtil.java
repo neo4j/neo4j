@@ -254,7 +254,7 @@ public final class UnsafeUtil {
 
     private static void addAllocatedPointer(long pointer, long sizeInBytes) {
         if (CHECK_NATIVE_ACCESS) {
-            allocations.put(pointer, new Allocation(pointer, sizeInBytes, freeCounter.get()));
+            allocations.put(pointer, new Allocation(pointer, sizeInBytes));
         }
     }
 
@@ -294,8 +294,7 @@ public final class UnsafeUtil {
         Allocation allocation = lastUsedAllocation.get();
         if (allocation != null && !allocation.freed) {
             if (compareUnsigned(allocation.pointer, pointer) <= 0
-                    && compareUnsigned(allocation.boundary, boundary) > 0
-                    && allocation.freeCounter == freeCounter.get()) {
+                    && compareUnsigned(allocation.boundary, boundary) > 0) {
                 return;
             }
         }
@@ -718,21 +717,19 @@ public final class UnsafeUtil {
         private final long pointer;
         private final long sizeInBytes;
         private final long boundary;
-        private final long freeCounter;
         public volatile boolean freed;
 
-        Allocation(long pointer, long sizeInBytes, long freeCounter) {
+        Allocation(long pointer, long sizeInBytes) {
             this.pointer = pointer;
             this.sizeInBytes = sizeInBytes;
-            this.freeCounter = freeCounter;
             this.boundary = pointer + sizeInBytes;
         }
 
         @Override
         public String toString() {
             return format(
-                    "Allocation[pointer=%s (%x), size=%s, boundary=%s (%x), free counter=%s]",
-                    pointer, pointer, sizeInBytes, boundary, boundary, freeCounter);
+                    "Allocation[pointer=%s (%x), size=%s, boundary=%s (%x)]",
+                    pointer, pointer, sizeInBytes, boundary, boundary);
         }
     }
 
