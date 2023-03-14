@@ -908,10 +908,7 @@ class HttpCopierTest
         return post( urlEqualTo( "/import" ) )
                 .withHeader( "Content-Type", equalTo( "application/json" ) )
                 .withHeader( "Authorization", equalTo( "Bearer " + authorizationTokenResponse ) )
-                .withHeader( "Accept", equalTo( "application/json" ) )
-                // We can't actually test the value that gets set in the header
-                // because it comes from the jar's manifest which is not available at test time
-                .withHeader("Neo4j-Version", matching(".*"));
+                .withHeader( "Accept", equalTo( "application/json" ) );
     }
 
     private MappingBuilder initiateSizeRequest( String authorizationTokenResponse, long size )
