@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkEnd;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
 import org.neo4j.test.LatestVersions;
 
 class CommittedCommandBatchCursorTest {

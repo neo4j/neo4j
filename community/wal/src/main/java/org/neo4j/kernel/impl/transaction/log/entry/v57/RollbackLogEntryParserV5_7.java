@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.v56;
+package org.neo4j.kernel.impl.transaction.log.entry.v57;
 
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
@@ -28,9 +28,10 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParser;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-public class ChunkEndLogEntryParserV5_6 extends LogEntryParser {
-    public ChunkEndLogEntryParserV5_6() {
-        super(LogEntryTypeCodes.CHUNK_END);
+public class RollbackLogEntryParserV5_7 extends LogEntryParser {
+
+    public RollbackLogEntryParserV5_7() {
+        super(LogEntryTypeCodes.TX_ROLLBACK);
     }
 
     @Override
@@ -40,9 +41,9 @@ public class ChunkEndLogEntryParserV5_6 extends LogEntryParser {
             LogPositionMarker marker,
             CommandReaderFactory commandReaderFactory)
             throws IOException {
-        long txId = channel.getLong();
-        long chunkId = channel.getLong();
+        long transactionId = channel.getLong();
+        long timeWritten = channel.getLong();
         int checksum = channel.endChecksumAndValidate();
-        return new LogEntryChunkEnd(txId, chunkId, checksum);
+        return new LogEntryRollback(version, transactionId, timeWritten, checksum);
     }
 }

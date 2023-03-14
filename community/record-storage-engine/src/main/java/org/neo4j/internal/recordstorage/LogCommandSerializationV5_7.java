@@ -21,11 +21,11 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.kernel.KernelVersion;
 
-class LogCommandSerializationV5_6 extends LogCommandSerializationV5_0 {
-    static final LogCommandSerializationV5_6 INSTANCE = new LogCommandSerializationV5_6();
+class LogCommandSerializationV5_7 extends LogCommandSerializationV5_0 {
+    static final LogCommandSerializationV5_7 INSTANCE = new LogCommandSerializationV5_7();
 
     @Override
     public KernelVersion kernelVersion() {
-        return KernelVersion.V5_6;
+        return KernelVersion.V5_7;
     }
 }

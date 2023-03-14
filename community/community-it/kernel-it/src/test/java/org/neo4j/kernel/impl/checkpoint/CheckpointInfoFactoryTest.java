@@ -36,7 +36,7 @@ import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryDetachedCheckpointV5_6;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryDetachedCheckpointV5_7;
 import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -123,7 +123,7 @@ class CheckpointInfoFactoryTest {
         LogPosition postReaderPosition = new LogPosition(5, 6);
         TransactionId transactionId = new TransactionId(6, 7, 8, 9);
         var checkpointInfo = ofLogEntry(
-                new LogEntryDetachedCheckpointV5_6(
+                new LogEntryDetachedCheckpointV5_7(
                         LatestVersions.LATEST_KERNEL_VERSION, transactionId, logPosition, 2, storeId, "checkpoint"),
                 position,
                 positionAfterCheckpoint,

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.v56;
+package org.neo4j.kernel.impl.transaction.log.entry.v57;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
@@ -36,11 +36,11 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class DetachedCheckpointLogEntryParserV5_6 extends LogEntryParser {
+public class DetachedCheckpointLogEntryParserV5_7 extends LogEntryParser {
     public static final int MAX_DESCRIPTION_LENGTH = 108;
 
-    public DetachedCheckpointLogEntryParserV5_6() {
-        super(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_6);
+    public DetachedCheckpointLogEntryParserV5_7() {
+        super(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7);
     }
 
     @Override
@@ -63,7 +63,7 @@ public class DetachedCheckpointLogEntryParserV5_6 extends LogEntryParser {
         channel.get(bytes, MAX_DESCRIPTION_LENGTH);
         String reason = new String(bytes, 0, reasonBytesLength, UTF_8);
         channel.endChecksumAndValidate();
-        return new LogEntryDetachedCheckpointV5_6(
+        return new LogEntryDetachedCheckpointV5_7(
                 version, transactionId, new LogPosition(logVersion, byteOffset), checkpointTimeMillis, storeId, reason);
     }
 }

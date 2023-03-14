@@ -49,7 +49,7 @@ public enum KernelVersion {
     V4_3_D4((byte) 3),
     V4_4((byte) 4), // 4.4. Introduces RANGE, POINT and TEXT index types.
     V5_0((byte) 5), // 5.0.
-    V5_6((byte) 6), // 5.6. Introduces chunked transactions
+    V5_7((byte) 6), // 5.6. Introduces chunked transactions
 
     // An unreleased future version.
     // This version is meant to be used when developing a new feature

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryWriterV5_6.RECORD_LENGTH_BYTES;
+import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntryWriterV5_7.RECORD_LENGTH_BYTES;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -37,7 +37,7 @@ import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryWriterV5_6;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntryWriterV5_7;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.test.extension.Inject;
@@ -57,7 +57,7 @@ class DetachedCheckpointLogEntryWriterV56Test {
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(directory.createFile("a"));
             try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
-                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriterV5_6(writeChannel);
+                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriterV5_7(writeChannel);
                 long initialPosition = writeChannel.position();
                 writeCheckpoint(checkpointLogEntryWriter, "checkpoint reason");
 
@@ -71,7 +71,7 @@ class DetachedCheckpointLogEntryWriterV56Test {
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(directory.createFile("b"));
             try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
-                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriterV5_6(writeChannel);
+                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriterV5_7(writeChannel);
 
                 for (int i = 0; i < 100; i++) {
                     long initialPosition = writeChannel.position();
@@ -88,7 +88,7 @@ class DetachedCheckpointLogEntryWriterV56Test {
         try (var buffer = new HeapScopedBuffer((int) kibiBytes(1), ByteOrder.LITTLE_ENDIAN, INSTANCE)) {
             StoreChannel storeChannel = fs.write(directory.createFile("b"));
             try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
-                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriterV5_6(writeChannel);
+                var checkpointLogEntryWriter = new DetachedCheckpointLogEntryWriterV5_7(writeChannel);
 
                 long initialPosition = writeChannel.position();
                 writeCheckpoint(checkpointLogEntryWriter, StringUtils.repeat("b", 1024));
@@ -98,7 +98,7 @@ class DetachedCheckpointLogEntryWriterV56Test {
         }
     }
 
-    private static void writeCheckpoint(DetachedCheckpointLogEntryWriterV5_6 checkpointLogEntryWriter, String reason)
+    private static void writeCheckpoint(DetachedCheckpointLogEntryWriterV5_7 checkpointLogEntryWriter, String reason)
             throws IOException {
         var storeId = new StoreId(3, 4, "engine-1", "format-1", 11, 22);
         var transactionId = new TransactionId(7, 8, 9, 10);

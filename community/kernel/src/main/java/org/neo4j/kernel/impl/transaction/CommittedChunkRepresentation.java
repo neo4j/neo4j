@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkEnd;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
 

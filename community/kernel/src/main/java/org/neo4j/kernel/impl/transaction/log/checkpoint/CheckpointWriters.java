@@ -23,15 +23,15 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.DetachedCheckpointLogEntryWriterV5_0;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryWriterV5_6;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntryWriterV5_7;
 
 public final class CheckpointWriters {
     private final DetachedCheckpointLogEntryWriterV5_0 writer5_0;
-    private final DetachedCheckpointLogEntryWriterV5_6 writer5_6;
+    private final DetachedCheckpointLogEntryWriterV5_7 writer5_7;
 
     public CheckpointWriters(WritableChannel channel) {
         writer5_0 = new DetachedCheckpointLogEntryWriterV5_0(channel);
-        writer5_6 = new DetachedCheckpointLogEntryWriterV5_6(channel);
+        writer5_7 = new DetachedCheckpointLogEntryWriterV5_7(channel);
     }
 
     public CheckpointLogEntryWriter writer(KernelVersion version) {
@@ -39,7 +39,7 @@ public final class CheckpointWriters {
             case V4_2, V4_3_D4, V4_4 -> throw new IllegalArgumentException(
                     "Unsupported kernel version for new checkpoint: " + version);
             case V5_0 -> writer5_0;
-            default -> writer5_6;
+            default -> writer5_7;
         };
     }
 }

@@ -17,38 +17,42 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.v56;
+package org.neo4j.kernel.impl.transaction.log.entry.v57;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_END;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_ROLLBACK;
 
-import org.neo4j.kernel.impl.transaction.log.entry.AbstractLogEntry;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 
-public class LogEntryChunkEnd extends AbstractLogEntry {
+public class LogEntryRollback extends AbstractVersionAwareLogEntry {
     private final long transactionId;
-    private final long chunkId;
+    private final long timeWritten;
     private final int checksum;
 
-    public LogEntryChunkEnd(long transactionId, long chunkId, int checksum) {
-        super(CHUNK_END);
+    public LogEntryRollback(KernelVersion kernelVersion, long transactionId, long timeWritten, int checksum) {
+        super(kernelVersion, TX_ROLLBACK);
         this.transactionId = transactionId;
-        this.chunkId = chunkId;
+        this.timeWritten = timeWritten;
         this.checksum = checksum;
-    }
-
-    public long getChunkId() {
-        return chunkId;
-    }
-
-    public int getChecksum() {
-        return checksum;
     }
 
     public long getTransactionId() {
         return transactionId;
     }
 
+    public long getTimeWritten() {
+        return timeWritten;
+    }
+
+    public int getChecksum() {
+        return checksum;
+    }
+
     @Override
     public String toString() {
-        return "LogEntryChunkEnd{" + "chunkId=" + chunkId + ", checksum=" + checksum + ", txId=" + transactionId + '}';
+        return "LogEntryRollback{" + "transactionId="
+                + transactionId + ", timeWritten="
+                + timeWritten + ", checksum="
+                + checksum + '}';
     }
 }

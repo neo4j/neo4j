@@ -40,7 +40,7 @@ public class LogEntryTypeCodes {
     public static final byte CHUNK_END = 11;
 
     // Checkpoint also contains consensus log index
-    public static final byte DETACHED_CHECK_POINT_V5_6 = (byte) 12;
+    public static final byte DETACHED_CHECK_POINT_V5_7 = (byte) 12;
 
     // transaction roll back entry code
     public static final byte TX_ROLLBACK = 13;

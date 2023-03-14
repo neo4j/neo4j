@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.v56;
+package org.neo4j.kernel.impl.transaction.log.entry.v57;
 
 import static java.lang.Math.min;
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_6;
-import static org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryParserV5_6.MAX_DESCRIPTION_LENGTH;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7;
+import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntryParserV5_7.MAX_DESCRIPTION_LENGTH;
 import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
 
 import java.io.IOException;
@@ -36,11 +36,11 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class DetachedCheckpointLogEntryWriterV5_6 implements CheckpointLogEntryWriter {
+public class DetachedCheckpointLogEntryWriterV5_7 implements CheckpointLogEntryWriter {
     public static final int RECORD_LENGTH_BYTES = 232;
     protected final WritableChannel channel;
 
-    public DetachedCheckpointLogEntryWriterV5_6(WritableChannel channel) {
+    public DetachedCheckpointLogEntryWriterV5_7(WritableChannel channel) {
         this.channel = channel;
     }
 
@@ -54,7 +54,7 @@ public class DetachedCheckpointLogEntryWriterV5_6 implements CheckpointLogEntryW
             String reason)
             throws IOException {
         channel.beginChecksum();
-        writeLogEntryHeader(kernelVersion, DETACHED_CHECK_POINT_V5_6, channel);
+        writeLogEntryHeader(kernelVersion, DETACHED_CHECK_POINT_V5_7, channel);
         byte[] storeIdBuffer = new byte[MAX_STORE_ID_LENGTH];
         StoreIdSerialization.serializeWithFixedSize(storeId, ByteBuffer.wrap(storeIdBuffer));
         byte[] reasonBytes = reason.getBytes();

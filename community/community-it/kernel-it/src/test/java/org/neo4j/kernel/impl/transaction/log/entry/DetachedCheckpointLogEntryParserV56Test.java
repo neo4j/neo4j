@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_6;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -43,8 +43,8 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogPositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.DetachedCheckpointLogEntryWriterV5_6;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryDetachedCheckpointV5_6;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntryWriterV5_7;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryDetachedCheckpointV5_7;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -71,7 +71,7 @@ class DetachedCheckpointLogEntryParserV56Test {
             Path path = directory.createFile("a");
             StoreChannel storeChannel = fs.write(path);
             try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
-                writeCheckpoint(writeChannel, KernelVersion.V5_6, StringUtils.repeat("c", 1024));
+                writeCheckpoint(writeChannel, KernelVersion.V5_7, StringUtils.repeat("c", 1024));
             }
 
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
@@ -83,8 +83,8 @@ class DetachedCheckpointLogEntryParserV56Test {
                     NO_MORE_CHANNELS,
                     INSTANCE)) {
                 var checkpointV56 = readCheckpoint(entryReader, readChannel);
-                assertEquals(DETACHED_CHECK_POINT_V5_6, checkpointV56.getType());
-                assertEquals(KernelVersion.V5_6, checkpointV56.kernelVersion());
+                assertEquals(DETACHED_CHECK_POINT_V5_7, checkpointV56.getType());
+                assertEquals(KernelVersion.V5_7, checkpointV56.kernelVersion());
                 assertEquals(new LogPosition(1, 2), checkpointV56.getLogPosition());
                 assertEquals(TEST_STORE_ID, checkpointV56.getStoreId());
                 assertEquals(new TransactionId(100, 101, 102, 103), checkpointV56.getTransactionId());
@@ -114,9 +114,9 @@ class DetachedCheckpointLogEntryParserV56Test {
         }
     }
 
-    private LogEntryDetachedCheckpointV5_6 readCheckpoint(
+    private LogEntryDetachedCheckpointV5_7 readCheckpoint(
             VersionAwareLogEntryReader entryReader, ReadableLogPositionAwareChannel readChannel) throws IOException {
-        return (LogEntryDetachedCheckpointV5_6) entryReader.readLogEntry(readChannel);
+        return (LogEntryDetachedCheckpointV5_7) entryReader.readLogEntry(readChannel);
     }
 
     private static void writeCheckpoint(WritableChannel channel, KernelVersion kernelVersion, String reason)
@@ -137,7 +137,7 @@ class DetachedCheckpointLogEntryParserV56Test {
             StoreId storeId,
             String reason)
             throws IOException {
-        new DetachedCheckpointLogEntryWriterV5_6(channel)
+        new DetachedCheckpointLogEntryWriterV5_7(channel)
                 .writeCheckPointEntry(transactionId, kernelVersion, logPosition, checkpointTime, storeId, reason);
     }
 }

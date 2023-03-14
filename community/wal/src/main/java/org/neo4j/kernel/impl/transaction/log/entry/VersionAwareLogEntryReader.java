@@ -27,7 +27,7 @@ import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogPositionAwareChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryRollback;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryRollback;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.util.FeatureToggles;
 

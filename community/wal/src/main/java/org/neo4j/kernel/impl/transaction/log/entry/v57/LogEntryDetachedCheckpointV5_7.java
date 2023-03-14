@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.v56;
+package org.neo4j.kernel.impl.transaction.log.entry.v57;
 
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_6;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7;
 
 import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
@@ -28,21 +28,21 @@ import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class LogEntryDetachedCheckpointV5_6 extends AbstractVersionAwareLogEntry {
+public class LogEntryDetachedCheckpointV5_7 extends AbstractVersionAwareLogEntry {
     private final TransactionId transactionId;
     private final LogPosition logPosition;
     private final long checkpointTime;
     private final StoreId storeId;
     private final String reason;
 
-    public LogEntryDetachedCheckpointV5_6(
+    public LogEntryDetachedCheckpointV5_7(
             KernelVersion kernelVersion,
             TransactionId transactionId,
             LogPosition logPosition,
             long checkpointMillis,
             StoreId storeId,
             String reason) {
-        super(kernelVersion, DETACHED_CHECK_POINT_V5_6);
+        super(kernelVersion, DETACHED_CHECK_POINT_V5_7);
         this.transactionId = transactionId;
         this.logPosition = logPosition;
         this.checkpointTime = checkpointMillis;
@@ -58,7 +58,7 @@ public class LogEntryDetachedCheckpointV5_6 extends AbstractVersionAwareLogEntry
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        LogEntryDetachedCheckpointV5_6 that = (LogEntryDetachedCheckpointV5_6) o;
+        LogEntryDetachedCheckpointV5_7 that = (LogEntryDetachedCheckpointV5_7) o;
         return checkpointTime == that.checkpointTime
                 && Objects.equals(transactionId, that.transactionId)
                 && Objects.equals(logPosition, that.logPosition)
@@ -90,7 +90,7 @@ public class LogEntryDetachedCheckpointV5_6 extends AbstractVersionAwareLogEntry
 
     @Override
     public String toString() {
-        return "LogEntryDetachedCheckpointV5_6{" + "transactionId="
+        return "LogEntryDetachedCheckpointV5_7{" + "transactionId="
                 + transactionId + ", logPosition="
                 + logPosition + ", checkpointTime="
                 + checkpointTime + ", storeId="

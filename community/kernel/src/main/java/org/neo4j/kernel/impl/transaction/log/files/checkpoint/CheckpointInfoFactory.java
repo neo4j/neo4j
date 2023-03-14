@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v42.LogEntryDetachedCheckpointV4_2;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
-import org.neo4j.kernel.impl.transaction.log.entry.v56.LogEntryDetachedCheckpointV5_6;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryDetachedCheckpointV5_7;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
 import org.neo4j.storageengine.api.TransactionId;
@@ -86,7 +86,7 @@ public class CheckpointInfoFactory {
                     checkpoint50.kernelVersion(),
                     checkpoint50.getTransactionId(),
                     checkpoint50.getReason());
-        } else if (entry instanceof LogEntryDetachedCheckpointV5_6 checkpoint56) {
+        } else if (entry instanceof LogEntryDetachedCheckpointV5_7 checkpoint56) {
             return new CheckpointInfo(
                     checkpoint56.getLogPosition(),
                     checkpoint56.getStoreId(),

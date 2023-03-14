@@ -17,21 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry.v56;
+package org.neo4j.kernel.impl.transaction.log.entry.v57;
 
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryParser;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 
-public class ChunkStartLogEntryParserV5_6 extends LogEntryParser {
-    public ChunkStartLogEntryParserV5_6() {
-        super(LogEntryTypeCodes.CHUNK_START);
+public class ChunkEndLogEntryParserV5_7 extends LogEntryParser {
+    public ChunkEndLogEntryParserV5_7() {
+        super(LogEntryTypeCodes.CHUNK_END);
     }
 
     @Override
@@ -41,10 +40,9 @@ public class ChunkStartLogEntryParserV5_6 extends LogEntryParser {
             LogPositionMarker marker,
             CommandReaderFactory commandReaderFactory)
             throws IOException {
-        long timeWritten = channel.getLong();
+        long txId = channel.getLong();
         long chunkId = channel.getLong();
-        long logVersion = channel.getLong();
-        long offset = channel.getLong();
-        return new LogEntryChunkStart(version, timeWritten, chunkId, new LogPosition(logVersion, offset));
+        int checksum = channel.endChecksumAndValidate();
+        return new LogEntryChunkEnd(txId, chunkId, checksum);
     }
 }

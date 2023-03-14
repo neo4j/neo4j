@@ -47,7 +47,7 @@ public class CheckpointKernelVersionIT {
     void checkPointRecordContainsDatabaseKernelVersion() throws IOException {
         // earlier version do not support new format of checkpoint commands; it's impossible to read them back, so we
         // cannot test them
-        kernelVersionRepository.setKernelVersion(KernelVersion.V5_6);
+        kernelVersionRepository.setKernelVersion(KernelVersion.V5_7);
         checkPointer.forceCheckPoint(new SimpleTriggerInfo("Forced " + kernelVersionRepository.kernelVersion()));
 
         final var checkpoints = logFiles.getCheckpointFile().reachableCheckpoints().stream();
