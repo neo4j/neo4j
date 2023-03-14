@@ -17,21 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.recovery.facade;
+package org.neo4j.kernel.recovery;
 
-import java.io.IOException;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.recovery.RecoveryMode;
+public enum RecoveryMode {
+    FORWARD,
+    FULL;
 
-public interface RecoveryFacade {
-    RecoveryFacade EMPTY = EmptyRecoveryFacade.INSTANCE;
-
-    void performRecovery(DatabaseLayout databaseLayout) throws IOException;
-
-    void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode mode)
-            throws IOException;
-
-    void performRecovery(
-            DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
-            throws IOException;
+    public String description() {
+        return this.name().toLowerCase();
+    }
 }

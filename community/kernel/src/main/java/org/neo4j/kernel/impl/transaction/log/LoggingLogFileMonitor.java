@@ -27,6 +27,7 @@ import static org.neo4j.internal.helpers.Format.duration;
 import java.nio.file.Path;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
+import org.neo4j.kernel.recovery.RecoveryMode;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryPredicate;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
@@ -51,11 +52,12 @@ public class LoggingLogFileMonitor
     }
 
     @Override
-    public void recoveryCompleted(long recoveryTimeInMilliseconds) {
+    public void recoveryCompleted(long recoveryTimeInMilliseconds, RecoveryMode mode) {
         log.info(format(
-                "Recovery completed. Observed transactions range [first:%s, last:%s]: %d transactions applied, "
+                "Recovery in '%s' mode completed. Observed transactions range [first:%s, last:%s]: %d transactions applied, "
                         + "%d not completed transactions rolled back, "
                         + "skipped applying %d previously rolled back transactions. Time spent: %s.",
+                mode.description(),
                 valueOrDefault(minObservedTransaction, Long.MAX_VALUE),
                 valueOrDefault(maxObservedTransaction, Long.MIN_VALUE),
                 numberOfRecoveredTransactions,

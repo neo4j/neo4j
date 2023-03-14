@@ -21,6 +21,7 @@ package org.neo4j.kernel.recovery.facade;
 
 import java.io.IOException;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.recovery.RecoveryMode;
 
 class EmptyRecoveryFacade implements RecoveryFacade {
     static RecoveryFacade INSTANCE = new EmptyRecoveryFacade();
@@ -33,7 +34,8 @@ class EmptyRecoveryFacade implements RecoveryFacade {
     }
 
     @Override
-    public void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor) throws IOException {
+    public void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode mode)
+            throws IOException {
         // noop
     }
 

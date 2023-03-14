@@ -1143,7 +1143,7 @@ class RecoveryIT {
             }
 
             @Override
-            public void recoveryCompleted(long recoveryTimeInMilliseconds) {
+            public void recoveryCompleted(long recoveryTimeInMilliseconds, RecoveryMode mode) {
                 recoveryCompleted.set(true);
             }
 

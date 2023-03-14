@@ -63,6 +63,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
 import org.neo4j.kernel.recovery.RecoveryApplier;
+import org.neo4j.kernel.recovery.RecoveryMode;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryPredicate;
 import org.neo4j.kernel.recovery.RecoveryService;
@@ -227,7 +228,8 @@ class PhysicalLogicalTransactionStoreTest {
                 false,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
-                contextFactory));
+                contextFactory,
+                RecoveryMode.FULL));
 
         // WHEN
         try {

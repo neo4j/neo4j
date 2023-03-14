@@ -293,6 +293,7 @@ public final class Recovery {
         private Clock clock = systemClock();
         private final IOController ioController;
         private RecoveryPredicate recoveryPredicate = RecoveryPredicate.ALL;
+        private RecoveryMode mode = RecoveryMode.FULL;
         private long awaitIndexesOnlineMillis;
         private final KernelVersionProvider emptyLogsFallbackKernelVersion;
 
@@ -403,6 +404,11 @@ public final class Recovery {
             this.awaitIndexesOnlineMillis = unit.toMillis(time);
             return this;
         }
+
+        public Context recoveryMode(RecoveryMode mode) {
+            this.mode = mode;
+            return this;
+        }
     }
 
     /**
@@ -439,7 +445,8 @@ public final class Recovery {
                     context.ioController,
                     context.recoveryPredicate,
                     context.awaitIndexesOnlineMillis,
-                    context.emptyLogsFallbackKernelVersion);
+                    context.emptyLogsFallbackKernelVersion,
+                    context.mode);
         } finally {
             config.removeAllLocalListeners();
         }
@@ -463,7 +470,8 @@ public final class Recovery {
             IOController ioController,
             RecoveryPredicate recoveryPredicate,
             long awaitIndexesOnlineMillis,
-            KernelVersionProvider emptyLogsFallbackKernelVersion)
+            KernelVersionProvider emptyLogsFallbackKernelVersion,
+            RecoveryMode mode)
             throws IOException {
         InternalLog recoveryLog = logProvider.getLog(Recovery.class);
         if (!forceRunRecovery
@@ -675,7 +683,8 @@ public final class Recovery {
                 clock,
                 doParallelRecovery,
                 recoveryPredicate,
-                cursorContextFactory);
+                cursorContextFactory,
+                mode);
 
         CheckPointerImpl.ForceOperation forceOperation =
                 new DefaultForceOperation(indexingService, storageEngine, databasePageCache);
@@ -808,7 +817,8 @@ public final class Recovery {
             Clock clock,
             boolean doParallelRecovery,
             RecoveryPredicate recoveryPredicate,
-            CursorContextFactory contextFactory) {
+            CursorContextFactory contextFactory,
+            RecoveryMode mode) {
         RecoveryService recoveryService = new DefaultRecoveryService(
                 storageEngine,
                 transactionIdStore,
@@ -832,7 +842,8 @@ public final class Recovery {
                 failOnCorruptedLogFiles,
                 startupChecker,
                 recoveryPredicate,
-                contextFactory);
+                contextFactory,
+                mode);
     }
 
     private static Iterable<ExtensionFactory<?>> loadExtensions() {

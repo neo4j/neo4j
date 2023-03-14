@@ -31,7 +31,7 @@ public interface RecoveryMonitor {
         // noop
     }
 
-    default void recoveryCompleted(long recoveryTimeInMilliseconds) {
+    default void recoveryCompleted(long recoveryTimeInMilliseconds, RecoveryMode mode) {
         // noop
     }
 

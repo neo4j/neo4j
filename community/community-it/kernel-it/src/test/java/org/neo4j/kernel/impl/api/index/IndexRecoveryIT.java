@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.RecoveryMode;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -522,7 +523,7 @@ class IndexRecoveryIT {
         }
 
         @Override
-        public void recoveryCompleted(long recoveryTimeInMilliseconds) {
+        public void recoveryCompleted(long recoveryTimeInMilliseconds, RecoveryMode mode) {
             recoverySemaphore.release();
         }
     }

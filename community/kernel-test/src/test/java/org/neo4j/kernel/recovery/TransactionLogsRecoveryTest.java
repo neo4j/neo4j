@@ -282,7 +282,8 @@ class TransactionLogsRecoveryTest {
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
-                    contextFactory));
+                    contextFactory,
+                    RecoveryMode.FULL));
 
             life.start();
 
@@ -359,7 +360,8 @@ class TransactionLogsRecoveryTest {
                     false,
                     EMPTY_CHECKER,
                     RecoveryPredicate.ALL,
-                    contextFactory));
+                    contextFactory,
+                    RecoveryMode.FULL));
 
             life.start();
 
@@ -571,7 +573,8 @@ class TransactionLogsRecoveryTest {
                 true,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
-                contextFactory);
+                contextFactory,
+                RecoveryMode.FULL);
 
         logsRecovery.init();
 
@@ -612,7 +615,7 @@ class TransactionLogsRecoveryTest {
                 .isInstanceOf(DatabaseStartAbortedException.class);
 
         verify(logsTruncator, never()).truncate(any());
-        verify(monitor, never()).recoveryCompleted(anyLong());
+        verify(monitor, never()).recoveryCompleted(anyLong(), any(RecoveryMode.class));
     }
 
     private boolean recovery(Path storeDir) throws IOException {
@@ -661,7 +664,8 @@ class TransactionLogsRecoveryTest {
                     false,
                     startupChecker,
                     RecoveryPredicate.ALL,
-                    contextFactory));
+                    contextFactory,
+                    RecoveryMode.FULL));
 
             life.start();
         } finally {

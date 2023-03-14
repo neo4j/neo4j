@@ -30,6 +30,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.RecoveryMode;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
 
@@ -58,17 +59,27 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
 
     @Override
     public void performRecovery(DatabaseLayout databaseLayout) throws IOException {
-        performRecovery(databaseLayout, EMPTY_MONITOR);
+        performRecovery(databaseLayout, EMPTY_MONITOR, RecoveryMode.FULL);
     }
 
     @Override
-    public void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor) throws IOException {
-        performRecovery(databaseLayout, RecoveryCriteria.ALL, monitor);
+    public void performRecovery(DatabaseLayout databaseLayout, RecoveryFacadeMonitor monitor, RecoveryMode mode)
+            throws IOException {
+        recovery(databaseLayout, RecoveryCriteria.ALL, monitor, mode);
     }
 
     @Override
     public void performRecovery(
             DatabaseLayout databaseLayout, RecoveryCriteria recoveryCriteria, RecoveryFacadeMonitor monitor)
+            throws IOException {
+        recovery(databaseLayout, recoveryCriteria, monitor, RecoveryMode.FULL);
+    }
+
+    private void recovery(
+            DatabaseLayout databaseLayout,
+            RecoveryCriteria recoveryCriteria,
+            RecoveryFacadeMonitor monitor,
+            RecoveryMode mode)
             throws IOException {
         monitor.recoveryStarted();
         Recovery.performRecovery(Recovery.context(
@@ -82,7 +93,9 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                         logProvider,
                         () -> KernelVersion.getLatestVersion(config)) // FIXME this should not be latest unless
                 // we are guaranteed to never have empty logs here
-                .recoveryPredicate(recoveryCriteria.toPredicate()));
+                .recoveryPredicate(recoveryCriteria.toPredicate())
+                .recoveryMode(mode));
+
         monitor.recoveryCompleted();
     }
 }

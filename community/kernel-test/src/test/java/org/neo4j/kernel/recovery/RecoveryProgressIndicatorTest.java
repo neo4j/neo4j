@@ -90,7 +90,8 @@ class RecoveryProgressIndicatorTest {
                 true,
                 EMPTY_CHECKER,
                 RecoveryPredicate.ALL,
-                contextFactory);
+                contextFactory,
+                RecoveryMode.FULL);
         recovery.init();
 
         progressReporter.verify();
