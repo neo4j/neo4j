@@ -655,7 +655,7 @@ Feature: CollectExpressionAcceptance
       } as foo
       RETURN foo
       """
-    Then the result should be, in any order:
+    Then the result should be (ignoring element order for lists):
       | foo                 |
       | ['Bob', 'Carl']     |
       | ['Ada', 'Danielle'] |
