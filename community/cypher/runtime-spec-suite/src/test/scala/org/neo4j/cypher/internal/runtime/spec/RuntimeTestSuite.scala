@@ -49,6 +49,7 @@ import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction
 import org.neo4j.kernel.api.Kernel
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.procedure.CallableProcedure
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction
 import org.neo4j.kernel.api.procedure.CallableUserFunction
@@ -288,7 +289,8 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
    * use data from the previous tx afterwards. If you need to, get them again from the new
    * tx by id.
    */
-  def restartTx(): Unit = runtimeTestSupport.restartTx()
+  def restartTx(txType: KernelTransaction.Type = runtimeTestSupport.defaultTransactionType): Unit =
+    runtimeTestSupport.restartTx(txType)
 
   def consume(left: RecordingRuntimeResult): IndexedSeq[Array[AnyValue]] = left.awaitAll()
 

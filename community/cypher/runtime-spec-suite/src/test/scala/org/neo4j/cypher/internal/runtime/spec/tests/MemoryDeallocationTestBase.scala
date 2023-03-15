@@ -23,15 +23,20 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorBreak
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
+import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.runtime.InputDataStream
 import org.neo4j.cypher.internal.runtime.NoInput
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.rewriters.TestPlanCombinationRewriter
 import org.neo4j.io.ByteUnit
+import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues
@@ -74,7 +79,9 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       ),
       runtime,
       testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)
-    ) with InputStreams[CONTEXT] {
+    )
+    with InputStreams[CONTEXT]
+    with RandomValuesTestSupport {
 
   test("should deallocate memory between grouping aggregation - many groups") {
     // given
@@ -420,7 +427,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       case Interpreted => 0.2 // TODO: Improve accuracy of interpreted
       case _           => 0.1
     }
-    compareMemoryUsage(logicalQuery1, logicalQuery2, toleratedDeviation)
+    compareMemoryUsage(logicalQuery1, logicalQuery2, toleratedDeviation = toleratedDeviation)
   }
 
   test("should deallocate memory for distinct on RHS of apply") {
@@ -754,12 +761,114 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     actualSavings should be > (expectedSavings * 0.9).toLong
   }
 
-  protected def compareMemoryUsage(
+  test("should deallocate memory after transaction foreach") {
+    val errorBehaviour = randomAmong(Seq(OnErrorFail, OnErrorBreak, OnErrorContinue))
+    val status = if (errorBehaviour != OnErrorFail && random.nextBoolean()) Some("status") else None
+    def query(rows: Int) = new LogicalQueryBuilder(this)
+      .produceResults()
+      .emptyResult()
+      .transactionForeach(10, errorBehaviour, status)
+      .|.projection("i * 2 as i2")
+      .|.argument()
+      .unwind(s"range(1, $rows) as i")
+      .argument()
+      .build()
+
+    // then
+    compareMemoryUsageImplicitTx(query(rows = 100), query(rows = 10000))
+  }
+
+  test("should deallocate memory after transaction apply") {
+    val errorBehaviour = randomAmong(Seq(OnErrorFail, OnErrorBreak, OnErrorContinue))
+    val status = if (errorBehaviour != OnErrorFail && random.nextBoolean()) Some("status") else None
+    def query(rows: Int) = new LogicalQueryBuilder(this)
+      .produceResults("i", "i2")
+      .transactionApply(10, errorBehaviour, status)
+      .|.projection("i * 2 as i2")
+      .|.argument()
+      .unwind(s"range(1, $rows) as i")
+      .argument()
+      .build()
+
+    // then
+    compareMemoryUsageImplicitTx(query(rows = 100), query(rows = 10000))
+  }
+
+  test("should deallocate memory after eager under apply") {
+    def query(rows: Int) = new LogicalQueryBuilder(this)
+      .produceResults("aaa", "i")
+      .apply()
+      .|.eager()
+      .|.projection(s"'${"a".repeat(128)}' as aaa")
+      .|.unwind("range(1, 32) as i")
+      .|.argument()
+      .unwind(s"range(1, $rows) as i")
+      .argument()
+      .build()
+
+    // then
+    compareMemoryUsage(query(rows = 10), query(rows = 100))
+  }
+
+  test("should deallocate memory after aggregation under apply") {
+    def query(rows: Int) = new LogicalQueryBuilder(this)
+      .produceResults("z")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("collect(x+y) as z"))
+      .|.unwind("range (1, 128) as y")
+      .|.argument()
+      .unwind(s"range(1, $rows) as x")
+      .argument()
+      .build()
+
+    compareMemoryUsage(query(rows = 10), query(rows = 100))
+  }
+
+  test("should deallocate memory after sort under apply") {
+    def query(rows: Int) = new LogicalQueryBuilder(this)
+      .produceResults("aaa")
+      .apply()
+      .|.sort(Seq(Descending("aaa")))
+      .|.projection(s"'${"a".repeat(128)}' + i as aaa")
+      .|.unwind("range(1, 32) as i")
+      .|.argument()
+      .unwind(s"range(1, $rows) as i")
+      .argument()
+      .build()
+
+    // then
+    compareMemoryUsage(query(rows = 10), query(rows = 100))
+  }
+
+  test("should deallocate memory after top under apply") {
+    def query(rows: Int) = new LogicalQueryBuilder(this)
+      .produceResults("aaa")
+      .apply()
+      .|.top(Seq(Descending("aaa")), 16)
+      .|.projection(s"'${"a".repeat(128)}' + i as aaa")
+      .|.unwind("range(1, 32) as i")
+      .|.argument()
+      .unwind(s"range(1, $rows) as i")
+      .argument()
+      .build()
+
+    // then
+    compareMemoryUsage(query(rows = 10), query(rows = 100))
+  }
+
+  protected def compareMemoryUsageImplicitTx(
     logicalQuery1: LogicalQuery,
     logicalQuery2: LogicalQuery,
     toleratedDeviation: Double = 0.0d
   ): Unit = {
-    compareMemoryUsage(logicalQuery1, logicalQuery2, () => NoInput, () => NoInput, toleratedDeviation)
+    compareMemoryUsage(
+      logicalQuery1,
+      logicalQuery2,
+      () => NoInput,
+      () => NoInput,
+      toleratedDeviation,
+      Some(KernelTransaction.Type.IMPLICIT)
+    )
   }
 
   protected def compareMemoryUsageWithInputRows(
@@ -786,12 +895,13 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   private def compareMemoryUsage(
     logicalQuery1: LogicalQuery,
     logicalQuery2: LogicalQuery,
-    input1: () => InputDataStream,
-    input2: () => InputDataStream,
-    toleratedDeviation: Double
+    input1: () => InputDataStream = () => NoInput,
+    input2: () => InputDataStream = () => NoInput,
+    toleratedDeviation: Double = 0.0,
+    txType: Option[KernelTransaction.Type] = None
   ): Unit = {
-    val maxMem1 = maxAllocatedMem(logicalQuery1, input1)
-    val maxMem2 = maxAllocatedMem(logicalQuery2, input2)
+    val maxMem1 = maxAllocatedMem(logicalQuery1, input1, txType)
+    val maxMem2 = maxAllocatedMem(logicalQuery2, input2, txType)
     val memDiff = Math.abs(maxMem2 - maxMem1)
 
     maxMem1 shouldNot be(0)
@@ -813,11 +923,17 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  private def maxAllocatedMem(query: LogicalQuery, input: () => InputDataStream): Long = {
-    restartTx()
+  private def maxAllocatedMem(
+    query: LogicalQuery,
+    input: () => InputDataStream,
+    txTypeOpt: Option[KernelTransaction.Type] = None
+  ): Long = {
+    txTypeOpt match {
+      case Some(txType) => restartTx(txType)
+      case _            => restartTx()
+    }
     val runtimeResult = profile(query, runtime, input())
     consume(runtimeResult)
-    val queryProfile1 = runtimeResult.runtimeResult.queryProfile()
-    queryProfile1.maxAllocatedMemory()
+    runtimeResult.runtimeResult.queryProfile().maxAllocatedMemory()
   }
 }
