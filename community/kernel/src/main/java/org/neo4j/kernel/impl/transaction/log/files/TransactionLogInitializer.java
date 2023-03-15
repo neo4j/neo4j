@@ -64,14 +64,40 @@ public class TransactionLogInitializer {
      * @return A {@link LogFilesInitializer} instance.
      */
     public static LogFilesInitializer getLogFilesInitializer() {
-        return (databaseLayout, store, metadataCache, fileSystem, checkpointReason) -> {
-            try {
-                TransactionLogInitializer initializer = new TransactionLogInitializer(
-                        fileSystem, store, StorageEngineFactory.defaultStorageEngine(), metadataCache);
-                initializer.initializeEmptyLogFile(
-                        databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason);
-            } catch (IOException e) {
-                throw new UnderlyingStorageException("Fail to create empty transaction log file.", e);
+        return new LogFilesInitializer() {
+            @Override
+            public void initializeLogFiles(
+                    DatabaseLayout databaseLayout,
+                    MetadataProvider store,
+                    MetadataCache metadataCache,
+                    FileSystemAbstraction fileSystem,
+                    String checkpointReason) {
+                try {
+                    TransactionLogInitializer initializer = new TransactionLogInitializer(
+                            fileSystem, store, StorageEngineFactory.defaultStorageEngine(), metadataCache);
+                    initializer.initializeEmptyLogFile(
+                            databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason);
+                } catch (IOException e) {
+                    throw new UnderlyingStorageException("Failed to initialize transaction log files.", e);
+                }
+            }
+
+            @Override
+            public void clearHistoryAndInitializeLogFiles(
+                    DatabaseLayout databaseLayout,
+                    MetadataProvider store,
+                    MetadataCache metadataCache,
+                    FileSystemAbstraction fileSystem,
+                    String checkpointReason) {
+                try {
+                    TransactionLogInitializer initializer = new TransactionLogInitializer(
+                            fileSystem, store, StorageEngineFactory.defaultStorageEngine(), metadataCache);
+                    initializer.migrateExistingLogFiles(
+                            databaseLayout, databaseLayout.getTransactionLogsDirectory(), checkpointReason);
+                } catch (Exception e) {
+                    throw new UnderlyingStorageException(
+                            "Failed to clear history and initialize transaction log files.", e);
+                }
             }
         };
     }

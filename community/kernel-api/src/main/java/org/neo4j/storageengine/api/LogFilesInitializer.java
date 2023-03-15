@@ -27,13 +27,39 @@ public interface LogFilesInitializer {
     /**
      * A LogFilesInitializer instance that doesn't do anything.
      */
-    LogFilesInitializer NULL = (databaseLayout, store, metadataCache, fileSystem, checkpointReason) -> {};
+    LogFilesInitializer NULL = new LogFilesInitializer() {
+        @Override
+        public void initializeLogFiles(
+                DatabaseLayout databaseLayout,
+                MetadataProvider store,
+                MetadataCache metadataCache,
+                FileSystemAbstraction fileSystem,
+                String checkpointReason) {}
+
+        @Override
+        public void clearHistoryAndInitializeLogFiles(
+                DatabaseLayout databaseLayout,
+                MetadataProvider store,
+                MetadataCache metadataCache,
+                FileSystemAbstraction fileSystem,
+                String checkpointReason) {}
+    };
 
     /**
      * Initialize the transaction log files in the given database layout.
      * This is usually called after creating an empty, or newly imported, store.
      */
     void initializeLogFiles(
+            DatabaseLayout databaseLayout,
+            MetadataProvider store,
+            MetadataCache metadataCache,
+            FileSystemAbstraction fileSystem,
+            String checkpointReason);
+
+    /**
+     * Clears existing log files (transactions and checkpoints) and initializes new ones.
+     */
+    void clearHistoryAndInitializeLogFiles(
             DatabaseLayout databaseLayout,
             MetadataProvider store,
             MetadataCache metadataCache,
