@@ -83,6 +83,7 @@ import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
@@ -115,6 +116,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -163,6 +165,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherTestSupport
 import java.nio.charset.StandardCharsets
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
 
 trait AstConstructionTestSupport extends CypherTestSupport {
@@ -376,6 +379,25 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     PathExpression(
       NodePathStep(start, MultiRelationshipPathStep(relationships, direction, Some(end), NilPathStep()(pos))(pos))(pos)
     )(pos)
+
+  def qppPath(
+    start: LogicalVariable,
+    variables: Seq[LogicalVariable],
+    end: LogicalVariable
+  ): PathExpression = {
+    if (variables.size % 2 == 1) {
+      throw new IllegalArgumentException("Tried to construct node rel pairs but found uneven number of elements")
+    }
+    val pairs = new ArrayBuffer[NodeRelPair]
+    var i = 0
+    while (i < variables.size) {
+      pairs += NodeRelPair(variables(i), variables(i + 1))
+      i += 2
+    }
+    PathExpression(
+      NodePathStep(start, RepeatPathStep(pairs.toSeq, end, NilPathStep()(pos))(pos))(pos)
+    )(pos)
+  }
 
   def sum(expression: Expression): FunctionInvocation =
     FunctionInvocation(expression, FunctionName(Sum.name)(pos))

@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -71,6 +72,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -97,6 +99,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -123,6 +126,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{2,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -147,6 +151,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{1,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -187,6 +192,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,*} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -230,6 +236,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,*} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -301,6 +308,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,*} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -426,6 +434,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -467,6 +476,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpressionOrString("b_inner.prop = me.prop", isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -497,6 +507,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r", "r2")
       .projection("r AS r2")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -525,10 +536,12 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "other", "a", "b", "r", "c", "d", "rr")
+      .projection(Map("path2" -> qppPath(varFor("you"), Seq(varFor("c"), varFor("rr")), varFor("other"))))
       .trail(`(you) [(c)-[rr]->(d)]{0,1} (other)`)
       .|.filterExpression(isRepeatTrailUnique("rr_inner"))
       .|.expandAll("(c_inner)-[rr_inner]->(d_inner)")
       .|.argument("me", "you", "c_inner")
+      .projection(Map("path1" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,1} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -569,10 +582,12 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "other", "a", "b", "r", "c", "d", "rr")
+      .projection(Map("path2" -> qppPath(varFor("you"), Seq(varFor("c"), varFor("rr")), varFor("other"))))
       .trail(`(you) [(c)-[rr]->(d)]{0,2} (other)`)
       .|.filterExpression(isRepeatTrailUnique("rr_inner"))
       .|.expandAll("(c_inner)-[rr_inner]->(d_inner)")
       .|.argument("me", "anon", "c_inner")
+      .projection(Map("path1" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -665,6 +680,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .apply()
       .|.optional("me")
       .|.filter("you:User")
+      .|.projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .|.trail(`(me) [(a)-[r]->(b)]{0,*} (you)`)
       .|.|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -736,6 +752,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
       .limit(1)
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -756,6 +773,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.unwind("[1] AS ignore") // pipelined specific: does not need a filtering morsel
       .|.nonFuseable() // pipelined specific: force break to test where RHS output receives normal Morsel but RHS leaf requires FilteringMorsel
@@ -785,6 +803,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.limit(Int.MaxValue) // pipelined specific: test when RHS output receives FilteringMorsel & RHS leaf requires FilteringMorsel in different pipeline
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -814,6 +833,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
       .filter(s"id(you)<>${n2.getId}")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -839,6 +859,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpressionOrString(s"id(b_inner)<>${n3.getId}", isRepeatTrailUnique("r_inner"))
       .|.expandAll("(a_inner)-[r_inner]->(b_inner)")
@@ -864,6 +885,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "a", "b", "r")
+      .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.unwind("[1] AS ignore") // pipelined specific: does not need a filtering morsel
       .|.nonFuseable() // pipelined specific: force break to test where RHS output receives normal Morsel but RHS leaf requires FilteringMorsel
@@ -892,6 +914,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "other", "a", "b", "r", "c", "d", "rr")
       .optional("me")
+      .projection(Map("path2" -> qppPath(varFor("you"), Seq(varFor("c"), varFor("rr")), varFor("other"))))
       .trail(`(you) [(c)-[rr]->(d)]{0,2} (other)`)
       .|.sort(Seq(Ascending("d_inner")))
       .|.distinct("d_inner  AS d_inner")
@@ -901,6 +924,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .|.|.argument("you", "c_inner")
       .|.argument("you", "c_inner")
       .optional("me")
+      .projection(Map("path1" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.optional("me")
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -937,6 +961,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "other", "a", "b", "r", "c", "d", "rr")
       .optional("me")
+      .projection(Map("path2" -> qppPath(varFor("you"), Seq(varFor("c"), varFor("rr")), varFor("other"))))
       .trail(`(you) [(c)-[rr]->(d)]{1,2} (other)`)
       .|.sort(Seq(Ascending("d_inner")))
       .|.distinct("d_inner  AS d_inner")
@@ -946,6 +971,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .|.|.argument("you", "c_inner")
       .|.argument("you", "c_inner")
       .optional("me")
+      .projection(Map("path1" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{1,2} (you)`)
       .|.optional("me")
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -977,6 +1003,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "other", "a", "b", "r", "c", "d", "rr")
       .optional("me")
+      .projection(Map("path2" -> qppPath(varFor("you"), Seq(varFor("c"), varFor("rr")), varFor("other"))))
       .trail(`(you) [(c)-[rr]->(d)]{0,2} (other)`)
       .|.sort(Seq(Ascending("d_inner")))
       .|.distinct("d_inner  AS d_inner")
@@ -986,6 +1013,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .|.|.argument("me", "a_inner")
       .|.argument("me", "a_inner")
       .optional("me")
+      .projection(Map("path1" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.optional("me")
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -1022,6 +1050,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "other", "a", "b", "r", "c", "d", "rr")
       .optional("me")
+      .projection(Map("path2" -> qppPath(varFor("you"), Seq(varFor("c"), varFor("rr")), varFor("other"))))
       .trail(`(you) [(c)-[rr]->(d)]{1,2} (other)`)
       .|.sort(Seq(Ascending("d_inner")))
       .|.distinct("d_inner  AS d_inner")
@@ -1031,6 +1060,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .|.|.argument("you", "c_inner")
       .|.argument("you", "c_inner")
       .optional("me")
+      .projection(Map("path1" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{1,2} (you)`)
       .|.optional("me")
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -1062,6 +1092,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "other", "a", "b", "r", "c", "d", "rr")
       .optional("me")
+      .projection(Map("path2" -> qppPath(varFor("you"), Seq(varFor("c"), varFor("rr")), varFor("other"))))
       .trail(`(you) [(c)-[rr]->(d)]{0,2} (other)`)
       .|.sort(Seq(Ascending("d_inner")))
       .|.distinct("d_inner  AS d_inner")
@@ -1071,6 +1102,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .|.expand("(c_inner)-[rr_inner]->(d_inner)")
       .|.argument("you", "c_inner")
       .optional("me")
+      .projection(Map("path1" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.optional("me")
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -1109,6 +1141,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("me", "you", "other", "a", "b", "r", "c", "d", "rr")
       .optional("me")
+      .projection(Map("path2" -> qppPath(varFor("you"), Seq(varFor("c"), varFor("rr")), varFor("other"))))
       .trail(`(you) [(c)-[rr]->(d)]{1,2} (other)`)
       .|.sort(Seq(Ascending("d_inner")))
       .|.distinct("d_inner  AS d_inner")
@@ -1118,6 +1151,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .|.expand("(c_inner)-[rr_inner]->(d_inner)")
       .|.argument("you", "c_inner")
       .optional("me")
+      .projection(Map("path1" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{1,2} (you)`)
       .|.optional("me")
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -1157,12 +1191,14 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2")
       .filter("end:LOOP")
       .apply()
+      .|.projection(Map("path3" -> qppPath(varFor("middle"), Seq(varFor("c"), varFor("r2")), varFor("end"))))
       .|.trail(`(middle) [(c)-[r2]->(d:LOOP)]{0, *} (end:LOOP)`)
       .|.|.filterExpressionOrString("d_inner:LOOP", isRepeatTrailUnique("r2_inner"))
       .|.|.expandAll("(c_inner)-[r2_inner]->(d_inner)")
       .|.|.argument("middle", "c_inner")
       .|.argument("middle")
       .filter("middle:MIDDLE:LOOP")
+      .projection(Map("path2" -> qppPath(varFor("firstMiddle"), Seq(varFor("a"), varFor("r1")), varFor("middle"))))
       .trail(`(firstMiddle) [(a)-[r1]->(b:MIDDLE)]{0, *} (middle:MIDDLE:LOOP)`)
       .|.filterExpressionOrString("b_inner:MIDDLE", isRepeatTrailUnique("r1_inner"))
       .|.expandAll("(a_inner)-[r1_inner]->(b_inner)")
