@@ -296,6 +296,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             DatabaseHealth databaseHealth,
             LogProvider logProvider,
             boolean multiVersioned) {
+        this.closed = true;
         this.config = new LocalConfig(externalConfig);
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.contextFactory = contextFactory;
@@ -410,8 +411,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.leaseClient = leaseService.newClient();
         this.lockClient.initialize(leaseClient, transactionSequenceNumber, memoryTracker, config);
         this.terminationMark = null;
-        this.closing = false;
-        this.closed = false;
         this.rollback = true;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clocks.systemClock().millis();
@@ -436,6 +435,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.initializationTrace = traceProvider.getTraceInfo();
         this.transactionMemoryPool.setLimit(transactionHeapBytesLimit);
         this.innerTransactionHandler = new InnerTransactionHandlerImpl(kernelTransactions);
+        this.closing = false;
+        this.closed = false;
         return this;
     }
 

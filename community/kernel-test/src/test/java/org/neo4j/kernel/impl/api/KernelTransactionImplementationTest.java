@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -463,7 +464,23 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         tx.markForTermination(Status.General.UnknownError);
 
-        assertEquals(Status.General.UnknownError, tx.getReasonIfTerminated().get());
+        assertThat(tx.getReasonIfTerminated()).isEmpty();
+    }
+
+    @Test
+    void newNotInitializedTransactionIsNotOpen() {
+        KernelTransactionImplementation tx = newNotInitializedTransaction();
+        assertThat(tx.isOpen()).isFalse();
+    }
+
+    @Test
+    void reusedNotInitializedTransactionIsNotOpen() throws TransactionFailureException {
+        KernelTransactionImplementation tx = newTransaction(loginContext(false));
+        tx.close();
+        verify(txPool).release(eq(tx));
+
+        // We pretend we just got this tx from the pool
+        assertThat(tx.isOpen()).isFalse();
     }
 
     @ParameterizedTest
