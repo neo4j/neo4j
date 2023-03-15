@@ -152,31 +152,29 @@ public class IndexStatisticsStore extends LifecycleAdapter
     /**
      * Incrementally add usage stats. If no previous usage statistics for given index exist, the added stats will be used
      * as is. If there is a current value, the added stats will be added to it like this:
-     * - timeLastUsed: use the highest time value (most resent in time) between current and added
-     * - queryCount: use the sum of current and added count
-     * - trackedSinceTime: use the lowest value (oldest in time) between current and added
+     * - lastRead: use the highest time value (most resent in time) between current and added
+     * - readCount: use the sum of current and added count
+     * - trackedSince: use the lowest value (oldest in time) between current and added
      */
     @Override
     public void addUsageStats(long indexId, IndexUsageStats added) {
         var newValue = new IndexStatisticsValue();
-        newValue.set(IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED, added.lastUsedTime());
-        newValue.set(IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT, added.queryCount());
-        newValue.set(IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED, added.trackedSinceTime());
+        newValue.set(IndexStatisticsValue.INDEX_USAGE_LAST_READ, added.lastRead());
+        newValue.set(IndexStatisticsValue.INDEX_USAGE_READ_COUNT, added.readCount());
+        newValue.set(IndexStatisticsValue.INDEX_USAGE_TRACKED_SINCE, added.trackedSince());
         cache.compute(new IndexStatisticsKey(indexId, TYPE_USAGE), (key, currentValue) -> {
             if (currentValue != null) {
                 newValue.set(
-                        IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT,
-                        added.queryCount() + currentValue.get(IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT));
+                        IndexStatisticsValue.INDEX_USAGE_READ_COUNT,
+                        added.readCount() + currentValue.get(IndexStatisticsValue.INDEX_USAGE_READ_COUNT));
                 newValue.set(
-                        IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED,
+                        IndexStatisticsValue.INDEX_USAGE_TRACKED_SINCE,
                         Long.min(
-                                currentValue.get(IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED),
-                                added.trackedSinceTime()));
+                                currentValue.get(IndexStatisticsValue.INDEX_USAGE_TRACKED_SINCE),
+                                added.trackedSince()));
                 newValue.set(
-                        IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED,
-                        Long.max(
-                                currentValue.get(IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED),
-                                added.lastUsedTime()));
+                        IndexStatisticsValue.INDEX_USAGE_LAST_READ,
+                        Long.max(currentValue.get(IndexStatisticsValue.INDEX_USAGE_LAST_READ), added.lastRead()));
             }
             return newValue;
         });
@@ -184,15 +182,25 @@ public class IndexStatisticsStore extends LifecycleAdapter
 
     /**
      * If there is no recorded value for the given index, return empty IndexUsageStats (all values are 0).
+     * How to interpret the result:
+     * <pre>
+     * if (stats.trackedSince() == 0) {
+     *     // Values are missing
+     * } else if (stats.lastRead() == 0) {
+     *     // No reads registered yet
+     * } else {
+     *     // Real values exists for all fields
+     * }
+     * </pre>
      */
     public IndexUsageStats usageStats(long indexId) {
         return get(
                 indexId,
                 TYPE_USAGE,
                 stats -> new IndexUsageStats(
-                        stats.get(IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED),
-                        stats.get(IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT),
-                        stats.get(IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED)));
+                        stats.get(IndexStatisticsValue.INDEX_USAGE_LAST_READ),
+                        stats.get(IndexStatisticsValue.INDEX_USAGE_READ_COUNT),
+                        stats.get(IndexStatisticsValue.INDEX_USAGE_TRACKED_SINCE)));
     }
 
     public IndexSample indexSample(long indexId) {
@@ -249,9 +257,9 @@ public class IndexStatisticsStore extends LifecycleAdapter
                                     value.get(IndexStatisticsValue.INDEX_SAMPLE_INDEX_SIZE));
                             case TYPE_USAGE -> visitor.visitUsageStatistics(
                                     key.getIndexId(),
-                                    value.get(IndexStatisticsValue.INDEX_USAGE_TIME_LAST_USED),
-                                    value.get(IndexStatisticsValue.INDEX_USAGE_QUERY_COUNT),
-                                    value.get(IndexStatisticsValue.INDEX_USAGE_TIME_FIRST_TRACKED));
+                                    value.get(IndexStatisticsValue.INDEX_USAGE_LAST_READ),
+                                    value.get(IndexStatisticsValue.INDEX_USAGE_READ_COUNT),
+                                    value.get(IndexStatisticsValue.INDEX_USAGE_TRACKED_SINCE));
                             default -> throw new IllegalArgumentException("Unknown key type for " + key);
                         }
                     },

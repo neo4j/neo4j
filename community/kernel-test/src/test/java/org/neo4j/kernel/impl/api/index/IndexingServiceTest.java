@@ -1548,9 +1548,9 @@ class IndexingServiceTest {
         indexingService.reportUsageStatistics();
         var statsCaptor = ArgumentCaptor.forClass(IndexUsageStats.class);
         verify(indexStatisticsStore).addUsageStats(eq(index.getId()), statsCaptor.capture());
-        assertThat(statsCaptor.getValue().trackedSinceTime()).isEqualTo(creationTimeMillis);
-        assertThat(statsCaptor.getValue().queryCount()).isEqualTo(1);
-        assertThat(statsCaptor.getValue().lastUsedTime()).isEqualTo(readerTimeMillis);
+        assertThat(statsCaptor.getValue().trackedSince()).isEqualTo(creationTimeMillis);
+        assertThat(statsCaptor.getValue().readCount()).isEqualTo(1);
+        assertThat(statsCaptor.getValue().lastRead()).isEqualTo(readerTimeMillis);
     }
 
     @Test
@@ -1579,9 +1579,9 @@ class IndexingServiceTest {
         indexingService.reportUsageStatistics();
         var statsCaptor = ArgumentCaptor.forClass(IndexUsageStats.class);
         verify(indexStatisticsStore).addUsageStats(eq(tokenIndex.getId()), statsCaptor.capture());
-        assertThat(statsCaptor.getValue().trackedSinceTime()).isEqualTo(creationTimeMillis);
-        assertThat(statsCaptor.getValue().queryCount()).isEqualTo(1);
-        assertThat(statsCaptor.getValue().lastUsedTime()).isEqualTo(readerTimeMillis);
+        assertThat(statsCaptor.getValue().trackedSince()).isEqualTo(creationTimeMillis);
+        assertThat(statsCaptor.getValue().readCount()).isEqualTo(1);
+        assertThat(statsCaptor.getValue().lastRead()).isEqualTo(readerTimeMillis);
     }
 
     @Test

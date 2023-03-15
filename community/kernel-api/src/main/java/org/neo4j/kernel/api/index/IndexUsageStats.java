@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.index;
 /**
  * Used to hold usage statistics of an index.
  *
- * @param lastUsedTime {@link System#currentTimeMillis()} of last query made to the index
- * @param queryCount Number of queries since {@link #trackedSinceTime}
- * @param trackedSinceTime {@link System#currentTimeMillis()} when tracking of usage in index started
+ * @param lastRead {@link System#currentTimeMillis()} of last query made to the index
+ * @param readCount Number of read queries since {@link #trackedSince}
+ * @param trackedSince {@link System#currentTimeMillis()} when tracking of usage in index started
  */
-public record IndexUsageStats(long lastUsedTime, long queryCount, long trackedSinceTime) {}
+public record IndexUsageStats(long lastRead, long readCount, long trackedSince) {}

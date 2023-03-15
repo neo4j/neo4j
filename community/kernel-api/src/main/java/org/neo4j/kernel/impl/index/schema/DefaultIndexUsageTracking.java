@@ -24,14 +24,14 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 
 public class DefaultIndexUsageTracking implements IndexUsageTracking {
-    private final long trackedSinceTime;
-    private final AtomicLong queryCount = new AtomicLong();
-    private final AtomicLong lastUsedTime = new AtomicLong();
+    private final long trackedSince;
+    private final AtomicLong readCount = new AtomicLong();
+    private final AtomicLong lastRead = new AtomicLong();
     private final Clock clock;
 
     public DefaultIndexUsageTracking(Clock clock) {
         this.clock = clock;
-        this.trackedSinceTime = clock.millis();
+        this.trackedSince = clock.millis();
     }
 
     @Override
@@ -41,29 +41,29 @@ public class DefaultIndexUsageTracking implements IndexUsageTracking {
 
     @Override
     public IndexUsageStats getAndReset() {
-        long queryCount = this.queryCount.get();
-        this.queryCount.addAndGet(-queryCount);
-        return new IndexUsageStats(lastUsedTime.get(), queryCount, trackedSinceTime);
+        long queryCount = this.readCount.get();
+        this.readCount.addAndGet(-queryCount);
+        return new IndexUsageStats(lastRead.get(), queryCount, trackedSince);
     }
 
     private void add(long queryCount, long lastTimeUsed) {
-        this.queryCount.addAndGet(queryCount);
-        this.lastUsedTime.getAndUpdate(operand -> Long.max(operand, lastTimeUsed));
+        this.readCount.addAndGet(queryCount);
+        this.lastRead.getAndUpdate(operand -> Long.max(operand, lastTimeUsed));
     }
 
     private class DefaultIndexUsageTracker implements IndexUsageTracker {
-        private long localLastUsedTime;
-        private long localQueryCount;
+        private long localLastRead;
+        private long localReadCount;
 
         @Override
         public void queried() {
-            localQueryCount++;
-            localLastUsedTime = clock.millis();
+            localReadCount++;
+            localLastRead = clock.millis();
         }
 
         @Override
         public void close() {
-            add(localQueryCount, localLastUsedTime);
+            add(localReadCount, localLastRead);
         }
     }
 }

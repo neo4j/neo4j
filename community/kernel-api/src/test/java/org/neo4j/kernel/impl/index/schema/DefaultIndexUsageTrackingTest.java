@@ -55,9 +55,9 @@ class DefaultIndexUsageTrackingTest {
 
             // then
             var stats = tracking.getAndReset();
-            assertThat(stats.trackedSinceTime()).isEqualTo(creationTime);
-            assertThat(stats.queryCount()).isEqualTo(2);
-            assertThat(stats.lastUsedTime()).isEqualTo(clock.millis());
+            assertThat(stats.trackedSince()).isEqualTo(creationTime);
+            assertThat(stats.readCount()).isEqualTo(2);
+            assertThat(stats.lastRead()).isEqualTo(clock.millis());
         }
     }
 
@@ -82,8 +82,8 @@ class DefaultIndexUsageTrackingTest {
 
         // then
         var stats = tracking.getAndReset();
-        assertThat(stats.queryCount()).isEqualTo(numThreads * queriesPerThread);
-        assertThat(stats.trackedSinceTime()).isEqualTo(creationTime);
-        assertThat(stats.lastUsedTime()).isEqualTo(clock.millis());
+        assertThat(stats.readCount()).isEqualTo(numThreads * queriesPerThread);
+        assertThat(stats.trackedSince()).isEqualTo(creationTime);
+        assertThat(stats.lastRead()).isEqualTo(clock.millis());
     }
 }

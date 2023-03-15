@@ -342,9 +342,9 @@ class IndexStatisticsStoreTest {
         store.addUsageStats(indexId, secondUsage);
 
         // then
-        assertThat(store.usageStats(indexId).trackedSinceTime()).isEqualTo(firstUsage.trackedSinceTime());
+        assertThat(store.usageStats(indexId).trackedSince()).isEqualTo(firstUsage.trackedSince());
         restartStore();
-        assertThat(store.usageStats(indexId).trackedSinceTime()).isEqualTo(firstUsage.trackedSinceTime());
+        assertThat(store.usageStats(indexId).trackedSince()).isEqualTo(firstUsage.trackedSince());
     }
 
     @Test
@@ -356,9 +356,7 @@ class IndexStatisticsStoreTest {
         var firstUsage = new IndexUsageStats(lastUsedTime, 987654, trackedSinceTime);
         var secondUsage = new IndexUsageStats(lastUsedTime + 2000, 100, trackedSinceTime + 1000);
         var expectedUsage = new IndexUsageStats(
-                secondUsage.lastUsedTime(),
-                firstUsage.queryCount() + secondUsage.queryCount(),
-                firstUsage.trackedSinceTime());
+                secondUsage.lastRead(), firstUsage.readCount() + secondUsage.readCount(), firstUsage.trackedSince());
 
         // When
         store.addUsageStats(indexId, firstUsage);
@@ -381,9 +379,7 @@ class IndexStatisticsStoreTest {
         restartStore();
         var secondUsage = new IndexUsageStats(lastUsedTime + 2000, 100, trackedSinceTime + 1000);
         var expectedUsage = new IndexUsageStats(
-                secondUsage.lastUsedTime(),
-                firstUsage.queryCount() + secondUsage.queryCount(),
-                firstUsage.trackedSinceTime());
+                secondUsage.lastRead(), firstUsage.readCount() + secondUsage.readCount(), firstUsage.trackedSince());
         store.addUsageStats(indexId, secondUsage);
 
         // Then
@@ -421,10 +417,10 @@ class IndexStatisticsStoreTest {
 
         // then
         var usageStats = store.usageStats(indexId);
-        assertThat(usageStats.lastUsedTime()).isEqualTo(expectedMaxTimeMillis.get());
-        assertThat(usageStats.queryCount()).isEqualTo(sessionsPerThread * queriesPerSession * numThreads);
-        assertThat(usageStats.trackedSinceTime()).isLessThan(usageStats.lastUsedTime());
-        assertThat(usageStats.trackedSinceTime()).isEqualTo(expectedMinTimeMillis.get());
+        assertThat(usageStats.lastRead()).isEqualTo(expectedMaxTimeMillis.get());
+        assertThat(usageStats.readCount()).isEqualTo(sessionsPerThread * queriesPerSession * numThreads);
+        assertThat(usageStats.trackedSince()).isLessThan(usageStats.lastRead());
+        assertThat(usageStats.trackedSince()).isEqualTo(expectedMinTimeMillis.get());
     }
 
     private void replaceAndVerifySample(long indexId, IndexSample indexSample) {

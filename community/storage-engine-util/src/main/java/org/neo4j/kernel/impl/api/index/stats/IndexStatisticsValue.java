@@ -30,9 +30,9 @@ class IndexStatisticsValue {
     static final int INDEX_SAMPLE_UPDATES_COUNT = 2;
     static final int INDEX_SAMPLE_INDEX_SIZE = 3;
 
-    static final int INDEX_USAGE_TIME_LAST_USED = 0;
-    static final int INDEX_USAGE_QUERY_COUNT = 1;
-    static final int INDEX_USAGE_TIME_FIRST_TRACKED = 2;
+    static final int INDEX_USAGE_LAST_READ = 0;
+    static final int INDEX_USAGE_READ_COUNT = 1;
+    static final int INDEX_USAGE_TRACKED_SINCE = 2;
 
     final long[] data = new long[NUM_LONGS];
 

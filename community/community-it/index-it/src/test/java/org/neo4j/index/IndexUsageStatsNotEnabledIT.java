@@ -65,9 +65,9 @@ public class IndexUsageStatsNotEnabledIT {
             var stats = ktx.schemaRead().indexUsageStats(index);
 
             // Then
-            assertThat(stats.trackedSinceTime()).isGreaterThanOrEqualTo(0);
-            assertThat(stats.lastUsedTime()).isGreaterThanOrEqualTo(0);
-            assertThat(stats.queryCount()).isEqualTo(0);
+            assertThat(stats.trackedSince()).isEqualTo(0);
+            assertThat(stats.lastRead()).isEqualTo(0);
+            assertThat(stats.readCount()).isEqualTo(0);
         }
     }
 

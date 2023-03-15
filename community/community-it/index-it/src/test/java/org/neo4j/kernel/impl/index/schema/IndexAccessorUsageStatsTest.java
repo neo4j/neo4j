@@ -350,15 +350,15 @@ public class IndexAccessorUsageStatsTest {
     }
 
     private static void assertUsage(IndexUsageStats usageStats, long expectedLastUsedTime, long expectedQueryCount) {
-        Assertions.assertThat(usageStats.queryCount()).isEqualTo(expectedQueryCount);
-        Assertions.assertThat(usageStats.lastUsedTime()).isEqualTo(expectedLastUsedTime);
-        Assertions.assertThat(usageStats.trackedSinceTime()).isEqualTo(trackedSinceMillis);
+        Assertions.assertThat(usageStats.readCount()).isEqualTo(expectedQueryCount);
+        Assertions.assertThat(usageStats.lastRead()).isEqualTo(expectedLastUsedTime);
+        Assertions.assertThat(usageStats.trackedSince()).isEqualTo(trackedSinceMillis);
     }
 
     private static void assertNoUsage(IndexUsageStats usageStats) {
-        Assertions.assertThat(usageStats.queryCount()).isEqualTo(0);
-        Assertions.assertThat(usageStats.lastUsedTime()).isEqualTo(0);
-        Assertions.assertThat(usageStats.trackedSinceTime()).isEqualTo(trackedSinceMillis);
+        Assertions.assertThat(usageStats.readCount()).isEqualTo(0);
+        Assertions.assertThat(usageStats.lastRead()).isEqualTo(0);
+        Assertions.assertThat(usageStats.trackedSince()).isEqualTo(trackedSinceMillis);
     }
 
     private StaticIndexProviderMap createIndexProviderMap() {

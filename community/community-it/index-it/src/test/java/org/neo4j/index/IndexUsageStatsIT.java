@@ -59,7 +59,7 @@ class IndexUsageStatsIT {
 
     private long beforeCreateTime;
     private long beforeQueryTime;
-    private FakeClock fakeClock = new FakeClock(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
+    private final FakeClock fakeClock = new FakeClock(System.currentTimeMillis(), TimeUnit.MILLISECONDS);
 
     @ExtensionCallback
     void configuration(TestDatabaseManagementServiceBuilder builder) {
@@ -104,9 +104,9 @@ class IndexUsageStatsIT {
         // then
         triggerReportUsageStatistics();
         assertIndexUsageStats(stats -> {
-            assertThat(stats.trackedSinceTime()).isGreaterThanOrEqualTo(beforeCreateTime);
-            assertThat(stats.lastUsedTime()).isGreaterThanOrEqualTo(beforeQueryTime);
-            assertThat(stats.queryCount()).isEqualTo(1);
+            assertThat(stats.trackedSince()).isGreaterThanOrEqualTo(beforeCreateTime);
+            assertThat(stats.lastRead()).isGreaterThanOrEqualTo(beforeQueryTime);
+            assertThat(stats.readCount()).isEqualTo(1);
         });
     }
 
@@ -125,9 +125,9 @@ class IndexUsageStatsIT {
         // then
         triggerReportUsageStatistics();
         assertIndexUsageStats(stats -> {
-            assertThat(stats.trackedSinceTime()).isGreaterThanOrEqualTo(beforeCreateTime);
-            assertThat(stats.lastUsedTime()).isGreaterThanOrEqualTo(beforeQueryTime);
-            assertThat(stats.queryCount()).isEqualTo(1);
+            assertThat(stats.trackedSince()).isGreaterThanOrEqualTo(beforeCreateTime);
+            assertThat(stats.lastRead()).isGreaterThanOrEqualTo(beforeQueryTime);
+            assertThat(stats.readCount()).isEqualTo(1);
         });
     }
 
@@ -136,9 +136,9 @@ class IndexUsageStatsIT {
         // then
         triggerReportUsageStatistics();
         assertIndexUsageStats(stats -> {
-            assertThat(stats.trackedSinceTime()).isGreaterThanOrEqualTo(beforeCreateTime);
-            assertThat(stats.lastUsedTime()).isEqualTo(0);
-            assertThat(stats.queryCount()).isEqualTo(0);
+            assertThat(stats.trackedSince()).isGreaterThanOrEqualTo(beforeCreateTime);
+            assertThat(stats.lastRead()).isEqualTo(0);
+            assertThat(stats.readCount()).isEqualTo(0);
         });
     }
 
@@ -150,9 +150,9 @@ class IndexUsageStatsIT {
             var ktx = tx.kernelTransaction();
             var nonExistingIndex = TestIndexDescriptorFactory.forLabel(1, 42);
             var stats = ktx.schemaRead().indexUsageStats(nonExistingIndex);
-            assertThat(stats.trackedSinceTime()).isEqualTo(0);
-            assertThat(stats.lastUsedTime()).isEqualTo(0);
-            assertThat(stats.queryCount()).isEqualTo(0);
+            assertThat(stats.trackedSince()).isEqualTo(0);
+            assertThat(stats.lastRead()).isEqualTo(0);
+            assertThat(stats.readCount()).isEqualTo(0);
         }
     }
 
@@ -172,9 +172,9 @@ class IndexUsageStatsIT {
 
         // then
         assertIndexUsageStats(stats -> {
-            assertThat(stats.trackedSinceTime()).isEqualTo(0);
-            assertThat(stats.lastUsedTime()).isEqualTo(0);
-            assertThat(stats.queryCount()).isEqualTo(0);
+            assertThat(stats.trackedSince()).isEqualTo(0);
+            assertThat(stats.lastRead()).isEqualTo(0);
+            assertThat(stats.readCount()).isEqualTo(0);
         });
     }
 
@@ -184,7 +184,7 @@ class IndexUsageStatsIT {
         fakeClock.forward(IndexingService.USAGE_REPORT_FREQUENCY_SECONDS, TimeUnit.SECONDS);
 
         // then
-        assertEventuallyIndexUsageStats(stats -> stats.trackedSinceTime() >= beforeCreateTime);
+        assertEventuallyIndexUsageStats(stats -> stats.trackedSince() >= beforeCreateTime);
     }
 
     private void triggerReportUsageStatistics() {
