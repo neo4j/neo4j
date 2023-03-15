@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.log;
 import java.nio.file.Path;
 import java.time.Instant;
 
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
@@ -74,7 +73,7 @@ public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInfo
     }
 
     @Override
-    public void partialRecovery( RecoveryPredicate recoveryPredicate, CommittedTransactionRepresentation lastTransaction )
+    public void partialRecovery( RecoveryPredicate recoveryPredicate, LogEntryCommit lastTransaction )
     {
         log.info( "Partial database recovery based on provided criteria: " + recoveryPredicate.describe() + ". Last replayed transaction: " +
                 describeTransaction( lastTransaction ) + "." );
@@ -148,13 +147,12 @@ public class LoggingLogFileMonitor implements RecoveryMonitor, RecoveryStartInfo
         log.info( sb.append( '.' ).toString() );
     }
 
-    private static String describeTransaction( CommittedTransactionRepresentation lastTransaction )
+    private static String describeTransaction( LogEntryCommit lastTransaction )
     {
         if ( lastTransaction == null )
         {
             return "Not found.";
         }
-        LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
-        return "transaction id: " + commitEntry.getTxId() + ", time " + date( Instant.ofEpochMilli( commitEntry.getTimeWritten() ) );
+        return "transaction id: " + lastTransaction.getTxId() + ", time " + date( Instant.ofEpochMilli( lastTransaction.getTimeWritten() ) );
     }
 }

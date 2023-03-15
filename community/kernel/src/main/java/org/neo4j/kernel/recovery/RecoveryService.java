@@ -23,9 +23,9 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 public interface RecoveryService
@@ -40,6 +40,6 @@ public interface RecoveryService
 
     RecoveryApplier getRecoveryApplier( TransactionApplicationMode mode, PageCacheTracer cacheTracer, String tracerTag ) throws Exception;
 
-    void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastTransactionPosition,
+    void transactionsRecovered( LogEntryCommit lastRecoveredTransaction, LogPosition lastTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction, LogPosition checkpointPosition, boolean missingLogs, CursorContext cursorContext );
 }

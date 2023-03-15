@@ -23,7 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -96,7 +95,7 @@ public class DefaultRecoveryService implements RecoveryService
     }
 
     @Override
-    public void transactionsRecovered( CommittedTransactionRepresentation lastRecoveredTransaction, LogPosition lastRecoveredTransactionPosition,
+    public void transactionsRecovered( LogEntryCommit lastRecoveredTransaction, LogPosition lastRecoveredTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction, LogPosition checkpointPosition, boolean missingLogs, CursorContext cursorContext )
     {
         if ( missingLogs )
@@ -123,10 +122,9 @@ public class DefaultRecoveryService implements RecoveryService
         }
         if ( lastRecoveredTransaction != null )
         {
-            LogEntryCommit commitEntry = lastRecoveredTransaction.getCommitEntry();
-            transactionIdStore.setLastCommittedAndClosedTransactionId( commitEntry.getTxId(), lastRecoveredTransaction.getChecksum(),
-                    commitEntry.getTimeWritten(), lastRecoveredTransactionPosition.getByteOffset(), lastRecoveredTransactionPosition.getLogVersion(),
-                    cursorContext );
+            transactionIdStore.setLastCommittedAndClosedTransactionId( lastRecoveredTransaction.getTxId(), lastRecoveredTransaction.getChecksum(),
+                    lastRecoveredTransaction.getTimeWritten(), lastRecoveredTransactionPosition.getByteOffset(),
+                    lastRecoveredTransactionPosition.getLogVersion(), cursorContext );
         }
         else
         {

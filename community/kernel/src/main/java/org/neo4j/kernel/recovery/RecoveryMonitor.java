@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.recovery;
 
-import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
@@ -56,7 +55,7 @@ public interface RecoveryMonitor
         //noop
     }
 
-    default void partialRecovery( RecoveryPredicate recoveryPredicate, CommittedTransactionRepresentation lastTransaction )
+    default void partialRecovery( RecoveryPredicate recoveryPredicate, LogEntryCommit lastTransaction )
     {
         // noop
     }

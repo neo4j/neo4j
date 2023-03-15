@@ -94,8 +94,8 @@ public class TransactionLogsRecovery extends LifecycleAdapter
 
         LogPosition recoveryToPosition = recoveryStartPosition;
         LogPosition lastTransactionPosition = recoveryStartPosition;
-        CommittedTransactionRepresentation lastTransaction = null;
-        CommittedTransactionRepresentation lastReversedTransaction = null;
+        LogEntryCommit lastTransaction = null;
+        LogEntryCommit lastReversedTransaction = null;
         if ( !recoveryStartInformation.isMissingLogs() )
         {
             try
@@ -110,7 +110,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                         CommittedTransactionRepresentation transaction = transactionsToRecover.get();
                         if ( lastReversedTransaction == null )
                         {
-                            lastReversedTransaction = transaction;
+                            lastReversedTransaction = transaction.getCommitEntry();
                             initProgressReporter( recoveryStartInformation, lastReversedTransaction );
                         }
                         recoveryVisitor.visit( transaction );
@@ -165,7 +165,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                                                     "Observed transaction id: %d, recovery criteria: %s.", candidate.getCommitEntry().getTxId(),
                                                     recoveryPredicate.describe() ) );
                                         }
-                                        lastTransaction = candidate;
+                                        lastTransaction = candidate.getCommitEntry();
                                         lastTransactionPosition = beforeCheckpointCursor.position();
                                     }
                                     else
@@ -195,7 +195,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                             long txId = nextTransaction.getCommitEntry().getTxId();
                             recoveryVisitor.visit( nextTransaction );
 
-                            lastTransaction = nextTransaction;
+                            lastTransaction = nextTransaction.getCommitEntry();
                             monitor.transactionRecovered( txId );
                             numberOfRecoveredTransactions++;
                             lastTransactionPosition = transactionsToRecover.position();
@@ -220,8 +220,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
                 }
                 if ( lastTransaction != null )
                 {
-                    LogEntryCommit commitEntry = lastTransaction.getCommitEntry();
-                    monitor.failToRecoverTransactionsAfterCommit( t, commitEntry, recoveryToPosition );
+                    monitor.failToRecoverTransactionsAfterCommit( t, lastTransaction, recoveryToPosition );
                 }
                 else
                 {
@@ -241,8 +240,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter
         monitor.recoveryCompleted( numberOfRecoveredTransactions, recoveryStartTime.elapsed( MILLISECONDS ) );
     }
 
-    private void initProgressReporter( RecoveryStartInformation recoveryStartInformation,
-            CommittedTransactionRepresentation lastReversedTransaction )
+    private void initProgressReporter( RecoveryStartInformation recoveryStartInformation, LogEntryCommit lastReversedTransaction )
     {
         long numberOfTransactionToRecover =
                 getNumberOfTransactionToRecover( recoveryStartInformation, lastReversedTransaction );
@@ -256,11 +254,9 @@ public class TransactionLogsRecovery extends LifecycleAdapter
         progressReporter.progress( 1 );
     }
 
-    private static long getNumberOfTransactionToRecover( RecoveryStartInformation recoveryStartInformation,
-            CommittedTransactionRepresentation lastReversedTransaction )
+    private static long getNumberOfTransactionToRecover( RecoveryStartInformation recoveryStartInformation, LogEntryCommit lastReversedTransaction )
     {
-        return lastReversedTransaction.getCommitEntry().getTxId() -
-                recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() + 1;
+        return lastReversedTransaction.getTxId() - recoveryStartInformation.getFirstTxIdAfterLastCheckPoint() + 1;
     }
 
     @Override
