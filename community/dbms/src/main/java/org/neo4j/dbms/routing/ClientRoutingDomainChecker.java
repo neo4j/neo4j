@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing;
 
-@FunctionalInterface
-public interface InstanceClusterView {
+import java.util.Set;
+import org.neo4j.configuration.SettingChangeListener;
+import org.neo4j.configuration.helpers.SocketAddress;
 
-    /**
-     * Returns true if this instance/server is alone in the system graph
-     * of an enterprise system cluster
-     */
-    boolean amIAlone();
+public interface ClientRoutingDomainChecker extends SettingChangeListener<Set<String>> {
+    boolean shouldGetClientRouting(SocketAddress address);
+
+    boolean isEmpty();
 }

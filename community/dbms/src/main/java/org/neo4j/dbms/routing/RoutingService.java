@@ -17,18 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
 
-public enum RoutingOption {
-    ROUTE_AND_READ_ONLY(true, false, true),
-    ROUTE_WRITE_AND_READ(true, true, true);
-    final boolean read;
-    final boolean write;
-    final boolean route;
+package org.neo4j.dbms.routing;
 
-    RoutingOption(boolean route, boolean write, boolean read) {
-        this.route = route;
-        this.write = write;
-        this.read = read;
-    }
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.values.virtual.MapValue;
+
+public interface RoutingService {
+    RoutingResult route(DatabaseReference databaseReference, MapValue routingContext) throws RoutingException;
+
+    RoutingResult route(String databaseName, String user, MapValue routingContext) throws RoutingException;
 }

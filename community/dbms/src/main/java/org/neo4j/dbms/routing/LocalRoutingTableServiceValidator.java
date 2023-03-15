@@ -17,37 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing;
 
-import org.neo4j.dbms.routing.RoutingTableProcedureHelpers;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.database.DatabaseReference;
 
-public class LocalRoutingTableProcedureValidator implements RoutingTableProcedureValidator {
+public class LocalRoutingTableServiceValidator implements RoutingTableServiceValidator {
 
     private final DatabaseAvailabilityChecker databaseAvailabilityChecker;
 
-    public LocalRoutingTableProcedureValidator(DatabaseAvailabilityChecker databaseAvailabilityChecker) {
+    public LocalRoutingTableServiceValidator(DatabaseAvailabilityChecker databaseAvailabilityChecker) {
         this.databaseAvailabilityChecker = databaseAvailabilityChecker;
     }
 
     @Override
-    public void isValidForServerSideRouting(DatabaseReference.Internal databaseReference) throws ProcedureException {
+    public void isValidForServerSideRouting(DatabaseReference.Internal databaseReference) throws RoutingException {
         assertDatabaseIsOperational(databaseReference);
     }
 
     @Override
-    public void isValidForClientSideRouting(DatabaseReference.Internal databaseReference) throws ProcedureException {
+    public void isValidForClientSideRouting(DatabaseReference.Internal databaseReference) throws RoutingException {
         assertDatabaseIsOperational(databaseReference);
     }
 
-    private void assertDatabaseIsOperational(DatabaseReference.Internal databaseReference) throws ProcedureException {
+    private void assertDatabaseIsOperational(DatabaseReference.Internal databaseReference) throws RoutingException {
         if (!databaseAvailabilityChecker.isPresent(databaseReference)) {
-            throw RoutingTableProcedureHelpers.databaseNotFoundException(
+            throw RoutingTableServiceHelpers.databaseNotFoundException(
                     databaseReference.alias().name());
         }
         if (!databaseAvailabilityChecker.isAvailable(databaseReference)) {
-            throw RoutingTableProcedureHelpers.databaseNotAvailableException(
+            throw RoutingTableServiceHelpers.databaseNotAvailableException(
                     databaseReference.alias().name());
         }
     }

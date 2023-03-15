@@ -364,6 +364,21 @@ public interface Status {
         }
     }
 
+    enum Routing implements Status {
+        RoutingFailed(ClientError, "Failed to Route");
+
+        private final Code code;
+
+        Routing(Classification classification, String description) {
+            this.code = new Code(classification, this, description);
+        }
+
+        @Override
+        public Code code() {
+            return code;
+        }
+    }
+
     enum Schema implements Status {
         // client errors
         RepeatedPropertyInCompositeSchema(

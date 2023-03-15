@@ -21,6 +21,7 @@ package org.neo4j.procedure.builtin.routing;
 
 import java.util.HashMap;
 import java.util.Map;
+import org.neo4j.dbms.routing.DatabaseAvailabilityChecker;
 import org.neo4j.kernel.database.DatabaseReference;
 
 public final class TestDatabaseAvailabilityChecker implements DatabaseAvailabilityChecker {

@@ -55,6 +55,8 @@ import org.neo4j.dbms.database.DatabaseManagementServiceImpl;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.UnableToStartDatabaseException;
+import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
+import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -87,7 +89,6 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.StatusDetailsAccessor;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.SpecialBuiltInProcedures;
-import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.procedure.impl.ProcedureGraphDatabaseAPI;
@@ -159,7 +160,15 @@ public class DatabaseManagementServiceFactory {
         edition.createDefaultDatabaseResolver(globalModule);
         globalDependencies.satisfyDependency(edition.getDefaultDatabaseResolver());
 
-        setupProcedures(globalModule, edition, databaseContextProvider);
+        var clientRoutingDomainChecker = tryResolveOrCreate(
+                ClientRoutingDomainChecker.class,
+                globalModule.getGlobalDependencies(),
+                () -> edition.createClientRoutingDomainChecker(globalModule));
+
+        var routingService = edition.createRoutingService(databaseContextProvider, clientRoutingDomainChecker);
+        globalDependencies.satisfyDependency(routingService);
+
+        setupProcedures(globalModule, edition, databaseContextProvider, routingService);
         edition.registerDatabaseInitializers(globalModule);
 
         edition.createSecurityModule(globalModule);
@@ -317,11 +326,8 @@ public class DatabaseManagementServiceFactory {
     private static void setupProcedures(
             GlobalModule globalModule,
             AbstractEditionModule editionModule,
-            DatabaseContextProvider<?> databaseContextProvider) {
-        tryResolveOrCreate(
-                ClientRoutingDomainChecker.class,
-                globalModule.getGlobalDependencies(),
-                () -> editionModule.createClientRoutingDomainChecker(globalModule));
+            DatabaseContextProvider<?> databaseContextProvider,
+            RoutingService routingService) {
 
         Supplier<GlobalProcedures> procedureInitializer = () -> {
             Config globalConfig = globalModule.getGlobalConfig();
@@ -388,7 +394,7 @@ public class DatabaseManagementServiceFactory {
             // Edition procedures
             try {
                 editionModule.registerProcedures(
-                        globalProcedures, procedureConfig, globalModule, databaseContextProvider);
+                        globalProcedures, procedureConfig, globalModule, databaseContextProvider, routingService);
             } catch (KernelException e) {
                 internalLog.error("Failed to register built-in edition procedures at start up: " + e.getMessage());
             }

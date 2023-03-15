@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing;
 
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.kernel.database.DatabaseReference;
+@FunctionalInterface
+public interface InstanceClusterView {
 
-public interface RoutingTableProcedureValidator {
-    void isValidForServerSideRouting(DatabaseReference.Internal databaseReference) throws ProcedureException;
-
-    void isValidForClientSideRouting(DatabaseReference.Internal databaseReference) throws ProcedureException;
+    /**
+     * Returns true if this instance/server is alone in the system graph
+     * of an enterprise system cluster
+     */
+    boolean amIAlone();
 }

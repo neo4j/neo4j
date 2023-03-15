@@ -33,8 +33,8 @@ import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
+import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
 import org.neo4j.server.configuration.ServerSettings;
 
 /**

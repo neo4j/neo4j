@@ -26,18 +26,17 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 import java.util.Optional;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.configuration.helpers.SocketAddressParser;
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-public class RoutingTableProcedureHelpers {
+public class RoutingTableServiceHelpers {
     public static final String ADDRESS_CONTEXT_KEY = "address";
     public static final String FROM_ALIAS_KEY = "alias";
 
     public static Optional<SocketAddress> findClientProvidedAddress(
-            MapValue routingContext, int defaultBoltPort, InternalLog log) throws ProcedureException {
+            MapValue routingContext, int defaultBoltPort, InternalLog log) throws RoutingException {
         var address = routingContext.get(ADDRESS_CONTEXT_KEY);
         if (address == null || address == NO_VALUE) {
             return Optional.empty();
@@ -58,21 +57,21 @@ public class RoutingTableProcedureHelpers {
             }
         }
 
-        throw new ProcedureException(
+        throw new RoutingException(
                 Status.Procedure.ProcedureCallFailed,
                 "An address key is included in the query string provided to the "
                         + "GetRoutingTableProcedure, but its value could not be parsed.");
     }
 
-    public static ProcedureException databaseNotFoundException(String databaseName) {
-        return new ProcedureException(
+    public static RoutingException databaseNotFoundException(String databaseName) {
+        return new RoutingException(
                 DatabaseNotFound,
                 "Unable to get a routing table for database '" + databaseName
                         + "' because this database does not exist");
     }
 
-    public static ProcedureException databaseNotAvailableException(String databaseName) {
-        return new ProcedureException(
+    public static RoutingException databaseNotAvailableException(String databaseName) {
+        return new RoutingException(
                 DatabaseUnavailable,
                 "Unable to get a routing table for database '" + databaseName
                         + "' because this database is unavailable");

@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing;
 
-import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.values.virtual.MapValue;
+import org.neo4j.kernel.database.DatabaseReference;
 
-public interface ServerSideRoutingTableProvider {
-    RoutingResult getServerSideRoutingTable(MapValue routingContext) throws ProcedureException;
+public interface RoutingTableServiceValidator {
+    void isValidForServerSideRouting(DatabaseReference.Internal databaseReference) throws RoutingException;
+
+    void isValidForClientSideRouting(DatabaseReference.Internal databaseReference) throws RoutingException;
 }

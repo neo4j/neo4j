@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing;
 
 import java.util.List;
 import java.util.Objects;
@@ -60,7 +60,7 @@ public class RoutingResult {
         return readEndpoints;
     }
 
-    boolean containsNoEndpoints() {
+    public boolean containsNoEndpoints() {
         return routeEndpoints.isEmpty() && writeEndpoints.isEmpty() && readEndpoints.isEmpty();
     }
 

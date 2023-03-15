@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing;
 
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseReference;
@@ -29,7 +29,7 @@ import org.neo4j.kernel.database.DatabaseReference;
  * A database may be invalid for routing because it is not currently available (i.e. it may be store copying) or not
  * present at all (perhaps it is still starting up, or dropped, or only exists on another Neo4j instance).
  *
- * @see LocalRoutingTableProcedureValidator
+ * @see LocalRoutingTableServiceValidator
  */
 public interface DatabaseAvailabilityChecker {
     /**

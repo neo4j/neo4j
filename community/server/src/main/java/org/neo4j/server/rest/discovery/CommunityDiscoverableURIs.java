@@ -23,7 +23,7 @@ import static org.neo4j.server.http.cypher.CypherResource.absoluteDatabaseTransa
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
-import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
+import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.http.cypher.CypherResource;

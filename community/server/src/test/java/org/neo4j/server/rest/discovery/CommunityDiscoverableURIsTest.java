@@ -34,8 +34,8 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.dbms.routing.SimpleClientRoutingDomainChecker;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.procedure.builtin.routing.SimpleClientRoutingDomainChecker;
 import org.neo4j.server.configuration.ConfigurableServerModules;
 import org.neo4j.server.configuration.ServerSettings;
 

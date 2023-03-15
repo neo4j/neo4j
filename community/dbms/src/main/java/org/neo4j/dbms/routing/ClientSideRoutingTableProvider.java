@@ -17,16 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing;
 
-import java.time.Duration;
-import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.values.virtual.MapValue;
 
-public interface RoutingTableTTLProvider {
-    static RoutingTableTTLProvider ttlFromConfig(Config config) {
-        return () -> config.get(GraphDatabaseSettings.routing_ttl);
-    }
-
-    Duration nextTTL();
+public interface ClientSideRoutingTableProvider {
+    RoutingResult getRoutingResultForClientSideRouting(
+            DatabaseReference.Internal databaseReference, MapValue routingContext) throws RoutingException;
 }

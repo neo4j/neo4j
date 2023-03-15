@@ -27,11 +27,19 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.dbms.routing.RoutingTableTTLProvider.ttlFromConfig;
 
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
+import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
+import org.neo4j.dbms.routing.DatabaseAvailabilityChecker;
+import org.neo4j.dbms.routing.DefaultRoutingService;
+import org.neo4j.dbms.routing.LocalRoutingTableServiceValidator;
+import org.neo4j.dbms.routing.RoutingOption;
+import org.neo4j.dbms.routing.RoutingService;
+import org.neo4j.dbms.routing.SingleAddressRoutingTableProvider;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -49,18 +57,27 @@ class SingleInstanceRoutingProcedureInstallerTest {
         var clientRoutingDomainChecker = mock(ClientRoutingDomainChecker.class);
         var config = Config.defaults();
         var logProvider = NullLogProvider.getInstance();
+        var defaultDatabaseResolver = mock(DefaultDatabaseResolver.class);
 
-        SingleInstanceRoutingProcedureInstaller installer = new SingleInstanceRoutingProcedureInstaller(
-                databaseAvailabilityChecker,
-                databaseReferenceRepo,
-                clientRoutingDomainChecker,
-                portRegister,
-                config,
+        LocalRoutingTableServiceValidator validator =
+                new LocalRoutingTableServiceValidator(databaseAvailabilityChecker);
+        SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
+                portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig(config));
+
+        RoutingService routingService = new DefaultRoutingService(
                 logProvider,
-                mock(DefaultDatabaseResolver.class));
+                validator,
+                routingTableProvider,
+                routingTableProvider,
+                clientRoutingDomainChecker,
+                config,
+                () -> false,
+                defaultDatabaseResolver,
+                databaseReferenceRepo);
+
         GlobalProcedures procedures = spy(new GlobalProceduresRegistry());
 
-        installer.install(procedures);
+        RoutingProcedureInstaller.install(procedures, routingService, logProvider);
 
         verify(procedures, times(2)).register(any(GetRoutingTableProcedure.class));
 

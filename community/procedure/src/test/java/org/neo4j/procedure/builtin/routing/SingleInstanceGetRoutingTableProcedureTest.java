@@ -32,7 +32,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SERVER_DEFAULTS;
 import static org.neo4j.configuration.GraphDatabaseSettings.client_side_router_enforce_for_domains;
 import static org.neo4j.configuration.GraphDatabaseSettings.routing_default_router;
-import static org.neo4j.dbms.routing.RoutingTableProcedureHelpers.ADDRESS_CONTEXT_KEY;
+import static org.neo4j.dbms.routing.RoutingTableServiceHelpers.ADDRESS_CONTEXT_KEY;
+import static org.neo4j.dbms.routing.RoutingTableTTLProvider.ttlFromConfig;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.inputField;
 import static org.neo4j.internal.kernel.api.procs.FieldSignature.outputField;
@@ -43,7 +44,7 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.kernel.api.exceptions.Status.Database.DatabaseNotFound;
 import static org.neo4j.kernel.api.exceptions.Status.General.DatabaseUnavailable;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
-import static org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller.DEFAULT_NAMESPACE;
+import static org.neo4j.procedure.builtin.routing.RoutingProcedureInstaller.DEFAULT_NAMESPACE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.lang.annotation.ElementType;
@@ -69,6 +70,14 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.dbms.routing.DatabaseAvailabilityChecker;
+import org.neo4j.dbms.routing.DefaultRoutingService;
+import org.neo4j.dbms.routing.LocalRoutingTableServiceValidator;
+import org.neo4j.dbms.routing.RoutingOption;
+import org.neo4j.dbms.routing.RoutingResult;
+import org.neo4j.dbms.routing.RoutingService;
+import org.neo4j.dbms.routing.SimpleClientRoutingDomainChecker;
+import org.neo4j.dbms.routing.SingleAddressRoutingTableProvider;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -328,6 +337,7 @@ public class SingleInstanceGetRoutingTableProcedureTest {
         assertEquals(singletonList(expectedAddress), result.readEndpoints());
         assertEquals(expectedWriters(expectedAddress), result.writeEndpoints());
         assertEquals(singletonList(expectedAddress), result.routeEndpoints());
+        assertEquals(singletonList(expectedAddress), result.routeEndpoints());
     }
 
     /**
@@ -522,15 +532,24 @@ public class SingleInstanceGetRoutingTableProcedureTest {
             InternalLogProvider logProvider) {
         var clientRoutingDomainChecker = SimpleClientRoutingDomainChecker.fromConfig(config, logProvider);
         var defaultDatabaseResolver = mock(DefaultDatabaseResolver.class);
-        return new SingleInstanceRoutingProcedureInstaller(
-                        databaseAvailabilityChecker,
-                        databaseReferenceRepo,
-                        clientRoutingDomainChecker,
-                        portRegister,
-                        config,
-                        logProvider,
-                        defaultDatabaseResolver)
-                .createProcedure(DEFAULT_NAMESPACE);
+
+        LocalRoutingTableServiceValidator validator =
+                new LocalRoutingTableServiceValidator(databaseAvailabilityChecker);
+        SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
+                portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig(config));
+
+        RoutingService routingService = new DefaultRoutingService(
+                logProvider,
+                validator,
+                routingTableProvider,
+                routingTableProvider,
+                clientRoutingDomainChecker,
+                config,
+                () -> false,
+                defaultDatabaseResolver,
+                databaseReferenceRepo);
+
+        return new GetRoutingTableProcedure(DEFAULT_NAMESPACE, routingService, logProvider);
     }
 
     protected List<SocketAddress> expectedWriters(SocketAddress selfAddress) {

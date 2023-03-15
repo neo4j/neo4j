@@ -17,14 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing;
 
-import java.util.Set;
-import org.neo4j.configuration.SettingChangeListener;
-import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.values.virtual.MapValue;
 
-public interface ClientRoutingDomainChecker extends SettingChangeListener<Set<String>> {
-    boolean shouldGetClientRouting(SocketAddress address);
-
-    boolean isEmpty();
+public interface ServerSideRoutingTableProvider {
+    RoutingResult getServerSideRoutingTable(MapValue routingContext) throws RoutingException;
 }

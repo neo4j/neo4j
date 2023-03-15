@@ -39,6 +39,13 @@ import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.DbmsRuntimeSystemGraphComponent;
 import org.neo4j.dbms.database.StandaloneDbmsRuntimeRepository;
 import org.neo4j.dbms.database.SystemGraphComponents;
+import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
+import org.neo4j.dbms.routing.RoutingOption;
+import org.neo4j.dbms.routing.RoutingService;
+import org.neo4j.dbms.routing.RoutingTableTTLProvider;
+import org.neo4j.dbms.routing.ServerSideRoutingTableProvider;
+import org.neo4j.dbms.routing.SimpleClientRoutingDomainChecker;
+import org.neo4j.dbms.routing.SingleAddressRoutingTableProvider;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -64,13 +71,7 @@ import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.BuiltInProcedures;
 import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
-import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
-import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
-import org.neo4j.procedure.builtin.routing.RoutingOption;
-import org.neo4j.procedure.builtin.routing.RoutingTableTTLProvider;
-import org.neo4j.procedure.builtin.routing.ServerSideRoutingTableProvider;
-import org.neo4j.procedure.builtin.routing.SimpleClientRoutingDomainChecker;
-import org.neo4j.procedure.builtin.routing.SingleAddressRoutingTableProvider;
+import org.neo4j.procedure.builtin.routing.RoutingProcedureInstaller;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.time.SystemNanoClock;
@@ -88,7 +89,8 @@ public abstract class AbstractEditionModule {
             GlobalProcedures globalProcedures,
             ProcedureConfig procedureConfig,
             GlobalModule globalModule,
-            DatabaseContextProvider<?> databaseContextProvider)
+            DatabaseContextProvider<?> databaseContextProvider,
+            RoutingService routingService)
             throws KernelException {
         globalProcedures.registerProcedure(BuiltInProcedures.class);
         globalProcedures.registerProcedure(TokenProcedures.class);
@@ -98,11 +100,8 @@ public abstract class AbstractEditionModule {
         registerTemporalFunctions(globalProcedures, procedureConfig);
 
         registerEditionSpecificProcedures(globalProcedures, databaseContextProvider);
-        AbstractRoutingProcedureInstaller routingProcedureInstaller = createRoutingProcedureInstaller(
-                globalModule,
-                databaseContextProvider,
-                globalModule.getGlobalDependencies().resolveDependency(ClientRoutingDomainChecker.class));
-        routingProcedureInstaller.install(globalProcedures);
+        RoutingProcedureInstaller.install(
+                globalProcedures, routingService, globalModule.getLogService().getInternalLogProvider());
     }
 
     public ClientRoutingDomainChecker createClientRoutingDomainChecker(GlobalModule globalModule) {
@@ -116,11 +115,6 @@ public abstract class AbstractEditionModule {
     protected void registerEditionSpecificProcedures(
             GlobalProcedures globalProcedures, DatabaseContextProvider<?> databaseContextProvider)
             throws KernelException {}
-
-    protected abstract AbstractRoutingProcedureInstaller createRoutingProcedureInstaller(
-            GlobalModule globalModule,
-            DatabaseContextProvider<?> databaseContextProvider,
-            ClientRoutingDomainChecker clientRoutingDomainChecker);
 
     protected abstract AuthConfigProvider createAuthConfigProvider(GlobalModule globalModule);
 
@@ -220,6 +214,9 @@ public abstract class AbstractEditionModule {
     }
 
     public abstract DatabaseInfoService createDatabaseInfoService(DatabaseContextProvider<?> databaseContextProvider);
+
+    public abstract RoutingService createRoutingService(
+            DatabaseContextProvider<?> databaseContextProvider, ClientRoutingDomainChecker clientRoutingDomainChecker);
 
     public static <T> T tryResolveOrCreate(
             Class<T> clazz, DependencyResolver dependencies, Supplier<T> newInstanceMethod) {

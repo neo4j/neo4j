@@ -85,6 +85,11 @@ org.neo4j.kernel.api.exceptions.Status.Request::NoThreadsAvailable org.neo4j.ker
 org.neo4j.kernel.api.exceptions.Status.Request::code() org.neo4j.kernel.api.exceptions.Status.Code public
 org.neo4j.kernel.api.exceptions.Status.Request::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Request public static
 org.neo4j.kernel.api.exceptions.Status.Request::values() org.neo4j.kernel.api.exceptions.Status.Request[] public static
+org.neo4j.kernel.api.exceptions.Status.Routing public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Routing> implements org.neo4j.kernel.api.exceptions.Status
+org.neo4j.kernel.api.exceptions.Status.Routing::RoutingFailed org.neo4j.kernel.api.exceptions.Status.Routing public static final
+org.neo4j.kernel.api.exceptions.Status.Routing::code() org.neo4j.kernel.api.exceptions.Status.Code public
+org.neo4j.kernel.api.exceptions.Status.Routing::valueOf(java.lang.String) org.neo4j.kernel.api.exceptions.Status.Routing public static
+org.neo4j.kernel.api.exceptions.Status.Routing::values() org.neo4j.kernel.api.exceptions.Status.Routing[] public static
 org.neo4j.kernel.api.exceptions.Status.Schema public static final enum extends java.lang.Enum<org.neo4j.kernel.api.exceptions.Status.Schema> implements org.neo4j.kernel.api.exceptions.Status
 org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintAlreadyExists org.neo4j.kernel.api.exceptions.Status.Schema public static final
 org.neo4j.kernel.api.exceptions.Status.Schema::ConstraintCreationFailed org.neo4j.kernel.api.exceptions.Status.Schema public static final

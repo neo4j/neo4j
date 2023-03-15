@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory.module.edition;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_database;
 import static org.neo4j.dbms.database.DatabaseContextProviderDelegate.delegate;
+import static org.neo4j.dbms.routing.RoutingTableTTLProvider.ttlFromConfig;
 
 import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
@@ -59,6 +60,13 @@ import org.neo4j.dbms.database.readonly.SystemGraphReadOnlyListener;
 import org.neo4j.dbms.identity.DefaultIdentityModule;
 import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.dbms.identity.ServerIdentityFactory;
+import org.neo4j.dbms.routing.ClientRoutingDomainChecker;
+import org.neo4j.dbms.routing.DefaultDatabaseAvailabilityChecker;
+import org.neo4j.dbms.routing.DefaultRoutingService;
+import org.neo4j.dbms.routing.LocalRoutingTableServiceValidator;
+import org.neo4j.dbms.routing.RoutingOption;
+import org.neo4j.dbms.routing.RoutingService;
+import org.neo4j.dbms.routing.SingleAddressRoutingTableProvider;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -86,10 +94,6 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
-import org.neo4j.procedure.builtin.routing.AbstractRoutingProcedureInstaller;
-import org.neo4j.procedure.builtin.routing.ClientRoutingDomainChecker;
-import org.neo4j.procedure.builtin.routing.DefaultDatabaseAvailabilityChecker;
-import org.neo4j.procedure.builtin.routing.SingleInstanceRoutingProcedureInstaller;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
@@ -258,22 +262,29 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     }
 
     @Override
-    protected AbstractRoutingProcedureInstaller createRoutingProcedureInstaller(
-            GlobalModule globalModule,
-            DatabaseContextProvider<?> databaseContextProvider,
-            ClientRoutingDomainChecker clientRoutingDomainChecker) {
+    public RoutingService createRoutingService(
+            DatabaseContextProvider<?> databaseContextProvider, ClientRoutingDomainChecker clientRoutingDomainChecker) {
+        var logService = globalModule.getLogService();
         var portRegister = globalModule.getConnectorPortRegister();
         var config = globalModule.getGlobalConfig();
         var logProvider = globalModule.getLogService().getInternalLogProvider();
         var databaseAvailabilityChecker = new DefaultDatabaseAvailabilityChecker(databaseContextProvider);
-        return new SingleInstanceRoutingProcedureInstaller(
-                databaseAvailabilityChecker,
-                databaseReferenceRepo,
+
+        LocalRoutingTableServiceValidator validator =
+                new LocalRoutingTableServiceValidator(databaseAvailabilityChecker);
+        SingleAddressRoutingTableProvider routingTableProvider = new SingleAddressRoutingTableProvider(
+                portRegister, RoutingOption.ROUTE_WRITE_AND_READ, config, logProvider, ttlFromConfig(config));
+
+        return new DefaultRoutingService(
+                logService.getInternalLogProvider(),
+                validator,
+                routingTableProvider,
+                routingTableProvider,
                 clientRoutingDomainChecker,
-                portRegister,
                 config,
-                logProvider,
-                defaultDatabaseResolver);
+                () -> true,
+                defaultDatabaseResolver,
+                databaseReferenceRepo);
     }
 
     @Override

@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.dbms.routing.RoutingResult;
 import org.neo4j.values.AnyValue;
 
 class RoutingResultFormatTest {
