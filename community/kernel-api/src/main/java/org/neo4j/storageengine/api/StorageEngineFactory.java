@@ -372,6 +372,7 @@ public interface StorageEngineFactory {
             Monitor monitor,
             JobScheduler jobScheduler,
             Collector badCollector,
+            LogFilesInitializer logFilesInitializer,
             IndexImporterFactory indexImporterFactory,
             MemoryTracker memoryTracker,
             CursorContextFactory contextFactory,

@@ -122,7 +122,6 @@ class CsvImporter implements Importer {
     private final MemoryTracker memoryTracker;
     private final boolean force;
     private final IncrementalStage incrementalStage;
-
     private final boolean incremental;
 
     private CsvImporter(Builder b) {
@@ -227,6 +226,7 @@ class CsvImporter implements Importer {
                             new PrintingImportLogicMonitor(stdOut, stdErr),
                             jobScheduler,
                             badCollector,
+                            TransactionLogInitializer.getLogFilesInitializer(),
                             new IndexImporterFactoryImpl(),
                             memoryTracker,
                             contextFactory,
