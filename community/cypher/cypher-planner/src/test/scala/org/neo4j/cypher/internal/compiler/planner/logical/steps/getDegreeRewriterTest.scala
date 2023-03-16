@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.CreateIrExpressions
@@ -217,6 +218,58 @@ class GetDegreeRewriterCountExpressionTest extends GetDegreeRewriterCountLikeTes
   }
 
   override protected def testNameExpr(pattern: String): String = s"COUNT { $pattern }"
+
+  test("does not rewrite COUNT with SKIP in RETURN") {
+    val incoming = createIrExpressions(
+      CountExpression(
+        singleQuery(
+          match_(nodePat(Some("a"))),
+          return_(skip(2), varFor("a").as("a"))
+        )
+      )(pos, None, Some(Set(varFor("a"))))
+    )
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test("does not rewrite COUNT with LIMIT in RETURN") {
+    val incoming = createIrExpressions(
+      CountExpression(
+        singleQuery(
+          match_(nodePat(Some("a"))),
+          return_(limit(42), varFor("a").as("a"))
+        )
+      )(pos, None, Some(Set(varFor("a"))))
+    )
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test("does not rewrite COUNT with ORDER BY, SKIP and LIMIT in RETURN") {
+    val incoming = createIrExpressions(
+      CountExpression(
+        singleQuery(
+          match_(nodePat(Some("a"))),
+          return_(orderBy(varFor("a").desc), skip(2), limit(42), varFor("a").as("a"))
+        )
+      )(pos, None, Some(Set(varFor("a"))))
+    )
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test("does not rewrite COUNT with DISTINCT in RETURN") {
+    val incoming = createIrExpressions(
+      CountExpression(
+        singleQuery(
+          match_(nodePat(Some("a"))),
+          returnDistinct(varFor("a").as("a"))
+        )
+      )(pos, None, Some(Set(varFor("a"))))
+    )
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
 }
 
 trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstructionTestSupport {
@@ -232,7 +285,7 @@ trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstruc
 
   protected def testNameExpr(pattern: String): String
 
-  private def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator(), new SemanticTable())
+  protected def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator(), new SemanticTable())
 
   test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} to GetDegree( (a)-[:FOO]->() )") {
     val incoming =

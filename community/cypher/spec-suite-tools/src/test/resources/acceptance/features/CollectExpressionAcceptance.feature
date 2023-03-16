@@ -850,6 +850,100 @@ Feature: CollectExpressionAcceptance
       | (:A {prop:1}) |
     And no side effects
 
+  Scenario: COLLECT with ORDER BY
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN COLLECT {
+     MATCH (m)-[:FRIEND]->(n)
+     RETURN m.name ORDER BY m.age
+    } AS friends
+    """
+      Then the result should be, in any order:
+        | friends             |
+        | ['Bob']             |
+        | ['Ada']             |
+        | ['Ada', 'Danielle'] |
+        | ['Carl', 'Bob']     |
+        | []             |
+      And no side effects
+
+  Scenario: COLLECT with SKIP
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WITH n, COLLECT {
+     MATCH (m)-[:FRIEND]->(n)
+     RETURN m.name SKIP 1
+    } AS allButOneFriend
+    RETURN n.name AS name, size(allButOneFriend) AS nbr
+    """
+      Then the result should be, in any order:
+        | name       | nbr |
+        | 'Ada'      | 0   |
+        | 'Bob'      | 0   |
+        | 'Carl'     | 1   |
+        | 'Danielle' | 1   |
+        | 'Eve'      | 0   |
+      And no side effects
+
+  Scenario: COLLECT with LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WITH n, COLLECT {
+     MATCH (m)-[:FRIEND]->(n)
+     RETURN m.name LIMIT 1
+    } AS maxOneFriend
+    RETURN n.name AS name, size(maxOneFriend) AS nbr
+    """
+      Then the result should be, in any order:
+        | name       | nbr |
+        | 'Ada'      | 1   |
+        | 'Bob'      | 1   |
+        | 'Carl'     | 1   |
+        | 'Danielle' | 1   |
+        | 'Eve'      | 0   |
+      And no side effects
+
+  Scenario: COLLECT with ORDER BY, SKIP and LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE 'Bob' IN  COLLECT {
+     MATCH (m)-[:FRIEND]->(n)
+     RETURN m.name ORDER BY m.age SKIP 1 LIMIT 1
+    }
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name       |
+        | 'Danielle' |
+      And no side effects
+
+  Scenario: COLLECT with DISTINCT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN COLLECT {
+     MATCH ()-[:FRIEND]->(n)
+     RETURN DISTINCT n.name
+    } AS nameIfFriend
+    """
+      Then the result should be, in any order:
+        | nameIfFriend |
+        | ['Ada']      |
+        | ['Bob']      |
+        | ['Carl']     |
+        | ['Danielle'] |
+        |  []          |
+      And no side effects
+
   Scenario: COLLECT inlined in node pattern with label expression on unnamed node should be supported
     Given any graph
     When executing query:

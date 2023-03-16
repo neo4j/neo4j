@@ -1163,6 +1163,192 @@ Feature: CountExpressionAcceptance
       | 'Erika' |
     And no side effects
 
+    Scenario: COUNT in WHERE with ORDER BY
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE COUNT {
+     MATCH (n)-[:FOLLOWS]->(m)
+     RETURN m ORDER BY m.name
+    } = 1
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name    |
+        | 'Bob'   |
+        | 'Erika' |
+      And no side effects
+
+
+  Scenario: COUNT in RETURN with ORDER BY
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN COUNT {
+     MATCH (n)-[:FOLLOWS]->(m)
+     RETURN m ORDER BY m.name
+    } AS nbr
+    """
+      Then the result should be, in any order:
+        | nbr |
+        | 2   |
+        | 1   |
+        | 2   |
+        | 0   |
+        | 1   |
+      And no side effects
+
+  Scenario: COUNT in WHERE with SKIP
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE COUNT {
+     MATCH (n)-[:FOLLOWS]->(m)
+     RETURN m SKIP 1
+    } = 1
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name    |
+        | 'Ada'   |
+        | 'Cat'   |
+      And no side effects
+
+  Scenario: COUNT in RETURN with SKIP
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN COUNT {
+     MATCH (n)-[:FOLLOWS]->(m)
+     RETURN m SKIP 1
+    } AS nbr
+    """
+      Then the result should be, in any order:
+        | nbr |
+        | 1   |
+        | 0   |
+        | 1   |
+        | 0   |
+        | 0   |
+      And no side effects
+
+  Scenario: COUNT in WHERE with LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE COUNT {
+     MATCH (n)-[:FOLLOWS]->(m)
+     RETURN m LIMIT 1
+    } = 1
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name    |
+        | 'Ada'   |
+        | 'Bob'   |
+        | 'Cat'   |
+        | 'Erika' |
+      And no side effects
+
+  Scenario: COUNT in RETURN with LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN COUNT {
+     MATCH (n)-[:FOLLOWS]->(m)
+     RETURN m LIMIT 1
+    } AS nbr
+    """
+      Then the result should be, in any order:
+        | nbr |
+        | 1   |
+        | 1   |
+        | 1   |
+        | 0   |
+        | 1   |
+      And no side effects
+
+  Scenario: COUNT in WHERE with ORDER BY, SKIP and LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE COUNT {
+     MATCH (n)-[]->(m)
+     RETURN m ORDER BY m.name SKIP 1 LIMIT 2
+    } = 1
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name  |
+        | 'Ada' |
+        | 'Cat' |
+      And no side effects
+
+
+  Scenario: COUNT in RETURN with ORDER BY, SKIP and LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN COUNT {
+     MATCH (n)-[]->(m)
+     RETURN m ORDER BY m.name SKIP 1 LIMIT 2
+    } AS nbr
+    """
+      Then the result should be, in any order:
+        | nbr |
+        | 1   |
+        | 2   |
+        | 1   |
+        | 0   |
+        | 0   |
+      And no side effects
+
+  Scenario: COUNT in WHERE with DISTINCT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE COUNT {
+     MATCH (n)-[:FOLLOWS]->(m)
+     RETURN DISTINCT n
+    } = 1
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name    |
+        | 'Ada'   |
+        | 'Bob'   |
+        | 'Cat'   |
+        | 'Erika' |
+      And no side effects
+
+  Scenario: COUNT in RETURN with DISTINCT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN COUNT {
+     MATCH (n)-[:FOLLOWS]->(m)
+     RETURN DISTINCT n
+    } AS nbr
+    """
+      Then the result should be, in any order:
+        | nbr |
+        | 1   |
+        | 1   |
+        | 1   |
+        | 0   |
+        | 1   |
+      And no side effects
+
   Scenario: Full count subquery with update clause should fail
     Given any graph
     When executing query:

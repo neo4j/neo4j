@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
@@ -42,6 +43,7 @@ import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
+import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
@@ -52,6 +54,7 @@ import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.RelationshipChainDestructor
+import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.PredicateNormalizer
@@ -231,15 +234,35 @@ case class CreateIrExpressions(
       )
 
       /**
-       * For single queries, it is fine to just append a horizon or tail with an aggregating projection.
+       * For single queries not containing SKIP, LIMIT, WHERE, DISTINCT, aggregation, etc.,
+       * it is fine to just override the horizon with an aggregating projection and rewrite away the InterestingOrder.
+       * For other single queries we can add the aggregating projection in an additional tail.
        * This cannot be done for Union queries as it cannot be cast as a single planner query and it is the
-       * result of the union that should be aggregated, that is why we add the query as a CallSubqueryHorizon
+       * result of the union that should be aggregated.
+       * For these cases we instead add the query as a CallSubqueryHorizon
        * and then set the tail as the aggregating query projection.
        */
       val finalizedQuery = plannerQuery match {
-        case _: SinglePlannerQuery => plannerQuery.asSinglePlannerQuery.updateTailOrSelf(_.withHorizon(
-            AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(q.position)))
-          ))
+        case query: RegularSinglePlannerQuery =>
+          query.tailOrSelf.horizon match {
+            // Simply some Return items but no SKIP, LIMIT, WHERE, DISTINCT, aggregation, etc.
+            case RegularQueryProjection(_, QueryPagination(None, None), Selections(SetExtractor()), _) =>
+              // We can simply override the final horizon with our aggregation.
+              plannerQuery.asSinglePlannerQuery
+                .updateTailOrSelf(_.withHorizon(
+                  AggregatingQueryProjection(aggregationExpressions = Map(countVariableName -> CountStar()(q.position)))
+                ))
+                // And also remove any ORDER BY since that won't have any impact in a COUNT subquery anyway.
+                .updateTailOrSelf(_.withInterestingOrder(InterestingOrder.empty))
+            case _ =>
+              // In any other case we add another tail with our aggregation.
+              plannerQuery.asSinglePlannerQuery
+                .updateTailOrSelf(_.withTail(RegularSinglePlannerQuery(
+                  horizon = AggregatingQueryProjection(aggregationExpressions =
+                    Map(countVariableName -> CountStar()(q.position))
+                  )
+                )))
+          }
         case _ => RegularSinglePlannerQuery(
             queryGraph = QueryGraph(
               argumentIds = arguments

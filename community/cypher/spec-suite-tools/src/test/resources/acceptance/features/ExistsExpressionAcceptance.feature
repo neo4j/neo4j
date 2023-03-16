@@ -1500,6 +1500,173 @@ Feature: ExistsExpressionAcceptance
       | 'Alice' |
     And no side effects
 
+  Scenario: EXISTS in WHERE with ORDER BY
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE EXISTS {
+     MATCH (n)-[:HAS_DOG]->(m)
+     RETURN m ORDER BY m.name
+    }
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name    |
+        | 'Bosse' |
+        | 'Chris' |
+      And no side effects
+
+  Scenario: EXISTS in RETURN with ORDER BY
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN EXISTS {
+     MATCH (n)-[:HAS_DOG]->(m)
+     RETURN m ORDER BY m.name
+    } AS hasDog
+    """
+      Then the result should be, in any order:
+        | hasDog |
+        | false  |
+        | true   |
+        | true   |
+      And no side effects
+
+    Scenario: EXISTS in WHERE with SKIP
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE EXISTS {
+     MATCH (n)-[:HAS_DOG]->(m)
+     RETURN m SKIP 1
+    }
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name    |
+        | 'Chris' |
+      And no side effects
+
+  Scenario: EXISTS in RETURN with SKIP
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN EXISTS {
+     MATCH (n)-[:HAS_DOG]->(m)
+     RETURN m SKIP 1
+    } AS hasDogs
+    """
+      Then the result should be, in any order:
+        | hasDogs |
+        | false   |
+        | false   |
+        | true    |
+      And no side effects
+
+  Scenario: EXISTS in WHERE with LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE EXISTS {
+     MATCH (n)-[:HAS_DOGS]->(m)
+     RETURN m LIMIT 0
+    }
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name    |
+      And no side effects
+
+  Scenario: EXISTS in RETURN with LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN EXISTS {
+     MATCH (n)-[:HAS_DOG]->(m)
+     RETURN m LIMIT 0
+    } AS hasDog
+    """
+      Then the result should be, in any order:
+        | hasDog |
+        | false  |
+        | false  |
+        | false  |
+
+      And no side effects
+
+  Scenario: EXISTS in WHERE with ORDER BY, SKIP and LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE EXISTS {
+     MATCH (n)-[:HAS_DOG]->(m)
+     RETURN m ORDER BY m.name SKIP 1 LIMIT 1
+    }
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name    |
+        | 'Chris' |
+      And no side effects
+
+  Scenario: EXISTS in RETURN with ORDER BY, SKIP and LIMIT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN EXISTS {
+     MATCH (n)-[:HAS_DOG]->(m)
+     RETURN m ORDER BY m.name SKIP 1 LIMIT 1
+    } AS hasDogs
+    """
+      Then the result should be, in any order:
+        | hasDogs |
+        | false   |
+        | false   |
+        | true    |
+      And no side effects
+
+  Scenario: EXISTS in WHERE with DISTINCT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    WHERE EXISTS {
+     MATCH (n)-[:HAS_DOG]->(m)
+     RETURN DISTINCT m
+    }
+    RETURN n.name AS name
+    """
+      Then the result should be, in any order:
+        | name    |
+        | 'Bosse' |
+        | 'Chris' |
+      And no side effects
+
+  Scenario: EXISTS in RETURN with DISTINCT
+      Given an empty graph
+      When executing query:
+    """
+    MATCH (n:Person)
+    RETURN EXISTS {
+     MATCH (n)-[:HAS_DOG]->(m)
+     RETURN DISTINCT m
+    } AS hasDog
+    """
+      Then the result should be, in any order:
+        | hasDog |
+        | false  |
+        | true   |
+        | true   |
+      And no side effects
+
   Scenario: Exists function inlined in node pattern with label expression should be supported
     Given any graph
     When executing query:

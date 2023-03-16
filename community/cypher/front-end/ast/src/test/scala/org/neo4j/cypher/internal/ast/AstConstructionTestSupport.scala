@@ -739,6 +739,15 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def return_(ob: OrderBy, items: ReturnItem*): Return =
     Return(distinct = false, ReturnItems(includeExisting = false, items)(pos), Some(ob), None, None)(pos)
 
+  def return_(skip: Skip, items: ReturnItem*): Return =
+    Return(distinct = false, ReturnItems(includeExisting = false, items)(pos), None, Some(skip), None)(pos)
+
+  def return_(limit: Limit, items: ReturnItem*): Return =
+    Return(distinct = false, ReturnItems(includeExisting = false, items)(pos), None, None, Some(limit))(pos)
+
+  def return_(ob: OrderBy, skip: Skip, limit: Limit, items: ReturnItem*): Return =
+    Return(distinct = false, ReturnItems(includeExisting = false, items)(pos), Some(ob), Some(skip), Some(limit))(pos)
+
   def returnDistinct(items: ReturnItem*): Return =
     Return(distinct = true, ReturnItems(includeExisting = false, items)(pos), None, None, None)(pos)
 

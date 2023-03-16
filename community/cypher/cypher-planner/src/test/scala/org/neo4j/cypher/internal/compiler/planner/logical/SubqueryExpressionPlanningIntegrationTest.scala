@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.ReduceExpression
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Head
@@ -290,6 +291,72 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .|.nodeByLabelScan("b", "Person")
       .nodeByLabelScan("a", "Person")
       .build()
+  }
+
+  test("should plan FULL COLLECT expression with ORDER BY") {
+    val plan = planner.plan(
+      "MATCH (a:Person) RETURN COLLECT { MATCH (a)-[r:KNOWS]->(c) RETURN c ORDER BY c} AS x"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .rollUpApply("x", "c")
+      .|.sort(Seq(Ascending("c")))
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL COLLECT expression with SKIP") {
+    val plan = planner.plan(
+      "MATCH (a:Person) RETURN COLLECT { MATCH (a)-[r:KNOWS]->(c) RETURN c SKIP 7} AS x"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .rollUpApply("x", "c")
+      .|.skip(7L)
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL COLLECT expression with LIMIT") {
+    val plan = planner.plan(
+      "MATCH (a:Person) RETURN COLLECT { MATCH (a)-[r:KNOWS]->(c) RETURN c LIMIT 42} AS x"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .rollUpApply("x", "c")
+      .|.limit(42L)
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL COLLECT expression with ORDER BY, SKIP and LIMIT") {
+    val plan = planner.plan(
+      "MATCH (a:Person) RETURN COLLECT { MATCH (a)-[r:KNOWS]->(c) RETURN c ORDER BY c SKIP 7 LIMIT 42 } AS x"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .rollUpApply("x", "c")
+      .|.skip(7L)
+      .|.top(Seq(Ascending("c")), add(SignedDecimalIntegerLiteral("42")(pos), SignedDecimalIntegerLiteral("7")(pos)))
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL COLLECT expression with DISTINCT") {
+    val plan = planner.plan(
+      "MATCH (a:Person) RETURN COLLECT { MATCH (a)-[r:KNOWS]->(c) RETURN DISTINCT c} AS x"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .rollUpApply("x", "c")
+      .|.distinct("c AS c")
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
   }
 
   private def reduceExpr(anonOffset: Int): ReduceExpression = reduce(
@@ -2653,9 +2720,99 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .build())
   }
 
+  test("should plan FULL COUNT expression with ignored ORDER BY") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE COUNT { MATCH (a)-[r:KNOWS]->(c) RETURN a ORDER BY a } > 1 RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .filterExpression(HasDegreeGreaterThan(
+        varFor("a"),
+        Some(RelTypeName("KNOWS")(pos)),
+        SemanticDirection.OUTGOING,
+        literalInt(1)
+      )(pos))
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL COUNT expression with SKIP") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE COUNT { MATCH (a)-[r:KNOWS]->(c) RETURN a SKIP 2 } > 1 RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .filter("anon_0 > 1")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_0"))
+      .|.skip(2L)
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL COUNT expression with LIMIT") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE COUNT { MATCH (a)-[r:KNOWS]->(c) RETURN a LIMIT 42 } > 1 RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .filter("anon_0 > 1")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_0"))
+      .|.limit(42L)
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL COUNT expression with ORDER BY, SKIP and LIMIT") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE COUNT { MATCH (a)-[r:KNOWS]->(c) RETURN a ORDER BY a SKIP 7 LIMIT 42 } > 1 RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .filter("anon_0 > 1")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_0"))
+      .|.skip(7L)
+      .|.top(Seq(Ascending("a")), add(SignedDecimalIntegerLiteral("42")(pos), SignedDecimalIntegerLiteral("7")(pos)))
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL COUNT expression with DISTINCT") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE COUNT { MATCH (a)-[r:KNOWS]->(c) RETURN DISTINCT a } > 1 RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .filter("anon_0 > 1")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_0"))
+      .|.distinct("a AS a")
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
   test("should plan FULL COUNT expression with a CALL Subquery") {
     val plan = planner.plan(
       "MATCH (a:Person) RETURN COUNT { MATCH (a)-[r:KNOWS]->(c) CALL { WITH a MATCH (a)-[:HAS_DOG]-(b) RETURN b} RETURN a } AS foo"
+    ).stripProduceResults
+    plan shouldBe planner.subPlanBuilder()
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS foo"))
+      .|.expandAll("(a)-[anon_0:HAS_DOG]-(b)")
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build()
+  }
+
+  test("should plan FULL COUNT expression with a CALL Subquery and ignored ORDER BY") {
+    val plan = planner.plan(
+      "MATCH (a:Person) RETURN COUNT { MATCH (a)-[r:KNOWS]->(c) CALL { WITH a MATCH (a)-[:HAS_DOG]-(b) RETURN b} RETURN a ORDER BY a} AS foo"
     ).stripProduceResults
     plan shouldBe planner.subPlanBuilder()
       .apply()
@@ -2722,6 +2879,72 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
       .|.nodeByLabelScan("b", "Person", IndexOrderNone)
       .nodeByLabelScan("a", "Person", IndexOrderNone)
       .build()
+  }
+
+  test("should plan FULL EXISTS expression with ORDER BY") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE EXISTS { MATCH (a)-[r:KNOWS]->(c) RETURN a ORDER BY a} RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .semiApply()
+      .|.sort(Seq(Ascending("a")))
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL EXISTS expression with SKIP") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE EXISTS { MATCH (a)-[r:KNOWS]->(c) RETURN a SKIP 7} RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .semiApply()
+      .|.skip(7L)
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL EXISTS expression with LIMIT") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE EXISTS { MATCH (a)-[r:KNOWS]->(c) RETURN a LIMIT 42} RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .semiApply()
+      .|.limit(42L)
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL EXISTS expression with ORDER BY, SKIP and LIMIT") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE EXISTS { MATCH (a)-[r:KNOWS]->(c) RETURN a ORDER BY a SKIP 7 LIMIT 42 } RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .semiApply()
+      .|.skip(7L)
+      .|.top(Seq(Ascending("a")), add(SignedDecimalIntegerLiteral("42")(pos), SignedDecimalIntegerLiteral("7")(pos)))
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
+  }
+
+  test("should plan FULL EXISTS expression with DISTINCT") {
+    val plan = planner.plan(
+      "MATCH (a:Person) WHERE EXISTS { MATCH (a)-[r:KNOWS]->(c) RETURN DISTINCT a} RETURN a"
+    ).stripProduceResults
+    plan should equal(planner.subPlanBuilder()
+      .semiApply()
+      .|.distinct("a AS a")
+      .|.expandAll("(a)-[r:KNOWS]->(c)")
+      .|.argument("a")
+      .nodeByLabelScan("a", "Person", IndexOrderNone)
+      .build())
   }
 
   test("should plan FULL EXISTS expression with a CALL Subquery") {
