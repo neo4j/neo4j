@@ -1595,6 +1595,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:A)-[]->(:A)", 5)
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatternPathAssignment)
+      .enableDeduplicateNames(enable = false)
       .build()
     val query = "MATCH p=(()-[y]->(z))+ RETURN p"
     val plan = planner.plan(query).stripProduceResults
@@ -1602,34 +1603,34 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       TrailParameters(
         min = 1,
         max = UpperBound.Unlimited,
-        start = "anon_0",
-        end = "anon_2",
-        innerStart = "anon_7",
-        innerEnd = "z",
-        groupNodes = Set(("anon_7", "anon_8")),
-        groupRelationships = Set(("y", "y")),
-        innerRelationships = Set("y"),
+        start = "  UNNAMED0",
+        end = "  UNNAMED2",
+        innerStart = "  UNNAMED7",
+        innerEnd = "  z@4",
+        groupNodes = Set(("  UNNAMED7", "  UNNAMED8")),
+        groupRelationships = Set(("  y@3", "  y@5")),
+        innerRelationships = Set("  y@3"),
         previouslyBoundRelationships = Set.empty,
         previouslyBoundRelationshipGroups = Set.empty,
         reverseGroupVariableProjections = false
       )
     }
     val path = PathExpression(NodePathStep(
-      varFor("anon_0"),
+      varFor("  UNNAMED0"),
       RepeatPathStep(
-        List(NodeRelPair(varFor("anon_8"), varFor("y"))),
-        varFor("anon_2"),
+        List(NodeRelPair(varFor("  UNNAMED8"), varFor("  y@5"))),
+        varFor("  UNNAMED2"),
         NilPathStep()(pos)
       )(pos)
     )(pos))(pos)
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("p" -> path), discard = Set("anon_2", "anon_0", "anon_8", "y"))
+      .projection(project = Map("p" -> path), discard = Set("  UNNAMED2", "  UNNAMED0", "  UNNAMED8", "  y@5"))
       .trail(`(()-[y]->(z))+`)
-      .|.filterExpression(isRepeatTrailUnique("y"))
-      .|.expandAll("(anon_7)-[y]->(z)")
-      .|.argument("anon_7")
-      .allNodeScan("anon_0")
+      .|.filterExpression(isRepeatTrailUnique("  y@3"))
+      .|.expandAll("(`  UNNAMED7`)-[`  y@3`]->(`  z@4`)")
+      .|.argument("  UNNAMED7")
+      .allNodeScan("`  UNNAMED0`")
       .build()
   }
 
@@ -1644,6 +1645,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:A)-[]->(:A)", 5)
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatternPathAssignment)
+      .enableDeduplicateNames(enable = false)
       .build()
     val query = "MATCH p=(()-[]->(z))+ RETURN p"
     val plan = planner.plan(query).stripProduceResults
@@ -1651,34 +1653,34 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       TrailParameters(
         min = 1,
         max = UpperBound.Unlimited,
-        start = "anon_0",
-        end = "anon_3",
-        innerStart = "anon_8",
-        innerEnd = "z",
-        groupNodes = Set(("anon_8", "anon_9")),
-        groupRelationships = Set(("anon_4", "anon_7")),
-        innerRelationships = Set("anon_4"),
+        start = "  UNNAMED0",
+        end = "  UNNAMED3",
+        innerStart = "  UNNAMED8",
+        innerEnd = "  z@5",
+        groupNodes = Set(("  UNNAMED8", "  UNNAMED9")),
+        groupRelationships = Set(("  UNNAMED4", "  UNNAMED7")),
+        innerRelationships = Set("  UNNAMED4"),
         previouslyBoundRelationships = Set.empty,
         previouslyBoundRelationshipGroups = Set.empty,
         reverseGroupVariableProjections = false
       )
     }
     val path = PathExpression(NodePathStep(
-      varFor("anon_0"),
+      varFor("  UNNAMED0"),
       RepeatPathStep(
-        List(NodeRelPair(varFor("anon_9"), varFor("anon_7"))),
-        varFor("anon_3"),
+        List(NodeRelPair(varFor("  UNNAMED9"), varFor("  UNNAMED7"))),
+        varFor("  UNNAMED3"),
         NilPathStep()(pos)
       )(pos)
     )(pos))(pos)
 
     plan shouldEqual planner.subPlanBuilder()
-      .projection(project = Map("p" -> path), discard = Set("anon_0", "anon_3", "anon_9", "anon_7"))
+      .projection(project = Map("p" -> path), discard = Set("  UNNAMED0", "  UNNAMED3", "  UNNAMED9", "  UNNAMED7"))
       .trail(`(()-[y]->(z))+`)
-      .|.filterExpression(isRepeatTrailUnique("anon_4"))
-      .|.expandAll("(anon_8)-[anon_4]->(z)")
-      .|.argument("anon_8")
-      .allNodeScan("anon_0")
+      .|.filterExpression(isRepeatTrailUnique("  UNNAMED4"))
+      .|.expandAll("(`  UNNAMED8`)-[`  UNNAMED4`]->(`  z@5`)")
+      .|.argument("  UNNAMED8")
+      .allNodeScan("`  UNNAMED0`")
       .build()
   }
 }
