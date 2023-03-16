@@ -26,295 +26,173 @@ import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.IndexHintException;
 import org.neo4j.exceptions.IndexHintException.IndexHintIndexType;
 
-public interface NotificationDetail {
-    String name();
+public class NotificationDetail {
 
-    String value();
-
-    final class Factory {
-        private Factory() {}
-
-        public static NotificationDetail deprecatedName(final String oldName, final String newName) {
-            return createDeprecationNotificationDetail(oldName, newName);
+    public static String deprecatedName(final String oldName, final String newName) {
+        if (newName == null || newName.trim().isEmpty()) {
+            return String.format("'%s' is no longer supported", oldName);
+        } else {
+            return String.format("'%s' has been replaced by '%s'", oldName, newName);
         }
+    }
 
-        public static NotificationDetail nodeAnyIndex(
-                final String variableName, final String labelName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.ANY);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
+    public static String nodeAnyIndex(
+            final String variableName, final String labelName, final String... propertyKeyNames) {
+        String indexFormatString = IndexHintException.indexFormatString(
+                variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.ANY);
+        return createNotificationDetail("index", indexFormatString, true);
+    }
 
-        public static NotificationDetail nodeTextIndex(
-                final String variableName, final String labelName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.TEXT);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
+    public static String nodeTextIndex(
+            final String variableName, final String labelName, final String... propertyKeyNames) {
+        String indexFormatString = IndexHintException.indexFormatString(
+                variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.TEXT);
+        return createNotificationDetail("index", indexFormatString, true);
+    }
 
-        public static NotificationDetail nodeRangeIndex(
-                final String variableName, final String labelName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName,
-                    labelName,
-                    Arrays.asList(propertyKeyNames),
-                    EntityType.NODE,
-                    IndexHintIndexType.RANGE);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
+    public static String nodeRangeIndex(
+            final String variableName, final String labelName, final String... propertyKeyNames) {
+        String indexFormatString = IndexHintException.indexFormatString(
+                variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.RANGE);
+        return createNotificationDetail("index", indexFormatString, true);
+    }
 
-        public static NotificationDetail nodePointIndex(
-                final String variableName, final String labelName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName,
-                    labelName,
-                    Arrays.asList(propertyKeyNames),
-                    EntityType.NODE,
-                    IndexHintIndexType.POINT);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
+    public static String nodePointIndex(
+            final String variableName, final String labelName, final String... propertyKeyNames) {
+        String indexFormatString = IndexHintException.indexFormatString(
+                variableName, labelName, Arrays.asList(propertyKeyNames), EntityType.NODE, IndexHintIndexType.POINT);
+        return createNotificationDetail("index", indexFormatString, true);
+    }
 
-        public static NotificationDetail relationshipAnyIndex(
-                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName,
-                    relationshipTypeName,
-                    Arrays.asList(propertyKeyNames),
-                    EntityType.RELATIONSHIP,
-                    IndexHintIndexType.ANY);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
+    public static String relationshipAnyIndex(
+            final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
+        String indexFormatString = IndexHintException.indexFormatString(
+                variableName,
+                relationshipTypeName,
+                Arrays.asList(propertyKeyNames),
+                EntityType.RELATIONSHIP,
+                IndexHintIndexType.ANY);
+        return createNotificationDetail("index", indexFormatString, true);
+    }
 
-        public static NotificationDetail relationshipTextIndex(
-                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName,
-                    relationshipTypeName,
-                    Arrays.asList(propertyKeyNames),
-                    EntityType.RELATIONSHIP,
-                    IndexHintIndexType.TEXT);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
+    public static String relationshipTextIndex(
+            final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
+        String indexFormatString = IndexHintException.indexFormatString(
+                variableName,
+                relationshipTypeName,
+                Arrays.asList(propertyKeyNames),
+                EntityType.RELATIONSHIP,
+                IndexHintIndexType.TEXT);
+        return createNotificationDetail("index", indexFormatString, true);
+    }
 
-        public static NotificationDetail relationshipRangeIndex(
-                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName,
-                    relationshipTypeName,
-                    Arrays.asList(propertyKeyNames),
-                    EntityType.RELATIONSHIP,
-                    IndexHintIndexType.RANGE);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
+    public static String relationshipRangeIndex(
+            final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
+        String indexFormatString = IndexHintException.indexFormatString(
+                variableName,
+                relationshipTypeName,
+                Arrays.asList(propertyKeyNames),
+                EntityType.RELATIONSHIP,
+                IndexHintIndexType.RANGE);
+        return createNotificationDetail("index", indexFormatString, true);
+    }
 
-        public static NotificationDetail relationshipPointIndex(
-                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName,
-                    relationshipTypeName,
-                    Arrays.asList(propertyKeyNames),
-                    EntityType.RELATIONSHIP,
-                    IndexHintIndexType.POINT);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
+    public static String relationshipPointIndex(
+            final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
+        String indexFormatString = IndexHintException.indexFormatString(
+                variableName,
+                relationshipTypeName,
+                Arrays.asList(propertyKeyNames),
+                EntityType.RELATIONSHIP,
+                IndexHintIndexType.POINT);
+        return createNotificationDetail("index", indexFormatString, true);
+    }
 
-        public static NotificationDetail label(final String labelName) {
-            return createNotificationDetail("the missing label name", labelName, true);
-        }
+    public static String label(final String labelName) {
+        return createNotificationDetail("the missing label name", labelName, true);
+    }
 
-        public static NotificationDetail relationshipType(final String relType) {
-            return createNotificationDetail("the missing relationship type", relType, true);
-        }
+    public static String relationshipType(final String relType) {
+        return createNotificationDetail("the missing relationship type", relType, true);
+    }
 
-        public static NotificationDetail procedureWarning(final String procedure, final String warning) {
-            return createWarningNotificationDetail(procedure, warning);
-        }
+    public static String procedureWarning(final String procedure, final String warning) {
+        return String.format(warning, procedure);
+    }
 
-        public static NotificationDetail propertyName(final String name) {
-            return createNotificationDetail("the missing property name", name, true);
-        }
+    public static String propertyName(final String name) {
+        return createNotificationDetail("the missing property name", name, true);
+    }
 
-        public static NotificationDetail shadowingVariable(final String name) {
-            return createNotificationDetail("the shadowing variable", name, true);
-        }
+    public static String shadowingVariable(final String name) {
+        return createNotificationDetail("the shadowing variable", name, true);
+    }
 
-        public static NotificationDetail repeatedVarLengthRel(final String name) {
-            return createNotificationDetail("the repeated variable-length relationship", name, true);
-        }
+    public static String repeatedVarLengthRel(final String name) {
+        return createNotificationDetail("the repeated variable-length relationship", name, true);
+    }
 
-        public static NotificationDetail joinKey(List<String> identifiers) {
-            boolean singular = identifiers.size() == 1;
-            StringBuilder builder = new StringBuilder();
-            boolean first = true;
-            for (String identifier : identifiers) {
-                if (first) {
-                    first = false;
-                } else {
-                    builder.append(", ");
-                }
-                builder.append(identifier);
+    public static String joinKey(List<String> identifiers) {
+        boolean singular = identifiers.size() == 1;
+        StringBuilder builder = new StringBuilder();
+        boolean first = true;
+        for (String identifier : identifiers) {
+            if (first) {
+                first = false;
+            } else {
+                builder.append(", ");
             }
-            return createNotificationDetail(
-                    singular ? "hinted join key identifier" : "hinted join key identifiers",
-                    builder.toString(),
-                    singular);
+            builder.append(identifier);
         }
+        return createNotificationDetail(
+                singular ? "hinted join key identifier" : "hinted join key identifiers", builder.toString(), singular);
+    }
 
-        public static NotificationDetail cartesianProduct(Set<String> identifiers) {
-            return createNotificationDetail(identifiers, "identifier", "identifiers");
+    public static String cartesianProduct(Set<String> identifiers) {
+        return createNotificationDetail(identifiers, "identifier", "identifiers");
+    }
+
+    public static String nodeIndexSeekOrScan(Set<String> labels) {
+        return createNotificationDetail(labels, "indexed label", "indexed labels");
+    }
+
+    public static String relationshipIndexSeekOrScan(Set<String> labels) {
+        return createNotificationDetail(labels, "indexed relationship type", "indexed relationship types");
+    }
+
+    public static String deprecatedField(final String procedure, final String field) {
+        return String.format("'%s' returned by '%s' is no longer supported.", field, procedure);
+    }
+
+    private static String createNotificationDetail(Set<String> elements, String singularTerm, String pluralTerm) {
+        StringBuilder builder = new StringBuilder();
+        builder.append('(');
+        String separator = "";
+        for (String element : elements) {
+            builder.append(separator);
+            builder.append(element);
+            separator = ", ";
         }
+        builder.append(')');
+        boolean singular = elements.size() == 1;
+        return createNotificationDetail(singular ? singularTerm : pluralTerm, builder.toString(), singular);
+    }
 
-        public static NotificationDetail nodeIndexSeekOrScan(Set<String> labels) {
-            return createNotificationDetail(labels, "indexed label", "indexed labels");
-        }
+    private static String createNotificationDetail(final String name, final String value, final boolean singular) {
+        return String.format("%s %s %s", name, singular ? "is:" : "are:", value);
+    }
 
-        public static NotificationDetail relationshipIndexSeekOrScan(Set<String> labels) {
-            return createNotificationDetail(labels, "indexed relationship type", "indexed relationship types");
-        }
+    public static String deprecationNotificationDetail(final String replacement) {
+        return String.format("Please use '%s' instead", replacement);
+    }
 
-        public static NotificationDetail message(String name, String message) {
-            return new NotificationDetail() {
-                @Override
-                public String name() {
-                    return name;
-                }
+    public static String unsatisfiableRelTypeExpression(String expression) {
+        return String.format(
+                "`%s` can never be satisfied by any relationship. Relationships must have exactly one relationship type.",
+                expression);
+    }
 
-                @Override
-                public String value() {
-                    return message;
-                }
-
-                @Override
-                public String toString() {
-                    return message;
-                }
-            };
-        }
-
-        public static NotificationDetail deprecatedField(final String procedure, final String field) {
-            return new NotificationDetail() {
-                @Override
-                public String name() {
-                    return procedure;
-                }
-
-                @Override
-                public String value() {
-                    return field;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("'%s' returned by '%s' is no longer supported.", field, procedure);
-                }
-            };
-        }
-
-        private static NotificationDetail createNotificationDetail(
-                Set<String> elements, String singularTerm, String pluralTerm) {
-            StringBuilder builder = new StringBuilder();
-            builder.append('(');
-            String separator = "";
-            for (String element : elements) {
-                builder.append(separator);
-                builder.append(element);
-                separator = ", ";
-            }
-            builder.append(')');
-            boolean singular = elements.size() == 1;
-            return createNotificationDetail(singular ? singularTerm : pluralTerm, builder.toString(), singular);
-        }
-
-        private static NotificationDetail createNotificationDetail(
-                final String name, final String value, final boolean singular) {
-            return new NotificationDetail() {
-                @Override
-                public String name() {
-                    return name;
-                }
-
-                @Override
-                public String value() {
-                    return value;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("%s %s %s", name, singular ? "is:" : "are:", value);
-                }
-            };
-        }
-
-        private static NotificationDetail createDeprecationNotificationDetail(
-                final String oldName, final String newName) {
-            return new NotificationDetail() {
-                @Override
-                public String name() {
-                    return oldName;
-                }
-
-                @Override
-                public String value() {
-                    return newName;
-                }
-
-                @Override
-                public String toString() {
-                    if (newName == null || newName.trim().isEmpty()) {
-                        return String.format("'%s' is no longer supported", oldName);
-                    } else {
-                        return String.format("'%s' has been replaced by '%s'", oldName, newName);
-                    }
-                }
-            };
-        }
-
-        public static NotificationDetail deprecationNotificationDetail(final String replacement) {
-            return new NotificationDetail() {
-                @Override
-                public String name() {
-                    return replacement;
-                }
-
-                @Override
-                public String value() {
-                    return null;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format("Please use '%s' instead", replacement);
-                }
-            };
-        }
-
-        private static NotificationDetail createWarningNotificationDetail(String value, String warningPattern) {
-            return new NotificationDetail() {
-                @Override
-                public String name() {
-                    return value;
-                }
-
-                @Override
-                public String value() {
-                    return warningPattern;
-                }
-
-                @Override
-                public String toString() {
-                    return String.format(warningPattern, value);
-                }
-            };
-        }
-
-        public static NotificationDetail unsatisfiableRelTypeExpression(String expression) {
-            return createWarningNotificationDetail(
-                    expression,
-                    "`%s` can never be satisfied by any relationship. Relationships must have exactly one relationship type.");
-        }
-
-        public static NotificationDetail repeatedRelationship(String relationshipName) {
-            return createWarningNotificationDetail(relationshipName, "Relationship `%s` was repeated");
-        }
+    public static String repeatedRelationship(String relationshipName) {
+        return String.format("Relationship `%s` was repeated", relationshipName);
     }
 }

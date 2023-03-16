@@ -26,8 +26,8 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_UNSUPPORTED;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNBOUNDED_SHORTEST_PATH;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.nodeAnyIndex;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.nodeTextIndex;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.nodeAnyIndex;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.nodeTextIndex;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -37,7 +37,6 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.internal.helpers.collection.Iterables;
 
 class NotificationAcceptanceTest extends NotificationTestSupport {
@@ -48,9 +47,7 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 "EXPLAIN CYPHER runtime=pipelined RETURN 1",
                 InputPosition.empty,
                 RUNTIME_UNSUPPORTED,
-                NotificationDetail.Factory.message(
-                        "Runtime unsupported",
-                        "This version of Neo4j does not " + "support requested runtime: pipelined"));
+                "This version of Neo4j does not " + "support requested runtime: pipelined");
     }
 
     @Test
@@ -461,8 +458,6 @@ class NotificationAcceptanceTest extends NotificationTestSupport {
                 "EXPLAIN CYPHER runtime=interpreted RETURN 1",
                 InputPosition.empty,
                 DEPRECATED_RUNTIME_OPTION,
-                NotificationDetail.Factory.message(
-                        "The query used a deprecated runtime option.",
-                        "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead"));
+                "'runtime=interpreted' is deprecated, please use 'runtime=slotted' instead");
     }
 }

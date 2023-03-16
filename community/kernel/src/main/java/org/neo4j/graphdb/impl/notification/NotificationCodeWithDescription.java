@@ -164,7 +164,7 @@ public enum NotificationCodeWithDescription {
     }
 
     // TODO: Move construction of Notifications to a factory with explicit methods per type of notification
-    public Notification notification(InputPosition position, NotificationDetail... details) {
+    public Notification notification(InputPosition position, String... details) {
         return new Notification(position, details);
     }
 
@@ -172,7 +172,7 @@ public enum NotificationCodeWithDescription {
         private final InputPosition position;
         private final String detailedDescription;
 
-        Notification(InputPosition position, NotificationDetail... details) {
+        Notification(InputPosition position, String... details) {
             this.position = position;
 
             if (details.length == 0) {
@@ -183,7 +183,7 @@ public enum NotificationCodeWithDescription {
                 builder.append(' ');
                 builder.append('(');
                 String comma = "";
-                for (NotificationDetail detail : details) {
+                for (String detail : details) {
                     builder.append(comma);
                     builder.append(detail);
                     comma = ", ";

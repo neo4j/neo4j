@@ -32,7 +32,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRE
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_TEXT_INDEX_PROVIDER
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNION_RETURN_ORDER
 import org.neo4j.graphdb.impl.notification.NotificationDetail
-import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.deprecationNotificationDetail
+import org.neo4j.graphdb.impl.notification.NotificationDetail.deprecationNotificationDetail
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.scalatest.BeforeAndAfterAll
@@ -54,7 +54,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("deprecated procedure calls") {
     val queries = Seq("CALL oldProc()", "CALL oldProc() RETURN 1")
-    val detail = NotificationDetail.Factory.deprecatedName("oldProc", "newProc")
+    val detail = NotificationDetail.deprecatedName("oldProc", "newProc")
     assertNotification(queries, true, DEPRECATED_PROCEDURE, detail)
   }
 
@@ -66,7 +66,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
 
   test("deprecated procedure result field") {
     val query = "CALL changedProc() YIELD oldField RETURN oldField"
-    val detail = NotificationDetail.Factory.deprecatedField("changedProc", "oldField")
+    val detail = NotificationDetail.deprecatedField("changedProc", "oldField")
     assertNotification(Seq(query), true, DEPRECATED_PROCEDURE_RETURN_FIELD, detail)
   }
 
@@ -81,7 +81,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "RETURN org.example.com.oldFunc()",
       "MATCH (n) WHERE org.example.com.oldFunc() = 1 RETURN n"
     )
-    val detail = NotificationDetail.Factory.deprecatedName("org.example.com.oldFunc", "org.example.com.newFunc")
+    val detail = NotificationDetail.deprecatedName("org.example.com.oldFunc", "org.example.com.newFunc")
     assertNotification(queries, true, DEPRECATED_FUNCTION, detail)
   }
 
@@ -90,7 +90,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "UNWIND [1, 2, 3] AS nums RETURN org.example.com.oldAggFunc(nums)",
       "UNWIND [1, 2, 3] AS nums WITH org.example.com.oldAggFunc(nums) AS aggTest RETURN aggTest"
     )
-    val detail = NotificationDetail.Factory.deprecatedName("org.example.com.oldAggFunc", "org.example.com.newAggFunc")
+    val detail = NotificationDetail.deprecatedName("org.example.com.oldAggFunc", "org.example.com.newAggFunc")
     assertNotification(queries, true, DEPRECATED_FUNCTION, detail)
   }
 
@@ -274,7 +274,7 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       "RETURN id(null)",
       "MATCH ()-[r]->() RETURN id(r)"
     )
-    val detail = NotificationDetail.Factory.deprecatedName("id", null)
+    val detail = NotificationDetail.deprecatedName("id", null)
 
     assertNotification(
       queries,

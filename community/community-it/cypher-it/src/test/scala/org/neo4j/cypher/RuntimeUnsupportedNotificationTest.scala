@@ -24,7 +24,6 @@ import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.exceptions.RuntimeUnsupportedException
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.RUNTIME_UNSUPPORTED
-import org.neo4j.graphdb.impl.notification.NotificationDetail
 
 import java.lang.Boolean.TRUE
 
@@ -34,10 +33,7 @@ class RuntimeUnsupportedNotificationTest extends ExecutionEngineFunSuite {
     val result = execute("CYPHER runtime=pipelined EXPLAIN RETURN 1")
     result.notifications should contain(RUNTIME_UNSUPPORTED.notification(
       InputPosition.empty,
-      NotificationDetail.Factory.message(
-        "Runtime unsupported",
-        "This version of Neo4j does not support requested runtime: pipelined"
-      )
+      "This version of Neo4j does not support requested runtime: pipelined"
     ))
   }
 

@@ -53,8 +53,8 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNBOUNDED_SHORTEST_PATH;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNION_RETURN_ORDER;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.UNSATISFIABLE_RELATIONSHIP_TYPE_EXPRESSION;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.repeatedRelationship;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.unsatisfiableRelTypeExpression;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.repeatedRelationship;
+import static org.neo4j.graphdb.impl.notification.NotificationDetail.unsatisfiableRelTypeExpression;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,7 +71,7 @@ import org.neo4j.graphdb.SeverityLevel;
 class NotificationCodeWithDescriptionTest {
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_index() {
-        NotificationDetail indexDetail = NotificationDetail.Factory.nodeAnyIndex("person", "Person", "name");
+        String indexDetail = NotificationDetail.nodeAnyIndex("person", "Person", "name");
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
 
         verifyNotification(
@@ -85,7 +85,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_text_index() {
-        NotificationDetail indexDetail = NotificationDetail.Factory.nodeTextIndex("person", "Person", "name");
+        String indexDetail = NotificationDetail.nodeTextIndex("person", "Person", "name");
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
 
         verifyNotification(
@@ -99,7 +99,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_index() {
-        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipAnyIndex("person", "Person", "name");
+        String indexDetail = NotificationDetail.relationshipAnyIndex("person", "Person", "name");
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
 
         verifyNotification(
@@ -113,7 +113,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_text_index() {
-        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipTextIndex("person", "Person", "name");
+        String indexDetail = NotificationDetail.relationshipTextIndex("person", "Person", "name");
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
 
         verifyNotification(
@@ -130,7 +130,7 @@ class NotificationCodeWithDescriptionTest {
         Set<String> idents = new TreeSet<>();
         idents.add("n");
         idents.add("node2");
-        NotificationDetail identifierDetail = NotificationDetail.Factory.cartesianProduct(idents);
+        String identifierDetail = NotificationDetail.cartesianProduct(idents);
         Notification notification = CARTESIAN_PRODUCT.notification(InputPosition.empty, identifierDetail);
 
         verifyNotification(
@@ -151,7 +151,7 @@ class NotificationCodeWithDescriptionTest {
         List<String> idents = new ArrayList<>();
         idents.add("n");
         idents.add("node2");
-        NotificationDetail identifierDetail = NotificationDetail.Factory.joinKey(idents);
+        String identifierDetail = NotificationDetail.joinKey(idents);
         Notification notification = JOIN_HINT_UNFULFILLABLE.notification(InputPosition.empty, identifierDetail);
 
         verifyNotification(
@@ -167,7 +167,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE() {
-        NotificationDetail identifierDetail = NotificationDetail.Factory.deprecatedName("oldName", "newName");
+        String identifierDetail = NotificationDetail.deprecatedName("oldName", "newName");
         Notification notification = DEPRECATED_PROCEDURE.notification(InputPosition.empty, identifierDetail);
 
         verifyNotification(
@@ -181,7 +181,7 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_PROCEDURE_with_no_newName() {
-        NotificationDetail identifierDetail = NotificationDetail.Factory.deprecatedName("oldName", "");
+        String identifierDetail = NotificationDetail.deprecatedName("oldName", "");
         Notification notification = DEPRECATED_PROCEDURE.notification(InputPosition.empty, identifierDetail);
 
         verifyNotification(

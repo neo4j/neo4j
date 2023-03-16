@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
-import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
@@ -112,7 +111,7 @@ public class NotificationTestSupport {
     }
 
     void shouldNotifyInStreamWithDetail(
-            String query, InputPosition pos, NotificationCodeWithDescription code, NotificationDetail detail) {
+            String query, InputPosition pos, NotificationCodeWithDescription code, String detail) {
         try (Transaction transaction = db.beginTx()) {
             // when
             try (Result result = transaction.execute(query)) {

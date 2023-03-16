@@ -20,7 +20,6 @@
 package org.neo4j.server.http.cypher.format.output.eventsource;
 
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FORMAT;
-import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.message;
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.COMMITTED;
 import static org.neo4j.server.http.cypher.format.api.TransactionNotificationState.OPEN;
 
@@ -440,11 +439,9 @@ class LineDelimitedEventSourceJoltSerializer implements EventSourceSerializer {
             String deprecatedFormatA, String deprecatedFormatB, String newFormat) {
         return DEPRECATED_FORMAT.notification(
                 InputPosition.empty,
-                message(
-                        "",
-                        String.format(
-                                "'%s' and '%s' have been deprecated and will be removed in a future version. "
-                                        + "Please use '%s'.",
-                                deprecatedFormatA, deprecatedFormatB, newFormat)));
+                String.format(
+                        "'%s' and '%s' have been deprecated and will be removed in a future version. "
+                                + "Please use '%s'.",
+                        deprecatedFormatA, deprecatedFormatB, newFormat));
     }
 }
