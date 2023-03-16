@@ -40,8 +40,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       testName,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -60,8 +59,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       testName,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -78,8 +76,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       testName,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -98,8 +95,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       testName,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -118,8 +114,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       testName,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -138,8 +133,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       testName,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -156,8 +150,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       testName,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -183,8 +176,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -203,8 +195,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -222,8 +213,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -242,8 +232,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -262,8 +251,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -282,8 +270,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -302,8 +289,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -322,8 +308,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -342,8 +327,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -362,8 +346,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -382,8 +365,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -402,8 +384,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get
@@ -422,8 +403,7 @@ class RemoveUnusedNamedGroupVariablesPhaseTest extends CypherFunSuite with AstCo
     val statement = prepareFrom(
       query,
       rewriterPhaseUnderTest,
-      SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.QuantifiedPathPatternPathAssignment
+      SemanticFeature.QuantifiedPathPatterns
     ).statement()
 
     val rewrittenQpp = statement.folder.treeFindByClass[QuantifiedPath].get

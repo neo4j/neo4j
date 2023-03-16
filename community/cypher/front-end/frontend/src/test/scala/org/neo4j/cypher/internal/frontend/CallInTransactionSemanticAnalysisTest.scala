@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.util.InputPosition
 
 class CallInTransactionSemanticAnalysisTest extends SemanticAnalysisTestSuite {
