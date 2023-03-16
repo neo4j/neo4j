@@ -99,7 +99,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
 
         LogPosition recoveryToPosition = recoveryStartPosition;
         LogPosition lastTransactionPosition = recoveryStartPosition;
-        CommittedCommandBatch lastCommandBatch = null;
+        CommittedCommandBatch.BatchInformation lastCommandBatch = null;
         if (!recoveryStartInformation.isMissingLogs()) {
             try {
                 reverseRecovery(recoveryStartInformation, transactionIdTracker, recoveryStartPosition);
@@ -147,7 +147,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                                             + "Observed transaction id: %d, recovery criteria: %s.",
                                                     candidate.txId(), recoveryPredicate.describe()));
                                         }
-                                        lastCommandBatch = candidate;
+                                        lastCommandBatch = candidate.batchInformation();
                                         lastTransactionPosition = beforeCheckpointCursor.position();
                                     } else {
                                         throw new RecoveryPredicateException(format(
@@ -175,7 +175,7 @@ public class TransactionLogsRecovery extends LifecycleAdapter {
                                 monitor.batchApplySkipped(nextCommandBatch);
                             }
                             if (lastCommandBatch == null || lastCommandBatch.txId() < nextCommandBatch.txId()) {
-                                lastCommandBatch = nextCommandBatch;
+                                lastCommandBatch = nextCommandBatch.batchInformation();
                             }
                             lastTransactionPosition = transactionsToRecover.position();
                             recoveryToPosition = lastTransactionPosition;

@@ -102,7 +102,7 @@ public class DefaultRecoveryService implements RecoveryService {
     public LogPosition rollbackTransactions(
             LogPosition writePosition,
             TransactionIdTracker transactionTracker,
-            CommittedCommandBatch lastCommittedBatch)
+            CommittedCommandBatch.BatchInformation lastCommittedBatch)
             throws IOException {
         long[] notCompletedTransactions = transactionTracker.notCompletedTransactions();
         if (notCompletedTransactions.length == 0) {
@@ -142,7 +142,7 @@ public class DefaultRecoveryService implements RecoveryService {
 
     @Override
     public void transactionsRecovered(
-            CommittedCommandBatch lastRecoveredBatch,
+            CommittedCommandBatch.BatchInformation lastRecoveredBatch,
             LogPosition lastRecoveredTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction,
             LogPosition checkpointPosition,
@@ -183,7 +183,7 @@ public class DefaultRecoveryService implements RecoveryService {
                     lastRecoveredBatch.txId(),
                     lastRecoveredBatch.checksum(),
                     lastRecoveredBatch.timeWritten(),
-                    lastRecoveredBatch.commandBatch().consensusIndex(),
+                    lastRecoveredBatch.consensusIndex(),
                     lastRecoveredTransactionPosition.getByteOffset(),
                     lastRecoveredTransactionPosition.getLogVersion());
         } else {

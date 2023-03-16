@@ -453,7 +453,7 @@ class PhysicalLogicalTransactionStoreTest {
         public LogPosition rollbackTransactions(
                 LogPosition writePosition,
                 TransactionIdTracker transactionTracker,
-                CommittedCommandBatch commandBatch) {
+                CommittedCommandBatch.BatchInformation commandBatch) {
             return writePosition;
         }
 
@@ -482,7 +482,7 @@ class PhysicalLogicalTransactionStoreTest {
 
         @Override
         public void transactionsRecovered(
-                CommittedCommandBatch committedCommandBatch,
+                CommittedCommandBatch.BatchInformation committedCommandBatch,
                 LogPosition lastTransactionPosition,
                 LogPosition positionAfterLastRecoveredTransaction,
                 LogPosition checkpointPosition,

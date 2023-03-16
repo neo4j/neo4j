@@ -40,4 +40,14 @@ public interface CommittedCommandBatch {
     boolean isRollback();
 
     LogPosition previousBatchLogPosition();
+
+    /**
+     * @return an object containing only the meta-data about this command batch, w/o the commands themselves.
+     */
+    default BatchInformation batchInformation() {
+        return new BatchInformation(
+                txId(), checksum(), timeWritten(), commandBatch().consensusIndex());
+    }
+
+    record BatchInformation(long txId, int checksum, long timeWritten, long consensusIndex) {}
 }

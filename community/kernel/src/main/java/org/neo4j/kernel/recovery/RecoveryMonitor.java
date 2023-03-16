@@ -40,7 +40,7 @@ public interface RecoveryMonitor {
     }
 
     default void failToRecoverTransactionsAfterCommit(
-            Throwable t, CommittedCommandBatch commandBatch, LogPosition recoveryToPosition) {
+            Throwable t, CommittedCommandBatch.BatchInformation commandBatch, LogPosition recoveryToPosition) {
         // noop
     }
 
@@ -48,7 +48,8 @@ public interface RecoveryMonitor {
         // noop
     }
 
-    default void partialRecovery(RecoveryPredicate recoveryPredicate, CommittedCommandBatch commandBatch) {
+    default void partialRecovery(
+            RecoveryPredicate recoveryPredicate, CommittedCommandBatch.BatchInformation commandBatch) {
         // noop
     }
 

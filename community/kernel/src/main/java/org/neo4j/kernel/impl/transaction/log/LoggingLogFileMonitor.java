@@ -68,7 +68,7 @@ public class LoggingLogFileMonitor
 
     @Override
     public void failToRecoverTransactionsAfterCommit(
-            Throwable t, CommittedCommandBatch commandBatch, LogPosition recoveryToPosition) {
+            Throwable t, CommittedCommandBatch.BatchInformation commandBatch, LogPosition recoveryToPosition) {
         log.warn(
                 format(
                         "Fail to recover database. Highest recovered transaction id:%d, committed "
@@ -78,7 +78,8 @@ public class LoggingLogFileMonitor
     }
 
     @Override
-    public void partialRecovery(RecoveryPredicate recoveryPredicate, CommittedCommandBatch commandBatch) {
+    public void partialRecovery(
+            RecoveryPredicate recoveryPredicate, CommittedCommandBatch.BatchInformation commandBatch) {
         log.info("Partial database recovery based on provided criteria: " + recoveryPredicate.describe()
                 + ". Last replayed transaction: " + describeBatch(commandBatch) + ".");
     }
@@ -171,7 +172,7 @@ public class LoggingLogFileMonitor
         return value == unknownValue ? "None" : String.valueOf(value);
     }
 
-    private static String describeBatch(CommittedCommandBatch commandBatch) {
+    private static String describeBatch(CommittedCommandBatch.BatchInformation commandBatch) {
         if (commandBatch == null) {
             return "Not found.";
         }

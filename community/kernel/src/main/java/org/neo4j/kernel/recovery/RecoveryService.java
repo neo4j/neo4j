@@ -40,11 +40,13 @@ public interface RecoveryService {
             TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag) throws Exception;
 
     LogPosition rollbackTransactions(
-            LogPosition writePosition, TransactionIdTracker transactionTracker, CommittedCommandBatch lastCommandBatch)
+            LogPosition writePosition,
+            TransactionIdTracker transactionTracker,
+            CommittedCommandBatch.BatchInformation lastCommandBatch)
             throws IOException;
 
     void transactionsRecovered(
-            CommittedCommandBatch lastRecoveredBatch,
+            CommittedCommandBatch.BatchInformation lastRecoveredBatch,
             LogPosition lastTransactionPosition,
             LogPosition positionAfterLastRecoveredTransaction,
             LogPosition checkpointPosition,
