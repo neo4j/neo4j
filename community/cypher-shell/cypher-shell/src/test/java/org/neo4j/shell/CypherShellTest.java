@@ -46,8 +46,8 @@ import org.neo4j.shell.prettyprint.PrettyPrinter;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.BoltStateHandler;
+import org.neo4j.shell.state.LicenseDetails;
 import org.neo4j.shell.state.ListBoltResult;
-import org.neo4j.shell.state.TrialStatus;
 import org.neo4j.shell.terminal.CypherShellTerminal;
 
 class CypherShellTest {
@@ -169,7 +169,7 @@ class CypherShellTest {
 
     @Test
     void printLicenseExpired() {
-        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("expired", -1, 120));
+        when(mockedBoltStateHandler.licenseDetails()).thenReturn(LicenseDetails.parse("expired", -1, 120));
         offlineTestShell.printLicenseWarnings();
         verify(printer).printOut(contains("This is a time limited trial, and the\n120 days have expired"));
         verify(printer, times(0)).printIfVerbose(anyString());
@@ -177,15 +177,23 @@ class CypherShellTest {
 
     @Test
     void printLicenseAccepted() {
-        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("yes", 0, 0));
+        when(mockedBoltStateHandler.licenseDetails()).thenReturn(LicenseDetails.parse("yes", 0, 0));
         offlineTestShell.printLicenseWarnings();
         verify(printer, times(0)).printOut(anyString());
         verify(printer, times(0)).printIfVerbose(anyString());
     }
 
     @Test
+    void printLicenseNotAccepted() {
+        when(mockedBoltStateHandler.licenseDetails()).thenReturn(LicenseDetails.parse("no", -1, 120));
+        offlineTestShell.printLicenseWarnings();
+        verify(printer).printOut(contains("A Neo4j license has not been accepted"));
+        verify(printer, times(0)).printIfVerbose(anyString());
+    }
+
+    @Test
     void printLicenseDaysLeft() {
-        when(mockedBoltStateHandler.trialStatus()).thenReturn(TrialStatus.parse("eval", 2, 30));
+        when(mockedBoltStateHandler.licenseDetails()).thenReturn(LicenseDetails.parse("eval", 2, 30));
         offlineTestShell.printLicenseWarnings();
         verify(printer).printOut(contains("This is a time limited trial.\nYou have 2 days remaining out of 30 days."));
         verify(printer, times(0)).printIfVerbose(anyString());

@@ -669,8 +669,8 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, true);
         handler.connect(config);
 
-        assertThat(handler.trialStatus().expired()).isTrue();
-        assertThat(handler.trialStatus().daysLeft()).contains(-1L);
+        assertThat(handler.licenseDetails().status()).isEqualTo(LicenseDetails.Status.EXPIRED);
+        assertThat(handler.licenseDetails().daysLeft()).contains(0L);
     }
 
     @Test
@@ -682,8 +682,8 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, true);
         handler.connect(config);
 
-        assertThat(handler.trialStatus().expired()).isFalse();
-        assertThat(handler.trialStatus().daysLeft()).contains(5L);
+        assertThat(handler.licenseDetails().status()).isEqualTo(LicenseDetails.Status.EVAL);
+        assertThat(handler.licenseDetails().daysLeft()).contains(5L);
     }
 
     @Test
@@ -695,8 +695,8 @@ class BoltStateHandlerTest {
         BoltStateHandler handler = new BoltStateHandler((s, authToken, config) -> driverMock, true);
         handler.connect(config);
 
-        assertThat(handler.trialStatus().expired()).isFalse();
-        assertThat(handler.trialStatus().daysLeft()).isEmpty();
+        assertThat(handler.licenseDetails().status()).isEqualTo(LicenseDetails.Status.YES);
+        assertThat(handler.licenseDetails().daysLeft()).isEmpty();
     }
 
     private Session mockSessionWithLicensing(String status, long daysLeftOnTrial) {

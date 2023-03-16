@@ -40,6 +40,7 @@ import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.BoltStateHandler;
+import org.neo4j.shell.state.LicenseDetails;
 
 /**
  * A possibly interactive shell for evaluating cypher statements.
@@ -60,6 +61,21 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
             You have %d days remaining out of %d days. Please
             contact https://neo4j.com/contact-us/ if you require more time.
             """;
+    private static final String LICENSE_NOT_ACCEPTED_WARNING =
+            """
+            A Neo4j license has not been accepted. To accept the commercial license agreement, run
+                neo4j-admin server license --accept-commercial.
+            To accept the terms of the evaluation agreement, run
+                neo4j-admin server license --accept-evaluation.
+
+            (c) Neo4j Sweden AB. All Rights Reserved.
+            Use of this Software without a proper commercial license, or evaluation license
+            with Neo4j, Inc. or its affiliates is prohibited.
+            Neo4j has the right to terminate your usage if you are not compliant.
+
+            Please contact us about licensing via https://neo4j.com/contact-us/
+            """;
+
     private final ParameterService parameters;
     private final Printer printer;
     private final BoltStateHandler boltStateHandler;
@@ -299,16 +315,23 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     }
 
     public void printLicenseWarnings() {
-        final var status = boltStateHandler.trialStatus();
-        if (status.expired() && status.trialDays().isPresent()) {
+        final var license = boltStateHandler.licenseDetails();
+        if (license.status() == LicenseDetails.Status.NO) {
             printer.printOut(AnsiFormattedText.s()
-                    .orange(format(LICENSE_EXPIRED_WARNING, status.trialDays().get()))
+                    .orange(format(LICENSE_NOT_ACCEPTED_WARNING))
                     .formattedString());
-        } else if (status.daysLeft().isPresent() && status.trialDays().isPresent()) {
+        } else if (license.status() == LicenseDetails.Status.EXPIRED
+                && license.trialDays().isPresent()) {
+            printer.printOut(AnsiFormattedText.s()
+                    .orange(format(LICENSE_EXPIRED_WARNING, license.trialDays().get()))
+                    .formattedString());
+        } else if (license.status() == LicenseDetails.Status.EVAL
+                && license.daysLeft().isPresent()
+                && license.trialDays().isPresent()) {
             printer.printOut(format(
                     LICENSE_DAYS_LEFT_WARNING,
-                    status.daysLeft().get(),
-                    status.trialDays().get()));
+                    license.daysLeft().get(),
+                    license.trialDays().get()));
         }
     }
 }

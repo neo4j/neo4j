@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell.state;
 
-import static org.neo4j.shell.state.TrialStatusImpl.NOT_EXPIRED;
 import static org.neo4j.shell.util.Versions.isPasswordChangeRequiredException;
 
 import java.net.URI;
@@ -81,7 +80,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private String actualDatabaseNameAsReportedByServer;
     private Transaction tx;
     private ConnectionConfig connectionConfig;
-    private TrialStatus trialStatus = NOT_EXPIRED;
+    private LicenseDetails licenseDetails = LicenseDetailsImpl.YES;
 
     public BoltStateHandler(boolean isInteractive) {
         this(GraphDatabase::driver, isInteractive);
@@ -281,7 +280,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     private void reconnectAndPing(String databaseToConnectTo, String previousDatabase) throws CommandException {
         reconnect(databaseToConnectTo, previousDatabase);
         getPing().apply();
-        trialStatus = getTrialStatus();
+        licenseDetails = getTrialStatus();
     }
 
     private void reconnect(String databaseToConnectTo, String previousDatabase) {
@@ -340,17 +339,17 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
         };
     }
 
-    private TrialStatus getTrialStatus() {
+    private LicenseDetails getTrialStatus() {
         try {
             final var record = session.run("CALL dbms.licenseAgreementDetails()", SYSTEM_TX_CONF)
                     .single();
-            return TrialStatus.parse(
+            return LicenseDetails.parse(
                     record.get("status").asString(),
                     record.get("daysLeftOnTrial", 0L),
                     record.get("totalTrialDays", 0L));
         } catch (Exception e) {
             log.warn("Failed to fetch trial status", e);
-            return NOT_EXPIRED;
+            return LicenseDetailsImpl.YES;
         }
     }
 
@@ -593,7 +592,7 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
                 .build();
     }
 
-    public TrialStatus trialStatus() {
-        return trialStatus;
+    public LicenseDetails licenseDetails() {
+        return licenseDetails;
     }
 }
