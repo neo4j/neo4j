@@ -84,20 +84,6 @@ class NotificationCodeWithDescriptionTest {
     }
 
     @Test
-    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_btree_index() {
-        NotificationDetail indexDetail = NotificationDetail.Factory.nodeBtreeIndex("person", "Person", "name");
-        Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
-
-        verifyNotification(
-                notification,
-                "The request (directly or indirectly) referred to an index that does not exist.",
-                SeverityLevel.WARNING,
-                "Neo.ClientNotification.Schema.HintedIndexNotFound",
-                "The hinted index does not exist, please check the schema (index is: BTREE INDEX FOR (`person`:`Person`) ON (`person`.`name`))",
-                NotificationCategory.HINT);
-    }
-
-    @Test
     void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_node_text_index() {
         NotificationDetail indexDetail = NotificationDetail.Factory.nodeTextIndex("person", "Person", "name");
         Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
@@ -122,20 +108,6 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Schema.HintedIndexNotFound",
                 "The hinted index does not exist, please check the schema (index is: INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
-                NotificationCategory.HINT);
-    }
-
-    @Test
-    void shouldConstructNotificationFor_INDEX_HINT_UNFULFILLABLE_for_rel_btree_index() {
-        NotificationDetail indexDetail = NotificationDetail.Factory.relationshipBtreeIndex("person", "Person", "name");
-        Notification notification = INDEX_HINT_UNFULFILLABLE.notification(InputPosition.empty, indexDetail);
-
-        verifyNotification(
-                notification,
-                "The request (directly or indirectly) referred to an index that does not exist.",
-                SeverityLevel.WARNING,
-                "Neo.ClientNotification.Schema.HintedIndexNotFound",
-                "The hinted index does not exist, please check the schema (index is: BTREE INDEX FOR ()-[`person`:`Person`]-() ON (`person`.`name`))",
                 NotificationCategory.HINT);
     }
 

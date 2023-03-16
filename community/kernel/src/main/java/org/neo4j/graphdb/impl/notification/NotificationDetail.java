@@ -45,17 +45,6 @@ public interface NotificationDetail {
             return createNotificationDetail("index", indexFormatString, true);
         }
 
-        public static NotificationDetail nodeBtreeIndex(
-                final String variableName, final String labelName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName,
-                    labelName,
-                    Arrays.asList(propertyKeyNames),
-                    EntityType.NODE,
-                    IndexHintIndexType.BTREE);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
-
         public static NotificationDetail nodeTextIndex(
                 final String variableName, final String labelName, final String... propertyKeyNames) {
             String indexFormatString = IndexHintException.indexFormatString(
@@ -93,17 +82,6 @@ public interface NotificationDetail {
                     Arrays.asList(propertyKeyNames),
                     EntityType.RELATIONSHIP,
                     IndexHintIndexType.ANY);
-            return createNotificationDetail("index", indexFormatString, true);
-        }
-
-        public static NotificationDetail relationshipBtreeIndex(
-                final String variableName, final String relationshipTypeName, final String... propertyKeyNames) {
-            String indexFormatString = IndexHintException.indexFormatString(
-                    variableName,
-                    relationshipTypeName,
-                    Arrays.asList(propertyKeyNames),
-                    EntityType.RELATIONSHIP,
-                    IndexHintIndexType.BTREE);
             return createNotificationDetail("index", indexFormatString, true);
         }
 
