@@ -914,10 +914,14 @@ public abstract class MuninnPageCursor extends PageCursor {
             return;
         }
 
-        if (shift < 0) {
-            unsafeShiftLeft(offset, sourceEnd, length, shift);
+        if (length < 16) {
+            if (shift < 0) {
+                unsafeShiftLeft(offset, sourceEnd, length, shift);
+            } else {
+                unsafeShiftRight(sourceEnd, offset, length, shift);
+            }
         } else {
-            unsafeShiftRight(sourceEnd, offset, length, shift);
+            UnsafeUtil.copyMemory(pointer + offset, pointer + targetStart, length);
         }
     }
 
