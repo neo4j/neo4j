@@ -49,6 +49,18 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
  * @param <DATA_VALUE> layout of the data values.
  */
 abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExchange {
+    protected final RootLayerSupport support;
+    protected final TreeNodeSelector treeNodeSelector;
+    protected volatile Root root;
+    // Kept and ref:ed for performance. Just keeping it ref:ed doesn't actually latch it, just keeps it
+    // in the map of active latches to avoid that overhead.
+    private volatile LongSpinLatch rootLatch;
+
+    RootLayer(RootLayerSupport support, TreeNodeSelector treeNodeSelector) {
+        this.support = support;
+        this.treeNodeSelector = treeNodeSelector;
+    }
+
     /**
      * Called on first startup when the GBPTree file gets created. Typically initializes the top-level root.
      *
@@ -61,8 +73,7 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
     /**
      * Called on startup when the GBPTree file already exists. Typically, verify metadata.
      *
-     *
-     * @param root
+     * @param root new root from now on.
      * @param cursorContext the {@link CursorContext}.
      * @throws IOException on I/O error.
      */
@@ -104,7 +115,18 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
      * directly, which moves the page cursor to the id and returns the generation.
      */
     @Override
-    public abstract Root getRoot();
+    public Root getRoot() {
+        return root;
+    }
+
+    @Override
+    public void setRoot(Root root) {
+        if (rootLatch != null) {
+            rootLatch.deref();
+        }
+        this.root = root;
+        rootLatch = support.latchService().latch(root.id());
+    }
 
     /**
      * Visits all types of content found in a {@link MultiRootGBPTree}, like metadata, root keys and actual data entries (key/value pairs).

@@ -35,36 +35,22 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.util.Preconditions;
 
 class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
-    private final RootLayerSupport support;
     private final Layout<KEY, VALUE> layout;
-    private final TreeNodeSelector treeNodeSelector;
     private final TreeNode<KEY, VALUE> treeNode;
     private final SingleDataTree singleRootAccess;
-    private volatile Root root;
 
     SingleRootLayer(
             RootLayerSupport support,
             Layout<KEY, VALUE> layout,
             TreeNodeSelector treeNodeSelector,
             DependencyResolver dependencyResolver) {
-        this.support = support;
+        super(support, treeNodeSelector);
         this.layout = layout;
-        this.treeNodeSelector = treeNodeSelector;
 
         var format = treeNodeSelector.selectByLayout(layout);
         OffloadStoreImpl<KEY, VALUE> offloadStore = support.buildOffload(layout);
         this.treeNode = format.create(support.payloadSize(), layout, offloadStore, dependencyResolver);
         this.singleRootAccess = new SingleDataTree();
-    }
-
-    @Override
-    public Root getRoot() {
-        return root;
-    }
-
-    @Override
-    public void setRoot(Root root) throws IOException {
-        this.root = root;
     }
 
     @Override
@@ -77,7 +63,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
     @Override
     void initialize(Root root, CursorContext cursorContext) throws IOException {
         setRoot(root);
-        support.readMeta(cursorContext).verify(layout, (Layout<?, ?>) null, treeNodeSelector);
+        support.readMeta(cursorContext).verify(layout, null, treeNodeSelector);
     }
 
     @Override

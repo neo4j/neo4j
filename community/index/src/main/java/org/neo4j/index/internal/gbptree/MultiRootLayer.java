@@ -61,9 +61,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     private static final int BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT =
             16 /*obj.overhead*/ + 16 /*obj.fields*/ + 16 /*inner root instance*/;
 
-    private final RootLayerSupport support;
     private final CursorContextFactory contextFactory;
-    private final TreeNodeSelector treeNodeSelector;
     private final Layout<ROOT_KEY, RootMappingValue> rootLayout;
     private final TreeNode<ROOT_KEY, RootMappingValue> rootTreeNode;
     private final AtomicReferenceArray<DataTreeRoot<ROOT_KEY>> rootMappingCache;
@@ -76,8 +74,6 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     private final Layout<DATA_KEY, DATA_VALUE> dataLayout;
     private final TreeNode<DATA_KEY, DATA_VALUE> dataTreeNode;
 
-    private volatile Root root;
-
     MultiRootLayer(
             RootLayerSupport support,
             Layout<ROOT_KEY, RootMappingValue> rootLayout,
@@ -86,14 +82,13 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             CursorContextFactory contextFactory,
             TreeNodeSelector treeNodeSelector,
             DependencyResolver dependencyResolver) {
+        super(support, treeNodeSelector);
         Preconditions.checkState(
                 hashCodeSeemsImplemented(rootLayout), "Root layout doesn't seem to have a hashCode() implementation");
 
-        this.support = support;
         this.rootLayout = rootLayout;
         this.dataLayout = dataLayout;
         this.contextFactory = contextFactory;
-        this.treeNodeSelector = treeNodeSelector;
         int numCachedRoots = rootCacheSizeInBytes / BYTE_SIZE_PER_CACHED_EXTERNAL_ROOT;
         this.rootMappingCache = new AtomicReferenceArray<>(max(numCachedRoots, 10));
 
@@ -112,16 +107,6 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         rootLayout.initializeAsHighest(key1);
         rootLayout.initializeAsHighest(key2);
         return key1.hashCode() == key2.hashCode();
-    }
-
-    @Override
-    public void setRoot(Root root) {
-        this.root = root;
-    }
-
-    @Override
-    public Root getRoot() {
-        return root;
     }
 
     @Override
