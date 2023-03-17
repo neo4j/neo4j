@@ -31,49 +31,30 @@ import org.neo4j.token.TokenHolders;
  * Unifies all data input given to a {@link BatchImporter} to allow for more coherent implementations.
  */
 public interface Input extends AutoCloseable {
-    interface Estimates {
-        /**
-         * @return estimated number of nodes for the entire input.
-         */
-        long numberOfNodes();
-
-        /**
-         * @return estimated number of relationships for the entire input.
-         */
-        long numberOfRelationships();
-
-        /**
-         * @return estimated number of node properties.
-         */
-        long numberOfNodeProperties();
-
-        /**
-         * @return estimated number of relationship properties.
-         */
-        long numberOfRelationshipProperties();
-
-        /**
-         * @return estimated size that the estimated number of node properties will require on disk.
-         * This is a separate estimate since it depends on the type and size of the actual properties.
-         */
-        long sizeOfNodeProperties();
-
-        /**
-         * @return estimated size that the estimated number of relationship properties will require on disk.
-         * This is a separate estimate since it depends on the type and size of the actual properties.
-         */
-        long sizeOfRelationshipProperties();
-
-        /**
-         * @return estimated number of node labels. Examples:
-         * <ul>
-         * <li>2 nodes, 1 label each ==> 2</li>
-         * <li>1 node, 2 labels each ==> 2</li>
-         * <li>2 nodes, 2 labels each ==> 4</li>
-         * </ul>
-         */
-        long numberOfNodeLabels();
-    }
+    /**
+     * @param numberOfNodes estimated number of nodes for the entire input.
+     * @param numberOfRelationships estimated number of relationships for the entire input.
+     * @param numberOfNodeProperties estimated number of node properties.
+     * @param numberOfRelationshipProperties estimated number of relationship properties.
+     * @param sizeOfNodeProperties estimated size that the estimated number of node properties will require on disk.
+     * This is a separate estimate since it depends on the type and size of the actual properties.
+     * @param sizeOfRelationshipProperties estimated size that the estimated number of relationship properties will require on disk.
+     * This is a separate estimate since it depends on the type and size of the actual properties.
+     * @param numberOfNodeLabels estimated number of node labels. Examples:
+     * <ul>
+     * <li>2 nodes, 1 label each ==> 2</li>
+     * <li>1 node, 2 labels each ==> 2</li>
+     * <li>2 nodes, 2 labels each ==> 4</li>
+     * </ul>
+     */
+    record Estimates(
+            long numberOfNodes,
+            long numberOfRelationships,
+            long numberOfNodeProperties,
+            long numberOfRelationshipProperties,
+            long sizeOfNodeProperties,
+            long sizeOfRelationshipProperties,
+            long numberOfNodeLabels) {}
 
     /**
      * Provides all node data for an import.
@@ -160,44 +141,16 @@ public interface Input extends AutoCloseable {
             long numberOfRelationships,
             long numberOfNodeProperties,
             long numberOfRelationshipProperties,
-            long nodePropertiesSize,
-            long relationshipPropertiesSize,
+            long sizeOfNodeProperties,
+            long sizeOfRelationshipProperties,
             long numberOfNodeLabels) {
-        return new Estimates() {
-            @Override
-            public long numberOfNodes() {
-                return numberOfNodes;
-            }
-
-            @Override
-            public long numberOfRelationships() {
-                return numberOfRelationships;
-            }
-
-            @Override
-            public long numberOfNodeProperties() {
-                return numberOfNodeProperties;
-            }
-
-            @Override
-            public long sizeOfNodeProperties() {
-                return nodePropertiesSize;
-            }
-
-            @Override
-            public long numberOfNodeLabels() {
-                return numberOfNodeLabels;
-            }
-
-            @Override
-            public long numberOfRelationshipProperties() {
-                return numberOfRelationshipProperties;
-            }
-
-            @Override
-            public long sizeOfRelationshipProperties() {
-                return relationshipPropertiesSize;
-            }
-        };
+        return new Estimates(
+                numberOfNodes,
+                numberOfRelationships,
+                numberOfNodeProperties,
+                numberOfRelationshipProperties,
+                sizeOfNodeProperties,
+                sizeOfRelationshipProperties,
+                numberOfNodeLabels);
     }
 }
