@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Optional;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -36,7 +37,7 @@ public final class RecoveryHelpers {
 
     public static void removeLastCheckpointRecordFromLastLogFile(DatabaseLayout dbLayout, FileSystemAbstraction fs)
             throws IOException {
-        LogFiles logFiles = buildLogFiles(dbLayout, fs);
+        LogFiles logFiles = buildLogFiles(dbLayout, fs, null);
         var checkpointFile = logFiles.getCheckpointFile();
         Optional<CheckpointInfo> latestCheckpoint = checkpointFile.findLatestCheckpoint();
         latestCheckpoint.ifPresent(checkpointInfo -> {
@@ -50,25 +51,32 @@ public final class RecoveryHelpers {
     }
 
     public static boolean logsContainCheckpoint(DatabaseLayout dbLayout, FileSystemAbstraction fs) throws IOException {
-        Optional<CheckpointInfo> latestCheckpoint = getLatestCheckpointInfo(dbLayout, fs);
+        Optional<CheckpointInfo> latestCheckpoint = getLatestCheckpointInfo(dbLayout, fs, null);
         return latestCheckpoint.isPresent();
     }
 
     public static CheckpointInfo getLatestCheckpoint(DatabaseLayout dbLayout, FileSystemAbstraction fs)
             throws IOException {
-        Optional<CheckpointInfo> latestCheckpoint = getLatestCheckpointInfo(dbLayout, fs);
+        return getLatestCheckpoint(dbLayout, fs, null);
+    }
+
+    public static CheckpointInfo getLatestCheckpoint(DatabaseLayout dbLayout, FileSystemAbstraction fs, Config config)
+            throws IOException {
+        Optional<CheckpointInfo> latestCheckpoint = getLatestCheckpointInfo(dbLayout, fs, config);
         return latestCheckpoint.orElseThrow();
     }
 
-    private static Optional<CheckpointInfo> getLatestCheckpointInfo(DatabaseLayout dbLayout, FileSystemAbstraction fs)
-            throws IOException {
-        LogFiles logFiles = buildLogFiles(dbLayout, fs);
+    private static Optional<CheckpointInfo> getLatestCheckpointInfo(
+            DatabaseLayout dbLayout, FileSystemAbstraction fs, Config config) throws IOException {
+        LogFiles logFiles = buildLogFiles(dbLayout, fs, config);
         var checkpointFile = logFiles.getCheckpointFile();
         return checkpointFile.findLatestCheckpoint();
     }
 
-    private static LogFiles buildLogFiles(DatabaseLayout dbLayout, FileSystemAbstraction fs) throws IOException {
+    private static LogFiles buildLogFiles(DatabaseLayout dbLayout, FileSystemAbstraction fs, Config config)
+            throws IOException {
         return LogFilesBuilder.logFilesBasedOnlyBuilder(dbLayout.getTransactionLogsDirectory(), fs)
+                .withConfig(config)
                 .build();
     }
 }

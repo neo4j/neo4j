@@ -155,10 +155,11 @@ public final class Recovery {
     /**
      * Provide recovery helper that can perform recovery of some database described by {@link DatabaseLayout}.
      *
-     * @param fs database filesystem
-     * @param pageCache page cache used to perform database recovery.
-     * @param tracers underlying operation tracers
-     * @param config custom configuration
+     * @param fs                                database filesystem
+     * @param pageCache                         page cache used to perform database recovery.
+     * @param tracers                           underlying operation tracers
+     * @param config                            custom configuration
+     * @param emptyLogsFallbackKernelVersion    provides the kernel version if no logs exists
      * @return helper recovery checker
      */
     public static DatabaseRecoveryFacade recoveryFacade(
@@ -167,9 +168,16 @@ public final class Recovery {
             Tracers tracers,
             Config config,
             MemoryTracker memoryTracker,
-            InternalLogProvider logProvider) {
+            InternalLogProvider logProvider,
+            KernelVersionProvider emptyLogsFallbackKernelVersion) {
         return new DatabaseRecoveryFacade(
-                fs, pageCache, new DatabaseTracers(tracers), config, memoryTracker, logProvider);
+                fs,
+                pageCache,
+                new DatabaseTracers(tracers),
+                config,
+                memoryTracker,
+                logProvider,
+                emptyLogsFallbackKernelVersion);
     }
 
     /**

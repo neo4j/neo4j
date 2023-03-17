@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOController;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.recovery.Recovery;
 import org.neo4j.kernel.recovery.RecoveryMode;
@@ -41,6 +41,7 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
     private final Config config;
     private final MemoryTracker memoryTracker;
     private final InternalLogProvider logProvider;
+    private final KernelVersionProvider emptyLogsFallbackKernelVersion;
 
     public DatabaseRecoveryFacade(
             FileSystemAbstraction fs,
@@ -48,13 +49,15 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
             DatabaseTracers tracers,
             Config config,
             MemoryTracker memoryTracker,
-            InternalLogProvider logProvider) {
+            InternalLogProvider logProvider,
+            KernelVersionProvider emptyLogsFallbackKernelVersion) {
         this.fs = fs;
         this.pageCache = pageCache;
         this.tracers = tracers;
         this.config = config;
         this.memoryTracker = memoryTracker;
         this.logProvider = logProvider;
+        this.emptyLogsFallbackKernelVersion = emptyLogsFallbackKernelVersion;
     }
 
     @Override
@@ -91,11 +94,9 @@ public class DatabaseRecoveryFacade implements RecoveryFacade {
                         memoryTracker,
                         IOController.DISABLED,
                         logProvider,
-                        () -> KernelVersion.getLatestVersion(config)) // FIXME this should not be latest unless
-                // we are guaranteed to never have empty logs here
+                        emptyLogsFallbackKernelVersion)
                 .recoveryPredicate(recoveryCriteria.toPredicate())
                 .recoveryMode(mode));
-
         monitor.recoveryCompleted();
     }
 }

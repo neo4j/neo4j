@@ -24,5 +24,10 @@ public interface KernelVersionProvider {
         throw new IllegalStateException("Kernel version can not be provided in this state");
     };
 
+    KernelVersionProvider THROWING_PROVIDER_RECOVERY = () -> {
+        throw new IllegalStateException(
+                "Failed to retrieve the kernel version from the transaction log, as there are no logs. Recovery is not allowed in this state.");
+    };
+
     KernelVersion kernelVersion();
 }
