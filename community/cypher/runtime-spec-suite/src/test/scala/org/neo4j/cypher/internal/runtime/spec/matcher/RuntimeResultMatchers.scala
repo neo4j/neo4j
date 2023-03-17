@@ -362,14 +362,15 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
 
   case class DiffItem(missingRow: ListValue, fromA: Boolean)
 
-  def failProbe(failAfterRowCount: Int): Prober.Probe = new Prober.Probe {
-    val c = new AtomicInteger(0)
+  def failProbe(failAfterRowCount: Int, fail: String => Throwable = msg => new RuntimeException(msg)): Prober.Probe =
+    new Prober.Probe {
+      val c = new AtomicInteger(0)
 
-    override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
-      if (c.incrementAndGet() == failAfterRowCount) {
-        throw new RuntimeException(s"Probe failed as expected (row count=$c)")
+      override def onRow(row: AnyRef, queryStatistics: QueryStatistics, transactionsCommitted: Int): Unit = {
+        if (c.incrementAndGet() == failAfterRowCount) {
+          throw fail(s"Probe failed as expected (row count=$c)")
+        }
       }
     }
-  }
 
 }
