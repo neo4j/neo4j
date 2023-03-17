@@ -603,7 +603,9 @@ class NotificationCodeWithDescriptionTest {
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The Cypher query option `connectComponentsPlanner` is deprecated. In a future release, the option will be removed. After removal, the product will behave as if the option was set to `idp`.",
+                "The Cypher query option `connectComponentsPlanner` is deprecated and will be removed without a replacement. "
+                        + "The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept. "
+                        + "For more information, see Cypher Manual -> Cypher planner.",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -659,8 +661,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            35, 11, 101, -70, 59, -26, -10, 40, -94, 76, -67, -54, -77, 93, -107, -32, -103, -100, 94, -85, 19, 100, 4,
-            27, -67, 39, 69, -113, 45, 17, 51, -65
+            -84, 122, 85, 9, -106, 48, -91, 45, -32, -10, 105, -29, 100, 82, -59, -31, -60, 51, -7, 127, -107, -12, 54,
+            -90, 114, -22, 9, 21, 4, -80, 100, 28
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

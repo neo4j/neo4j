@@ -155,7 +155,8 @@ trait FragmentTestUtils {
 
   def pipeline(query: String): frontend.Pipeline =
     frontend.Pipeline(
-      signatures,frontend.preParsing.preParse(query, devNullLogger),
+      signatures,
+      frontend.preParsing.preParse(query, devNullLogger),
       params,
       CancellationChecker.NeverCancelled,
       devNullLogger

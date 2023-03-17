@@ -76,7 +76,15 @@ case class FabricPlanner(
   ): PlannerInstance = {
     val notificationLogger = new RecordingNotificationLogger()
     val query = frontend.preParsing.preParse(queryString, notificationLogger)
-    PlannerInstance(signatureResolver, query, queryParams, defaultGraphName, catalog, cancellationChecker, notificationLogger)
+    PlannerInstance(
+      signatureResolver,
+      query,
+      queryParams,
+      defaultGraphName,
+      catalog,
+      cancellationChecker,
+      notificationLogger
+    )
   }
 
   case class PlannerInstance(
@@ -89,7 +97,8 @@ case class FabricPlanner(
     notificationLogger: InternalNotificationLogger
   ) {
 
-    private lazy val pipeline = frontend.Pipeline(signatureResolver, query, queryParams, cancellationChecker, notificationLogger)
+    private lazy val pipeline =
+      frontend.Pipeline(signatureResolver, query, queryParams, cancellationChecker, notificationLogger)
 
     private val useHelper = new UseHelper(catalog, defaultContextName)
 
