@@ -42,6 +42,7 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
     private final IndexImporter importer;
     private final NodeStore nodeStore;
     private final StoreCursors cachedStoreCursors;
+    private final IndexImporter.Writer writer;
 
     public LabelIndexWriterStep(
             StageControl control,
@@ -65,6 +66,7 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
                 contextFactory,
                 pageCacheTracer,
                 storeCursorsCreator);
+        this.writer = importer.writer(false);
         this.cachedStoreCursors = storeCursorsCreator.apply(cursorContext);
         this.nodeStore = neoStores.getNodeStore();
     }
@@ -74,7 +76,7 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
         cachedStoreCursors.reset(cursorContext);
         for (NodeRecord node : batch) {
             if (node.inUse() && node.getId() >= fromNodeId) {
-                importer.add(node.getId(), get(node, nodeStore, cachedStoreCursors));
+                writer.add(node.getId(), get(node, nodeStore, cachedStoreCursors));
             }
         }
         sender.send(batch);
@@ -83,6 +85,6 @@ public class LabelIndexWriterStep extends IndexWriterStep<NodeRecord[]> {
     @Override
     public void close() throws Exception {
         super.close();
-        closeAll(importer, cursorContext, cachedStoreCursors);
+        closeAll(writer, importer, cursorContext, cachedStoreCursors);
     }
 }

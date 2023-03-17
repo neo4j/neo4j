@@ -37,6 +37,7 @@ public class RelationshipTypeIndexWriterStep extends IndexWriterStep<Relationshi
     private static final String RELATIONSHIP_INDEX_WRITE_STEP_TAG = "relationshipIndexWriteStep";
     private final CursorContext cursorContext;
     private final IndexImporter importer;
+    private final IndexImporter.Writer writer;
 
     public RelationshipTypeIndexWriterStep(
             StageControl control,
@@ -58,6 +59,7 @@ public class RelationshipTypeIndexWriterStep extends IndexWriterStep<Relationshi
                 contextFactory,
                 pageCacheTracer,
                 storeCursorsCreator);
+        this.writer = importer.writer(false);
     }
 
     @Override
@@ -65,7 +67,7 @@ public class RelationshipTypeIndexWriterStep extends IndexWriterStep<Relationshi
             throws Throwable {
         for (RelationshipRecord relationship : batch) {
             if (relationship.inUse()) {
-                importer.add(relationship.getId(), new long[] {relationship.getType()});
+                writer.add(relationship.getId(), new long[] {relationship.getType()});
             }
         }
         sender.send(batch);
@@ -74,6 +76,6 @@ public class RelationshipTypeIndexWriterStep extends IndexWriterStep<Relationshi
     @Override
     public void close() throws Exception {
         super.close();
-        closeAll(importer, cursorContext);
+        closeAll(writer, importer, cursorContext);
     }
 }

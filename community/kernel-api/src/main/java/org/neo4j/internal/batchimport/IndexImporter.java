@@ -23,21 +23,19 @@ import java.io.Closeable;
 import java.io.IOException;
 
 /**
- * Used by the {@link BatchImporter} to publish index entries as it imports node & relationship records.
+ * Used by the {@link BatchImporter} to write index entries as it imports node & relationship entities.
  */
 public interface IndexImporter extends Closeable {
     IndexImporter EMPTY_IMPORTER = new EmptyIndexImporter();
 
     /**
-     * Called by the batch importer for entity that is imported
-     * @param entity the id of the entity (node id/relationship id)
-     * @param tokens the tokens associated with the entity (labels/relationship types)
+     * @param parallel if {@code true} uses a parallel internal writer, which also means that there
+     * can be multiple concurrent writers writing index entries.
+     * @return a new {@link Writer} able to write index entries.
      */
-    void add(long entity, long[] tokens);
+    Writer writer(boolean parallel);
 
-    void remove(long entity, long[] tokens);
-
-    class EmptyIndexImporter implements IndexImporter {
+    class EmptyIndexImporter implements IndexImporter, Writer {
         @Override
         public void add(long entity, long[] tokens) {}
 
@@ -46,5 +44,27 @@ public interface IndexImporter extends Closeable {
 
         @Override
         public void close() throws IOException {}
+
+        @Override
+        public Writer writer(boolean parallel) {
+            return this;
+        }
+    }
+
+    interface Writer extends Closeable {
+        /**
+         * Called by the batch importer for entity that is imported
+         * @param entity the id of the entity (node id/relationship id)
+         * @param tokens the tokens associated with the entity (labels/relationship types)
+         */
+        void add(long entity, long[] tokens);
+
+        /**
+         * Called by the batch importer for entity that is removed, typically after observing
+         * duplicate entities or entities violating constraints.
+         * @param entity the id of the entity (node id/relationship id)
+         * @param tokens the tokens associated with the entity (labels/relationship types)
+         */
+        void remove(long entity, long[] tokens);
     }
 }
