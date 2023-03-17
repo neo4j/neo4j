@@ -858,6 +858,7 @@ public class Database extends AbstractDatabase {
             CursorContextFactory cursorContextFactory,
             CommandReaderFactory commandReaderFactory) {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
+        databaseDependencies.satisfyDependencies(transactionMetadataCache);
 
         Lock pruneLock = new ReentrantLock();
         final LogPruning logPruning =
