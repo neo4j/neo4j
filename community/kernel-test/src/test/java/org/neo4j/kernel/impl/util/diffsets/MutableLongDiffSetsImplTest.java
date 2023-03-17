@@ -34,8 +34,9 @@ import static org.neo4j.internal.helpers.collection.Iterators.asSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
-import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
+import org.neo4j.collection.diffset.MutableLongDiffSetsImpl;
+import org.neo4j.collection.factory.CollectionsFactory;
+import org.neo4j.collection.factory.OnHeapCollectionsFactory;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 class MutableLongDiffSetsImplTest {

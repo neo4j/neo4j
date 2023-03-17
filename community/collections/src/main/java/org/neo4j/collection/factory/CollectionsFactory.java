@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.collection.factory;
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
+import org.neo4j.collection.diffset.MutableLongDiffSets;
+import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.values.storable.Value;
 
 /**
  * The purpose of this factory is the ability to switch between multiple collection implementations (e.g. on- or off-heap),
@@ -34,7 +34,7 @@ public interface CollectionsFactory {
 
     MutableLongDiffSets newLongDiffSets(MemoryTracker memoryTracker);
 
-    MutableLongObjectMap<Value> newValuesMap(MemoryTracker memoryTracker);
+    <T extends Measurable> MutableLongObjectMap<T> newObjectMap(MemoryTracker memoryTracker);
 
     /**
      * Release previously created collections. This method does not invalidate the factory.

@@ -28,8 +28,8 @@ import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.internal.helpers.collection.Iterables;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertyKeyValue;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -75,7 +75,7 @@ class EntityStateImpl implements EntityState {
         }
 
         if (changedProperties == null) {
-            changedProperties = collectionsFactory.newValuesMap(memoryTracker);
+            changedProperties = collectionsFactory.newObjectMap(memoryTracker);
         }
         changedProperties.put(propertyKeyId, value);
 
@@ -92,7 +92,7 @@ class EntityStateImpl implements EntityState {
             return;
         }
         if (addedProperties == null) {
-            addedProperties = collectionsFactory.newValuesMap(memoryTracker);
+            addedProperties = collectionsFactory.newObjectMap(memoryTracker);
         }
         addedProperties.put(propertyKeyId, value);
     }

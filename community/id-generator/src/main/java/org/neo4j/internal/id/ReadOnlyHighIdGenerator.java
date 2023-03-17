@@ -72,12 +72,6 @@ class ReadOnlyHighIdGenerator implements IdGenerator {
     }
 
     @Override
-    public long getDefragCount() {
-        // Doesn't quite matter actually, not for the intended use case anyway
-        return 0;
-    }
-
-    @Override
     public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) {
         // no-op
     }

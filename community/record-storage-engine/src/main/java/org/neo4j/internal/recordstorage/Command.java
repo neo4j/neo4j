@@ -164,7 +164,7 @@ public abstract class Command implements StorageCommand {
         }
 
         RECORD record(TransactionApplicationMode mode) {
-            return mode == TransactionApplicationMode.REVERSE_RECOVERY ? before : after;
+            return mode.isReverseStep() ? before : after;
         }
     }
 

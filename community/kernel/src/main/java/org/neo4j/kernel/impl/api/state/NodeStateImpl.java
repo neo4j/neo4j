@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.state;
 
 import static java.util.Collections.emptyList;
+import static org.neo4j.collection.diffset.TrackableDiffSets.newMutableLongDiffSets;
 import static org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.createRelationshipChangesForNode;
-import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
 
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.iterator.IntIterator;
@@ -29,10 +29,11 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
+import org.neo4j.collection.diffset.LongDiffSets;
+import org.neo4j.collection.diffset.MutableLongDiffSets;
+import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode.DiffStrategy;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.Degrees;
@@ -40,7 +41,6 @@ import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipSelection;
 import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
 import org.neo4j.storageengine.api.StorageProperty;
-import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications.RelationshipBatch;

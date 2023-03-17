@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
+import org.neo4j.collection.factory.CollectionsFactory;
+import org.neo4j.collection.factory.OnHeapCollectionsFactory;
+
 @FunctionalInterface
 public interface CollectionsFactorySupplier {
     CollectionsFactorySupplier ON_HEAP = () -> OnHeapCollectionsFactory.INSTANCE;

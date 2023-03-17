@@ -23,6 +23,8 @@ import java.util.Iterator;
 import java.util.NavigableMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
+import org.neo4j.collection.diffset.DiffSets;
+import org.neo4j.collection.diffset.LongDiffSets;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;

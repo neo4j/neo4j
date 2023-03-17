@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.diffsets;
+package org.neo4j.collection.diffset;
 
-import static org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl;
+import static org.neo4j.collection.diffset.MutableLongDiffSetsImpl.createMutableLongDiffSetsImpl;
 
-import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.memory.MemoryTracker;
 
 public class TrackableDiffSets {

@@ -26,6 +26,7 @@ import static org.neo4j.token.api.TokenConstants.ANY_RELATIONSHIP_TYPE;
 
 import java.util.function.LongConsumer;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.neo4j.collection.diffset.LongDiffSets;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.internal.helpers.Exceptions;

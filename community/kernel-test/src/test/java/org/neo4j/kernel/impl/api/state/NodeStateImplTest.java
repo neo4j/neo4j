@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.api.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory.INSTANCE;
+import static org.neo4j.collection.factory.OnHeapCollectionsFactory.INSTANCE;
 import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
 import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
 import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;

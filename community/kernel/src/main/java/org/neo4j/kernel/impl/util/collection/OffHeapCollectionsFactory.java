@@ -19,17 +19,18 @@
  */
 package org.neo4j.kernel.impl.util.collection;
 
-import static org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets.newMutableLongDiffSets;
+import static org.neo4j.collection.diffset.TrackableDiffSets.newMutableLongDiffSets;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.neo4j.collection.diffset.MutableLongDiffSets;
+import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.kernel.impl.api.state.AppendOnlyValuesContainer;
 import org.neo4j.kernel.impl.api.state.ValuesContainer;
 import org.neo4j.kernel.impl.api.state.ValuesMap;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.storable.Value;
 
@@ -56,7 +57,7 @@ public class OffHeapCollectionsFactory implements CollectionsFactory {
     }
 
     @Override
-    public MutableLongObjectMap<Value> newValuesMap(MemoryTracker memoryTracker) {
+    public MutableLongObjectMap<Value> newObjectMap(MemoryTracker memoryTracker) {
         if (valuesContainer == null) {
             valuesContainer = new AppendOnlyValuesContainer(allocator, memoryTracker);
         }

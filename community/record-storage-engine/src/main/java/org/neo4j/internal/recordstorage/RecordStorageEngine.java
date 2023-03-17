@@ -24,7 +24,6 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
-import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
 import static org.neo4j.util.Preconditions.checkState;
 
 import java.io.IOException;
@@ -38,6 +37,7 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
+import org.neo4j.collection.diffset.LongDiffSets;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
@@ -115,7 +115,6 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
-import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -260,7 +259,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     private TransactionApplierFactoryChain buildApplierFacadeChain(TransactionApplicationMode mode) {
-        Function<IdGeneratorUpdatesWorkSync, IdUpdateListener> idUpdateListenerFunction = mode == REVERSE_RECOVERY
+        Function<IdGeneratorUpdatesWorkSync, IdUpdateListener> idUpdateListenerFunction = mode.isReverseStep()
                 ? workSync -> IdUpdateListener.IGNORE
                 : workSync -> workSync.newBatch(contextFactory);
         List<TransactionApplierFactory> appliers = new ArrayList<>();
@@ -270,6 +269,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         }
         appliers.add(new KernelVersionTransactionApplier.Factory(kernelVersionRepository));
         appliers.add(new NeoStoreTransactionApplierFactory(mode, neoStores, cacheAccess, lockService(mode)));
+        if (mode.rollbackIdProcessing()) {
+            appliers.add((transaction, batchContext) ->
+                    new IdRollbackTransactionApplier(idGeneratorFactory, transaction.cursorContext()));
+        }
         if (mode.needsHighIdTracking()) {
             appliers.add(new HighIdTransactionApplierFactory(neoStores));
         }
@@ -566,7 +569,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     private LockService lockService(TransactionApplicationMode mode) {
-        return mode == RECOVERY || mode == REVERSE_RECOVERY ? NO_LOCK_SERVICE : lockService;
+        return mode == RECOVERY || mode.isReverseStep() ? NO_LOCK_SERVICE : lockService;
     }
 
     @Override
@@ -705,7 +708,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     @Override
     public void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode)
             throws IOException {
-        if (!mode.equals(REVERSE_RECOVERY) && batch != null) {
+        if (!mode.isReverseStep() && batch != null) {
             try (PreAllocationTransactionApplier txApplier = new PreAllocationTransactionApplier(neoStores)) {
                 while (batch != null) {
                     batch.accept(txApplier);

@@ -17,17 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
-
-import static org.neo4j.kernel.impl.util.collection.HeapTrackingValuesMap.createValuesMap;
+package org.neo4j.collection.factory;
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.neo4j.collection.HeapTrackingObjectMap;
+import org.neo4j.collection.diffset.MutableLongDiffSets;
+import org.neo4j.collection.diffset.TrackableDiffSets;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
-import org.neo4j.kernel.impl.util.diffsets.TrackableDiffSets;
+import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.values.storable.Value;
 
 public class OnHeapCollectionsFactory implements CollectionsFactory {
     public static final CollectionsFactory INSTANCE = new OnHeapCollectionsFactory();
@@ -47,8 +46,8 @@ public class OnHeapCollectionsFactory implements CollectionsFactory {
     }
 
     @Override
-    public MutableLongObjectMap<Value> newValuesMap(MemoryTracker memoryTracker) {
-        return createValuesMap(memoryTracker);
+    public <T extends Measurable> MutableLongObjectMap<T> newObjectMap(MemoryTracker memoryTracker) {
+        return HeapTrackingObjectMap.createObjectMap(memoryTracker);
     }
 
     @Override

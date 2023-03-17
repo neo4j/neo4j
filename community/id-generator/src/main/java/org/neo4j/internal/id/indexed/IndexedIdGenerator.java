@@ -641,14 +641,6 @@ public class IndexedIdGenerator implements IdGenerator {
         return getHighId() - 1;
     }
 
-    @Override
-    public long getDefragCount() {
-        // This is only correct up to cache capacity, but this method only seems to be used in tests and those tests
-        // only
-        // check whether or not this id generator have a small number of ids that it just freed.
-        return cache.size();
-    }
-
     /**
      * A peculiar being this one. It's for the import case where all records are written w/o even touching the id generator.
      * When all have been written the id generator is told that it should consider highest written where it's at right now
@@ -815,7 +807,7 @@ public class IndexedIdGenerator implements IdGenerator {
                             if (id >= compareToIdExclusive) {
                                 return false;
                             }
-                            if (id >= fromIdInclusive && !IdRange.IdState.USED.equals(currentRange.getState(index))) {
+                            if ((id >= fromIdInclusive) && (IdRange.IdState.USED != currentRange.getState(index))) {
                                 return next(id);
                             }
                         }

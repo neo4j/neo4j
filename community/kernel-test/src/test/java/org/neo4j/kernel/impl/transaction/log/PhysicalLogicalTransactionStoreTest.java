@@ -446,7 +446,7 @@ class PhysicalLogicalTransactionStoreTest {
         @Override
         public RecoveryApplier getRecoveryApplier(
                 TransactionApplicationMode mode, CursorContextFactory contextFactory, String tracerTag) {
-            return mode == TransactionApplicationMode.REVERSE_RECOVERY ? mock(RecoveryApplier.class) : visitor;
+            return mode.isReverseStep() ? mock(RecoveryApplier.class) : visitor;
         }
 
         @Override

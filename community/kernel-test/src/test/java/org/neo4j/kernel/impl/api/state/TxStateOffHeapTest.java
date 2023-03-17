@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.state;
 
 import org.junit.jupiter.api.AfterAll;
+import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
 

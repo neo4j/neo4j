@@ -23,7 +23,7 @@ import static java.util.Collections.emptyList;
 
 import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.RelationshipVisitor;

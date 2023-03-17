@@ -80,7 +80,7 @@ final class ParallelRecoveryVisitor implements RecoveryApplier {
                 TimeUnit.HOURS,
                 new ArrayBlockingQueue<>(numAppliers),
                 new ThreadPoolExecutor.CallerRunsPolicy());
-        this.stride = mode == TransactionApplicationMode.REVERSE_RECOVERY ? -1 : 1;
+        this.stride = mode.isReverseStep() ? -1 : 1;
     }
 
     @Override

@@ -49,6 +49,7 @@ import org.neo4j.storageengine.api.CommandBatchToApply;
  *
  * </pre>
  */
+@FunctionalInterface
 public interface TransactionApplierFactory {
     /**
      * Get the suitable {@link TransactionApplier} for a given transaction, and the store which this {@link

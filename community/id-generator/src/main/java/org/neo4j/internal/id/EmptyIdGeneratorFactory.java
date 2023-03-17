@@ -135,11 +135,6 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
-        public long getDefragCount() {
-            return -1;
-        }
-
-        @Override
         public void checkpoint(FileFlushEvent flushEvent, CursorContext cursorContext) {
             // nothing
         }
@@ -150,7 +145,7 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
-        public void start(FreeIds freeIdsForRebuild, CursorContext cursorContext) throws IOException {
+        public void start(FreeIds freeIdsForRebuild, CursorContext cursorContext) {
             // nothing
         }
 

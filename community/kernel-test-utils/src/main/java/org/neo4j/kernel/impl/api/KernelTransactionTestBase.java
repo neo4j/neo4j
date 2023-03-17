@@ -40,6 +40,9 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
 import org.neo4j.collection.Dependencies;
+import org.neo4j.collection.diffset.MutableLongDiffSets;
+import org.neo4j.collection.factory.CollectionsFactory;
+import org.neo4j.collection.factory.OnHeapCollectionsFactory;
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -74,9 +77,6 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
-import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
-import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.internal.event.DatabaseTransactionEventListeners;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.NullLogProvider;
@@ -279,7 +279,7 @@ class KernelTransactionTestBase {
         }
 
         @Override
-        public MutableLongObjectMap<Value> newValuesMap(MemoryTracker memoryTracker) {
+        public MutableLongObjectMap<Value> newObjectMap(MemoryTracker memoryTracker) {
             return new LongObjectHashMap<>();
         }
 

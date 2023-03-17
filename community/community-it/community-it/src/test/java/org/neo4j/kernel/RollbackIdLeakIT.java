@@ -208,8 +208,7 @@ class RollbackIdLeakIT {
                                 tx.commit();
                             }
                         }
-                        ((GraphDatabaseAPI) db)
-                                .getDependencyResolver()
+                        db.getDependencyResolver()
                                 .resolveDependency(IdController.class)
                                 .maintenance();
                     },

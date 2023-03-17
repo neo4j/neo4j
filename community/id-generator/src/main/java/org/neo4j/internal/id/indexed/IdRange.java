@@ -213,24 +213,21 @@ class IdRange {
     }
 
     private void verifyMerge(IdRangeKey key, IdRange other) {
+        if (!isAddition(other.addition, BITSET_COMMIT)) {
+            return;
+        }
         long[] intoBitSet = bitSets[BITSET_COMMIT];
         long[] fromBitSet = other.bitSets[BITSET_COMMIT];
         for (int i = 0; i < intoBitSet.length; i++) {
             long into = intoBitSet[i];
             long from = fromBitSet[i];
-            if (isAddition(other.addition, BITSET_COMMIT)) {
-                if ((into & from) != 0) {
-                    long rangeFirstId = key.getIdRangeIdx() * idsPerEntry;
-                    long firstId = rangeFirstId + (long) i * BITSET_SIZE;
-                    long lastId = Long.min(firstId + BITSET_SIZE, rangeFirstId + idsPerEntry) - 1;
-                    throw new IllegalStateException(format(
-                            "Illegal addition ID state for range: %d (IDs %d-%d) transition%ninto: %s%nfrom: %s",
-                            key.getIdRangeIdx(),
-                            firstId,
-                            lastId,
-                            toPaddedBinaryString(into),
-                            toPaddedBinaryString(from)));
-                }
+            if ((into & from) != 0) {
+                long rangeFirstId = key.getIdRangeIdx() * idsPerEntry;
+                long firstId = rangeFirstId + (long) i * BITSET_SIZE;
+                long lastId = Long.min(firstId + BITSET_SIZE, rangeFirstId + idsPerEntry) - 1;
+                throw new IllegalStateException(format(
+                        "Illegal addition ID state for range: %d (IDs %d-%d) transition%ninto: %s%nfrom: %s",
+                        key.getIdRangeIdx(), firstId, lastId, toPaddedBinaryString(into), toPaddedBinaryString(from)));
             }
             // don't verify removal since we can't quite verify transitioning to USED since 0 is the default bit value
         }

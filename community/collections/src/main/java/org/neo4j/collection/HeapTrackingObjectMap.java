@@ -17,32 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.collection;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 
 import org.neo4j.collection.trackable.HeapTrackingLongObjectHashMap;
+import org.neo4j.memory.Measurable;
 import org.neo4j.memory.MemoryTracker;
-import org.neo4j.values.storable.Value;
 
 @SuppressWarnings("ExternalizableWithoutPublicNoArgConstructor")
-public class HeapTrackingValuesMap extends HeapTrackingLongObjectHashMap<Value> {
-    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingValuesMap.class);
+public class HeapTrackingObjectMap<T extends Measurable> extends HeapTrackingLongObjectHashMap<T> {
+    private static final long SHALLOW_SIZE = shallowSizeOfInstance(HeapTrackingObjectMap.class);
     private long valuesHeapSize;
 
-    static HeapTrackingValuesMap createValuesMap(MemoryTracker memoryTracker) {
+    public static <T extends Measurable> HeapTrackingObjectMap<T> createObjectMap(MemoryTracker memoryTracker) {
         memoryTracker.allocateHeap(SHALLOW_SIZE + arraysHeapSize(DEFAULT_INITIAL_CAPACITY));
-        return new HeapTrackingValuesMap(memoryTracker, DEFAULT_INITIAL_CAPACITY);
+        return new HeapTrackingObjectMap<>(memoryTracker, DEFAULT_INITIAL_CAPACITY);
     }
 
-    private HeapTrackingValuesMap(MemoryTracker memoryTracker, int trackedCapacity) {
+    private HeapTrackingObjectMap(MemoryTracker memoryTracker, int trackedCapacity) {
         super(memoryTracker, trackedCapacity);
     }
 
     @Override
-    public Value put(long key, Value value) {
+    public T put(long key, T value) {
         allocate(value);
-        Value old = super.put(key, value);
+        T old = super.put(key, value);
         if (old != null) {
             release(old);
         }
@@ -50,8 +50,8 @@ public class HeapTrackingValuesMap extends HeapTrackingLongObjectHashMap<Value> 
     }
 
     @Override
-    public Value remove(long key) {
-        Value remove = super.remove(key);
+    public T remove(long key) {
+        T remove = super.remove(key);
         if (remove != null) {
             release(remove);
         }
@@ -65,13 +65,13 @@ public class HeapTrackingValuesMap extends HeapTrackingLongObjectHashMap<Value> 
         valuesHeapSize = 0;
     }
 
-    private void allocate(Value value) {
+    private void allocate(T value) {
         long valueHeapSize = value.estimatedHeapUsage();
         valuesHeapSize += valueHeapSize;
         memoryTracker.allocateHeap(valueHeapSize);
     }
 
-    private void release(Value old) {
+    private void release(T old) {
         long oldHeapSize = old.estimatedHeapUsage();
         valuesHeapSize -= oldHeapSize;
         memoryTracker.releaseHeap(oldHeapSize);

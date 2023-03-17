@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.diffsets;
+package org.neo4j.collection.diffset;
 
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
+import org.neo4j.collection.factory.CollectionsFactory;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.VisibleForTesting;
@@ -61,7 +61,8 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets {
         this.memoryTracker = memoryTracker;
     }
 
-    protected MutableLongDiffSetsImpl(CollectionsFactory collectionsFactory, MemoryTracker memoryTracker) {
+    @VisibleForTesting
+    public MutableLongDiffSetsImpl(CollectionsFactory collectionsFactory, MemoryTracker memoryTracker) {
         this(NOT_INITIALIZED, NOT_INITIALIZED, collectionsFactory, memoryTracker);
     }
 

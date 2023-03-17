@@ -213,9 +213,9 @@ public final class ChunkCommitter implements TransactionCommitter {
                                 "Transaction rollback failed. Batch with transaction id %d encountered, while it was expected to belong to transaction id %d. Batch id: %s.",
                                 commandBatch.txId(), transactionIdToRollback, chunkId(commandBatch)));
                     }
-                    rolledbackBatches++;
                     transactionPayload.init((CommandChunk) commandBatch.commandBatch());
-                    storageEngine.apply(transactionPayload, TransactionApplicationMode.REVERSE_RECOVERY);
+                    storageEngine.apply(transactionPayload, TransactionApplicationMode.MVCC_ROLLBACK);
+                    rolledbackBatches++;
                     logPosition = commandBatch.previousBatchLogPosition();
                 }
             }

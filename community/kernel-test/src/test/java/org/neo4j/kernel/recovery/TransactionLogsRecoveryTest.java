@@ -244,7 +244,7 @@ class TransactionLogsRecoveryTest {
                                 CursorContextFactory contextFactory,
                                 String tracerTag) {
                             RecoveryApplier actual = super.getRecoveryApplier(mode, contextFactory, tracerTag);
-                            if (mode == TransactionApplicationMode.REVERSE_RECOVERY) {
+                            if (mode.isReverseStep()) {
                                 return actual;
                             }
 

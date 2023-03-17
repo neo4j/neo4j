@@ -17,9 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.diffsets;
-
-import org.neo4j.storageengine.api.txstate.DiffSets;
+package org.neo4j.collection.diffset;
 
 public interface MutableDiffSets<T> extends DiffSets<T> {
     boolean add(T elem);

@@ -32,8 +32,8 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.impl.util.diffsets.MutableDiffSets;
-import org.neo4j.kernel.impl.util.diffsets.MutableDiffSetsImpl;
+import org.neo4j.collection.diffset.MutableDiffSets;
+import org.neo4j.collection.diffset.MutableDiffSetsImpl;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 class MutableDiffSetsImplTest {

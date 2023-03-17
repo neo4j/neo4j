@@ -33,7 +33,7 @@ class OffHeapCollectionsFactoryTest {
         var factory = new OffHeapCollectionsFactory(new CachingOffHeapBlockAllocator());
         memoryTracker.setLimit(ByteUnit.kibiBytes(512) + 1);
         // when
-        Assertions.assertThatThrownBy(() -> factory.newValuesMap(memoryTracker))
+        Assertions.assertThatThrownBy(() -> factory.newObjectMap(memoryTracker))
                 .isInstanceOf(MemoryLimitExceededException.class);
         factory.release();
 

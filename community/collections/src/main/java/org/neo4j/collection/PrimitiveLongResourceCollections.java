@@ -21,6 +21,7 @@ package org.neo4j.collection;
 
 import static org.neo4j.collection.PrimitiveLongCollections.resourceIterator;
 
+import java.io.IOException;
 import java.util.Arrays;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceUtils;
@@ -39,6 +40,17 @@ public class PrimitiveLongResourceCollections {
 
     public static PrimitiveLongResourceIterator iterator(Resource resource, final long... items) {
         return resourceIterator(PrimitiveLongCollections.iterator(items), resource);
+    }
+
+    public static long count(PrimitiveLongResourceIterator iterator) throws IOException {
+        long count = 0;
+        try (iterator) {
+            while (iterator.hasNext()) {
+                iterator.next();
+                count++;
+            }
+        }
+        return count;
     }
 
     public static PrimitiveLongResourceIterator concat(
