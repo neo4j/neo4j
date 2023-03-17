@@ -84,9 +84,9 @@ object ASTRewriter {
         addDependenciesToProjectionsInSubqueryExpressions
       ),
       initialConditions = SemanticInfoAvailable ++ Set(
-          ReturnItemsAreAliased,
-          ExpressionsHaveComputedDependencies
-        )
+        ReturnItemsAreAliased,
+        ExpressionsHaveComputedDependencies
+      )
     )
 
   def rewrite(
