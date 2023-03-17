@@ -56,12 +56,13 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory
             return Optional.empty();
         }
 
-        var unrecoverableFiles = unrecoverableFiles( database );
-        var recoverableFiles = recoverableFiles( database );
-
         var checkPointer = database.getDependencyResolver().resolveDependency( CheckPointer.class );
         var checkpointMutex = tryCheckpointAndAcquireMutex( checkPointer );
         var lastCommittedTransactionId = checkPointer.lastCheckPointedTransactionId();
+
+        var unrecoverableFiles = unrecoverableFiles( database );
+        var recoverableFiles = recoverableFiles( database );
+
         var snapshot = new StoreSnapshot( unrecoverableFiles, recoverableFiles, lastCommittedTransactionId, database.getStoreId(), checkpointMutex );
         return Optional.of( snapshot );
     }
