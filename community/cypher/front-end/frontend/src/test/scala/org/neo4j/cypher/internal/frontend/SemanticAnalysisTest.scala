@@ -1471,4 +1471,9 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       Set(SemanticError("Subquery expressions are not allowed in a MERGE clause.", InputPosition(33, 1, 34)))
     )
   }
+
+  test("should allow index hint with negated predicate") {
+    val query = "MATCH (a:A) USING INDEX a:A(prop) WHERE NOT a.prop > 123 RETURN 1"
+    expectNoErrorsFrom(query)
+  }
 }

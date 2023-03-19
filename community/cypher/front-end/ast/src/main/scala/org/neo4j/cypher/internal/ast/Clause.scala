@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -691,7 +692,7 @@ case class Match(
             }
           }
           SkipChildren(newAcc)
-      case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors =>
+      case _: Where | _: And | _: Ands | _: Set[_] | _: Seq[_] | _: Or | _: Ors | _: Not =>
         acc => TraverseChildren(acc)
       case _ =>
         acc => SkipChildren(acc)
