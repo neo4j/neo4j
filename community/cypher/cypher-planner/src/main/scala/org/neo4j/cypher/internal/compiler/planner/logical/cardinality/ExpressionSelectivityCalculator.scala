@@ -206,6 +206,10 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case AsValueRangeSeekable(seekable) =>
       calculateSelectivityForValueRangeSeekable(seekable, labelInfo, relTypeInfo)
 
+    // WHERE NOT [...]
+    case Not(inner) =>
+      apply(inner, labelInfo, relTypeInfo).negate
+
     // WHERE x.prop IS NOT NULL
     case AsPropertyScannable(scannable) =>
       calculateSelectivityForPropertyExistence(scannable.name, labelInfo, relTypeInfo, scannable.propertyKey)
@@ -224,10 +228,6 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case _: VarLengthBound =>
       // These are inserted by AddVarLengthPredicates and taken care of in the cardinality estimation of the referenced var-length relationship.
       Selectivity.ONE
-
-    // WHERE NOT [...]
-    case Not(inner) =>
-      apply(inner, labelInfo, relTypeInfo).negate
 
     case Ors(expressions) =>
       val selectivities = expressions.toIndexedSeq.map(apply(_, labelInfo, relTypeInfo))
