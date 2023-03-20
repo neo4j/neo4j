@@ -29,31 +29,33 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsStringRangeSee
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsValueRangeSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PropertySeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexRequirement
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.MultipleExactPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NonSeekablePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NotExactPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.SingleExactPredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.variable
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProvider.allPossibleRangeIndexRequirements
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProvider.findExplicitCompatiblePredicates
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
-import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.PartialPredicate.PartialDistanceSeekWrapper
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.ExistenceQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.toValueCategory
+import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
+import org.neo4j.values.storable.ValueCategory
 
 trait IndexCompatiblePredicatesProvider {
 
@@ -87,14 +89,8 @@ trait IndexCompatiblePredicatesProvider {
       valid
     )
 
-    val rangeIndexCapability: IndexCapability = RangeIndexProvider.CAPABILITY
-
     val partialCompatiblePredicates = explicitCompatiblePredicates.collect {
-      case predicate
-        if !rangeIndexCapability.isQuerySupported(
-          predicate.indexQueryType,
-          toValueCategory(predicate.cypherType)
-        ) =>
+      case predicate if !predicate.indexRequirements.subsetOf(allPossibleRangeIndexRequirements) =>
         predicate.convertToScannable
     }
 
@@ -143,7 +139,7 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = exactness,
           solvedPredicate = Some(predicate),
           dependencies = seekable.dependencies,
-          indexQueryType = IndexQueryType.EXACT,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXACT)),
           cypherType = seekable.propertyValueType(semanticTable)
         )
 
@@ -162,7 +158,7 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = SingleExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = lhs.dependencies,
-          indexQueryType = IndexQueryType.EXACT,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXACT)),
           cypherType = seekable.propertyValueType(semanticTable)
         )
 
@@ -177,7 +173,7 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = seekable.dependencies,
-          indexQueryType = IndexQueryType.STRING_PREFIX,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.STRING_PREFIX)),
           cypherType = seekable.propertyValueType(semanticTable)
         )
 
@@ -192,7 +188,7 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = seekable.dependencies,
-          indexQueryType = IndexQueryType.RANGE,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.RANGE)),
           cypherType = seekable.propertyValueType(semanticTable)
         )
 
@@ -206,7 +202,7 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = seekable.dependencies,
-          indexQueryType = IndexQueryType.BOUNDING_BOX,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.BOUNDING_BOX)),
           cypherType = seekable.propertyValueType(semanticTable)
         )
 
@@ -224,7 +220,7 @@ object IndexCompatiblePredicatesProvider {
           solvedPredicate = Some(PartialDistanceSeekWrapper(predicate)),
           dependencies = seekable.dependencies,
           // Distance on an index level uses IndexQueryType.BOUNDING_BOX
-          indexQueryType = IndexQueryType.BOUNDING_BOX,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.BOUNDING_BOX)),
           cypherType = seekable.propertyValueType(semanticTable)
         )
 
@@ -238,7 +234,7 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NonSeekablePredicate,
           solvedPredicate = Some(predicate),
           dependencies = expr.dependencies,
-          indexQueryType = IndexQueryType.STRING_SUFFIX,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.STRING_SUFFIX)),
           cypherType = CTString
         )
 
@@ -252,7 +248,7 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NonSeekablePredicate,
           solvedPredicate = Some(predicate),
           dependencies = expr.dependencies,
-          indexQueryType = IndexQueryType.STRING_CONTAINS,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.STRING_CONTAINS)),
           cypherType = CTString
         )
 
@@ -266,10 +262,20 @@ object IndexCompatiblePredicatesProvider {
           predicateExactness = NotExactPredicate,
           solvedPredicate = Some(predicate),
           dependencies = Set.empty,
-          indexQueryType = IndexQueryType.EXISTS,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
           cypherType = CTAny
         ).convertToScannable
     }
+  }
+
+  private val allPossibleRangeIndexRequirements: Set[IndexRequirement] = {
+    val rangeIndexCapability: IndexCapability = RangeIndexProvider.CAPABILITY
+    val supportedQueryTypes = IndexQueryType.values().collect {
+      case queryType if rangeIndexCapability.isQuerySupported(queryType, ValueCategory.ANYTHING) =>
+        IndexRequirement.SupportsIndexQuery(queryType)
+    }
+
+    Set(IndexRequirement.HasType(IndexType.Range)) ++ supportedQueryTypes
   }
 }
 

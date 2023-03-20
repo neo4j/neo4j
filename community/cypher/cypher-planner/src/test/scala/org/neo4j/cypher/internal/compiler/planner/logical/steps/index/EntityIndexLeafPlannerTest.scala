@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.AsDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexCompatiblePredicate
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.IndexRequirement
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NonSeekablePredicate
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityIndexLeafPlanner.NotExactPredicate
 import org.neo4j.cypher.internal.expressions.BooleanExpression
@@ -78,32 +79,41 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     "equals",
     equals(property, integerLiteral),
     propertyTypes = Map(integerLiteral -> CTInteger.invariant),
-    expectedPredicatesOrArgs = Right(Args(indexQueryType = IndexQueryType.EXACT, cypherType = CTInteger))
+    expectedPredicatesOrArgs = Args(
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXACT)),
+      cypherType = CTInteger
+    )
   )
 
   testFindIndexCompatiblePredicate(
     "equals with unknown variable",
     equals(property, varFor("m")),
-    expectedPredicatesOrArgs = Right(Args(
+    expectedPredicatesOrArgs = Args(
       solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _)),
-      indexQueryType = IndexQueryType.EXISTS,
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
       cypherType = CTAny
-    ))
+    )
   )
 
   testFindIndexCompatiblePredicate(
     "equals with known variable",
     equals(property, varFor("m")),
     argumentIds = Set("m"),
-    expectedPredicatesOrArgs =
-      Right(Args(dependencies = Set("m"), indexQueryType = IndexQueryType.EXACT, cypherType = CTAny))
+    expectedPredicatesOrArgs = Args(
+      dependencies = Set("m"),
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXACT)),
+      cypherType = CTAny
+    )
   )
 
   testFindIndexCompatiblePredicate(
     "equals reverse",
     equals(integerLiteral, property),
     propertyTypes = Map(integerLiteral -> CTInteger.invariant),
-    expectedPredicatesOrArgs = Right(Args(indexQueryType = IndexQueryType.EXACT, cypherType = CTInteger))
+    expectedPredicatesOrArgs = Args(
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXACT)),
+      cypherType = CTInteger
+    )
   )
 
   testFindIndexCompatiblePredicate(
@@ -114,13 +124,19 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       integerListLiteral.expressions(0) -> CTInteger,
       integerListLiteral.expressions(1) -> CTInteger
     ),
-    expectedPredicatesOrArgs = Right(Args(indexQueryType = IndexQueryType.EXACT, cypherType = CTInteger))
+    expectedPredicatesOrArgs = Args(
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXACT)),
+      cypherType = CTInteger
+    )
   )
 
   testFindIndexCompatiblePredicate(
     "startsWith",
     startsWith(property, literalString("test")),
-    expectedPredicatesOrArgs = Right(Args(indexQueryType = IndexQueryType.STRING_PREFIX, cypherType = CTString))
+    expectedPredicatesOrArgs = Args(
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.STRING_PREFIX)),
+      cypherType = CTString
+    )
   )
 
   testFindIndexPredicateOnStringPredicate(
@@ -139,27 +155,30 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     "lessThan with literal",
     lessThan(property, integerLiteral),
     propertyTypes = Map(integerLiteral -> CTInteger.invariant),
-    expectedPredicatesOrArgs = Right(Args(indexQueryType = IndexQueryType.RANGE, cypherType = CTInteger))
+    expectedPredicatesOrArgs = Args(
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.RANGE)),
+      cypherType = CTInteger
+    )
   )
 
   testFindIndexCompatiblePredicate(
     "lessThan with other property",
     lessThan(property, property2),
-    expectedPredicatesOrArgs = Right(Args(
+    expectedPredicatesOrArgs = Args(
       solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _)),
-      indexQueryType = IndexQueryType.EXISTS,
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
       cypherType = CTAny
-    ))
+    )
   )
 
   testFindIndexCompatiblePredicate(
     "lessThan with unknown variable",
     lessThan(property, varFor("m")),
-    expectedPredicatesOrArgs = Right(Args(
+    expectedPredicatesOrArgs = Args(
       solvedPredicate = Some(PartialPredicateWrapper(isNotNull(property), _)),
-      indexQueryType = IndexQueryType.EXISTS,
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
       cypherType = CTAny
-    ))
+    )
   )
 
   testFindIndexCompatiblePredicate(
@@ -167,21 +186,27 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
     lessThan(property, varFor("m")),
     argumentIds = Set("m"),
     propertyTypes = Map(varFor("m") -> CTInteger.invariant),
-    expectedPredicatesOrArgs =
-      Right(Args(dependencies = Set("m"), indexQueryType = IndexQueryType.RANGE, cypherType = CTInteger))
+    expectedPredicatesOrArgs = Args(
+      dependencies = Set("m"),
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.RANGE)),
+      cypherType = CTInteger
+    )
   )
 
   testFindIndexCompatiblePredicate(
     "isNotNull",
     isNotNull(property),
-    expectedPredicatesOrArgs = Right(Args(indexQueryType = IndexQueryType.EXISTS, cypherType = CTAny))
+    expectedPredicatesOrArgs = Args(
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
+      cypherType = CTAny
+    )
   )
 
   // this should only work for NodeIndexLeafPlanner
   testFindIndexCompatiblePredicate(
     "hasLabel in generic leaf planner",
     hasLabels("n", "ConstraintLabel"),
-    expectedPredicatesOrArgs = Right(Args(expectToExist = false))
+    expectedPredicatesOrArgs = Args(expectToExist = false)
   )
 
   testFindIndexPredicateOnPointPredicate(
@@ -244,14 +269,14 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       predicateExactness = NonSeekablePredicate,
       solvedPredicate = Some(stringPredicate),
       dependencies = Set.empty,
-      indexQueryType = indexQueryType,
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(indexQueryType)),
       cypherType = CTString
     )
     val implicitExistencePredicate = makeImplicitExistencePredicate(stringPredicate)
     testFindIndexCompatiblePredicate(
       predicateName,
       stringPredicate,
-      expectedPredicatesOrArgs = Left(Seq(explicitPredicate, implicitExistencePredicate))
+      expectedPredicatesOrArgs = Predicates(Seq(explicitPredicate, implicitExistencePredicate))
     )
   }
 
@@ -272,14 +297,14 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       predicateExactness = NotExactPredicate,
       solvedPredicate = solvedPredicate.map(_.apply(pointPredicate)).orElse(Some(pointPredicate)),
       dependencies = Set.empty,
-      indexQueryType = IndexQueryType.BOUNDING_BOX,
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.BOUNDING_BOX)),
       cypherType = CTPoint
     )
     val implicitExistencePredicate = makeImplicitExistencePredicate(pointPredicate)
     testFindIndexCompatiblePredicate(
       predicateName,
       pointPredicate,
-      expectedPredicatesOrArgs = Left(Seq(explicitPredicate, implicitExistencePredicate))
+      expectedPredicatesOrArgs = Predicates(Seq(explicitPredicate, implicitExistencePredicate))
     )
   }
 
@@ -295,27 +320,32 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
       predicateExactness = NotExactPredicate,
       solvedPredicate = Some(PartialPredicate(isNotNull(property), predicate)),
       dependencies = dependencies.map(varFor(_)),
-      indexQueryType = IndexQueryType.EXISTS,
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
       cypherType = CTAny
     )
   }
 
+  sealed private trait ExpectedTestResult
+
   private case class Args(
     solvedPredicate: Option[Expression => PartialPredicate[Expression]] = None,
     dependencies: Set[String] = Set.empty,
-    indexQueryType: IndexQueryType = IndexQueryType.RANGE,
+    indexRequirements: Set[IndexRequirement] = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.RANGE)),
     cypherType: CypherType = CTAny,
     expectToExist: Boolean = true
-  )
+  ) extends ExpectedTestResult
+
+  private case class Predicates(predicates: Seq[IndexCompatiblePredicate]) extends ExpectedTestResult
 
   private def testFindIndexCompatiblePredicate(
     name: String,
     predicate: Expression,
     argumentIds: Set[String] = Set.empty,
     propertyTypes: Map[Expression, TypeSpec] = Map.empty,
-    expectedPredicatesOrArgs: Either[Seq[IndexCompatiblePredicate], Args]
+    expectedPredicatesOrArgs: ExpectedTestResult
   ): Unit = {
     val predicates = Set(predicate)
+    val exactQueryTypeReq = IndexRequirement.SupportsIndexQuery(IndexQueryType.EXACT)
     test(s"findIndexCompatiblePredicates ($name)") {
       new given {
         qg = queryGraph(predicates)
@@ -330,9 +360,9 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
           context.plannerState.indexCompatiblePredicatesProviderContext
         )
         expectedPredicatesOrArgs match {
-          case Left(expectedPredicates) =>
+          case Predicates(expectedPredicates) =>
             compatiblePredicates should contain theSameElementsAs expectedPredicates
-          case Right(Args(solvedPredicate, dependencies, indexQueryType, cypherType, expectToExist)) =>
+          case Args(solvedPredicate, dependencies, indexRequirements, cypherType, expectToExist) =>
             if (expectToExist) {
               withClue(s"$name should be recognized as index compatible predicate with the right parameters") {
                 compatiblePredicates.size shouldBe 1
@@ -343,13 +373,15 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
                     compatiblePredicate.solvedPredicate.get should equal(expectedSolvedPredicate)
                   }
                   withClue("including exactness") {
-                    compatiblePredicate.predicateExactness.isExact shouldBe (indexQueryType == IndexQueryType.EXACT)
+                    compatiblePredicate.predicateExactness.isExact shouldBe (indexRequirements.contains(
+                      exactQueryTypeReq
+                    ))
                   }
                   withClue("including dependencies") {
                     compatiblePredicate.dependencies.map(_.name) should equal(dependencies)
                   }
-                  withClue("including indexQueryType") {
-                    compatiblePredicate.indexQueryType shouldBe indexQueryType
+                  withClue("including indexRequirements") {
+                    compatiblePredicate.indexRequirements shouldBe indexRequirements
                   }
                   withClue("including cypherType") {
                     compatiblePredicate.cypherType shouldBe cypherType

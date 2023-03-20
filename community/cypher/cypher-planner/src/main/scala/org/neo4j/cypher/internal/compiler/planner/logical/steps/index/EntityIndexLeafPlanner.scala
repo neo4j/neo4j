@@ -103,7 +103,7 @@ object EntityIndexLeafPlanner {
       solvedPredicate = None,
       dependencies = Set.empty,
       isImplicit = true,
-      indexQueryType = IndexQueryType.EXISTS,
+      indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
       cypherType = CTAny
     )
   }
@@ -121,7 +121,7 @@ object EntityIndexLeafPlanner {
 
     // Group predicates by which property they include
     val predicatesByProperty = predicates
-      .filter(predicate => indexDescriptor.isQuerySupported(predicate.indexQueryType, predicate.cypherType))
+      .filter(predicate => predicate.indexRequirements.forall(req => req.satisfiedBy(indexDescriptor, predicate)))
       .groupBy(icp => semanticTable.id(icp.propertyKeyName))
       // Sort out predicates that are not found in semantic table
       .collect { case (Some(x), v) => (x, v) }
@@ -183,7 +183,7 @@ object EntityIndexLeafPlanner {
    * @param solvedPredicate      If a plan is created, this is what to register as solved predicate
    * @param dependencies         Predicate dependencies
    * @param isImplicit           if `true` than the predicate is not explicitly stated in the query
-   * @param indexQueryType       the type of predicate
+   * @param indexRequirements    Requirements an index must satisfy to be considered a match for this predicate
    * @param cypherType           the type of the property
    */
   case class IndexCompatiblePredicate(
@@ -195,7 +195,7 @@ object EntityIndexLeafPlanner {
     solvedPredicate: Option[Expression],
     dependencies: Set[LogicalVariable],
     isImplicit: Boolean = false,
-    indexQueryType: IndexQueryType,
+    indexRequirements: Set[IndexRequirement],
     cypherType: CypherType
   ) {
     def name: String = variable.name
@@ -215,7 +215,7 @@ object EntityIndexLeafPlanner {
           queryExpression = ExistenceQueryExpression(),
           predicateExactness = NotExactPredicate,
           solvedPredicate = solvedPredicate.map(convertToScannablePredicate),
-          indexQueryType = IndexQueryType.EXISTS,
+          indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
           cypherType = CTAny
         )
     }
@@ -234,6 +234,27 @@ object EntityIndexLeafPlanner {
     private def unwrapPartial(expr: Expression) = expr match {
       case pp: PartialPredicate[_] => pp.coveringPredicate
       case e                       => e
+    }
+  }
+
+  sealed trait IndexRequirement extends Product {
+    def satisfiedBy(indexDescriptor: IndexDescriptor, predicate: IndexCompatiblePredicate): Boolean
+  }
+
+  object IndexRequirement {
+
+    final case class SupportsIndexQuery(indexQueryType: IndexQueryType) extends IndexRequirement {
+
+      override def satisfiedBy(indexDescriptor: IndexDescriptor, predicate: IndexCompatiblePredicate): Boolean = {
+        indexDescriptor.isQuerySupported(indexQueryType, predicate.cypherType)
+      }
+    }
+
+    final case class HasType(indexType: IndexDescriptor.IndexType) extends IndexRequirement {
+
+      override def satisfiedBy(indexDescriptor: IndexDescriptor, predicate: IndexCompatiblePredicate): Boolean = {
+        indexDescriptor.indexType == indexType
+      }
     }
   }
 
