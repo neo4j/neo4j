@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
 import org.neo4j.util.VisibleForTesting;
 
 public class TransactionLogFileInformation implements LogFileInformation {
@@ -133,13 +134,18 @@ public class TransactionLogFileInformation implements LogFileInformation {
                 LogEntry entry;
                 while ((entry = logEntryReader.readLogEntry(channel)) != null) {
                     if (entry instanceof LogEntryStart logEntryStart) {
-                        long timeWritten = logEntryStart.getTimeWritten();
-                        logFileTimeStamp.put(version, timeWritten);
-                        return timeWritten;
+                        return cacheTimeWritten(version, logEntryStart.getTimeWritten());
+                    } else if (entry instanceof LogEntryChunkStart chunkStart) {
+                        return cacheTimeWritten(version, chunkStart.getTimeWritten());
                     }
                 }
             }
             return -1;
+        }
+
+        private long cacheTimeWritten(long version, long timeWritten) {
+            logFileTimeStamp.put(version, timeWritten);
+            return timeWritten;
         }
     }
 }

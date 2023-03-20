@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.test.LatestVersions;
 
@@ -152,6 +153,27 @@ class TransactionLogFileInformationTest {
 
         long firstCommittedTxId = info.getFirstExistingEntryId();
         assertEquals(-1, firstCommittedTxId);
+    }
+
+    @Test
+    void extractLogFileTimeFromChunkStartEntry() throws IOException {
+        var logEntryReader = mock(LogEntryReader.class);
+        var readableLogChannel = mock(ReadableLogChannel.class);
+        when(logEntryReader.readLogEntry(readableLogChannel))
+                .thenReturn(
+                        new LogEntryChunkStart(LatestVersions.LATEST_KERNEL_VERSION, 42, 1, LogPosition.UNSPECIFIED));
+        var fileInfo = new TransactionLogFileInformation(logFiles, logHeaderCache, context, () -> logEntryReader);
+
+        var expectedHeader =
+                new LogHeader((byte) 1, new LogPosition(2, 4), 3, storeId, UNKNOWN_LOG_SEGMENT_SIZE, BASE_TX_CHECKSUM);
+        when(logFile.extractHeader(anyLong())).thenReturn(expectedHeader);
+        when(logFile.getRawReader(any())).thenReturn(readableLogChannel);
+
+        assertEquals(42, fileInfo.getFirstStartRecordTimestamp(1));
+        assertEquals(42, fileInfo.getFirstStartRecordTimestamp(1));
+        assertEquals(42, fileInfo.getFirstStartRecordTimestamp(1));
+
+        verify(logFile, times(1)).getRawReader(any());
     }
 
     @Test
