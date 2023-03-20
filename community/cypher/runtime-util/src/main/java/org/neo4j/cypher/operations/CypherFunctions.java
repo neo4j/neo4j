@@ -874,8 +874,8 @@ public final class CypherFunctions {
 
     public static ListValue labels(AnyValue item, DbAccess access, NodeCursor nodeCursor) {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof VirtualNodeValue) {
-            return access.getLabelsForNode(((VirtualNodeValue) item).id(), nodeCursor);
+        if (item instanceof VirtualNodeValue node) {
+            return access.getLabelsForNode(node.id(), nodeCursor);
         } else {
             throw new CypherTypeException("Invalid input for function 'labels()': Expected a Node, got: " + item);
         }
@@ -884,8 +884,18 @@ public final class CypherFunctions {
     @CalledFromGeneratedCode
     public static boolean hasLabel(AnyValue entity, int labelToken, DbAccess access, NodeCursor nodeCursor) {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (entity instanceof VirtualNodeValue) {
-            return access.isLabelSetOnNode(labelToken, ((VirtualNodeValue) entity).id(), nodeCursor);
+        if (entity instanceof VirtualNodeValue node) {
+            return access.isLabelSetOnNode(labelToken, node.id(), nodeCursor);
+        } else {
+            throw new CypherTypeException("Expected a Node, got: " + entity);
+        }
+    }
+
+    @CalledFromGeneratedCode
+    public static boolean hasLabels(AnyValue entity, int[] labelTokens, DbAccess access, NodeCursor nodeCursor) {
+        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (entity instanceof VirtualNodeValue node) {
+            return access.areLabelsSetOnNode(labelTokens, node.id(), nodeCursor);
         } else {
             throw new CypherTypeException("Expected a Node, got: " + entity);
         }
@@ -906,8 +916,28 @@ public final class CypherFunctions {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (entity instanceof VirtualNodeValue node) {
             return access.isALabelSetOnNode(node.id(), nodeCursor);
-        } else if (entity instanceof VirtualRelationshipValue relationship) {
+        } else if (entity instanceof VirtualRelationshipValue) {
             return true;
+        } else {
+            throw new CypherTypeException(format(
+                    "Invalid input for function 'hasALabelOrType()': Expected %s to be a node or relationship, but it was `%s`",
+                    entity, entity.getTypeName()));
+        }
+    }
+
+    @CalledFromGeneratedCode
+    public static boolean hasLabelsOrTypes(
+            AnyValue entity,
+            DbAccess access,
+            int[] labels,
+            NodeCursor nodeCursor,
+            int[] types,
+            RelationshipScanCursor relationshipScanCursor) {
+        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (entity instanceof VirtualNodeValue node) {
+            return access.areLabelsSetOnNode(labels, node.id(), nodeCursor);
+        } else if (entity instanceof VirtualRelationshipValue relationship) {
+            return access.areTypesSetOnRelationship(types, relationship.id(), relationshipScanCursor);
         } else {
             throw new CypherTypeException(format(
                     "Invalid input for function 'hasALabelOrType()': Expected %s to be a node or relationship, but it was `%s`",
@@ -918,8 +948,8 @@ public final class CypherFunctions {
     @CalledFromGeneratedCode
     public static boolean hasAnyLabel(AnyValue entity, int[] labels, DbAccess access, NodeCursor nodeCursor) {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (entity instanceof VirtualNodeValue) {
-            return access.isAnyLabelSetOnNode(labels, ((VirtualNodeValue) entity).id(), nodeCursor);
+        if (entity instanceof VirtualNodeValue node) {
+            return access.isAnyLabelSetOnNode(labels, node.id(), nodeCursor);
         } else {
             throw new CypherTypeException("Expected a Node, got: " + entity);
         }
@@ -927,10 +957,10 @@ public final class CypherFunctions {
 
     public static TextValue type(AnyValue item, DbAccess access, RelationshipScanCursor relCursor) {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof RelationshipValue) {
-            return ((RelationshipValue) item).type();
-        } else if (item instanceof VirtualRelationshipValue) {
-            int typeToken = ((VirtualRelationshipValue) item).relationshipTypeId(relationshipVisitor -> {
+        if (item instanceof RelationshipValue relationship) {
+            return relationship.type();
+        } else if (item instanceof VirtualRelationshipValue relationship) {
+            int typeToken = relationship.relationshipTypeId(relationshipVisitor -> {
                 access.singleRelationship(relationshipVisitor.id(), relCursor);
                 relCursor.next();
                 relationshipVisitor.visit(
@@ -944,8 +974,8 @@ public final class CypherFunctions {
 
     public static TextValue threadSafeType(AnyValue item, DbAccess access, RelationshipScanCursor relCursor) {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof VirtualRelationshipValue) {
-            access.singleRelationship(((VirtualRelationshipValue) item).id(), relCursor);
+        if (item instanceof VirtualRelationshipValue relationship) {
+            access.singleRelationship(relationship.id(), relCursor);
             relCursor.next();
             return Values.stringValue(access.relationshipTypeName(relCursor.type()));
         } else {
@@ -956,11 +986,11 @@ public final class CypherFunctions {
     @CalledFromGeneratedCode
     public static boolean hasType(AnyValue entity, int typeToken, DbAccess access, RelationshipScanCursor relCursor) {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (entity instanceof VirtualRelationshipValue) {
+        if (entity instanceof VirtualRelationshipValue relationship) {
             if (typeToken == StatementConstants.NO_SUCH_RELATIONSHIP_TYPE) {
                 return false;
             } else {
-                int actualType = ((VirtualRelationshipValue) entity).relationshipTypeId(relationshipVisitor -> {
+                int actualType = relationship.relationshipTypeId(relationshipVisitor -> {
                     access.singleRelationship(relationshipVisitor.id(), relCursor);
                     if (relCursor.next()) {
                         relationshipVisitor.visit(
@@ -969,6 +999,17 @@ public final class CypherFunctions {
                 });
                 return typeToken == actualType;
             }
+        } else {
+            throw new CypherTypeException("Expected a Relationship, got: " + entity);
+        }
+    }
+
+    @CalledFromGeneratedCode
+    public static boolean hasTypes(
+            AnyValue entity, int[] typeTokens, DbAccess access, RelationshipScanCursor relCursor) {
+        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if (entity instanceof VirtualRelationshipValue relationship) {
+            return access.areTypesSetOnRelationship(typeTokens, relationship.id(), relCursor);
         } else {
             throw new CypherTypeException("Expected a Relationship, got: " + entity);
         }

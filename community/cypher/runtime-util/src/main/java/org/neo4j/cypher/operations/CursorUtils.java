@@ -225,6 +225,42 @@ public final class CursorUtils {
     }
 
     /**
+     * Checks if a given node has all the given labels
+     * @param read The current Read instance
+     * @param nodeCursor The node cursor to use
+     * @param node The id of the node
+     * @param labels The labels to check for
+     * @return {@code true} if the node has all the labels, otherwise {@code false}
+     */
+    public static boolean nodeHasLabels(Read read, NodeCursor nodeCursor, long node, int[] labels) {
+        read.singleNode(node, nodeCursor);
+        if (!nodeCursor.next()) {
+            return false;
+        }
+
+        return nodeHasLabels(nodeCursor, labels);
+    }
+
+    /**
+     * Checks if a given node has all the given labels
+     * @param nodeCursor A node cursor positioned on a particular node
+     * @param labels The labels to check for
+     * @return {@code true} if the node has all the labels, otherwise {@code false}
+     */
+    public static boolean nodeHasLabels(NodeCursor nodeCursor, int[] labels) {
+        for (int label : labels) {
+            if (label == NO_SUCH_LABEL) {
+                return false;
+            }
+            if (!nodeCursor.hasLabel(label)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Checks if given node has any label at all.
      *
      * @param read The current Read instance
@@ -297,6 +333,51 @@ public final class CursorUtils {
         }
 
         return relationshipCursor.type() == type;
+    }
+
+    /**
+     * Checks if given relationship has a given type.
+     *
+     * @param read The current Read instance
+     * @param relationshipCursor The relationship cursor to use
+     * @param relationship The id of the relationship
+     * @param types The types to check for
+     * @return {@code true} if the relationship has the type, otherwise {@code false}
+     */
+    public static boolean relationshipHasTypes(
+            Read read, RelationshipScanCursor relationshipCursor, long relationship, int[] types) {
+        assert types.length > 0;
+        int typeToLookFor = types[0];
+        for (int i = 1; i < types.length; i++) {
+            if (types[i] != typeToLookFor) {
+                return false;
+            }
+        }
+        if (typeToLookFor == NO_SUCH_RELATIONSHIP_TYPE) {
+            return false;
+        }
+
+        read.singleRelationship(relationship, relationshipCursor);
+        if (!relationshipCursor.next()) {
+            return false;
+        }
+
+        return relationshipCursor.type() == typeToLookFor;
+    }
+
+    public static boolean relationshipHasTypes(RelationshipScanCursor relationshipCursor, int[] types) {
+        assert types.length > 0;
+        int typeToLookFor = types[0];
+        for (int i = 1; i < types.length; i++) {
+            if (types[i] != typeToLookFor) {
+                return false;
+            }
+        }
+        if (typeToLookFor == NO_SUCH_RELATIONSHIP_TYPE) {
+            return false;
+        }
+
+        return relationshipCursor.type() == typeToLookFor;
     }
 
     public static RelationshipTraversalCursor nodeGetRelationships(

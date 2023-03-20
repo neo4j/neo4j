@@ -205,9 +205,9 @@ class CodeGeneration(methodLimit: Int, val codeGenerationMode: CodeGenerationMod
     beginBlock(clazz.generateConstructor(params.map(_.asCodeGen).toSeq: _*)) { block =>
       block.expression(invokeSuper(parent.getOrElse(OBJECT)))
       fields.distinct.foreach {
-        case InstanceField(typ, name, initializer) =>
+        case field @ InstanceField(typ, name) =>
           val reference = clazz.field(typ, name)
-          initializer.map(ir => compileExpression(ir, block)).foreach { value =>
+          field.initializer.map(ir => compileExpression(ir(), block)).foreach { value =>
             block.put(block.self(), reference, value)
           }
         case StaticField(typ, name, _) =>
@@ -470,9 +470,9 @@ class CodeGeneration(methodLimit: Int, val codeGenerationMode: CodeGenerationMod
             beginBlock(clazz.generateConstructor(params.map(_.asCodeGen): _*)) { constructor =>
               constructor.expression(Expression.invokeSuper(overrides, params.map(p => constructor.load(p.name)): _*))
               fields.distinct.foreach {
-                case InstanceField(typ, name, initializer) =>
+                case field @ InstanceField(typ, name) =>
                   val reference = clazz.field(typ, name)
-                  initializer.map(ir => compileExpression(ir, constructor)).foreach { value =>
+                  field.initializer.map(ir => compileExpression(ir(), constructor)).foreach { value =>
                     constructor.put(constructor.self(), reference, value)
                   }
                 case StaticField(typ, name, _) =>

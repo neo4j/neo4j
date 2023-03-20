@@ -686,9 +686,9 @@ sealed trait Field {
 
 case class InstanceField(
   typ: codegen.TypeReference,
-  name: String,
-  initializer: Option[IntermediateRepresentation] = None
-) extends Field
+  name: String
+)(val initializer: Option[() => IntermediateRepresentation] = None) extends Field
+
 case class StaticField(typ: codegen.TypeReference, name: String, value: Option[Any] = None) extends Field
 
 case class LocalVariable(typ: codegen.TypeReference, name: String, value: IntermediateRepresentation)
@@ -715,10 +715,14 @@ object IntermediateRepresentation {
   def nonGenericTypeRefOf[TYPE](implicit typ: Manifest[TYPE]): codegen.TypeReference =
     codegen.TypeReference.typeReference(manifest.runtimeClass)
 
-  def field[TYPE](name: String)(implicit typ: Manifest[TYPE]): InstanceField = InstanceField(typeRef(typ), name)
+  def field[TYPE](name: String)(implicit typ: Manifest[TYPE]): InstanceField = InstanceField(typeRef(typ), name)(None)
 
   def field[TYPE](name: String, initializer: IntermediateRepresentation)(implicit typ: Manifest[TYPE]): InstanceField =
-    InstanceField(typeRef(typ), name, Some(initializer))
+    InstanceField(typeRef(typ), name)(Some(() => initializer))
+
+  def lazyField[TYPE](name: String, initializer: () => IntermediateRepresentation)(implicit
+  typ: Manifest[TYPE]): InstanceField =
+    InstanceField(typeRef(typ), name)(Some(initializer))
 
   def staticConstant[TYPE](name: String, value: AnyRef)(implicit typ: Manifest[TYPE]): StaticField =
     StaticField(typeRef(typ), name, Some(value))

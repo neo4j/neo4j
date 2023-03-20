@@ -101,11 +101,15 @@ public interface DbAccess extends EntityById {
 
     boolean isLabelSetOnNode(int label, long id, NodeCursor nodeCursor);
 
+    boolean areLabelsSetOnNode(int[] labels, long id, NodeCursor nodeCursor);
+
     boolean isAnyLabelSetOnNode(int[] labels, long id, NodeCursor nodeCursor);
 
     boolean isALabelSetOnNode(long id, NodeCursor nodeCursor);
 
     boolean isTypeSetOnRelationship(int typ, long id, RelationshipScanCursor relationshipCursor);
+
+    boolean areTypesSetOnRelationship(int[] types, long id, RelationshipScanCursor relationshipCursor);
 
     String getPropertyKeyName(int token);
 

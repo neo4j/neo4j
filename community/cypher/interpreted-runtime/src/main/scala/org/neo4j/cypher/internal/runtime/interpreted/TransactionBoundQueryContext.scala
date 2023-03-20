@@ -620,12 +620,23 @@ private[internal] class TransactionBoundReadQueryContext(
     CursorUtils.nodeHasLabel(reads(), nodeCursor, node, label)
   }
 
+  override def areLabelsSetOnNode(labels: Array[Int], id: Long, nodeCursor: NodeCursor): Boolean =
+    CursorUtils.nodeHasLabels(reads(), nodeCursor, id, labels)
+
   override def isAnyLabelSetOnNode(labels: Array[Int], id: Long, nodeCursor: NodeCursor): Boolean = {
     CursorUtils.nodeHasAnyLabel(reads(), nodeCursor, id, labels)
   }
 
   override def isTypeSetOnRelationship(typ: Int, id: Long, relationshipCursor: RelationshipScanCursor): Boolean = {
     CursorUtils.relationshipHasType(reads(), relationshipCursor, id, typ)
+  }
+
+  override def areTypesSetOnRelationship(
+    types: Array[Int],
+    id: Long,
+    relationshipCursor: RelationshipScanCursor
+  ): Boolean = {
+    CursorUtils.relationshipHasTypes(reads(), relationshipCursor, id, types)
   }
 
   override def getRelationshipsForIds(
