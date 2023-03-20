@@ -291,7 +291,7 @@ class TransactionLogFilesTest {
         var files = LogFilesBuilder.builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
                 .withLogVersionRepository(new SimpleLogVersionRepository())
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
         files.init();

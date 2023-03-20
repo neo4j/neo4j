@@ -281,7 +281,7 @@ class CheckpointLogFileTest {
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
                 .withLogVersionRepository(logVersionRepository)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
     }

@@ -123,7 +123,7 @@ class TransactionLogAppendAndRotateIT {
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withMonitors(monitors)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
         life.add(logFiles);

@@ -30,6 +30,6 @@ public final class TestLogEntryReader {
 
     public static LogEntryReader logEntryReader() {
         return new VersionAwareLogEntryReader(
-                new TestCommandReaderFactory(), new BinarySupportedKernelVersions(Config.defaults()));
+                TestCommandReaderFactory.INSTANCE, new BinarySupportedKernelVersions(Config.defaults()));
     }
 }

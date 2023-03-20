@@ -97,7 +97,7 @@ class TransactionLogFileRotateAndReadRaceIT {
         LogFiles logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(new SimpleTransactionIdStore())
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withConfig(cfg)
                 .withStoreId(storeId)
                 .build();

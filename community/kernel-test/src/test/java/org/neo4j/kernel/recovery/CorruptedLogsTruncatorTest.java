@@ -99,7 +99,7 @@ class CorruptedLogsTruncatorTest {
                 .withRotationThreshold(SINGLE_LOG_FILE_SIZE)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .withConfig(Config.newBuilder()
                         .set(

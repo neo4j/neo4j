@@ -214,7 +214,7 @@ class LogFilesBuilderTest {
     @Test
     void fileBasedOperationsContextFailOnLastCommittedTransactionIdAccess() {
         assertThrows(UnsupportedOperationException.class, () -> logFilesBasedOnlyBuilder(storeDirectory, fileSystem)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .buildContext()
                 .getLastCommittedTransactionIdProvider()
                 .getLastCommittedTransactionId(null));
@@ -223,7 +223,7 @@ class LogFilesBuilderTest {
     @Test
     void fileBasedOperationsContextFailOnLogVersionRepositoryAccess() {
         assertThrows(UnsupportedOperationException.class, () -> logFilesBasedOnlyBuilder(storeDirectory, fileSystem)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .buildContext()
                 .getLogVersionRepositoryProvider()
                 .logVersionRepository(null));
@@ -232,6 +232,6 @@ class LogFilesBuilderTest {
     private static LogFilesBuilder builderWithTestCommandReaderFactory(
             DatabaseLayout databaseLayout, FileSystemAbstraction fileSystem) {
         return builder(databaseLayout, fileSystem, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
-                .withCommandReaderFactory(new TestCommandReaderFactory());
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE);
     }
 }

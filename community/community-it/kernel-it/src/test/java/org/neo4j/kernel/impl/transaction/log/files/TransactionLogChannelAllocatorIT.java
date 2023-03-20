@@ -232,7 +232,7 @@ class TransactionLogChannelAllocatorIT {
         return new TransactionLogFilesContext(
                 new AtomicLong(rotationThreshold),
                 new AtomicBoolean(true),
-                new TestCommandReaderFactory(),
+                TestCommandReaderFactory.INSTANCE,
                 any -> 1L,
                 () -> 1L,
                 any -> new LogPosition(0, 1),

@@ -69,7 +69,7 @@ public class TransactionIdChecker {
 
     private ReadableLogChannel openLogFile(FileSystemAbstraction fs, int version) throws IOException {
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(workingDirectory, fs)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .build();
         LogFile logFile = logFiles.getLogFile();
         PhysicalLogVersionedStoreChannel channel = logFile.openForVersion(version);

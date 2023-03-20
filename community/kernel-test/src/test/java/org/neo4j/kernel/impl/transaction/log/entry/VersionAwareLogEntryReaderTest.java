@@ -39,7 +39,7 @@ import org.neo4j.test.LatestVersions;
 
 class VersionAwareLogEntryReaderTest {
     private final LogEntryReader logEntryReader =
-            new VersionAwareLogEntryReader(new TestCommandReaderFactory(), LatestVersions.BINARY_VERSIONS);
+            new VersionAwareLogEntryReader(TestCommandReaderFactory.INSTANCE, LatestVersions.BINARY_VERSIONS);
 
     @Test
     void shouldReadAStartLogEntry() throws IOException {

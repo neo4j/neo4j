@@ -103,7 +103,7 @@ class ReversedSingleFileCommandBatchCursorTest {
                 .withRotationThreshold(ByteUnit.mebiBytes(10))
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
         life.add(logFiles);

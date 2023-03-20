@@ -160,7 +160,7 @@ class TransactionAppenderRotationIT {
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
     }

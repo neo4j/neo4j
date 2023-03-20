@@ -265,7 +265,7 @@ class QueueTransactionAppenderTestIT {
                 .withLogVersionRepository(logVersionRepository)
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withTransactionIdStore(transactionIdStore)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
     }

@@ -616,7 +616,7 @@ class LogCommandSerializationV4_2Test {
     }
 
     protected CommandReader createReader() {
-        return new LogCommandSerializationV4_2();
+        return LogCommandSerializationV4_2.INSTANCE;
     }
 
     static <RECORD extends AbstractBaseRecord> void assertBeforeAndAfterEquals(

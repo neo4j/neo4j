@@ -68,7 +68,7 @@ class DetachedCheckpointLogEntrySerializerV42Test {
     @Inject
     private TestDirectory directory;
 
-    private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
+    private final CommandReaderFactory commandReader = TestCommandReaderFactory.INSTANCE;
     private final LogPositionMarker positionMarker = new LogPositionMarker();
 
     @Test

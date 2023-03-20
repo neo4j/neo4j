@@ -59,7 +59,7 @@ import org.neo4j.test.utils.TestDirectory;
 @TestDirectoryExtension
 class LogEntrySerializerDispatcherTest {
     private final KernelVersion version = LATEST_KERNEL_VERSION;
-    private final CommandReaderFactory commandReader = new TestCommandReaderFactory();
+    private final CommandReaderFactory commandReader = TestCommandReaderFactory.INSTANCE;
     private final LogPositionMarker marker = new LogPositionMarker();
     private final LogPosition position = new LogPosition(0, 25);
 

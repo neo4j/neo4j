@@ -113,7 +113,7 @@ public class Runner implements Callable<Long> {
                         databaseLayout, fileSystemAbstraction, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(logVersionRepository)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
     }

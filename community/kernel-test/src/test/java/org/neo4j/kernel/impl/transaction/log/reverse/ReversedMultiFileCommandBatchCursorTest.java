@@ -97,7 +97,7 @@ class ReversedMultiFileCommandBatchCursorTest {
         logFiles = LogFilesBuilder.builder(databaseLayout, fs, LatestVersions.LATEST_KERNEL_VERSION_PROVIDER)
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
         life.add(logFiles);

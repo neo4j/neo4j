@@ -100,7 +100,7 @@ public final class LogTestUtils {
                     DatabaseTracer.NULL);
             ReadableLogChannel inBuffer = new ReadAheadLogChannel(inChannel, INSTANCE);
             LogEntryReader entryReader =
-                    new VersionAwareLogEntryReader(new TestCommandReaderFactory(), LatestVersions.BINARY_VERSIONS);
+                    new VersionAwareLogEntryReader(TestCommandReaderFactory.INSTANCE, LatestVersions.BINARY_VERSIONS);
 
             LogEntry entry;
             while ((entry = entryReader.readLogEntry(inBuffer)) != null) {

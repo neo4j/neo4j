@@ -148,7 +148,7 @@ public class TransactionAppenderConcurrencyTest {
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(STORE_ID)
                 .build();
         life.add(logFiles);
@@ -190,7 +190,7 @@ public class TransactionAppenderConcurrencyTest {
                 .withLogVersionRepository(logVersionRepository)
                 .withTransactionIdStore(transactionIdStore)
                 .withDatabaseHealth(databaseHealth)
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(STORE_ID)
                 .build();
         life.add(logFiles);
@@ -218,7 +218,7 @@ public class TransactionAppenderConcurrencyTest {
 
         // Check number of transactions, should only have one
         LogEntryReader logEntryReader =
-                new VersionAwareLogEntryReader(new TestCommandReaderFactory(), LatestVersions.BINARY_VERSIONS);
+                new VersionAwareLogEntryReader(TestCommandReaderFactory.INSTANCE, LatestVersions.BINARY_VERSIONS);
 
         LogFile logFile = logFiles.getLogFile();
         assertThat(logFile.getLowestLogVersion()).isEqualTo(logFile.getHighestLogVersion());

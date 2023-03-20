@@ -152,7 +152,7 @@ class PhysicalLogicalTransactionStoreTest {
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore(
-                logFiles, positionCache, new TestCommandReaderFactory(), monitors, true, config);
+                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
         verifyTransaction(
                 positionCache, consensusIndex, timeStarted, latestCommittedTxWhenStarted, timeCommitted, store);
     }
@@ -214,7 +214,7 @@ class PhysicalLogicalTransactionStoreTest {
                 new FakeRecoveryVisitor(consensusIndex, timeStarted, timeCommitted, latestCommittedTxWhenStarted);
 
         LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
-                logFiles, positionCache, new TestCommandReaderFactory(), monitors, true, config);
+                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
 
         life.add(createTransactionAppender(transactionIdStore, logFiles, Config.defaults(), jobScheduler));
         CorruptedLogsTruncator logPruner =
@@ -275,7 +275,7 @@ class PhysicalLogicalTransactionStoreTest {
         life = new LifeSupport();
         life.add(logFiles);
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore(
-                logFiles, positionCache, new TestCommandReaderFactory(), monitors, true, config);
+                logFiles, positionCache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
 
         // WHEN
         life.start();
@@ -303,7 +303,7 @@ class PhysicalLogicalTransactionStoreTest {
         LifeSupport life = new LifeSupport();
 
         final LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore(
-                logFiles, cache, new TestCommandReaderFactory(), monitors, true, config);
+                logFiles, cache, TestCommandReaderFactory.INSTANCE, monitors, true, config);
 
         try {
             life.start();
@@ -322,7 +322,7 @@ class PhysicalLogicalTransactionStoreTest {
                 .withRotationThreshold(ByteUnit.mebiBytes(1))
                 .withTransactionIdStore(transactionIdStore)
                 .withLogVersionRepository(mock(LogVersionRepository.class))
-                .withCommandReaderFactory(new TestCommandReaderFactory())
+                .withCommandReaderFactory(TestCommandReaderFactory.INSTANCE)
                 .withStoreId(storeId)
                 .build();
     }

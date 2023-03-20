@@ -125,6 +125,6 @@ class LogCommandSerializationV4_3D_3Test extends LogCommandSerializationV4_2Test
 
     @Override
     protected CommandReader createReader() {
-        return new LogCommandSerializationV4_3_D3();
+        return LogCommandSerializationV4_3_D3.INSTANCE;
     }
 }
