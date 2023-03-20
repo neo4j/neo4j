@@ -32,6 +32,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -39,7 +40,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.io.output.NullPrintStream;
@@ -53,6 +53,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.helpers.ProcessUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemUtils;
@@ -156,7 +157,16 @@ class ProfileCommandTest {
         Stopwatch start = Stopwatch.start();
         Future<Void> future = null;
         try (OtherThreadExecutor otherThread = new OtherThreadExecutor("test")) {
-            future = otherThread.executeDontWait(() -> execute(Duration.ofMinutes(10)));
+            future = otherThread.executeDontWait(() -> {
+                try {
+                    return execute(Duration.ofMinutes(10));
+                } catch (Exception e) {
+                    if (!process.isAlive()) {
+                        e = Exceptions.chain(e, new IllegalStateException("Process died with " + process.exitValue()));
+                    }
+                    throw e;
+                }
+            });
             assertEventually(this::hasThreadDumps, TRUE, 1, MINUTES);
             process.destroy();
             process.waitFor();
@@ -175,12 +185,9 @@ class ProfileCommandTest {
     }
 
     private boolean hasThreadDumps() throws IOException {
-        return fs.isDirectory(threadDumpDir)
-                && fs.listFiles(
-                                        threadDumpDir,
-                                        path -> path.getFileName().toString().startsWith("threads"))
-                                .length
-                        > 0;
+        DirectoryStream.Filter<Path> dumps =
+                path -> path.getFileName().toString().startsWith("threads");
+        return fs.isDirectory(threadDumpDir) && fs.listFiles(threadDumpDir, dumps).length > 0;
     }
 
     private void setPid(long pid) throws IOException {
@@ -232,7 +239,10 @@ class ProfileCommandTest {
         }
 
         public static void main(String[] args) throws InterruptedException {
-            Thread.sleep(TimeUnit.MINUTES.toMillis(10));
+            Stopwatch time = Stopwatch.start();
+            while (!time.hasTimedOut(10, MINUTES)) {
+                Thread.sleep(100);
+            }
         }
     }
 }
