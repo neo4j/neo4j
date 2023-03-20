@@ -58,7 +58,12 @@ case object normalizeInequalities extends Rewriter with CnfPhase {
 
   override def instance(from: BaseState, context: BaseContext): Rewriter = this
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(!AndRewrittenToAnds)
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    // This rewriter matches on Or, so it must run before that is rewritten to Ors
+    !OrRewrittenToOrs,
+    // If the predicates are already in CNF (AndsAboveOrs), there are more opportunities for this rewriter to be applied
+    AndsAboveOrs
+  )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(InequalitiesNormalized)
 

@@ -119,7 +119,10 @@ case object simplifyPredicates extends StepSequencer.Step with PlanPipelineTrans
     def unapplySeq[T](s: Set[T]): Option[Seq[T]] = Some(s.toSeq)
   }
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(AndRewrittenToAnds) ++ SemanticInfoAvailable
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    AndRewrittenToAnds,
+    OrRewrittenToOrs
+  ) ++ SemanticInfoAvailable
 
   override def postConditions: Set[StepSequencer.Condition] = Set(PredicatesSimplified)
 

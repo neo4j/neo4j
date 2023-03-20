@@ -80,7 +80,10 @@ case object distributeLawsRewriter extends CnfPhase {
     distributeLawsRewriter()
   }
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(!AndRewrittenToAnds)
+  override def preConditions: Set[StepSequencer.Condition] = Set(
+    !AndRewrittenToAnds,
+    !OrRewrittenToOrs
+  )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(AndsAboveOrs)
 

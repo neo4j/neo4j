@@ -54,7 +54,10 @@ case object flattenBooleanOperators extends Rewriter with CnfPhase {
 
   override def preConditions: Set[StepSequencer.Condition] = Set.empty
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(AndRewrittenToAnds)
+  override def postConditions: Set[StepSequencer.Condition] = Set(
+    AndRewrittenToAnds,
+    OrRewrittenToOrs
+  )
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
 
