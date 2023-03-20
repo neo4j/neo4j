@@ -1177,7 +1177,7 @@ class IndexPlanningIntegrationTest
       .build()
   }
 
-  test("should plan node text index usage only for supported predicates when feature flag is set") {
+  test("should plan node text index seek for supported predicates") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setLabelCardinality("A", 500)
@@ -1204,13 +1204,13 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter(s"cacheNFromStore[a.prop] $op 'hello'")
-        .nodeByLabelScan("a", "A")
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
         .build()
     }
   }
 
   test(
-    "should plan node text index usage only for supported predicates with a text index that does not support range predicates"
+    "should plan node text index seek only for supported predicates with a text index that does not support range predicates"
   ) {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -1238,7 +1238,7 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter(s"cacheNFromStore[a.prop] $op 'hello'")
-        .nodeByLabelScan("a", "A")
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
         .build()
     }
 
@@ -1315,7 +1315,7 @@ class IndexPlanningIntegrationTest
     }
   }
 
-  test("should plan relationship text index usage only for supported predicates when feature flag is set") {
+  test("should plan relationship text index seek only for supported predicates") {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
       .setRelationshipCardinality("()-[:REL]->()", 200)
@@ -1352,13 +1352,13 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
         .filter(s"cacheRFromStore[r.prop] $op 'hello'")
-        .relationshipTypeScan("(a)-[r:REL]->(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
         .build()
     }
   }
 
   test(
-    "should plan relationship text index usage only for supported predicates with a text index that does not support range predicates"
+    "should plan relationship text index seek only for supported predicates with a text index that does not support range predicates"
   ) {
     val cfg = plannerBuilder()
       .setAllNodesCardinality(1000)
@@ -1386,7 +1386,7 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
         .filter(s"cacheRFromStore[r.prop] $op 'hello'")
-        .relationshipTypeScan("(a)-[r:REL]->(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
         .build()
     }
 
@@ -1949,5 +1949,34 @@ class IndexPlanningIntegrationTest
         .relationshipIndexOperator("(a)-[r:REL(prop, otherProp)]->(b)")
         .build()
     }
+  }
+
+  test("should estimate cardinality for less-than with a string literal using TEXT index") {
+    val existsSelectivity = 0.5
+    val labelCardinality = 1000
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(2000)
+      .addNodeIndex(
+        "A",
+        Seq("prop"),
+        existsSelectivity = existsSelectivity,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT
+      )
+      .setLabelCardinality("A", labelCardinality)
+      .build()
+
+    val q = "MATCH (a:A) WHERE a.prop < 'hello' RETURN a"
+    val planState = planner.planState(q)
+    val expected = planner.planBuilder()
+      .produceResults("a")
+      .filter("a.prop < 'hello'")
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT).withCardinality(labelCardinality * existsSelectivity)
+
+    planState should haveSamePlanAndCardinalitiesAsBuilder(
+      expected,
+      AttributeComparisonStrategy.ComparingProvidedAttributesOnly
+    )
   }
 }

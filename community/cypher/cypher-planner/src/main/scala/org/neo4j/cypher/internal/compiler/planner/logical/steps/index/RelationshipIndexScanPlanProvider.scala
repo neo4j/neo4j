@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 
 object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
 
@@ -60,8 +59,6 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
 
     val solutions = for {
       indexMatch <- indexMatches
-      // Text indexes don't support scanning
-      if indexMatch.indexDescriptor.indexType != IndexDescriptor.IndexType.Text
       if isAllowedByRestrictions(indexMatch.variableName, restrictions)
     } yield createSolution(indexMatch, hints, argumentIds, context)
 
@@ -103,7 +100,10 @@ object RelationshipIndexScanPlanProvider extends RelationshipIndexPlanProvider {
     context: LogicalPlanningContext
   ): Solution[RelationshipIndexScanParameters] = {
     val predicateSet =
-      indexMatch.predicateSet(predicatesForIndexScan(indexMatch.propertyPredicates), exactPredicatesCanGetValue = false)
+      indexMatch.predicateSet(
+        predicatesForIndexScan(indexMatch.indexDescriptor.indexType, indexMatch.propertyPredicates),
+        exactPredicatesCanGetValue = false
+      )
 
     val hint = predicateSet
       .fulfilledHints(hints, indexMatch.indexDescriptor.indexType, planIsScan = true)

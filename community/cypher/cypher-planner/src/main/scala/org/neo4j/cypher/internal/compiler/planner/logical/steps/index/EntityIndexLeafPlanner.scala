@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -207,20 +208,20 @@ object EntityIndexLeafPlanner {
       case _                                       => false
     }
 
-    def convertToScannable: IndexCompatiblePredicate = queryExpression match {
+    def convertToRangeScannable: IndexCompatiblePredicate = queryExpression match {
       case _: CompositeQueryExpression[Expression] =>
         throw new IllegalStateException("A CompositeQueryExpression can't be nested in a CompositeQueryExpression")
 
       case _ => copy(
           queryExpression = ExistenceQueryExpression(),
           predicateExactness = NotExactPredicate,
-          solvedPredicate = solvedPredicate.map(convertToScannablePredicate),
+          solvedPredicate = solvedPredicate.map(convertToRangeScannablePredicate),
           indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
           cypherType = CTAny
         )
     }
 
-    private def convertToScannablePredicate(expr: Expression) = {
+    private def convertToRangeScannablePredicate(expr: Expression): Expression = {
       val original = unwrapPartial(expr)
       original match {
         case AsExplicitlyPropertyScannable(scannable) =>
@@ -229,6 +230,24 @@ object EntityIndexLeafPlanner {
           val isNotNull = IsNotNull(property)(predicate.position)
           PartialPredicate(isNotNull, expr)
       }
+    }
+
+    def convertToTextScannable: IndexCompatiblePredicate = {
+      copy(
+        queryExpression = ExistenceQueryExpression(),
+        predicateExactness = NotExactPredicate,
+        solvedPredicate = solvedPredicate.map(convertToTextScannablePredicate),
+        indexRequirements = Set(
+          IndexRequirement.SupportsIndexQuery(IndexQueryType.ALL_ENTRIES),
+          IndexRequirement.HasType(IndexType.Text)
+        )
+      )
+    }
+
+    private def convertToTextScannablePredicate(expr: Expression): Expression = {
+      val original = unwrapPartial(expr)
+      val isStringProperty = IsStringProperty(property)(predicate.position)
+      PartialPredicate(isStringProperty, original)
     }
 
     private def unwrapPartial(expr: Expression) = expr match {

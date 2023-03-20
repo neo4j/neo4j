@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListLiteral
@@ -440,6 +441,7 @@ object Scannable {
   def isEquivalentScannable(predicate1: Expression, predicate2: Expression): Boolean = {
     def explicitlyScannableProperty(predicate: Expression) = predicate match {
       case AsExplicitlyPropertyScannable(scannable) => Some(scannable.property)
+      case IsStringProperty(property)               => Some(property)
       case _                                        => None
     }
 

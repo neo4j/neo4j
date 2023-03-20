@@ -40,7 +40,7 @@ object EntityIndexSeekPlanProvider {
       case _                                                          => (exactPrefix, rest)
     }
 
-    seekablePrefix ++ nonSeekableSuffix.map(_.convertToScannable)
+    seekablePrefix ++ nonSeekableSuffix.map(_.convertToRangeScannable)
   }
 
   // Test if solving using this match is valid given the leaf plan restrictions

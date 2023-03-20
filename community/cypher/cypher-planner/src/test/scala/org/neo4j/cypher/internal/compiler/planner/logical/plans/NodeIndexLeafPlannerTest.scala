@@ -357,6 +357,14 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           IndexOrderNone,
           IndexType.RANGE
         ),
+        NodeIndexScan(
+          "n",
+          labelToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // oPropIsNotNull
         NodeIndexScan(
           "o",
@@ -388,79 +396,6 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
           IndexOrderNone,
           IndexType.RANGE
         )
-      )
-    }
-  }
-
-  test("should not find node index scans for text indexes") {
-
-    val litFoo = literalString("foo")
-
-    val nProp = prop("n", "prop")
-
-    val nPropStartsWithLitFoo = startsWith(nProp, litFoo)
-    val nPropEndsWithLitFoo = endsWith(nProp, litFoo)
-    val nPropContainsLitFoo = contains(nProp, litFoo)
-    val nPropIsNotNull = isNotNull(nProp)
-    new given {
-      addTypeToSemanticTable(nProp, CTInteger.invariant)
-
-      val predicates: Set[Expression] = Set(
-        hasLabels("n", "Awesome"),
-        nPropStartsWithLitFoo,
-        nPropEndsWithLitFoo,
-        nPropContainsLitFoo,
-        nPropIsNotNull
-      )
-
-      qg = QueryGraph(
-        selections = Selections(predicates.flatMap(_.asPredicates)),
-        patternNodes = Set("n")
-      )
-
-      textIndexOn("Awesome", "prop")
-
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val restriction = LeafPlanRestrictions.NoRestrictions
-      val resultPlans = nodeIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      val labelToken = LabelToken("Awesome", LabelId(0))
-      val propToken = PropertyKeyToken("prop", PropertyKeyId(0))
-
-      resultPlans shouldEqual Set(
-        // nPropStartsWithLitFoo
-        NodeIndexSeek(
-          "n",
-          labelToken,
-          Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
-          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
-          Set(),
-          IndexOrderNone,
-          IndexType.TEXT
-        ),
-        // nPropEndsWithLitFoo
-        NodeIndexEndsWithScan(
-          "n",
-          labelToken,
-          IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
-          litFoo,
-          Set(),
-          IndexOrderNone,
-          IndexType.TEXT
-        ),
-        // nPropContainsLitFoo
-        NodeIndexContainsScan(
-          "n",
-          labelToken,
-          IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
-          litFoo,
-          Set(),
-          IndexOrderNone,
-          IndexType.TEXT
-        )
-        // no scan plans
       )
     }
   }

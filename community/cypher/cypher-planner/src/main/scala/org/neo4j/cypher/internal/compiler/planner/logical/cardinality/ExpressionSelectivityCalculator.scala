@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAUL
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_TYPE_SELECTIVITY
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.defaultSelectivityForPropertyEquality
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.emptyStringLiteral
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.getPropertyPredicateRangeSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.getStringLength
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.indexSelectivityForSubstringSargable
@@ -66,9 +67,11 @@ import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
+import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
+import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
@@ -119,12 +122,13 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   private def indexTypesForPropertyEquality(propertyType: CypherType): Seq[IndexType] = Seq(
     Some(IndexType.Range),
     // We cannot use a text index for cardinality estimation unless we know that the property type is a String
-    if (propertyType == CTString) Some(IndexType.Text) else None
+    Option.when(propertyType == CTString)(IndexType.Text)
   ).flatten
 
-  private val indexTypesForRangeSeeks: Seq[IndexType] = Seq(
-    IndexType.Range
-  )
+  private def indexTypesForRangeSeeks(propertyType: CypherType): Seq[IndexType] = Seq(
+    Option.when(propertyType == CTString)(IndexType.Text),
+    Some(IndexType.Range)
+  ).flatten
 
   private val indexTypesPriorityForPointPredicates: Seq[IndexType] = Seq(
     IndexType.Point,
@@ -181,6 +185,17 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     // WHERE x.prop ENDS WITH expression
     case EndsWith(Property(Variable(name), propertyKey), substring) =>
       calculateSelectivityForSubstringSargable(name, labelInfo, relTypeInfo, propertyKey, substring)
+
+    case IsStringProperty(LogicalProperty(Variable(variable), propertyKey)) =>
+      // same as STARTS WITH ''
+      calculateSelectivityForSubstringSargable(
+        variable,
+        labelInfo,
+        relTypeInfo,
+        propertyKey,
+        emptyStringLiteral,
+        prefix = true
+      )
 
     // WHERE x.prop =~ expression
     case RegexMatch(Property(Variable(name), propertyKey), _) =>
@@ -411,6 +426,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       }
     }
 
+    val indexTypesToConsider = indexTypesForRangeSeeks(seekable.propertyValueType(semanticTable))
+
     val labels = labelInfo.getOrElse(seekable.ident.name, Set.empty)
     val relTypes = relTypeInfo.get(seekable.ident.name)
     val indexRangeSelectivities: Seq[Selectivity] = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
@@ -422,15 +439,15 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
       ids match {
         case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
-          for {
-            descriptor <-
-              indexTypesForRangeSeeks.map(IndexDescriptor.forNameId(_, labelOrRelTypeId, Seq(propertyKeyId)))
+          val selectivities = for {
+            descriptor <- indexTypesToConsider.map(IndexDescriptor.forNameId(_, labelOrRelTypeId, Seq(propertyKeyId)))
             propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
             propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
           } yield {
             val pRangeBounded: Selectivity = getPropertyPredicateRangeSelectivity(seekable, propEqValueSelectivity)
             pRangeBounded * propertyExistsSelectivity
           }
+          selectivities.headOption
 
         case _ => Some(Selectivity.ZERO)
       }
@@ -673,4 +690,6 @@ object ExpressionSelectivityCalculator {
     propEqualsAnyValue <- combiner.orTogetherSelectivities(Seq.fill(size)(propEqualsSingleValue))
     combinedSelectivity <- combiner.andTogetherSelectivities(Seq(propExists, propEqualsAnyValue))
   } yield combinedSelectivity
+
+  private val emptyStringLiteral = StringLiteral("")(InputPosition.NONE)
 }

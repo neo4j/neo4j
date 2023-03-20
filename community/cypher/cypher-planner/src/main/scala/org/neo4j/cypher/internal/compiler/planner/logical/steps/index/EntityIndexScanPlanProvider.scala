@@ -42,9 +42,17 @@ object EntityIndexScanPlanProvider {
     indexType: IndexType
   )
 
-  private[index] def predicatesForIndexScan(propertyPredicates: Seq[IndexCompatiblePredicate])
-    : Seq[IndexCompatiblePredicate] =
-    propertyPredicates.map(_.convertToScannable)
+  private[index] def predicatesForIndexScan(
+    indexType: IndexType,
+    propertyPredicates: Seq[IndexCompatiblePredicate]
+  ): Seq[IndexCompatiblePredicate] = {
+    indexType match {
+      case IndexType.Range | IndexType.Point =>
+        propertyPredicates.map(_.convertToRangeScannable)
+      case IndexType.Text =>
+        propertyPredicates.map(_.convertToTextScannable)
+    }
+  }
 
   private[index] def mergeSolutions[PARAMETERS](solutions: Set[Solution[PARAMETERS]]): Set[Solution[PARAMETERS]] =
     solutions

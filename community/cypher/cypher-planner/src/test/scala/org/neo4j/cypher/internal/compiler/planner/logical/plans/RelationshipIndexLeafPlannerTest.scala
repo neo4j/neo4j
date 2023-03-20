@@ -367,6 +367,16 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           IndexOrderNone,
           IndexType.RANGE
         ),
+        DirectedRelationshipIndexScan(
+          "n",
+          "n1",
+          "n2",
+          relationshipTypeToken,
+          Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)),
+          Set("x"),
+          IndexOrderNone,
+          IndexType.TEXT
+        ),
         // oPropIsNotNull
         DirectedRelationshipIndexScan(
           "o",
@@ -407,91 +417,6 @@ class RelationshipIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanni
           IndexOrderNone,
           IndexType.RANGE
         )
-      )
-    }
-  }
-
-  test("should not find relationship index scans for text indexes") {
-
-    val litFoo = literalString("foo")
-
-    val rProp = prop("r", "prop")
-
-    val rPropStartsWithLitFoo = startsWith(rProp, litFoo)
-    val rPropEndsWithLitFoo = endsWith(rProp, litFoo)
-    val rPropContainsLitFoo = contains(rProp, litFoo)
-    val rIsNotNull = isNotNull(rProp)
-    new given {
-      addTypeToSemanticTable(rProp, CTInteger.invariant)
-
-      val predicates: Set[Expression] = Set(
-        rPropStartsWithLitFoo,
-        rPropEndsWithLitFoo,
-        rPropContainsLitFoo,
-        rIsNotNull
-      )
-
-      qg = QueryGraph(
-        selections = Selections(predicates.flatMap(_.asPredicates)),
-        patternNodes = Set("a", "b"),
-        patternRelationships = Set(PatternRelationship(
-          "r",
-          ("a", "b"),
-          SemanticDirection.OUTGOING,
-          Seq(RelTypeName("REL")(pos)),
-          SimplePatternLength
-        ))
-      )
-
-      relationshipTextIndexOn("REL", "prop")
-
-    }.withLogicalPlanningContext { (cfg, ctx) =>
-      // when
-      val restriction = LeafPlanRestrictions.NoRestrictions
-      val resultPlans = relationshipIndexLeafPlanner(restriction)(cfg.qg, InterestingOrderConfig.empty, ctx)
-
-      // then
-      val relTypeToken = RelationshipTypeToken("REL", RelTypeId(0))
-      val propToken = PropertyKeyToken("prop", PropertyKeyId(0))
-
-      resultPlans shouldEqual Set(
-        // rPropStartsWithLitFoo
-        DirectedRelationshipIndexSeek(
-          "r",
-          "a",
-          "b",
-          relTypeToken,
-          Seq(IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE)),
-          RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
-          Set(),
-          IndexOrderNone,
-          IndexType.TEXT
-        ),
-        // rPropEndsWithLitFoo
-        DirectedRelationshipIndexEndsWithScan(
-          "r",
-          "a",
-          "b",
-          relTypeToken,
-          IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE),
-          litFoo,
-          Set(),
-          IndexOrderNone,
-          IndexType.TEXT
-        ),
-        // rPropContainsLitFoo
-        DirectedRelationshipIndexContainsScan(
-          "r",
-          "a",
-          "b",
-          relTypeToken,
-          IndexedProperty(propToken, DoNotGetValue, RELATIONSHIP_TYPE),
-          litFoo,
-          Set(),
-          IndexOrderNone,
-          IndexType.TEXT
-        )
-        // no scan plans
       )
     }
   }

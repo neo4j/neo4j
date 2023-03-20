@@ -363,10 +363,10 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       planner.plan(query) should equal(
         planner.planBuilder()
           .produceResults("r")
-          .filter("a = anon_2")
+          .filter("a = anon_3")
           .apply()
           .|.relationshipIndexOperator(
-            s"(anon_2)-[r:REL(prop $op 'foo')]-(b)",
+            s"(anon_3)-[r:REL(prop $op 'foo')]-(b)",
             argumentIds = Set("a"),
             indexType = IndexType.TEXT
           )
@@ -388,10 +388,10 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       planner.plan(query) should equal(
         planner.planBuilder()
           .produceResults("r")
-          .filter("b = anon_2")
+          .filter("b = anon_3")
           .apply()
           .|.relationshipIndexOperator(
-            s"(a)-[r:REL(prop $op 'foo')]-(anon_2)",
+            s"(a)-[r:REL(prop $op 'foo')]-(anon_3)",
             argumentIds = Set("b"),
             indexType = IndexType.TEXT
           )
@@ -412,10 +412,10 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
         planner.planBuilder()
           .produceResults("r")
           // the filter got pushed up through the apply
-          .filter("a = anon_4", "b = anon_5")
+          .filter("a = anon_6", "b = anon_7")
           .apply()
           .|.relationshipIndexOperator(
-            s"(anon_4)-[r:REL(prop $op 'foo')]-(anon_5)",
+            s"(anon_6)-[r:REL(prop $op 'foo')]-(anon_7)",
             argumentIds = Set("a", "b"),
             indexType = IndexType.TEXT
           )

@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
 import org.neo4j.cypher.internal.expressions.PartialPredicate
@@ -65,6 +66,7 @@ import org.neo4j.cypher.internal.planner.spi.MutableGraphStatisticsSnapshot
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.ApproximateSize
 import org.neo4j.cypher.internal.util.Cardinality
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.NameId
 import org.neo4j.cypher.internal.util.NonEmptyList
@@ -1618,6 +1620,13 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val calculator = setUpCalculator()
     val result = calculator(falseLiteral)
     result should equal(Selectivity.ZERO)
+  }
+
+  test("isStringProperty") {
+    val predicate = IsStringProperty(nProp)(InputPosition.NONE)
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val result = calculator(predicate)
+    result.factor shouldEqual personTextPropIsNotNullSel
   }
 
   // HELPER METHODS
