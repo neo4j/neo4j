@@ -272,13 +272,16 @@ trait SinglePlannerQuery extends PlannerQuery {
       case mutatingPattern => Seq(mutatingPattern)
     }.flatten
 
-    copy(
+    val other = copy(
       queryGraph = queryGraph.copy(mutatingPatterns = flatUpdates),
       tail = tail.map(_.flattenForeach)
     ).updateHorizon {
       case csh: CallSubqueryHorizon => csh.copy(callSubquery = csh.callSubquery.flattenForeach)
       case horizon                  => horizon
     }
+
+    // Optimization to keep lazy vals that have been computed already
+    if (other == this) this else other
   }
 }
 
