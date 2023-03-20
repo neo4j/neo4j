@@ -111,7 +111,7 @@ case object getDegreeRewriter extends Rewriter {
     case EligibleCountLikeIRExpression(node, types, dir) =>
       calculateUsingGetDegree(node, types, dir)
 
-    // EXISTS( (a)-[]->() ) rewritten to GetDegree( (a)-[]->() ) > 0
+    // EXISTS( (a)-[]->() ) and EXISTS { (a)-[]->() } rewritten to GetDegree( (a)-[]->() ) > 0
     case EligibleExistsIRExpression(node, types, dir) =>
       existsToUsingHasDegreeGreaterThan(node, types, dir)
   }

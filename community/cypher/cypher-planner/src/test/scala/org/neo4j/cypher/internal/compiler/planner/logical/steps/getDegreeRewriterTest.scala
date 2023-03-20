@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.CreateIrExpressions
@@ -56,46 +57,60 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.disjoinRelTyp
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSupport {
+trait GetDegreeRewriterTestBase extends CypherFunSuite with AstConstructionTestSupport {
+
+  def createIrExpressions: CreateIrExpressions =
+    CreateIrExpressions(new AnonymousVariableNameGenerator(), new SemanticTable())
+
+  protected def makeInputExpression(
+    from: Option[String] = None,
+    to: Option[String] = None,
+    relationships: Seq[String] = Seq.empty,
+    predicate: Option[Expression] = None,
+    introducedVariables: Set[LogicalVariable] = Set.empty,
+    scopeDependencies: Set[LogicalVariable] = Set.empty
+  ): Expression
+
+  protected def testNameExpr(pattern: String): String
+}
+
+trait GetDegreeRewriterExistsLikeTestBase extends GetDegreeRewriterTestBase {
 
   // All pattern elements have been named at this point, so the outer scope of PatternExpression is used to signal which expressions come from the outside.
   // In the test names, empty names denote anonymous notes, i.e. ones that do not come from the outside.
 
-  private def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator(), new SemanticTable())
+  test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} to GetDegree( (a)-[:FOO]->() ) > 0") {
 
-  test("Rewrite exists( (a)-[:FOO]->() ) to GetDegree( (a)-[:FOO]->() ) > 0") {
     val incoming =
-      createIrExpressions(Exists(patternExpression(
+      createIrExpressions(makeInputExpression(
         from = Some("a"),
         relationships = Seq("FOO"),
         scopeDependencies = Set(varFor("a"))
-      ))(pos))
+      ))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(0))(pos)
 
     getDegreeRewriter(incoming) should equal(expected)
   }
 
-  test("Rewrite exists( ()-[:FOO]->(a) ) to GetDegree( (a)<-[:FOO]-() ) > 0") {
+  test(s"Rewrite ${testNameExpr("()-[:FOO]->(a)")} to GetDegree( (a)<-[:FOO]-() ) > 0") {
     val incoming =
-      createIrExpressions(Exists(patternExpression(
+      createIrExpressions(makeInputExpression(
         to = Some("a"),
         relationships = Seq("FOO"),
         scopeDependencies = Set(varFor("a"))
-      ))(pos))
+      ))
     val expected = HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), INCOMING, literalInt(0))(pos)
     getDegreeRewriter(incoming) should equal(expected)
   }
 
   test(
-    "Rewrite exists( (a)-[:FOO|:BAR]->() ) to HasDegreeGreaterThan( (a)-[:FOO]->(), 0) OR HasDegreeGreaterThan( (a)-[:BAR]->(), 0)"
+    s"Rewrite ${testNameExpr("(a)-[:FOO|:BAR]->()")} to HasDegreeGreaterThan( (a)-[:FOO]->(), 0) OR HasDegreeGreaterThan( (a)-[:BAR]->(), 0)"
   ) {
-    val incoming = createIrExpressions(Exists.asInvocation(
-      patternExpression(
-        from = Some("a"),
-        relationships = Seq("FOO", "BAR"),
-        scopeDependencies = Set(varFor("a"))
-      )
-    )(pos))
+    val incoming = createIrExpressions(makeInputExpression(
+      from = Some("a"),
+      relationships = Seq("FOO", "BAR"),
+      scopeDependencies = Set(varFor("a"))
+    ))
     val expected =
       ors(
         HasDegreeGreaterThan(varFor("a"), Some(RelTypeName("FOO")(pos)), OUTGOING, literalInt(0))(pos),
@@ -105,47 +120,111 @@ class getDegreeRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
     getDegreeRewriter(incoming) should equal(expected)
   }
 
-  test("Does not rewrite exists((a {prop: 5})-[:FOO]->()) ") {
-    val incoming = createIrExpressions(Exists(patternExpression(
+  test(s"Does not rewrite ${testNameExpr("(a {prop: 5})-[:FOO]->()")} ") {
+    val incoming = createIrExpressions(makeInputExpression(
       from = Some("a"),
       to = Some("b"),
       relationships = Seq("FOO"),
-      fromPropertyPredicate = Some(mapOf("prop" -> literalInt(5))),
+      predicate = Some(mapOf("prop" -> literalInt(5))),
       scopeDependencies = Set(varFor("a"))
-    ))(pos))
+    ))
 
     getDegreeRewriter(incoming) should equal(incoming)
   }
 
-  test("Does not rewrite exists( (a)-[:FOO]->(b) )") {
+  test(s"Does not rewrite ${testNameExpr("(a)-[:FOO]->(b)")}") {
     val incoming =
-      createIrExpressions(Exists(patternExpression(
+      createIrExpressions(makeInputExpression(
         from = Some("a"),
         to = Some("b"),
         relationships = Seq("FOO"),
         introducedVariables = Set(varFor("p"), varFor("a"), varFor("r"), varFor("b"))
-      ))(
-        pos
       ))
 
     getDegreeRewriter(incoming) should equal(incoming)
   }
+}
 
-  private def patternExpression(
-    from: Option[String] = None,
-    to: Option[String] = None,
-    relationships: Seq[String] = Seq.empty,
-    fromPropertyPredicate: Option[Expression] = None,
+class GetDegreeRewriterExistsExpressionTest extends GetDegreeRewriterExistsLikeTestBase {
+
+  override def makeInputExpression(
+    from: Option[String],
+    to: Option[String],
+    relationships: Seq[String],
+    predicate: Option[Expression],
     introducedVariables: Set[LogicalVariable] = Set.empty,
     scopeDependencies: Set[LogicalVariable] = Set.empty
-  ) = {
-    PatternExpression(
-      pattern = relPattern(from, to, relationships, fromPropertyPredicate)
+  ): Expression = {
+    val maybeWhere: Option[Where] = predicate.map(p => Where(p)(p.position))
+    simpleExistsExpression(
+      Pattern(Seq(EveryPath(relPattern(from, to, relationships).element)))(pos),
+      maybeWhere = maybeWhere,
+      introducedVariables = introducedVariables,
+      scopeDependencies = scopeDependencies
+    )
+  }
+
+  override protected def testNameExpr(pattern: String): String = s"EXISTS { $pattern }"
+
+  test("does not rewrite EXIST with SKIP in RETURN") {
+    val incoming = createIrExpressions(
+      ExistsExpression(
+        singleQuery(
+          match_(nodePat(Some("a"))),
+          return_(skip(2), varFor("a").as("a"))
+        )
+      )(pos, None, Some(Set(varFor("a"))))
+    )
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test("does not rewrite EXISTS with LIMIT in RETURN") {
+    val incoming = createIrExpressions(
+      ExistsExpression(
+        singleQuery(
+          match_(nodePat(Some("a"))),
+          return_(limit(42), varFor("a").as("a"))
+        )
+      )(pos, None, Some(Set(varFor("a"))))
+    )
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+
+  test("does not rewrite EXISTS with ORDER BY, SKIP and LIMIT in RETURN") {
+    val incoming = createIrExpressions(
+      ExistsExpression(
+        singleQuery(
+          match_(nodePat(Some("a"))),
+          return_(orderBy(varFor("a").desc), skip(2), limit(42), varFor("a").as("a"))
+        )
+      )(pos, None, Some(Set(varFor("a"))))
+    )
+
+    getDegreeRewriter(incoming) should equal(incoming)
+  }
+}
+
+class GetDegreeRewriterExistsFunctionTest extends GetDegreeRewriterExistsLikeTestBase {
+
+  override def makeInputExpression(
+    from: Option[String],
+    to: Option[String],
+    relationships: Seq[String],
+    predicate: Option[Expression],
+    introducedVariables: Set[LogicalVariable] = Set.empty,
+    scopeDependencies: Set[LogicalVariable] = Set.empty
+  ): Expression = {
+    Exists(PatternExpression(
+      pattern = relPattern(from, to, relationships, predicate)
     )(
       computedIntroducedVariables = Some(introducedVariables),
       computedScopeDependencies = Some(scopeDependencies)
-    )
+    ))(pos)
   }
+
+  override protected def testNameExpr(pattern: String): String = s"exists ( $pattern )"
 }
 
 object getDegreeRewriterTest extends AstConstructionTestSupport {
@@ -272,20 +351,7 @@ class GetDegreeRewriterCountExpressionTest extends GetDegreeRewriterCountLikeTes
   }
 }
 
-trait GetDegreeRewriterCountLikeTestBase extends CypherFunSuite with AstConstructionTestSupport {
-
-  protected def makeInputExpression(
-    from: Option[String] = None,
-    to: Option[String] = None,
-    relationships: Seq[String] = Seq.empty,
-    predicate: Option[Expression] = None,
-    introducedVariables: Set[LogicalVariable] = Set.empty,
-    scopeDependencies: Set[LogicalVariable] = Set.empty
-  ): Expression
-
-  protected def testNameExpr(pattern: String): String
-
-  protected def createIrExpressions = CreateIrExpressions(new AnonymousVariableNameGenerator(), new SemanticTable())
+trait GetDegreeRewriterCountLikeTestBase extends GetDegreeRewriterTestBase {
 
   test(s"Rewrite ${testNameExpr("(a)-[:FOO]->()")} to GetDegree( (a)-[:FOO]->() )") {
     val incoming =
