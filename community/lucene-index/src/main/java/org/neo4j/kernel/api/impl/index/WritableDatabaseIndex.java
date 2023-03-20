@@ -38,10 +38,13 @@ public class WritableDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, RE
     // lock used to guard commits and close of lucene indexes from separate threads
     private final ReentrantLock commitCloseLock = new ReentrantLock();
     private final DatabaseReadOnlyChecker readOnlyChecker;
+    private final boolean permanentlyReadOnly;
 
-    public WritableDatabaseIndex(INDEX luceneIndex, DatabaseReadOnlyChecker readOnlyChecker) {
+    public WritableDatabaseIndex(
+            INDEX luceneIndex, DatabaseReadOnlyChecker readOnlyChecker, boolean permanentlyReadOnly) {
         super(luceneIndex);
         this.readOnlyChecker = readOnlyChecker;
+        this.permanentlyReadOnly = permanentlyReadOnly;
     }
 
     /**
@@ -52,12 +55,17 @@ public class WritableDatabaseIndex<INDEX extends AbstractLuceneIndex<READER>, RE
         luceneIndex.create();
     }
 
+    @Override
+    public boolean isPermanentlyOnly() {
+        return permanentlyReadOnly;
+    }
+
     /**
      * {@inheritDoc}
      */
     @Override
     public boolean isReadOnly() {
-        return readOnlyChecker.isReadOnly();
+        return permanentlyReadOnly || readOnlyChecker.isReadOnly();
     }
 
     /**

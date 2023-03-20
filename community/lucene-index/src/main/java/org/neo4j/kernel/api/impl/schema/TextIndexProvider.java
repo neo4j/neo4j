@@ -105,11 +105,18 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
             ImmutableSet<OpenOption> openOptions,
             boolean readOnly)
             throws IOException {
-        var index = TextIndexBuilder.create(descriptor, readOnlyChecker, config)
-                .withSamplingConfig(samplingConfig)
-                .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .build();
+        var builder = builder(descriptor, samplingConfig);
+        if (readOnly) {
+            builder = builder.permanentlyReadOnly();
+        }
+        var index = builder.build();
         index.open();
         return new TextIndexAccessor(index, descriptor, tokenNameLookup, UPDATE_IGNORE_STRATEGY);
+    }
+
+    private TextIndexBuilder builder(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig) {
+        return TextIndexBuilder.create(descriptor, readOnlyChecker, config)
+                .withSamplingConfig(samplingConfig)
+                .withIndexStorage(getIndexStorage(descriptor.getId()));
     }
 }

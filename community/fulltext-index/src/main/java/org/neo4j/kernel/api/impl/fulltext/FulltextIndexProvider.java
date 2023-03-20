@@ -268,6 +268,9 @@ public class FulltextIndexProvider extends IndexProvider {
         if (isEventuallyConsistent(index)) {
             fulltextIndexBuilder = fulltextIndexBuilder.withIndexUpdateSink(indexUpdateSink);
         }
+        if (readOnly) {
+            fulltextIndexBuilder = fulltextIndexBuilder.permanentlyReadOnly();
+        }
         DatabaseIndex<FulltextIndexReader> fulltextIndex = fulltextIndexBuilder.build();
         fulltextIndex.open();
 

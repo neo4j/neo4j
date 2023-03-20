@@ -67,7 +67,7 @@ public abstract class AbstractLuceneIndexAccessor<READER extends ValueIndexReade
 
     protected AbstractLuceneIndexAccessor(
             INDEX luceneIndex, IndexDescriptor descriptor, IndexUpdateIgnoreStrategy ignoreStrategy) {
-        this.writer = luceneIndex.isReadOnly() ? null : luceneIndex.getIndexWriter();
+        this.writer = luceneIndex.isPermanentlyOnly() ? null : luceneIndex.getIndexWriter();
         this.luceneIndex = luceneIndex;
         this.descriptor = descriptor;
         this.ignoreStrategy = ignoreStrategy;

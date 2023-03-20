@@ -99,6 +99,6 @@ public class TextIndexBuilder extends AbstractLuceneIndexBuilder<TextIndexBuilde
         PartitionedIndexStorage storage = storageBuilder.build();
         var index = new TextIndex(
                 storage, descriptor, samplingConfig, new WritableIndexPartitionFactory(writerConfigFactory), config);
-        return new WritableDatabaseIndex<>(index, readOnlyChecker);
+        return new WritableDatabaseIndex<>(index, readOnlyChecker, permanentlyReadOnly);
     }
 }

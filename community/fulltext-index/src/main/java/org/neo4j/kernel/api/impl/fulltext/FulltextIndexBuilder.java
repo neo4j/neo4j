@@ -111,6 +111,6 @@ public class FulltextIndexBuilder extends AbstractLuceneIndexBuilder<FulltextInd
                 config,
                 analyzer,
                 propertyNames);
-        return new WritableFulltextDatabaseIndex(indexUpdateSink, fulltextIndex, readOnlyChecker);
+        return new WritableFulltextDatabaseIndex(indexUpdateSink, fulltextIndex, readOnlyChecker, permanentlyReadOnly);
     }
 }

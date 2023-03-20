@@ -27,8 +27,11 @@ class WritableFulltextDatabaseIndex extends WritableDatabaseIndex<FulltextIndex,
     private final IndexUpdateSink indexUpdateSink;
 
     WritableFulltextDatabaseIndex(
-            IndexUpdateSink indexUpdateSink, FulltextIndex fulltextIndex, DatabaseReadOnlyChecker readOnlyChecker) {
-        super(fulltextIndex, readOnlyChecker);
+            IndexUpdateSink indexUpdateSink,
+            FulltextIndex fulltextIndex,
+            DatabaseReadOnlyChecker readOnlyChecker,
+            boolean permanentlyReadOnly) {
+        super(fulltextIndex, readOnlyChecker, permanentlyReadOnly);
         this.indexUpdateSink = indexUpdateSink;
     }
 

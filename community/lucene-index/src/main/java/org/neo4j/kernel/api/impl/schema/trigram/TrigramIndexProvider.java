@@ -103,13 +103,20 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             ImmutableSet<OpenOption> openOptions,
             boolean readOnly)
             throws IOException {
-        var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
-                .withSamplingConfig(samplingConfig)
-                .withIndexStorage(getIndexStorage(descriptor.getId()))
-                .build();
+        var builder = builder(descriptor, samplingConfig);
+        if (readOnly) {
+            builder = builder.permanentlyReadOnly();
+        }
+        var luceneIndex = builder.build();
         luceneIndex.open();
         var validator = valueValidator(descriptor, tokenNameLookup);
         return new TrigramIndexAccessor(luceneIndex, descriptor, UPDATE_IGNORE_STRATEGY, validator);
+    }
+
+    private TrigramIndexBuilder builder(IndexDescriptor descriptor, IndexSamplingConfig samplingConfig) {
+        return TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
+                .withSamplingConfig(samplingConfig)
+                .withIndexStorage(getIndexStorage(descriptor.getId()));
     }
 
     @Override

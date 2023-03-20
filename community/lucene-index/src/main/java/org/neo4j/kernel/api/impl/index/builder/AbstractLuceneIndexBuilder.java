@@ -34,6 +34,7 @@ import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBuilder<T>> {
     protected LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
     protected final DatabaseReadOnlyChecker readOnlyChecker;
+    protected boolean permanentlyReadOnly;
 
     public AbstractLuceneIndexBuilder(DatabaseReadOnlyChecker readOnlyChecker) {
         this.readOnlyChecker = Objects.requireNonNull(readOnlyChecker);
@@ -80,6 +81,11 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
      */
     public T withIndexRootFolder(Path indexRootFolder) {
         storageBuilder.withIndexFolder(indexRootFolder);
+        return (T) this;
+    }
+
+    public T permanentlyReadOnly() {
+        this.permanentlyReadOnly = true;
         return (T) this;
     }
 }

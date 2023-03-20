@@ -63,8 +63,15 @@ public interface DatabaseIndex<READER extends ValueIndexReader> extends Closeabl
     boolean isOpen();
 
     /**
-     * Check if index is opened in read only mode
-     * @return true if index open in rad only mode
+     * @return {@code true} if this index is permanently in read-only mode throughout the lifetime
+     * of this index instance. A permanently read-only index should instantiate its writer.
+     */
+    boolean isPermanentlyOnly();
+
+    /**
+     * Check if index is currently set to read-only mode. This value can change over time throughout the
+     * lifetime of this index instance, contrary to {@link #isPermanentlyOnly()}.
+     * @return true if index open currently in read-only mode
      */
     boolean isReadOnly();
 

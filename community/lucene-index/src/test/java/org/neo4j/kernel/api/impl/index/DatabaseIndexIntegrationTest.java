@@ -210,7 +210,8 @@ class DatabaseIndexIntegrationTest {
                     new TestLuceneIndex(
                             indexStorage,
                             new WritableIndexPartitionFactory(() -> IndexWriterConfigs.standard(Config.defaults()))),
-                    writable());
+                    writable(),
+                    false);
         }
     }
 

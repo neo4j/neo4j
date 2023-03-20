@@ -91,6 +91,6 @@ public class TrigramIndexBuilder extends AbstractLuceneIndexBuilder<TrigramIndex
         PartitionedIndexStorage storage = storageBuilder.build();
         var index = new TrigramIndex(
                 storage, descriptor, samplingConfig, new WritableIndexPartitionFactory(writerConfigFactory), config);
-        return new WritableDatabaseIndex<>(index, readOnlyChecker);
+        return new WritableDatabaseIndex<>(index, readOnlyChecker, permanentlyReadOnly);
     }
 }

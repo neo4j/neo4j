@@ -51,6 +51,11 @@ public class MinimalDatabaseIndex<READER extends ValueIndexReader>
         throw new UnsupportedOperationException("Index creation in read only mode is not supported.");
     }
 
+    @Override
+    public boolean isPermanentlyOnly() {
+        return true;
+    }
+
     /**
      * {@inheritDoc}
      */
