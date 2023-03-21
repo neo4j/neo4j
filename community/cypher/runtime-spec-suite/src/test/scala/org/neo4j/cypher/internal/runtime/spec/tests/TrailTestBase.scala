@@ -56,6 +56,7 @@ import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.RelationshipType.withName
+import org.neo4j.values.virtual.VirtualValues.pathReference
 
 import java.util
 import java.util.Collections.emptyList
@@ -71,7 +72,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val (n1, n2, n3, n4, r12, r23, r34) = smallChainGraph
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("me", "you", "a", "b", "r")
+      .produceResults("me", "you", "a", "b", "r", "path")
       .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -84,11 +85,18 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("me", "you", "a", "b", "r").withRows(inAnyOrder(
+    runtimeResult should beColumns("me", "you", "a", "b", "r", "path").withRows(inAnyOrder(
       Seq(
-        Array(n1, n1, emptyList(), emptyList(), emptyList()),
-        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12)),
-        Array(n1, n3, listOf(n1, n2), listOf(n2, n3), listOf(r12, r23))
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), pathReference(Array(n1.getId), Array.empty[Long])),
+        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12), pathReference(Array(n1.getId, n2.getId), Array(r12.getId))),
+        Array(
+          n1,
+          n3,
+          listOf(n1, n2),
+          listOf(n2, n3),
+          listOf(r12, r23),
+          pathReference(Array(n1.getId, n2.getId, n3.getId), Array(r12.getId, r23.getId))
+        )
       )
     ))
   }
@@ -98,7 +106,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val (n1, n2, n3, n4, r12, r23, r34) = smallChainGraph
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("me", "a", "b", "r")
+      .produceResults("me", "a", "b", "r", "path")
       .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -111,11 +119,17 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("me", "a", "b", "r").withRows(inAnyOrder(
+    runtimeResult should beColumns("me", "a", "b", "r", "path").withRows(inAnyOrder(
       Seq(
-        Array(n1, emptyList(), emptyList(), emptyList()),
-        Array(n1, listOf(n1), listOf(n2), listOf(r12)),
-        Array(n1, listOf(n1, n2), listOf(n2, n3), listOf(r12, r23))
+        Array(n1, emptyList(), emptyList(), emptyList(), pathReference(Array(n1.getId), Array.empty[Long])),
+        Array(n1, listOf(n1), listOf(n2), listOf(r12), pathReference(Array(n1.getId, n2.getId), Array(r12.getId))),
+        Array(
+          n1,
+          listOf(n1, n2),
+          listOf(n2, n3),
+          listOf(r12, r23),
+          pathReference(Array(n1.getId, n2.getId, n3.getId), Array(r12.getId, r23.getId))
+        )
       )
     ))
   }
@@ -125,7 +139,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val (n1, n2, n3, n4, r12, r23, r34) = smallChainGraph
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("me", "you", "a", "b", "r")
+      .produceResults("me", "you", "a", "b", "r", "path")
       .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{2,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -138,9 +152,16 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("me", "you", "a", "b", "r").withRows(inAnyOrder(
+    runtimeResult should beColumns("me", "you", "a", "b", "r", "path").withRows(inAnyOrder(
       Seq(
-        Array(n1, n3, listOf(n1, n2), listOf(n2, n3), listOf(r12, r23))
+        Array(
+          n1,
+          n3,
+          listOf(n1, n2),
+          listOf(n2, n3),
+          listOf(r12, r23),
+          pathReference(Array(n1.getId, n2.getId, n3.getId), Array(r12.getId, r23.getId))
+        )
       )
     ))
   }
@@ -150,7 +171,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val (n1, n2, n3, n4, r12, r23, r34) = smallChainGraph
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("me", "you", "a", "b", "r")
+      .produceResults("me", "you", "a", "b", "r", "path")
       .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{1,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -163,10 +184,17 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("me", "you", "a", "b", "r").withRows(inAnyOrder(
+    runtimeResult should beColumns("me", "you", "a", "b", "r", "path").withRows(inAnyOrder(
       Seq(
-        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12)),
-        Array(n1, n3, listOf(n1, n2), listOf(n2, n3), listOf(r12, r23))
+        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12), pathReference(Array(n1.getId, n2.getId), Array(r12.getId))),
+        Array(
+          n1,
+          n3,
+          listOf(n1, n2),
+          listOf(n2, n3),
+          listOf(r12, r23),
+          pathReference(Array(n1.getId, n2.getId, n3.getId), Array(r12.getId, r23.getId))
+        )
       )
     ))
   }
@@ -191,7 +219,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("me", "you", "a", "b", "r")
+      .produceResults("me", "you", "a", "b", "r", "path")
       .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,*} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -204,13 +232,37 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("me", "you", "a", "b", "r").withRows(inAnyOrder(
+    runtimeResult should beColumns("me", "you", "a", "b", "r", "path").withRows(inAnyOrder(
       Seq(
-        Array(n1, n1, emptyList(), emptyList(), emptyList()),
-        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12)),
-        Array(n1, n3, listOf(n1, n2), listOf(n2, n3), listOf(r12, r23)),
-        Array(n1, n4, listOf(n1, n2, n3), listOf(n2, n3, n4), listOf(r12, r23, r34)),
-        Array(n1, n1, listOf(n1, n2, n3, n4), listOf(n2, n3, n4, n1), listOf(r12, r23, r34, r41))
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), pathReference(Array(n1.getId), Array.empty[Long])),
+        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12), pathReference(Array(n1.getId, n2.getId), Array(r12.getId))),
+        Array(
+          n1,
+          n3,
+          listOf(n1, n2),
+          listOf(n2, n3),
+          listOf(r12, r23),
+          pathReference(Array(n1.getId, n2.getId, n3.getId), Array(r12.getId, r23.getId))
+        ),
+        Array(
+          n1,
+          n4,
+          listOf(n1, n2, n3),
+          listOf(n2, n3, n4),
+          listOf(r12, r23, r34),
+          pathReference(Array(n1.getId, n2.getId, n3.getId, n4.getId), Array(r12.getId, r23.getId, r34.getId))
+        ),
+        Array(
+          n1,
+          n1,
+          listOf(n1, n2, n3, n4),
+          listOf(n2, n3, n4, n1),
+          listOf(r12, r23, r34, r41),
+          pathReference(
+            Array(n1.getId, n2.getId, n3.getId, n4.getId, n1.getId),
+            Array(r12.getId, r23.getId, r34.getId, r41.getId)
+          )
+        )
       )
     ))
   }
@@ -235,7 +287,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("me", "you", "a", "b", "r")
+      .produceResults("me", "you", "a", "b", "r", "path")
       .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,*} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -259,14 +311,45 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
      */
 
     // then
-    runtimeResult should beColumns("me", "you", "a", "b", "r").withRows(inAnyOrder(
+    runtimeResult should beColumns("me", "you", "a", "b", "r", "path").withRows(inAnyOrder(
       Seq(
-        Array(n1, n1, emptyList(), emptyList(), emptyList()),
-        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12)),
-        Array(n1, n1, listOf(n1, n2), listOf(n2, n1), listOf(r12, r21)),
-        Array(n1, n3, listOf(n1, n2), listOf(n2, n3), listOf(r12, r23)),
-        Array(n1, n2, listOf(n1, n2, n3), listOf(n2, n3, n2), listOf(r12, r23, r32)),
-        Array(n1, n1, listOf(n1, n2, n3, n2), listOf(n2, n3, n2, n1), listOf(r12, r23, r32, r21))
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), pathReference(Array(n1.getId), Array.empty[Long])),
+        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12), pathReference(Array(n1.getId, n2.getId), Array(r12.getId))),
+        Array(
+          n1,
+          n1,
+          listOf(n1, n2),
+          listOf(n2, n1),
+          listOf(r12, r21),
+          pathReference(Array(n1.getId, n2.getId, n1.getId), Array(r12.getId, r21.getId))
+        ),
+        Array(
+          n1,
+          n3,
+          listOf(n1, n2),
+          listOf(n2, n3),
+          listOf(r12, r23),
+          pathReference(Array(n1.getId, n2.getId, n3.getId), Array(r12.getId, r23.getId))
+        ),
+        Array(
+          n1,
+          n2,
+          listOf(n1, n2, n3),
+          listOf(n2, n3, n2),
+          listOf(r12, r23, r32),
+          pathReference(Array(n1.getId, n2.getId, n3.getId, n2.getId), Array(r12.getId, r23.getId, r32.getId))
+        ),
+        Array(
+          n1,
+          n1,
+          listOf(n1, n2, n3, n2),
+          listOf(n2, n3, n2, n1),
+          listOf(r12, r23, r32, r21),
+          pathReference(
+            Array(n1.getId, n2.getId, n3.getId, n2.getId, n1.getId),
+            Array(r12.getId, r23.getId, r32.getId, r21.getId)
+          )
+        )
       )
     ))
   }
@@ -307,7 +390,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("me", "you", "a", "b", "r")
+      .produceResults("me", "you", "a", "b", "r", "path")
       .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,*} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -346,22 +429,98 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
      */
 
     // then
-    runtimeResult should beColumns("me", "you", "a", "b", "r").withRows(inAnyOrder(
+    runtimeResult should beColumns("me", "you", "a", "b", "r", "path").withRows(inAnyOrder(
       Seq(
-        Array(n1, n1, emptyList(), emptyList(), emptyList()),
-        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12)),
-        Array(n1, n4, listOf(n1), listOf(n4), listOf(r14)),
-        Array(n1, n6, listOf(n1), listOf(n6), listOf(r16)),
-        Array(n1, n3, listOf(n1, n2), listOf(n2, n3), listOf(r12, r23)),
-        Array(n1, n5, listOf(n1, n4), listOf(n4, n5), listOf(r14, r45a)),
-        Array(n1, n5, listOf(n1, n4), listOf(n4, n5), listOf(r14, r45b)),
-        Array(n1, n7, listOf(n1, n6), listOf(n6, n7), listOf(r16, r67)),
-        Array(n1, n2, listOf(n1, n2, n3), listOf(n2, n3, n2), listOf(r12, r23, r32)),
-        Array(n1, n4, listOf(n1, n4, n5), listOf(n4, n5, n4), listOf(r14, r45a, r54)),
-        Array(n1, n4, listOf(n1, n4, n5), listOf(n4, n5, n4), listOf(r14, r45b, r54)),
-        Array(n1, n6, listOf(n1, n6, n7), listOf(n6, n7, n6), listOf(r16, r67, r76)),
-        Array(n1, n5, listOf(n1, n4, n5, n4), listOf(n4, n5, n4, n5), listOf(r14, r45a, r54, r45b)),
-        Array(n1, n5, listOf(n1, n4, n5, n4), listOf(n4, n5, n4, n5), listOf(r14, r45b, r54, r45a))
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), pathReference(Array(n1.getId), Array.empty[Long])),
+        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12), pathReference(Array(n1.getId, n2.getId), Array(r12.getId))),
+        Array(n1, n4, listOf(n1), listOf(n4), listOf(r14), pathReference(Array(n1.getId, n4.getId), Array(r14.getId))),
+        Array(n1, n6, listOf(n1), listOf(n6), listOf(r16), pathReference(Array(n1.getId, n6.getId), Array(r16.getId))),
+        Array(
+          n1,
+          n3,
+          listOf(n1, n2),
+          listOf(n2, n3),
+          listOf(r12, r23),
+          pathReference(Array(n1.getId, n2.getId, n3.getId), Array(r12.getId, r23.getId))
+        ),
+        Array(
+          n1,
+          n5,
+          listOf(n1, n4),
+          listOf(n4, n5),
+          listOf(r14, r45a),
+          pathReference(Array(n1.getId, n4.getId, n5.getId), Array(r14.getId, r45a.getId))
+        ),
+        Array(
+          n1,
+          n5,
+          listOf(n1, n4),
+          listOf(n4, n5),
+          listOf(r14, r45b),
+          pathReference(Array(n1.getId, n4.getId, n5.getId), Array(r14.getId, r45b.getId))
+        ),
+        Array(
+          n1,
+          n7,
+          listOf(n1, n6),
+          listOf(n6, n7),
+          listOf(r16, r67),
+          pathReference(Array(n1.getId, n6.getId, n7.getId), Array(r16.getId, r67.getId))
+        ),
+        Array(
+          n1,
+          n2,
+          listOf(n1, n2, n3),
+          listOf(n2, n3, n2),
+          listOf(r12, r23, r32),
+          pathReference(Array(n1.getId, n2.getId, n3.getId, n2.getId), Array(r12.getId, r23.getId, r32.getId))
+        ),
+        Array(
+          n1,
+          n4,
+          listOf(n1, n4, n5),
+          listOf(n4, n5, n4),
+          listOf(r14, r45a, r54),
+          pathReference(Array(n1.getId, n4.getId, n5.getId, n4.getId), Array(r14.getId, r45a.getId, r54.getId))
+        ),
+        Array(
+          n1,
+          n4,
+          listOf(n1, n4, n5),
+          listOf(n4, n5, n4),
+          listOf(r14, r45b, r54),
+          pathReference(Array(n1.getId, n4.getId, n5.getId, n4.getId), Array(r14.getId, r45b.getId, r54.getId))
+        ),
+        Array(
+          n1,
+          n6,
+          listOf(n1, n6, n7),
+          listOf(n6, n7, n6),
+          listOf(r16, r67, r76),
+          pathReference(Array(n1.getId, n6.getId, n7.getId, n6.getId), Array(r16.getId, r67.getId, r76.getId))
+        ),
+        Array(
+          n1,
+          n5,
+          listOf(n1, n4, n5, n4),
+          listOf(n4, n5, n4, n5),
+          listOf(r14, r45a, r54, r45b),
+          pathReference(
+            Array(n1.getId, n4.getId, n5.getId, n4.getId, n5.getId),
+            Array(r14.getId, r45a.getId, r54.getId, r45b.getId)
+          )
+        ),
+        Array(
+          n1,
+          n5,
+          listOf(n1, n4, n5, n4),
+          listOf(n4, n5, n4, n5),
+          listOf(r14, r45b, r54, r45a),
+          pathReference(
+            Array(n1.getId, n4.getId, n5.getId, n4.getId, n5.getId),
+            Array(r14.getId, r45b.getId, r54.getId, r45a.getId)
+          )
+        )
       )
     ))
   }
@@ -433,7 +592,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("me", "you", "a", "b", "r")
+      .produceResults("me", "you", "a", "b", "r", "path")
       .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpression(isRepeatTrailUnique("r_inner"))
@@ -446,13 +605,41 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("me", "you", "a", "b", "r").withRows(inAnyOrder(
+    runtimeResult should beColumns("me", "you", "a", "b", "r", "path").withRows(inAnyOrder(
       Seq(
-        Array(n1, n1, emptyList(), emptyList(), emptyList()), // 0
-        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12)), // 1
-        Array(n1, n3, listOf(n1), listOf(n3), listOf(r13)), // 1
-        Array(n1, n4, listOf(n1, n2), listOf(n2, n4), listOf(r12, r24)), // 2
-        Array(n1, n5, listOf(n1, n3), listOf(n3, n5), listOf(r13, r35)) // 2
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), pathReference(Array(n1.getId), Array.empty[Long])), // 0
+        Array(
+          n1,
+          n2,
+          listOf(n1),
+          listOf(n2),
+          listOf(r12),
+          pathReference(Array(n1.getId, n2.getId), Array(r12.getId))
+        ), // 1
+        Array(
+          n1,
+          n3,
+          listOf(n1),
+          listOf(n3),
+          listOf(r13),
+          pathReference(Array(n1.getId, n3.getId), Array(r13.getId))
+        ), // 1
+        Array(
+          n1,
+          n4,
+          listOf(n1, n2),
+          listOf(n2, n4),
+          listOf(r12, r24),
+          pathReference(Array(n1.getId, n2.getId, n4.getId), Array(r12.getId, r24.getId))
+        ), // 2
+        Array(
+          n1,
+          n5,
+          listOf(n1, n3),
+          listOf(n3, n5),
+          listOf(r13, r35),
+          pathReference(Array(n1.getId, n3.getId, n5.getId), Array(r13.getId, r35.getId))
+        ) // 2
       )
     ))
   }
@@ -475,7 +662,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     }
 
     val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("me", "you", "a", "b", "r")
+      .produceResults("me", "you", "a", "b", "r", "path")
       .projection(Map("path" -> qppPath(varFor("me"), Seq(varFor("a"), varFor("r")), varFor("you"))))
       .trail(`(me) [(a)-[r]->(b)]{0,2} (you)`)
       .|.filterExpressionOrString("b_inner.prop = me.prop", isRepeatTrailUnique("r_inner"))
@@ -488,14 +675,14 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("me", "you", "a", "b", "r").withRows(inAnyOrder(
+    runtimeResult should beColumns("me", "you", "a", "b", "r", "path").withRows(inAnyOrder(
       Seq(
-        Array(n1, n1, emptyList(), emptyList(), emptyList()),
-        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12)),
-        Array(n2, n2, emptyList(), emptyList(), emptyList()),
-        Array(n3, n3, emptyList(), emptyList(), emptyList()),
-        Array(n3, n4, listOf(n3), listOf(n4), listOf(r34)),
-        Array(n4, n4, emptyList(), emptyList(), emptyList())
+        Array(n1, n1, emptyList(), emptyList(), emptyList(), pathReference(Array(n1.getId), Array.empty[Long])),
+        Array(n1, n2, listOf(n1), listOf(n2), listOf(r12), pathReference(Array(n1.getId, n2.getId), Array(r12.getId))),
+        Array(n2, n2, emptyList(), emptyList(), emptyList(), pathReference(Array(n2.getId), Array.empty[Long])),
+        Array(n3, n3, emptyList(), emptyList(), emptyList(), pathReference(Array(n3.getId), Array.empty[Long])),
+        Array(n3, n4, listOf(n3), listOf(n4), listOf(r34), pathReference(Array(n3.getId, n4.getId), Array(r34.getId))),
+        Array(n4, n4, emptyList(), emptyList(), emptyList(), pathReference(Array(n4.getId), Array.empty[Long]))
       )
     ))
   }
