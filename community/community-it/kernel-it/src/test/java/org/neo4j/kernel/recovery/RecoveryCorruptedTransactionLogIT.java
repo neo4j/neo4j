@@ -34,6 +34,7 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
 import java.io.IOException;
@@ -94,7 +95,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.IncompleteLogHeaderException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntryWriterV5_7;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -123,7 +124,7 @@ import org.neo4j.test.extension.RandomExtension;
 @Neo4jLayoutExtension
 @ExtendWith(RandomExtension.class)
 class RecoveryCorruptedTransactionLogIT {
-    private static final int CHECKPOINT_RECORD_SIZE = DetachedCheckpointLogEntryWriterV5_7.RECORD_LENGTH_BYTES;
+    private static final int CHECKPOINT_RECORD_SIZE = DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
     private static final LogCommandSerialization LATEST_LOG_SERIALIZATION =
             RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
 
@@ -1223,32 +1224,32 @@ class RecoveryCorruptedTransactionLogIT {
 
     private static class CorruptedLogEntryWriter<T extends WritableChannel> extends LogEntryWriter<T> {
         CorruptedLogEntryWriter(T channel) {
-            super(channel);
+            super(channel, LATEST_KERNEL_VERSION);
         }
 
         @Override
         public void writeStartEntry(
-                byte version,
+                KernelVersion version,
                 long timeWritten,
                 long latestCommittedTxWhenStarted,
                 int previousChecksum,
                 byte[] additionalHeaderData)
                 throws IOException {
-            writeLogEntryHeader(version, TX_START, channel);
+            channel.put(version.version()).put(TX_START);
         }
     }
 
     private static class CorruptedLogEntryVersionWriter<T extends WritableChannel> extends LogEntryWriter<T> {
         CorruptedLogEntryVersionWriter(T channel) {
-            super(channel);
+            super(channel, LATEST_KERNEL_VERSION);
         }
 
         /**
-         * Use a non-existing log entry version. Implementation stolen from {@link LogEntryWriter#writeStartEntry(byte, long, long, int, byte[])}.
+         * Use a non-existing log entry version. Implementation stolen from {@link LogEntryWriter#writeStartEntry(KernelVersion, long, long, int, byte[])}.
          */
         @Override
         public void writeStartEntry(
-                byte version,
+                KernelVersion version,
                 long timeWritten,
                 long latestCommittedTxWhenStarted,
                 int previousChecksum,

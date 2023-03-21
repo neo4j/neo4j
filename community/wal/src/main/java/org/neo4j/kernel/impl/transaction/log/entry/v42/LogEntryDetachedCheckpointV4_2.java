@@ -79,6 +79,10 @@ public class LogEntryDetachedCheckpointV4_2 extends AbstractVersionAwareLogEntry
         return reason;
     }
 
+    public long getCheckpointTime() {
+        return checkpointTime;
+    }
+
     @Override
     public String toString() {
         return "LogEntryDetachedCheckpointV4_2{" + "version="

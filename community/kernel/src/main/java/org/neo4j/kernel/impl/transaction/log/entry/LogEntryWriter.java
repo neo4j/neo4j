@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_END;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_START;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.COMMAND;
@@ -31,64 +32,83 @@ import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryRollback;
 import org.neo4j.storageengine.api.CommandBatch;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.util.VisibleForTesting;
 
 public class LogEntryWriter<T extends WritableChannel> {
     protected final T channel;
+    private final KernelVersion latestRecognizedKernelVersion;
+    private LogEntrySerializationSet logEntrySerializationSet;
+    private KernelVersion currentVersion;
 
-    public LogEntryWriter(T channel) {
+    public LogEntryWriter(T channel, KernelVersion latestRecognizedKernelVersion) {
         this.channel = channel;
-    }
-
-    public void writeLogEntryHeader(byte version, byte type, WritableChannel channel) throws IOException {
-        channel.put(version).put(type);
+        this.latestRecognizedKernelVersion = latestRecognizedKernelVersion;
     }
 
     public void writeStartEntry(
-            byte version,
+            KernelVersion kernelVersion,
             long timeWritten,
             long latestCommittedTxWhenStarted,
             int previousChecksum,
             byte[] additionalHeaderData)
             throws IOException {
-        channel.beginChecksum();
-        writeLogEntryHeader(version, TX_START, channel);
-        channel.putLong(timeWritten)
-                .putLong(latestCommittedTxWhenStarted)
-                .putInt(previousChecksum)
-                .putInt(additionalHeaderData.length)
-                .put(additionalHeaderData, additionalHeaderData.length);
+        updateSerializationSet(kernelVersion);
+
+        logEntrySerializationSet
+                .select(TX_START)
+                .write(
+                        kernelVersion,
+                        channel,
+                        new LogEntryStart(
+                                kernelVersion,
+                                timeWritten,
+                                latestCommittedTxWhenStarted,
+                                previousChecksum,
+                                additionalHeaderData,
+                                null));
     }
 
-    public void writeChunkStartEntry(byte version, long timeWritten, long chunkId, LogPosition previousChunkStart)
+    public void writeChunkStartEntry(
+            KernelVersion kernelVersion, long timeWritten, long chunkId, LogPosition previousChunkStart)
             throws IOException {
-        channel.beginChecksum();
-        writeLogEntryHeader(version, CHUNK_START, channel);
-        channel.putLong(timeWritten)
-                .putLong(chunkId)
-                .putLong(previousChunkStart.getLogVersion())
-                .putLong(previousChunkStart.getByteOffset());
+        updateSerializationSet(kernelVersion);
+
+        logEntrySerializationSet
+                .select(CHUNK_START)
+                .write(
+                        kernelVersion,
+                        channel,
+                        new LogEntryChunkStart(kernelVersion, timeWritten, chunkId, previousChunkStart));
     }
 
-    public int writeChunkEndEntry(byte version, long transactionId, long chunkId) throws IOException {
-        writeLogEntryHeader(version, CHUNK_END, channel);
-        channel.putLong(transactionId);
-        channel.putLong(chunkId);
-        return channel.putChecksum();
+    public int writeChunkEndEntry(KernelVersion kernelVersion, long transactionId, long chunkId) throws IOException {
+        updateSerializationSet(kernelVersion);
+
+        return logEntrySerializationSet
+                .select(CHUNK_END)
+                .write(kernelVersion, channel, new LogEntryChunkEnd(transactionId, chunkId, 0));
     }
 
-    public int writeRollbackEntry(byte version, long transactionId, long timeWritten) throws IOException {
-        channel.beginChecksum();
-        writeLogEntryHeader(version, TX_ROLLBACK, channel);
-        channel.putLong(transactionId).putLong(timeWritten);
-        return channel.putChecksum();
+    public int writeRollbackEntry(KernelVersion kernelVersion, long transactionId, long timeWritten)
+            throws IOException {
+        updateSerializationSet(kernelVersion);
+
+        return logEntrySerializationSet
+                .select(TX_ROLLBACK)
+                .write(kernelVersion, channel, new LogEntryRollback(kernelVersion, transactionId, timeWritten, 0));
     }
 
-    public int writeCommitEntry(byte version, long transactionId, long timeWritten) throws IOException {
-        writeLogEntryHeader(version, TX_COMMIT, channel);
-        channel.putLong(transactionId).putLong(timeWritten);
-        return channel.putChecksum();
+    public int writeCommitEntry(KernelVersion kernelVersion, long transactionId, long timeWritten) throws IOException {
+        updateSerializationSet(kernelVersion);
+
+        return logEntrySerializationSet
+                .select(TX_COMMIT)
+                .write(kernelVersion, channel, new LogEntryCommit(transactionId, timeWritten, 0));
     }
 
     public void serialize(CommandBatch batch) throws IOException {
@@ -100,19 +120,25 @@ public class LogEntryWriter<T extends WritableChannel> {
     }
 
     public void serialize(Iterable<StorageCommand> commands, KernelVersion kernelVersion) throws IOException {
-        byte version = kernelVersion.version();
-        for (StorageCommand storageCommand : commands) {
-            writeLogEntryHeader(version, COMMAND, channel);
-            storageCommand.serialize(channel);
-        }
+        updateSerializationSet(kernelVersion);
+        logEntrySerializationSet.serialize(channel, commands, kernelVersion);
     }
 
     public void serialize(StorageCommand command, KernelVersion kernelVersion) throws IOException {
-        writeLogEntryHeader(kernelVersion.version(), COMMAND, channel);
+        updateSerializationSet(kernelVersion);
+        LogEntrySerializer.writeLogEntryHeader(kernelVersion, COMMAND, channel);
         command.serialize(channel);
     }
 
+    @VisibleForTesting
     public T getChannel() {
         return channel;
+    }
+
+    private void updateSerializationSet(KernelVersion version) {
+        if (version != currentVersion) {
+            logEntrySerializationSet = serializationSet(version, latestRecognizedKernelVersion);
+            currentVersion = version;
+        }
     }
 }

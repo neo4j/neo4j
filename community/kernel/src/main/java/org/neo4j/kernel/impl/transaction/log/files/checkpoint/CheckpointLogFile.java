@@ -68,6 +68,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     private final InternalLog log;
     private final long rotationsSize;
     private final LogTailScannerMonitor monitor;
+    private final KernelVersion latestKernelVersionKnownByBinaries;
     private LogVersionRepository logVersionRepository;
 
     public CheckpointLogFile(LogFiles logFiles, TransactionLogFilesContext context) {
@@ -83,8 +84,15 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         var rotationMonitor = context.getMonitors().newMonitor(LogRotationMonitor.class);
         var checkpointRotation = checkpointLogRotation(
                 this, logFiles.getLogFile(), context.getClock(), context.getDatabaseHealth(), rotationMonitor);
+        this.latestKernelVersionKnownByBinaries = KernelVersion.getLatestVersion(context.getConfig());
         this.checkpointAppender = new DetachedCheckpointAppender(
-                logFiles, channelAllocator, context, this, checkpointRotation, logTailScanner);
+                logFiles,
+                channelAllocator,
+                context,
+                this,
+                checkpointRotation,
+                logTailScanner,
+                latestKernelVersionKnownByBinaries);
     }
 
     @Override
@@ -115,8 +123,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
         long lowestVersion = versionVisitor.getLowestVersion();
         long currentVersion = highestVersion;
 
-        var checkpointReader =
-                new VersionAwareLogEntryReader(NO_COMMANDS, true, KernelVersion.getLatestVersion(context.getConfig()));
+        var checkpointReader = new VersionAwareLogEntryReader(NO_COMMANDS, true, latestKernelVersionKnownByBinaries);
         while (currentVersion >= lowestVersion) {
             CheckpointEntryInfo checkpointEntry = null;
             try (var channel = channelAllocator.openLogChannel(currentVersion);
@@ -170,8 +177,7 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
 
         long currentVersion = versionVisitor.getLowestVersion();
 
-        var checkpointReader =
-                new VersionAwareLogEntryReader(NO_COMMANDS, true, KernelVersion.getLatestVersion(context.getConfig()));
+        var checkpointReader = new VersionAwareLogEntryReader(NO_COMMANDS, true, latestKernelVersionKnownByBinaries);
         var checkpoints = new ArrayList<CheckpointInfo>();
         while (currentVersion <= highestVersion) {
             try (var channel = channelAllocator.openLogChannel(currentVersion);

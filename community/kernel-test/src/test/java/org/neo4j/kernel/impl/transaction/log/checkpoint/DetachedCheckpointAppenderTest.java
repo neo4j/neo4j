@@ -29,6 +29,7 @@ import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTA
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.io.IOException;
 import java.time.Instant;
@@ -105,7 +106,7 @@ class DetachedCheckpointAppenderTest {
                 () -> checkpointAppender.checkPoint(
                         LogCheckPointEvent.NULL,
                         UNKNOWN_TRANSACTION_ID,
-                        LatestVersions.LATEST_KERNEL_VERSION,
+                        LATEST_KERNEL_VERSION,
                         logPosition,
                         Instant.now(),
                         "test"));
@@ -119,11 +120,12 @@ class DetachedCheckpointAppenderTest {
                 mock(TransactionLogFilesContext.class, RETURNS_MOCKS),
                 logFiles.getCheckpointFile(),
                 NO_ROTATION,
-                mock(DetachedLogTailScanner.class));
+                mock(DetachedLogTailScanner.class),
+                LATEST_KERNEL_VERSION);
         assertDoesNotThrow(() -> appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
-                LatestVersions.LATEST_KERNEL_VERSION,
+                LATEST_KERNEL_VERSION,
                 UNSPECIFIED,
                 Instant.now(),
                 "test"));
@@ -140,21 +142,21 @@ class DetachedCheckpointAppenderTest {
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
-                LatestVersions.LATEST_KERNEL_VERSION,
+                LATEST_KERNEL_VERSION,
                 logPosition1,
                 Instant.now(),
                 "first");
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
-                LatestVersions.LATEST_KERNEL_VERSION,
+                LATEST_KERNEL_VERSION,
                 logPosition2,
                 Instant.now(),
                 "second");
         checkpointAppender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
-                LatestVersions.LATEST_KERNEL_VERSION,
+                LATEST_KERNEL_VERSION,
                 logPosition3,
                 Instant.now(),
                 "third");

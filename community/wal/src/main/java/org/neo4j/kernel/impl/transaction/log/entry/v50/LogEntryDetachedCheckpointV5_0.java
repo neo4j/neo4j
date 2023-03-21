@@ -29,11 +29,27 @@ import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
 public class LogEntryDetachedCheckpointV5_0 extends AbstractVersionAwareLogEntry {
-    private final TransactionId transactionId;
-    private final LogPosition logPosition;
-    private final long checkpointTime;
-    private final StoreId storeId;
-    private final String reason;
+    protected final TransactionId transactionId;
+    protected final LogPosition logPosition;
+    protected final long checkpointTime;
+    protected final StoreId storeId;
+    protected final String reason;
+
+    protected LogEntryDetachedCheckpointV5_0(
+            byte type,
+            KernelVersion kernelVersion,
+            TransactionId transactionId,
+            LogPosition logPosition,
+            long checkpointMillis,
+            StoreId storeId,
+            String reason) {
+        super(kernelVersion, type);
+        this.transactionId = transactionId;
+        this.logPosition = logPosition;
+        this.checkpointTime = checkpointMillis;
+        this.storeId = storeId;
+        this.reason = reason;
+    }
 
     public LogEntryDetachedCheckpointV5_0(
             KernelVersion kernelVersion,
@@ -42,12 +58,7 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractVersionAwareLogEntry
             long checkpointMillis,
             StoreId storeId,
             String reason) {
-        super(kernelVersion, DETACHED_CHECK_POINT_V5_0);
-        this.transactionId = transactionId;
-        this.logPosition = logPosition;
-        this.checkpointTime = checkpointMillis;
-        this.storeId = storeId;
-        this.reason = reason;
+        this(DETACHED_CHECK_POINT_V5_0, kernelVersion, transactionId, logPosition, checkpointMillis, storeId, reason);
     }
 
     @Override
@@ -86,6 +97,10 @@ public class LogEntryDetachedCheckpointV5_0 extends AbstractVersionAwareLogEntry
 
     public String getReason() {
         return reason;
+    }
+
+    public long getCheckpointTime() {
+        return checkpointTime;
     }
 
     @Override

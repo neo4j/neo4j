@@ -41,7 +41,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
     private final KernelVersion latestRecognizedKernelVersion;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
-    private LogEntryParserSet parserSet;
+    private LogEntrySerializationSet parserSet;
     private int lastTxChecksum = BASE_TX_CHECKSUM;
 
     public VersionAwareLogEntryReader(
@@ -88,7 +88,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
         }
 
         try {
-            parserSet = LogEntryParserSets.parserSet(
+            parserSet = LogEntrySerializationSets.serializationSet(
                     KernelVersion.getForVersion(versionCode), latestRecognizedKernelVersion);
         } catch (IllegalArgumentException e) {
             String msg;

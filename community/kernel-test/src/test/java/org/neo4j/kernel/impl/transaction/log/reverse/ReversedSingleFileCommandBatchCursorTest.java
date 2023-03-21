@@ -31,6 +31,7 @@ import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryR
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
 import java.io.IOException;
@@ -43,6 +44,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.TestCommand;
 import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -267,18 +269,18 @@ class ReversedSingleFileCommandBatchCursorTest {
 
     private static class CorruptedLogEntryWriter<T extends WritableChannel> extends LogEntryWriter<T> {
         CorruptedLogEntryWriter(T channel) {
-            super(channel);
+            super(channel, LATEST_KERNEL_VERSION);
         }
 
         @Override
         public void writeStartEntry(
-                byte version,
+                KernelVersion kernelVersion,
                 long timeWritten,
                 long latestCommittedTxWhenStarted,
                 int previousChecksum,
                 byte[] additionalHeaderData)
                 throws IOException {
-            writeLogEntryHeader(version, TX_START, channel);
+            channel.put(kernelVersion.version()).put(TX_START);
             for (int i = 0; i < 100; i++) {
                 channel.put((byte) -1);
             }

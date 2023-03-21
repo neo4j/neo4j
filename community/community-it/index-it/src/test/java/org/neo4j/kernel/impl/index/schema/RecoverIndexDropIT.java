@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.count;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 import java.io.IOException;
@@ -158,7 +159,7 @@ class RecoverIndexDropIT {
             storeChannel.position(position.getByteOffset());
             try (var writeChannel = new PhysicalFlushableLogChannel(
                     storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
-                new LogEntryWriter<>(writeChannel).serialize(dropBatch);
+                new LogEntryWriter<>(writeChannel, LATEST_KERNEL_VERSION).serialize(dropBatch);
             }
         }
     }

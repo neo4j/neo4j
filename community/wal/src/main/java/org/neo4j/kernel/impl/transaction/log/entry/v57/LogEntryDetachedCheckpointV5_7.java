@@ -21,19 +21,13 @@ package org.neo4j.kernel.impl.transaction.log.entry.v57;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7;
 
-import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionId;
 
-public class LogEntryDetachedCheckpointV5_7 extends AbstractVersionAwareLogEntry {
-    private final TransactionId transactionId;
-    private final LogPosition logPosition;
-    private final long checkpointTime;
-    private final StoreId storeId;
-    private final String reason;
+public class LogEntryDetachedCheckpointV5_7 extends LogEntryDetachedCheckpointV5_0 {
 
     public LogEntryDetachedCheckpointV5_7(
             KernelVersion kernelVersion,
@@ -42,50 +36,7 @@ public class LogEntryDetachedCheckpointV5_7 extends AbstractVersionAwareLogEntry
             long checkpointMillis,
             StoreId storeId,
             String reason) {
-        super(kernelVersion, DETACHED_CHECK_POINT_V5_7);
-        this.transactionId = transactionId;
-        this.logPosition = logPosition;
-        this.checkpointTime = checkpointMillis;
-        this.storeId = storeId;
-        this.reason = reason;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        LogEntryDetachedCheckpointV5_7 that = (LogEntryDetachedCheckpointV5_7) o;
-        return checkpointTime == that.checkpointTime
-                && Objects.equals(transactionId, that.transactionId)
-                && Objects.equals(logPosition, that.logPosition)
-                && Objects.equals(storeId, that.storeId)
-                && kernelVersion() == that.kernelVersion()
-                && Objects.equals(reason, that.reason);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(kernelVersion(), transactionId, logPosition, checkpointTime, storeId, reason);
-    }
-
-    public StoreId getStoreId() {
-        return storeId;
-    }
-
-    public LogPosition getLogPosition() {
-        return logPosition;
-    }
-
-    public TransactionId getTransactionId() {
-        return transactionId;
-    }
-
-    public String getReason() {
-        return reason;
+        super(DETACHED_CHECK_POINT_V5_7, kernelVersion, transactionId, logPosition, checkpointMillis, storeId, reason);
     }
 
     @Override

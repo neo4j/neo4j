@@ -40,7 +40,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORM
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogSegments.UNKNOWN_LOG_SEGMENT_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntryWriterV5_7.RECORD_LENGTH_BYTES;
+import static org.neo4j.kernel.impl.transaction.log.entry.v57.DetachedCheckpointLogEntrySerializerV5_7.RECORD_LENGTH_BYTES;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.kernel.recovery.RecoveryStartInformation.NO_RECOVERY_REQUIRED;
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
@@ -49,6 +49,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -173,17 +174,11 @@ class TransactionLogsRecoveryTest {
             int previousChecksum = BASE_TX_CHECKSUM;
             channel.getCurrentLogPosition(marker);
             LogPosition lastCommittedTxPosition = marker.newPosition();
-            byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
             byte[] headerData = encodeLogIndex(1);
-            writer.writeStartEntry(version, 2L, 3L, previousChecksum, headerData);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, previousChecksum, headerData);
             lastCommittedTxStartEntry = new LogEntryStart(
-                    LatestVersions.LATEST_KERNEL_VERSION,
-                    2L,
-                    3L,
-                    previousChecksum,
-                    headerData,
-                    lastCommittedTxPosition);
-            previousChecksum = writer.writeCommitEntry(version, 4L, 5L);
+                    LATEST_KERNEL_VERSION, 2L, 3L, previousChecksum, headerData, lastCommittedTxPosition);
+            previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
             lastCommittedTxCommitEntry = new LogEntryCommit(4L, 5L, previousChecksum);
 
             // check point pointing to the previously committed transaction
@@ -192,18 +187,18 @@ class TransactionLogsRecoveryTest {
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
                     new TransactionId(4L, 2, 5L, 6L),
-                    LatestVersions.LATEST_KERNEL_VERSION,
+                    LATEST_KERNEL_VERSION,
                     lastCommittedTxPosition,
                     Instant.now(),
                     "test");
 
             // tx committed after checkpoint
             channel.getCurrentLogPosition(marker);
-            writer.writeStartEntry(version, 6L, 4L, previousChecksum, headerData);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 6L, 4L, previousChecksum, headerData);
             expectedStartEntry = new LogEntryStart(
-                    LatestVersions.LATEST_KERNEL_VERSION, 6L, 4L, previousChecksum, headerData, marker.newPosition());
+                    LATEST_KERNEL_VERSION, 6L, 4L, previousChecksum, headerData, marker.newPosition());
 
-            previousChecksum = writer.writeCommitEntry(version, 5L, 7L);
+            previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 5L, 7L);
             expectedCommitEntry = new LogEntryCommit(5L, 7L, previousChecksum);
 
             return true;
@@ -235,7 +230,8 @@ class TransactionLogsRecoveryTest {
                             NO_MONITOR,
                             mock(InternalLog.class),
                             Clocks.systemClock(),
-                            false) {
+                            false,
+                            LATEST_KERNEL_VERSION) {
                         private int nr;
 
                         @Override
@@ -303,13 +299,12 @@ class TransactionLogsRecoveryTest {
         writeSomeDataWithVersion(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
-            byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
             TransactionId transactionId = new TransactionId(4L, BASE_TX_CHECKSUM, 5L, 6L);
 
             // last committed tx
             channel.getCurrentLogPosition(marker);
-            writer.writeStartEntry(version, 2L, 3L, BASE_TX_CHECKSUM, new byte[0]);
-            writer.writeCommitEntry(version, 4L, 5L);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, BASE_TX_CHECKSUM, new byte[0]);
+            writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
 
             // check point
             channel.getCurrentLogPosition(marker);
@@ -318,7 +313,7 @@ class TransactionLogsRecoveryTest {
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
                     transactionId,
-                    LatestVersions.LATEST_KERNEL_VERSION,
+                    LATEST_KERNEL_VERSION,
                     marker.newPosition(),
                     Instant.now(),
                     "test");
@@ -352,7 +347,8 @@ class TransactionLogsRecoveryTest {
                             NO_MONITOR,
                             mock(InternalLog.class),
                             Clocks.systemClock(),
-                            false),
+                            false,
+                            LATEST_KERNEL_VERSION),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -378,13 +374,12 @@ class TransactionLogsRecoveryTest {
         final LogPositionMarker marker = new LogPositionMarker();
 
         writeSomeData(file, dataWriters -> {
-            byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
 
             // incomplete tx
             channel.getCurrentLogPosition(marker); // <-- marker has the last good position
-            writer.writeStartEntry(version, 5L, 4L, 0, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, new byte[0]);
 
             return true;
         });
@@ -404,24 +399,23 @@ class TransactionLogsRecoveryTest {
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
-            byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
-            writer.writeStartEntry(version, 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
             TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L, 4L);
 
-            writer.writeCommitEntry(version, 1L, 2L);
+            writer.writeCommitEntry(LATEST_KERNEL_VERSION, 1L, 2L);
             channel.getCurrentLogPosition(marker);
             var checkpointFile = logFiles.getCheckpointFile();
             var checkpointAppender = checkpointFile.getCheckpointAppender();
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
                     transactionId,
-                    LatestVersions.LATEST_KERNEL_VERSION,
+                    LATEST_KERNEL_VERSION,
                     marker.newPosition(),
                     Instant.now(),
                     "test");
 
             // write incomplete tx to trigger recovery
-            writer.writeStartEntry(version, 5L, 4L, 0, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, new byte[0]);
             return true;
         });
         assertTrue(recovery(storeDir));
@@ -450,9 +444,8 @@ class TransactionLogsRecoveryTest {
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
-            byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
-            writer.writeStartEntry(version, 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
-            writer.writeCommitEntry(version, 1L, 2L);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 1L, 1L, BASE_TX_CHECKSUM, ArrayUtils.EMPTY_BYTE_ARRAY);
+            writer.writeCommitEntry(LATEST_KERNEL_VERSION, 1L, 2L);
             TransactionId transactionId = new TransactionId(1L, BASE_TX_CHECKSUM, 2L, 3L);
 
             channel.getCurrentLogPosition(marker);
@@ -461,20 +454,20 @@ class TransactionLogsRecoveryTest {
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
                     transactionId,
-                    LatestVersions.LATEST_KERNEL_VERSION,
+                    LATEST_KERNEL_VERSION,
                     marker.newPosition(),
                     Instant.now(),
                     "valid checkpoint");
             checkpointAppender.checkPoint(
                     LogCheckPointEvent.NULL,
                     transactionId,
-                    LatestVersions.LATEST_KERNEL_VERSION,
+                    LATEST_KERNEL_VERSION,
                     new LogPosition(marker.getLogVersion() + 1, marker.getByteOffset()),
                     Instant.now(),
                     "invalid checkpoint");
 
             // incomplete tx
-            writer.writeStartEntry(version, 5L, 4L, 0, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, 0, new byte[0]);
             return true;
         });
         assertTrue(recovery(storeDir));
@@ -494,16 +487,15 @@ class TransactionLogsRecoveryTest {
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
-            byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
 
             // last committed tx
             int previousChecksum = BASE_TX_CHECKSUM;
-            writer.writeStartEntry(version, 2L, 3L, previousChecksum, new byte[0]);
-            previousChecksum = writer.writeCommitEntry(version, 4L, 5L);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, previousChecksum, new byte[0]);
+            previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
 
             // incomplete tx
             channel.getCurrentLogPosition(marker); // <-- marker has the last good position
-            writer.writeStartEntry(version, 5L, 4L, previousChecksum, new byte[0]);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 5L, 4L, previousChecksum, new byte[0]);
 
             return true;
         });
@@ -528,11 +520,10 @@ class TransactionLogsRecoveryTest {
         writeSomeData(file, dataWriters -> {
             LogEntryWriter<?> writer = dataWriters.writer();
             LogPositionAwareChannel channel = dataWriters.channel();
-            byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
 
             // last committed tx
-            writer.writeStartEntry(version, 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
-            writer.writeCommitEntry(version, transactionId, commitTimestamp);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
+            writer.writeCommitEntry(LATEST_KERNEL_VERSION, transactionId, commitTimestamp);
             channel.getCurrentLogPosition(marker);
 
             return true;
@@ -593,11 +584,10 @@ class TransactionLogsRecoveryTest {
         writeSomeData(file, writers -> {
             LogEntryWriter<?> writer = writers.writer();
             LogPositionAwareChannel channel = writers.channel();
-            byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
 
             // last committed tx
-            writer.writeStartEntry(version, 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
-            writer.writeCommitEntry(version, transactionId, commitTimestamp);
+            writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, BASE_TX_CHECKSUM, additionalHeaderData);
+            writer.writeCommitEntry(LATEST_KERNEL_VERSION, transactionId, commitTimestamp);
             channel.getCurrentLogPosition(marker);
 
             return true;
@@ -656,7 +646,8 @@ class TransactionLogsRecoveryTest {
                             NO_MONITOR,
                             mock(InternalLog.class),
                             Clocks.systemClock(),
-                            false),
+                            false,
+                            LATEST_KERNEL_VERSION),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -700,7 +691,7 @@ class TransactionLogsRecoveryTest {
                             BASE_TX_CHECKSUM),
                     INSTANCE);
             writableLogChannel.beginChecksum();
-            LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel);
+            LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, LATEST_KERNEL_VERSION);
             visitor.visit(new DataWriters(first, writableLogChannel));
         }
     }

@@ -57,7 +57,7 @@ public record RollbackChunkRepresentation(
 
     @Override
     public int serialize(LogEntryWriter<? extends WritableChannel> writer) throws IOException {
-        return writer.writeRollbackEntry(kernelVersion.version(), transactionId, timeWritten);
+        return writer.writeRollbackEntry(kernelVersion, transactionId, timeWritten);
     }
 
     @Override

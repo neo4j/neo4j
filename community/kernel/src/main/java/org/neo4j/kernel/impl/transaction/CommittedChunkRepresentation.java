@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.List;
 import org.neo4j.common.Subject;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.api.chunk.ChunkMetadata;
 import org.neo4j.kernel.impl.api.chunk.CommandChunk;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -65,14 +66,14 @@ public record CommittedChunkRepresentation(
 
     @Override
     public int serialize(LogEntryWriter<? extends WritableChannel> writer) throws IOException {
-        byte version = chunkStart.kernelVersion().version();
+        KernelVersion kernelVersion = chunkStart.kernelVersion();
         writer.writeChunkStartEntry(
-                version,
+                kernelVersion,
                 chunkStart.getTimeWritten(),
                 chunkStart.getChunkId(),
                 chunkStart.getPreviousBatchLogPosition());
         writer.serialize(commandBatch);
-        return writer.writeChunkEndEntry(version, chunkEnd.getTransactionId(), chunkEnd.getChunkId());
+        return writer.writeChunkEndEntry(kernelVersion, chunkEnd.getTransactionId(), chunkEnd.getChunkId());
     }
 
     @Override

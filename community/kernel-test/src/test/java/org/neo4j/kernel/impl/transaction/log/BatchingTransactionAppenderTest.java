@@ -118,7 +118,8 @@ class BatchingTransactionAppenderTest {
     void shouldBeAbleToAppendTransactionWithoutKernelVersion()
             throws IOException, ExecutionException, InterruptedException {
         CountingVersionProvider versionProvider = new CountingVersionProvider();
-        when(logFile.getTransactionLogWriter()).thenReturn(new TransactionLogWriter(channel, versionProvider));
+        when(logFile.getTransactionLogWriter())
+                .thenReturn(new TransactionLogWriter(channel, versionProvider, LATEST_KERNEL_VERSION));
 
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
@@ -151,7 +152,7 @@ class BatchingTransactionAppenderTest {
     void shouldAppendSingleTransaction() throws Exception {
         // GIVEN
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -183,7 +184,8 @@ class BatchingTransactionAppenderTest {
     @Test
     void shouldAppendBatchOfTransactions() throws Exception {
         // GIVEN
-        TransactionLogWriter logWriter = new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER);
+        TransactionLogWriter logWriter =
+                new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION);
         TransactionLogWriter logWriterSpy = spy(logWriter);
         when(logFile.getTransactionLogWriter()).thenReturn(logWriterSpy);
 
@@ -207,7 +209,7 @@ class BatchingTransactionAppenderTest {
     void shouldAppendCommittedTransactions() throws Exception {
         // GIVEN
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
 
         long nextTxId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(nextTxId);
@@ -260,7 +262,7 @@ class BatchingTransactionAppenderTest {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
 
         TransactionAppender appender = life.add(createTransactionAppender());
 
@@ -301,7 +303,7 @@ class BatchingTransactionAppenderTest {
         IOException failure = new IOException(failureMessage);
         when(channel.putLong(anyLong())).thenThrow(failure);
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
 
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -350,7 +352,7 @@ class BatchingTransactionAppenderTest {
                 .prepareForFlush();
         when(logFile.forceAfterAppend(any())).thenThrow(failure);
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER));
+                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);
@@ -367,6 +369,7 @@ class BatchingTransactionAppenderTest {
         when(commandBatch.kernelVersion()).thenReturn(LatestVersions.LATEST_KERNEL_VERSION);
         when(commandBatch.iterator()).thenReturn(emptyIterator());
         when(commandBatch.isFirst()).thenReturn(true);
+        when(commandBatch.isLast()).thenReturn(true);
 
         var e = assertThrows(
                 IOException.class,

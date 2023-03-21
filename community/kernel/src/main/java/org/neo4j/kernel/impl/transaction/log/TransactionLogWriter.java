@@ -35,8 +35,11 @@ public class TransactionLogWriter {
     private final LogEntryWriter<FlushableLogPositionAwareChannel> writer;
     private final KernelVersionProvider versionProvider;
 
-    public TransactionLogWriter(FlushableLogPositionAwareChannel channel, KernelVersionProvider versionProvider) {
-        this(channel, new LogEntryWriter<>(channel), versionProvider);
+    public TransactionLogWriter(
+            FlushableLogPositionAwareChannel channel,
+            KernelVersionProvider versionProvider,
+            KernelVersion latestRecognizedKernelVersion) {
+        this(channel, new LogEntryWriter<>(channel, latestRecognizedKernelVersion), versionProvider);
     }
 
     @VisibleForTesting
@@ -73,29 +76,28 @@ public class TransactionLogWriter {
         if (kernelVersion == null) {
             kernelVersion = versionProvider.kernelVersion();
         }
-        byte version = kernelVersion.version();
         if (batch.isRollback()) {
-            return writer.writeRollbackEntry(version, transactionId, batch.getTimeCommitted());
+            return writer.writeRollbackEntry(kernelVersion, transactionId, batch.getTimeCommitted());
         }
 
         if (batch.isFirst()) {
             writer.writeStartEntry(
-                    version,
+                    kernelVersion,
                     batch.getTimeStarted(),
                     batch.getLatestCommittedTxWhenStarted(),
                     previousChecksum,
                     encodeLogIndex(batch.consensusIndex()));
         } else {
-            writer.writeChunkStartEntry(version, batch.getTimeCommitted(), chunkId, previousBatchPosition);
+            writer.writeChunkStartEntry(kernelVersion, batch.getTimeCommitted(), chunkId, previousBatchPosition);
         }
 
         // Write all the commands to the log channel
         writer.serialize(batch, kernelVersion);
 
         if (batch.isLast()) {
-            return writer.writeCommitEntry(version, transactionId, batch.getTimeCommitted());
+            return writer.writeCommitEntry(kernelVersion, transactionId, batch.getTimeCommitted());
         } else {
-            return writer.writeChunkEndEntry(version, transactionId, chunkId);
+            return writer.writeChunkEndEntry(kernelVersion, transactionId, chunkId);
         }
     }
 

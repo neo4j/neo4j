@@ -32,6 +32,7 @@ import static org.neo4j.logging.AssertableLogProvider.Level.INFO;
 import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -123,7 +124,7 @@ class DetachedLogTailScannerTest {
                 .checkPoint(
                         LogCheckPointEvent.NULL,
                         transactionId,
-                        LatestVersions.LATEST_KERNEL_VERSION,
+                        LATEST_KERNEL_VERSION,
                         logPosition,
                         Instant.now(),
                         "test");
@@ -514,7 +515,7 @@ class DetachedLogTailScannerTest {
 
     @Test
     void extractTxIdFromFirstChunkEndOnEmptyLogs() throws Exception {
-        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
+        assumeThat(LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
 
         long chunkTxId = 42;
         setupLogFiles(10, logFile(start(), chunkEnd(chunkTxId)), logFile());
@@ -525,7 +526,7 @@ class DetachedLogTailScannerTest {
 
     @Test
     void extractTxIdFromFirstChunkEndOnNotEmptyLogs() throws Exception {
-        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
+        assumeThat(LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
 
         long chunkTxId = 42;
         PositionEntry position = position();
@@ -566,17 +567,16 @@ class DetachedLogTailScannerTest {
                 try {
                     TransactionLogWriter logWriter = logFile.getTransactionLogWriter();
                     LogEntryWriter<?> writer = logWriter.getWriter();
-                    byte version = LatestVersions.LATEST_KERNEL_VERSION.version();
                     for (Entry entry : entries) {
                         LogPosition currentPosition = logWriter.getCurrentPosition();
                         positions.put(entry, currentPosition);
                         if (entry instanceof StartEntry) {
-                            writer.writeStartEntry(version, 0, 0, previousChecksum, new byte[0]);
+                            writer.writeStartEntry(LATEST_KERNEL_VERSION, 0, 0, previousChecksum, new byte[0]);
                         } else if (entry instanceof CommitEntry commitEntry) {
-                            previousChecksum = writer.writeCommitEntry(version, commitEntry.txId, 0);
+                            previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, commitEntry.txId, 0);
                             lastTxId.set(commitEntry.txId);
                         } else if (entry instanceof ChunkEndEntry chunkEntry) {
-                            previousChecksum = writer.writeChunkEndEntry(version, chunkEntry.txId, 1);
+                            previousChecksum = writer.writeChunkEndEntry(LATEST_KERNEL_VERSION, chunkEntry.txId, 1);
                         } else if (entry instanceof CheckPointEntry checkPointEntry) {
                             Entry target = checkPointEntry.withPositionOfEntry;
                             LogPosition logPosition = target != null ? positions.get(target) : currentPosition;

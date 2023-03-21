@@ -230,7 +230,7 @@ class DumpCommandIT {
             LogFile logFile = logFiles.getLogFile();
             LogEntryWriter<?> writer = logFile.getTransactionLogWriter().getWriter();
             writer.writeStartEntry(
-                    LatestVersions.LATEST_KERNEL_VERSION.version(),
+                    LatestVersions.LATEST_KERNEL_VERSION,
                     0x123456789ABCDEFL,
                     logFile.getLogFileInformation().getLastEntryId() + 1,
                     BASE_TX_CHECKSUM,

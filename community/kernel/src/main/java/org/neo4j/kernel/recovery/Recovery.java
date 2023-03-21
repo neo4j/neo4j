@@ -72,6 +72,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.impl.muninn.VersionStorage;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.AvailabilityListener;
@@ -693,7 +694,8 @@ public final class Recovery {
                 doParallelRecovery,
                 recoveryPredicate,
                 cursorContextFactory,
-                mode);
+                mode,
+                KernelVersion.getLatestVersion(config));
 
         CheckPointerImpl.ForceOperation forceOperation =
                 new DefaultForceOperation(indexingService, storageEngine, databasePageCache);
@@ -827,7 +829,8 @@ public final class Recovery {
             boolean doParallelRecovery,
             RecoveryPredicate recoveryPredicate,
             CursorContextFactory contextFactory,
-            RecoveryMode mode) {
+            RecoveryMode mode,
+            KernelVersion latestRecognizedKernelVersion) {
         RecoveryService recoveryService = new DefaultRecoveryService(
                 storageEngine,
                 transactionIdStore,
@@ -838,7 +841,8 @@ public final class Recovery {
                 positionMonitor,
                 log,
                 clock,
-                doParallelRecovery);
+                doParallelRecovery,
+                latestRecognizedKernelVersion);
         CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator(
                 databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction, memoryTracker);
         ProgressReporter progressReporter = new LogProgressReporter(log);

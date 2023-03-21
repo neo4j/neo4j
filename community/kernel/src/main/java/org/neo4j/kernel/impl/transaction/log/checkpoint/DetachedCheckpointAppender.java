@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.storageengine.api.CommandReaderFactory.NO_COMMANDS;
 
 import java.io.IOException;
@@ -38,8 +39,12 @@ import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.CheckpointLogEntryWriter;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializer;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
+import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryDetachedCheckpointV5_7;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
@@ -63,9 +68,9 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final TransactionLogFilesContext context;
     private final Panic databasePanic;
     private final LogRotation logRotation;
+    private final KernelVersion latestRecognizedKernelVersion;
     private StoreId storeId;
     private PhysicalFlushableLogPositionAwareChannel writer;
-    private CheckpointWriters checkpointWriters;
     private NativeScopedBuffer buffer;
     private PhysicalLogVersionedStoreChannel channel;
     private LogVersionRepository logVersionRepository;
@@ -78,7 +83,8 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             TransactionLogFilesContext context,
             CheckpointFile checkpointFile,
             LogRotation checkpointRotation,
-            DetachedLogTailScanner logTailScanner) {
+            DetachedLogTailScanner logTailScanner,
+            KernelVersion latestRecognizedKernelVersion) {
         this.logFiles = logFiles;
         this.checkpointFile = requireNonNull(checkpointFile);
         this.context = requireNonNull(context);
@@ -87,6 +93,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         this.logRotation = requireNonNull(checkpointRotation);
         this.log = context.getLogProvider().getLog(DetachedCheckpointAppender.class);
         this.logTailScanner = logTailScanner;
+        this.latestRecognizedKernelVersion = latestRecognizedKernelVersion;
     }
 
     @Override
@@ -101,7 +108,6 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         seekCheckpointChannel(version);
         buffer = new NativeScopedBuffer(kibiBytes(1), ByteOrder.LITTLE_ENDIAN, context.getMemoryTracker());
         writer = new PhysicalFlushableLogPositionAwareChannel(channel, buffer);
-        checkpointWriters = new CheckpointWriters(writer);
     }
 
     private void seekCheckpointChannel(long expectedVersion) throws IOException {
@@ -164,9 +170,34 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             try {
                 databasePanic.assertNoPanic(IOException.class);
                 var logPositionBeforeCheckpoint = writer.getCurrentLogPosition();
-                getCheckpointLogEntryWriter(kernelVersion)
-                        .writeCheckPointEntry(
-                                transactionId, kernelVersion, logPosition, checkpointTime, storeId, reason);
+                if (kernelVersion == KernelVersion.V5_7) {
+                    LogEntrySerializer<LogEntry> select = serializationSet(kernelVersion, latestRecognizedKernelVersion)
+                            .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7);
+                    select.write(
+                            kernelVersion,
+                            writer,
+                            new LogEntryDetachedCheckpointV5_7(
+                                    kernelVersion,
+                                    transactionId,
+                                    logPosition,
+                                    checkpointTime.toEpochMilli(),
+                                    storeId,
+                                    reason));
+                } else {
+                    LogEntrySerializer<LogEntry> select = serializationSet(kernelVersion, latestRecognizedKernelVersion)
+                            .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0);
+                    select.write(
+                            kernelVersion,
+                            writer,
+                            new LogEntryDetachedCheckpointV5_0(
+                                    kernelVersion,
+                                    transactionId,
+                                    logPosition,
+                                    checkpointTime.toEpochMilli(),
+                                    storeId,
+                                    reason));
+                }
+
                 var logPositionAfterCheckpoint = writer.getCurrentLogPosition();
                 logCheckPointEvent.appendToLogFile(logPositionBeforeCheckpoint, logPositionAfterCheckpoint);
                 forceAfterAppend(logCheckPointEvent);
@@ -176,10 +207,6 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
                 throw cause;
             }
         }
-    }
-
-    private CheckpointLogEntryWriter getCheckpointLogEntryWriter(KernelVersion kernelVersion) {
-        return checkpointWriters.writer(kernelVersion);
     }
 
     public long getCurrentPosition() {
