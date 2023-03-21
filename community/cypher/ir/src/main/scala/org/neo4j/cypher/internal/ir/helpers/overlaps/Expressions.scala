@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasALabel
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.Not
@@ -103,6 +104,10 @@ object Expressions {
         TailRecOption.some(SolvableLabelExpression.wildcard)
       case HasLabels(_, Seq(label)) =>
         TailRecOption.some(SolvableLabelExpression.label(label.name))
+      case HasTypes(_, Seq(relType)) =>
+        // Note: The logic for RelType and Labels is currently the same when using overlap logic so we can consider the RelType to be a Label in this instance
+        // but this should be updated when specific overlap logic for RelTypes is added.
+        TailRecOption.some(SolvableLabelExpression.label(relType.name))
       case Not(not) =>
         TailRecOption.tailcall(extractLabelExpressionRec(not)).map(_.not)
       case And(lhs, rhs) =>

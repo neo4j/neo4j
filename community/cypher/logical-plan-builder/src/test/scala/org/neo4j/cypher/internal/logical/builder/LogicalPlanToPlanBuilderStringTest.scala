@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
@@ -72,6 +73,9 @@ import scala.tools.nsc.Settings
 import scala.tools.nsc.interpreter.IMain
 import scala.tools.nsc.interpreter.shell.ReplReporterImpl
 
+/**
+ * If you reference something new and a type was not found an import needs to be added to [[interpretPlanBuilder]]
+ */
 class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
 
   private val testedOperators = mutable.Set[String]()
@@ -792,6 +796,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
       .eager(ListSet(EagernessReason.Unknown))
       .eager(ListSet(
         EagernessReason.LabelReadSetConflict(LabelName("X")(InputPosition.NONE)),
+        EagernessReason.TypeReadSetConflict(RelTypeName("X")(InputPosition.NONE)),
         EagernessReason.LabelReadRemoveConflict(LabelName("Bar")(InputPosition.NONE)),
         EagernessReason.ReadDeleteConflict("n"),
         EagernessReason.ReadCreateConflict(),
@@ -799,6 +804,10 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
         EagernessReason.UnknownPropertyReadSetConflict(),
         EagernessReason.LabelReadSetConflict(
           LabelName("X")(InputPosition.NONE),
+          Some(EagernessReason.Conflict(Id(1), Id(2)))
+        ),
+        EagernessReason.TypeReadSetConflict(
+          RelTypeName("X")(InputPosition.NONE),
           Some(EagernessReason.Conflict(Id(1), Id(2)))
         ),
         EagernessReason.LabelReadRemoveConflict(
@@ -2225,6 +2234,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
             |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
             |import org.neo4j.cypher.internal.expressions.LabelName
+            |import org.neo4j.cypher.internal.expressions.RelTypeName
             |import org.neo4j.cypher.internal.expressions.PropertyKeyName
             |import org.neo4j.cypher.internal.logical.plans._
             |import org.neo4j.cypher.internal.logical.builder.TestException

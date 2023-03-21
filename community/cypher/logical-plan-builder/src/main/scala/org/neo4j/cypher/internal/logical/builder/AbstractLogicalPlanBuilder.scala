@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -2294,7 +2295,10 @@ object AbstractLogicalPlanBuilder {
     right: String,
     direction: SemanticDirection = OUTGOING,
     properties: Option[String] = None
-  ): CreateRelationship =
+  ): CreateRelationship = {
+    val props = properties.map(Parser.parseExpression)
+    if (props.exists(!_.isInstanceOf[MapExpression]))
+      throw new IllegalArgumentException("Property must be a Map Expression")
     CreateRelationship(
       relationship,
       left,
@@ -2303,6 +2307,7 @@ object AbstractLogicalPlanBuilder {
       direction,
       properties.map(Parser.parseExpression)
     )
+  }
 
   def setNodeProperty(node: String, key: String, value: String): SetMutatingPattern =
     SetNodePropertyPattern(node, PropertyKeyName(key)(InputPosition.NONE), Parser.parseExpression(value))

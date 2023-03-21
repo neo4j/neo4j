@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.R
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.truncateDatabaseDeeagerizer
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.bottomUp
@@ -37,9 +38,13 @@ import org.neo4j.cypher.internal.util.bottomUp
 case class EagerWhereNeededRewriter(cardinalities: Cardinalities, attributes: Attributes[LogicalPlan])
     extends EagerRewriter(attributes) {
 
-  override def eagerize(plan: LogicalPlan, semanticTable: SemanticTable): LogicalPlan = {
+  override def eagerize(
+    plan: LogicalPlan,
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): LogicalPlan = {
     // Step 1: Find reads and writes
-    val readsAndWrites = collectReadsAndWrites(plan, semanticTable)
+    val readsAndWrites = collectReadsAndWrites(plan, semanticTable, anonymousVariableNameGenerator)
 
     // Step 2: Find conflicting plans
     val conflicts = findConflictingPlans(readsAndWrites, plan)

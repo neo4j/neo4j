@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
@@ -74,7 +75,11 @@ case class EagerEverywhereRewriter(attributes: Attributes[LogicalPlan]) extends 
     }
   }
 
-  override def eagerize(plan: LogicalPlan, semanticTable: SemanticTable): LogicalPlan = {
+  override def eagerize(
+    plan: LogicalPlan,
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): LogicalPlan = {
     plan.endoRewrite(bottomUp(Rewriter.lift {
       case up: UpdatingPlan =>
         eager(up.withLhs(eager(up.source))(SameId(up.id)))

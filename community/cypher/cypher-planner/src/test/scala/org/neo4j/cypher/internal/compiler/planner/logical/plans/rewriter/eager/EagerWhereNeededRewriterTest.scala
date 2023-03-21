@@ -22,6 +22,17 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
+import org.neo4j.cypher.internal.expressions.HasDegree
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
+import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThanOrEqual
+import org.neo4j.cypher.internal.expressions.HasDegreeLessThan
+import org.neo4j.cypher.internal.expressions.HasDegreeLessThanOrEqual
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
@@ -30,6 +41,7 @@ import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.PropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
+import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
@@ -41,9 +53,18 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setL
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperty
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setPropertyFromMap
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperties
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -69,6 +90,13 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       override val idGen: IdGen = new SequentialIdGen(100)
     }
 
+  private def eagerizePlan(planBuilder: LogicalPlanBuilder, plan: LogicalPlan): LogicalPlan =
+    EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable,
+      new AnonymousVariableNameGenerator
+    )
+
   // Negative tests
 
   test("inserts no eager in linear read query") {
@@ -77,11 +105,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .limit(5)
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -94,11 +119,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.argument("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -110,11 +132,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -127,11 +146,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -144,11 +160,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -161,11 +174,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -183,7 +193,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     an[IllegalStateException] should be thrownBy {
       EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
         plan,
-        planBuilder.getSemanticTable
+        planBuilder.getSemanticTable,
+        new AnonymousVariableNameGenerator
       )
     }
   }
@@ -202,7 +213,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     an[IllegalStateException] should be thrownBy {
       EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
         plan,
-        planBuilder.getSemanticTable
+        planBuilder.getSemanticTable,
+        new AnonymousVariableNameGenerator
       )
     }
   }
@@ -216,11 +228,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -239,11 +248,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -257,11 +263,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -281,11 +284,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperties("n", ("v1", "n.v1 + 1"), ("v2", "n.v2 + 1"))
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("nv1", "nv2")
@@ -311,11 +311,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .nodeIndexOperator("n:N(prop)")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -330,11 +327,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("n:N(prop)")
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -356,11 +350,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("properties")
@@ -381,11 +372,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("p")
@@ -406,11 +394,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -422,11 +407,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("p")
@@ -447,11 +429,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("p")
@@ -483,11 +462,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -519,11 +495,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("ps")
@@ -553,11 +526,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("mProps")
@@ -580,11 +550,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .nodeByLabelScan("n", "N")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -598,11 +565,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n:N")
       .nodeByIdSeek("n", Set.empty, 1)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -627,11 +591,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n:N")
       .nodeByIdSeek("n", Set.empty, 1)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -655,11 +616,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("n", "N")
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -684,11 +642,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.unionNodeByLabelsScan("n", Seq("N", "M"))
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -711,11 +666,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("n:N(prop)")
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -737,11 +689,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("labels")
@@ -764,11 +713,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("n")
       .argument()
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("labels")
@@ -794,11 +740,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeCountFromCountStore("count", Seq(Some("N")))
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -823,11 +766,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .nodeCountFromCountStore("count", Seq(Some("N")))
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -850,11 +790,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setLabels("n", "N")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -886,11 +823,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setLabels("n", "N")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("lbs")
@@ -911,10 +845,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .allNodeScan("n")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(plan)
   }
 
@@ -926,10 +857,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .allNodeScan("n")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(plan)
   }
 
@@ -943,10 +871,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .allNodeScan("n")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(plan)
   }
 
@@ -957,11 +882,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .create(createNode("m"))
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -974,11 +896,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .unwind("n.prop AS prop")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -990,11 +909,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1015,11 +931,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1042,11 +955,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeCountFromCountStore("count", Seq(None))
       .nodeByLabelScan("m", "M")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("m")
@@ -1069,11 +979,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .nodeCountFromCountStore("count", Seq(None))
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1087,11 +994,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeCountFromCountStore("count", Seq(Some("N")))
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("m")
@@ -1112,11 +1016,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1128,11 +1029,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1144,11 +1042,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1171,11 +1066,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.unionNodeByLabelsScan("n", Seq("N", "M"))
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1189,11 +1081,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.unionNodeByLabelsScan("n", Seq("N", "M"))
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("m")
@@ -1216,11 +1105,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.unionNodeByLabelsScan("n", Seq("N", "M"))
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1234,11 +1120,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.intersectionNodeByLabelsScan("n", Seq("N", "M"))
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("m")
@@ -1265,11 +1148,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1284,11 +1164,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1318,11 +1195,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1339,11 +1213,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1374,11 +1245,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1394,11 +1262,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1430,11 +1295,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1466,11 +1328,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1500,11 +1359,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1534,11 +1390,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1554,11 +1407,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1576,11 +1426,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1598,11 +1445,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1632,11 +1476,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1653,11 +1494,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1674,11 +1512,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(new LogicalPlanBuilder()
       .produceResults("o")
       .create(createNode("o", "M"))
@@ -1705,11 +1540,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1735,11 +1567,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M", "n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1765,11 +1594,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1786,11 +1612,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(new LogicalPlanBuilder()
       .produceResults("o")
       .create(createNode("o", "M"))
@@ -1817,11 +1640,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(new LogicalPlanBuilder()
       .produceResults("o")
       .create(createNode("o", "M"))
@@ -1848,11 +1668,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1884,11 +1701,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1903,11 +1717,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1922,11 +1733,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -1941,11 +1749,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1969,11 +1774,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .create(createNode("o", "M"))
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -1994,11 +1796,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -2010,11 +1809,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -2026,11 +1822,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -2054,11 +1847,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -2083,11 +1873,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n:N")
       .nodeByIdSeek("n", Set.empty, 1)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(new LogicalPlanBuilder()
       .produceResults("m")
       .create(createNode("m", "N"))
@@ -2108,11 +1895,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n:N")
       .nodeByIdSeek("n", Set.empty, 1, 2, 3)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(new LogicalPlanBuilder()
       .produceResults("m")
       .create(createNode("m", "N"))
@@ -2133,11 +1917,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n:N")
       .nodeByElementIdSeek("n", Set.empty, 1)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(new LogicalPlanBuilder()
       .produceResults("m")
       .create(createNode("m", "N"))
@@ -2158,11 +1939,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n:N")
       .nodeByElementIdSeek("n", Set.empty, 1, 2, 3)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(new LogicalPlanBuilder()
       .produceResults("m")
       .create(createNode("m", "N"))
@@ -2184,11 +1962,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .unwind("[1,2] AS x")
       .argument()
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -2212,11 +1987,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .unwind("[1,2] AS x")
       .argument()
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("x")
@@ -2238,11 +2010,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .merge(nodes = Seq(createNode("n")))
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -2253,11 +2022,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n", "N")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -2271,11 +2037,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -2298,11 +2061,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -2317,11 +2077,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -2348,11 +2105,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -2382,11 +2136,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -2421,11 +2172,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -2455,11 +2203,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -2484,10 +2229,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
 
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(plan)
   }
 
@@ -2502,11 +2244,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2535,11 +2274,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2572,11 +2308,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2610,11 +2343,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2648,11 +2378,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2686,11 +2413,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2724,11 +2448,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2762,11 +2483,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2795,11 +2513,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("n").withCardinality(10)
       .argument().withCardinality(1)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("m")
@@ -2831,11 +2546,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .projection("n.prop AS foo").withCardinality(10)
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2858,11 +2570,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .projection("n.prop AS foo")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2885,11 +2594,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.argument("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2912,11 +2618,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.argument("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2941,11 +2644,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.argument("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -2971,11 +2671,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.argument("n")
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults()
@@ -2999,11 +2696,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.argument("n")
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -3016,11 +2710,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.argument("a")
       .allNodeScan("a")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults()
@@ -3043,11 +2734,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setLabels("a", "A")
       .allNodeScan("a")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults()
@@ -3075,7 +2763,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     an[IllegalStateException] should be thrownBy {
       EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
         plan,
-        planBuilder.getSemanticTable
+        planBuilder.getSemanticTable,
+        new AnonymousVariableNameGenerator
       )
     }
   }
@@ -3092,11 +2781,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("a:B").withCardinality(1)
       .nodeByLabelScan("a", "A")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("`count(*)`")
@@ -3121,11 +2807,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("a:B").withCardinality(2)
       .nodeByLabelScan("a", "A")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("`count(*)`")
@@ -3149,11 +2832,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3176,11 +2856,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3205,11 +2882,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m1", "Two")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -3237,11 +2911,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3264,11 +2935,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3291,11 +2959,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .projection("n.prop AS foo")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3318,11 +2983,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3345,11 +3007,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .projection("n.prop AS foo")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3372,11 +3031,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3400,11 +3056,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .projection("n.prop AS foo").withCardinality(5)
       .allNodeScan("n").withCardinality(5)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3432,11 +3085,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .argument()
 
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -3452,11 +3102,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .argument()
 
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(new LogicalPlanBuilder()
       .produceResults("d")
       .apply()
@@ -3480,11 +3127,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .projection("n.prop AS foo").withCardinality(5)
       .allNodeScan("n").withCardinality(5)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("foo")
@@ -3512,11 +3156,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n.prop > 0").withCardinality(5)
       .allNodeScan("n").withCardinality(5)
     val plan = planBuilder.build()
-
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
 
     result should equal(
       new LogicalPlanBuilder()
@@ -3554,11 +3194,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .argument()
 
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -3593,11 +3230,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .argument()
 
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("d")
@@ -3621,11 +3255,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .argument()
 
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("d")
@@ -3654,11 +3285,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .argument()
 
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("d")
@@ -3689,11 +3317,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .argument()
 
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -3708,11 +3333,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("n:N(prop>5)")
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -3737,11 +3359,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("n:N(prop=5)")
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -3763,11 +3382,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop>0)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -3794,11 +3410,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("n:N(prop=5)", unique = true)
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -3820,11 +3433,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop>0)", unique = true)
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -3851,11 +3461,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("n:N(prop CONTAINS '1')", indexType = IndexType.TEXT)
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -3877,11 +3484,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop CONTAINS '1')")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -3908,11 +3512,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("n:N(prop ENDS WITH '1')", indexType = IndexType.TEXT)
       .allNodeScan("m")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -3934,11 +3535,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeIndexOperator("m:M(prop ENDS WITH '1')")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("o")
@@ -3968,11 +3566,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .create(createNode("m", "C"))
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("result")
@@ -4003,11 +3598,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .unwind("[1, 2] AS y")
       .argument()
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("m")
@@ -4038,11 +3630,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .nodeByLabelScan("n", "N")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4067,11 +3656,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .unwind("[0,1] AS i")
       .argument()
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4099,11 +3685,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .unwind("[0,1] AS i")
       .argument()
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4126,11 +3709,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .deleteNode("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -4143,11 +3723,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4170,11 +3747,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4197,11 +3771,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4224,11 +3795,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4251,11 +3819,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.allNodeScan("m")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4277,17 +3842,17 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .expand("(n)-[r]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))
+        ))
         .expand("(n)-[r]->(m)")
         .allNodeScan("n")
         .build()
@@ -4306,17 +3871,17 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .expand("(n)-[r]->(m)").withCardinality(20)
       .allNodeScan("n").withCardinality(10)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(5))))
+        ))
         .filter("m:M")
         .unwind("[1,2,3] AS i")
         .expand("(n)-[r]->(m)")
@@ -4337,17 +3902,17 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .expand("(n)-[r]->(m)").withCardinality(20)
       .allNodeScan("n").withCardinality(10)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(5))))
+        ))
         .projection("m.prop AS prop")
         .unwind("[1,2,3] AS i")
         .expand("(n)-[r]->(m)")
@@ -4365,11 +3930,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .deleteNode("n")
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4394,11 +3956,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .deleteNode("n").withCardinality(10)
       .nodeByLabelScan("n", "A").withCardinality(10)
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4424,11 +3983,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .deleteNode("n")
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4453,11 +4009,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("n", "N")
       .nodeByLabelScan("n", "N")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4489,11 +4042,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filterExpression(nestedPlanExpression)
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4533,17 +4083,17 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     // This makes sure we do not mistake prop for a potential node
     planBuilder.newVariable(prop, CTList(CTAny))
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(5))))
+        ))
         .projection(Map("props" -> nestedPlanExpression)).withCardinality(60)
         .unwind("[1,2,3] AS i")
         .expand("(n)-[r]->(m)")
@@ -4560,17 +4110,17 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .create(Seq.empty, Seq(createRelationship("r", "n", "R", "n")))
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))
+        ))
         .create(Seq.empty, Seq(createRelationship("r", "n", "R", "n")))
         .nodeByLabelScan("n", "A")
         .build()
@@ -4586,16 +4136,16 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))
+        ))
         .foreach("x", "[1]", Seq(createPattern(Seq.empty, Seq(createRelationship("r", "n", "R", "n")))))
         .nodeByLabelScan("n", "A")
         .build()
@@ -4611,10 +4161,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4636,10 +4183,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4661,10 +4205,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4686,10 +4227,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4711,10 +4249,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4739,16 +4274,16 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
+        ))
         .apply()
         .|.merge(Seq.empty, Seq(createRelationship("r", "n", "R", "n")))
         .|.expandInto("(n)-[r:R]->(n)")
@@ -4774,16 +4309,16 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
+        ))
         .apply()
         .|.merge(
           Seq.empty,
@@ -4813,16 +4348,16 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
+        ))
         .apply()
         .|.merge(
           Seq.empty,
@@ -4845,10 +4380,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4870,10 +4402,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4895,10 +4424,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4920,10 +4446,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4945,10 +4468,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("count")
@@ -4969,10 +4489,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .allNodeScan("n")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(plan)
   }
 
@@ -4984,10 +4501,1316 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .allNodeScan("n")
     val plan = planBuilder.build()
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(plan)
+  }
+
+  // Relationship Tests
+
+  // Reads
+  test("Should be eager in set/read conflict with SetRelationshipProperty") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("prop")
+      .projection("r.prop AS prop")
+      .setRelationshipProperty("r", "prop", "5")
+      .apply()
+      .|.allRelationshipsScan("(n)-[r]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("prop")
+        .projection("r.prop AS prop")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(1))))))
+        .setRelationshipProperty("r", "prop", "5")
+        .apply()
+        .|.allRelationshipsScan("(n)-[r]->(m)")
+        .unwind("[1, 2, 3] AS i")
+        .argument()
+        .build()
     )
+  }
+
+  // CREATE Relationship
+  test(
+    "inserts eager between Create and RelationshipTypeScan if Type overlap, and other type in Filter after create"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("o")
+      .filter("r:O")
+      .create(Seq.empty, Seq(createRelationship("o", "q", "R", "z")))
+      .cartesianProduct()
+      .|.relationshipTypeScan("(n)-[r:R]->(m)")
+      .allNodeScan("a")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("o")
+        .filter("r:O")
+        .create(Seq(), Seq(createRelationship("o", "q", "R", "z")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(2), Id(4))))))
+        .cartesianProduct()
+        .|.relationshipTypeScan("(n)-[r:R]->(m)")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with UndirectedAllRelationshipsScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .apply()
+      .|.allRelationshipsScan("(n)-[r]-(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.allRelationshipsScan("(n)-[r]-(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with DirectedAllRelationshipsScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .apply()
+      .|.allRelationshipsScan("(n)-[r]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.allRelationshipsScan("(n)-[r]->(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with DirectedRelationshipsTypeScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .apply()
+      .|.relationshipTypeScan("(n)-[r:R]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.relationshipTypeScan("(n)-[r:R]->(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be not eager in read/create conflict with DirectedRelationshipsTypeScan where types does not overlap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R2", "m")))
+      .apply()
+      .|.relationshipTypeScan("(n)-[r:R1]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test("Should be eager in read/create conflict with UndirectedRelationshipsTypeScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .apply()
+      .|.relationshipTypeScan("(n)-[r:R]-(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.relationshipTypeScan("(n)-[r:R]-(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should be not eager in read/create conflict with UndirectedRelationshipsTypeScan where types does not overlap"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R2", "m")))
+      .apply()
+      .|.relationshipTypeScan("(n)-[r:R1]-(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
+  }
+
+  test("Should be eager in read/create conflict with DirectedRelationshipIndexSeek") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop>5)]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop>5)]->(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with UndirectedRelationshipIndexSeek") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop>5)]-(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop>5)]-(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with DirectedRelationshipIndexScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop)]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop)]->(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with UndirectedRelationshipIndexScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with DirectedRelationshipIdSeek") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.directedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.directedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with UndirectedRelationshipIdSeek") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.undirectedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.undirectedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with UndirectedUnionRelationshipTypesScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .apply()
+      .|.unionRelationshipTypesScan("(n)-[r:R1|R2]-(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.unionRelationshipTypesScan("(n)-[r:R1|R2]-(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with DirectedUnionRelationshipTypesScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .apply()
+      .|.unionRelationshipTypesScan("(n)-[r:R1|R2]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.unionRelationshipTypesScan("(n)-[r:R1|R2]->(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with Expand") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .expand("(n)-[r:R1|R2]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .expand("(n)-[r:R1|R2]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should not be eager in read/create conflict with Expand with no overlapping types") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .expand("(n)-[r:R2|R3]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .expand("(n)-[r:R2|R3]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with Optional Expand") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .optionalExpandInto("(n)-[r:R1|R2]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .optionalExpandInto("(n)-[r:R1|R2]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should not be eager in read/create conflict with Optional Expand  with no overlapping types") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .optionalExpandInto("(n)-[r:R2|R3]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .optionalExpandInto("(n)-[r:R2|R3]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with VarExpand") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .expand("(n)-[r:R1|R2*1..2]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .expand("(n)-[r:R1|R2*1..2]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should not be eager in read/create conflict with VarExpand with no overlapping types") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .expand("(n)-[r:R2|R3*1..2]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .expand("(n)-[r:R2|R3*1..2]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with ShortestPath") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .shortestPath("(n)-[r]->(m)")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .shortestPath("(n)-[r]->(m)")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with returning a full relationship entity") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .setRelationshipProperty("r", "prop", "5")
+      .relationshipTypeScan("(n)-[r:R1]-(m)")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(0))))))
+        .setRelationshipProperty("r", "prop", "5")
+        .relationshipTypeScan("(n)-[r:R1]-(m)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with a property filter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .setRelationshipProperty("r", "prop", "5")
+      .filter("r.prop = 0")
+      .relationshipTypeScan("(n)-[r:R1]-(m)")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .setRelationshipProperty("r", "prop", "5")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(2))))))
+        .filter("r.prop = 0")
+        .relationshipTypeScan("(n)-[r:R1]-(m)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with a getDegree filter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .filterExpression(getDegree(varFor("n"), SemanticDirection.OUTGOING))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .filterExpression(getDegree(varFor("n"), SemanticDirection.OUTGOING))
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with a HasDegree filter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .filterExpression(
+        HasDegree(varFor("n"), Some(relTypeName("R1")), SemanticDirection.OUTGOING, literalInt(10L))(InputPosition.NONE)
+      )
+      .relationshipTypeScan("(n)-[r:R1]-(m)")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .filterExpression(HasDegree(varFor("n"), Some(relTypeName("R1")), SemanticDirection.OUTGOING, literalInt(10L))(
+          InputPosition.NONE
+        ))
+        .relationshipTypeScan("(n)-[r:R1]-(m)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with a HasDegreeGreaterThan filter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .filterExpression(HasDegreeGreaterThan(
+        varFor("n"),
+        Some(relTypeName("R1")),
+        SemanticDirection.OUTGOING,
+        literalInt(10L)
+      )(InputPosition.NONE))
+      .relationshipTypeScan("(n)-[r:R1]-(m)")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .filterExpression(HasDegreeGreaterThan(
+          varFor("n"),
+          Some(relTypeName("R1")),
+          SemanticDirection.OUTGOING,
+          literalInt(10L)
+        )(InputPosition.NONE))
+        .relationshipTypeScan("(n)-[r:R1]-(m)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with a HasDegreeGreaterThanOrEqual filter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .filterExpression(HasDegreeGreaterThanOrEqual(
+        varFor("n"),
+        Some(relTypeName("R1")),
+        SemanticDirection.OUTGOING,
+        literalInt(10L)
+      )(InputPosition.NONE))
+      .relationshipTypeScan("(n)-[r:R1]-(m)")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .filterExpression(HasDegreeGreaterThanOrEqual(
+          varFor("n"),
+          Some(relTypeName("R1")),
+          SemanticDirection.OUTGOING,
+          literalInt(10L)
+        )(InputPosition.NONE))
+        .relationshipTypeScan("(n)-[r:R1]-(m)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with a HasDegreeLessThan filter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .filterExpression(HasDegreeLessThan(
+        varFor("n"),
+        Some(relTypeName("R1")),
+        SemanticDirection.OUTGOING,
+        literalInt(10L)
+      )(InputPosition.NONE))
+      .relationshipTypeScan("(n)-[r:R1]-(m)")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .filterExpression(HasDegreeLessThan(
+          varFor("n"),
+          Some(relTypeName("R1")),
+          SemanticDirection.OUTGOING,
+          literalInt(10L)
+        )(InputPosition.NONE))
+        .relationshipTypeScan("(n)-[r:R1]-(m)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with a HasDegreeLessThanOrEqual filter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("n")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .filterExpression(HasDegreeLessThanOrEqual(
+        varFor("n"),
+        Some(relTypeName("R1")),
+        SemanticDirection.OUTGOING,
+        literalInt(10L)
+      )(InputPosition.NONE))
+      .relationshipTypeScan("(n)-[r:R1]-(m)")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("n")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .filterExpression(HasDegreeLessThanOrEqual(
+          varFor("n"),
+          Some(relTypeName("R1")),
+          SemanticDirection.OUTGOING,
+          literalInt(10L)
+        )(InputPosition.NONE))
+        .relationshipTypeScan("(n)-[r:R1]-(m)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with a HasLabelOrTypes filter") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .setLabels("c", "Foo")
+      .filter("entity:Foo")
+      .projection("$autoint_0 AS foo")
+      .unwind("entities AS entity")
+      .projection("[a, r, b] AS entities")
+      .allRelationshipsScan("(a)-[r]->(b)")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .setLabels("c", "Foo")
+        .eager(ListSet(LabelReadSetConflict(labelName("Foo"), Some(Conflict(Id(1), Id(2))))))
+        .filter("entity:Foo")
+        .projection("$autoint_0 AS foo")
+        .unwind("entities AS entity")
+        .projection("[a, r, b] AS entities")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  // Writes
+
+  test("Should be eager in read/set conflict with a SetRelationshipProperties") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("a", "b")
+      .setRelationshipProperties("r", ("p1", "42"), ("p1", "42"))
+      .filter("r.p1 = 0")
+      .allRelationshipsScan("(a)-[r]->(b)")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("a", "b")
+        .setRelationshipProperties("r", ("p1", "42"), ("p1", "42"))
+        .eager(ListSet(PropertyReadSetConflict(propName("p1"), Some(Conflict(Id(1), Id(2))))))
+        .filter("r.p1 = 0")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/set conflict with a SetPropertiesFromMap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setPropertiesFromMap("r", "{prop: 42, foo: a.bar}", removeOtherProps = true)
+      .filter("r.prop = 0")
+      .allRelationshipsScan("(a)-[r]->(b)")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setPropertiesFromMap("r", "{prop: 42, foo: a.bar}", removeOtherProps = true)
+        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(2), Id(3))))))
+        .filter("r.prop = 0")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/set conflict with a SetRelationshipPropertiesFromMap") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setRelationshipPropertiesFromMap("r", "{prop: 42, foo: a.bar}", removeOtherProps = false)
+      .filter("r.prop = 0")
+      .allRelationshipsScan("(a)-[r]->(b)")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setRelationshipPropertiesFromMap("r", "{prop: 42, foo: a.bar}", removeOtherProps = false)
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(3))))))
+        .filter("r.prop = 0")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/delete conflict with a DeleteRelationship") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .deleteRelationship("r")
+      .filter("r.prop = 0")
+      .allRelationshipsScan("(a)-[r]->(b)")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .deleteRelationship("r")
+        .eager(ListSet(ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))))
+        .filter("r.prop = 0")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/delete conflict with a DeletePath") {
+    val multiOutgoingRelationshipPath = PathExpression(
+      NodePathStep(
+        node = varFor("n"),
+        MultiRelationshipPathStep(
+          rel = varFor("r"),
+          direction = OUTGOING,
+          toNode = Some(varFor("m")),
+          next = NilPathStep()(pos)
+        )(pos)
+      )(pos)
+    )(InputPosition.NONE)
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .deletePath("p")
+      .projection(Map("p" -> multiOutgoingRelationshipPath))
+      .expandAll("(n)-[r:SMELLS*2]-(m)")
+      .nodeByLabelScan("n", "START")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .deletePath("p")
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))
+        ))
+        .projection(Map("p" -> multiOutgoingRelationshipPath))
+        .expandAll("(n)-[r:SMELLS*2]-(m)")
+        .nodeByLabelScan("n", "START")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/delete conflict with a DetachDeletePath") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .detachDeletePath("(a)-[r]->(b)")
+      .filter("r.prop = 0")
+      .allRelationshipsScan("(a)-[r]->(b)")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .detachDeletePath("(a)-[r]->(b)")
+        .eager(ListSet(ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))))
+        .filter("r.prop = 0")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test(
+    "Should be eager in read/set conflict with a SetRelationshipPropertyPattern"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(foo)]-(m)")
+      .foreach(
+        "x",
+        "[1]",
+        Seq(
+          createPattern(
+            Seq(createNode("e", "Event"), createNode("p", "Place")),
+            Seq(createRelationship("i", "e", "IN", "p"))
+          ),
+          setRelationshipProperty("i", "foo", "i_bar")
+        )
+      )
+      .argument()
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(foo)]-(m)")
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("foo"), Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Place"), Some(Conflict(Id(4), Id(3))))
+        ))
+        .foreach(
+          "x",
+          "[1]",
+          Seq(
+            createPattern(
+              Seq(createNode("e", "Event"), createNode("p", "Place")),
+              Seq(createRelationship("i", "e", "IN", "p"))
+            ),
+            setRelationshipProperty("i", "foo", "i_bar")
+          )
+        )
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should be eager in read/set conflict with a SetRelationshipPropertiesPattern"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(p1)]-(m)")
+      .foreach(
+        "x",
+        "[1]",
+        Seq(
+          createPattern(
+            Seq(createNode("e", "Event"), createNode("p", "Place")),
+            Seq(createRelationship("i", "e", "IN", "p"))
+          ),
+          setRelationshipProperties("i", ("p1", "42"), ("p1", "42"))
+        )
+      )
+      .argument()
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(p1)]-(m)")
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("p1"), Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Place"), Some(Conflict(Id(4), Id(3))))
+        ))
+        .foreach(
+          "x",
+          "[1]",
+          Seq(
+            createPattern(
+              Seq(createNode("e", "Event"), createNode("p", "Place")),
+              Seq(createRelationship("i", "e", "IN", "p"))
+            ),
+            setRelationshipProperties("i", ("p1", "42"), ("p1", "42"))
+          )
+        )
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should be eager in read/set conflict with a SetRelationshipPropertiesFromMapPattern"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+      .foreach(
+        "x",
+        "[1]",
+        Seq(
+          createPattern(
+            Seq(createNode("e", "Event"), createNode("p", "Place")),
+            Seq(createRelationship("i", "e", "IN", "p"))
+          ),
+          setRelationshipPropertiesFromMap("r", "{prop: 42, foo: a.bar}", removeOtherProps = false)
+        )
+      )
+      .argument()
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+        .eager(ListSet(
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Place"), Some(Conflict(Id(4), Id(3))))
+        ))
+        .foreach(
+          "x",
+          "[1]",
+          Seq(
+            createPattern(
+              Seq(createNode("e", "Event"), createNode("p", "Place")),
+              Seq(createRelationship("i", "e", "IN", "p"))
+            ),
+            setRelationshipPropertiesFromMap("r", "{prop: 42, foo: a.bar}", removeOtherProps = false)
+          )
+        )
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should be eager in read/set conflict with a SetPropertyPattern"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+      .foreach(
+        "x",
+        "[1]",
+        Seq(
+          createPattern(
+            Seq(createNode("e", "Event"), createNode("p", "Place")),
+            Seq(createRelationship("i", "e", "IN", "p"))
+          ),
+          setProperty("r", "prop", "r_prop")
+        )
+      )
+      .argument()
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+        .eager(ListSet(
+          UnknownPropertyReadSetConflict(Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Place"), Some(Conflict(Id(4), Id(3))))
+        ))
+        .foreach(
+          "x",
+          "[1]",
+          Seq(
+            createPattern(
+              Seq(createNode("e", "Event"), createNode("p", "Place")),
+              Seq(createRelationship("i", "e", "IN", "p"))
+            ),
+            setProperty("r", "prop", "r_prop")
+          )
+        )
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should be eager in read/set conflict with a SetPropertiesPattern"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+      .foreach(
+        "x",
+        "[1]",
+        Seq(
+          createPattern(
+            Seq(createNode("e", "Event"), createNode("p", "Place")),
+            Seq(createRelationship("i", "e", "IN", "p"))
+          ),
+          setProperties("r", ("p1", "42"), ("p1", "42"))
+        )
+      )
+      .argument()
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+        .eager(ListSet(
+          UnknownPropertyReadSetConflict(Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Place"), Some(Conflict(Id(4), Id(3))))
+        ))
+        .foreach(
+          "x",
+          "[1]",
+          Seq(
+            createPattern(
+              Seq(createNode("e", "Event"), createNode("p", "Place")),
+              Seq(createRelationship("i", "e", "IN", "p"))
+            ),
+            setProperties("r", ("p1", "42"), ("p1", "42"))
+          )
+        )
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should be eager in read/set conflict with a SetPropertyFromMapPattern"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+      .foreach(
+        "x",
+        "[1]",
+        Seq(
+          createPattern(
+            Seq(createNode("e", "Event"), createNode("p", "Place")),
+            Seq(createRelationship("i", "e", "IN", "p"))
+          ),
+          setPropertyFromMap("r", "{prop: 42, foo: a.bar}")
+        )
+      )
+      .argument()
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
+        .eager(ListSet(
+          UnknownPropertyReadSetConflict(Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Event"), Some(Conflict(Id(4), Id(3)))),
+          LabelReadSetConflict(labelName("Place"), Some(Conflict(Id(4), Id(3))))
+        ))
+        .foreach(
+          "x",
+          "[1]",
+          Seq(
+            createPattern(
+              Seq(createNode("e", "Event"), createNode("p", "Place")),
+              Seq(createRelationship("i", "e", "IN", "p"))
+            ),
+            setPropertyFromMap("r", "{prop: 42, foo: a.bar}")
+          )
+        )
+        .argument()
+        .build()
+    )
+  }
+
+  test(
+    "Should be eager in read/delete conflict with a DetachDeleteNode and possible conflict with unknown relationship"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .detachDeleteNode("a")
+      .union()
+      .|.relationshipTypeScan("(n)-[r:R1]->(m)")
+      .allNodeScan("a")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .detachDeleteNode("a")
+        .union()
+        .|.eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
+        ))
+        .|.relationshipTypeScan("(n)-[r:R1]->(m)")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("inserts no Eager between relationship Create and Create") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(Seq.empty, Seq(createRelationship("o", "m", "R", "n")))
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(plan)
+  }
+
+  test("inserts no Eager between relationship Create and Create with subsequent filters") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .filter("r.prop > 0")
+      .filter("o.prop > 0")
+      .create(Seq.empty, Seq(createRelationship("o", "m", "R", "n")))
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(plan)
+  }
+
+  test("inserts no Eager between relationship Create and Create in Foreach") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .foreach("i", "[1]", Seq(createPattern(Seq.empty, Seq(createRelationship("o", "m", "R", "n")))))
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(plan)
+  }
+
+  test("inserts no Eager between relationship Delete and Create") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .deleteRelationship("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(plan)
+  }
+
+  test("inserts no Eager between relationship Create and Delete") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .deleteRelationship("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
     result should equal(plan)
   }
 
@@ -5005,11 +5828,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .argument()
 
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("d")
@@ -5020,6 +5840,20 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .argument()
         .build()
     )
+  }
+
+  // This one should really be fixed before enabling the new analysis
+  ignore("Should not insert an eager when the property conflict of a merge is on a stable iterator?") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("d")
+      .merge(Seq(createNodeWithProperties("n", Seq(), "{foo: 5}")))
+      .filter("n.foo = 5")
+      .allNodeScan("n")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(plan)
   }
 
   // No analysis for possible overlaps of node variables based on predicates yet.
@@ -5035,11 +5869,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .filter("n.prop = 5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 
@@ -5057,11 +5888,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .|.nodeByLabelScan("m", "M")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerWhereNeededRewriter(planBuilder.cardinalities, Attributes(planBuilder.idGen)).eagerize(
-      plan,
-      planBuilder.getSemanticTable
-    )
     result should equal(plan)
   }
 }

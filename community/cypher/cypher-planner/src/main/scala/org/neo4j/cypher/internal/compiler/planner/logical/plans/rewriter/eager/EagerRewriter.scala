@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
@@ -67,9 +68,17 @@ case object EagerRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     val cardinalities = from.planningAttributes.cardinalities
 
     val newPlan = context.updateStrategy match {
-      case `eagerUpdateStrategy` => EagerEverywhereRewriter(attributes).eagerize(from.logicalPlan, from.semanticTable())
+      case `eagerUpdateStrategy` => EagerEverywhereRewriter(attributes).eagerize(
+          from.logicalPlan,
+          from.semanticTable(),
+          from.anonymousVariableNameGenerator
+        )
       case `defaultUpdateStrategy` =>
-        EagerWhereNeededRewriter(cardinalities, attributes).eagerize(from.logicalPlan, from.semanticTable())
+        EagerWhereNeededRewriter(cardinalities, attributes).eagerize(
+          from.logicalPlan,
+          from.semanticTable(),
+          from.anonymousVariableNameGenerator
+        )
     }
 
     from.withMaybeLogicalPlan(Some(newPlan))
@@ -114,5 +123,9 @@ abstract class EagerRewriter(attributes: Attributes[LogicalPlan]) {
    * @param plan the whole logical plan
    * @return the rewritten logical plan
    */
-  def eagerize(plan: LogicalPlan, semanticTable: SemanticTable): LogicalPlan
+  def eagerize(
+    plan: LogicalPlan,
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
+  ): LogicalPlan
 }

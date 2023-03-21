@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ConflictFinder.ConflictingPlanPair
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
@@ -186,6 +187,15 @@ object CandidateListFinder {
             "We do not expect conflicts between the two branches of an AssertSameNode yet."
           )
         case _: AssertSameNode => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = false,
+            emptyCandidateListsForRHSvsTopConflicts = true
+          )
+        case _: AssertSameRelationship if solvedConflicts.nonEmpty =>
+          // do not expect conflicts between lhs and rhs
+          throw new IllegalStateException(
+            "We do not expect conflicts between the two branches of an AssertSameRelationship yet."
+          )
+        case _: AssertSameRelationship => BinaryPlanEagerizationStrategy(
             eagerizeLHSvsRHSConflicts = false,
             emptyCandidateListsForRHSvsTopConflicts = true
           )

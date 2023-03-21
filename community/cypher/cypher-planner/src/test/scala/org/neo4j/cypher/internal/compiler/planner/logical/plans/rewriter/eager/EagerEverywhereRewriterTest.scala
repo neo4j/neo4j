@@ -21,9 +21,10 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -31,14 +32,21 @@ import scala.collection.immutable.ListSet
 
 class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps {
 
+  private def eagerizePlan(planBuilder: LogicalPlanBuilder, plan: LogicalPlan): LogicalPlan =
+    EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(
+      plan,
+      planBuilder.getSemanticTable,
+      new AnonymousVariableNameGenerator
+    )
+
   test("inserts no eager in linear read query") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
       .limit(5)
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result = EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(plan)
   }
 
@@ -51,9 +59,8 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
       .|.argument("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result =
-      eager.EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(plan)
   }
 
@@ -63,9 +70,8 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
       .create(createNode("m"))
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result =
-      eager.EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -84,9 +90,8 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
       .create(createNode("m"))
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result =
-      eager.EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -109,9 +114,8 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
       .filter("n.prop > 5")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result =
-      eager.EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -140,9 +144,8 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
       .|.allNodeScan("q")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result =
-      eager.EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -172,9 +175,8 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
       .|.argument("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result =
-      eager.EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -200,9 +202,8 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
       .create(createNode("m"))
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result =
-      eager.EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -226,9 +227,8 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
       .|.argument("n")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result =
-      eager.EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
@@ -256,9 +256,8 @@ class EagerEverywhereRewriterTest extends CypherFunSuite with LogicalPlanTestOps
       .setNodeProperty("n", "prop", "8")
       .allNodeScan("n")
     val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
 
-    val result =
-      eager.EagerEverywhereRewriter(Attributes(planBuilder.idGen)).eagerize(plan, planBuilder.getSemanticTable)
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")

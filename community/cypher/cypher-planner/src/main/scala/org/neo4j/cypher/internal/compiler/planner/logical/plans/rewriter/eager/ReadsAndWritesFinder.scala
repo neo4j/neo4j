@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.PlanReads
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.ReadFinder.collectReads
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.CreatedNode
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.CreatedRelationship
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanCreates
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanDeletes
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.WriteFinder.PlanSets
@@ -36,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.AbstractLetSelectOrSemiApply
@@ -63,6 +65,7 @@ import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 
@@ -113,37 +116,61 @@ object ReadsAndWritesFinder {
    * Stores information about what plans write which property.
    * This is a generalization from just a map from a property to a collection of plans, because some operators can write unknown properties.
    *
-   * @param plansWritingConcreteProperty A Map from the property name to the plans that write that property.
-   * @param plansWritingUnknownProperty  all plans which write an unknown property
+   * @param plansWritingConcreteNodeProperty A Map from the Node property name to the plans that write that property.
+   * @param plansWritingUnknownNodeProperty  all plans which write an unknown Node property
+   * @param plansWritingConcreteRelProperty A Map from the Relationship property name to the plans that write that property.
+   * @param plansWritingUnknownRelProperty all plans which write an unknown Relationship property
    */
   private[eager] case class PropertyWritingPlansProvider(
-    plansWritingConcreteProperty: Map[PropertyKeyName, Seq[LogicalPlan]] = Map.empty,
-    plansWritingUnknownProperty: Seq[LogicalPlan] = Seq.empty
+    plansWritingConcreteNodeProperty: Map[PropertyKeyName, Seq[LogicalPlan]] = Map.empty,
+    plansWritingConcreteRelProperty: Map[PropertyKeyName, Seq[LogicalPlan]] = Map.empty,
+    plansWritingUnknownNodeProperty: Seq[LogicalPlan] = Seq.empty,
+    plansWritingUnknownRelProperty: Seq[LogicalPlan] = Seq.empty
   ) {
 
-    def withPropertyWritten(property: PropertyKeyName, plan: LogicalPlan): PropertyWritingPlansProvider = {
-      val previousPlans = plansWritingConcreteProperty.getOrElse(property, Seq.empty)
-      copy(plansWritingConcreteProperty.updated(property, previousPlans :+ plan))
+    def withNodePropertyWritten(property: PropertyKeyName, plan: LogicalPlan): PropertyWritingPlansProvider = {
+      val previousPlans = plansWritingConcreteNodeProperty.getOrElse(property, Seq.empty)
+      copy(plansWritingConcreteNodeProperty = plansWritingConcreteNodeProperty.updated(property, previousPlans :+ plan))
     }
 
-    def withUnknownPropertyWritten(plan: LogicalPlan): PropertyWritingPlansProvider = {
-      copy(plansWritingUnknownProperty = plansWritingUnknownProperty :+ plan)
+    def withRelPropertyWritten(property: PropertyKeyName, plan: LogicalPlan): PropertyWritingPlansProvider = {
+      val previousPlans = plansWritingConcreteRelProperty.getOrElse(property, Seq.empty)
+      copy(plansWritingConcreteRelProperty = plansWritingConcreteRelProperty.updated(property, previousPlans :+ plan))
+    }
+
+    def withUnknownNodePropertyWritten(plan: LogicalPlan): PropertyWritingPlansProvider = {
+      copy(plansWritingUnknownNodeProperty = plansWritingUnknownNodeProperty :+ plan)
+    }
+
+    def withUnknownRelPropertyWritten(plan: LogicalPlan): PropertyWritingPlansProvider = {
+      copy(plansWritingUnknownRelProperty = plansWritingUnknownRelProperty :+ plan)
     }
 
     def ++(other: PropertyWritingPlansProvider): PropertyWritingPlansProvider =
       copy(
-        plansWritingConcreteProperty.fuse(other.plansWritingConcreteProperty)(_ ++ _),
-        plansWritingUnknownProperty ++ other.plansWritingUnknownProperty
+        plansWritingConcreteNodeProperty.fuse(other.plansWritingConcreteNodeProperty)(_ ++ _),
+        plansWritingConcreteRelProperty.fuse(other.plansWritingConcreteRelProperty)(_ ++ _),
+        plansWritingUnknownNodeProperty ++ other.plansWritingUnknownNodeProperty,
+        plansWritingUnknownRelProperty ++ other.plansWritingUnknownRelProperty
       )
 
     /**
-     * @return A `Seq` of pairs that map a known `PropertyKeyName` (if `Some`) or an unknown `PropertyKeyName` (if `None`)
+     * @return A `Seq` of pairs that map a known nodes `PropertyKeyName` (if `Some`) or an unknown nodes `PropertyKeyName` (if `None`)
      *         to all plans writing that property.
      */
-    def entries: Seq[(Option[PropertyKeyName], Seq[LogicalPlan])] =
-      plansWritingConcreteProperty.toSeq.map {
+    def nodeEntries: Seq[(Option[PropertyKeyName], Seq[LogicalPlan])] =
+      plansWritingConcreteNodeProperty.toSeq.map {
         case (key, value) => (Some(key), value)
-      } :+ (None, plansWritingUnknownProperty)
+      } :+ (None, plansWritingUnknownNodeProperty)
+
+    /**
+     * @return A `Seq` of pairs that map a known relationships `PropertyKeyName` (if `Some`) or an unknown relationships `PropertyKeyName` (if `None`)
+     *         to all plans writing that property.
+     */
+    def relEntries: Seq[(Option[PropertyKeyName], Seq[LogicalPlan])] =
+      plansWritingConcreteRelProperty.toSeq.map {
+        case (key, value) => (Some(key), value)
+      } :+ (None, plansWritingUnknownRelProperty)
   }
 
   /**
@@ -268,30 +295,50 @@ object ReadsAndWritesFinder {
   /**
    * An accumulator of reads in the logical plan tree.
    *
-   * @param readProperties                  a provider to find out which plans read which properties.
+   * @param readNodeProperties              a provider to find out which plans read which node properties.
    * @param readLabels                      a provider to find out which plans read which labels.
    * @param nodeFilterExpressions           for each node variable the expressions that filter on that variable.
    *                                        This also tracks if a variable is introduced by a plan.
    *                                        If a variable is introduced by a plan, and no predicates are applied on that variable,
    *                                        it is still present as a key in this map.
    * @param possibleNodeDeleteConflictPlans for each node variable, the [[PossibleDeleteConflictPlans]]
+   * @param readRelProperties               a provider to find out which plans read which relationship properties.
+   * @param relationshipFilterExpressions   for each relationship variable the expressions that filter on that variable.
+   *                                        This also tracks if a variable is introduced by a plan.
+   *                                        If a variable is introduced by a plan, and no predicates are applied on that variable,
+   *                                        it is still present as a key in this map.
+   * @param possibleRelDeleteConflictPlans  for each relationship variable, the [[PossibleDeleteConflictPlans]]
    */
   private[eager] case class Reads(
-    readProperties: ReadingPlansProvider[PropertyKeyName] = ReadingPlansProvider(),
+    readNodeProperties: ReadingPlansProvider[PropertyKeyName] = ReadingPlansProvider(),
     readLabels: ReadingPlansProvider[LabelName] = ReadingPlansProvider(),
     nodeFilterExpressions: Map[LogicalVariable, FilterExpressions] = Map.empty,
-    possibleNodeDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans] = Map.empty
+    possibleNodeDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans] = Map.empty,
+    readRelProperties: ReadingPlansProvider[PropertyKeyName] = ReadingPlansProvider(),
+    relationshipFilterExpressions: Map[LogicalVariable, FilterExpressions] = Map.empty,
+    possibleRelDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans] = Map.empty
   ) {
 
     /**
-     * @param property if `Some(prop)` look for plans that could potentially read that property,
+     * @param property if `Some(prop)` look for plans that could potentially read that node property,
      *                 if `None` look for plans that read any property.
+     * @return all plans that read the given node property.
+     */
+    def plansReadingNodeProperty(property: Option[PropertyKeyName]): Seq[LogicalPlan] =
+      property match {
+        case Some(property) => readNodeProperties.plansReadingSymbol(property)
+        case None           => readNodeProperties.plansReadingAnySymbol()
+      }
+
+    /**
+     * @param property if `Some(prop)` look for plans that could potentially read that relationship property,
+     *                 if `None` look for plans that read any node property.
      * @return all plans that read the given property.
      */
-    def plansReadingProperty(property: Option[PropertyKeyName]): Seq[LogicalPlan] =
+    def plansReadingRelProperty(property: Option[PropertyKeyName]): Seq[LogicalPlan] =
       property match {
-        case Some(property) => readProperties.plansReadingSymbol(property)
-        case None           => readProperties.plansReadingAnySymbol()
+        case Some(property) => readRelProperties.plansReadingSymbol(property)
+        case None           => readRelProperties.plansReadingAnySymbol()
       }
 
     /**
@@ -300,18 +347,24 @@ object ReadsAndWritesFinder {
     def plansReadingLabel(label: LabelName): Seq[LogicalPlan] =
       readLabels.plansReadingSymbol(label)
 
-    def withPropertyRead(property: PropertyKeyName, plan: LogicalPlan): Reads =
-      copy(readProperties = readProperties.withSymbolRead(property, plan))
+    def withNodePropertyRead(property: PropertyKeyName, plan: LogicalPlan): Reads =
+      copy(readNodeProperties = readNodeProperties.withSymbolRead(property, plan))
 
-    def withUnknownPropertiesRead(plan: LogicalPlan): Reads =
-      copy(readProperties = readProperties.withUnknownSymbolsRead(plan))
+    def withRelPropertyRead(property: PropertyKeyName, plan: LogicalPlan): Reads =
+      copy(readRelProperties = readRelProperties.withSymbolRead(property, plan))
+
+    def withUnknownNodePropertiesRead(plan: LogicalPlan): Reads =
+      copy(readNodeProperties = readNodeProperties.withUnknownSymbolsRead(plan))
+
+    def withUnknownRelPropertiesRead(plan: LogicalPlan): Reads =
+      copy(readRelProperties = readRelProperties.withUnknownSymbolsRead(plan))
 
     def withLabelRead(label: LabelName, plan: LogicalPlan): Reads = {
       copy(readLabels = readLabels.withSymbolRead(label, plan))
     }
 
     /**
-     * Save that the plan introduces a variable.
+     * Save that the plan introduces a node variable.
      * This is done by saving an empty filter expressions.
      */
     def withIntroducedNodeVariable(
@@ -320,6 +373,18 @@ object ReadsAndWritesFinder {
     ): Reads = {
       val newExpressions = nodeFilterExpressions.getOrElse(variable, FilterExpressions(Set(Ref(plan))))
       copy(nodeFilterExpressions = nodeFilterExpressions + (variable -> newExpressions))
+    }
+
+    /**
+     * Save that the plan introduces a relationship variable.
+     * This is done by saving an empty filter expressions.
+     */
+    def withIntroducedRelationshipVariable(
+      variable: LogicalVariable,
+      plan: LogicalPlan
+    ): Reads = {
+      val newExpressions = relationshipFilterExpressions.getOrElse(variable, FilterExpressions(Set(Ref(plan))))
+      copy(relationshipFilterExpressions = relationshipFilterExpressions + (variable -> newExpressions))
     }
 
     def withAddedNodeFilterExpression(
@@ -334,24 +399,28 @@ object ReadsAndWritesFinder {
       copy(nodeFilterExpressions = nodeFilterExpressions + (variable -> newExpressions))
     }
 
+    def withAddedRelationshipFilterExpression(
+      variable: LogicalVariable,
+      plan: LogicalPlan,
+      filterExpression: Expression
+    ): Reads = {
+      val newExpressions =
+        relationshipFilterExpressions.getOrElse(variable, FilterExpressions(Set(Ref(plan)))).withAddedExpression(
+          filterExpression
+        )
+      copy(relationshipFilterExpressions = relationshipFilterExpressions + (variable -> newExpressions))
+    }
+
     def withUnknownLabelsRead(plan: LogicalPlan): Reads =
       copy(readLabels = readLabels.withUnknownSymbolsRead(plan))
 
-    /**
-     * Update [[PossibleDeleteConflictPlans]].
-     * This should be called if `plan` references `variable`.
-     *
-     * If `plan` filters on `variable`, the `expressions` should be all filters on `variable`.
-     *
-     * @param expressions all expressions in `plan` that filter on `variable`.
-     */
-    def withUpdatedPossibleDeleteConflictPlans(
+    private def variableReferencesInPlan(
       plan: LogicalPlan,
+      expressions: Seq[Expression],
       variable: LogicalVariable,
-      expressions: Seq[Expression]
-    ): Reads = {
-      val prev = possibleNodeDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
-
+      possibleDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans]
+    ): Map[LogicalVariable, PossibleDeleteConflictPlans] = {
+      val prev = possibleDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
       val plansThatIntroduceVariable =
         if (prev.plansThatIntroduceVariable.isEmpty) {
           // This plan introduces the variable.
@@ -368,14 +437,48 @@ object ReadsAndWritesFinder {
 
       val lastPlansToReferenceVariable = Seq(plan)
 
+      possibleDeleteConflictPlans
+        .updated(variable, PossibleDeleteConflictPlans(plansThatIntroduceVariable, lastPlansToReferenceVariable))
+    }
+
+    /**
+     * Update [[PossibleDeleteConflictPlans]].
+     * This should be called if `plan` references `variable`.
+     *
+     * If `plan` filters on `variable`, the `expressions` should be all filters on `variable`.
+     *
+     * @param expressions all expressions in `plan` that filter on `variable`.
+     */
+    def withUpdatedPossibleDeleteNodeConflictPlans(
+      plan: LogicalPlan,
+      variable: LogicalVariable,
+      expressions: Seq[Expression]
+    ): Reads = {
       copy(possibleNodeDeleteConflictPlans =
-        possibleNodeDeleteConflictPlans
-          .updated(variable, PossibleDeleteConflictPlans(plansThatIntroduceVariable, lastPlansToReferenceVariable))
+        variableReferencesInPlan(plan, expressions, variable, possibleNodeDeleteConflictPlans)
       )
     }
 
     /**
-     * Update [[PossibleDeleteConflictPlans.lastPlansToReferenceVariable]]. 
+     * Update [[PossibleDeleteConflictPlans]].
+     * This should be called if `plan` references `variable`.
+     *
+     * If `plan` filters on `variable`, the `expressions` should be all filters on `variable`.
+     *
+     * @param expressions all expressions in `plan` that filter on `variable`.
+     */
+    def withUpdatedPossibleRelDeleteConflictPlans(
+      plan: LogicalPlan,
+      variable: LogicalVariable,
+      expressions: Seq[Expression]
+    ): Reads = {
+      copy(possibleRelDeleteConflictPlans =
+        variableReferencesInPlan(plan, expressions, variable, possibleRelDeleteConflictPlans)
+      )
+    }
+
+    /**
+     * Update [[PossibleDeleteConflictPlans.lastPlansToReferenceVariable]].
      * This should be called if a plan references a node variable.
      */
     def updateLastPlansToReferenceNodeVariable(plan: LogicalPlan, variable: LogicalVariable): Reads = {
@@ -385,16 +488,26 @@ object ReadsAndWritesFinder {
     }
 
     /**
+     * Update [[PossibleDeleteConflictPlans.lastPlansToReferenceVariable]].
+     * This should be called if a plan references a relationship variable.
+     */
+    def updateLastPlansToReferenceRelationshipVariable(plan: LogicalPlan, variable: LogicalVariable): Reads = {
+      val prev = possibleRelDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
+      val next = prev.copy(lastPlansToReferenceVariable = Seq(plan))
+      copy(possibleRelDeleteConflictPlans = possibleRelDeleteConflictPlans.updated(variable, next))
+    }
+
+    /**
      * Return a copy that included the given [[PlanReads]] for the given [[LogicalPlan]]
      */
     def includePlanReads(plan: LogicalPlan, planReads: PlanReads): Reads = {
       Function.chain[Reads](Seq(
-        acc => planReads.readProperties.foldLeft(acc)(_.withPropertyRead(_, plan)),
+        acc => planReads.readNodeProperties.foldLeft(acc)(_.withNodePropertyRead(_, plan)),
         acc => planReads.readLabels.foldLeft(acc)(_.withLabelRead(_, plan)),
         acc => {
           planReads.nodeFilterExpressions.foldLeft(acc) {
             case (acc, (variable, expressions)) =>
-              val acc2 = acc.withUpdatedPossibleDeleteConflictPlans(plan, variable, expressions)
+              val acc2 = acc.withUpdatedPossibleDeleteNodeConflictPlans(plan, variable, expressions)
               if (expressions.isEmpty) {
                 // The plan introduces the variable but has no filter expressions
                 acc2.withIntroducedNodeVariable(variable, plan)
@@ -409,7 +522,26 @@ object ReadsAndWritesFinder {
           }
         },
         acc => if (planReads.readsUnknownLabels) acc.withUnknownLabelsRead(plan) else acc,
-        acc => if (planReads.readsUnknownProperties) acc.withUnknownPropertiesRead(plan) else acc
+        acc => if (planReads.readsUnknownNodeProperties) acc.withUnknownNodePropertiesRead(plan) else acc,
+        acc => planReads.readRelProperties.foldLeft(acc)(_.withRelPropertyRead(_, plan)),
+        acc => {
+          planReads.relationshipFilterExpressions.foldLeft(acc) {
+            case (acc, (variable, expressions)) =>
+              val acc2 = acc.withUpdatedPossibleRelDeleteConflictPlans(plan, variable, expressions)
+              if (expressions.isEmpty) {
+                // The plan introduces the variable but has no filter expressions
+                acc2.withIntroducedRelationshipVariable(variable, plan)
+              } else {
+                expressions.foldLeft(acc2)(_.withAddedRelationshipFilterExpression(variable, plan, _))
+              }
+          }
+        },
+        acc => {
+          planReads.referencedRelationshipVariables.foldLeft(acc) {
+            case (acc, variable) => acc.updateLastPlansToReferenceRelationshipVariable(plan, variable)
+          }
+        },
+        acc => if (planReads.readsUnknownRelProperties) acc.withUnknownRelPropertiesRead(plan) else acc
       ))(this)
     }
 
@@ -417,19 +549,26 @@ object ReadsAndWritesFinder {
      * Returns a copy of this class, except that the [[FilterExpressions]] from the other plan are merged in
      * as if it was invoked like `other ++ (this, mergePlan)`.
      */
-    def mergeNodeFilterExpressions(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
+    def mergeFilterExpressions(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
       copy(
-        nodeFilterExpressions = other.nodeFilterExpressions.fuse(this.nodeFilterExpressions)(_ ++ (_, mergePlan))
+        nodeFilterExpressions = other.nodeFilterExpressions.fuse(this.nodeFilterExpressions)(_ ++ (_, mergePlan)),
+        relationshipFilterExpressions =
+          other.relationshipFilterExpressions.fuse(this.relationshipFilterExpressions)(_ ++ (_, mergePlan))
       )
     }
 
     def ++(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
       copy(
-        readProperties = this.readProperties ++ other.readProperties,
+        readNodeProperties = this.readNodeProperties ++ other.readNodeProperties,
         readLabels = this.readLabels ++ other.readLabels,
         nodeFilterExpressions = this.nodeFilterExpressions.fuse(other.nodeFilterExpressions)(_ ++ (_, mergePlan)),
         possibleNodeDeleteConflictPlans =
-          this.possibleNodeDeleteConflictPlans.fuse(other.possibleNodeDeleteConflictPlans)(_ ++ _)
+          this.possibleNodeDeleteConflictPlans.fuse(other.possibleNodeDeleteConflictPlans)(_ ++ _),
+        readRelProperties = this.readRelProperties ++ other.readRelProperties,
+        relationshipFilterExpressions =
+          this.relationshipFilterExpressions.fuse(other.relationshipFilterExpressions)(_ ++ (_, mergePlan)),
+        possibleRelDeleteConflictPlans =
+          this.possibleRelDeleteConflictPlans.fuse(other.possibleRelDeleteConflictPlans)(_ ++ _)
       )
     }
   }
@@ -437,19 +576,26 @@ object ReadsAndWritesFinder {
   /**
    * An accumulator of SETs in the logical plan tree.
    *
-   * @param writtenProperties a provider to find out which plans set which properties.
+   * @param writtenNodeProperties a provider to find out which plans set which properties.
    * @param writtenLabels     for each label, all the plans that set that label.
    */
   private[eager] case class Sets(
-    writtenProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
+    writtenNodeProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
+    writtenRelProperties: PropertyWritingPlansProvider = PropertyWritingPlansProvider(),
     writtenLabels: Map[LabelName, Seq[LogicalPlan]] = Map.empty
   ) {
 
-    def withPropertyWritten(property: PropertyKeyName, plan: LogicalPlan): Sets =
-      copy(writtenProperties = writtenProperties.withPropertyWritten(property, plan))
+    def withNodePropertyWritten(property: PropertyKeyName, plan: LogicalPlan): Sets =
+      copy(writtenNodeProperties = writtenNodeProperties.withNodePropertyWritten(property, plan))
 
-    def withUnknownPropertyWritten(plan: LogicalPlan): Sets =
-      copy(writtenProperties = writtenProperties.withUnknownPropertyWritten(plan))
+    def withRelPropertyWritten(property: PropertyKeyName, plan: LogicalPlan): Sets =
+      copy(writtenRelProperties = writtenRelProperties.withRelPropertyWritten(property, plan))
+
+    def withUnknownNodePropertyWritten(plan: LogicalPlan): Sets =
+      copy(writtenNodeProperties = writtenNodeProperties.withUnknownNodePropertyWritten(plan))
+
+    def withUnknownRelPropertyWritten(plan: LogicalPlan): Sets =
+      copy(writtenRelProperties = writtenRelProperties.withUnknownRelPropertyWritten(plan))
 
     def withLabelWritten(label: LabelName, plan: LogicalPlan): Sets = {
       val wL = writtenLabels.getOrElse(label, Seq.empty)
@@ -458,16 +604,19 @@ object ReadsAndWritesFinder {
 
     def includePlanSets(plan: LogicalPlan, planSets: PlanSets): Sets = {
       Function.chain[Sets](Seq(
-        acc => planSets.writtenProperties.foldLeft(acc)(_.withPropertyWritten(_, plan)),
-        acc => if (planSets.writesUnknownProperties) acc.withUnknownPropertyWritten(plan) else acc,
-        acc => planSets.writtenLabels.foldLeft(acc)(_.withLabelWritten(_, plan))
+        acc => planSets.writtenNodeProperties.foldLeft(acc)(_.withNodePropertyWritten(_, plan)),
+        acc => if (planSets.writesUnknownNodeProperties) acc.withUnknownNodePropertyWritten(plan) else acc,
+        acc => planSets.writtenLabels.foldLeft(acc)(_.withLabelWritten(_, plan)),
+        acc => planSets.writtenRelProperties.foldLeft(acc)(_.withRelPropertyWritten(_, plan)),
+        acc => if (planSets.writesUnknownRelProperties) acc.withUnknownRelPropertyWritten(plan) else acc
       ))(this)
     }
 
     def ++(other: Sets): Sets = {
       copy(
-        writtenProperties = this.writtenProperties ++ other.writtenProperties,
-        writtenLabels = this.writtenLabels.fuse(other.writtenLabels)(_ ++ _)
+        writtenNodeProperties = this.writtenNodeProperties ++ other.writtenNodeProperties,
+        writtenLabels = this.writtenLabels.fuse(other.writtenLabels)(_ ++ _),
+        writtenRelProperties = this.writtenRelProperties ++ other.writtenRelProperties
       )
     }
   }
@@ -477,10 +626,15 @@ object ReadsAndWritesFinder {
    *
    * @param createdNodes                   for each plan, the created nodes.
    * @param nodeFilterExpressionsSnapshots for each plan (that we will need to look at the snapshot later), a snapshot of the current nodeFilterExpressions.
+   * @param createdRelationships                   for each plan, the created relationships.
+   * @param relationshipFilterExpressionsSnapshots for each plan (that we will need to look at the snapshot later), a snapshot of the current relationshipFilterExpressions.
+   *
    */
   private[eager] case class Creates(
     createdNodes: Map[Ref[LogicalPlan], Set[CreatedNode]] = Map.empty,
-    nodeFilterExpressionsSnapshots: Map[Ref[LogicalPlan], Map[LogicalVariable, FilterExpressions]] = Map.empty
+    nodeFilterExpressionsSnapshots: Map[Ref[LogicalPlan], Map[LogicalVariable, FilterExpressions]] = Map.empty,
+    createdRelationships: Map[Ref[LogicalPlan], Set[CreatedRelationship]] = Map.empty,
+    relationshipFilterExpressionsSnapshots: Map[Ref[LogicalPlan], Map[LogicalVariable, FilterExpressions]] = Map.empty
   ) {
 
     /**
@@ -501,18 +655,48 @@ object ReadsAndWritesFinder {
       )
     }
 
+    /**
+     * Save that `plan` creates `createdRelationship`.
+     * Since CREATE plans need to look for conflicts in the _current_ filterExpressions, we save a snapshot of the current filterExpressions,
+     * associated with the CREATE plan. If we were to include all filterExpressions, we might think that Eager is not needed, even though it is.
+     * See test "inserts eager between Create and RelationshipTypeScan if Type overlap, and other type in Filter after create".
+     */
+    def withCreatedRelationship(
+      createdRelationship: CreatedRelationship,
+      plan: LogicalPlan,
+      relationshipFilterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions]
+    ): Creates = {
+      val prevCreatedRelationships = createdRelationships.getOrElse(Ref(plan), Set.empty)
+      copy(
+        createdRelationships = createdRelationships.updated(Ref(plan), prevCreatedRelationships + createdRelationship),
+        relationshipFilterExpressionsSnapshots =
+          relationshipFilterExpressionsSnapshots + (Ref(plan) -> relationshipFilterExpressionsSnapshot)
+      )
+    }
+
     def includePlanCreates(
       plan: LogicalPlan,
       planCreates: PlanCreates,
-      nodeFilterExpressionsSnapshots: Map[LogicalVariable, FilterExpressions]
+      nodeFilterExpressionsSnapshots: Map[LogicalVariable, FilterExpressions],
+      relationshipFilterExpressionsSnapshots: Map[LogicalVariable, FilterExpressions]
     ): Creates = {
-      planCreates.createdNodes.foldLeft(this)(_.withCreatedNode(_, plan, nodeFilterExpressionsSnapshots))
+      val nodeCreates =
+        planCreates.createdNodes.foldLeft(this)(_.withCreatedNode(_, plan, nodeFilterExpressionsSnapshots))
+      val relCreates = planCreates.createdRelationships.foldLeft(this)(_.withCreatedRelationship(
+        _,
+        plan,
+        relationshipFilterExpressionsSnapshots
+      ))
+      nodeCreates ++ relCreates
     }
 
     def ++(other: Creates): Creates = {
       copy(
         createdNodes = this.createdNodes.fuse(other.createdNodes)(_ ++ _),
-        nodeFilterExpressionsSnapshots = this.nodeFilterExpressionsSnapshots ++ other.nodeFilterExpressionsSnapshots
+        nodeFilterExpressionsSnapshots = this.nodeFilterExpressionsSnapshots ++ other.nodeFilterExpressionsSnapshots,
+        createdRelationships = this.createdRelationships.fuse(other.createdRelationships)(_ ++ _),
+        relationshipFilterExpressionsSnapshots =
+          this.relationshipFilterExpressionsSnapshots ++ other.relationshipFilterExpressionsSnapshots
       )
     }
   }
@@ -522,14 +706,24 @@ object ReadsAndWritesFinder {
    *
    * @param deletedNodeVariables                  for each plan, the nodes that are deleted by variable name
    * @param plansThatDeleteNodeExpressions        all plans that delete non-variable expressions of type node
-   * @param plansThatDeleteUnknownTypeExpressions all plans that delete expressions of unknown type
    * @param possibleNodeDeleteConflictPlanSnapshots   for each plan (that we will need to look at the snapshot later), a snapshot of the current possibleNodeDeleteConflictPlans
+   * @param deletedRelationshipVariables                  for each plan, the relationships that are deleted by variable name
+   * @param plansThatDeleteRelationshipExpressions        all plans that delete non-variable expressions of type relationship
+   * @param plansThatDeleteUnknownTypeExpressions all plans that delete expressions of unknown type
+   * @param possibleRelationshipDeleteConflictPlanSnapshots   for each plan (that we will need to look at the snapshot later), a snapshot of the current possibleRelationshipDeleteConflictPlans
    */
   private[eager] case class Deletes(
     deletedNodeVariables: Map[Ref[LogicalPlan], Set[Variable]] = Map.empty,
+    deletedRelationshipVariables: Map[Ref[LogicalPlan], Set[Variable]] = Map.empty,
     plansThatDeleteNodeExpressions: Seq[LogicalPlan] = Seq.empty,
+    plansThatDeleteRelationshipExpressions: Seq[LogicalPlan] = Seq.empty,
     plansThatDeleteUnknownTypeExpressions: Seq[LogicalPlan] = Seq.empty,
     possibleNodeDeleteConflictPlanSnapshots: Map[Ref[LogicalPlan], Map[LogicalVariable, PossibleDeleteConflictPlans]] =
+      Map.empty,
+    possibleRelationshipDeleteConflictPlanSnapshots: Map[
+      Ref[LogicalPlan],
+      Map[LogicalVariable, PossibleDeleteConflictPlans]
+    ] =
       Map.empty
   ) {
 
@@ -541,8 +735,22 @@ object ReadsAndWritesFinder {
       copy(deletedNodeVariables = deletedNodeVariables.updated(Ref(plan), prevDeletedNodes + deletedNode))
     }
 
+    /**
+     * Save that `plan` deletes the variable `deletedRelationship`.
+     */
+    def withDeletedRelationshipVariable(deletedRelationship: Variable, plan: LogicalPlan): Deletes = {
+      val prevDeletedRelationship = deletedRelationshipVariables.getOrElse(Ref(plan), Set.empty)
+      copy(deletedRelationshipVariables =
+        deletedRelationshipVariables.updated(Ref(plan), prevDeletedRelationship + deletedRelationship)
+      )
+    }
+
     def withPlanThatDeletesNodeExpressions(plan: LogicalPlan): Deletes = {
       copy(plansThatDeleteNodeExpressions = plansThatDeleteNodeExpressions :+ plan)
+    }
+
+    def withPlanThatDeletesRelationshipExpressions(plan: LogicalPlan): Deletes = {
+      copy(plansThatDeleteRelationshipExpressions = plansThatDeleteRelationshipExpressions :+ plan)
     }
 
     def withPlanThatDeletesUnknownTypeExpressions(plan: LogicalPlan): Deletes = {
@@ -550,7 +758,7 @@ object ReadsAndWritesFinder {
     }
 
     /**
-     * Since DELETE plans need to look for the latest plan that references a variable _before_ the DELETE plan itself,
+     * Since DELETE plans need to look for the latest plan that references a node variable _before_ the DELETE plan itself,
      * we save a snapshot of the current possibleNodeDeleteConflictPlanSnapshots, associated with the DELETE plan.
      */
     def withPossibleNodeDeleteConflictPlanSnapshot(
@@ -562,19 +770,37 @@ object ReadsAndWritesFinder {
       )
     }
 
+    /**
+     * Since DELETE plans need to look for the latest plan that references a relationship variable _before_ the DELETE plan itself,
+     * we save a snapshot of the current possibleRelationshipDeleteConflictPlanSnapshots, associated with the DELETE plan.
+     */
+    def withPossibleRelationshipDeleteConflictPlanSnapshot(
+      plan: LogicalPlan,
+      snapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
+    ): Deletes = {
+      copy(possibleRelationshipDeleteConflictPlanSnapshots =
+        possibleRelationshipDeleteConflictPlanSnapshots.updated(Ref(plan), snapshot)
+      )
+    }
+
     def includePlanDeletes(
       plan: LogicalPlan,
       planDeletes: PlanDeletes,
-      possibleNodeDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
+      possibleNodeDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans],
+      possibleRelationshipDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
     ): Deletes = {
       Function.chain[Deletes](Seq(
         acc => planDeletes.deletedNodeVariables.foldLeft(acc)(_.withDeletedNodeVariable(_, plan)),
+        acc => planDeletes.deletedRelationshipVariables.foldLeft(acc)(_.withDeletedRelationshipVariable(_, plan)),
         acc => if (planDeletes.deletesNodeExpressions) acc.withPlanThatDeletesNodeExpressions(plan) else acc,
+        acc =>
+          if (planDeletes.deletesRelationshipExpressions) acc.withPlanThatDeletesRelationshipExpressions(plan) else acc,
         acc =>
           if (planDeletes.deletesUnknownTypeExpressions) acc.withPlanThatDeletesUnknownTypeExpressions(plan) else acc,
         acc =>
           if (!planDeletes.isEmpty)
             acc.withPossibleNodeDeleteConflictPlanSnapshot(plan, possibleNodeDeleteConflictPlanSnapshot)
+              .withPossibleRelationshipDeleteConflictPlanSnapshot(plan, possibleRelationshipDeleteConflictPlanSnapshot)
           else acc
       ))(this)
     }
@@ -584,7 +810,15 @@ object ReadsAndWritesFinder {
         deletedNodeVariables = this.deletedNodeVariables.fuse(other.deletedNodeVariables)(_ ++ _),
         plansThatDeleteNodeExpressions = this.plansThatDeleteNodeExpressions ++ other.plansThatDeleteNodeExpressions,
         plansThatDeleteUnknownTypeExpressions =
-          this.plansThatDeleteUnknownTypeExpressions ++ other.plansThatDeleteUnknownTypeExpressions
+          this.plansThatDeleteUnknownTypeExpressions ++ other.plansThatDeleteUnknownTypeExpressions,
+        deletedRelationshipVariables =
+          this.deletedRelationshipVariables.fuse(other.deletedRelationshipVariables)(_ ++ _),
+        plansThatDeleteRelationshipExpressions =
+          this.plansThatDeleteRelationshipExpressions ++ other.plansThatDeleteRelationshipExpressions,
+        possibleNodeDeleteConflictPlanSnapshots =
+          this.possibleNodeDeleteConflictPlanSnapshots ++ other.possibleNodeDeleteConflictPlanSnapshots,
+        possibleRelationshipDeleteConflictPlanSnapshots =
+          this.possibleRelationshipDeleteConflictPlanSnapshots ++ other.possibleRelationshipDeleteConflictPlanSnapshots
       )
     }
   }
@@ -608,16 +842,25 @@ object ReadsAndWritesFinder {
       plan: LogicalPlan,
       planWrites: PlanWrites,
       nodeFilterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions],
-      possibleNodeDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
+      possibleNodeDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans],
+      relationshipFilterExpressionsSnapshot: Map[LogicalVariable, FilterExpressions],
+      possibleRelationshipDeleteConflictPlanSnapshot: Map[LogicalVariable, PossibleDeleteConflictPlans]
     ): Writes = {
       Function.chain[Writes](Seq(
         acc => acc.withSets(acc.sets.includePlanSets(plan, planWrites.sets)),
-        acc => acc.withCreates(acc.creates.includePlanCreates(plan, planWrites.creates, nodeFilterExpressionsSnapshot)),
+        acc =>
+          acc.withCreates(acc.creates.includePlanCreates(
+            plan,
+            planWrites.creates,
+            nodeFilterExpressionsSnapshot,
+            relationshipFilterExpressionsSnapshot
+          )),
         acc =>
           acc.withDeletes(acc.deletes.includePlanDeletes(
             plan,
             planWrites.deletes,
-            possibleNodeDeleteConflictPlanSnapshot
+            possibleNodeDeleteConflictPlanSnapshot,
+            possibleRelationshipDeleteConflictPlanSnapshot
           ))
       ))(this)
     }
@@ -648,9 +891,9 @@ object ReadsAndWritesFinder {
      * Returns a copy of this class, except that the [[FilterExpressions]] from the other plan are merged in
      * as if it was invoked like `other ++ (this, mergePlan)`.
      */
-    def mergeNodeFilterExpressions(other: ReadsAndWrites, mergePlan: LogicalBinaryPlan): ReadsAndWrites = {
+    def mergeFilterExpressions(other: ReadsAndWrites, mergePlan: LogicalBinaryPlan): ReadsAndWrites = {
       copy(
-        reads = this.reads.mergeNodeFilterExpressions(other.reads, mergePlan)
+        reads = this.reads.mergeFilterExpressions(other.reads, mergePlan)
       )
     }
 
@@ -667,10 +910,11 @@ object ReadsAndWritesFinder {
    */
   private[eager] def collectReadsAndWrites(
     wholePlan: LogicalPlan,
-    semanticTable: SemanticTable
+    semanticTable: SemanticTable,
+    anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): ReadsAndWrites = {
     def processPlan(acc: ReadsAndWrites, plan: LogicalPlan): ReadsAndWrites = {
-      val planReads = collectReads(plan, semanticTable)
+      val planReads = collectReads(plan, semanticTable, anonymousVariableNameGenerator)
       val planWrites = collectWrites(plan)
 
       Function.chain[ReadsAndWrites](Seq(
@@ -679,11 +923,15 @@ object ReadsAndWritesFinder {
         acc => {
           val nodeFilterExpressionsSnapshot = acc.reads.nodeFilterExpressions
           val possibleNodeDeleteConflictPlanSnapshot = acc.reads.possibleNodeDeleteConflictPlans
+          val relationshipFilterExpressionsSnapshot = acc.reads.relationshipFilterExpressions
+          val possibleRelationshipDeleteConflictPlanSnapshot = acc.reads.possibleRelDeleteConflictPlans
           acc.withWrites(acc.writes.includePlanWrites(
             plan,
             planWrites,
             nodeFilterExpressionsSnapshot,
-            possibleNodeDeleteConflictPlanSnapshot
+            possibleNodeDeleteConflictPlanSnapshot,
+            relationshipFilterExpressionsSnapshot,
+            possibleRelationshipDeleteConflictPlanSnapshot
           ))
         },
         acc => acc.withReads(acc.reads.includePlanReads(plan, planReads))
@@ -698,7 +946,7 @@ object ReadsAndWritesFinder {
           case _: ApplyPlan =>
             // The RHS was initialized with the LHS in LogicalPlans.foldPlan,
             // but lhsAcc filterExpressions still need to be merged into rhsAcc by some rules defined FilterExpressions.
-            val acc = rhsAcc.mergeNodeFilterExpressions(lhsAcc, plan)
+            val acc = rhsAcc.mergeFilterExpressions(lhsAcc, plan)
             processPlan(acc, plan)
           case _ =>
             // We need to merge LHS and RHS

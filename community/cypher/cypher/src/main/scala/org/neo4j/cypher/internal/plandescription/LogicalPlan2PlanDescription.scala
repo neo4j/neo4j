@@ -2664,6 +2664,8 @@ case class LogicalPlan2PlanDescription(
       Some(pretty"updateStrategy=eager")
     case EagernessReason.LabelReadSetConflict(label, _) =>
       Some(pretty"read/set conflict for label: ${asPrettyString(label)}")
+    case EagernessReason.TypeReadSetConflict(label, _) =>
+      Some(pretty"read/set conflict for relationship type: ${asPrettyString(label)}")
     case EagernessReason.LabelReadRemoveConflict(label, _) =>
       Some(pretty"read/remove conflict for label: ${asPrettyString(label)}")
     case EagernessReason.ReadDeleteConflict(identifier, _) =>

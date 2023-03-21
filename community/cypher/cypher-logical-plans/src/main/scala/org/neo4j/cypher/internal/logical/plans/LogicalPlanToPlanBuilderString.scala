@@ -1512,6 +1512,8 @@ object LogicalPlanToPlanBuilderString {
       case EagernessReason.WriteAfterCallInTransactions => objectName(EagernessReason.WriteAfterCallInTransactions)
       case EagernessReason.LabelReadSetConflict(label, maybeConflict) =>
         s"${objectName(EagernessReason.LabelReadSetConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
+      case EagernessReason.TypeReadSetConflict(relType, maybeConflict) =>
+        s"${objectName(EagernessReason.TypeReadSetConflict)}(RelTypeName(${wrapInQuotations(relType.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
       case EagernessReason.LabelReadRemoveConflict(label, maybeConflict) =>
         s"${objectName(EagernessReason.LabelReadRemoveConflict)}(LabelName(${wrapInQuotations(label.name)})(InputPosition.NONE), ${conflictStr(maybeConflict)})"
       case EagernessReason.ReadDeleteConflict(identifier, maybeConflict) =>

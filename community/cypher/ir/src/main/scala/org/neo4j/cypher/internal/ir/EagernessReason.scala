@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.attribution.Id
 
@@ -52,6 +53,9 @@ object EagernessReason {
   }
 
   case class LabelReadSetConflict(label: LabelName, override val maybeConflict: Option[Conflict] = None)
+      extends Reason
+
+  case class TypeReadSetConflict(relType: RelTypeName, override val maybeConflict: Option[Conflict] = None)
       extends Reason
 
   case class LabelReadRemoveConflict(label: LabelName, override val maybeConflict: Option[Conflict] = None)

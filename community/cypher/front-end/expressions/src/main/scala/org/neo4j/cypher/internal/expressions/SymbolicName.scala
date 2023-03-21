@@ -40,4 +40,5 @@ case class RelTypeName(name: String)(val position: InputPosition) extends LabelE
 
 case class LabelOrRelTypeName(name: String)(val position: InputPosition) extends LabelExpressionLeafName {
   def asLabelName: LabelName = LabelName(name)(position)
+  def asRelTypeName: RelTypeName = RelTypeName(name)(position)
 }

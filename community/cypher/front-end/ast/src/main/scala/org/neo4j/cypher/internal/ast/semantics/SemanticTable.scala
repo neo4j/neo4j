@@ -102,6 +102,12 @@ class SemanticTable(
     case _ => false
   }
 
+  def containsRelationship(expr: String): Boolean = types.exists {
+    case (PositionedNode(v @ Variable(name)), _) =>
+      name == expr && isRelationship(v)
+    case _ => false
+  }
+
   def id(labelName: LabelName): Option[LabelId] = resolvedLabelNames.get(labelName.name)
 
   def id(propertyKeyName: PropertyKeyName): Option[PropertyKeyId] = resolvedPropertyKeyNames.get(propertyKeyName.name)
