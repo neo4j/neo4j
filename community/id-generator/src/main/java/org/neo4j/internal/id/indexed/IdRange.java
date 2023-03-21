@@ -51,6 +51,8 @@ class IdRange {
 
     static final int BITSET_AND_MASK = BITSET_SIZE - 1;
     static final int BITSET_SHIFT = log2floor(BITSET_SIZE);
+    private static final byte ADDITION_MARKER = 0b111;
+    private static final byte CLEAR_ADDITION_MARKER = 0b011;
 
     private long generation;
     private byte addition;
@@ -108,25 +110,19 @@ class IdRange {
 
     void clear(long generation, boolean addition) {
         this.generation = generation;
-        this.addition = (byte) (addition ? 0b111 : 0);
+        this.addition = (byte) (addition ? ADDITION_MARKER : 0);
         fill(bitSets[BITSET_COMMIT], 0);
         fill(bitSets[BITSET_REUSE], 0);
         fill(bitSets[BITSET_RESERVED], 0);
-    }
-
-    private static byte additionBit(boolean addition, int bitSet) {
-        return (byte) (addition ? (1 << bitSet) : 0);
     }
 
     private static boolean isAddition(byte addition, int bitSet) {
         return (addition & (1 << bitSet)) != 0;
     }
 
-    void clear(long generation, boolean additionCommit, boolean additionReuse, boolean additionReserved) {
+    void clear(long generation) {
         this.generation = generation;
-        this.addition = (byte) (additionBit(additionCommit, BITSET_COMMIT)
-                | additionBit(additionReuse, BITSET_REUSE)
-                | additionBit(additionReserved, BITSET_RESERVED));
+        this.addition = CLEAR_ADDITION_MARKER;
         fill(bitSets[BITSET_COMMIT], 0);
         fill(bitSets[BITSET_REUSE], 0);
         fill(bitSets[BITSET_RESERVED], 0);
@@ -153,7 +149,7 @@ class IdRange {
         }
     }
 
-    boolean mergeFrom(IdRangeKey key, IdRange other, boolean recoveryMode) {
+    void mergeFrom(IdRangeKey key, IdRange other, boolean recoveryMode) {
         if (!recoveryMode) {
             verifyMerge(key, other);
         }
@@ -161,8 +157,6 @@ class IdRange {
         for (int bitSetIndex = 0; bitSetIndex < BITSET_COUNT; bitSetIndex++) {
             mergeBitSet(bitSets[bitSetIndex], other.bitSets[bitSetIndex], isAddition(other.addition, bitSetIndex));
         }
-
-        return true;
     }
 
     private static void mergeBitSet(long[] into, long[] mergeFrom, boolean addition) {

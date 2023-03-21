@@ -216,7 +216,7 @@ class IdRangeMarker implements IndexedIdGenerator.InternalMarker {
         bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, true);
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
             key.setIdRangeIdx(idRangeIndex(id));
-            value.clear(generation, true, true, false);
+            value.clear(generation);
             var idOffset = idOffset(id);
             value.setBits(BITSET_REUSE, idOffset, numberOfIds);
             value.setBits(BITSET_RESERVED, idOffset, numberOfIds);
