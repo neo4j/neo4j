@@ -247,6 +247,7 @@ abstract class InputWithMaterializedEntitiesTest[CONTEXT <: RuntimeContext](
         runtimeContextManager.create(
           queryContext,
           queryContext.transactionalContext.schemaRead,
+          queryContext.transactionalContext.procedures,
           MasterCompiler.CLOCK,
           CypherDebugOptions.default,
           compileExpressions = false,

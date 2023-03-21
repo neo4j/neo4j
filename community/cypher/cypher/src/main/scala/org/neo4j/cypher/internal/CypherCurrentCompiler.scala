@@ -180,6 +180,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     val runtimeContext = contextManager.create(
       logicalPlanResult.plannerContext.planContext,
       transactionalContext.kernelTransaction().schemaRead(),
+      transactionalContext.kernelTransaction().procedures(),
       logicalPlanResult.plannerContext.clock,
       logicalPlanResult.plannerContext.debugOptions,
       query.options.useCompiledExpressions,

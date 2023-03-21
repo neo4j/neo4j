@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.options.CypherOperatorEngineOption
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.InternalLog
 
@@ -36,6 +37,7 @@ import java.time.Clock
 case class CommunityRuntimeContext(
   tokenContext: ReadTokenContext,
   schemaRead: SchemaRead,
+  procedures: Procedures,
   log: InternalLog,
   config: CypherRuntimeConfiguration,
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator
@@ -52,6 +54,7 @@ case class CommunityRuntimeContextManager(log: InternalLog, config: CypherRuntim
   override def create(
     tokenContext: ReadTokenContext,
     schemaRead: SchemaRead,
+    procedures: Procedures,
     clock: Clock,
     debugOptions: CypherDebugOptions,
     ignore: Boolean,
@@ -60,7 +63,7 @@ case class CommunityRuntimeContextManager(log: InternalLog, config: CypherRuntim
     ignore4: CypherInterpretedPipesFallbackOption,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): CommunityRuntimeContext =
-    CommunityRuntimeContext(tokenContext, schemaRead, log, config, anonymousVariableNameGenerator)
+    CommunityRuntimeContext(tokenContext, schemaRead, procedures, log, config, anonymousVariableNameGenerator)
 
   // As we rely completely on transaction bound resources in community,
   // there is no need for further assertions here.

@@ -747,6 +747,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
     runtimeContextManager.create(
       queryContext,
       queryContext.transactionalContext.schemaRead,
+      queryContext.transactionalContext.procedures,
       MasterCompiler.CLOCK,
       debugOptions,
       compileExpressions = queryOptions.useCompiledExpressions,

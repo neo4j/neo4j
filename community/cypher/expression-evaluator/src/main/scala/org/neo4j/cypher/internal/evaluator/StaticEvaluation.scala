@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.evaluator
 
 import org.eclipse.collections.api.map.primitive.IntObjectMap
 import org.eclipse.collections.api.set.primitive.IntSet
-import org.neo4j.common.DependencyResolver
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
 import org.neo4j.cypher.internal.expressions.Expression
@@ -49,7 +48,6 @@ import org.neo4j.dbms.database.DatabaseContextProvider
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.graphdb.Path
-import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
@@ -64,23 +62,17 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext
 import org.neo4j.internal.kernel.api.procs.UserAggregationReducer
-import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
-import org.neo4j.kernel.api.procedure.Context
-import org.neo4j.kernel.api.procedure.GlobalProcedures
-import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber
-import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
-import org.neo4j.values.ValueMapper
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
@@ -89,13 +81,8 @@ import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import java.net.URL
-import java.time.Clock
-import java.util.function.Supplier
 
 object StaticEvaluation {
-
-  def from(proceduresSupplier: Supplier[GlobalProcedures]) =
-    new StaticEvaluator(() => new StaticQueryContext(proceduresSupplier.get()))
 
   def from(procedures: Procedures) = new StaticEvaluator(() => new SimplifiedStaticQueryContext(procedures))
 
@@ -152,46 +139,8 @@ object StaticEvaluation {
     }
   }
 
-  private class StaticQueryContext(procedures: GlobalProcedures) extends EmptyQueryContext {
-
-    override def callFunction(id: Int, args: Array[AnyValue]): AnyValue =
-      procedures.callFunction(new StaticProcedureContext, id, args)
-
-    override def callBuiltInFunction(id: Int, args: Array[AnyValue]): AnyValue =
-      procedures.callFunction(new StaticProcedureContext, id, args)
-  }
-
-  private class StaticProcedureContext extends EmptyProcedureContext
-
   private def notAvailable(): Nothing =
     throw new RuntimeException("Operation not available in static context.")
-
-  private trait EmptyProcedureContext extends Context {
-
-    override def procedureCallContext(): ProcedureCallContext = notAvailable()
-
-    override def valueMapper(): ValueMapper[AnyRef] = notAvailable()
-
-    override def securityContext(): SecurityContext = notAvailable()
-
-    override def dependencyResolver(): DependencyResolver = notAvailable()
-
-    override def graphDatabaseAPI(): GraphDatabaseAPI = notAvailable()
-
-    override def thread(): Thread = notAvailable()
-
-    override def systemClock(): Clock = notAvailable()
-
-    override def statementClock(): Clock = notAvailable()
-
-    override def transactionClock(): Clock = notAvailable()
-
-    override def transaction(): Transaction = notAvailable()
-
-    override def internalTransaction(): InternalTransaction = notAvailable()
-
-    override def internalTransactionOrNull(): InternalTransaction = notAvailable()
-  }
 
   private trait EmptyQueryContext extends QueryContext {
 

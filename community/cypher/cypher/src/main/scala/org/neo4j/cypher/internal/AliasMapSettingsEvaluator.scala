@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.evaluator.EvaluationException
 import org.neo4j.cypher.internal.evaluator.StaticEvaluation
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
-import org.neo4j.kernel.api.procedure.GlobalProcedures
 import org.neo4j.logging.Level
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
@@ -38,12 +38,10 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
-import java.util.function.Supplier
-
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
-class AliasMapSettingsEvaluator(proceduresSupplier: Supplier[GlobalProcedures]) {
-  private val evaluator = StaticEvaluation.from(proceduresSupplier)
+class AliasMapSettingsEvaluator(procedures: Procedures) {
+  private val evaluator = StaticEvaluation.from(procedures)
 
   type ExpressionMapOrParamValue = Either[Map[String, Expression], AnyValue]
 

@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.RuntimeUnsupportedException
+import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.logging.InternalLog
 
@@ -99,6 +100,7 @@ case class LogicalQuery(
 abstract class RuntimeContext {
   def tokenContext: ReadTokenContext
   def schemaRead: SchemaRead
+  def procedures: Procedures
   def config: CypherRuntimeConfiguration
   def compileExpressions: Boolean
   def log: InternalLog
@@ -120,6 +122,7 @@ trait RuntimeContextManager[+CONTEXT <: RuntimeContext] {
   def create(
     tokenContext: ReadTokenContext,
     schemaRead: SchemaRead,
+    procedures: Procedures,
     clock: Clock,
     debugOptions: CypherDebugOptions,
     compileExpressions: Boolean,
