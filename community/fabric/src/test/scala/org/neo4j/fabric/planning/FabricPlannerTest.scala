@@ -825,6 +825,61 @@ class FabricPlannerTest
       newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(1)
       newPlanner.queryCache.clearByContext(defaultGraphName).shouldEqual(0)
     }
+
+    "no cache hits for malformed options" in {
+      case class ExpectedState(hits: Int, misses: Int, failure: Boolean)
+      class CacheModel(var hits: Int = 0, var misses: Int = 0) {
+        def hit(): ExpectedState = {
+          hits += 1
+          ExpectedState(hits, misses, failure = false)
+        }
+
+        def miss(): ExpectedState = {
+          misses += 1
+          ExpectedState(hits, misses, failure = false)
+        }
+
+        def fail(): ExpectedState = {
+          ExpectedState(hits, misses, failure = true)
+        }
+      }
+
+      val newPlanner = FabricPlanner(config, cypherConfig, monitors, cacheFactory, signatures)
+
+      val model = new CacheModel()
+
+      Seq(
+        // PROFILE
+        ("CYPHER runtime=slotted PROFILE RETURN 1", model.miss()),
+        ("CYPHER PROFILE runtime=slotted RETURN 1", model.fail()),
+        ("PROFILE CYPHER runtime=slotted RETURN 1", model.hit()),
+        // EXPLAIN
+        ("CYPHER runtime=slotted EXPLAIN RETURN 1", model.miss()),
+        ("CYPHER EXPLAIN runtime=slotted RETURN 1", model.fail()),
+        ("EXPLAIN CYPHER runtime=slotted RETURN 1", model.hit()),
+        ("CYPHER runtime=slotted RETURN 1", model.hit()),
+        // PROFILE with multiple options
+        ("CYPHER runtime=slotted planner=dp PROFILE RETURN 1", model.miss()),
+        ("CYPHER PROFILE planner=dp runtime=slotted RETURN 1", model.fail()),
+        ("PROFILE CYPHER planner=dp runtime=slotted RETURN 1", model.hit()),
+        // EXPLAIN with multiple options
+        ("CYPHER runtime=slotted planner=dp EXPLAIN RETURN 1", model.miss()),
+        ("CYPHER EXPLAIN planner=dp runtime=slotted RETURN 1", model.fail()),
+        ("EXPLAIN CYPHER planner=dp runtime=slotted RETURN 1", model.hit()),
+        // plain with multiple options
+        ("CYPHER planner=dp runtime=slotted RETURN 1", model.hit()),
+        ("CYPHER planner=dp runtime=slotted debug=toString RETURN 1", model.miss()),
+        ("CYPHER planner=dp runtime=slotted debug=toString RETURN 1", model.hit())
+      ).foreach { case (query, expectation) =>
+        withClue(query) {
+          val result = Try(newPlanner.instance(query, params, defaultGraphName).plan)
+          result.isFailure.shouldEqual(expectation.failure)
+          newPlanner.queryCache.getMisses.shouldEqual(expectation.misses)
+          newPlanner.queryCache.getHits.shouldEqual(expectation.hits)
+        }
+      }
+
+    }
   }
 
   "Options:" - {

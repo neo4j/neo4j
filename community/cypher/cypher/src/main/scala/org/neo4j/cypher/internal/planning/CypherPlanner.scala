@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.FineToReuse
 import org.neo4j.cypher.internal.FullyParsedQuery
+import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.MaybeReusable
 import org.neo4j.cypher.internal.PlanFingerprint
 import org.neo4j.cypher.internal.PlanFingerprintReference
@@ -154,7 +155,7 @@ object CypherPlanner {
 
 }
 
-case class ParsedQueriesCacheKey(key: String, parameterTypes: ParameterTypeMap)
+case class ParsedQueriesCacheKey(key: InputQuery.CacheKey, parameterTypes: ParameterTypeMap)
 
 object ParsedQueriesCacheKey {
   def key(preParsedQuery: PreParsedQuery, params: MapValue): ParsedQueriesCacheKey =

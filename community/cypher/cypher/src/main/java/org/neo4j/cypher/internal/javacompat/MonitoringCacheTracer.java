@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
+import org.neo4j.cypher.internal.InputQuery;
 import scala.Option;
 
 import org.neo4j.cypher.internal.CacheTracer;
@@ -37,7 +38,7 @@ import org.neo4j.cypher.internal.QueryCache.CacheKey;
  *  in the same superclass, the monitor callbacks would always be invoked from both caches. So we need this
  *  awful mumbo-jumbo in order to monitor specifically one of the two caches only.
  */
-public class MonitoringCacheTracer implements CacheTracer<CacheKey<String>>
+public class MonitoringCacheTracer implements CacheTracer<CacheKey<InputQuery.CacheKey>>
 {
     private final ExecutionEngineQueryCacheMonitor monitor;
 
@@ -47,31 +48,31 @@ public class MonitoringCacheTracer implements CacheTracer<CacheKey<String>>
     }
 
     @Override
-    public void queryCacheHit( CacheKey<String> queryKey, String metaData )
+    public void queryCacheHit( CacheKey<InputQuery.CacheKey> queryKey, String metaData )
     {
         monitor.cacheHit( queryKey );
     }
 
     @Override
-    public void queryCacheMiss( CacheKey<String> queryKey, String metaData )
+    public void queryCacheMiss( CacheKey<InputQuery.CacheKey> queryKey, String metaData )
     {
         monitor.cacheMiss( queryKey );
     }
 
     @Override
-    public void queryCompile( CacheKey<String> queryKey, String metaData )
+    public void queryCompile( CacheKey<InputQuery.CacheKey> queryKey, String metaData )
     {
         monitor.cacheCompile( queryKey );
     }
 
     @Override
-    public void queryCompileWithExpressionCodeGen( CacheKey<String> queryKey, String metaData )
+    public void queryCompileWithExpressionCodeGen( CacheKey<InputQuery.CacheKey> queryKey, String metaData )
     {
         monitor.cacheCompileWithExpressionCodeGen( queryKey );
     }
 
     @Override
-    public void queryCacheStale( CacheKey<String> queryKey, int secondsSincePlan, String metaData,
+    public void queryCacheStale( CacheKey<InputQuery.CacheKey> queryKey, int secondsSincePlan, String metaData,
                                  Option<String> maybeReason )
     {
         monitor.cacheDiscard( queryKey, metaData, secondsSincePlan, maybeReason );

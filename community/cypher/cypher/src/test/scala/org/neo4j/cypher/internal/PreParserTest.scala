@@ -73,6 +73,56 @@ class PreParserTest extends CypherFunSuite {
     preParser.preParseQuery("CYPHER operatorEngine=interpreted RETURN 42").options.queryOptions.operatorEngine should equal(CypherOperatorEngineOption.interpreted)
   }
 
+  test("cacheKey with EXPLAIN") {
+    val q1 = preParser.preParseQuery("CYPHER runtime=slotted operatorEngine=interpreted RETURN 42")
+    val q2 = preParser.preParseQuery("EXPLAIN CYPHER runtime=slotted operatorEngine=interpreted RETURN 42")
+    val q3 = preParser.preParseQuery("CYPHER runtime=slotted operatorEngine=interpreted EXPLAIN RETURN 42")
+    val q4 = preParser.preParseQuery("CYPHER runtime=slotted EXPLAIN operatorEngine=interpreted RETURN 42")
+
+    q1.cacheKey.should(equal(q2.cacheKey))
+    q2.cacheKey.should(equal(q3.cacheKey))
+    q3.cacheKey.should(not(equal(q4.cacheKey)))
+  }
+
+  test("cacheKey with PROFILE") {
+    val q1 = preParser.preParseQuery("CYPHER runtime=slotted operatorEngine=interpreted RETURN 42")
+    val q2 = preParser.preParseQuery("PROFILE CYPHER runtime=slotted operatorEngine=interpreted RETURN 42")
+    val q3 = preParser.preParseQuery("CYPHER runtime=slotted operatorEngine=interpreted PROFILE RETURN 42")
+    val q4 = preParser.preParseQuery("CYPHER runtime=slotted PROFILE operatorEngine=interpreted RETURN 42")
+
+    q1.cacheKey.should(not(equal(q2.cacheKey)))
+    q2.cacheKey.should(equal(q3.cacheKey))
+    q3.cacheKey.should(not(equal(q4.cacheKey)))
+  }
+
+  test("cacheKey for mixed queries") {
+    val queries = Seq(
+      "CYPHER runtime=slotted PROFILE RETURN 1",
+      "CYPHER PROFILE runtime=slotted RETURN 1",
+      "PROFILE CYPHER runtime=slotted RETURN 1",
+      // EXPLAIN
+      "CYPHER runtime=slotted EXPLAIN RETURN 1",
+      "CYPHER EXPLAIN runtime=slotted RETURN 1",
+      "EXPLAIN CYPHER runtime=slotted RETURN 1",
+      "CYPHER runtime=slotted RETURN 1",
+      // PROFILE with multiple options
+      "CYPHER runtime=slotted planner=dp PROFILE RETURN 1",
+      "CYPHER PROFILE planner=dp runtime=slotted RETURN 1",
+      "PROFILE CYPHER planner=dp runtime=slotted RETURN 1",
+      // EXPLAIN with multiple options
+      "CYPHER runtime=slotted planner=dp EXPLAIN RETURN 1",
+      "CYPHER EXPLAIN planner=dp runtime=slotted RETURN 1",
+      "EXPLAIN CYPHER planner=dp runtime=slotted RETURN 1",
+      // plain with multiple options
+      "CYPHER planner=dp runtime=slotted RETURN 1",
+      "CYPHER planner=dp runtime=slotted debug=toString RETURN 1",
+      "CYPHER planner=dp runtime=slotted debug=toString RETURN 1"
+    )
+
+    val cacheKeys = queries.map(q => preParser.preParseQuery(q)).map(_.cacheKey).toSet
+    cacheKeys.size.shouldEqual(9)
+  }
+
   test("should accept just one replan strategy") {
     preParser.preParseQuery("CYPHER replan=force RETURN 42").options.queryOptions.replan should equal(CypherReplanOption.force)
     preParser.preParseQuery("CYPHER replan=skip RETURN 42").options.queryOptions.replan should equal(CypherReplanOption.skip)

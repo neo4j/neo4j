@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
+import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planning.CypherCacheMonitor
@@ -117,13 +118,13 @@ case class CacheCounts(hits: Int = 0, misses: Int = 0, flushes: Int = 0, evicted
   override def toString = s"hits = $hits, misses = $misses, flushes = $flushes, evicted = $evicted, compilations = $compilations, compilationsWithExpressionCodeGen = $compilationsWithExpressionCodeGen"
 }
 
-class ExecutionEngineCacheCounter() extends ExecutionEngineQueryCacheMonitor with CypherCacheMonitor[CacheKey[String]] {
+class ExecutionEngineCacheCounter() extends ExecutionEngineQueryCacheMonitor {
   var counts: CacheCounts = CacheCounts()
-  override def cacheMiss(key: CacheKey[String]): Unit = counts = counts.copy(misses = counts.misses + 1)
-  override def cacheHit(key: CacheKey[String]): Unit = counts = counts.copy(hits = counts.hits + 1)
+  override def cacheMiss(key: CacheKey[InputQuery.CacheKey]): Unit = counts = counts.copy(misses = counts.misses + 1)
+  override def cacheHit(key: CacheKey[InputQuery.CacheKey]): Unit = counts = counts.copy(hits = counts.hits + 1)
   override def cacheFlushDetected(sizeBeforeFlush: Long): Unit = counts = counts.copy(flushes = counts.flushes + 1)
-  override def cacheDiscard(key: CacheKey[String], key2: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit =
+  override def cacheDiscard(key: CacheKey[InputQuery.CacheKey], key2: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit =
     counts = counts.copy(evicted = counts.evicted + 1)
-  override def cacheCompile(key: CacheKey[String]): Unit = counts = counts.copy(compilations = counts.compilations + 1)
-  override def cacheCompileWithExpressionCodeGen(key: CacheKey[String]): Unit = counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
+  override def cacheCompile(key: CacheKey[InputQuery.CacheKey]): Unit = counts = counts.copy(compilations = counts.compilations + 1)
+  override def cacheCompileWithExpressionCodeGen(key: CacheKey[InputQuery.CacheKey]): Unit = counts = counts.copy(compilationsWithExpressionCodeGen = counts.compilationsWithExpressionCodeGen + 1)
 }

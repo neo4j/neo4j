@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.CacheTracer
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
 import org.neo4j.cypher.internal.ExecutionPlanCacheKey
 import org.neo4j.cypher.internal.ExecutionPlanCacheTracer
+import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -932,23 +933,23 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int = GraphDatabaseInter
       if (traceExecutionEngineQueryCache) log += "String: cacheFlushDetected"
     }
 
-    override def cacheHit(key: CacheKey[String]): Unit = {
+    override def cacheHit(key: CacheKey[InputQuery.CacheKey]): Unit = {
       if (traceExecutionEngineQueryCache) log += s"String: cacheHit: $key"
     }
 
-    override def cacheMiss(key: CacheKey[String]): Unit = {
+    override def cacheMiss(key: CacheKey[InputQuery.CacheKey]): Unit = {
       if (traceExecutionEngineQueryCache) log += s"String: cacheMiss: $key"
     }
 
-    override def cacheDiscard(key: CacheKey[String], ignored: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit = {
+    override def cacheDiscard(key: CacheKey[InputQuery.CacheKey], ignored: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit = {
       if (traceExecutionEngineQueryCache) log += s"String: cacheDiscard: $key"
     }
 
-    override def cacheCompile(key: CacheKey[String]): Unit = {
+    override def cacheCompile(key: CacheKey[InputQuery.CacheKey]): Unit = {
       if (traceExecutionEngineQueryCache) log += s"String: cacheCompile: $key"
     }
 
-    override def cacheCompileWithExpressionCodeGen(key: CacheKey[String]): Unit = {
+    override def cacheCompileWithExpressionCodeGen(key: CacheKey[InputQuery.CacheKey]): Unit = {
       if (traceExecutionEngineQueryCache) log += s"String: cacheCompileWithExpressionCodeGen: $key"
     }
 

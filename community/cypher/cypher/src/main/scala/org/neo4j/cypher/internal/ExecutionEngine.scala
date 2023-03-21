@@ -51,7 +51,7 @@ import scala.collection.JavaConverters.seqAsJavaListConverter
 /**
  * See comment in MonitoringCacheTracer for justification of the existence of this type.
  */
-trait ExecutionEngineQueryCacheMonitor extends CypherCacheMonitor[CacheKey[String]]
+trait ExecutionEngineQueryCacheMonitor extends CypherCacheMonitor[CacheKey[InputQuery.CacheKey]]
 
 /**
  * This class constructs and initializes both the cypher compilers and runtimes, which are very expensive
@@ -60,7 +60,7 @@ trait ExecutionEngineQueryCacheMonitor extends CypherCacheMonitor[CacheKey[Strin
 class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                       val kernelMonitors: Monitors,
                       val tracer: CompilationTracer,
-                      val cacheTracer: CacheTracer[CacheKey[String]],
+                      val cacheTracer: CacheTracer[CacheKey[InputQuery.CacheKey]],
                       val config: CypherConfiguration,
                       val compilerLibrary: CompilerLibrary,
                       val cacheFactory: CaffeineCacheFactory,
@@ -81,7 +81,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   // Log on stale query discard from query cache
   private val log = logProvider.getLog( getClass )
   kernelMonitors.addMonitorListener( new ExecutionEngineQueryCacheMonitor {
-    override def cacheDiscard(ignored: CacheKey[String], queryId: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
+    override def cacheDiscard(ignored: CacheKey[InputQuery.CacheKey], queryId: String, secondsSinceReplan: Int, maybeReason: Option[String]) {
       log.info(s"Discarded stale query from the query cache after $secondsSinceReplan seconds${maybeReason.fold("")(r => s". Reason: $r")}. Query id: $queryId")
     }
   })
@@ -93,8 +93,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       planReusabilitiy,
       log)
 
-  private val queryCache: QueryCache[CacheKey[String], ExecutableQuery] =
-    new QueryCache[CacheKey[String], ExecutableQuery](cacheFactory, config.queryCacheSize, planStalenessCaller, cacheTracer)
+  private val queryCache: QueryCache[CacheKey[InputQuery.CacheKey], ExecutableQuery] =
+    new QueryCache(cacheFactory, config.queryCacheSize, planStalenessCaller, cacheTracer)
 
   private val masterCompiler: MasterCompiler = new MasterCompiler(compilerLibrary)
 

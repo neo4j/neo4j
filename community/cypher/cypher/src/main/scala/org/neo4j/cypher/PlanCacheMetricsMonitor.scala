@@ -20,6 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.ExecutionEngineQueryCacheMonitor
+import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 
 import java.util.concurrent.atomic.AtomicLong
@@ -28,7 +29,7 @@ class PlanCacheMetricsMonitor extends ExecutionEngineQueryCacheMonitor {
   private val counter = new AtomicLong()
   private val waitTime = new AtomicLong()
 
-  override def cacheDiscard(ignored1: CacheKey[String], ignored2: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit = {
+  override def cacheDiscard(ignored1: CacheKey[InputQuery.CacheKey], ignored2: String, secondsSinceReplan: Int, maybeReason: Option[String]): Unit = {
     counter.incrementAndGet()
     waitTime.addAndGet(secondsSinceReplan)
   }
