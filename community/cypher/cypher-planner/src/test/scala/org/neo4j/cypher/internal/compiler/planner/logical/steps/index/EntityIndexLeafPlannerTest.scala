@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.expressions.BooleanExpression
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsPointProperty
 import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -77,6 +78,7 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
   private val property2: Property = prop("n", "prop2")
   private val integerLiteral: SignedDecimalIntegerLiteral = literalInt(1)
   private val stringLiteral: StringLiteral = literalString("hello")
+  private val pointLiteral: Expression = point(1, 2)
   private val integerListLiteral: ListLiteral = listOfInt(1, 2)
 
   testFindIndexCompatiblePredicate(
@@ -291,6 +293,40 @@ class EntityIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
         compatiblePredicates.map(p => (p.solvedPredicate, p.indexRequirements)) shouldBe
           Set(rangeSeek, textScan)
+    }
+  }
+
+  test("should find multiple index compatible predicates for less-than with point literal") {
+    new given {
+      qg = queryGraph(Set.empty)
+      addTypeToSemanticTable(pointLiteral, CTPoint.invariant)
+    } withLogicalPlanningContext {
+      (_, context) =>
+        val expr = lessThan(property, pointLiteral)
+        val compatiblePredicates = leafPlanner.findIndexCompatiblePredicates(
+          Set(expr),
+          Set.empty,
+          context.semanticTable,
+          context.staticComponents.planContext,
+          context.plannerState.indexCompatiblePredicatesProviderContext
+        )
+
+        val rangeSeek = (
+          Some(expr),
+          Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.RANGE))
+        )
+        val pointScan = (
+          Some(PartialPredicate(IsPointProperty(property)(expr.position), expr)),
+          Set(
+            IndexRequirement.SupportsIndexQuery(IndexQueryType.ALL_ENTRIES),
+            IndexRequirement.HasType(IndexType.Point)
+          )
+        )
+
+        compatiblePredicates.size shouldBe 2
+
+        compatiblePredicates.map(p => (p.solvedPredicate, p.indexRequirements)) shouldBe
+          Set(rangeSeek, pointScan)
     }
   }
 

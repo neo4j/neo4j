@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType
@@ -211,7 +212,8 @@ object IndexCompatiblePredicatesProvider {
         )
 
         Set(rangePredicate) ++
-          Option.when(cypherType == CTString)(rangePredicate.convertToTextScannable)
+          Option.when(cypherType == CTString)(rangePredicate.convertToTextScannable) ++
+          Option.when(cypherType == CTPoint)(rangePredicate.convertToPointScannable)
 
       case predicate @ AsBoundingBoxSeekable(seekable) if valid(seekable.ident, seekable.dependencies) =>
         val queryExpression = seekable.asQueryExpression

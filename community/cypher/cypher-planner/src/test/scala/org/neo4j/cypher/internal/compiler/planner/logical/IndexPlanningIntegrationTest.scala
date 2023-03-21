@@ -1598,14 +1598,14 @@ class IndexPlanningIntegrationTest
       .build()
   }
 
-  test("should not plan node point index usage for inequalities") {
+  test("should plan node point index usage for inequalities") {
     val cfg = plannerConfigForNodePointIndex
     for (op <- Seq("<", "<=", ">", ">=")) {
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op point({x:1, y:2}) RETURN a, a.prop").stripProduceResults
       plan shouldEqual cfg.subPlanBuilder()
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter(s"cacheNFromStore[a.prop] $op point({x:1, y:2})")
-        .nodeByLabelScan("a", "A")
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT)
         .build()
     }
   }
@@ -1703,7 +1703,7 @@ class IndexPlanningIntegrationTest
       .build()
   }
 
-  test("should not plan relationship point index usage for inequalities") {
+  test("should plan relationship point index scan for inequalities") {
     val cfg = plannerConfigForRelPointIndex
     for (op <- Seq("<", "<=", ">", ">=")) {
       val plan =
@@ -1711,7 +1711,7 @@ class IndexPlanningIntegrationTest
       plan shouldEqual cfg.subPlanBuilder()
         .projection(project = Seq("cacheR[r.prop] AS `r.prop`"), discard = Set("a", "b"))
         .filter(s"cacheRFromStore[r.prop] $op point({x:1, y:2})")
-        .relationshipTypeScan("(a)-[r:REL]->(b)")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.POINT)
         .build()
     }
   }
@@ -1973,6 +1973,35 @@ class IndexPlanningIntegrationTest
       .produceResults("a")
       .filter("a.prop < 'hello'")
       .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT).withCardinality(labelCardinality * existsSelectivity)
+
+    planState should haveSamePlanAndCardinalitiesAsBuilder(
+      expected,
+      AttributeComparisonStrategy.ComparingProvidedAttributesOnly
+    )
+  }
+
+  test("should estimate cardinality for less-than with a point literal using POINT index") {
+    val existsSelectivity = 0.5
+    val labelCardinality = 1000
+
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(2000)
+      .addNodeIndex(
+        "A",
+        Seq("prop"),
+        existsSelectivity = existsSelectivity,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.POINT
+      )
+      .setLabelCardinality("A", labelCardinality)
+      .build()
+
+    val q = "MATCH (a:A) WHERE a.prop < point({x:1, y:2}) RETURN a"
+    val planState = planner.planState(q)
+    val expected = planner.planBuilder()
+      .produceResults("a")
+      .filter("a.prop < point({x:1, y:2})")
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT).withCardinality(labelCardinality * existsSelectivity)
 
     planState should haveSamePlanAndCardinalitiesAsBuilder(
       expected,

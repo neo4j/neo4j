@@ -47,10 +47,12 @@ object EntityIndexScanPlanProvider {
     propertyPredicates: Seq[IndexCompatiblePredicate]
   ): Seq[IndexCompatiblePredicate] = {
     indexType match {
-      case IndexType.Range | IndexType.Point =>
+      case IndexType.Range =>
         propertyPredicates.map(_.convertToRangeScannable)
       case IndexType.Text =>
         propertyPredicates.map(_.convertToTextScannable)
+      case IndexType.Point =>
+        propertyPredicates.map(_.convertToPointScannable)
     }
   }
 

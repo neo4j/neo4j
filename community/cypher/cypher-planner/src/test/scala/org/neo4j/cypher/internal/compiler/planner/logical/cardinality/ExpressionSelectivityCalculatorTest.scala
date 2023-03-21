@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.InequalityExpression
+import org.neo4j.cypher.internal.expressions.IsPointProperty
 import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
@@ -78,6 +79,7 @@ import org.neo4j.cypher.internal.util.SizeBucket
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTPoint
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -109,6 +111,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   protected val personPointPropIsNotNullSel: Double = 0.1
   protected val indexPersonUniqueSel: Double = 1.0 / 180.0
   protected val indexPersonTextUniqueSel: Double = 1.0 / 60.0
+  protected val indexPersonPointUniqueSel: Double = 1.0 / 70.0
   protected val animalPropIsNotNullSel: Double = 0.5
 
   // RELATIONSHIPS
@@ -126,6 +129,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   // EXPRESSIONS
 
   protected val helloStringLiteral: StringLiteral = literalString("hello")
+  protected val pointLiteralX1Y2 = point(1, 2)
 
   // RANGE SEEK
 
@@ -1656,6 +1660,30 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     )
   }
 
+  test("isPointProperty") {
+    val predicate = IsPointProperty(nProp)(InputPosition.NONE)
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val result = calculator(predicate)
+    result.factor shouldEqual personPointPropIsNotNullSel
+  }
+
+  test("should use point index to calculate selectivity of greater-than with point literal") {
+    val inequality = nPredicate(nAnded(NonEmptyList(
+      greaterThan(nProp, pointLiteralX1Y2)
+    )))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+    val inequalityResult = calculator(inequality.expr)
+
+    inequalityResult.factor should equal(
+      personPointPropIsNotNullSel
+        * (1 - indexPersonPointUniqueSel) // Selectivity for != x
+        * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
+        +- 0.00000001
+    )
+  }
+
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {
@@ -1673,6 +1701,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       .addTypeInfo(literalInt(4), CTInteger)
       .addTypeInfo(literalInt(7), CTInteger)
       .addTypeInfo(helloStringLiteral, CTString)
+      .addTypeInfo(pointLiteralX1Y2, CTPoint)
   }
 
   protected def setUpCalculator(
@@ -1717,6 +1746,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(
       indexPersonRange -> 180.0,
       indexPersonText -> 60.0,
+      indexPersonPoint -> 70.0,
       indexFriends -> 180.0
     )
   ) extends GraphStatistics {

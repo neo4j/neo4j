@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.EntityInde
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsPointProperty
 import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalProperty
@@ -248,6 +249,24 @@ object EntityIndexLeafPlanner {
       val original = unwrapPartial(expr)
       val isStringProperty = IsStringProperty(property)(predicate.position)
       PartialPredicate(isStringProperty, original)
+    }
+
+    def convertToPointScannable: IndexCompatiblePredicate = {
+      copy(
+        queryExpression = ExistenceQueryExpression(),
+        predicateExactness = NotExactPredicate,
+        solvedPredicate = solvedPredicate.map(convertToPointScannablePredicate),
+        indexRequirements = Set(
+          IndexRequirement.SupportsIndexQuery(IndexQueryType.ALL_ENTRIES),
+          IndexRequirement.HasType(IndexType.Point)
+        )
+      )
+    }
+
+    private def convertToPointScannablePredicate(expr: Expression): Expression = {
+      val original = unwrapPartial(expr)
+      val isPointProperty = IsPointProperty(property)(predicate.position)
+      PartialPredicate(isPointProperty, original)
     }
 
     private def unwrapPartial(expr: Expression) = expr match {
