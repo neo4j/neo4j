@@ -68,7 +68,7 @@ abstract class ExecutionEngine(
 
   private val preParser = new PreParser(config, queryCaches.preParserCache)
 
-  private val queryCache: QueryCache[CacheKey[String], ExecutableQuery] = queryCaches.executableQueryCache
+  private val queryCache: QueryCache[CacheKey[InputQuery.CacheKey], ExecutableQuery] = queryCaches.executableQueryCache
 
   private val schemaHelper = new SchemaHelper(queryCache, masterCompiler)
 

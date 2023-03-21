@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.cache
 
+import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.QueryCache
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory
@@ -30,12 +31,12 @@ import scala.jdk.CollectionConverters.MapHasAsScala
 
 class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
 
-  type Query = String
+  type QueryKey = InputQuery.CacheKey
   type Params = MapValue
   type ParamTypes = ParameterTypeMap
   type ContextName = String
 
-  type Key = (Query, ParamTypes, ContextName)
+  type Key = (QueryKey, ParamTypes, ContextName)
   type Value = FabricPlan
 
   private val cache = new LFUCache[Key, Value](cacheFactory, size)
@@ -44,7 +45,7 @@ class FabricQueryCache(cacheFactory: CaffeineCacheFactory, size: Int) {
   private var misses: Long = 0
 
   def computeIfAbsent(
-    query: Query,
+    query: QueryKey,
     params: Params,
     defaultContextName: ContextName,
     compute: () => FabricPlan,

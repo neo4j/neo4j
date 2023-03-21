@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.CacheabilityInfo
 import org.neo4j.cypher.internal.DefaultPlanStalenessCaller
 import org.neo4j.cypher.internal.ExecutableQuery
 import org.neo4j.cypher.internal.ExecutionPlan
+import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.PlanStalenessCaller
 import org.neo4j.cypher.internal.PreParsedQuery
 import org.neo4j.cypher.internal.QueryCache
@@ -176,7 +177,7 @@ object CypherQueryCaches {
     type Key = AstCacheKey
     type Value = BaseState
 
-    case class AstCacheKey(key: String, parameterTypes: ParameterTypeMap)
+    case class AstCacheKey(key: InputQuery.CacheKey, parameterTypes: ParameterTypeMap)
 
     def key(preParsedQuery: PreParsedQuery, params: MapValue, useParameterSizeHint: Boolean): AstCache.Key =
       AstCacheKey(preParsedQuery.cacheKey, QueryCache.extractParameterTypeMap(params, useParameterSizeHint))
@@ -236,7 +237,7 @@ object CypherQueryCaches {
   }
 
   object ExecutableQueryCache extends CacheCompanion("executable_query") with CacheMonitorHelpers {
-    type Key = CacheKey[String]
+    type Key = CacheKey[InputQuery.CacheKey]
     type Value = ExecutableQuery
 
     class Cache(

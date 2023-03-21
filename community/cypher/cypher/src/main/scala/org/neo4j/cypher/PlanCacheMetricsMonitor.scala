@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.cypher.internal.InputQuery
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.cache.CacheTracer
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
@@ -89,7 +90,7 @@ class ExecutableQueryCacheMetricsMonitor extends CacheMetricsMonitor[CypherQuery
   private val waitTime = new AtomicLong()
 
   override def cacheStale(
-    queryKey: CacheKey[String],
+    queryKey: CacheKey[InputQuery.CacheKey],
     secondsSincePlan: Int,
     metaData: String,
     maybeReason: Option[String]
