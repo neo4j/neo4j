@@ -44,7 +44,7 @@ import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
-import org.neo4j.values.utils.CypherBoolean
+import org.neo4j.values.utils.ValueBooleanLogic
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
 
@@ -485,7 +485,7 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implici
     (lValue, rValue) match {
       case (lhs: TextValue, rhs) if !(rhs eq Values.NO_VALUE) =>
         val rhsAsRegexString = converter(CastSupport.castOrFail[TextValue](rhs))
-        IsMatchResult(CypherBoolean.regex(lhs, rhsAsRegexString).booleanValue())
+        IsMatchResult(ValueBooleanLogic.regex(lhs, rhsAsRegexString).booleanValue())
       case _ => IsUnknown
     }
   }

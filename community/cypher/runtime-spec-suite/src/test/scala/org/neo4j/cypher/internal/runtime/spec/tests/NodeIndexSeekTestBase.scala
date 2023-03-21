@@ -48,7 +48,7 @@ import org.neo4j.values.storable.ValueCategory
 import org.neo4j.values.storable.ValueType
 import org.neo4j.values.storable.ValueType.BOOLEAN
 import org.neo4j.values.storable.Values
-import org.neo4j.values.utils.CypherBoolean
+import org.neo4j.values.utils.ValueBooleanLogic
 
 import scala.collection.mutable
 import scala.util.Random
@@ -1615,9 +1615,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     n => n.hasProperty("prop") && predicate.apply(asValue(n.getProperty("prop")))
   }
 
-  private def equalTo(rhs: Value)(lhs: Value): Boolean = CypherBoolean.equals(lhs, rhs) == BooleanValue.TRUE
-  private def greaterThan(rhs: Value)(lhs: Value): Boolean = CypherBoolean.greaterThan(lhs, rhs) == BooleanValue.TRUE
-  private def lessThan(rhs: Value)(lhs: Value): Boolean = CypherBoolean.lessThan(lhs, rhs) == BooleanValue.TRUE
+  private def equalTo(rhs: Value)(lhs: Value): Boolean = ValueBooleanLogic.equals(lhs, rhs) == BooleanValue.TRUE
+  private def greaterThan(rhs: Value)(lhs: Value): Boolean = ValueBooleanLogic.greaterThan(lhs, rhs) == BooleanValue.TRUE
+  private def lessThan(rhs: Value)(lhs: Value): Boolean = ValueBooleanLogic.lessThan(lhs, rhs) == BooleanValue.TRUE
 
   private def collectProp[T](predicate: T => Boolean): PartialFunction[Node, T] = {
     case n if predicate(n.getProperty("prop").asInstanceOf[T]) => n.getProperty("prop").asInstanceOf[T]

@@ -54,25 +54,23 @@ import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 /**
- * This class contains static helper boolean methods used by the compiled expressions
+ * This class contains static helper boolean methods for performing boolean logic on values
  */
 @SuppressWarnings({"ReferenceEquality"})
-public final class CypherBoolean {
+public final class ValueBooleanLogic {
     private static final BooleanMapper BOOLEAN_MAPPER = new BooleanMapper();
 
-    private CypherBoolean() {
+    private ValueBooleanLogic() {
         throw new UnsupportedOperationException("Do not instantiate");
     }
 
     @CalledFromGeneratedCode
-    public static Value xor(AnyValue lhs, AnyValue rhs) {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+    public static BooleanValue xor(BooleanValue lhs, BooleanValue rhs) {
         return (lhs == TRUE) ^ (rhs == TRUE) ? TRUE : FALSE;
     }
 
     @CalledFromGeneratedCode
-    public static Value not(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+    public static BooleanValue not(BooleanValue in) {
         return in != TRUE ? TRUE : FALSE;
     }
 

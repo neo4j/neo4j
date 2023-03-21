@@ -32,7 +32,7 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.Equality
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.values.utils.CypherBoolean
+import org.neo4j.values.utils.ValueBooleanLogic
 
 sealed abstract class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
@@ -100,7 +100,7 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  override def comparator: (AnyValue, AnyValue) => Value = CypherBoolean.lessThan
+  override def comparator: (AnyValue, AnyValue) => Value = ValueBooleanLogic.lessThan
 
   override def sign: String = "<"
 
@@ -111,7 +111,7 @@ case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a,
 
 case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  override def comparator: (AnyValue, AnyValue) => Value = CypherBoolean.greaterThan
+  override def comparator: (AnyValue, AnyValue) => Value = ValueBooleanLogic.greaterThan
 
   override def sign: String = ">"
 
@@ -122,7 +122,7 @@ case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate
 
 case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  override def comparator: (AnyValue, AnyValue) => Value = CypherBoolean.lessThanOrEqual
+  override def comparator: (AnyValue, AnyValue) => Value = ValueBooleanLogic.lessThanOrEqual
 
   override def sign: String = "<="
 
@@ -133,7 +133,7 @@ case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredi
 
 case class GreaterThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
 
-  override def comparator: (AnyValue, AnyValue) => Value = CypherBoolean.greaterThanOrEqual
+  override def comparator: (AnyValue, AnyValue) => Value = ValueBooleanLogic.greaterThanOrEqual
 
   override def sign: String = ">="
 
