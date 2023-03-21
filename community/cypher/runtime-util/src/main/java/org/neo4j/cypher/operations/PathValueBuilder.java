@@ -26,6 +26,7 @@ import java.util.function.Consumer;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.neo4j.cypher.internal.runtime.DbAccess;
+import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
@@ -63,6 +64,23 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
     }
 
     /**
+     * Reads a node from the given offset of a (Trail group variable) List and adds it to the path
+     *
+     * @param value the list to get relationship from
+     * @param offset in the list
+     */
+    @CalledFromGeneratedCode
+    public void addNodeFromList(AnyValue value, int offset) {
+        if (notNoValue(value)) {
+            if (value instanceof ListValue) {
+                addNode(((ListValue) value).value(offset));
+            } else {
+                throw new CypherTypeException("Expected list but found: " + value);
+            }
+        }
+    }
+
+    /**
      * Adds node to the path
      *
      * @param value the node to add
@@ -71,6 +89,23 @@ public class PathValueBuilder implements Consumer<RelationshipVisitor> {
     public void addNode(AnyValue value) {
         if (notNoValue(value)) {
             addNode((VirtualNodeValue) value);
+        }
+    }
+
+    /**
+     * Reads a relationship from the given offset of a (Trail group variable) List and adds it to the path
+     *
+     * @param value the list to get relationship from
+     * @param offset in the list
+     */
+    @CalledFromGeneratedCode
+    public void addRelationshipFromList(AnyValue value, int offset) {
+        if (notNoValue(value)) {
+            if (value instanceof ListValue) {
+                addRelationship(((ListValue) value).value(offset));
+            } else {
+                throw new CypherTypeException("Expected list but found: " + value);
+            }
         }
     }
 
