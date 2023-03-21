@@ -1616,7 +1616,9 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
   }
 
   private def equalTo(rhs: Value)(lhs: Value): Boolean = ValueBooleanLogic.equals(lhs, rhs) == BooleanValue.TRUE
-  private def greaterThan(rhs: Value)(lhs: Value): Boolean = ValueBooleanLogic.greaterThan(lhs, rhs) == BooleanValue.TRUE
+
+  private def greaterThan(rhs: Value)(lhs: Value): Boolean =
+    ValueBooleanLogic.greaterThan(lhs, rhs) == BooleanValue.TRUE
   private def lessThan(rhs: Value)(lhs: Value): Boolean = ValueBooleanLogic.lessThan(lhs, rhs) == BooleanValue.TRUE
 
   private def collectProp[T](predicate: T => Boolean): PartialFunction[Node, T] = {

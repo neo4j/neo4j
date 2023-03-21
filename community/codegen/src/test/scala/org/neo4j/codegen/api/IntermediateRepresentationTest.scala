@@ -20,19 +20,33 @@
 package org.neo4j.codegen.api
 
 import org.neo4j.codegen.TypeReference
+import org.neo4j.codegen.api.IntermediateRepresentation.and
+import org.neo4j.codegen.api.IntermediateRepresentation.assign
 import org.neo4j.codegen.api.IntermediateRepresentation.block
+import org.neo4j.codegen.api.IntermediateRepresentation.booleanValue
 import org.neo4j.codegen.api.IntermediateRepresentation.condition
 import org.neo4j.codegen.api.IntermediateRepresentation.constant
+import org.neo4j.codegen.api.IntermediateRepresentation.getStatic
 import org.neo4j.codegen.api.IntermediateRepresentation.ifElse
+import org.neo4j.codegen.api.IntermediateRepresentation.invoke
+import org.neo4j.codegen.api.IntermediateRepresentation.invokeStatic
 import org.neo4j.codegen.api.IntermediateRepresentation.isEmpty
 import org.neo4j.codegen.api.IntermediateRepresentation.load
+import org.neo4j.codegen.api.IntermediateRepresentation.longValue
+import org.neo4j.codegen.api.IntermediateRepresentation.method
 import org.neo4j.codegen.api.IntermediateRepresentation.noop
+import org.neo4j.codegen.api.IntermediateRepresentation.notEqual
+import org.neo4j.codegen.api.IntermediateRepresentation.or
 import org.neo4j.codegen.api.IntermediateRepresentation.print
 import org.neo4j.codegen.api.IntermediateRepresentation.scalaObjectInstance
-import org.neo4j.codegen.api.IntermediateRepresentation.staticallyKnownPredicate
 import org.neo4j.codegen.api.IntermediateRepresentation.ternary
 import org.neo4j.codegen.api.IntermediateRepresentation.trueValue
+import org.neo4j.codegen.api.IntermediateRepresentation.tryCatchIfNecessary
+import org.neo4j.codegen.api.IntermediateRepresentation.typeRefOf
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.BooleanValue
+import org.neo4j.values.storable.Values
 
 class IntermediateRepresentationTest extends CypherFunSuite {
 
@@ -43,22 +57,13 @@ class IntermediateRepresentationTest extends CypherFunSuite {
     isEmpty(block()) shouldBe true
   }
 
-  test("staticallyKnownPredicate") {
-    staticallyKnownPredicate(constant(true)) shouldBe Some(true)
-    staticallyKnownPredicate(constant(false)) shouldBe Some(false)
-    staticallyKnownPredicate(notOp(constant(true))) shouldBe Some(false)
-    staticallyKnownPredicate(notOp(constant(false))) shouldBe Some(true)
-    staticallyKnownPredicate(notOp(notOp(constant(true)))) shouldBe Some(true)
-    staticallyKnownPredicate(notOp(notOp(constant(false)))) shouldBe Some(false)
-    staticallyKnownPredicate(notOp(notOp(notOp(constant(true))))) shouldBe Some(false)
-    staticallyKnownPredicate(notOp(notOp(notOp(constant(false))))) shouldBe Some(true)
-    staticallyKnownPredicate(notOp(load[Boolean]("boolean"))) shouldBe None
-  }
-
   test("condition") {
     condition(constant(true))(print(constant("hello"))) shouldBe print(constant("hello"))
     condition(constant(true))(block()) shouldBe noop()
     condition(constant(false))(print(constant("hello"))) shouldBe noop()
+    condition(BooleanOr(Seq(load[Boolean]("a"), constant(true))))(print(constant("hello"))) shouldBe print(
+      constant("hello")
+    )
   }
 
   test("ifElse") {
@@ -75,6 +80,17 @@ class IntermediateRepresentationTest extends CypherFunSuite {
   test("ternary") {
     ternary(constant(true), print(constant("hello")), print(constant("there"))) shouldBe print(constant("hello"))
     ternary(constant(false), print(constant("hello")), print(constant("there"))) shouldBe print(constant("there"))
+    BooleanOr(Seq(load[Boolean]("a"), constant(true)))
+    ternary(
+      BooleanOr(Seq(load[Boolean]("a"), constant(true))),
+      print(constant("hello")),
+      print(constant("there"))
+    ) shouldBe print(constant("hello"))
+    ternary(
+      BooleanAnd(Seq(load[Boolean]("a"), constant(false))),
+      print(constant("hello")),
+      print(constant("there"))
+    ) shouldBe print(constant("there"))
   }
 
   test("not") {
@@ -82,6 +98,49 @@ class IntermediateRepresentationTest extends CypherFunSuite {
     notOp(constant(false)) shouldBe constant(true)
     notOp(Not(load[Boolean]("boolean"))) shouldBe load[Boolean]("boolean")
     notOp(Not(Not(load[Boolean]("boolean")))) shouldBe notOp(load[Boolean]("boolean"))
+    notOp(Eq(constant(42), constant(43))) shouldBe NotEq(constant(42), constant(43))
+  }
+
+  test("or") {
+    or(constant(true), constant(false)) shouldBe constant(true)
+    or(constant(false), constant(true)) shouldBe constant(true)
+    or(constant(false), load[Boolean]("a")) shouldBe load[Boolean]("a")
+    or(load[Boolean]("a"), constant(false)) shouldBe load[Boolean]("a")
+    or(constant(false), constant(false)) shouldBe constant(false)
+
+    or(
+      BooleanOr(Seq(load[Boolean]("a"), load[Boolean]("b"))),
+      BooleanOr(Seq(load[Boolean]("c"), load[Boolean]("d")))
+    ) shouldBe
+      BooleanOr(Seq(load[Boolean]("a"), load[Boolean]("b"), load[Boolean]("c"), load[Boolean]("d")))
+    or(Seq(load[Boolean]("a"), load[Boolean]("b"), constant(true), load[Boolean]("c"))) shouldBe constant(true)
+    or(Seq(load[Boolean]("a"), load[Boolean]("b"), constant(false), load[Boolean]("c"))) shouldBe
+      BooleanOr(Seq(load[Boolean]("a"), load[Boolean]("b"), load[Boolean]("c")))
+  }
+
+  test("and") {
+    and(constant(true), constant(false)) shouldBe constant(false)
+    and(constant(false), constant(true)) shouldBe constant(false)
+    and(constant(true), load[Boolean]("a")) shouldBe load[Boolean]("a")
+    and(load[Boolean]("a"), constant(true)) shouldBe load[Boolean]("a")
+    and(constant(true), constant(true)) shouldBe constant(true)
+
+    and(
+      BooleanAnd(Seq(load[Boolean]("a"), load[Boolean]("b"))),
+      BooleanAnd(Seq(load[Boolean]("c"), load[Boolean]("d")))
+    ) shouldBe
+      BooleanAnd(Seq(load[Boolean]("a"), load[Boolean]("b"), load[Boolean]("c"), load[Boolean]("d")))
+    and(Seq(load[Boolean]("a"), load[Boolean]("b"), constant(false), load[Boolean]("c"))) shouldBe constant(false)
+    and(Seq(load[Boolean]("a"), load[Boolean]("b"), constant(true), load[Boolean]("c"))) shouldBe
+      BooleanAnd(Seq(load[Boolean]("a"), load[Boolean]("b"), load[Boolean]("c")))
+  }
+
+  test("booleanValue") {
+    booleanValue(
+      invoke(longValue(constant(42)), method[AnyValue, Boolean, AnyRef]("equals"), longValue(constant(43)))
+    ) shouldBe
+      invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), Eq(constant(42), constant(43)))
+
   }
 
   test("rewrite if (booleanValue(a) == TRUE) to if (a)") {
@@ -119,6 +178,25 @@ class IntermediateRepresentationTest extends CypherFunSuite {
     scalaObjectTest(TestSealedCaseObject)
     scalaObjectTest(TestStandAloneObject)
     scalaObjectTest(TestStandAloneCaseObject)
+  }
+
+  test("tryCatchIfNecessary") {
+    tryCatchIfNecessary[RuntimeException]("e")(
+      assign("result", notEqual(constant(true), getStatic[Object, Boolean]("FOO")))
+    )(
+      print(constant("NO!"))
+    ) shouldBe assign("result", notEqual(constant(true), getStatic[Object, Boolean]("FOO")))
+
+    tryCatchIfNecessary[RuntimeException]("e")(
+      invoke(load[Object]("a"), method[Object, Unit]("superDangerous"))
+    )(
+      print(constant("NO!"))
+    ) shouldBe TryCatch(
+      invoke(load[Object]("a"), method[Object, Unit]("superDangerous")),
+      print(constant("NO!")),
+      typeRefOf[RuntimeException],
+      "e"
+    )
   }
 
   private def scalaObjectTest(objectInstance: AnyRef) = {

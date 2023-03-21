@@ -192,7 +192,7 @@ public final class ValueBooleanLogic {
     public static Value in(AnyValue lhs, AnyValue rhs) {
         assert rhs != NO_VALUE;
 
-        ListValue anyValues = VirtualValues.asList( rhs);
+        ListValue anyValues = VirtualValues.asList(rhs);
 
         boolean seenUndefined = false;
         for (AnyValue value : anyValues) {

@@ -22,16 +22,23 @@ package org.neo4j.codegen.api
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
 import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.RewriterStopper
+import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.DoubleValue
 import org.neo4j.values.storable.FloatingPointValue
+import org.neo4j.values.storable.IntValue
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.storable.NoValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values
+import org.neo4j.values.utils.ValueBooleanLogic
 
+import java.io.ObjectInputStream.GetField
 import java.io.PrintStream
 import java.lang.reflect.Modifier
-
-import scala.annotation.tailrec
 
 /**
  * IntermediateRepresentation is an intermediate step between pure byte code and the operator/expression
@@ -1345,7 +1352,14 @@ object IntermediateRepresentation {
 
   def load(parameter: Parameter): Load = Load(parameter.name, parameter.typ)
 
-  def cast[TO](expression: IntermediateRepresentation)(implicit to: Manifest[TO]): Cast = Cast(typeRef(to), expression)
+  def cast[TO](expression: IntermediateRepresentation)(implicit to: Manifest[TO]): IntermediateRepresentation = {
+    val toType = typeRef(to)
+    if (expression.typeReference == toType) {
+      expression
+    } else {
+      Cast(toType, expression)
+    }
+  }
 
   def instanceOf[T](expression: IntermediateRepresentation)(implicit t: Manifest[T]): InstanceOf =
     InstanceOf(typeRef(t), expression)
@@ -1408,11 +1422,7 @@ object IntermediateRepresentation {
     onTrue: IntermediateRepresentation,
     onFalse: IntermediateRepresentation
   ): IntermediateRepresentation = {
-    staticallyKnownPredicate(condition) match {
-      case Some(true)  => onTrue
-      case Some(false) => onFalse
-      case _           => Ternary(simplifyPredicate(condition), onTrue, onFalse)
-    }
+    simplifyPredicate(Ternary(condition, onTrue, onFalse))
   }
 
   def add(lhs: IntermediateRepresentation, rhs: Int): IntermediateRepresentation =
@@ -1503,14 +1513,6 @@ object IntermediateRepresentation {
 
   def noop(): IntermediateRepresentation = Noop
 
-  @tailrec
-  def staticallyKnownPredicate(ir: IntermediateRepresentation, notCount: Int = 0): Option[Boolean] = ir match {
-    case Constant(true)  => Some(notCount % 2 == 0)
-    case Constant(false) => Some(notCount % 2 != 0)
-    case Not(inner)      => staticallyKnownPredicate(inner, notCount + 1)
-    case _               => None
-  }
-
   def isEmpty(ir: IntermediateRepresentation): Boolean = ir match {
     case Noop       => true
     case Block(ops) => ops.isEmpty || ops.forall(isEmpty)
@@ -1519,24 +1521,14 @@ object IntermediateRepresentation {
 
   def condition(test: IntermediateRepresentation)(onTrue: IntermediateRepresentation): IntermediateRepresentation = {
     if (isEmpty(onTrue)) noop()
-    else staticallyKnownPredicate(test) match {
-      case Some(true)  => onTrue
-      case Some(false) => noop()
-      case _           => Condition(simplifyPredicate(test), onTrue)
-    }
+    else simplifyPredicate(Condition(test, onTrue))
   }
 
   def ifElse(test: IntermediateRepresentation)(onTrue: IntermediateRepresentation)(onFalse: IntermediateRepresentation)
     : IntermediateRepresentation = {
     if (isEmpty(onFalse)) condition(test)(onTrue)
     else if (isEmpty(onTrue)) condition(not(test))(onFalse)
-    else {
-      staticallyKnownPredicate(test) match {
-        case Some(true)  => onTrue
-        case Some(false) => onFalse
-        case _           => Condition(simplifyPredicate(test), onTrue, Some(onFalse))
-      }
-    }
+    else simplifyPredicate(Condition(test, onTrue, Some(onFalse)))
   }
 
   def loop(test: IntermediateRepresentation)(body: IntermediateRepresentation): IntermediateRepresentation =
@@ -1594,6 +1586,26 @@ object IntermediateRepresentation {
   typ: Manifest[E]): TryCatch =
     TryCatch(ops, onError, typeRef(typ), name)
 
+  def tryCatchIfNecessary[E](name: String)(ops: IntermediateRepresentation)(
+    onError: IntermediateRepresentation
+  )(implicit typ: Manifest[E]): IntermediateRepresentation = {
+    // This is by no means a complete list of "safe operations" but it removes some common expressions
+    def cannotFail(in: IntermediateRepresentation): Boolean = {
+      in.folder.treeForall {
+        case _: Eq | _: NotEq | BooleanValueFcn(_) | LongValueFcn(_) |
+          _: Constant | _: Block | _: Load | _: AssignToLocalVariable | _: GetStatic | _: GetField =>
+          true
+        case _: IntermediateRepresentation => false
+        case _                             => true
+      }
+    }
+    if (cannotFail(ops)) {
+      ops
+    } else {
+      tryCatch[E](name)(ops)(onError)
+    }
+  }
+
   def fail(error: IntermediateRepresentation): Throw = Throw(error)
 
   def and(lhsVar: String, rhs: IntermediateRepresentation): IntermediateRepresentation =
@@ -1603,44 +1615,19 @@ object IntermediateRepresentation {
     and(lhs, Load(rhsVar, lhs.typeReference))
 
   def and(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation = {
-    (lhs, rhs) match {
-      case (Constant(false), _) => Constant(false)
-      case (_, Constant(false)) => Constant(false)
-      case (Constant(true), _)  => simplifyPredicate(rhs)
-      case (_, Constant(true))  => simplifyPredicate(lhs)
-      case (lhsAnd: BooleanAnd, _) => rhs match {
-          case rhsAnd: BooleanAnd => BooleanAnd(lhsAnd.as ++ rhsAnd.as)
-          case a                  => BooleanAnd(lhsAnd.as :+ simplifyPredicate(a))
-        }
-      case (_, rhsAnd: BooleanAnd) => BooleanAnd(simplifyPredicate(lhs) +: rhsAnd.as)
-      case _                       => BooleanAnd(Seq(simplifyPredicate(lhs), simplifyPredicate(rhs)))
-    }
+    simplifyPredicate(BooleanAnd(Seq(lhs, rhs)))
   }
 
   def and(ands: collection.Seq[IntermediateRepresentation]): IntermediateRepresentation = {
-    if (ands.isEmpty) constant(true)
-    else if (ands.size == 1) ands.head
-    else ands.reduceLeft((l: IntermediateRepresentation, r: IntermediateRepresentation) => and(l, r))
+    simplifyPredicate(BooleanAnd(ands.toSeq))
   }
 
   def or(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation): IntermediateRepresentation = {
-    (lhs, rhs) match {
-      case (Constant(true), _)  => Constant(true)
-      case (_, Constant(true))  => Constant(true)
-      case (Constant(false), _) => simplifyPredicate(rhs)
-      case (_, Constant(false)) => simplifyPredicate(lhs)
-      case (lhsOr: BooleanOr, _) => rhs match {
-          case rhsOr: BooleanOr => BooleanOr(lhsOr.as ++ rhsOr.as)
-          case a                => BooleanOr(lhsOr.as :+ simplifyPredicate(a))
-        }
-      case (_, rhsOr: BooleanOr) => BooleanOr(simplifyPredicate(lhs) +: rhsOr.as)
-      case _                     => BooleanOr(Seq(simplifyPredicate(lhs), simplifyPredicate(rhs)))
-    }
+    simplifyPredicate(BooleanOr(Seq(lhs, rhs)))
   }
 
   def or(ors: collection.Seq[IntermediateRepresentation]): IntermediateRepresentation = {
-    if (ors.isEmpty) constant(true)
-    else ors.reduceLeft(or)
+    simplifyPredicate(BooleanOr(ors.toSeq))
   }
 
   def isNull(test: IntermediateRepresentation): IntermediateRepresentation = IsNull(test)
@@ -1659,16 +1646,7 @@ object IntermediateRepresentation {
     NewArrayDynamicSize(baseType, size)
 
   def not(test: IntermediateRepresentation): IntermediateRepresentation = {
-    @tailrec
-    def simplify(in: IntermediateRepresentation, count: Int = 0): IntermediateRepresentation = in match {
-      case Not(inner)              => simplify(inner, count + 1)
-      case inner if count % 2 == 0 => inner
-      case inner                   => Not(inner)
-    }
-    staticallyKnownPredicate(test) match {
-      case Some(p) => constant(!p)
-      case None    => simplify(Not(test))
-    }
+    simplifyPredicate(Not(test))
   }
 
   def oneTime(expression: IntermediateRepresentation): IntermediateRepresentation = OneTime(expression)(used = false)
@@ -1682,18 +1660,59 @@ object IntermediateRepresentation {
 
   def self[TYPE](implicit typ: Manifest[TYPE]): IntermediateRepresentation = Self(typeRef(typ))
 
-  def booleanValue(ir: IntermediateRepresentation): IntermediateRepresentation =
-    invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), ir)
+  def booleanValue(ir: IntermediateRepresentation): IntermediateRepresentation = {
+    simplifyPredicate(invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), ir))
+  }
+
+  def longValue(ir: IntermediateRepresentation): IntermediateRepresentation =
+    invokeStatic(method[Values, LongValue, Long]("longValue"), ir)
 
   def scalaObjectInstance(instance: AnyRef): IntermediateRepresentation = {
     val typeReference = codegen.TypeReference.typeReference(instance.getClass)
     GetStatic(Some(typeReference), typeReference, "MODULE$")
   }
 
-  private val BOOLEAN_VALUE_TYPE: TypeReference = typeRefOf[BooleanValue]
-  private val VALUES_TYPE: TypeReference = typeRefOf[Values]
+  val NO_VALUE_TYPE: TypeReference = typeRefOf[NoValue]
+  val LONG_VALUE_TYPE: TypeReference = typeRefOf[LongValue]
+  val INT_VALUE_TYPE: TypeReference = typeRefOf[IntValue]
+  val BOOLEAN_VALUE_TYPE: TypeReference = typeRefOf[BooleanValue]
+  val VALUE_TYPE: TypeReference = typeRefOf[Value]
+  val ANY_VALUE_TYPE: TypeReference = typeRefOf[AnyValue]
+  val VALUES_TYPE: TypeReference = typeRefOf[Values]
+  val VALUE_BOOLEAN_LOGIC_TYPE: TypeReference = typeRefOf[ValueBooleanLogic]
 
-  private object BooleanValueFcn {
+  object LongValueFcn {
+
+    def unapply(arg: IntermediateRepresentation): Option[IntermediateRepresentation] = arg match {
+      case InvokeStatic(Method(owner, returnType, "longValue", Seq(inType)), Seq(in))
+        if owner == VALUES_TYPE && returnType == LONG_VALUE_TYPE && inType == TypeReference.LONG =>
+        Some(in)
+      case _ => None
+    }
+  }
+
+  object ReferenceEqualsFcn {
+
+    def unapply(arg: IntermediateRepresentation): Option[(IntermediateRepresentation, IntermediateRepresentation)] =
+      arg match {
+        case Invoke(target, Method(_, returnType, "equals", Seq(inType)), Seq(obj))
+          if returnType == TypeReference.BOOLEAN && inType == TypeReference.OBJECT =>
+          Some((target, obj))
+        case _ => None
+      }
+  }
+
+  object IntValueFcn {
+
+    def unapply(arg: IntermediateRepresentation): Option[IntermediateRepresentation] = arg match {
+      case InvokeStatic(Method(owner, returnType, "intValue", Seq(inType)), Seq(in))
+        if owner == VALUES_TYPE && returnType == INT_VALUE_TYPE && inType == TypeReference.INT =>
+        Some(in)
+      case _ => None
+    }
+  }
+
+  object BooleanValueFcn {
 
     def unapply(arg: IntermediateRepresentation): Option[IntermediateRepresentation] = arg match {
       case InvokeStatic(Method(owner, returnType, "booleanValue", Seq(inType)), Seq(in))
@@ -1703,7 +1722,7 @@ object IntermediateRepresentation {
     }
   }
 
-  private object IsTrueValue {
+  object IsTrueValue {
 
     def unapply(arg: IntermediateRepresentation): Boolean = arg match {
       case GetStatic(Some(owner), t, "TRUE") => owner == VALUES_TYPE && t == BOOLEAN_VALUE_TYPE
@@ -1711,11 +1730,105 @@ object IntermediateRepresentation {
     }
   }
 
-  private def simplifyPredicate(predicate: IntermediateRepresentation): IntermediateRepresentation = predicate match {
-    case Eq(BooleanValueFcn(in), IsTrueValue())                  => in
-    case Eq(IsTrueValue(), BooleanValueFcn(in))                  => in
-    case Eq(Block(others :+ BooleanValueFcn(in)), IsTrueValue()) => Block(others :+ in)
-    case Eq(IsTrueValue(), Block(others :+ BooleanValueFcn(in))) => Block(others :+ in)
-    case other                                                   => other
+  object NotFcn {
+
+    def unapply(arg: IntermediateRepresentation): Option[IntermediateRepresentation] = arg match {
+      case InvokeStatic(Method(owner, returnType, "not", Seq(inType)), Seq(in))
+        if owner == VALUE_BOOLEAN_LOGIC_TYPE && returnType == BOOLEAN_VALUE_TYPE && inType == BOOLEAN_VALUE_TYPE =>
+        Some(in)
+      case _ => None
+    }
+  }
+
+  object CoerceToBooleanFcn {
+
+    def unapply(arg: IntermediateRepresentation): Option[IntermediateRepresentation] = arg match {
+      case InvokeStatic(Method(owner, returnType, "coerceToBoolean", Seq(inType)), Seq(in))
+        if owner == VALUE_BOOLEAN_LOGIC_TYPE && returnType == VALUE_TYPE && inType == ANY_VALUE_TYPE =>
+        Some(in)
+      case _ => None
+    }
+  }
+
+  private val stopper: RewriterStopper = {
+    case _: OneTime => true
+    case _          => false
+  }
+
+  def simplifyPredicate(predicate: IntermediateRepresentation): IntermediateRepresentation = {
+    val rewriter = bottomUp(
+      Rewriter.lift {
+        // booleanValue(a) == Values.TRUE -> a
+        case Eq(BooleanValueFcn(in), IsTrueValue())                  => in
+        case Eq(Block(others :+ BooleanValueFcn(in)), IsTrueValue()) => Block(others :+ in)
+        // Values.TRUE == booleanValue(a) -> a
+        case Eq(IsTrueValue(), BooleanValueFcn(in))                  => in
+        case Eq(IsTrueValue(), Block(others :+ BooleanValueFcn(in))) => Block(others :+ in)
+        // ValueBooleanLogic.not(booleanValue(a)) -> booleanValue(!a)
+        case NotFcn(BooleanValueFcn(in)) => booleanValue(not(in))
+        // !true -> false
+        case Not(Constant(true)) => Constant(false)
+        // !false -> true
+        case Not(Constant(false)) => Constant(true)
+        // !!a -> a
+        case Not(Not(inner)) => inner
+        // !(a==b) -> a != b
+        case Not(Eq(l, r)) => NotEq(l, r)
+        // longValue(a).equals(longValue(b)) -> a == b
+        case ReferenceEqualsFcn(LongValueFcn(l), LongValueFcn(r)) => Eq(l, r)
+        // intValue(a).equals(intValue(b)) -> a == b
+        case ReferenceEqualsFcn(IntValueFcn(l), IntValueFcn(r)) => Eq(l, r)
+        // booleanValue(a).equals(booleanValue(b)) -> a == b
+        case ReferenceEqualsFcn(BooleanValueFcn(l), BooleanValueFcn(r)) => Eq(l, r)
+        // true || a -> true
+        // a || true -> true
+        // false || a -> a
+        // a || false -> a
+        case BooleanOr(ors) =>
+          val reducedBuilder = Seq.newBuilder[IntermediateRepresentation]
+          var seenTrue = false
+          ors.foreach {
+            case Constant(true)   => seenTrue = true
+            case Constant(false)  => // ignore
+            case BooleanOr(inner) => reducedBuilder.addAll(inner)
+            case other            => reducedBuilder += other
+          }
+          val reduced = reducedBuilder.result()
+          if (seenTrue) Constant(true)
+          else if (reduced.isEmpty) Constant(false)
+          else if (reduced.size == 1) reduced.head
+          else BooleanOr(reduced)
+
+        // true && a -> a
+        // a && true -> a
+        // false && a -> false
+        // a && false -> false
+        case BooleanAnd(ands) =>
+          val reducedBuilder = Seq.newBuilder[IntermediateRepresentation]
+          var seenFalse = false
+          ands.foreach {
+            case Constant(false)   => seenFalse = true
+            case Constant(true)    => // ignore
+            case BooleanAnd(inner) => reducedBuilder.addAll(inner)
+            case other             => reducedBuilder += other
+          }
+          val reduced = reducedBuilder.result()
+          if (seenFalse) Constant(false)
+          else if (reduced.isEmpty) Constant(true)
+          else if (reduced.size == 1) reduced.head
+          else BooleanAnd(reduced)
+
+        // if (true) doStuff -> doStuff
+        case Condition(Constant(true), onTrue, _) => onTrue
+        // if (false) doStuff -> doNothing/doElse
+        case Condition(Constant(false), _, maybeOnFalse) => maybeOnFalse.getOrElse(noop())
+        // true ? a : b -> a
+        case Ternary(Constant(true), onTrue, _) => onTrue
+        // false ? a : b -> b
+        case Ternary(Constant(false), _, onFalse) => onFalse
+      },
+      stopper = stopper
+    )
+    rewriter(predicate).asInstanceOf[IntermediateRepresentation]
   }
 }

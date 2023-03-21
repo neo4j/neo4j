@@ -49,6 +49,7 @@ import org.neo4j.codegen.api.IntermediateRepresentation.lessThan
 import org.neo4j.codegen.api.IntermediateRepresentation.lessThanOrEqual
 import org.neo4j.codegen.api.IntermediateRepresentation.load
 import org.neo4j.codegen.api.IntermediateRepresentation.loadField
+import org.neo4j.codegen.api.IntermediateRepresentation.longValue
 import org.neo4j.codegen.api.IntermediateRepresentation.loop
 import org.neo4j.codegen.api.IntermediateRepresentation.method
 import org.neo4j.codegen.api.IntermediateRepresentation.multiply
@@ -220,7 +221,7 @@ class SizeEstimationTest extends CypherFunSuite {
     val instructions =
       block(
         declare[LongValue]("a"),
-        assign("a", invokeStatic(method[Values, LongValue, Long]("longValue"), constant(42L))),
+        assign("a", longValue(constant(42L))),
         invoke(load[AnyRef]("a"), method[Measurable, Long]("estimatedHeapUsage"))
       )
 
