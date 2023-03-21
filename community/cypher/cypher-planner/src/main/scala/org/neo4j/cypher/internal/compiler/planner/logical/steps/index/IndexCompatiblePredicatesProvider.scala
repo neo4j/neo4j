@@ -89,15 +89,26 @@ trait IndexCompatiblePredicatesProvider {
       valid
     )
 
+    // Any predicate may be solved partially (i.e. n.prop IS NOT NULL) by a RANGE index scan.
     val partialCompatiblePredicates = {
+
+      // These are non-RANGE compatible predicates downgraded to a RANGE-scannable predicates.
+      val downgradedToRangeScannable = explicitCompatiblePredicates.collect {
+        case predicate if !predicate.indexRequirements.subsetOf(allPossibleRangeIndexRequirements) =>
+          predicate.convertToRangeScannable
+      }
+
+      // These partial RANGE predicates are already covered by an equivalent or better RANGE-compatible predicate.
       val alreadyCovered = explicitCompatiblePredicates.collect {
         case predicate if predicate.indexRequirements.subsetOf(allPossibleRangeIndexRequirements) =>
           predicate.convertToRangeScannable
       }
-      explicitCompatiblePredicates.collect {
-        case predicate if !predicate.indexRequirements.subsetOf(allPossibleRangeIndexRequirements) =>
-          predicate.convertToRangeScannable
-      } -- alreadyCovered
+
+      // `downgradedToRangeScannable` and `alreadyCovered` might overlap.
+      // For a predicate like n.prop < 'hello', we find two explicit compatible predicates, one RANGE-seekable and one TEXT-scannable.
+      // Downgrading TEXT-scannable to RANGE-scannable produces a predicate that is already covered by our RANGE-seekable predicate.
+      // To avoid considering these redundant predicates - exclude them.
+      downgradedToRangeScannable -- alreadyCovered
     }
 
     explicitCompatiblePredicates ++ implicitCompatiblePredicates ++ partialCompatiblePredicates
