@@ -52,6 +52,7 @@ import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -77,6 +78,7 @@ import org.neo4j.cypher.internal.util.SizeBucket
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -106,6 +108,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   protected val personTextPropIsNotNullSel: Double = 0.1
   protected val personPointPropIsNotNullSel: Double = 0.1
   protected val indexPersonUniqueSel: Double = 1.0 / 180.0
+  protected val indexPersonTextUniqueSel: Double = 1.0 / 60.0
   protected val animalPropIsNotNullSel: Double = 0.5
 
   // RELATIONSHIPS
@@ -119,6 +122,10 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   protected val friendsPropIsNotNullSel: Double = 0.2
   protected val indexFriendsUniqueSel: Double = 1.0 / 180.0
+
+  // EXPRESSIONS
+
+  protected val helloStringLiteral: StringLiteral = literalString("hello")
 
   // RANGE SEEK
 
@@ -1003,7 +1010,10 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   test("isNotNull with one label, empty text index only") {
     val calculator = setUpCalculator(
       labelInfo = nIsPersonLabelInfo,
-      stats = mockStats(indexCardinalities = Map(indexPersonText -> 0.0))
+      stats = mockStats(
+        indexCardinalities = Map(indexPersonText -> 0.0),
+        indexUniqueCardinalities = Map(indexPersonText -> 0.0)
+      )
     )
 
     val labelResult = calculator(nIsPerson.expr)
@@ -1629,6 +1639,23 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     result.factor shouldEqual personTextPropIsNotNullSel
   }
 
+  test("should use text index to calculate selectivity of greater-than with string literal") {
+    val inequality = nPredicate(nAnded(NonEmptyList(
+      greaterThan(nProp, helloStringLiteral)
+    )))
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+
+    val inequalityResult = calculator(inequality.expr)
+
+    inequalityResult.factor should equal(
+      personTextPropIsNotNullSel
+        * (1 - indexPersonTextUniqueSel) // Selectivity for != x
+        * DEFAULT_RANGE_SEEK_FACTOR // Selectivity for range
+        +- 0.00000001
+    )
+  }
+
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {
@@ -1645,6 +1672,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       .addTypeInfo(literalInt(3), CTInteger)
       .addTypeInfo(literalInt(4), CTInteger)
       .addTypeInfo(literalInt(7), CTInteger)
+      .addTypeInfo(helloStringLiteral, CTString)
   }
 
   protected def setUpCalculator(
@@ -1686,7 +1714,11 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       indexPersonPoint -> 100.0,
       indexFriends -> 200.0
     ),
-    indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(indexPersonRange -> 180.0, indexFriends -> 180.0)
+    indexUniqueCardinalities: Map[IndexDescriptor, Double] = Map(
+      indexPersonRange -> 180.0,
+      indexPersonText -> 60.0,
+      indexFriends -> 180.0
+    )
   ) extends GraphStatistics {
 
     // sanity check:
