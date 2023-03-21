@@ -47,7 +47,7 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
  *     <tr>
  *         <td>1</td>
  *         <td>byte</td>
- *         <td>type, {@link LogEntryTypeCodes#DETACHED_CHECK_POINT_V5_7}</td>
+ *         <td>type, {@link LogEntryTypeCodes#CHUNK_START}</td>
  *     </tr>
  *     <tr>
  *         <td>8</td>
@@ -99,9 +99,9 @@ public class ChunkStartLogEntrySerializerV5_7 extends LogEntrySerializer<LogEntr
     }
 
     @Override
-    public int write(KernelVersion version, WritableChannel channel, LogEntryChunkStart logEntry) throws IOException {
+    public int write(WritableChannel channel, LogEntryChunkStart logEntry) throws IOException {
         channel.beginChecksum();
-        writeLogEntryHeader(version, CHUNK_START, channel);
+        writeLogEntryHeader(logEntry.kernelVersion(), CHUNK_START, channel);
         LogPosition previousChunkStart = logEntry.getPreviousBatchLogPosition();
         channel.putLong(logEntry.getTimeWritten())
                 .putLong(logEntry.getChunkId())

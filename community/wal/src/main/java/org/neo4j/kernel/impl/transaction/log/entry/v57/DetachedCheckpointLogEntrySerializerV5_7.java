@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry.v57;
 import static java.lang.Math.min;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.internal.helpers.Numbers.safeCastIntToShort;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0;
 import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
 
 import java.io.IOException;
@@ -35,6 +35,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
+import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
@@ -55,7 +56,7 @@ import org.neo4j.storageengine.api.TransactionId;
  *     <tr>
  *         <td>1</td>
  *         <td>byte</td>
- *         <td>type, {@link LogEntryTypeCodes#DETACHED_CHECK_POINT_V5_7}</td>
+ *         <td>type, {@link LogEntryTypeCodes#DETACHED_CHECK_POINT_V5_0}</td>
  *     </tr>
  *     <tr>
  *         <td>8</td>
@@ -101,17 +102,19 @@ import org.neo4j.storageengine.api.TransactionId;
  *          <td rowspan="3"><strong>Total: 232 bytes</strong></td>
  *     </tr>
  * </table>
+ *
+ * 5.7 Added consensus index to transaction id
  */
-public class DetachedCheckpointLogEntrySerializerV5_7 extends LogEntrySerializer<LogEntryDetachedCheckpointV5_7> {
+public class DetachedCheckpointLogEntrySerializerV5_7 extends LogEntrySerializer<LogEntryDetachedCheckpointV5_0> {
     public static final int RECORD_LENGTH_BYTES = 232;
     public static final int MAX_DESCRIPTION_LENGTH = 108;
 
     public DetachedCheckpointLogEntrySerializerV5_7() {
-        super(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7);
+        super(DETACHED_CHECK_POINT_V5_0);
     }
 
     @Override
-    public LogEntryDetachedCheckpointV5_7 parse(
+    public LogEntryDetachedCheckpointV5_0 parse(
             KernelVersion version,
             ReadableChannel channel,
             LogPositionMarker marker,
@@ -130,15 +133,14 @@ public class DetachedCheckpointLogEntrySerializerV5_7 extends LogEntrySerializer
         channel.get(bytes, MAX_DESCRIPTION_LENGTH);
         String reason = new String(bytes, 0, reasonBytesLength, UTF_8);
         channel.endChecksumAndValidate();
-        return new LogEntryDetachedCheckpointV5_7(
+        return new LogEntryDetachedCheckpointV5_0(
                 version, transactionId, new LogPosition(logVersion, byteOffset), checkpointTimeMillis, storeId, reason);
     }
 
     @Override
-    public int write(KernelVersion version, WritableChannel channel, LogEntryDetachedCheckpointV5_7 logEntry)
-            throws IOException {
+    public int write(WritableChannel channel, LogEntryDetachedCheckpointV5_0 logEntry) throws IOException {
         channel.beginChecksum();
-        writeLogEntryHeader(version, DETACHED_CHECK_POINT_V5_7, channel);
+        writeLogEntryHeader(logEntry.kernelVersion(), DETACHED_CHECK_POINT_V5_0, channel);
         byte[] storeIdBuffer = new byte[MAX_STORE_ID_LENGTH];
         StoreIdSerialization.serializeWithFixedSize(logEntry.getStoreId(), ByteBuffer.wrap(storeIdBuffer));
         byte[] reasonBytes = logEntry.getReason().getBytes();

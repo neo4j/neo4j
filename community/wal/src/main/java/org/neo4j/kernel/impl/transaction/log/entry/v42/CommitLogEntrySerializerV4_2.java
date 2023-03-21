@@ -84,12 +84,12 @@ public class CommitLogEntrySerializerV4_2 extends LogEntrySerializer<LogEntryCom
         long txId = channel.getLong();
         long timeWritten = channel.getLong();
         int checksum = channel.endChecksumAndValidate();
-        return new LogEntryCommit(txId, timeWritten, checksum);
+        return new LogEntryCommit(version, txId, timeWritten, checksum);
     }
 
     @Override
-    public int write(KernelVersion version, WritableChannel channel, LogEntryCommit logEntry) throws IOException {
-        writeLogEntryHeader(version, TX_COMMIT, channel);
+    public int write(WritableChannel channel, LogEntryCommit logEntry) throws IOException {
+        writeLogEntryHeader(logEntry.kernelVersion(), TX_COMMIT, channel);
         channel.putLong(logEntry.getTxId()).putLong(logEntry.getTimeWritten());
         return channel.putChecksum();
     }

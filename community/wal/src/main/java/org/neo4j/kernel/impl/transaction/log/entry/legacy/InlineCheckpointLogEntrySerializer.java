@@ -63,7 +63,7 @@ public class InlineCheckpointLogEntrySerializer extends LogEntrySerializer<Legac
     }
 
     @Override
-    public int write(KernelVersion version, WritableChannel channel, LegacyInlinedCheckPoint logEntry) {
+    public int write(WritableChannel channel, LegacyInlinedCheckPoint logEntry) {
         throw new UnsupportedOperationException("Unable to write inline checkpoints");
     }
 }

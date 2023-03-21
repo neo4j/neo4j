@@ -35,7 +35,7 @@ class LogEntrySerializationSetV5_7 extends LogEntrySerializationSetV5_0 {
         register(new ChunkStartLogEntrySerializerV5_7());
         register(new ChunkEndLogEntrySerializerV5_7());
 
-        register(new DetachedCheckpointLogEntrySerializerV5_7());
+        register(new DetachedCheckpointLogEntrySerializerV5_7(), true);
 
         register(new RollbackLogEntrySerializerV5_7());
     }

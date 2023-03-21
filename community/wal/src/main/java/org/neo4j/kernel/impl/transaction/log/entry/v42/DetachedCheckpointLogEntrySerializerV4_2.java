@@ -121,8 +121,7 @@ public class DetachedCheckpointLogEntrySerializerV4_2 extends LogEntrySerializer
     }
 
     @Override
-    public int write(KernelVersion version, WritableChannel channel, LogEntryDetachedCheckpointV4_2 logEntry)
-            throws IOException {
+    public int write(WritableChannel channel, LogEntryDetachedCheckpointV4_2 logEntry) throws IOException {
         throw new UnsupportedOperationException("Unable to write old detached checkpoint log entry.");
     }
 

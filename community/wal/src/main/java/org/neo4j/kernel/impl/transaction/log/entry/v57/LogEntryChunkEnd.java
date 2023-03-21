@@ -21,15 +21,16 @@ package org.neo4j.kernel.impl.transaction.log.entry.v57;
 
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_END;
 
-import org.neo4j.kernel.impl.transaction.log.entry.AbstractLogEntry;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.AbstractVersionAwareLogEntry;
 
-public class LogEntryChunkEnd extends AbstractLogEntry {
+public class LogEntryChunkEnd extends AbstractVersionAwareLogEntry {
     private final long transactionId;
     private final long chunkId;
     private final int checksum;
 
-    public LogEntryChunkEnd(long transactionId, long chunkId, int checksum) {
-        super(CHUNK_END);
+    public LogEntryChunkEnd(KernelVersion kernelVersion, long transactionId, long chunkId, int checksum) {
+        super(kernelVersion, CHUNK_END);
         this.transactionId = transactionId;
         this.chunkId = chunkId;
         this.checksum = checksum;

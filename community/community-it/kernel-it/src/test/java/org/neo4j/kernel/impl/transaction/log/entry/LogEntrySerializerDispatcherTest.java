@@ -135,7 +135,7 @@ class LogEntrySerializerDispatcherTest {
     @Test
     void parseCommitEntry() throws IOException {
         // given
-        final LogEntryCommit commit = new LogEntryCommit(42, 21, -361070784);
+        final LogEntryCommit commit = new LogEntryCommit(LATEST_KERNEL_VERSION, 42, 21, -361070784);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong(commit.getTxId());

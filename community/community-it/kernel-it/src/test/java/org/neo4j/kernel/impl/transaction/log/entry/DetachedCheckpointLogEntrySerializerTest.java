@@ -52,7 +52,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
-import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryDetachedCheckpointV5_7;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
@@ -185,23 +184,12 @@ class DetachedCheckpointLogEntrySerializerTest {
             throws IOException {
         var transactionId = new TransactionId(70, 80, 90, 10);
         LogPosition logPosition = new LogPosition(100, 200);
-        if (kernelVersion == KernelVersion.V5_7) {
-            LogEntrySerializer<LogEntry> serializer = serializationSet(kernelVersion, LATEST_KERNEL_VERSION)
-                    .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7);
-            serializer.write(
-                    kernelVersion,
-                    channel,
-                    new LogEntryDetachedCheckpointV5_7(
-                            kernelVersion, transactionId, logPosition, 1, TEST_STORE_ID, reason));
-        } else {
-            LogEntrySerializer<LogEntry> serializer = serializationSet(kernelVersion, LATEST_KERNEL_VERSION)
-                    .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0);
-            serializer.write(
-                    kernelVersion,
-                    channel,
-                    new LogEntryDetachedCheckpointV5_0(
-                            kernelVersion, transactionId, logPosition, 1, TEST_STORE_ID, reason));
-        }
+        serializationSet(kernelVersion, LATEST_KERNEL_VERSION)
+                .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0)
+                .write(
+                        channel,
+                        new LogEntryDetachedCheckpointV5_0(
+                                kernelVersion, transactionId, logPosition, 1, TEST_STORE_ID, reason));
     }
 
     private LogEntryDetachedCheckpointV5_0 readCheckpoint(

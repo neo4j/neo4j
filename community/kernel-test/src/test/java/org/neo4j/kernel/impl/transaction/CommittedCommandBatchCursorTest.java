@@ -31,6 +31,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,20 +47,21 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkEnd;
 import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
-import org.neo4j.test.LatestVersions;
 
 class CommittedCommandBatchCursorTest {
     private final ReadableLogChannel channel = mock(ReadableLogChannel.class, RETURNS_MOCKS);
     private final LogEntryReader entryReader = mock(LogEntryReader.class);
 
     private static final LogEntry NULL_ENTRY = null;
-    private static final LogEntryStart START_ENTRY = new LogEntryStart(
-            LatestVersions.LATEST_KERNEL_VERSION, 0L, 0L, 0, encodeLogIndex(2), LogPosition.UNSPECIFIED);
-    private static final LogEntryCommit COMMIT_ENTRY = new LogEntryCommit(42, 0, BASE_TX_CHECKSUM);
+    private static final LogEntryStart START_ENTRY =
+            new LogEntryStart(LATEST_KERNEL_VERSION, 0L, 0L, 0, encodeLogIndex(2), LogPosition.UNSPECIFIED);
+    private static final LogEntryCommit COMMIT_ENTRY =
+            new LogEntryCommit(LATEST_KERNEL_VERSION, 42, 0, BASE_TX_CHECKSUM);
     private static final LogEntryCommand COMMAND_ENTRY = new LogEntryCommand(new TestCommand());
     private static final LogEntryChunkStart CHUNK_START =
-            new LogEntryChunkStart(LatestVersions.LATEST_KERNEL_VERSION, 12, 2, LogPosition.UNSPECIFIED);
-    private static final LogEntryChunkEnd CHUNK_END = new LogEntryChunkEnd(12, 2, BASE_TX_CHECKSUM);
+            new LogEntryChunkStart(LATEST_KERNEL_VERSION, 12, 2, LogPosition.UNSPECIFIED);
+    private static final LogEntryChunkEnd CHUNK_END =
+            new LogEntryChunkEnd(LATEST_KERNEL_VERSION, 12, 2, BASE_TX_CHECKSUM);
     private CommittedCommandBatchCursor cursor;
 
     @BeforeEach

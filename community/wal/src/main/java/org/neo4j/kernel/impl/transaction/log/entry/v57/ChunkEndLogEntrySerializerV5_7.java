@@ -46,7 +46,7 @@ import org.neo4j.storageengine.api.CommandReaderFactory;
  *     <tr>
  *         <td>1</td>
  *         <td>byte</td>
- *         <td>type, {@link LogEntryTypeCodes#CHUNK_START}</td>
+ *         <td>type, {@link LogEntryTypeCodes#CHUNK_END}</td>
  *     </tr>
  *     <tr>
  *         <td>8</td>
@@ -83,12 +83,12 @@ public class ChunkEndLogEntrySerializerV5_7 extends LogEntrySerializer<LogEntryC
         long txId = channel.getLong();
         long chunkId = channel.getLong();
         int checksum = channel.endChecksumAndValidate();
-        return new LogEntryChunkEnd(txId, chunkId, checksum);
+        return new LogEntryChunkEnd(version, txId, chunkId, checksum);
     }
 
     @Override
-    public int write(KernelVersion version, WritableChannel channel, LogEntryChunkEnd logEntry) throws IOException {
-        writeLogEntryHeader(version, CHUNK_END, channel);
+    public int write(WritableChannel channel, LogEntryChunkEnd logEntry) throws IOException {
+        writeLogEntryHeader(logEntry.kernelVersion(), CHUNK_END, channel);
         channel.putLong(logEntry.getTransactionId());
         channel.putLong(logEntry.getChunkId());
         return channel.putChecksum();

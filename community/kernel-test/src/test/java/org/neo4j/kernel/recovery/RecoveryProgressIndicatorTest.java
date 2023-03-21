@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.test.LatestVersions;
 
 class RecoveryProgressIndicatorTest {
 
@@ -59,10 +59,9 @@ class RecoveryProgressIndicatorTest {
         int expectedMax = transactionsToRecover * 2;
         int lastCommittedTransactionId = 14;
         CommittedTransactionRepresentation transactionRepresentation = new CommittedTransactionRepresentation(
-                new LogEntryStart(
-                        LatestVersions.LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                new LogEntryStart(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 emptyList(),
-                new LogEntryCommit(lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM));
+                new LogEntryCommit(LATEST_KERNEL_VERSION, lastCommittedTransactionId, 1L, BASE_TX_CHECKSUM));
         LogPosition transactionLogPosition = new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE);
         LogPosition checkpointLogPosition = new LogPosition(0, CURRENT_FORMAT_LOG_HEADER_SIZE);
         int firstTxIdAfterLastCheckPoint = 10;

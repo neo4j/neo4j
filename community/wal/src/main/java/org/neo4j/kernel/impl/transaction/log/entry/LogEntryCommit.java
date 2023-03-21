@@ -22,14 +22,15 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
 
 import java.util.Objects;
+import org.neo4j.kernel.KernelVersion;
 
-public class LogEntryCommit extends AbstractLogEntry {
+public class LogEntryCommit extends AbstractVersionAwareLogEntry {
     private final long txId;
     private final long timeWritten;
     private final int checksum;
 
-    public LogEntryCommit(long txId, long timeWritten, int checksum) {
-        super(TX_COMMIT);
+    public LogEntryCommit(KernelVersion kernelVersion, long txId, long timeWritten, int checksum) {
+        super(kernelVersion, TX_COMMIT);
         this.txId = txId;
         this.timeWritten = timeWritten;
         this.checksum = checksum;

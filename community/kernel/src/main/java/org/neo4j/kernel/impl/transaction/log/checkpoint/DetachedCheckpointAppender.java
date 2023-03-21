@@ -39,12 +39,9 @@ import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.PhysicalFlushableLogPositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.ReadAheadLogChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializer;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.v50.LogEntryDetachedCheckpointV5_0;
-import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryDetachedCheckpointV5_7;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogChannelAllocator;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesContext;
@@ -170,33 +167,17 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             try {
                 databasePanic.assertNoPanic(IOException.class);
                 var logPositionBeforeCheckpoint = writer.getCurrentLogPosition();
-                if (kernelVersion == KernelVersion.V5_7) {
-                    LogEntrySerializer<LogEntry> select = serializationSet(kernelVersion, latestRecognizedKernelVersion)
-                            .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_7);
-                    select.write(
-                            kernelVersion,
-                            writer,
-                            new LogEntryDetachedCheckpointV5_7(
-                                    kernelVersion,
-                                    transactionId,
-                                    logPosition,
-                                    checkpointTime.toEpochMilli(),
-                                    storeId,
-                                    reason));
-                } else {
-                    LogEntrySerializer<LogEntry> select = serializationSet(kernelVersion, latestRecognizedKernelVersion)
-                            .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0);
-                    select.write(
-                            kernelVersion,
-                            writer,
-                            new LogEntryDetachedCheckpointV5_0(
-                                    kernelVersion,
-                                    transactionId,
-                                    logPosition,
-                                    checkpointTime.toEpochMilli(),
-                                    storeId,
-                                    reason));
-                }
+                serializationSet(kernelVersion, latestRecognizedKernelVersion)
+                        .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0)
+                        .write(
+                                writer,
+                                new LogEntryDetachedCheckpointV5_0(
+                                        kernelVersion,
+                                        transactionId,
+                                        logPosition,
+                                        checkpointTime.toEpochMilli(),
+                                        storeId,
+                                        reason));
 
                 var logPositionAfterCheckpoint = writer.getCurrentLogPosition();
                 logCheckPointEvent.appendToLogFile(logPositionBeforeCheckpoint, logPositionAfterCheckpoint);

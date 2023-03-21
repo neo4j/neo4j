@@ -179,7 +179,7 @@ class TransactionLogsRecoveryTest {
             lastCommittedTxStartEntry = new LogEntryStart(
                     LATEST_KERNEL_VERSION, 2L, 3L, previousChecksum, headerData, lastCommittedTxPosition);
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
-            lastCommittedTxCommitEntry = new LogEntryCommit(4L, 5L, previousChecksum);
+            lastCommittedTxCommitEntry = new LogEntryCommit(LATEST_KERNEL_VERSION, 4L, 5L, previousChecksum);
 
             // check point pointing to the previously committed transaction
             var checkpointFile = logFiles.getCheckpointFile();
@@ -199,7 +199,7 @@ class TransactionLogsRecoveryTest {
                     LATEST_KERNEL_VERSION, 6L, 4L, previousChecksum, headerData, marker.newPosition());
 
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 5L, 7L);
-            expectedCommitEntry = new LogEntryCommit(5L, 7L, previousChecksum);
+            expectedCommitEntry = new LogEntryCommit(LATEST_KERNEL_VERSION, 5L, 7L, previousChecksum);
 
             return true;
         });

@@ -62,7 +62,6 @@ public class LogEntryWriter<T extends WritableChannel> {
         logEntrySerializationSet
                 .select(TX_START)
                 .write(
-                        kernelVersion,
                         channel,
                         new LogEntryStart(
                                 kernelVersion,
@@ -80,10 +79,7 @@ public class LogEntryWriter<T extends WritableChannel> {
 
         logEntrySerializationSet
                 .select(CHUNK_START)
-                .write(
-                        kernelVersion,
-                        channel,
-                        new LogEntryChunkStart(kernelVersion, timeWritten, chunkId, previousChunkStart));
+                .write(channel, new LogEntryChunkStart(kernelVersion, timeWritten, chunkId, previousChunkStart));
     }
 
     public int writeChunkEndEntry(KernelVersion kernelVersion, long transactionId, long chunkId) throws IOException {
@@ -91,7 +87,7 @@ public class LogEntryWriter<T extends WritableChannel> {
 
         return logEntrySerializationSet
                 .select(CHUNK_END)
-                .write(kernelVersion, channel, new LogEntryChunkEnd(transactionId, chunkId, 0));
+                .write(channel, new LogEntryChunkEnd(kernelVersion, transactionId, chunkId, 0));
     }
 
     public int writeRollbackEntry(KernelVersion kernelVersion, long transactionId, long timeWritten)
@@ -100,7 +96,7 @@ public class LogEntryWriter<T extends WritableChannel> {
 
         return logEntrySerializationSet
                 .select(TX_ROLLBACK)
-                .write(kernelVersion, channel, new LogEntryRollback(kernelVersion, transactionId, timeWritten, 0));
+                .write(channel, new LogEntryRollback(kernelVersion, transactionId, timeWritten, 0));
     }
 
     public int writeCommitEntry(KernelVersion kernelVersion, long transactionId, long timeWritten) throws IOException {
@@ -108,7 +104,7 @@ public class LogEntryWriter<T extends WritableChannel> {
 
         return logEntrySerializationSet
                 .select(TX_COMMIT)
-                .write(kernelVersion, channel, new LogEntryCommit(transactionId, timeWritten, 0));
+                .write(channel, new LogEntryCommit(kernelVersion, transactionId, timeWritten, 0));
     }
 
     public void serialize(CommandBatch batch) throws IOException {

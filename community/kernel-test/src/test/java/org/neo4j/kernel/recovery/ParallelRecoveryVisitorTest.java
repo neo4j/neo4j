@@ -26,6 +26,7 @@ import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.impl.transaction.log.LogPosition.UNSPECIFIED;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -75,7 +76,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.LatestVersions;
 
 class ParallelRecoveryVisitorTest {
     private final CursorContextFactory contextFactory =
@@ -235,11 +235,10 @@ class ParallelRecoveryVisitorTest {
 
     private CommittedTransactionRepresentation tx(long txId, List<StorageCommand> commands) {
         commands.forEach(cmd -> ((RecoveryTestBaseCommand) cmd).txId = txId);
-        LogEntryStart startEntry =
-                new LogEntryStart(LatestVersions.LATEST_KERNEL_VERSION, 0, 0, 0, new byte[0], UNSPECIFIED);
+        LogEntryStart startEntry = new LogEntryStart(LATEST_KERNEL_VERSION, 0, 0, 0, new byte[0], UNSPECIFIED);
         CommandBatch txRepresentation = new CompleteTransaction(
-                commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LatestVersions.LATEST_KERNEL_VERSION, AUTH_DISABLED);
-        LogEntryCommit commitEntry = new LogEntryCommit(txId, 0, 0);
+                commands, UNKNOWN_CONSENSUS_INDEX, 0, 0, 0, 0, LATEST_KERNEL_VERSION, AUTH_DISABLED);
+        LogEntryCommit commitEntry = new LogEntryCommit(LATEST_KERNEL_VERSION, txId, 0, 0);
         return new CommittedTransactionRepresentation(startEntry, txRepresentation, commitEntry);
     }
 
@@ -264,7 +263,7 @@ class ParallelRecoveryVisitorTest {
 
         @Override
         public KernelVersion kernelVersion() {
-            return LatestVersions.LATEST_KERNEL_VERSION;
+            return LATEST_KERNEL_VERSION;
         }
 
         abstract void lock(LockService lockService, LockGroup lockGroup);

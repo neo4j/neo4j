@@ -119,7 +119,8 @@ public record CommittedChunkRepresentation(
         if (end instanceof LogEntryChunkEnd endChunk) {
             return endChunk;
         } else if (end instanceof LogEntryCommit commit) {
-            return new LogEntryChunkEnd(commit.getTxId(), chunkStart.getChunkId(), commit.getChecksum());
+            return new LogEntryChunkEnd(
+                    chunkStart.kernelVersion(), commit.getTxId(), chunkStart.getChunkId(), commit.getChecksum());
         } else {
             throw new IllegalArgumentException("Was expecting end record. Actual entry: " + end);
         }

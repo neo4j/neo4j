@@ -109,9 +109,9 @@ public class StartLogEntrySerializerV4_2 extends LogEntrySerializer<LogEntryStar
     }
 
     @Override
-    public int write(KernelVersion version, WritableChannel channel, LogEntryStart logEntry) throws IOException {
+    public int write(WritableChannel channel, LogEntryStart logEntry) throws IOException {
         channel.beginChecksum();
-        writeLogEntryHeader(version, TX_START, channel);
+        writeLogEntryHeader(logEntry.kernelVersion(), TX_START, channel);
         byte[] additionalHeaderData = logEntry.getAdditionalHeader();
         channel.putLong(logEntry.getTimeWritten())
                 .putLong(logEntry.getLastCommittedTxWhenTransactionStarted())

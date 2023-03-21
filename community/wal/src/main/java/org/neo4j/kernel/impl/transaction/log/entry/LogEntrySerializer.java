@@ -68,13 +68,12 @@ public abstract class LogEntrySerializer<T extends LogEntry> {
     /**
      * Write a {@link LogEntry} to a {@code channel}.
      *
-     * @param version this log entry should be formatted for.
-     * @param channel to write entry to.
+     * @param channel  to write entry to.
      * @param logEntry to serialize.
      * @return checksum of the entry, or {@link #NO_RETURN_VALUE} if no checksum is needed.
      * @throws IOException I/O error when writing to the channel.
      */
-    public abstract int write(KernelVersion version, WritableChannel channel, T logEntry) throws IOException;
+    public abstract int write(WritableChannel channel, T logEntry) throws IOException;
 
     public static void writeLogEntryHeader(KernelVersion kernelVersion, byte type, WritableChannel channel)
             throws IOException {

@@ -231,7 +231,7 @@ class BatchingTransactionAppenderTest {
                 0,
                 additionalHeader,
                 LogPosition.UNSPECIFIED);
-        LogEntryCommit commit = new LogEntryCommit(nextTxId, timeCommitted, BASE_TX_CHECKSUM);
+        LogEntryCommit commit = new LogEntryCommit(LATEST_KERNEL_VERSION, nextTxId, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
 
@@ -275,7 +275,8 @@ class BatchingTransactionAppenderTest {
 
         LogEntryStart start = new LogEntryStart(
                 LATEST_KERNEL_VERSION, 0L, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
-        LogEntryCommit commit = new LogEntryCommit(latestCommittedTxWhenStarted + 2, timeCommitted, BASE_TX_CHECKSUM);
+        LogEntryCommit commit = new LogEntryCommit(
+                LATEST_KERNEL_VERSION, latestCommittedTxWhenStarted + 2, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
 
@@ -399,7 +400,7 @@ class BatchingTransactionAppenderTest {
         var transaction = new CommittedTransactionRepresentation(
                 new LogEntryStart(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 singleTestCommand(),
-                new LogEntryCommit(11, 1L, BASE_TX_CHECKSUM));
+                new LogEntryCommit(LATEST_KERNEL_VERSION, 11, 1L, BASE_TX_CHECKSUM));
         TransactionToApply batch = new TransactionToApply(
                 transaction, NULL_CONTEXT, StoreCursors.NULL, transactionCommitment, transactionIdGenerator);
         assertThrows(

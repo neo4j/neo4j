@@ -47,7 +47,7 @@ public class CommandLogEntrySerializerV4_2 extends LogEntrySerializer<LogEntryCo
     }
 
     @Override
-    public int write(KernelVersion version, WritableChannel channel, LogEntryCommand logEntry) throws IOException {
+    public int write(WritableChannel channel, LogEntryCommand logEntry) throws IOException {
         throw new UnsupportedOperationException("Use specialized writer for storage commands.");
     }
 }
