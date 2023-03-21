@@ -1594,7 +1594,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:A)-[]->()", 10)
       .setRelationshipCardinality("(:A)-[]->(:A)", 5)
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatternPathAssignment)
       .enableDeduplicateNames(enable = false)
       .build()
     val query = "MATCH p=(()-[y]->(z))+ RETURN p"
@@ -1644,7 +1643,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:A)-[]->()", 10)
       .setRelationshipCardinality("(:A)-[]->(:A)", 5)
       .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatternPathAssignment)
       .enableDeduplicateNames(enable = false)
       .build()
     val query = "MATCH p=(()-[]->(z))+ RETURN p"
