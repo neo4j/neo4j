@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.index.PropertyIndexTestSupport
-import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
@@ -52,6 +51,7 @@ import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.ValueCategory
 import org.neo4j.values.storable.ValueType
 import org.neo4j.values.storable.Values
+import org.neo4j.values.utils.CypherBoolean
 
 import scala.util.Random
 

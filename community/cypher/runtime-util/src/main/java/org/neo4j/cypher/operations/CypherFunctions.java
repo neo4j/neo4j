@@ -32,6 +32,7 @@ import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
+import static org.neo4j.values.virtual.VirtualValues.asList;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -1358,18 +1359,6 @@ public final class CypherFunctions {
             return list.slice(size + from, to);
         } else {
             return list.slice(size + from, size + to);
-        }
-    }
-
-    public static ListValue asList(AnyValue collection) {
-        if (collection == NO_VALUE) {
-            return VirtualValues.EMPTY_LIST;
-        } else if (collection instanceof ListValue) {
-            return (ListValue) collection;
-        } else if (collection instanceof ArrayValue) {
-            return VirtualValues.fromArray((ArrayValue) collection);
-        } else {
-            return VirtualValues.list(collection);
         }
     }
 

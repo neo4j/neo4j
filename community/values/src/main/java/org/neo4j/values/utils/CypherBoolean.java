@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.operations;
+package org.neo4j.values.utils;
 
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -51,6 +51,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
+import org.neo4j.values.virtual.VirtualValues;
 
 /**
  * This class contains static helper boolean methods used by the compiled expressions
@@ -193,7 +194,7 @@ public final class CypherBoolean {
     public static Value in(AnyValue lhs, AnyValue rhs) {
         assert rhs != NO_VALUE;
 
-        ListValue anyValues = CypherFunctions.asList(rhs);
+        ListValue anyValues = VirtualValues.asList( rhs);
 
         boolean seenUndefined = false;
         for (AnyValue value : anyValues) {

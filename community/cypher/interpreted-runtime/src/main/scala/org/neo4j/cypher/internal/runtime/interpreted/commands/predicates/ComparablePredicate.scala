@@ -28,11 +28,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.operations.CypherBoolean
 import org.neo4j.values.AnyValue
 import org.neo4j.values.Equality
 import org.neo4j.values.storable.Value
 import org.neo4j.values.storable.Values.NO_VALUE
+import org.neo4j.values.utils.CypherBoolean
 
 sealed abstract class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 

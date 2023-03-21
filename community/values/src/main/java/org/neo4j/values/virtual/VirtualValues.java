@@ -20,6 +20,7 @@
 package org.neo4j.values.virtual;
 
 import static org.neo4j.memory.HeapEstimator.sizeOf;
+import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.HashMap;
 import java.util.List;
@@ -224,5 +225,17 @@ public final class VirtualValues {
             boolean isDeleted) {
         return new RelationshipValue.DirectRelationshipValue(
                 id, elementId, startNode, endNode, type, properties, isDeleted);
+    }
+
+    public static ListValue asList(AnyValue collection) {
+        if (collection == NO_VALUE) {
+            return VirtualValues.EMPTY_LIST;
+        } else if (collection instanceof ListValue) {
+            return (ListValue) collection;
+        } else if (collection instanceof ArrayValue) {
+            return VirtualValues.fromArray((ArrayValue) collection);
+        } else {
+            return VirtualValues.list(collection);
+        }
     }
 }
