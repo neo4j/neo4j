@@ -71,6 +71,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
+import org.neo4j.io.locker.FileLockException;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
@@ -122,7 +123,7 @@ class CsvImporter implements Importer {
     private final boolean force;
     private final IncrementalStage incrementalStage;
 
-    private boolean incremental;
+    private final boolean incremental;
 
     private CsvImporter(Builder b) {
         this.databaseLayout = requireNonNull(b.databaseLayout);
@@ -221,7 +222,7 @@ class CsvImporter implements Importer {
                             stdOut,
                             verbose,
                             AdditionalInitialIds.EMPTY,
-                            () -> readLogTailMetaData(storageEngineFactory, logProvider),
+                            () -> readLogTailMetaData(storageEngineFactory),
                             databaseConfig,
                             new PrintingImportLogicMonitor(stdOut, stdErr),
                             jobScheduler,
@@ -264,8 +265,8 @@ class CsvImporter implements Importer {
                 importer.doImport(input);
             }
             success = true;
-        } catch (Exception e) {
-            throw andPrintError("Import error", e, verbose, stdErr);
+        } catch (Exception ex) {
+            throw andPrintError(databaseLayout.getDatabaseName(), ex, verbose, incremental, stdErr);
         } finally {
             long numberOfBadEntries = badCollector.badEntries();
 
@@ -286,8 +287,7 @@ class CsvImporter implements Importer {
         }
     }
 
-    private LogTailMetadata readLogTailMetaData(StorageEngineFactory storageEngineFactory, Log4jLogProvider logProvider)
-            throws IOException {
+    private LogTailMetadata readLogTailMetaData(StorageEngineFactory storageEngineFactory) throws IOException {
         return LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fileSystem)
                 .withStorageEngineFactory(storageEngineFactory)
                 .build()
@@ -296,11 +296,14 @@ class CsvImporter implements Importer {
 
     /**
      * Method name looks strange, but look at how it's used and you'll see why it's named like that.
-     *
-     * @param stackTrace whether or not to also print the stack trace of the error.
+     * @param databaseName the name of the database to receive the import data
+     * @param e the error that occurred
+     * @param stackTrace whether to also print the stack trace of the error.
+     * @param incremental whether the import is incremental
+     * @param err the error output stream
      */
     private static RuntimeException andPrintError(
-            String typeOfError, Exception e, boolean stackTrace, PrintStream err) {
+            String databaseName, Exception e, boolean stackTrace, boolean incremental, PrintStream err) {
         // List of common errors that can be explained to the user
         if (DuplicateInputIdException.class.equals(e.getClass())) {
             printErrorMessage(
@@ -313,6 +316,13 @@ class CsvImporter implements Importer {
         } else if (DirectoryNotEmptyException.class.equals(e.getClass())) {
             printErrorMessage(
                     "Database already exist. Re-run with `--overwrite-destination` to remove the database prior to import",
+                    e,
+                    stackTrace,
+                    err);
+        } else if (FileLockException.class.equals(e.getClass())) {
+            printErrorMessage(
+                    "%s can only be run against a database which is offline. The current state of database '%s' is online."
+                            .formatted(incremental ? "Incremental import" : "Import", databaseName),
                     e,
                     stackTrace,
                     err);
@@ -334,7 +344,7 @@ class CsvImporter implements Importer {
         }
         // Fallback to printing generic error and stack trace
         else {
-            printErrorMessage(typeOfError + ": " + e.getMessage(), e, true, err);
+            printErrorMessage("Import error: " + e.getMessage(), e, true, err);
         }
         err.println();
 
@@ -401,7 +411,7 @@ class CsvImporter implements Importer {
         if (k instanceof String) {
             return ((String) k).isEmpty();
         } else if (k instanceof Set) {
-            return ((Set) k).isEmpty();
+            return ((Set<?>) k).isEmpty();
         }
         return false;
     }
@@ -630,6 +640,6 @@ class CsvImporter implements Importer {
         /**
          * Performs a full incremental import including all steps involved.
          */
-        all;
+        all
     }
 }
