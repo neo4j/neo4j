@@ -569,14 +569,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .addConstraint(min(-1))
             .build();
 
-    @Internal
-    @Description(
-            "Normally, each database has its own query cache, but they are all controlled by the same settings. "
-                    + "This means that the space allocated by caches grows by the number of databases although the setting remains untouched. At the same time, this means that one cannot cater well for very different databases, which might use more or less query cache. "
-                    + "This setting allows the databases to share the cache size while still being logically separated, which leads to a more dynamic cache allocation per database.")
-    public static final Setting<Boolean> enable_unified_query_caches =
-            newBuilder("internal.dbms.enable_unified_query_caches", BOOL, false).build();
-
     /**
      * Block size properties values depends from selected record format.
      * We can't figured out record format until it will be selected by corresponding edition.

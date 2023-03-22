@@ -600,6 +600,7 @@ public final class SettingMigrators {
             migrateDefaultDatabaseSetting(values, defaultValues, log);
             migrateDatabaseMaxSize(values, defaultValues, log);
             migrateCypherNamespace(values, defaultValues, log);
+            migrateCypherQueryCacheSize(values, defaultValues, log);
             migrateTxStateAndLogsSettings(values, defaultValues, log);
             migrateTransactionAndTrackingSettings(values, defaultValues, log);
             migrateGcLogsSettings(values, defaultValues, log);
@@ -942,6 +943,11 @@ public final class SettingMigrators {
             migrateSettingNameChange(values, log, "cypher.render_plan_description", cypher_render_plan_descriptions);
             migrateSettingNameChange(
                     values, log, "cypher.statistics_divergence_threshold", query_statistics_divergence_threshold);
+        }
+
+        private static void migrateCypherQueryCacheSize(
+                Map<String, String> values, Map<String, String> defaultValues, InternalLog log) {
+            migrateSettingNameChange(values, log, "server.db.query_cache_size", query_cache_size);
         }
     }
 

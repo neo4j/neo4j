@@ -24,6 +24,7 @@ import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 import java.time.Clock;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.CommunityCompilerFactory;
 import org.neo4j.cypher.internal.CompilerFactory;
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider;
@@ -31,7 +32,6 @@ import org.neo4j.cypher.internal.cache.CacheFactory;
 import org.neo4j.cypher.internal.cache.CaffeineCacheFactory;
 import org.neo4j.cypher.internal.cache.CypherQueryCaches;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
-import org.neo4j.cypher.internal.cache.SharedExecutorBasedCaffeineCacheFactory;
 import org.neo4j.cypher.internal.compiler.CypherPlannerConfiguration;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration;
@@ -57,6 +57,14 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
                 queryService, spi.monitors(), spi.logProvider(), plannerConfig, runtimeConfig, queryCaches);
     }
 
+    protected CacheFactory getCacheFactory(Dependencies deps, SPI spi) {
+        return makeNonUnifiedCacheFactory(spi);
+    }
+
+    protected int getCacheSize(SPI spi) {
+        return spi.config().get(GraphDatabaseSettings.query_cache_size);
+    }
+
     @Override
     protected QueryExecutionEngine createEngine(
             Dependencies deps, GraphDatabaseAPI graphAPI, boolean isSystemDatabase, SPI spi) {
@@ -66,15 +74,12 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
         CypherPlannerConfiguration plannerConfig =
                 CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), isSystemDatabase);
         CypherRuntimeConfiguration runtimeConfig = CypherRuntimeConfiguration.fromCypherConfiguration(cypherConfig);
-        CacheFactory cacheFactory;
-        if (spi.config().get(GraphDatabaseInternalSettings.enable_unified_query_caches)) {
-            cacheFactory = deps.resolveDependency(SharedExecutorBasedCaffeineCacheFactory.class);
-        } else {
-            cacheFactory = makeNonUnifiedCacheFactory(spi);
-        }
+        CacheFactory cacheFactory = getCacheFactory(deps, spi);
         Clock clock = Clock.systemUTC();
+        int cacheSize = getCacheSize(spi);
 
-        CypherQueryCaches queryCaches = makeCypherQueryCaches(spi, queryService, cypherConfig, cacheFactory, clock);
+        CypherQueryCaches queryCaches =
+                makeCypherQueryCaches(spi, queryService, cypherConfig, cacheSize, cacheFactory, clock);
         CompilerFactory compilerFactory =
                 makeCompilerFactory(queryService, spi, plannerConfig, runtimeConfig, queryCaches);
         deps.satisfyDependency(queryCaches.statistics());
@@ -83,7 +88,7 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
             CypherPlannerConfiguration innerPlannerConfig =
                     CypherPlannerConfiguration.fromCypherConfiguration(cypherConfig, spi.config(), false);
             CypherQueryCaches innerQueryCaches =
-                    makeCypherQueryCaches(spi, queryService, cypherConfig, cacheFactory, clock);
+                    makeCypherQueryCaches(spi, queryService, cypherConfig, cacheSize, cacheFactory, clock);
             CompilerFactory innerCompilerFactory =
                     makeCompilerFactory(queryService, spi, innerPlannerConfig, runtimeConfig, innerQueryCaches);
             return new SystemExecutionEngine(
@@ -105,10 +110,11 @@ public class CommunityCypherEngineProvider extends QueryEngineProvider {
             SPI spi,
             GraphDatabaseCypherService queryService,
             CypherConfiguration cypherConfig,
+            int cacheSize,
             CacheFactory cacheFactory,
             Clock clock) {
         return new CypherQueryCaches(
-                new CypherQueryCaches.Config(cypherConfig),
+                new CypherQueryCaches.Config(cypherConfig, cacheSize),
                 new LastCommittedTxIdProvider(queryService),
                 cacheFactory,
                 clock,

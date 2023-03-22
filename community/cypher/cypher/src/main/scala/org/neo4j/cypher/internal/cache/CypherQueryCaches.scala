@@ -85,8 +85,8 @@ object CypherQueryCaches {
   ) {
 
     // Java helper
-    def this(cypherConfig: CypherConfiguration) = this(
-      cypherConfig.queryCacheSize,
+    def this(cypherConfig: CypherConfiguration, cacheSize: Int) = this(
+      cacheSize,
       ExecutionPlanCacheSize.fromInt(cypherConfig.executionPlanCacheSize),
       cypherConfig.statsDivergenceCalculator,
       cypherConfig.enableMonitors
@@ -96,7 +96,10 @@ object CypherQueryCaches {
   object Config {
 
     def fromCypherConfiguration(cypherConfig: CypherConfiguration) =
-      new Config(cypherConfig)
+      new Config(cypherConfig, cypherConfig.queryCacheSize)
+
+    def fromCypherConfiguration(cypherConfig: CypherConfiguration, cacheSize: Int) =
+      new Config(cypherConfig, cacheSize)
 
     sealed trait ExecutionPlanCacheSize
 

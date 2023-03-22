@@ -469,6 +469,18 @@ class SettingMigratorsTest {
     }
 
     @Test
+    void migrateCypherQueryCacheSizeSetting() throws IOException {
+        Path confFile = testDirectory.createFile("test.conf");
+        Files.write(confFile, List.of("server.db.query_cache_size=100"));
+
+        Config config = Config.newBuilder().fromFile(confFile).build();
+        var logProvider = new AssertableLogProvider();
+        config.setLogger(logProvider.getLog(Config.class));
+
+        assertEquals(100, config.get(query_cache_size));
+    }
+
+    @Test
     void migrateTxLogsAndStateSettings() throws IOException {
         Path confFile = testDirectory.createFile("test.conf");
         Files.write(

@@ -267,11 +267,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<Boolean> cypher_lenient_create_relationship =
             newBuilder("dbms.cypher.lenient_create_relationship", BOOL, false).build();
 
-    @Description("The number of cached Cypher query execution plans per database. "
-            + "The max number of query plans that can be kept in cache is the `number of databases` * `server.db.query_cache_size`. "
-            + "With 10 databases and `server.db.query_cache_size`=1000, the caches can keep 10000 plans in total on the instance, "
-            + "assuming that each DB receives queries that fill up its cache. ")
-    public static final Setting<Integer> query_cache_size = newBuilder("server.db.query_cache_size", INT, 1000)
+    @Description(
+            "The number of cached queries per database. "
+                    + "The max number of queries that can be kept in a cache is `number of databases` * `server.memory.query_cache.per_db_cache_num_entries`. "
+                    + "With 10 databases and `server.memory.query_cache.per_db_cache_num_entries`=1000, the cache can keep 10000 plans in total. "
+                    + "This setting is only deciding cache size when `server.memory.query_cache.sharing_enabled` is set to `false`.")
+    public static final Setting<Integer> query_cache_size = newBuilder(
+                    "server.memory.query_cache.per_db_cache_num_entries", INT, 1000)
             .addConstraint(min(0))
             .build();
 
