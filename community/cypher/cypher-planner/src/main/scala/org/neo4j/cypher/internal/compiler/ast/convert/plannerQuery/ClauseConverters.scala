@@ -353,7 +353,9 @@ object ClauseConverters {
     // We need this locally to avoid creating nodes twice if they occur
     // multiple times in this clause, but haven't occured before
     val seenPatternNodes = mutable.Set[String]()
-    seenPatternNodes ++= builder.allSeenPatternNodes
+    // If the variable is both an argument and appears in a CREATE pattern it has to be a node,
+    // otherwise SemanticAnalysis would already have failed.
+    seenPatternNodes ++= builder.lastQGNodesAndArguments
 
     clause.pattern.patternParts.foreach {
       // CREATE (n :L1:L2 {prop: 42})
@@ -670,14 +672,16 @@ object ClauseConverters {
         // remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)
 
-        val seenPatternNodes = builder.allSeenPatternNodes
+        // If the variable is both an argument and appears in a node pattern in a MERGE, it has to be a node,
+        // otherwise SemanticAnalysis would already have failed.
+        val seenPatternNodesAndArguments = builder.lastQGNodesAndArguments
         // create nodes that are not already matched or created
         val nodesToCreate = dedupedNodes.filterNot {
-          case CreateNodeCommand(pattern, _) => seenPatternNodes(pattern.idName)
+          case CreateNodeCommand(pattern, _) => seenPatternNodesAndArguments(pattern.idName)
         }
         // we must check that we are not trying to set a pattern or label on any already created nodes
         val nodesCreatedBefore = dedupedNodes.filter {
-          case CreateNodeCommand(pattern, _) => seenPatternNodes(pattern.idName)
+          case CreateNodeCommand(pattern, _) => seenPatternNodesAndArguments(pattern.idName)
         }.toSet
 
         nodesCreatedBefore.collectFirst {

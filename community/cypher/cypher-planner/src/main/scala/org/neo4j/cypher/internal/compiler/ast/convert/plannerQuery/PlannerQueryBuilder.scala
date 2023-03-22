@@ -102,9 +102,9 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
 
   def currentQueryGraph: QueryGraph = q.lastQueryGraph
 
-  def allSeenPatternNodes: collection.Set[String] = {
+  def lastQGNodesAndArguments: collection.Set[String] = {
     val qg = q.lastQueryGraph
-    qg.allPatternNodes ++ qg.argumentIds.filter(semanticTable.containsNode)
+    qg.allPatternNodes ++ qg.argumentIds
   }
 
   def readOnly: Boolean = q.queryGraph.readOnly
