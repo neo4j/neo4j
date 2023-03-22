@@ -27,12 +27,15 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.Size
+import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
+import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
@@ -40,6 +43,7 @@ import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.Projection
@@ -59,28 +63,40 @@ import scala.collection.mutable
 
 case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
 
-  private case class DistinctHorizon(dependencies: Set[String], aggregatingPlan: AggregatingPlan) {
+  sealed private trait HorizonPlan {
+    def aggregationExpressions: Map[String, Expression]
+  }
+
+  private case class AggregatingHorizonPlan(aggregatingPlan: AggregatingPlan) extends HorizonPlan {
+    override def aggregationExpressions: Map[String, Expression] = aggregatingPlan.aggregationExpressions
+  }
+
+  private case class ApplyHorizonPlan(applyPlan: AbstractSemiApply) extends HorizonPlan {
+    override def aggregationExpressions: Map[String, Expression] = Map.empty
+  }
+
+  private case class DistinctHorizon(dependencies: Set[String], horizonPlan: HorizonPlan) {
 
     private lazy val (
       allDependenciesMinusMinPath: Set[String],
       allDependencies: Set[String],
       minPathExpressions: Map[String, Expression]
     ) = {
-      if (aggregatingPlan == null) {
+      if (horizonPlan == null) {
         (null, null, null)
       } else {
         val (_minPath, _rest) =
-          aggregatingPlan.aggregationExpressions.partition(x => DistinctHorizon.isMinPathLength(x._2))
+          horizonPlan.aggregationExpressions.partition(x => DistinctHorizon.isMinPathLength(x._2))
         val _aggregatingDependenciesMinusMinPath = _rest.values.flatMap(_.dependencies.map(_.name)).toSet
         (
           dependencies ++ _aggregatingDependenciesMinusMinPath,
-          dependencies ++ aggregatingPlan.aggregationExpressions.values.flatMap(_.dependencies.map(_.name)).toSet,
+          dependencies ++ horizonPlan.aggregationExpressions.values.flatMap(_.dependencies.map(_.name)).toSet,
           _minPath
         )
       }
     }
 
-    def isInDistinctHorizon: Boolean = aggregatingPlan != null
+    def isInDistinctHorizon: Boolean = horizonPlan != null
 
     def getRewrite(expand: VarExpand): VarExpandRewrite = {
       if (canReplaceWithBfsPruning(expand)) {
@@ -105,10 +121,11 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           }
         }
 
-        if (rewrittenMinPathExpressions.nonEmpty) {
-          RewriteToBfsWithDepth(distanceName, rewrittenMinPathExpressions.toMap)
-        } else {
-          RewriteToBfs
+        horizonPlan match {
+          case AggregatingHorizonPlan(aggregatingPlan) if rewrittenMinPathExpressions.nonEmpty =>
+            RewriteToBfsWithDepth(distanceName, rewrittenMinPathExpressions.toMap, aggregatingPlan)
+          case _ =>
+            RewriteToBfs
         }
       } else if (canReplaceWithPruning(expand)) {
         RewriteToPruning
@@ -121,7 +138,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
      * @return true if it is safe to rewrite this [[VarExpand]] to a [[BFSPruningVarExpand]]
      */
     private def canReplaceWithBfsPruning(expand: VarExpand): Boolean = {
-      aggregatingPlan != null &&
+      horizonPlan != null &&
       expand.length.min <= 1 &&
       validMaxLength(expand, requireMaxLength = false) &&
       !allDependenciesMinusMinPath(expand.relName)
@@ -131,7 +148,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
      * @return true if it is safe to rewrite this [[VarExpand]] to a [[PruningVarExpand]]
      */
     private def canReplaceWithPruning(expand: VarExpand): Boolean = {
-      aggregatingPlan != null &&
+      horizonPlan != null &&
       validMaxLength(expand, requireMaxLength = true) &&
       !allDependencies(expand.relName)
     }
@@ -159,6 +176,15 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
   private object DistinctHorizon {
     val empty: DistinctHorizon = DistinctHorizon(Set.empty, null)
 
+    def create(dependencies: Set[String], plan: LogicalPlan): DistinctHorizon = plan match {
+      case aggregatingPlan: AggregatingPlan =>
+        DistinctHorizon(dependencies, AggregatingHorizonPlan(aggregatingPlan))
+      case apply: AbstractSemiApply =>
+        DistinctHorizon(dependencies, ApplyHorizonPlan(apply))
+      case _ =>
+        throw new IllegalArgumentException(s"Plan must be an AggregatingPlan or AbstractSemiApply but was: $plan")
+    }
+
     def isDistinct(e: Expression): Boolean = e match {
       case f: FunctionInvocation => f.distinct
       case _                     => false
@@ -177,8 +203,11 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
 
   case object RewriteToBfs extends VarExpandRewrite
 
-  case class RewriteToBfsWithDepth(distanceName: String, newAggregationExpressions: Map[String, Expression])
-      extends VarExpandRewrite
+  case class RewriteToBfsWithDepth(
+    distanceName: String,
+    newAggregationExpressions: Map[String, Expression],
+    aggregatingPlan: AggregatingPlan
+  ) extends VarExpandRewrite
 
   case object NoRewrite extends VarExpandRewrite
 
@@ -200,7 +229,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
             DistinctHorizon.isDistinct(e) || DistinctHorizon.isMinPathLength(e)
           ) =>
           val groupingDependencies = aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
-          DistinctHorizon(groupingDependencies, aggPlan)
+          DistinctHorizon.create(groupingDependencies, aggPlan)
 
         case expand: VarExpand =>
           distinctHorizon.getRewrite(expand) match {
@@ -210,11 +239,11 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
             case RewriteToBfs =>
               bfsPruningExpands.put(expand, None)
               distinctHorizon
-            case RewriteToBfsWithDepth(distanceName, newAggregationExpressions) =>
+            case RewriteToBfsWithDepth(distanceName, newAggregationExpressions, aggregatingPlan) =>
               bfsPruningExpands.put(expand, Some(distanceName))
-              replacementAggregatingPlans.updateWith(distinctHorizon.aggregatingPlan)({
+              replacementAggregatingPlans.updateWith(aggregatingPlan)({
                 case Some(aggregationExpressions) => Some(aggregationExpressions ++ newAggregationExpressions)
-                case None => Some(distinctHorizon.aggregatingPlan.aggregationExpressions ++ newAggregationExpressions)
+                case None => Some(distinctHorizon.horizonPlan.aggregationExpressions ++ newAggregationExpressions)
               })
               distinctHorizon
             case NoRewrite =>
@@ -274,13 +303,12 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
            * An exception to this rule is if those variables are used in the predicate of [[ValueHashJoin]], but these dependencies are tracked elsewhere.
            */
           (newDistinctHorizon, newDistinctHorizon)
-        case _: SemiApply |
-          _: AntiSemiApply =>
+        case apply: AbstractSemiApply =>
           /**
            * For predicate-type binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
            * Because the rows of RHS are never passed downstream, the LHS is traversed with same horizon.
            */
-          (newDistinctHorizon, DistinctHorizon.empty)
+          (newDistinctHorizon, DistinctHorizon.create(Set.empty, apply))
         case _: LogicalBinaryPlan =>
           /**
            * For binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
