@@ -1007,7 +1007,8 @@ final case class AlterDatabase(
   access: Option[Access],
   topology: Option[Topology],
   options: Options,
-  optionsToRemove: Set[String]
+  optionsToRemove: Set[String],
+  waitUntilComplete: WaitUntilComplete
 )(
   val position: InputPosition
 ) extends WriteAdministrationCommand {

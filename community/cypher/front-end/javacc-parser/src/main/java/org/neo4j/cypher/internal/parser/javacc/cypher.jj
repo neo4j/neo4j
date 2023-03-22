@@ -5936,6 +5936,7 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
     Token key = null;
     Token remove = null;
     EXPRESSION value = null;
+    WAIT_CLAUSE wait = astFactory.wait( false, -1 );
 }
 {
     <DATABASE>
@@ -5969,6 +5970,7 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
         }
       ))+
     )
+    ( wait=WaitClause() )?
     {
         return astFactory.alterDatabase(
             pos( start ),
@@ -5978,7 +5980,8 @@ ADMINISTRATION_COMMAND AlterDatabase( Token start ) throws Exception:
             (primaries != null) ? Integer.parseInt(primaries.image) : null,
             (secondaries != null) ? Integer.parseInt(secondaries.image) : null,
             options,
-            optionsToRemove);
+            optionsToRemove,
+            wait);
     }
 }
 

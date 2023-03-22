@@ -687,13 +687,13 @@ case class Prettifier(
             s"${x.name} ${Prettifier.escapeName(dbName)} IF EXISTS DUMP DATA${waitUntilComplete.name}"
         }
 
-      case x @ AlterDatabase(dbName, ifExists, access, topology, options, optionsToRemove) =>
+      case x @ AlterDatabase(dbName, ifExists, access, topology, options, optionsToRemove, waitUntilComplete) =>
         val maybeAccessString = access.map(getAccessString).getOrElse("")
         val maybeIfExists = if (ifExists) " IF EXISTS" else ""
         val maybeTopologyString = topology.map(topo => s" SET${Prettifier.extractTopology(topo)}").getOrElse("")
         val formattedOptions = asIndividualOptions(options)
         val formattedOptionsToRemove = optionsToRemove.map(o => s" REMOVE OPTION ${backtick(o)}").mkString("")
-        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists$maybeAccessString$maybeTopologyString$formattedOptions$formattedOptionsToRemove"
+        s"${x.name} ${Prettifier.escapeName(dbName)}$maybeIfExists$maybeAccessString$maybeTopologyString$formattedOptions$formattedOptionsToRemove${waitUntilComplete.name}"
 
       case x @ StartDatabase(dbName, waitUntilComplete) =>
         s"${x.name} ${Prettifier.escapeName(dbName)}${waitUntilComplete.name}"

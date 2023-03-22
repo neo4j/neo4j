@@ -608,7 +608,8 @@ public interface ASTFactory<
             Integer topologyPrimaries,
             Integer topologySecondaries,
             Map<String, EXPRESSION> options,
-            Set<String> optionsToRemove);
+            Set<String> optionsToRemove,
+            WAIT_CLAUSE waitClause);
 
     ADMINISTRATION_COMMAND showDatabase(
             POS p, DATABASE_SCOPE scope, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);

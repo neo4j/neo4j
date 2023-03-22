@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.procs
 
+import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
 import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
@@ -109,8 +110,20 @@ case class WaitReconciliationExecutionPlan(
     try {
       val tx = tc.transaction()
       val securityContext = tc.securityContext()
-      val (updatedParams, notifications) =
-        parameterTransformer.transform(tx, securityContext, systemParams.updatedWith(ctx.contextVars), params)
+      val (updatedParams, notifications) = parameterTransformer
+        .transform(
+          tx,
+          securityContext,
+          systemParams.updatedWith(ctx.contextVars)
+            .updatedWith(VirtualValues.map(
+              // For START / STOP / CREATE database / Server commands, lookup the database UUID via the alias in the wait query
+              // For DROP, it won't be there but we pass it through the SystemUpdateCountingQueryContext when
+              // it is dropped
+              Array(internalKey("databaseUuid"), internalKey("deletedDatabaseName")),
+              Array(Values.NO_VALUE, Values.NO_VALUE)
+            )),
+          params
+        )
 
       // We can't wait for a transaction from the same transaction so commit the existing transaction
       // and start a new one like PERIODIC COMMIT does

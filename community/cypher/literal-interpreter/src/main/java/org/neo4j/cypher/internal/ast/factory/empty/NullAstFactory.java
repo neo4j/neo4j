@@ -1263,7 +1263,8 @@ public class NullAstFactory
             Integer topologyPrimaries,
             Integer topologySecondaries,
             Map<String, NULL> options,
-            Set<String> optionsToRemove) {
+            Set<String> optionsToRemove,
+            NULL waitClause) {
         return null;
     }
 

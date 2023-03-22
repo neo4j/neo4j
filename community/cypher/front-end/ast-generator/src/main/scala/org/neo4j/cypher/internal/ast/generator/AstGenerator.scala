@@ -2290,7 +2290,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     optionsToRemove <- _optionsToRemove(hasSetClause =
       access.nonEmpty || topology.nonEmpty || (!options.equals(NoOptions))
     )
-  } yield AlterDatabase(dbName, ifExists, access, topology, options, optionsToRemove)(pos)
+    wait <- _waitUntilComplete
+  } yield AlterDatabase(dbName, ifExists, access, topology, options, optionsToRemove, wait)(pos)
 
   def _startDatabase: Gen[StartDatabase] = for {
     dbName <- _databaseName

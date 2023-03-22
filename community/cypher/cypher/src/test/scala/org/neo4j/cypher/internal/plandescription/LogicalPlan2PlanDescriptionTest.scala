@@ -155,7 +155,7 @@ import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDatabaseAction
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActions
 import org.neo4j.cypher.internal.logical.plans.AssertAllowedDbmsActionsOrSelf
-import org.neo4j.cypher.internal.logical.plans.AssertNotBlockedDatabaseManagement
+import org.neo4j.cypher.internal.logical.plans.AssertManagementActionNotBlocked
 import org.neo4j.cypher.internal.logical.plans.AssertNotBlockedDropAlias
 import org.neo4j.cypher.internal.logical.plans.AssertNotBlockedRemoteAliasManagement
 import org.neo4j.cypher.internal.logical.plans.AssertNotCurrentUser
@@ -5708,7 +5708,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       adminPlanDescription
     )
 
-    assertGood(attach(AssertNotBlockedDatabaseManagement(CreateDatabaseAction), 1.0), adminPlanDescription)
+    assertGood(attach(AssertManagementActionNotBlocked(CreateDatabaseAction), 1.0), adminPlanDescription)
 
     assertGood(attach(AssertNotBlockedRemoteAliasManagement(), 1.0), adminPlanDescription)
 

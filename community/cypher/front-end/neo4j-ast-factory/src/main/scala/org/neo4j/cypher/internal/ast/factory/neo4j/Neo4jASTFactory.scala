@@ -2347,7 +2347,8 @@ class Neo4jASTFactory(query: String)
     topologyPrimaries: Integer,
     topologySecondaries: Integer,
     options: util.Map[String, Expression],
-    optionsToRemove: util.Set[String]
+    optionsToRemove: util.Set[String],
+    waitClause: WaitUntilComplete
   ): AlterDatabase = {
     val access = Option(accessType) map {
       case READ_ONLY  => ReadOnlyAccess
@@ -2364,7 +2365,8 @@ class Neo4jASTFactory(query: String)
       access,
       if (primaryOpt.nonEmpty || secondaryOpt.nonEmpty) Some(Topology(primaryOpt, secondaryOpt)) else None,
       opts,
-      optsToRemove
+      optsToRemove,
+      waitClause
     )(p)
   }
 

@@ -208,7 +208,7 @@ case class AssertNotCurrentUser(
   violationMessage: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
-case class AssertNotBlockedDatabaseManagement(action: AdministrationAction)(implicit idGen: IdGen) extends PrivilegePlan
+case class AssertManagementActionNotBlocked(action: AdministrationAction)(implicit idGen: IdGen) extends PrivilegePlan
 case class AssertNotBlockedRemoteAliasManagement()(implicit idGen: IdGen) extends PrivilegePlan
 
 case class AssertNotBlockedDropAlias(aliasName: DatabaseName)(implicit idGen: IdGen)

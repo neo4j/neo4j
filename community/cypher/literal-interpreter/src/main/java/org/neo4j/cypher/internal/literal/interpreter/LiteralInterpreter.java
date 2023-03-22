@@ -920,7 +920,8 @@ public class LiteralInterpreter
             Integer topologyPrimaries,
             Integer topologySecondaries,
             Map<String, Object> options,
-            Set<String> optionsToRemove) {
+            Set<String> optionsToRemove,
+            NULL waitClause) {
         throw new UnsupportedOperationException("alterDatabase is not a literal");
     }
 

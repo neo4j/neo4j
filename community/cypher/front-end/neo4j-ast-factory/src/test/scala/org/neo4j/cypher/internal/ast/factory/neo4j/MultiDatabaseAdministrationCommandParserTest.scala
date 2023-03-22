@@ -767,7 +767,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
     case (accessKeyword, accessType) =>
       test(s"ALTER DATABASE foo SET ACCESS $accessKeyword") {
         assertAst(
-          ast.AlterDatabase(literalFoo, ifExists = false, Some(accessType), None, NoOptions, Set.empty)(defaultPos)
+          ast.AlterDatabase(literalFoo, ifExists = false, Some(accessType), None, NoOptions, Set.empty, ast.NoWait)(
+            defaultPos
+          )
         )
       }
 
@@ -778,7 +780,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
           Some(accessType),
           None,
           NoOptions,
-          Set.empty
+          Set.empty,
+          ast.NoWait
         )(
           defaultPos
         ))
@@ -786,7 +789,15 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
       test(s"ALTER DATABASE `foo.bar` SET ACCESS $accessKeyword") {
         assertAst(
-          ast.AlterDatabase(literal("foo.bar"), ifExists = false, Some(accessType), None, NoOptions, Set.empty)(
+          ast.AlterDatabase(
+            literal("foo.bar"),
+            ifExists = false,
+            Some(accessType),
+            None,
+            NoOptions,
+            Set.empty,
+            ast.NoWait
+          )(
             defaultPos
           )
         )
@@ -794,7 +805,15 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
       test(s"USE system ALTER DATABASE foo SET ACCESS $accessKeyword") {
         // can parse USE clause, but is not included in AST
-        assertAst(ast.AlterDatabase(literalFoo, ifExists = false, Some(accessType), None, NoOptions, Set.empty)((
+        assertAst(ast.AlterDatabase(
+          literalFoo,
+          ifExists = false,
+          Some(accessType),
+          None,
+          NoOptions,
+          Set.empty,
+          ast.NoWait
+        )((
           1,
           12,
           11
@@ -803,7 +822,9 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
       test(s"ALTER DATABASE foo IF EXISTS SET ACCESS $accessKeyword") {
         assertAst(
-          ast.AlterDatabase(literalFoo, ifExists = true, Some(accessType), None, NoOptions, Set.empty)(defaultPos)
+          ast.AlterDatabase(literalFoo, ifExists = true, Some(accessType), None, NoOptions, Set.empty, ast.NoWait)(
+            defaultPos
+          )
         )
       }
   }
@@ -862,7 +883,10 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   // Wrong order between IF EXISTS and SET
   test("ALTER DATABASE foo SET ACCESS READ ONLY IF EXISTS") {
-    assertFailsWithMessage(testName, "Invalid input 'IF': expected \"SET\" or <EOF> (line 1, column 41 (offset: 40))")
+    assertFailsWithMessage(
+      testName,
+      "Invalid input 'IF': expected \"NOWAIT\", \"SET\", \"WAIT\" or <EOF> (line 1, column 41 (offset: 40))"
+    )
   }
 
   // IF NOT EXISTS instead of IF EXISTS
@@ -874,7 +898,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo SET ACCESS READ WRITE OPTIONS {existingData: 'use'}") {
     assertFailsWithMessage(
       testName,
-      "Invalid input 'OPTIONS': expected \"SET\" or <EOF> (line 1, column 42 (offset: 41))"
+      "Invalid input 'OPTIONS': expected \"NOWAIT\", \"SET\", \"WAIT\" or <EOF> (line 1, column 42 (offset: 41))"
     )
   }
 
@@ -886,7 +910,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         None,
         None,
         OptionsMap(Map("txLogEnrichment" -> StringLiteral("FULL")(pos))),
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -899,7 +924,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         None,
         None,
         OptionsMap(Map("key" -> SignedDecimalIntegerLiteral("1")(pos))),
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -912,7 +938,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         None,
         None,
         OptionsMap(Map("key" -> SignedDecimalIntegerLiteral("-1")(pos))),
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -925,7 +952,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         None,
         None,
         OptionsMap(Map("key" -> Null()(pos))),
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -941,7 +969,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
           "key1" -> SignedDecimalIntegerLiteral("1")(pos),
           "key2" -> StringLiteral("two")(pos)
         )),
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -954,7 +983,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         Some(ReadOnlyAccess),
         Some(Topology(Some(1), None)),
         OptionsMap(Map("txLogEnrichment" -> StringLiteral("FULL")(pos))),
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -967,7 +997,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         None,
         None,
         NoOptions,
-        Set("key", "key2")
+        Set("key", "key2"),
+        ast.NoWait
       )(pos)
     )
   }
@@ -979,7 +1010,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo SET ACCESS READ ONLY REMOVE OPTION key") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'REMOVE': expected "SET" or <EOF> (line 1, column 41 (offset: 40))"""
+      """Invalid input 'REMOVE': expected "NOWAIT", "SET", "WAIT" or <EOF> (line 1, column 41 (offset: 40))"""
     )
   }
 
@@ -1025,9 +1056,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "ENDS"
         |  "IN"
         |  "IS"
+        |  "NOWAIT"
         |  "OR"
         |  "SET"
         |  "STARTS"
+        |  "WAIT"
         |  "XOR"
         |  "["
         |  "^"
@@ -1059,9 +1092,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "ENDS"
         |  "IN"
         |  "IS"
+        |  "NOWAIT"
         |  "OR"
         |  "SET"
         |  "STARTS"
+        |  "WAIT"
         |  "XOR"
         |  "["
         |  "^"
@@ -1072,14 +1107,14 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo REMOVE OPTION key key2") {
     assertFailsWithMessage(
       testName,
-      """Invalid input 'key2': expected "REMOVE" or <EOF> (line 1, column 38 (offset: 37))"""
+      """Invalid input 'key2': expected "NOWAIT", "REMOVE", "WAIT" or <EOF> (line 1, column 38 (offset: 37))"""
     )
   }
 
   test("ALTER DATABASE foo REMOVE OPTION key, key2") {
     assertFailsWithMessage(
       testName,
-      """Invalid input ',': expected "REMOVE" or <EOF> (line 1, column 37 (offset: 36))"""
+      """Invalid input ',': expected "NOWAIT", "REMOVE", "WAIT" or <EOF> (line 1, column 37 (offset: 36))"""
     )
   }
 
@@ -1115,9 +1150,11 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "ENDS"
         |  "IN"
         |  "IS"
+        |  "NOWAIT"
         |  "OR"
         |  "SET"
         |  "STARTS"
+        |  "WAIT"
         |  "XOR"
         |  "["
         |  "^"
@@ -1128,7 +1165,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo REMOVE OPTION txLogEnrichment SET OPTION txLogEnrichment 'FULL'") {
     assertFailsWithMessage(
       testName,
-      "Invalid input 'SET': expected \"REMOVE\" or <EOF> (line 1, column 50 (offset: 49))"
+      "Invalid input 'SET': expected \"NOWAIT\", \"REMOVE\", \"WAIT\" or <EOF> (line 1, column 50 (offset: 49))"
     )
   }
 
@@ -1153,7 +1190,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         None,
         Some(Topology(Some(1), None)),
         NoOptions,
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -1168,7 +1206,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY $param SECONDARY") {
     assertFailsWithMessage(
       testName,
-      """Invalid input '$': expected "SET", <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))"""
+      """Invalid input '$': expected
+        |  "NOWAIT"
+        |  "SET"
+        |  "WAIT"
+        |  <EOF>
+        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
     )
   }
 
@@ -1180,7 +1223,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         None,
         Some(Topology(Some(1), Some(1))),
         NoOptions,
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -1193,7 +1237,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         None,
         Some(Topology(Some(1), Some(1))),
         NoOptions,
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -1220,7 +1265,8 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         Some(ast.ReadWriteAccess),
         Some(Topology(Some(1), Some(1))),
         NoOptions,
-        Set.empty
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -1233,7 +1279,92 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         Some(ast.ReadWriteAccess),
         Some(Topology(Some(1), Some(1))),
         NoOptions,
-        Set.empty
+        Set.empty,
+        ast.NoWait
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY SET ACCESS READ WRITE WAIT") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        Some(ast.ReadWriteAccess),
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty,
+        ast.IndefiniteWait
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY SET ACCESS READ WRITE WAIT 5") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        Some(ast.ReadWriteAccess),
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty,
+        ast.TimeoutAfter(5)
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY SET ACCESS READ WRITE WAIT 5 SEC") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        Some(ast.ReadWriteAccess),
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty,
+        ast.TimeoutAfter(5)
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY SET ACCESS READ WRITE WAIT 5 SECOND") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        Some(ast.ReadWriteAccess),
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty,
+        ast.TimeoutAfter(5)
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY SET ACCESS READ WRITE WAIT 5 SECONDS") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        Some(ast.ReadWriteAccess),
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty,
+        ast.TimeoutAfter(5)
+      )(pos)
+    )
+  }
+
+  test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY 1 SECONDARY SET ACCESS READ WRITE NOWAIT") {
+    assertAst(
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        Some(ast.ReadWriteAccess),
+        Some(Topology(Some(1), Some(1))),
+        NoOptions,
+        Set.empty,
+        ast.NoWait
       )(pos)
     )
   }
@@ -1266,7 +1397,12 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
   test("ALTER DATABASE foo SET TOPOLOGY 1 PRIMARY -1 SECONDARY") {
     assertFailsWithMessage(
       testName,
-      """Invalid input '-': expected "SET", <EOF> or <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
+      """Invalid input '-': expected
+        |  "NOWAIT"
+        |  "SET"
+        |  "WAIT"
+        |  <EOF>
+        |  <UNSIGNED_DECIMAL_INTEGER> (line 1, column 43 (offset: 42))""".stripMargin
     )
   }
 
@@ -1286,7 +1422,15 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
 
   test("ALTER DATABASE foo SET TOPOLOGY 1 SECONDARY") {
     assertAst(
-      ast.AlterDatabase(literalFoo, ifExists = false, None, Some(Topology(None, Some(1))), NoOptions, Set.empty)(pos)
+      ast.AlterDatabase(
+        literalFoo,
+        ifExists = false,
+        None,
+        Some(Topology(None, Some(1))),
+        NoOptions,
+        Set.empty,
+        ast.NoWait
+      )(pos)
     )
   }
 
