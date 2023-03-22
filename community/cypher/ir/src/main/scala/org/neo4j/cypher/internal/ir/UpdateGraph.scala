@@ -499,13 +499,13 @@ trait UpdateGraph {
    * and what is updated with SET and MERGE here
    */
   def setPropertyOverlap(qgWithInfo: QgWithLeafInfo)(implicit semanticTable: SemanticTable): Boolean = {
-    val hasDynamicProperties = qgWithInfo.folder.treeExists {
+    lazy val hasDynamicProperties = qgWithInfo.folder.treeExists {
       case ContainerIndex(_, index) =>
         // if we access by index, foo[0] or foo[&autoIntX] we must be accessing a list and hence we
         // are not accessing a property
         !semanticTable.isIntegerNoFail(index)
     }
-    val hasPropertyFunctionRead = this != qgWithInfo.queryGraph && qgWithInfo.queryGraph.folder.treeExists {
+    lazy val hasPropertyFunctionRead = this != qgWithInfo.queryGraph && qgWithInfo.queryGraph.folder.treeExists {
       case Properties(expr) if !semanticTable.isMapNoFail(expr) =>
         true
     }
@@ -686,9 +686,9 @@ trait UpdateGraph {
    */
   private def setNodePropertyOverlap(
     propertiesToRead: Set[PropertyKeyName],
-    hasDynamicProperties: Boolean,
-    hasPropertyFunctionRead: Boolean,
-    isReturningNode: Boolean
+    hasDynamicProperties: => Boolean,
+    hasPropertyFunctionRead: => Boolean,
+    isReturningNode: => Boolean
   ): Boolean = {
 
     @tailrec
@@ -725,8 +725,8 @@ trait UpdateGraph {
 
     val propertiesToSet: CreatesPropertyKeys = toNodePropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
 
-    ((hasDynamicProperties || isReturningNode) && propertiesToSet.overlapsWithDynamicPropertyRead) ||
-    (hasPropertyFunctionRead && propertiesToSet.overlapsWithFunctionPropertyRead) ||
+    (propertiesToSet.overlapsWithDynamicPropertyRead && (isReturningNode || hasDynamicProperties)) ||
+    (propertiesToSet.overlapsWithFunctionPropertyRead && hasPropertyFunctionRead) ||
     propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
@@ -736,8 +736,8 @@ trait UpdateGraph {
    */
   private def setRelPropertyOverlap(
     propertiesToRead: Set[PropertyKeyName],
-    hasDynamicProperties: Boolean,
-    isReturningRel: Boolean
+    hasDynamicProperties: => Boolean,
+    isReturningRel: => Boolean
   ): Boolean = {
     @tailrec
     def toRelPropertyPattern(patterns: Seq[MutatingPattern], acc: CreatesPropertyKeys): CreatesPropertyKeys = {
@@ -773,7 +773,7 @@ trait UpdateGraph {
 
     val propertiesToSet = toRelPropertyPattern(mutatingPatterns, CreatesNoPropertyKeys)
 
-    ((hasDynamicProperties || isReturningRel) && propertiesToSet.overlapsWithDynamicPropertyRead) ||
+    (propertiesToSet.overlapsWithDynamicPropertyRead && (isReturningRel || hasDynamicProperties)) ||
     propertiesToRead.exists(propertiesToSet.overlaps)
   }
 
