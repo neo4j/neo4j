@@ -527,23 +527,16 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         factors.map(declareVariables(ctx, _)).reduce(_ chain _)
 
       case q @ QuantifiedPath(pattern, _, where, entityBindings) =>
-        // FIXME: remove this check once runtime supports this
-        where.folder.treeFindByClass[QuantifiedPath].foldSemanticCheck(qpp =>
-          error(
-            "Using quantified path patterns inside quantified path patterns is currently not supported.",
-            qpp.position
-          )
-        ) chain
-          withScopedState {
-            declareVariables(ctx, pattern.element) chain
-              ensureNoPathVariable(pattern) ifOkChain
-              entityBindings.foldSemanticCheck { entityBinding =>
-                ensureDefined(entityBinding.singleton)
-              } chain
-              recordCurrentScope(q) // We need to record the inner scope of q to import the variables for later checks.
-          } chain entityBindings.foldSemanticCheck { entityBinding =>
-            declareVariable(entityBinding.group, _.expressionType(entityBinding.singleton).actual.wrapInList)
-          }
+        withScopedState {
+          declareVariables(ctx, pattern.element) chain
+            ensureNoPathVariable(pattern) ifOkChain
+            entityBindings.foldSemanticCheck { entityBinding =>
+              ensureDefined(entityBinding.singleton)
+            } chain
+            recordCurrentScope(q) // We need to record the inner scope of q to import the variables for later checks.
+        } chain entityBindings.foldSemanticCheck { entityBinding =>
+          declareVariable(entityBinding.group, _.expressionType(entityBinding.singleton).actual.wrapInList)
+        }
 
       case ParenthesizedPath(pattern) =>
         declareVariables(ctx, pattern.element) chain
