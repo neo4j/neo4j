@@ -138,10 +138,10 @@ object AsPropertyScannable {
       Some(scannable)
 
     case AsBoundingBoxSeekable(seekable) =>
-      partialPropertyPredicate(seekable.expr, seekable.property)
+      partialPropertyPredicate(seekable.expr, seekable.property, cypherType = CTPoint)
 
     case AsDistanceSeekable(seekable) =>
-      partialPropertyPredicate(seekable.expr, seekable.property)
+      partialPropertyPredicate(seekable.expr, seekable.property, cypherType = CTPoint)
 
     case expr: Equals =>
       partialPropertyPredicate(expr, expr.lhs)
@@ -156,19 +156,19 @@ object AsPropertyScannable {
       partialPropertyPredicate(outerExpr, expr.lhs)
 
     case startsWith: StartsWith =>
-      partialPropertyPredicate(startsWith, startsWith.lhs)
+      partialPropertyPredicate(startsWith, startsWith.lhs, cypherType = CTString)
 
     case contains: Contains =>
-      partialPropertyPredicate(contains, contains.lhs)
+      partialPropertyPredicate(contains, contains.lhs, cypherType = CTString)
 
     case endsWith: EndsWith =>
-      partialPropertyPredicate(endsWith, endsWith.lhs)
+      partialPropertyPredicate(endsWith, endsWith.lhs, cypherType = CTString)
 
     case regex: RegexMatch =>
-      partialPropertyPredicate(regex, regex.lhs)
+      partialPropertyPredicate(regex, regex.lhs, cypherType = CTString)
 
     case not @ Not(AsPropertyScannable(scannable)) =>
-      partialPropertyPredicate(not, scannable.property)
+      partialPropertyPredicate(not, scannable.property, cypherType = scannable.cypherType)
 
     case _ =>
       None
@@ -176,14 +176,15 @@ object AsPropertyScannable {
 
   private def partialPropertyPredicate[P <: Expression](
     predicate: P,
-    lhs: Expression
+    lhs: Expression,
+    cypherType: CypherType = CTAny
   ): Option[ImplicitlyPropertyScannable[IsNotNull]] = {
     lhs match {
       case property @ Property(ident: LogicalVariable, _) =>
         PartialPredicate.ifNotEqual(
           IsNotNull(property)(predicate.position),
           predicate
-        ).map(ImplicitlyPropertyScannable(_, ident, property, solvesPredicate = false))
+        ).map(ImplicitlyPropertyScannable(_, ident, property, solvesPredicate = false, cypherType = cypherType))
 
       case _ =>
         None
@@ -433,6 +434,7 @@ sealed trait Scannable[+T <: Expression] extends Sargable[T] {
   def ident: LogicalVariable
   def property: LogicalProperty
   def solvesPredicate: Boolean
+  def cypherType: CypherType
 
   def propertyKey: PropertyKeyName = property.propertyKey
 }
@@ -462,12 +464,14 @@ object ExplicitlyPropertyScannable {
 
 case class ExplicitlyPropertyScannable private (expr: Expression, ident: LogicalVariable, property: LogicalProperty)
     extends Scannable[Expression] {
-  val solvesPredicate = true
+  override def solvesPredicate = true
+  override def cypherType: CypherType = CTAny
 }
 
 case class ImplicitlyPropertyScannable[+T <: Expression](
   expr: PartialPredicate[T],
   ident: LogicalVariable,
   property: LogicalProperty,
-  solvesPredicate: Boolean
+  solvesPredicate: Boolean,
+  cypherType: CypherType
 ) extends Scannable[PartialPredicate[T]]

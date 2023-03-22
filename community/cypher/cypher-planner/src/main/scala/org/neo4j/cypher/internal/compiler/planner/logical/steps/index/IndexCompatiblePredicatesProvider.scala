@@ -277,7 +277,7 @@ object IndexCompatiblePredicatesProvider {
 
       // MATCH (n:User) WHERE n.prop IS NOT NULL RETURN n
       case predicate @ AsPropertyScannable(scannable) if valid(scannable.ident, Set.empty) =>
-        Set(IndexCompatiblePredicate(
+        val explicitlyScannableRangePredicate = IndexCompatiblePredicate(
           scannable.ident,
           scannable.property,
           predicate,
@@ -287,7 +287,15 @@ object IndexCompatiblePredicatesProvider {
           dependencies = Set.empty,
           indexRequirements = Set(IndexRequirement.SupportsIndexQuery(IndexQueryType.EXISTS)),
           cypherType = CTAny
-        ).convertToRangeScannable)
+        )
+
+        val finalPredicate = scannable.cypherType match {
+          case CTString => explicitlyScannableRangePredicate.convertToTextScannable
+          case CTPoint  => explicitlyScannableRangePredicate.convertToPointScannable
+          case _        => explicitlyScannableRangePredicate.convertToRangeScannable
+        }
+
+        Set(finalPredicate)
 
       case _ => Set.empty[IndexCompatiblePredicate]
     }

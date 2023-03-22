@@ -330,7 +330,7 @@ class IndexPlanningIntegrationTest
       )
       .build()
 
-  test("should not plan index usage if distance predicate depends on variable from same QueryGraph") {
+  test("should plan index scan if distance predicate depends on variable from same QueryGraph") {
     val query =
       """MATCH (p:Place)-[r]->(x:Preference)
         |WHERE point.distance(p.location, point({x: 0, y: 0, crs: 'cartesian'})) <= x.maxDistance
@@ -346,7 +346,7 @@ class IndexPlanningIntegrationTest
         "x:Preference"
       )
       .expandAll("(p)-[r]->(x)")
-      .nodeByLabelScan("p", "Place")
+      .nodeIndexOperator("p:Place(location)", indexType = IndexType.POINT)
       .build()
   }
 
@@ -1884,14 +1884,22 @@ class IndexPlanningIntegrationTest
 
   private def scannablePredicates(prop: String): Seq[String] = {
     val binaryOpPredicates =
-      Seq("=", ">", ">=", "<", "<=", "STARTS WITH", "ENDS WITH", "CONTAINS", "IN")
+      Seq("=", ">", ">=", "<", "<=", "IN")
         .map(op => s"$prop $op $$param")
 
-    val pointPredicates = Seq(
+    binaryOpPredicates ++ scannableTextPredicates(prop) ++ scannablePointPredicates(prop)
+  }
+
+  private def scannableTextPredicates(prop: String): Seq[String] = {
+    Seq("STARTS WITH", "ENDS WITH", "CONTAINS")
+      .map(op => s"$prop $op $$param")
+  }
+
+  private def scannablePointPredicates(prop: String): Seq[String] = {
+    Seq(
       s"point.withinBBox($prop, $$p1, $$p2)",
       s"point.distance($prop, $$p1) < $$p2"
     )
-    binaryOpPredicates ++ pointPredicates
   }
 
   test("should plan a node index scan for negated predicates") {
@@ -1960,6 +1968,102 @@ class IndexPlanningIntegrationTest
         .relationshipIndexOperator("(a)-[r:REL(prop, otherProp)]->(b)")
         .build()
     }
+  }
+
+  test("should plan node text index scan with negated predicate") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(2000)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .setLabelCardinality("A", 1000)
+      .build()
+
+    for (pred <- scannableTextPredicates("a.prop")) {
+      val q = s"MATCH (a:A) WHERE NOT $pred RETURN a"
+      val plan = planner.plan(q).stripProduceResults
+      plan shouldEqual planner.subPlanBuilder()
+        .filter(s"NOT $pred")
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
+        .build()
+    }
+  }
+
+  test("should plan relationship text index scan with negated predicate") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(2000)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.TEXT
+      )
+      .setRelationshipCardinality("()-[:REL]->()", 1000)
+      .build()
+
+    for (pred <- scannableTextPredicates("r.prop")) {
+      val q = s"MATCH (a)-[r:REL]->(b) WHERE NOT $pred RETURN r"
+      val plan = planner.plan(q).stripProduceResults
+      plan shouldEqual planner.subPlanBuilder()
+        .filter(s"NOT $pred")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.TEXT)
+        .build()
+    }
+  }
+
+  test("should plan node point index scan with negated predicate") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(2000)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.POINT)
+      .setLabelCardinality("A", 1000)
+      .build()
+
+    for (pred <- scannablePointPredicates("a.prop")) {
+      val q = s"MATCH (a:A) WHERE NOT $pred RETURN a"
+      val plan = planner.plan(q).stripProduceResults
+      plan shouldEqual planner.subPlanBuilder()
+        .filter(s"NOT $pred")
+        .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT)
+        .build()
+    }
+  }
+
+  test("should plan relationship point index scan with negated predicate") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(2000)
+      .addRelationshipIndex(
+        "REL",
+        Seq("prop"),
+        existsSelectivity = 0.5,
+        uniqueSelectivity = 0.1,
+        indexType = IndexType.POINT
+      )
+      .setRelationshipCardinality("()-[:REL]->()", 1000)
+      .build()
+
+    for (pred <- scannablePointPredicates("r.prop")) {
+      val q = s"MATCH (a)-[r:REL]->(b) WHERE NOT $pred RETURN r"
+      val plan = planner.plan(q).stripProduceResults
+      plan shouldEqual planner.subPlanBuilder()
+        .filter(s"NOT $pred")
+        .relationshipIndexOperator("(a)-[r:REL(prop)]->(b)", indexType = IndexType.POINT)
+        .build()
+    }
+  }
+
+  test("should plan index scan if text predicate depends on variable from same QueryGraph") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(2000)
+      .addNodeIndex("A", Seq("prop"), existsSelectivity = 0.5, uniqueSelectivity = 0.1, indexType = IndexType.TEXT)
+      .setLabelCardinality("A", 1000)
+      .build()
+
+    val q = "MATCH (a:A) WHERE a.prop CONTAINS a.otherProp RETURN a"
+
+    val plan = planner.plan(q).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .filter("a.prop CONTAINS a.otherProp")
+      .nodeIndexOperator("a:A(prop)", indexType = IndexType.TEXT)
+      .build()
   }
 
   test("should estimate cardinality for less-than with a string literal using TEXT index") {
