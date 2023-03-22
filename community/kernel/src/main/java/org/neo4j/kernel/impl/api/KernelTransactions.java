@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import static java.util.stream.Collectors.toSet;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_transaction_database_max_size;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
+import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_ID;
 
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -47,6 +48,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -296,6 +298,29 @@ public class KernelTransactions extends LifecycleAdapter
             }
         }
         return oldestVisibleTransactionNumber;
+    }
+
+    public long oldestObservableHorizon() {
+        long oldestHorizon = Long.MAX_VALUE;
+        for (KernelTransactionImplementation transaction : allTransactions) {
+            if (transaction.isOpen() && !transaction.isTerminated()) {
+                oldestHorizon = Math.min(
+                        oldestHorizon,
+                        transactionHorizon(transaction.cursorContext().getVersionContext()));
+            }
+        }
+        return oldestHorizon;
+    }
+
+    private long transactionHorizon(VersionContext versionContext) {
+        // if transaction has already started committing its horizon is oldestVisibleTransactionNumber which was
+        // recorded at the time commit started
+        var oldestVisibleTransactionNumber = versionContext.oldestVisibleTransactionNumber();
+        if (oldestVisibleTransactionNumber != BASE_TX_ID) {
+            return oldestVisibleTransactionNumber;
+        }
+        // ortherwise its horizon is the latest gap free closed transaction at the time it started
+        return versionContext.lastClosedTransactionId();
     }
 
     public long oldestActiveTransactionSequenceNumber() {
