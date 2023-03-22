@@ -334,7 +334,7 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
     ))
   }
 
-  test("repeating query with different parameters types should not hit the caches") {
+  test("repeating query with different parameters types should hit the execution plan cache") {
     restartWithConfig(
       databaseConfig() + (GraphDatabaseInternalSettings.cypher_size_hint_parameters -> java.lang.Boolean.TRUE)
     )
@@ -359,14 +359,14 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       // params2
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      executionPlanCacheKeyMiss,
+      executionPlanCacheKeyHit,
       s"String: cacheMiss: CacheKey($query,Map(n -> ParameterTypeInfo(String,ApproximateSize(10))),false)",
       s"String: cacheCompile: CacheKey($query,Map(n -> ParameterTypeInfo(String,ApproximateSize(10))),false)"
     ))
   }
 
   test(
-    "repeating query with same parameters types but different string lengths should not hit the caches, when configured to use size hint"
+    "repeating query with same parameters types but different string lengths should hit the execution plan cache, when configured to use size hint"
   ) {
     restartWithConfig(
       databaseConfig() + (GraphDatabaseInternalSettings.cypher_size_hint_parameters -> java.lang.Boolean.TRUE)
@@ -393,14 +393,14 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       // params2
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      executionPlanCacheKeyMiss,
+      executionPlanCacheKeyHit,
       s"String: cacheMiss: CacheKey($query,Map(n -> ParameterTypeInfo(String,ApproximateSize(10000))),false)",
       s"String: cacheCompile: CacheKey($query,Map(n -> ParameterTypeInfo(String,ApproximateSize(10000))),false)"
     ))
   }
 
   test(
-    "repeating query with same parameters types but different string lengths should hit the caches, when configured not to use size hint"
+    "repeating query with same parameters types but different string lengths should hit the execution plan cache, when configured not to use size hint"
   ) {
     restartWithConfig(
       databaseConfig() + (GraphDatabaseInternalSettings.cypher_size_hint_parameters -> java.lang.Boolean.FALSE)
@@ -408,7 +408,7 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
     val cacheListener = new LoggingTracer()
 
     val query = "RETURN $n"
-    val params1: Map[String, AnyRef] = Map("n" -> "a")
+    val params1: Map[String, AnyRef] = Map("n" -> "")
     val params2: Map[String, AnyRef] = Map("n" -> "a".repeat(1001))
 
     graph.withTx(tx => tx.execute(query, params1.asJava).resultAsString())
@@ -429,7 +429,7 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
   }
 
   test(
-    "repeating query with same parameters types but different list lengths should not hit the caches, when configured to use size hint"
+    "repeating query with same parameters types but different list lengths should hit the execution plan cache, when configured to use size hint"
   ) {
     restartWithConfig(
       databaseConfig() + (GraphDatabaseInternalSettings.cypher_size_hint_parameters -> java.lang.Boolean.TRUE)
@@ -456,7 +456,7 @@ abstract class QueryCachingTest(executionPlanCacheSize: Int =
       // params2
       s"AST:    cacheMiss",
       s"AST:    cacheCompile",
-      executionPlanCacheKeyMiss,
+      executionPlanCacheKeyHit,
       s"String: cacheMiss: CacheKey($query,Map(n -> ParameterTypeInfo(List<Any>,ApproximateSize(10000))),false)",
       s"String: cacheCompile: CacheKey($query,Map(n -> ParameterTypeInfo(List<Any>,ApproximateSize(10000))),false)"
     ))

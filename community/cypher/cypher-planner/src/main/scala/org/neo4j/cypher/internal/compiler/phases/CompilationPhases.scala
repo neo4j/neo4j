@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.UnfulfillableQueryRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.VarLengthQuantifierMerger
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.CardinalityRewriter
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.ParameterToDefaultRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.PlanRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.eager.EagerRewriter
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.CompressPlanIDs
@@ -113,7 +114,8 @@ object CompilationPhases {
           CheckForUnresolvedTokens,
           EagerRewriter,
           SortPredicatesBySelectivity,
-          RemoveUnusedNamedGroupVariablesPhase
+          RemoveUnusedNamedGroupVariablesPhase,
+          ParameterToDefaultRewriter
         ) ++ CNFNormalizer.steps,
         initialConditions =
           Set(BaseContains[Statement])

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.cache
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.ExecutionEngineTestSupport
 import org.neo4j.cypher.GraphDatabaseTestSupport
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -128,5 +129,43 @@ class CypherQueryCachesTest extends CypherFunSuite with GraphDatabaseTestSupport
     stats.logicalPlanCacheEntries().shouldEqual(0)
     stats.executionPlanCacheEntries().shouldEqual(0)
     stats.executableQueryCacheEntries().shouldEqual(0)
+  }
+
+  test("Should only create one executionPlanCacheEntry for plan with parameter") {
+    restartWithConfig(databaseConfig() ++ Map(
+      GraphDatabaseInternalSettings.cypher_size_hint_parameters -> Boolean.box(true)
+    ))
+
+    val stats = eengine.queryCaches.statistics()
+
+    val q = "match (n {prop: $param}) return n"
+    execute(q, Map("param" -> 123))
+    execute(q, Map("param" -> "a"))
+    execute(q, Map("param" -> ""))
+
+    stats.executionPlanCacheEntries().shouldEqual(1)
+
+  }
+
+  test(
+    "Should create two executionPlanCacheEntries for plan with parameter giving different plans based on cardinality"
+  ) {
+    restartWithConfig(databaseConfig() ++ Map(
+      GraphDatabaseInternalSettings.cypher_size_hint_parameters -> Boolean.box(true)
+    ))
+
+    val stats = eengine.queryCaches.statistics()
+
+    val q = "MATCH (n) WHERE n.prop starts with $param RETURN n"
+    execute(q, Map("param" -> ""))
+    execute(
+      q,
+      Map(
+        "param" -> "This is a very long string test that needs to be checked if we still hit the executionPlanCacheEntries"
+      )
+    )
+
+    stats.executionPlanCacheEntries().shouldEqual(2)
+
   }
 }
