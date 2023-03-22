@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -456,7 +455,6 @@ class StoreMigratorTest {
 
     @Test
     void shouldDoPartOfMigrationIfNotOnLatestKernelVersion() throws Exception {
-        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
         ZippedStoreCommunity.REC_AF11_V50_ALL.unzip(
                 databaseLayout.getNeo4jLayout().homeDirectory());
         var logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder(databaseLayout.getTransactionLogsDirectory(), fs)

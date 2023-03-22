@@ -21,7 +21,6 @@ package org.neo4j.kernel.recovery;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_logs;
@@ -90,7 +89,6 @@ class RecoveryOldAndUpgradedVersionsIT {
     @ParameterizedTest
     @ValueSource(strings = {DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME})
     void recoverDatabaseOnOldVersionNoCheckpointsAndContainsUpgradeTransaction(String dbName) throws Throwable {
-        assumeTrue(LatestVersions.LATEST_KERNEL_VERSION.isGreaterThan(KernelVersion.V5_0));
         ZippedStoreCommunity.REC_AF11_V50_ALL.unzip(neo4jLayout.homeDirectory());
         DatabaseLayout dbLayout = neo4jLayout.databaseLayout(dbName);
 
@@ -146,7 +144,6 @@ class RecoveryOldAndUpgradedVersionsIT {
     @ParameterizedTest
     @ValueSource(strings = {DEFAULT_DATABASE_NAME, SYSTEM_DATABASE_NAME})
     void recoverDatabaseOnOldVersionOneCheckpointAndContainsUpgradeTransaction(String dbName) throws Throwable {
-        assumeTrue(LatestVersions.LATEST_KERNEL_VERSION.isGreaterThan(KernelVersion.V5_0));
         ZippedStoreCommunity.REC_AF11_V50_ALL.unzip(neo4jLayout.homeDirectory());
         DatabaseLayout dbLayout = neo4jLayout.databaseLayout(dbName);
 

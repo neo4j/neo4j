@@ -118,8 +118,6 @@ public class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransaction() throws Exception {
-        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
-
         // Given
         long startTransaction = lastCommittedTransactionId();
 
@@ -172,8 +170,6 @@ public class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnFirstWriteTransactionStressTest() throws Throwable {
-        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
-
         long startTransaction = lastCommittedTransactionId();
 
         // Then
@@ -200,8 +196,6 @@ public class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldUpgradeDatabaseToLatestVersionOnDenseNodeTransactionStressTest() throws Throwable {
-        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
-
         long startTransaction = lastCommittedTransactionId();
 
         // Then
@@ -272,8 +266,6 @@ public class DatabaseUpgradeTransactionIT {
 
     @Test
     void shouldHandleDeadlocksOnUpgradeTransaction() throws Exception {
-        assumeThat(LatestVersions.LATEST_KERNEL_VERSION).isGreaterThan(KernelVersion.V5_0);
-
         // This test tries to simulate a rare but possible deadlock scenario where one ongoing transaction (in commit
         // phase) is waiting for a lock held by the
         // transaction doing the upgrade. Since the first transaction has a shared upgrade lock, and the upgrade

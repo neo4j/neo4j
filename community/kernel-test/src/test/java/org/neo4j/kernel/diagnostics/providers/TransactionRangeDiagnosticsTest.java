@@ -139,7 +139,7 @@ class TransactionRangeDiagnosticsTest {
         TransactionId transactionId = new TransactionId(37, 38, 39, 40);
         assertThat(LatestVersions.LATEST_KERNEL_VERSION)
                 .describedAs("Guard for used version of checkpoint entry bellow.")
-                .isEqualTo(KernelVersion.V5_0);
+                .isEqualTo(KernelVersion.V5_7);
         Database database = databaseWithLogFilesContainingLowestTxId(logs(
                 transactionLogsWithTransaction(txLogLowVersion, txLogHighVersion, 42),
                 checkpointLogsWithLastCheckpoint(
