@@ -483,6 +483,116 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
+  test("can plan PruningVarExpand when VarExpand is on RHS of NodeHashJoin and Distinct is above Join") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.expand("(b)-[:R*2..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.pruningVarExpand("(b)-[:R*2..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("can plan BFSPruningVarExpand when VarExpand is on RHS of NodeHashJoin and Distinct is above Join") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.expand("(b)-[:R*1..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("can plan PruningVarExpand when VarExpand is on RHS of ValueHashJoin and Distinct is above Join") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .valueHashJoin("a=b")
+      .|.expand("(b)-[:R*2..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .valueHashJoin("a=b")
+      .|.pruningVarExpand("(b)-[:R*2..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("can plan BFSPruningVarExpand when VarExpand is on RHS of ValueHashJoin and Distinct is above Join") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .valueHashJoin("a=b")
+      .|.expand("(b)-[:R*1..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .valueHashJoin("a=b")
+      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("should not plan PruningVarExpand when VarExpand is on RHS of ValueHashJoin when path is join predicate") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .valueHashJoin("pathA=pathB")
+      .|.projection(Map("pathB" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .|.expand("(b)-[r:R*2..3]-(a)")
+      .|.allNodeScan("b")
+      .projection(Map("pathA" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .expand("(a)-[r:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("should not plan BFSPruningVarExpand when VarExpand is on RHS of ValueHashJoin when path is join predicate") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .valueHashJoin("pathA=pathB")
+      .|.projection(Map("pathB" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .|.expand("(b)-[r:R*1..3]-(a)")
+      .|.allNodeScan("b")
+      .projection(Map("pathA" -> path(varFor("a"), varFor("r"), varFor("b"), SemanticDirection.BOTH)))
+      .expand("(a)-[r:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
   test("should not rewrite when doing non-distinct aggregation") {
     // Should not be rewritten since it's asking for a count of all paths leading to a node
     // match (a)-[*1..3]-(b) return b, count(*)

@@ -35,12 +35,18 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
+import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.Union
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Rewriter
@@ -227,8 +233,17 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           _: Apply |
           _: CartesianProduct |
           _: Eager |
-          _: Optional =>
+          _: Optional |
+          _: NodeHashJoin |
+          _: LeftOuterHashJoin |
+          _: RightOuterHashJoin |
+          _: Union =>
           distinctHorizon
+
+        case ValueHashJoin(_, _, org.neo4j.cypher.internal.expressions.Equals(lhs, rhs)) =>
+          distinctHorizon.copy(dependencies =
+            distinctHorizon.dependencies ++ Seq(lhs, rhs).flatMap(_.dependencies.map(_.name))
+          )
 
         case _ =>
           DistinctHorizon.empty
