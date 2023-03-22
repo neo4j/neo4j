@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Aggregation
+import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
@@ -45,6 +46,7 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
@@ -231,6 +233,8 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
 
         case _: Expand |
           _: Apply |
+          _: SemiApply |
+          _: AntiSemiApply |
           _: CartesianProduct |
           _: Eager |
           _: Optional |
@@ -257,7 +261,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
       val (plan: LogicalPlan, distinctHorizon: DistinctHorizon) = planStack.pop()
       val newDistinctHorizon = collectDistinctSet(plan, distinctHorizon)
 
-      plan match {
+      val (lhsHorizon, rhsHorizon) = plan match {
         case _: CartesianProduct |
           _: Union |
           _: NodeHashJoin |
@@ -269,21 +273,28 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
            * variables (e.g., relationships) introduced by a [[VarExpand]] on one side of the plan could be used on the other side.
            * An exception to this rule is if those variables are used in the predicate of [[ValueHashJoin]], but these dependencies are tracked elsewhere.
            */
-          plan.lhs.foreach(p => planStack.push((p, newDistinctHorizon)))
-          plan.rhs.foreach(p => planStack.push((p, newDistinctHorizon)))
+          (newDistinctHorizon, newDistinctHorizon)
+        case _: SemiApply |
+          _: AntiSemiApply =>
+          /**
+           * For predicate-type binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
+           * Because the rows of RHS are never passed downstream, the LHS is traversed with same horizon.
+           */
+          (newDistinctHorizon, DistinctHorizon.empty)
         case _: LogicalBinaryPlan =>
           /**
            * For binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
            * For example, the RHS is traversed first and may introduce a new horizon, which means the later LHS traversal will work in the
            * wrong (further downstream) horizon.
            *
-           * Default to traversing RHS.
+           * Traverse RHS with same horizon.
            */
-          plan.lhs.foreach(p => planStack.push((p, DistinctHorizon.empty)))
-          plan.rhs.foreach(p => planStack.push((p, newDistinctHorizon)))
+          (DistinctHorizon.empty, newDistinctHorizon)
         case _ =>
-          plan.lhs.foreach(p => planStack.push((p, newDistinctHorizon)))
+          (newDistinctHorizon, DistinctHorizon.empty)
       }
+      plan.lhs.foreach(p => planStack.push((p, lhsHorizon)))
+      plan.rhs.foreach(p => planStack.push((p, rhsHorizon)))
     }
 
     ReplacementPlans(pruningExpands.toSet, bfsPruningExpands.toMap, replacementAggregatingPlans.toMap)

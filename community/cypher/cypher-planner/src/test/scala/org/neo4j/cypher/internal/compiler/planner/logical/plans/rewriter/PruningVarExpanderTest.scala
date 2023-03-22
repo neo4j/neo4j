@@ -743,6 +743,72 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
+  test("should not solve with PruningVarExpand when VarExpand is on RHS of SemiApply and Distinct is above SemiApply") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .semiApply()
+      .|.expand("(a)-[:R*2..3]-(b)")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test(
+    "should not solve with BFSPruningVarExpand when VarExpand is on RHS of SemiApply and Distinct is above SemiApply"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .semiApply()
+      .|.expand("(a)-[:R*1..3]-(b)")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("can solve with PruningVarExpand when VarExpand is on LHS of SemiApply and Distinct is above SemiApply") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .semiApply()
+      .|.argument("a")
+      .expand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .semiApply()
+      .|.argument("a")
+      .pruningVarExpand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("can solve with BFSPruningVarExpand when VarExpand is on LHS of SemiApply and Distinct is above SemiApply") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .semiApply()
+      .|.argument("a")
+      .expand("(a)-[:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .semiApply()
+      .|.argument("a")
+      .bfsPruningVarExpand("(a)-[:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
   test("should not rewrite when doing non-distinct aggregation") {
     // Should not be rewritten since it's asking for a count of all paths leading to a node
     // match (a)-[*1..3]-(b) return b, count(*)
