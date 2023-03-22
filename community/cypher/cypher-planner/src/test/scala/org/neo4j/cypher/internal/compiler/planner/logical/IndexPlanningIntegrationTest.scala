@@ -1598,7 +1598,7 @@ class IndexPlanningIntegrationTest
       .build()
   }
 
-  test("should plan node point index usage for inequalities") {
+  test("should plan node point index usage for inequalities with point literals") {
     val cfg = plannerConfigForNodePointIndex
     for (op <- Seq("<", "<=", ">", ">=")) {
       val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op point({x:1, y:2}) RETURN a, a.prop").stripProduceResults
@@ -1606,6 +1606,17 @@ class IndexPlanningIntegrationTest
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter(s"cacheNFromStore[a.prop] $op point({x:1, y:2})")
         .nodeIndexOperator("a:A(prop)", indexType = IndexType.POINT)
+        .build()
+    }
+  }
+
+  test("should not plan node point index usage for inequalities with non-point types") {
+    val cfg = plannerConfigForNodePointIndex
+    for (op <- Seq("<", "<=", ">", ">=")) {
+      val plan = cfg.plan(s"MATCH (a:A) WHERE a.prop $op 123 RETURN a").stripProduceResults
+      plan shouldEqual cfg.subPlanBuilder()
+        .filter(s"a.prop $op 123")
+        .nodeByLabelScan("a", "A")
         .build()
     }
   }
