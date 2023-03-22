@@ -458,7 +458,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("optional match can be solved with PruningVarExpand with BFSPruningVarExpand") {
+  test("optional match can be solved with BFSPruningVarExpand") {
     // Simplest query:
     // match (a) optional match (a)-[:R*1..3]->(b) return distinct b
 
