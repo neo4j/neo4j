@@ -32,7 +32,11 @@ class DefaultRegionCollectionEvent implements RegionCollectionEvent {
     public void regionMarkedFree(long region) {}
 
     @Override
-    public void latestUsedRegion(long latestUsedRegion) {}
+    public void regionStillUsed(long region, long boundary, long oldestVisibleTransactionNumber) {}
+
+    @Override
+    public void regionsWalkCompleted(
+            long oldestVisibleTransactionNumber, long latestUsedRegion, long regionsVisited, long markedFree) {}
 
     @Override
     public FileTruncateEvent attemptTruncate() {

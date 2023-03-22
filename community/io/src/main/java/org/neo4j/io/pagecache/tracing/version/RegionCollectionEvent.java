@@ -25,7 +25,11 @@ public interface RegionCollectionEvent extends AutoCloseable {
         public void regionMarkedFree(long region) {}
 
         @Override
-        public void latestUsedRegion(long latestUsedRegion) {}
+        public void regionStillUsed(long region, long boundary, long oldestVisibleTransactionNumber) {}
+
+        @Override
+        public void regionsWalkCompleted(
+                long oldestVisibleTransactionNumber, long latestUsedRegion, long regionsVisited, long markedFree) {}
 
         @Override
         public FileTruncateEvent attemptTruncate() {
@@ -38,7 +42,10 @@ public interface RegionCollectionEvent extends AutoCloseable {
 
     void regionMarkedFree(long region);
 
-    void latestUsedRegion(long latestUsedRegion);
+    void regionStillUsed(long region, long boundary, long oldestVisibleTransactionNumber);
+
+    void regionsWalkCompleted(
+            long oldestVisibleTransactionNumber, long latestUsedRegion, long regionsVisited, long markedFree);
 
     FileTruncateEvent attemptTruncate();
 
