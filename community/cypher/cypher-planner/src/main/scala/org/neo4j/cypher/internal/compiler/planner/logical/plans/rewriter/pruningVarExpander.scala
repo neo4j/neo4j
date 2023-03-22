@@ -257,8 +257,33 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
       val (plan: LogicalPlan, distinctHorizon: DistinctHorizon) = planStack.pop()
       val newDistinctHorizon = collectDistinctSet(plan, distinctHorizon)
 
-      plan.lhs.foreach(p => planStack.push((p, newDistinctHorizon)))
-      plan.rhs.foreach(p => planStack.push((p, newDistinctHorizon)))
+      plan match {
+        case _: CartesianProduct |
+          _: Union |
+          _: NodeHashJoin |
+          _: LeftOuterHashJoin |
+          _: RightOuterHashJoin |
+          _: ValueHashJoin =>
+          /**
+           * For binary plans that do not introduce an argument, it is safe to traverse both sides in the same horizon, because it is impossible that
+           * variables (e.g., relationships) introduced by a [[VarExpand]] on one side of the plan could be used on the other side.
+           * An exception to this rule is if those variables are used in the predicate of [[ValueHashJoin]], but these dependencies are tracked elsewhere.
+           */
+          plan.lhs.foreach(p => planStack.push((p, newDistinctHorizon)))
+          plan.rhs.foreach(p => planStack.push((p, newDistinctHorizon)))
+        case _: LogicalBinaryPlan =>
+          /**
+           * For binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
+           * For example, the RHS is traversed first and may introduce a new horizon, which means the later LHS traversal will work in the
+           * wrong (further downstream) horizon.
+           *
+           * Default to traversing RHS.
+           */
+          plan.lhs.foreach(p => planStack.push((p, DistinctHorizon.empty)))
+          plan.rhs.foreach(p => planStack.push((p, newDistinctHorizon)))
+        case _ =>
+          plan.lhs.foreach(p => planStack.push((p, newDistinctHorizon)))
+      }
     }
 
     ReplacementPlans(pruningExpands.toSet, bfsPruningExpands.toMap, replacementAggregatingPlans.toMap)

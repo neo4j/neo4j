@@ -593,6 +593,156 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(before)
   }
 
+  test("can plan PruningVarExpand when VarExpand is on LHS of NodeHashJoin and Distinct is above Join") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.allNodeScan("b")
+      .expand("(b)-[:R*2..3]-(a)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.allNodeScan("b")
+      .pruningVarExpand("(b)-[:R*2..3]-(a)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("can plan BFSPruningVarExpand when VarExpand is on LHS of NodeHashJoin and Distinct is above Join") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.allNodeScan("b")
+      .expand("(b)-[:R*1..3]-(a)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.allNodeScan("b")
+      .bfsPruningVarExpand("(b)-[:R*1..3]-(a)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("can plan PruningVarExpand when VarExpand is on LHS of ValueHashJoin and Distinct is above Join") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .valueHashJoin("b=c")
+      .|.allNodeScan("c")
+      .expand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .valueHashJoin("b=c")
+      .|.allNodeScan("c")
+      .pruningVarExpand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("can plan BFSPruningVarExpand when VarExpand is on LHS of ValueHashJoin and Distinct is above Join") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .valueHashJoin("b=c")
+      .|.allNodeScan("c")
+      .expand("(a)-[:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .valueHashJoin("b=c")
+      .|.allNodeScan("c")
+      .bfsPruningVarExpand("(a)-[:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("should not solve with PruningVarExpand when VarExpand is on LHS of Apply and Distinct is above Apply") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .apply()
+      .|.argument("a")
+      .expand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("should not solve with BFSPruningVarExpand when VarExpand is on LHS of Apply and Distinct is above Apply") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .apply()
+      .|.argument("a")
+      .expand("(a)-[:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("can solve with PruningVarExpand when VarExpand is on both LHS and RHS of Apply and Distinct is above Apply") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b", "c AS c")
+      .apply()
+      .|.expand("(a)-[:R*2..3]-(c)")
+      .|.argument("a")
+      .expand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b", "c AS c")
+      .apply()
+      .|.pruningVarExpand("(a)-[:R*2..3]-(c)")
+      .|.argument("a")
+      .expand("(a)-[:R*2..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test(
+    "can solve with BFSPruningVarExpand when VarExpand is on both LHS and RHS of Apply and Distinct is above Apply"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b", "c AS c")
+      .apply()
+      .|.expand("(a)-[:R*1..3]-(c)")
+      .|.argument("a")
+      .expand("(a)-[:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b", "c AS c")
+      .apply()
+      .|.bfsPruningVarExpand("(a)-[:R*1..3]-(c)")
+      .|.argument("a")
+      .expand("(a)-[:R*1..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
   test("should not rewrite when doing non-distinct aggregation") {
     // Should not be rewritten since it's asking for a count of all paths leading to a node
     // match (a)-[*1..3]-(b) return b, count(*)
@@ -676,7 +826,27 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(plan) // should not throw exception
   }
 
-  test("cartesian product can be solved with BFSPruningVarExpand") {
+  test("cartesian product can be solved with PruningVarExpand when VarExpand is on LHS") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*2..3]-(c)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .pruningVarExpand("(b)-[:R*2..3]-(c)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("cartesian product can be solved with BFSPruningVarExpand when VarExpand is on LHS") {
     // Simplest query:
     // match (a) match (b)-[:R*1..3]-(c) return distinct c
 
@@ -697,6 +867,273 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .build()
 
     rewrite(before) should equal(after)
+  }
+
+  test("cartesian product can be solved with PruningVarExpand when VarExpand is on RHS") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.expand("(b)-[:R*2..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.pruningVarExpand("(b)-[:R*2..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("cartesian product can be solved with BFSPruningVarExpand when VarExpand is on RHS") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.expand("(b)-[:R*1..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("cartesian product can be solved with PruningVarExpand when VarExpand is on both sides") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .cartesianProduct()
+      .|.expand("(b)-[:R*2..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*2..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .cartesianProduct()
+      .|.pruningVarExpand("(b)-[:R*2..3]-(c2)")
+      .|.allNodeScan("a")
+      .pruningVarExpand("(b)-[:R*2..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("cartesian product can be solved with BFSPruningVarExpand when VarExpand is on both sides") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .cartesianProduct()
+      .|.expand("(b)-[:R*1..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*1..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .cartesianProduct()
+      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(c2)")
+      .|.allNodeScan("a")
+      .bfsPruningVarExpand("(b)-[:R*1..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("cartesian product can be solved with PruningVarExpand on either side when relationships are used on top") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .filter("size(r1)>1 OR size(r2)>1")
+      .cartesianProduct()
+      .|.expand("(b)-[r2:R*2..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[r1:R*2..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("cartesian product can be solved with BFSPruningVarExpand on either side when relationships are used on top") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .filter("size(r1)>1 OR size(r2)>1")
+      .cartesianProduct()
+      .|.expand("(b)-[r2:R*1..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[r1:R*1..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("Union can be solved with PruningVarExpand when VarExpand is on LHS") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*2..3]-(c)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.allNodeScan("a")
+      .pruningVarExpand("(b)-[:R*2..3]-(c)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("Union can be solved with BFSPruningVarExpand when VarExpand is on LHS") {
+    // Simplest query:
+    // match (a) match (b)-[:R*1..3]-(c) return distinct c
+
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*1..3]-(c)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.allNodeScan("a")
+      .bfsPruningVarExpand("(b)-[:R*1..3]-(c)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("Union can be solved with PruningVarExpand when VarExpand is on RHS") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.expand("(b)-[:R*2..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.pruningVarExpand("(b)-[:R*2..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("Union can be solved with BFSPruningVarExpand when VarExpand is on RHS") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.expand("(b)-[:R*1..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("Union can be solved with PruningVarExpand when VarExpand is on both sides") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .union()
+      .|.expand("(b)-[:R*2..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*2..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .union()
+      .|.pruningVarExpand("(b)-[:R*2..3]-(c2)")
+      .|.allNodeScan("a")
+      .pruningVarExpand("(b)-[:R*2..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("Union can be solved with BFSPruningVarExpand when VarExpand is on both sides") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .union()
+      .|.expand("(b)-[:R*1..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*1..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .union()
+      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(c2)")
+      .|.allNodeScan("a")
+      .bfsPruningVarExpand("(b)-[:R*1..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("union can be solved with PruningVarExpand on either side when relationships are used on top") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .filter("size(r1)>1 OR size(r2)>1")
+      .union()
+      .|.expand("(b)-[r2:R*2..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[r1:R*2..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
+  test("union can be solved with BFSPruningVarExpand on either side when relationships are used on top") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .filter("size(r1)>1 OR size(r2)>1")
+      .union()
+      .|.expand("(b)-[r2:R*1..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[r1:R*1..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    assertNotRewritten(before)
   }
 
   test("do not use pruning-varexpand when upper bound < lower bound") {
