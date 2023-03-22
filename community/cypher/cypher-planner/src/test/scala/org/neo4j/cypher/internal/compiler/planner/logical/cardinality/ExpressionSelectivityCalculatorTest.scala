@@ -1684,6 +1684,113 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     )
   }
 
+  test("negated not property scannable predicate") {
+    val predicate = differentRelationships("r1", "r2")
+    val negatedPredicate = not(predicate)
+
+    val calculator = setUpCalculator()
+    val result = calculator(predicate)
+    val negatedResult = calculator(negatedPredicate)
+
+    negatedResult.factor should equal(
+      result.negate.factor +- 0.00000001
+    )
+  }
+
+  test("negated RANGE index scannable predicate") {
+    val inequality = nAnded(NonEmptyList(
+      greaterThan(nProp, literalInt(3))
+    ))
+    val negatedInequality = not(inequality)
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val result = calculator(inequality)
+    val negatedResult = calculator(negatedInequality)
+
+    negatedResult.factor should equal(
+      personPropIsNotNullSel
+        * result.negate.factor
+        +- 0.00000001
+    )
+  }
+
+  test("negated TEXT index scannable predicate") {
+    val propContains = contains(nProp, helloStringLiteral)
+    val negatedPropContains = not(propContains)
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val result = calculator(propContains)
+    val negatedResult = calculator(negatedPropContains)
+
+    negatedResult.factor should equal(
+      personTextPropIsNotNullSel
+        * result.negate.factor
+        +- 0.00000001
+    )
+  }
+
+  test("negated POINT index scannable predicate") {
+    val propWithinBBox = pointWithinBBox(nProp, point(1, 2), point(3, 4))
+    val negatedPropWithinBBox = not(propWithinBBox)
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)
+    val result = calculator(propWithinBBox)
+    val negatedResult = calculator(negatedPropWithinBBox)
+
+    negatedResult.factor should equal(
+      personPointPropIsNotNullSel
+        * result.negate.factor
+        +- 0.00000001
+    )
+  }
+
+  test("negated RANGE index scannable predicate without indexes") {
+    val inequality = nAnded(NonEmptyList(
+      greaterThan(nProp, literalInt(3))
+    ))
+    val negatedInequality = not(inequality)
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, stats = mockStats(indexCardinalities = Map.empty))
+    val result = calculator(inequality)
+    val negatedResult = calculator(negatedInequality)
+
+    negatedResult.factor should equal(
+      DEFAULT_PROPERTY_SELECTIVITY.factor
+        * result.negate.factor
+        +- 0.00000001
+    )
+  }
+
+  test("negated TEXT index scannable predicate without indexes") {
+    val propContains = contains(nProp, helloStringLiteral)
+    val negatedPropContains = not(propContains)
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, stats = mockStats(indexCardinalities = Map.empty))
+    val result = calculator(propContains)
+    val negatedResult = calculator(negatedPropContains)
+
+    negatedResult.factor should equal(
+      DEFAULT_PROPERTY_SELECTIVITY.factor * DEFAULT_TYPE_SELECTIVITY.factor
+        * result.negate.factor
+        +- 0.00000001
+    )
+  }
+
+  test("negated POINT index scannable predicate without indexes") {
+    val propWithinBBox = pointWithinBBox(nProp, point(1, 2), point(3, 4))
+    val negatedPropWithinBBox = not(propWithinBBox)
+
+    val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo, stats = mockStats(indexCardinalities = Map.empty))
+    val result = calculator(propWithinBBox)
+    val negatedResult = calculator(negatedPropWithinBBox)
+
+    negatedResult.factor should equal(
+      DEFAULT_PROPERTY_SELECTIVITY.factor * DEFAULT_TYPE_SELECTIVITY.factor
+        * result.negate.factor
+        +- 0.00000001
+    )
+  }
+
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {

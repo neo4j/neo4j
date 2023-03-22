@@ -54,6 +54,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.plans.InequalityRangeS
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointBoundingBoxSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PointDistanceSeekable
 import org.neo4j.cypher.internal.compiler.planner.logical.plans.PrefixRangeSeekable
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.Scannable
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.Contains
@@ -230,6 +231,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     case AsValueRangeSeekable(seekable) =>
       calculateSelectivityForValueRangeSeekable(seekable, labelInfo, relTypeInfo)
 
+    // WHERE NOT a.prop [...]
+    case Not(inner @ AsPropertyScannable(scannable)) =>
+      // Whether negated or not, predicates like CONTAINS and ENDS WITH will only apply to string properties
+      val propertyTypeSelectivity = propertyTypeSelectivityForScannable(scannable, labelInfo, relTypeInfo)
+      apply(inner, labelInfo, relTypeInfo).negate * propertyTypeSelectivity
+
     // WHERE NOT [...]
     case Not(inner) =>
       apply(inner, labelInfo, relTypeInfo).negate
@@ -345,7 +352,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     indexPropertyExistsSelectivities
       .headOption
       .map(_._1)
-      .getOrElse(DEFAULT_TYPE_SELECTIVITY)
+      .getOrElse(DEFAULT_PROPERTY_SELECTIVITY * DEFAULT_TYPE_SELECTIVITY)
   }
 
   private def multipleIndexPropertyExistsSelectivitiesFor(
@@ -599,6 +606,33 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       (lookups / stats.nodesAllCardinality()) getOrElse Selectivity.ONE
     } else {
       (lookups / stats.patternStepCardinality(None, None, None)) getOrElse Selectivity.ONE
+    }
+  }
+
+  private def propertyTypeSelectivityForScannable(
+    scannable: Scannable[Expression],
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo
+  )(implicit semanticTable: SemanticTable): Selectivity = {
+    scannable.cypherType match {
+      case CTString =>
+        calculateSelectivityForPropertyTypePredicateFromIndex(
+          scannable.name,
+          labelInfo,
+          relTypeInfo,
+          scannable.propertyKey,
+          indexTypesPriorityForSubstringSargable
+        )
+      case CTPoint =>
+        calculateSelectivityForPropertyTypePredicateFromIndex(
+          scannable.name,
+          labelInfo,
+          relTypeInfo,
+          scannable.propertyKey,
+          indexTypesPriorityForPointPredicates
+        )
+      case _ =>
+        calculateSelectivityForPropertyExistence(scannable.name, labelInfo, relTypeInfo, scannable.propertyKey)
     }
   }
 }
