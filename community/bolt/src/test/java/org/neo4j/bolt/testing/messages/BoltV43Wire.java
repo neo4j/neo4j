@@ -28,7 +28,7 @@ public final class BoltV43Wire extends BoltV40Wire {
     }
 
     @Override
-    protected String getUserAgent() {
+    public String getUserAgent() {
         return "BoltWire/V43";
     }
 }

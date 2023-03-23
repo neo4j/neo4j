@@ -58,7 +58,7 @@ public class UserAgentIT {
     @ProtocolTest
     void shouldFailWhenInvalidUserAgentIsGiven(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of("scheme", "none", "user_agent", 42L)));
+        connection.send(wire.hello(x -> x.withScheme("none").withUserAgent(42L)));
 
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailure(Status.Request.Invalid, "Illegal value for field \"user_agent\": Expected string");

@@ -20,7 +20,6 @@
 package org.neo4j.bolt.testing.messages;
 
 import io.netty.buffer.ByteBuf;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -39,7 +38,6 @@ import org.neo4j.bolt.protocol.io.writer.DefaultStructWriter;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
-import org.neo4j.values.virtual.MapValue;
 
 public abstract class AbstractBoltWire implements BoltWire {
 
@@ -85,7 +83,10 @@ public abstract class AbstractBoltWire implements BoltWire {
         this.pipeline.addLast(DefaultStructWriter.getInstance());
     }
 
-    protected abstract String getUserAgent();
+    @Override
+    public WriterPipeline getPipeline() {
+        return pipeline;
+    }
 
     @Override
     public ProtocolVersion getProtocolVersion() {
@@ -127,50 +128,6 @@ public abstract class AbstractBoltWire implements BoltWire {
     }
 
     @Override
-    public ByteBuf hello(Map<String, Object> meta, RoutingContext context) {
-        Map<String, Object> params;
-        if (meta != null) {
-            params = new HashMap<>(meta);
-        } else {
-            params = new HashMap<>();
-        }
-
-        params.putIfAbsent("user_agent", this.getUserAgent());
-
-        if (context != null) {
-            params.put("routing", context.getParameters());
-        }
-        if (!this.features.isEmpty()) {
-            var featureIds = this.features.stream().map(Feature::getId).toList();
-            params.putIfAbsent("patch_bolt", featureIds);
-        }
-
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_HELLO))
-                .writeMap(params)
-                .getTarget();
-    }
-
-    @Override
-    public ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks, String transactionType) {
-        var meta = new HashMap<String, Object>();
-        if (db != null) {
-            meta.put("db", db);
-        }
-        if (impersonatedUser != null) {
-            meta.put("imp_user", impersonatedUser);
-        }
-        if (bookmarks != null) {
-            meta.put("bookmarks", new ArrayList<>(bookmarks));
-        }
-
-        return PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(1, MESSAGE_TAG_BEGIN))
-                .writeMap(meta)
-                .getTarget();
-    }
-
-    @Override
     public ByteBuf discard(long n) {
         return PackstreamBuf.allocUnpooled()
                 .writeStructHeader(new StructHeader(1, MESSAGE_TAG_DISCARD))
@@ -200,27 +157,6 @@ public abstract class AbstractBoltWire implements BoltWire {
                 .writeString("qid")
                 .writeInt(qid)
                 .getTarget();
-    }
-
-    // TODO: Explicit parameters instead of meta to match the other functions?
-    @Override
-    public ByteBuf run(String statement, MapValue params, MapValue meta) {
-        if (params == null) {
-            params = MapValue.EMPTY;
-        }
-        if (meta == null) {
-            meta = MapValue.EMPTY;
-        }
-
-        var buf = PackstreamBuf.allocUnpooled()
-                .writeStructHeader(new StructHeader(3, MESSAGE_TAG_RUN))
-                .writeString(statement);
-
-        var ctx = this.pipeline.forBuffer(buf);
-        ctx.writeValue(params);
-        ctx.writeValue(meta);
-
-        return buf.getTarget();
     }
 
     @Override

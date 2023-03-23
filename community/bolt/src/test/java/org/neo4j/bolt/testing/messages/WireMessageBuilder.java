@@ -22,36 +22,25 @@ package org.neo4j.bolt.testing.messages;
 import io.netty.buffer.ByteBuf;
 import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.connector.connection.Feature;
-import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 
-public class BoltV50Wire extends AbstractBoltWire {
+public interface WireMessageBuilder<T> {
+    Map<String, Object> getMeta();
 
-    protected BoltV50Wire(ProtocolVersion version) {
-        super(version, Feature.UTC_DATETIME);
-    }
+    ProtocolVersion getProtocolVersion();
 
-    public BoltV50Wire() {
-        super(BoltProtocolV50.VERSION, Feature.UTC_DATETIME);
-    }
+    T getThis();
 
-    @Override
-    public boolean supportsLogonMessage() {
-        return false;
-    }
+    ByteBuf build();
 
-    @Override
-    public String getUserAgent() {
-        return "BoltWire/5.0";
-    }
-
-    @Override
-    public ByteBuf logon(Map<String, Object> authToken) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ByteBuf logoff() {
-        throw new UnsupportedOperationException();
+    /**
+     * Use this to inject bad key-value pairs into metadata.
+     * Do not use it to add metadata with known keys.
+     * @param key an unknown metadata key.
+     * @param value a value
+     * @return this;
+     */
+    default T withBadKeyPair(String key, Object value) {
+        getMeta().put(key, value);
+        return getThis();
     }
 }

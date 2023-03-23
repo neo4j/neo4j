@@ -90,10 +90,7 @@ public class LegacyAuthenticationIT {
     @ProtocolTest
     void shouldRespondWithCredentialsExpiredOnFirstUse(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j")));
+        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
         // ensure that the server returns the expected set of metadata as well as a marker indicating that the used
         // credentials have expired and will need to be changed
@@ -104,10 +101,7 @@ public class LegacyAuthenticationIT {
 
     @ProtocolTest
     void shouldFailIfWrongCredentials(BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "wrong")));
+        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "wrong")));
 
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailure(
@@ -136,17 +130,13 @@ public class LegacyAuthenticationIT {
     void shouldFailIfWrongCredentialsFollowingSuccessfulLogin(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
         // authenticate normally using the preset credentials and update the password to a new value
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j")));
+        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
 
-        connection.send(wire.run(
-                "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                singletonMap("password", "secretPassword"),
-                singletonMap("db", SYSTEM_DATABASE_NAME)));
+        connection.send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
+                        singletonMap("password", "secretPassword"))
+                .withDatabase(SYSTEM_DATABASE_NAME)));
         connection.send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
@@ -155,10 +145,7 @@ public class LegacyAuthenticationIT {
         connection.reconnect();
         wire.negotiate(connection);
 
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "secretPassword")));
+        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "secretPassword")));
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
 
@@ -166,10 +153,7 @@ public class LegacyAuthenticationIT {
         connection.reconnect();
         wire.negotiate(connection);
 
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j")));
+        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailure(
@@ -180,11 +164,8 @@ public class LegacyAuthenticationIT {
     @ProtocolTest
     void shouldFailIfMalformedAuthTokenWrongType(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", List.of("neo4j"),
-                "credentials", "neo4j")));
-
+        connection.send(wire.hello(
+                x -> x.withBasicScheme().withBadPrincipal(List.of("neo4j")).withCredentials("neo4j")));
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailureFuzzy(
                         Status.Security.Unauthorized,
@@ -195,10 +176,9 @@ public class LegacyAuthenticationIT {
     @ProtocolTest
     void shouldFailIfMalformedAuthTokenMissingKey(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "this-should-have-been-credentials", "neo4j")));
+        connection.send(wire.hello(x -> x.withBasicScheme()
+                .withPrincipal("neo4j")
+                .withBadKeyPair("this-should-have-been-credentials", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailureFuzzy(
@@ -209,9 +189,8 @@ public class LegacyAuthenticationIT {
     @ProtocolTest
     void shouldFailIfMalformedAuthTokenMissingScheme(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
-                "principal", "neo4j",
-                "credentials", "neo4j")));
+
+        connection.send(wire.hello(x -> x.withPrincipal("neo4j").withCredentials("neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailureFuzzy(
@@ -222,10 +201,8 @@ public class LegacyAuthenticationIT {
     @ProtocolTest
     protected void shouldFailIfMalformedAuthTokenUnknownScheme(
             BoltWire wire, @Negotiated TransportConnection connection) throws IOException {
-        connection.send(wire.hello(Map.of(
-                "scheme", "unknown",
-                "principal", "neo4j",
-                "credentials", "neo4j")));
+        connection.send(
+                wire.hello(x -> x.withScheme("unknown").withPrincipal("neo4j").withCredentials("neo4j")));
 
         BoltConnectionAssertions.assertThat(connection)
                 .receivesFailure(
@@ -240,10 +217,7 @@ public class LegacyAuthenticationIT {
             connection.reconnect();
             wire.negotiate(connection);
 
-            connection.send(wire.hello(Map.of(
-                    "scheme", "basic",
-                    "principal", "neo4j",
-                    "credentials", "WHAT_WAS_THE_PASSWORD_AGAIN")));
+            connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "WHAT_WAS_THE_PASSWORD_AGAIN")));
 
             BoltConnectionAssertions.assertThat(connection)
                     .receivesFailure(
@@ -256,10 +230,7 @@ public class LegacyAuthenticationIT {
     @ProtocolTest
     void shouldFailWhenReusingTheSamePassword(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j")));
+        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
                 .containsEntry("credentials_expired", true)
@@ -267,19 +238,17 @@ public class LegacyAuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run(
-                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                        singletonMap("password", "password"),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
+                                singletonMap("password", "password"))
+                        .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
 
         connection
-                .send(wire.run(
-                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
-                        singletonMap("password", "password"),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x -> x.withParameters(
+                                singletonMap("password", "password"))
+                        .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
@@ -289,10 +258,9 @@ public class LegacyAuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run(
-                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
-                        singletonMap("password", "abcdefgh"),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x -> x.withParameters(
+                                singletonMap("password", "abcdefgh"))
+                        .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
@@ -301,10 +269,7 @@ public class LegacyAuthenticationIT {
     @ProtocolTest
     void shouldFailWhenSubmittingEmptyPassword(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j")));
+        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
                 .containsEntry("credentials_expired", true)
@@ -313,8 +278,7 @@ public class LegacyAuthenticationIT {
         connection
                 .send(wire.run(
                         "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                        singletonMap("password", ""),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                        x -> x.withParameters(singletonMap("password", "")).withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
@@ -323,10 +287,9 @@ public class LegacyAuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run(
-                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                        singletonMap("password", "abcdefgh"),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
+                                singletonMap("password", "abcdefgh"))
+                        .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
@@ -336,10 +299,7 @@ public class LegacyAuthenticationIT {
     void shouldNotBeAbleToReadWhenPasswordChangeRequired(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
         // authenticate with the default (expired) credentials
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j")));
+        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(meta -> Assertions.assertThat(meta)
                 .containsEntry("credentials_expired", true)

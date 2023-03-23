@@ -92,6 +92,6 @@ public final class AuthenticateConnectionInitializer implements ConnectionInitia
         if (wire.supportsLogonMessage()) {
             return Optional.of(wire.logon(annotation.principal(), annotation.credentials()));
         }
-        return Optional.of(wire.hello(annotation.principal(), annotation.credentials()));
+        return Optional.of(wire.hello(x -> x.withBasicAuth(annotation.principal(), annotation.credentials())));
     }
 }

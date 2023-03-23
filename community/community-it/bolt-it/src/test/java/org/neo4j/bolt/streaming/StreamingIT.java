@@ -201,11 +201,11 @@ public class StreamingIT {
     @ProtocolTest
     void shouldAcceptTransactionType(BoltWire wire, @Authenticated TransportConnection connection) throws Exception {
         connection
-                .send(wire.begin("neo4j", null, null, "implicit"))
+                .send(wire.begin(x -> x.withDatabase("neo4j").withTransactionType("implicit")))
                 .send(wire.run("RETURN 1"))
                 .send(wire.pull())
                 .send(wire.commit())
-                .send(wire.begin("neo4j", null, null, "nonsense"))
+                .send(wire.begin(x -> x.withDatabase("neo4j").withTransactionType("nonsense")))
                 .send(wire.run("RETURN 1"))
                 .send(wire.pull())
                 .send(wire.commit());

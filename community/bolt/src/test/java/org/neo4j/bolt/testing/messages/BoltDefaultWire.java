@@ -30,7 +30,7 @@ import org.neo4j.bolt.testing.client.TransportConnection;
 public final class BoltDefaultWire extends BoltV50Wire {
 
     @Override
-    protected String getUserAgent() {
+    public String getUserAgent() {
         return "BoltDefaultWire/0.0";
     }
 }

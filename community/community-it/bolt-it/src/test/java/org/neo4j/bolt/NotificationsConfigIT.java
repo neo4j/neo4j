@@ -22,8 +22,8 @@ package org.neo4j.bolt;
 import static org.neo4j.bolt.testing.assertions.BoltConnectionAssertions.assertThat;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,26 +35,24 @@ import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
+import org.neo4j.bolt.testing.messages.NotificationsMessageBuilder;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
 import org.neo4j.graphdb.NotificationCategory;
 import org.neo4j.graphdb.SeverityLevel;
+import org.neo4j.kernel.impl.query.NotificationConfiguration;
 import org.neo4j.test.extension.OtherThreadExtension;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
-import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.MapValue;
-import org.neo4j.values.virtual.MapValueBuilder;
 
 @EphemeralTestDirectoryExtension
 @Neo4jWithSocketExtension
 @BoltTestExtension
 @ExtendWith(OtherThreadExtension.class)
 public class NotificationsConfigIT {
+
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldReturnWarning(BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
-
-        var helloMeta = Map.of("notifications_minimum_severity", (Object) "WARNING");
-        connection.send(wire.hello(helloMeta, null));
+        connection.send(wire.hello(x -> x.withSeverity(NotificationConfiguration.Severity.WARNING)));
         connection.send(wire.logon());
         connection
                 .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
@@ -79,57 +77,35 @@ public class NotificationsConfigIT {
 
     @ProtocolTest
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldSendFailureWithUnknownSeverity(BoltWire wire, @Negotiated TransportConnection connection)
+            throws Throwable {
+        connection.send(wire.hello(x -> x.withUnknownSeverity("WANING")));
+
+        assertThat(connection).receivesFailure();
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldSendFailureWithUnknownCategory(BoltWire wire, @Negotiated TransportConnection connection)
+            throws Throwable {
+        connection.send(wire.hello(x -> x.withUnknownDisabledCategories(List.of("Pete"))));
+
+        assertThat(connection).receivesFailure();
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldNotReturnNotificationsWhenAllDisabled(BoltWire wire, @Negotiated TransportConnection connection)
             throws Throwable {
 
-        var helloMeta = Map.of("notifications_minimum_severity", (Object) "OFF");
-        connection.send(wire.hello(helloMeta, null));
+        connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
         connection.send(wire.logon());
         connection
                 .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
-        // Then
         assertThat(connection).receivesSuccess(x -> Assertions.assertThat(x).doesNotContainKey("notifications"));
-    }
-
-    @ProtocolTest
-    @Disabled("Currently working wrong?")
-    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldNotReturnNotificationsInDisabledCategories(
-            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
-        var helloMeta = Map.of("notifications_disabled_categories", (Object) List.of("GENERIC", "UNRECOGNIZED"));
-        connection.send(wire.hello(helloMeta, null));
-        connection.send(wire.logon());
-        connection
-                .send(wire.run("MATCH (a:Person) CALL { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
-                .send(wire.pull());
-
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
-        // Then
-        assertThat(connection).receivesSuccess(x -> {
-            Assertions.assertThat(x).doesNotContainKey("notifications");
-        });
-    }
-
-    @ProtocolTest
-    @Disabled("Currently working wrong?")
-    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
-    public void shouldNotReturnNotificationsWhenNotHighEnoughSeverity(
-            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
-        var helloMeta = Map.of("notifications_minimum_severity", (Object) "WARNING");
-        connection.send(wire.hello(helloMeta, null));
-        connection.send(wire.logon());
-        connection
-                .send(wire.run("MATCH (a:Person) CALL { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
-                .send(wire.pull());
-
-        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
-        // Then
-        assertThat(connection).receivesSuccess(x -> {
-            Assertions.assertThat(x).doesNotContainKey("notifications");
-        });
     }
 
     @ProtocolTest
@@ -144,7 +120,7 @@ public class NotificationsConfigIT {
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
-        // Then
+
         assertThat(connection).receivesSuccess(x -> {
             Assertions.assertThat(x).containsKey("notifications");
             Assertions.assertThat((ArrayList<?>) x.get("notifications")).hasSize(3);
@@ -155,9 +131,7 @@ public class NotificationsConfigIT {
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldEnableNotificationsForQuery(BoltWire wire, @Negotiated TransportConnection connection)
             throws Throwable {
-
-        var helloMeta = Map.of("notifications_minimum_severity", (Object) "OFF");
-        connection.send(wire.hello(helloMeta, null));
+        connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
         connection.send(wire.logon());
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
 
@@ -166,13 +140,10 @@ public class NotificationsConfigIT {
                 .send(wire.pull());
         assertThat(connection).receivesSuccess().receivesSuccess(x -> Assertions.assertThat(x)
                 .doesNotContainKey("notifications"));
-
-        // Then
-        var metaBuilder = new MapValueBuilder();
-        metaBuilder.add("notifications_minimum_severity", Values.stringValue("INFORMATION"));
         connection
                 .send(wire.run(
-                        "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)", MapValue.EMPTY, metaBuilder.build()))
+                        "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)",
+                        x -> x.withSeverity(NotificationConfiguration.Severity.INFORMATION)))
                 .send(wire.pull());
 
         assertThat(connection)
@@ -189,5 +160,178 @@ public class NotificationsConfigIT {
                         17,
                         1,
                         18);
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldSendFailureOnRunWithUnknownSeverity(BoltWire wire, @Negotiated TransportConnection connection)
+            throws Throwable {
+        connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
+        connection.send(wire.logon());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
+
+        connection.send(wire.run("RETURN 1 as n", x -> x.withUnknownSeverity("boom")));
+
+        assertThat(connection).receivesFailure();
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldSendFailureOnRunWithUnknownCategory(BoltWire wire, @Negotiated TransportConnection connection)
+            throws Throwable {
+
+        connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
+        connection.send(wire.logon());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
+
+        connection.send(wire.run("RETURN 1 as n", x -> x.withUnknownDisabledCategories(List.of("boom"))));
+
+        assertThat(connection).receivesFailure();
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldEnableNotificationsForQueryUsingCategories(
+            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+
+        connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
+        connection.send(wire.logon());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
+
+        connection
+                .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
+                .send(wire.pull());
+        assertThat(connection).receivesSuccess().receivesSuccess(x -> Assertions.assertThat(x)
+                .doesNotContainKey("notifications"));
+
+        connection
+                .send(wire.run(
+                        "EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)",
+                        x -> x.withDisabledCategories(Collections.emptyList())))
+                .send(wire.pull());
+
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccessWithNotification(
+                        "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                        "The provided label is not in the database.",
+                        "One of the labels in your query is not available in the database, "
+                                + "make sure you didn't misspell it or that the label is available when "
+                                + "you run this statement in your application (the missing label name is: "
+                                + "THIS_IS_NOT_A_LABEL)",
+                        SeverityLevel.WARNING,
+                        NotificationCategory.UNRECOGNIZED,
+                        17,
+                        1,
+                        18);
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldEnableNotificationsInBegin(BoltWire wire, @Negotiated TransportConnection connection)
+            throws Throwable {
+
+        connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
+        connection.send(wire.logon());
+        assertThat(connection).receivesSuccess(2);
+
+        connection
+                .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
+                .send(wire.pull());
+        assertThat(connection).receivesSuccess().receivesSuccess(x -> Assertions.assertThat(x)
+                .doesNotContainKey("notifications"));
+
+        connection.send(wire.begin(x -> x.withSeverity(NotificationConfiguration.Severity.WARNING)));
+        assertThat(connection).receivesSuccess();
+
+        connection
+                .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
+                .send(wire.pull());
+
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccessWithNotification(
+                        "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                        "The provided label is not in the database.",
+                        "One of the labels in your query is not available in the database, "
+                                + "make sure you didn't misspell it or that the label is available when "
+                                + "you run this statement in your application (the missing label name is: "
+                                + "THIS_IS_NOT_A_LABEL)",
+                        SeverityLevel.WARNING,
+                        NotificationCategory.UNRECOGNIZED,
+                        17,
+                        1,
+                        18);
+    }
+
+    @ProtocolTest
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldEnableNotificationsInBeginWithCategories(
+            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+
+        connection.send(wire.hello(NotificationsMessageBuilder::withDisabledNotifications));
+        connection.send(wire.logon());
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
+
+        connection
+                .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
+                .send(wire.pull());
+        assertThat(connection).receivesSuccess().receivesSuccess(x -> Assertions.assertThat(x)
+                .doesNotContainKey("notifications"));
+
+        connection.send(wire.begin(x -> x.withDisabledCategories(Collections.emptyList())));
+        assertThat(connection).receivesSuccess();
+
+        connection
+                .send(wire.run("EXPLAIN MATCH (a:THIS_IS_NOT_A_LABEL) RETURN count(*)"))
+                .send(wire.pull());
+
+        assertThat(connection)
+                .receivesSuccess()
+                .receivesSuccessWithNotification(
+                        "Neo.ClientNotification.Statement.UnknownLabelWarning",
+                        "The provided label is not in the database.",
+                        "One of the labels in your query is not available in the database, "
+                                + "make sure you didn't misspell it or that the label is available when "
+                                + "you run this statement in your application (the missing label name is: "
+                                + "THIS_IS_NOT_A_LABEL)",
+                        SeverityLevel.WARNING,
+                        NotificationCategory.UNRECOGNIZED,
+                        17,
+                        1,
+                        18);
+    }
+
+    @ProtocolTest
+    @Disabled("Temporarily disabled awaiting fabric impl")
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldNotReturnNotificationsInDisabledCategories(
+            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+        connection.send(wire.hello(x -> x.withDisabledCategories(
+                List.of(NotificationConfiguration.Category.GENERIC, NotificationConfiguration.Category.UNRECOGNIZED))));
+        connection.send(wire.logon());
+        connection
+                .send(wire.run("MATCH (a:Person) CALL { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
+                .send(wire.pull());
+
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
+
+        assertThat(connection).receivesSuccess(x -> Assertions.assertThat(x).doesNotContainKey("notifications"));
+    }
+
+    @ProtocolTest
+    @Disabled("Temporarily disabled awaiting fabric impl")
+    @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
+    public void shouldNotReturnNotificationsWhenNotHighEnoughSeverity(
+            BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
+        connection.send(wire.hello(x -> x.withSeverity(NotificationConfiguration.Severity.WARNING)));
+        connection.send(wire.logon());
+        connection
+                .send(wire.run("MATCH (a:Person) CALL { MATCH (a:Label) RETURN a AS aLabel } RETURN a"))
+                .send(wire.pull());
+
+        BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
+
+        assertThat(connection).receivesSuccess(x -> Assertions.assertThat(x).doesNotContainKey("notifications"));
     }
 }

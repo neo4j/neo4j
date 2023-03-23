@@ -26,10 +26,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
+import org.neo4j.bolt.protocol.io.pipeline.WriterPipeline;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -63,6 +65,14 @@ public interface BoltWire {
      * @return a protocol version.
      */
     ProtocolVersion getProtocolVersion();
+
+    /**
+     * Get a User agent string.
+     * @return a user agent string.
+     */
+    String getUserAgent();
+
+    WriterPipeline getPipeline();
 
     /**
      * Transmits a negotiation request for the protocol version implemented by this wire and ensures that the correct version is selected.
@@ -105,23 +115,13 @@ public interface BoltWire {
     boolean isOptionalFeature(Feature... features);
 
     default ByteBuf hello() {
-        return this.hello(null);
+        return hello(x -> x);
     }
 
-    default ByteBuf hello(String principal, String credentials) {
-        return this.hello(Map.of("scheme", "basic", "principal", principal, "credentials", credentials));
+    default ByteBuf hello(UnaryOperator<HelloBuilder> fn) {
+        return fn.apply(new HelloBuilder(this.getProtocolVersion(), this.getUserAgent(), this.getEnabledFeatures()))
+                .build();
     }
-
-    default ByteBuf hello(String principal, String credentials, String realm) {
-        return this.hello(
-                Map.of("scheme", "basic", "principal", principal, "credentials", credentials, "realm", realm));
-    }
-
-    default ByteBuf hello(Map<String, Object> meta) {
-        return this.hello(meta, null);
-    }
-
-    ByteBuf hello(Map<String, Object> meta, RoutingContext context);
 
     default ByteBuf logon() {
         return this.logon(new HashMap<>());
@@ -141,22 +141,12 @@ public interface BoltWire {
     ByteBuf logoff();
 
     default ByteBuf begin() {
-        return begin(null, null, null, null);
+        return begin(x -> x);
     }
 
-    default ByteBuf begin(String db) {
-        return this.begin(db, null, null, null);
+    default ByteBuf begin(UnaryOperator<BeginBuilder> fn) {
+        return fn.apply(new BeginBuilder(this.getProtocolVersion())).build();
     }
-
-    default ByteBuf begin(Collection<String> bookmarks) {
-        return this.begin(null, null, bookmarks, null);
-    }
-
-    default ByteBuf begin(String db, String impersonatedUser) {
-        return this.begin(db, impersonatedUser, null, null);
-    }
-
-    ByteBuf begin(String db, String impersonatedUser, Collection<String> bookmarks, String transactionType);
 
     default ByteBuf discard() {
         return this.discard(-1);
@@ -172,19 +162,18 @@ public interface BoltWire {
 
     ByteBuf pull(long n, long qid);
 
-    default ByteBuf run() {
-        return this.run("RETURN 1");
-    }
-
     default ByteBuf run(String statement) {
-        return this.run(statement, null);
+        return this.run(statement, x -> x);
     }
 
     default ByteBuf run(String statement, MapValue params) {
-        return this.run(statement, params, null);
+        return this.run(statement, x -> x.withParameters(params));
     }
 
-    ByteBuf run(String statement, MapValue params, MapValue meta);
+    default ByteBuf run(String statement, UnaryOperator<RunMessageBuilder> fn) {
+        return fn.apply(new RunMessageBuilder(this.getProtocolVersion(), statement, this.getPipeline()))
+                .build();
+    }
 
     ByteBuf rollback();
 

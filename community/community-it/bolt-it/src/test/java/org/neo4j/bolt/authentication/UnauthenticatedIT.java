@@ -21,7 +21,6 @@ package org.neo4j.bolt.authentication;
 
 import java.io.IOException;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.Map;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
@@ -72,12 +71,13 @@ public class UnauthenticatedIT {
     @TransportTest
     void shouldTerminateConnectionWhenLargeHelloIsReceived(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
-        var meta = new HashMap<String, Object>();
-        for (int i = 0; i < 200; i++) {
-            meta.put("index-" + i, i);
-        }
 
-        connection.send(wire.hello(meta, null));
+        connection.send(wire.hello(x -> {
+            for (int i = 0; i < 200; i++) {
+                x.withBadKeyPair("index-" + i, i);
+            }
+            return x;
+        }));
 
         // Then
         BoltConnectionAssertions.assertThat(connection).isEventuallyTerminated();

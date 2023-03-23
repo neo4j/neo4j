@@ -47,7 +47,7 @@ public final class BoltV44Wire extends AbstractBoltWire {
     }
 
     @Override
-    protected String getUserAgent() {
+    public String getUserAgent() {
         return "BoltWire/4.4";
     }
 

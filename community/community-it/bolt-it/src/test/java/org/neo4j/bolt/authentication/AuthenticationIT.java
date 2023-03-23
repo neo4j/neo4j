@@ -156,10 +156,9 @@ public class AuthenticationIT {
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
 
-        connection.send(wire.run(
-                "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                singletonMap("password", "secretPassword"),
-                singletonMap("db", SYSTEM_DATABASE_NAME)));
+        connection.send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
+                        singletonMap("password", "secretPassword"))
+                .withDatabase(SYSTEM_DATABASE_NAME)));
         connection.send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(2);
@@ -315,19 +314,17 @@ public class AuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run(
-                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                        singletonMap("password", "password"),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
+                                singletonMap("password", "password"))
+                        .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
 
         connection
-                .send(wire.run(
-                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
-                        singletonMap("password", "password"),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x -> x.withParameters(
+                                singletonMap("password", "password"))
+                        .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
@@ -337,10 +334,9 @@ public class AuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run(
-                        "ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password",
-                        singletonMap("password", "abcdefgh"),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'password' TO $password", x -> x.withParameters(
+                                singletonMap("password", "abcdefgh"))
+                        .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
@@ -365,8 +361,7 @@ public class AuthenticationIT {
         connection
                 .send(wire.run(
                         "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                        singletonMap("password", ""),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                        x -> x.withParameters(singletonMap("password", "")).withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection)
@@ -375,10 +370,9 @@ public class AuthenticationIT {
 
         connection
                 .send(wire.reset())
-                .send(wire.run(
-                        "ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password",
-                        singletonMap("password", "abcdefgh"),
-                        singletonMap("db", SYSTEM_DATABASE_NAME)))
+                .send(wire.run("ALTER CURRENT USER SET PASSWORD FROM 'neo4j' TO $password", x -> x.withParameters(
+                                singletonMap("password", "abcdefgh"))
+                        .withDatabase(SYSTEM_DATABASE_NAME)))
                 .send(wire.pull());
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
@@ -453,10 +447,7 @@ public class AuthenticationIT {
     void shouldNotBeAbleToAuthenticateOnHelloMessage(BoltWire wire, @Negotiated TransportConnection connection)
             throws IOException {
         // authenticate normally using the preset credentials and update the password to a new value
-        connection.send(wire.hello(Map.of(
-                "scheme", "basic",
-                "principal", "neo4j",
-                "credentials", "neo4j")));
+        connection.send(wire.hello(x -> x.withBasicAuth("neo4j", "neo4j")));
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess();
 

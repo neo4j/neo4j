@@ -473,7 +473,7 @@ class ConnectionTrackingIT {
         return executor.submit(() -> {
             connectSocketTo(neo4j.boltURI())
                     .sendDefaultProtocolVersion()
-                    .send(wire.hello(username, password))
+                    .send(wire.hello(x -> x.withBasicAuth(username, password)))
                     .send(wire.run("MATCH (n) WHERE id(n) = " + id + " SET n.prop = 42"))
                     .send(wire.pull());
 
@@ -494,7 +494,7 @@ class ConnectionTrackingIT {
         try (var connection = connectSocketTo(neo4j.boltURI())) {
             connection
                     .sendDefaultProtocolVersion()
-                    .send(wire.hello("neo4j", NEO4J_USER_PWD))
+                    .send(wire.hello(x -> x.withBasicAuth("neo4j", NEO4J_USER_PWD)))
                     .send(wire.run("CALL dbms.killConnection('" + id + "')"))
                     .send(wire.pull());
 
