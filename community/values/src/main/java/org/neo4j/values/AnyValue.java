@@ -30,14 +30,14 @@ public abstract class AnyValue implements Measurable {
     // so we need to just manually ensure it isn't overridden
     @Override
     public boolean equals(Object other) {
-        return this == other || other != null && equalTo(other);
+        return internalEquals(other);
     }
 
     // In Cypher RETURN null = null; returns null. Therefore, in a binary equals we
     // sometimes need to return false when matching e.g CASE null WHEN null THEN... shouldn't match on null
     public boolean equalsWithNoValueCheck(Object other) {
         if (this == Values.NO_VALUE && other == Values.NO_VALUE) return false;
-        return this == other || other != null && equalTo(other);
+        return internalEquals(other);
     }
 
     @Override
@@ -88,5 +88,9 @@ public abstract class AnyValue implements Measurable {
 
     public static boolean isNaN(AnyValue value) {
         return value instanceof FloatingPointValue && ((FloatingPointValue) value).isNaN();
+    }
+
+    protected boolean internalEquals(Object other) {
+        return this == other || other != null && equalTo(other);
     }
 }

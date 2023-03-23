@@ -41,5 +41,16 @@ public abstract class HashMemoizingAnyValue extends AnyValue {
         return hash;
     }
 
+    @Override
+    protected boolean internalEquals(Object other) {
+        if (this == other) {
+            return true;
+        } else if (hash != 0 && other instanceof HashMemoizingAnyValue o && o.hash == hash) {
+            return equalTo(other);
+        } else {
+            return other != null && equalTo(other);
+        }
+    }
+
     protected abstract int computeHashToMemoize();
 }
