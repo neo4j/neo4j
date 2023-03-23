@@ -32,19 +32,17 @@ import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
-import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
+import org.neo4j.cypher.internal.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
@@ -267,6 +265,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           _: CartesianProduct |
           _: Eager |
           _: Optional |
+          _: OptionalExpand |
           _: NodeHashJoin |
           _: LeftOuterHashJoin |
           _: RightOuterHashJoin |
@@ -309,17 +308,19 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
            * Because the rows of RHS are never passed downstream, the LHS is traversed with same horizon.
            */
           (newDistinctHorizon, DistinctHorizon.create(Set.empty, apply))
-        case _: LogicalBinaryPlan =>
+        case _: Apply =>
           /**
-           * For binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
+           * For Apply plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
            * For example, the RHS is traversed first and may introduce a new horizon, which means the later LHS traversal will work in the
            * wrong (further downstream) horizon.
            *
            * Traverse RHS with same horizon.
            */
           (DistinctHorizon.empty, newDistinctHorizon)
-        case _ =>
+        case _: LogicalUnaryPlan =>
           (newDistinctHorizon, DistinctHorizon.empty)
+        case _ =>
+          (DistinctHorizon.empty, DistinctHorizon.empty)
       }
       plan.lhs.foreach(p => planStack.push((p, lhsHorizon)))
       plan.rhs.foreach(p => planStack.push((p, rhsHorizon)))
