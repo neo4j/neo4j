@@ -27,5 +27,6 @@ public enum NotificationCategory {
     GENERIC,
     UNRECOGNIZED,
     UNKNOWN,
-    UNSUPPORTED
+    UNSUPPORTED,
+    SECURITY
 }

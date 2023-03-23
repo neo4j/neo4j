@@ -59,5 +59,10 @@ public enum NotificationCategory {
     /**
      * Unsupported feature warnings
      */
-    UNSUPPORTED
+    UNSUPPORTED,
+
+    /**
+     * Security warnings
+     */
+    SECURITY
 }

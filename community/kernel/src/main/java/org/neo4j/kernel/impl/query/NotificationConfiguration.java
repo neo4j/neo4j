@@ -47,7 +47,8 @@ public record NotificationConfiguration(Severity severityLevel, Set<Category> di
         UNSUPPORTED,
         PERFORMANCE,
         DEPRECATION,
-        GENERIC
+        GENERIC,
+        SECURITY
     }
 
     public static final NotificationConfiguration DEFAULT_FILTER = all();
@@ -75,6 +76,7 @@ public record NotificationConfiguration(Severity severityLevel, Set<Category> di
                     case HINT -> Category.HINT;
                     case GENERIC -> Category.GENERIC;
                     case UNSUPPORTED -> Category.UNSUPPORTED;
+                    case SECURITY -> Category.SECURITY;
                     case UNKNOWN -> null;
                 };
 
