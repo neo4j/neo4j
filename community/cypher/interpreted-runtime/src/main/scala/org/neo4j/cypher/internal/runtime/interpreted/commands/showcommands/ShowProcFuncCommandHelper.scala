@@ -159,22 +159,31 @@ object ShowProcFuncCommandHelper {
   ): (Set[String], Set[String], Boolean) = {
     /* Allows executing function/non-admin procedure if:
      * - no DENY EXECUTE
-     * - GRANT EXECUTE or allowed execute as boosted
+     * - GRANT EXECUTE
      *
      * Allows executing admin procedure if:
      * - no DENY
-     * - allowed execute as boosted or execute admin
+     * - allowed execute admin or execute and execute as boosted
      *
      * Allows executing boosted function/procedure if:
      * - no DENY BOOSTED
      * - GRANT BOOSTED
+     *
+     * Allows execute admin if:
+     * - no DENY EXECUTE ADMIN
+     * - GRANT EXECUTE ADMIN
      */
     val (grantedExecuteRoles, grantedBoostedRoles, deniedExecuteRoles, deniedBoostedRoles) =
       if (isAdmin) {
-        val grantedExecute = privileges.grantedAdminExecuteRoles ++ privileges.grantedBoostedExecuteRoles(name)
+        val grantBoosted = privileges.grantedBoostedExecuteRoles(name)
+        val grantExecuteAndExecuteBoosted =
+          grantBoosted.intersect(privileges.grantedExecuteRoles(name))
+
+        val grantedExecute = privileges.grantedAdminExecuteRoles ++ grantExecuteAndExecuteBoosted
+        val grantedBoosted = privileges.grantedAdminExecuteRoles ++ grantBoosted
         val deniedBoosted = privileges.deniedAdminExecuteRoles ++ privileges.deniedBoostedExecuteRoles(name)
         val deniedExecute = privileges.deniedExecuteRoles(name) ++ deniedBoosted
-        (grantedExecute, grantedExecute, deniedExecute, deniedBoosted)
+        (grantedExecute, grantedBoosted, deniedExecute, deniedBoosted)
       } else {
         val grantedExecute = privileges.grantedExecuteRoles(name)
         val grantedBoosted = privileges.grantedBoostedExecuteRoles(name)
@@ -184,24 +193,14 @@ object ShowProcFuncCommandHelper {
       }
 
     val allowedBoostedRoles = grantedBoostedRoles -- deniedBoostedRoles
-    val allowedExecuteRoles = grantedExecuteRoles ++ allowedBoostedRoles -- deniedExecuteRoles
+    val allowedExecuteRoles = grantedExecuteRoles -- deniedExecuteRoles
 
     /* Test if the user is allowed executing (from mix of roles):
-     * Explicit:
      * - no DENY EXECUTE
      * - GRANT EXECUTE
-     *
-     * Implicit:
-     * - no DENY EXECUTE
-     * - no DENY BOOSTED
-     * - GRANT BOOSTED
      */
-    val allowedExplicit =
+    val allowedExecute =
       userRoles.exists(r => grantedExecuteRoles.contains(r)) && userRoles.forall(r => !deniedExecuteRoles.contains(r))
-    val allowedImplicit = userRoles.exists(r => grantedBoostedRoles.contains(r)) && userRoles.forall(r =>
-      !deniedBoostedRoles.contains(r) && !deniedExecuteRoles.contains(r)
-    )
-    val allowedExecute = allowedExplicit || allowedImplicit
 
     (allowedExecuteRoles, allowedBoostedRoles, allowedExecute)
   }
