@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.common.EntityType;
@@ -57,6 +58,7 @@ import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.newapi.PartitionedScanFactories.PartitionedScanFactory;
 import org.neo4j.kernel.impl.newapi.PartitionedScanTestSuite.Query;
+import org.neo4j.kernel.impl.newapi.TestUtils.PartitionedScanAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
@@ -189,23 +191,27 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             super(testSuite);
         }
 
-        @Test
-        final void shouldHandleEmptyDatabase() throws KernelException {
+        @ParameterizedTest
+        @EnumSource(PartitionedScanAPI.class)
+        final void shouldHandleEmptyDatabase(PartitionedScanAPI api) throws KernelException {
             try (var tx = beginTx();
-                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext())) {
+                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext());
+                    var statement = tx.acquireStatement();
+                    var executionContext = tx.createExecutionContext()) {
                 for (final var entry : queries.valid()) {
                     final var query = entry.getKey();
                     // given  an empty database
                     // when   scanning
                     final var scan = factory.partitionedScan(tx, Integer.MAX_VALUE, query);
-                    while (scan.reservePartition(
-                            entities, tx.cursorContext(), tx.securityContext().mode())) {
+                    while (api.reservePartition(scan, entities, tx, executionContext)) {
                         // then   no data should be found, and should not throw
                         softly.assertThat(entities.next())
                                 .as("no data should be found for %s", query)
                                 .isFalse();
                     }
                 }
+
+                executionContext.complete();
             }
         }
     }
@@ -228,10 +234,13 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                     .isGreaterThan(1);
         }
 
-        @Test
-        final void shouldScanSubsetOfEntriesWithSinglePartition() throws KernelException {
+        @ParameterizedTest
+        @EnumSource(PartitionedScanAPI.class)
+        final void shouldScanSubsetOfEntriesWithSinglePartition(PartitionedScanAPI api) throws KernelException {
             try (var tx = beginTx();
-                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext())) {
+                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext());
+                    var statement = tx.acquireStatement();
+                    var executionContext = tx.createExecutionContext()) {
                 for (final var entry : queries.valid()) {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -248,8 +257,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
                     // given  a partition
                     final var found = new HashSet<Long>();
-                    scan.reservePartition(
-                            entities, tx.cursorContext(), tx.securityContext().mode());
+                    api.reservePartition(scan, entities, tx, executionContext);
                     while (entities.next()) {
                         // when   inspecting the found entities
                         // then   there should be no duplicates
@@ -266,19 +274,22 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                                 .containsAll(found);
                     }
                 }
+
+                executionContext.complete();
             }
         }
 
-        @Test
-        final void shouldCreateNoMorePartitionsThanPossible() throws KernelException {
-            singleThreadedCheck(Integer.MAX_VALUE);
+        @ParameterizedTest
+        @EnumSource(PartitionedScanAPI.class)
+        final void shouldCreateNoMorePartitionsThanPossible(PartitionedScanAPI api) throws KernelException {
+            singleThreadedCheck(api, Integer.MAX_VALUE);
         }
 
         @ParameterizedTest(name = "desiredNumberOfPartitions={0}")
         @MethodSource("rangeFromOneToMaxPartitions")
         final void shouldScanAllEntriesWithGivenNumberOfPartitionsSingleThreaded(int desiredNumberOfPartitions)
                 throws KernelException {
-            singleThreadedCheck(desiredNumberOfPartitions);
+            singleThreadedCheck(PartitionedScanAPI.NEW, desiredNumberOfPartitions);
         }
 
         @ParameterizedTest(name = "desiredNumberOfPartitions={0}")
@@ -295,9 +306,11 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
             multiThreadedCheck(maxNumberOfPartitions, desiredNumberOfTheads);
         }
 
-        private void singleThreadedCheck(int desiredNumberOfPartitions) throws KernelException {
+        private void singleThreadedCheck(PartitionedScanAPI api, int desiredNumberOfPartitions) throws KernelException {
             try (var tx = beginTx();
-                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext())) {
+                    var entities = factory.getCursor(tx.cursors()).with(tx.cursorContext());
+                    var statement = tx.acquireStatement();
+                    var executionContext = tx.createExecutionContext()) {
                 for (final var entry : queries.valid()) {
                     final var query = entry.getKey();
                     final var expectedMatches = entry.getValue();
@@ -315,8 +328,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
 
                     // given  each partition
                     final var found = new HashSet<Long>();
-                    while (scan.reservePartition(
-                            entities, tx.cursorContext(), tx.securityContext().mode())) {
+                    while (api.reservePartition(scan, entities, tx, executionContext)) {
                         while (entities.next()) {
                             // when   inspecting the found entities
                             // then   there should be no duplicates
@@ -334,6 +346,8 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                                 .containsExactlyInAnyOrderElementsOf(expectedMatches);
                     }
                 }
+
+                executionContext.complete();
             }
         }
 
@@ -364,10 +378,7 @@ abstract class PartitionedScanTestSuite<QUERY extends Query<?>, SESSION, CURSOR 
                             final var executionContext = workerContext.getContext();
                             try (var entities = workerContext.getCursor()) {
                                 final var found = new HashSet<Long>();
-                                while (scan.reservePartition(
-                                        entities,
-                                        executionContext.cursorContext(),
-                                        executionContext.securityContext().mode())) {
+                                while (scan.reservePartition(entities, executionContext)) {
                                     while (entities.next()) {
                                         // when   inspecting the found entities
                                         // then   there should be no duplicates within the partition

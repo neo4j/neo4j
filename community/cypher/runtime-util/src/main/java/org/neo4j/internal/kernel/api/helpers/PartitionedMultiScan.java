@@ -24,6 +24,7 @@ import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.ExecutionContext;
 
 public record PartitionedMultiScan<INNER extends Cursor, OUTER extends Cursor>(List<PartitionedScan<INNER>> scans)
         implements PartitionedScan<OUTER> {
@@ -35,6 +36,11 @@ public record PartitionedMultiScan<INNER extends Cursor, OUTER extends Cursor>(L
 
     @Override
     public boolean reservePartition(OUTER cursor, CursorContext cursorContext, AccessMode accessMode) {
+        throw new UnsupportedOperationException("Do not call");
+    }
+
+    @Override
+    public boolean reservePartition(OUTER cursor, ExecutionContext executionContext) {
         throw new UnsupportedOperationException("Do not call");
     }
 

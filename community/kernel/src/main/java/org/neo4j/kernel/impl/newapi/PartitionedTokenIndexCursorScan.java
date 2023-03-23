@@ -23,12 +23,18 @@ import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.index.schema.PartitionedTokenScan;
 
 public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
         implements PartitionedScan<Cursor> {
-    private final Read read;
+    // Read is generally not a thread-safe object.
+    // This one belongs to the thread that initialised the partitioned scan.
+    // Even thought the operations performed by the partitioned scan on the Read should be OK, we prefer the threads
+    // working with the partition to use their own Reads.
+    // In other words, using this "global" Read makes thread-safety of the scan a bit questionable.
+    private final Read fallbackRead;
     private final TokenPredicate query;
     private final PartitionedTokenScan tokenScan;
 
@@ -37,7 +43,7 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
             throw new IllegalStateException(
                     "Transaction contains changes; PartitionScan is only valid in Read-Only transactions.");
         }
-        this.read = read;
+        this.fallbackRead = read;
         this.query = query;
         this.tokenScan = tokenScan;
     }
@@ -49,6 +55,19 @@ public class PartitionedTokenIndexCursorScan<Cursor extends org.neo4j.internal.k
 
     @Override
     public boolean reservePartition(Cursor cursor, CursorContext cursorContext, AccessMode accessMode) {
+        return reservePartition(cursor, fallbackRead, cursorContext, accessMode);
+    }
+
+    @Override
+    public boolean reservePartition(Cursor cursor, ExecutionContext executionContext) {
+        return reservePartition(
+                cursor,
+                (org.neo4j.kernel.impl.newapi.Read) executionContext.dataRead(),
+                executionContext.cursorContext(),
+                executionContext.securityContext().mode());
+    }
+
+    private boolean reservePartition(Cursor cursor, Read read, CursorContext cursorContext, AccessMode accessMode) {
         final var indexCursor = (DefaultEntityTokenIndexCursor<? extends DefaultEntityTokenIndexCursor<?>>) cursor;
         indexCursor.setRead(read);
         final var indexProgressor = tokenScan.reservePartition(indexCursor, cursorContext);

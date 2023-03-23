@@ -321,14 +321,18 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
             long min = Long.MAX_VALUE;
             long max = Long.MIN_VALUE;
 
-            scan.reservePartition(
-                    entities, tx.cursorContext(), tx.securityContext().mode());
-            while (entities.next()) {
-                // then   there should be no duplicates
-                final var entity = factory.getEntityReference(entities);
-                min = Math.min(min, entity);
-                max = Math.max(max, entity);
-                softly.assertThat(found.add(entity)).as("no duplicate").isTrue();
+            try (var statement = tx.acquireStatement();
+                    var executionContext = tx.createExecutionContext()) {
+                scan.reservePartition(entities, executionContext);
+                while (entities.next()) {
+                    // then   there should be no duplicates
+                    final var entity = factory.getEntityReference(entities);
+                    min = Math.min(min, entity);
+                    max = Math.max(max, entity);
+                    softly.assertThat(found.add(entity)).as("no duplicate").isTrue();
+                }
+
+                executionContext.complete();
             }
 
             return !(min == Long.MAX_VALUE || max == Long.MIN_VALUE) ? new Range(min, max) : null;

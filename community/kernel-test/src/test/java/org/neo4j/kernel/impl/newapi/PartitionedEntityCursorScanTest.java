@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.Cursor;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.ExecutionContext;
 
 class PartitionedEntityCursorScanTest {
 
@@ -64,6 +65,11 @@ class PartitionedEntityCursorScanTest {
 
         @Override
         public boolean reservePartition(Cursor cursor, CursorContext cursorContext, AccessMode accessMode) {
+            return true;
+        }
+
+        @Override
+        public boolean reservePartition(Cursor cursor, ExecutionContext executionContext) {
             return true;
         }
     }

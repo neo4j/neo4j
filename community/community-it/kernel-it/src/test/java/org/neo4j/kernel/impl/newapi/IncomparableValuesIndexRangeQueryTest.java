@@ -122,15 +122,19 @@ class IncomparableValuesIndexRangeQueryTest {
 
             var query = PropertyIndexQuery.range(prop, range.from, true, range.to, true);
             var partitionedScan = kernelTx.dataRead().nodeIndexSeek(indexSession, 2, kernelTx.queryContext(), query);
-            for (int i = 0; i < 2; i++) {
-                try (NodeValueIndexCursor cursor = kernelTx.cursors()
-                        .allocateNodeValueIndexCursor(kernelTx.cursorContext(), kernelTx.memoryTracker())) {
-                    partitionedScan.reservePartition(
-                            cursor,
-                            kernelTx.cursorContext(),
-                            kernelTx.securityContext().mode());
-                    assertFalse(cursor.next());
+
+            try (var statement = kernelTx.acquireStatement();
+                    var executionContext = kernelTx.createExecutionContext()) {
+                for (int i = 0; i < 2; i++) {
+                    try (NodeValueIndexCursor cursor = executionContext
+                            .cursors()
+                            .allocateNodeValueIndexCursor(kernelTx.cursorContext(), kernelTx.memoryTracker())) {
+                        partitionedScan.reservePartition(cursor, executionContext);
+                        assertFalse(cursor.next());
+                    }
                 }
+
+                executionContext.complete();
             }
         }
     }

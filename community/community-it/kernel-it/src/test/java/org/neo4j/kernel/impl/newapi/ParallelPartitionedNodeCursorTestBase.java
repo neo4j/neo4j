@@ -48,6 +48,8 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -57,6 +59,7 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.WorkerContext;
+import org.neo4j.kernel.impl.newapi.TestUtils.PartitionedScanAPI;
 
 public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G> {
@@ -76,13 +79,15 @@ public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIR
         }
     }
 
-    @Test
-    void shouldScanASubsetOfNodes() {
-        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldScanASubsetOfNodes(PartitionedScanAPI api) {
+        try (var statement = tx.acquireStatement();
+                var executionContext = tx.createExecutionContext();
+                NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
             // when
             PartitionedScan<NodeCursor> scan = read.allNodesScan(32, NULL_CONTEXT);
-            assertTrue(scan.reservePartition(
-                    nodes, NULL_CONTEXT, tx.securityContext().mode()));
+            assertTrue(api.reservePartition(scan, nodes, tx, executionContext));
 
             assertTrue(nodes.next());
             assertEquals(NODE_IDS.get(0), nodes.nodeReference());
@@ -93,16 +98,20 @@ public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIR
             assertTrue(nodes.next());
             assertEquals(NODE_IDS.get(3), nodes.nodeReference());
             assertFalse(nodes.next());
+
+            executionContext.complete();
         }
     }
 
-    @Test
-    void shouldHandleSinglePartition() {
-        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldHandleSinglePartition(PartitionedScanAPI api) {
+        try (var statement = tx.acquireStatement();
+                var executionContext = tx.createExecutionContext();
+                NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
             // when
             PartitionedScan<NodeCursor> scan = read.allNodesScan(1, NULL_CONTEXT);
-            assertTrue(scan.reservePartition(
-                    nodes, NULL_CONTEXT, tx.securityContext().mode()));
+            assertTrue(api.reservePartition(scan, nodes, tx, executionContext));
 
             LongArrayList ids = new LongArrayList();
             while (nodes.next()) {
@@ -110,6 +119,8 @@ public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIR
             }
 
             assertEquals(NODE_IDS, ids);
+
+            executionContext.complete();
         }
     }
 
@@ -118,21 +129,26 @@ public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIR
         assertThrows(IllegalArgumentException.class, () -> read.allNodesScan(0, NULL_CONTEXT));
     }
 
-    @Test
-    void shouldScanAllNodesInBatchesWithGetNumberOfPartitions() {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldScanAllNodesInBatchesWithGetNumberOfPartitions(PartitionedScanAPI api) {
         // given
         LongArrayList ids = new LongArrayList();
         PartitionedScan<NodeCursor> scan = read.allNodesScan(10, NULL_CONTEXT);
 
         for (int i = 0; i < scan.getNumberOfPartitions(); i++) {
             // when
-            try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
-                scan.reservePartition(nodes, NULL_CONTEXT, tx.securityContext().mode());
+            try (var statement = tx.acquireStatement();
+                    var executionContext = tx.createExecutionContext();
+                    NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                api.reservePartition(scan, nodes, tx, executionContext);
                 {
                     while (nodes.next()) {
                         ids.add(nodes.nodeReference());
                     }
                 }
+
+                executionContext.complete();
             }
         }
 
@@ -140,41 +156,48 @@ public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIR
         assertEquals(NODE_IDS, ids);
     }
 
-    @Test
-    void shouldScanAllNodesInBatchesWithoutGetNumberOfPartitions() {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldScanAllNodesInBatchesWithoutGetNumberOfPartitions(PartitionedScanAPI api) {
         // given
         PartitionedScan<NodeCursor> scan = read.allNodesScan(10, NULL_CONTEXT);
         LongArrayList ids = new LongArrayList();
 
-        try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
-            while (scan.reservePartition(
-                    nodes, NULL_CONTEXT, tx.securityContext().mode())) {
+        try (var statement = tx.acquireStatement();
+                var executionContext = tx.createExecutionContext();
+                NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+            while (api.reservePartition(scan, nodes, tx, executionContext)) {
                 while (nodes.next()) {
                     ids.add(nodes.nodeReference());
                 }
             }
             // when
+            executionContext.complete();
         }
 
         // then
         assertEquals(NODE_IDS, ids);
     }
 
-    @Test
-    void shouldHandleMorePartitionsThanNodes() {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldHandleMorePartitionsThanNodes(PartitionedScanAPI api) {
         // given
         LongArrayList ids = new LongArrayList();
         PartitionedScan<NodeCursor> scan = read.allNodesScan(2 * NUMBER_OF_NODES, NULL_CONTEXT);
 
         for (int i = 0; i < scan.getNumberOfPartitions(); i++) {
             // when
-            try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
-                scan.reservePartition(nodes, NULL_CONTEXT, tx.securityContext().mode());
+            try (var statement = tx.acquireStatement();
+                    var executionContext = tx.createExecutionContext();
+                    NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                api.reservePartition(scan, nodes, tx, executionContext);
                 {
                     while (nodes.next()) {
                         ids.add(nodes.nodeReference());
                     }
                 }
+                executionContext.complete();
             }
         }
 
@@ -233,8 +256,10 @@ public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIR
         }
     }
 
-    @Test
-    void shouldBeReadCommitted() throws ExecutionException, InterruptedException, TimeoutException {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldBeReadCommitted(PartitionedScanAPI api)
+            throws ExecutionException, InterruptedException, TimeoutException {
         // given
         MutableLongSet ids = new LongHashSet();
         PartitionedScan<NodeCursor> scan = read.allNodesScan(10, NULL_CONTEXT);
@@ -243,13 +268,17 @@ public abstract class ParallelPartitionedNodeCursorTestBase<G extends KernelAPIR
         LongList newNodes = createNodesInSeparateTransaction(5);
         for (int i = 0; i < scan.getNumberOfPartitions(); i++) {
             // when
-            try (NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
-                scan.reservePartition(nodes, NULL_CONTEXT, tx.securityContext().mode());
+            try (var statement = tx.acquireStatement();
+                    var executionContext = tx.createExecutionContext();
+                    NodeCursor nodes = cursors.allocateNodeCursor(NULL_CONTEXT)) {
+                api.reservePartition(scan, nodes, tx, executionContext);
                 {
                     while (nodes.next()) {
                         ids.add(nodes.nodeReference());
                     }
                 }
+
+                executionContext.complete();
             }
         }
 

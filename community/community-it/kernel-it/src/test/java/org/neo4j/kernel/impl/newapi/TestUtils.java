@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.WorkerContext;
 
@@ -118,10 +119,7 @@ public final class TestUtils {
                 LongArrayList batch = new LongArrayList();
                 T cursor = workerContext.getCursor();
                 var executionContext = workerContext.getContext();
-                scan.reservePartition(
-                        cursor,
-                        executionContext.cursorContext(),
-                        executionContext.securityContext().mode());
+                scan.reservePartition(cursor, executionContext);
                 while (cursor.next()) {
                     batch.add(producer.applyAsLong(cursor));
                 }
@@ -240,5 +238,32 @@ public final class TestUtils {
             count++;
         }
         return count;
+    }
+
+    enum PartitionedScanAPI {
+        NEW {
+            @Override
+            <CURSOR extends Cursor> boolean reservePartition(
+                    PartitionedScan<CURSOR> scan,
+                    CURSOR cursor,
+                    KernelTransaction tx,
+                    ExecutionContext executionContext) {
+                return scan.reservePartition(cursor, executionContext);
+            }
+        },
+        LEGACY {
+            @Override
+            <CURSOR extends Cursor> boolean reservePartition(
+                    PartitionedScan<CURSOR> scan,
+                    CURSOR cursor,
+                    KernelTransaction tx,
+                    ExecutionContext executionContext) {
+                return scan.reservePartition(
+                        cursor, tx.cursorContext(), tx.securityContext().mode());
+            }
+        };
+
+        abstract <CURSOR extends Cursor> boolean reservePartition(
+                PartitionedScan<CURSOR> scan, CURSOR cursor, KernelTransaction tx, ExecutionContext executionContext);
     }
 }

@@ -42,6 +42,8 @@ import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -50,6 +52,7 @@ import org.neo4j.internal.kernel.api.PartitionedScan;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.WorkerContext;
+import org.neo4j.kernel.impl.newapi.TestUtils.PartitionedScanAPI;
 
 public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends KernelAPIReadTestSupport>
         extends KernelAPIReadTestBase<G> {
@@ -71,16 +74,18 @@ public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends Ke
         }
     }
 
-    @Test
-    void shouldScanASubsetOfRelationships() {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldScanASubsetOfRelationships(PartitionedScanAPI api) {
         var cursorContext = tx.cursorContext();
-        try (var relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
+        try (var statement = tx.acquireStatement();
+                var executionContext = tx.createExecutionContext();
+                var relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
             var scan = read.allRelationshipsScan(64, NULL_CONTEXT);
             // Iterate over one subset/batch/partition. Given the test graph this should
             // have some but not all relationships. Exact numbers will depend on if the storage
             // engine stores relationships as independent entities or embeds relationships on nodes.
-            scan.reservePartition(
-                    relationships, cursorContext, tx.securityContext().mode());
+            api.reservePartition(scan, relationships, tx, executionContext);
             var ids = new LongArrayList();
             while (relationships.next()) {
                 ids.add(relationships.relationshipReference());
@@ -88,17 +93,21 @@ public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends Ke
             assertTrue(ids.size() > 0);
             assertTrue(ids.size() < RELATIONSHIPS.size());
             assertTrue(RELATIONSHIPS.containsAll(ids));
+
+            executionContext.complete();
         }
     }
 
-    @Test
-    void shouldHandleSinglePartition() {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldHandleSinglePartition(PartitionedScanAPI api) {
         CursorContext cursorContext = tx.cursorContext();
-        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
+        try (var statement = tx.acquireStatement();
+                var executionContext = tx.createExecutionContext();
+                RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(cursorContext)) {
             // when
             PartitionedScan<RelationshipScanCursor> scan = read.allRelationshipsScan(1, NULL_CONTEXT);
-            assertTrue(scan.reservePartition(
-                    relationships, NULL_CONTEXT, tx.securityContext().mode()));
+            assertTrue(api.reservePartition(scan, relationships, tx, executionContext));
 
             LongArrayList ids = new LongArrayList();
             while (relationships.next()) {
@@ -106,6 +115,8 @@ public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends Ke
             }
 
             assertEquals(RELATIONSHIPS, ids);
+
+            executionContext.complete();
         }
     }
 
@@ -114,22 +125,26 @@ public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends Ke
         assertThrows(IllegalArgumentException.class, () -> read.allRelationshipsScan(0, NULL_CONTEXT));
     }
 
-    @Test
-    void shouldScanAllRelationshipsInBatchesWithGetNumberOfPartitions() {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldScanAllRelationshipsInBatchesWithGetNumberOfPartitions(PartitionedScanAPI api) {
         // given
         LongArrayList ids = new LongArrayList();
         PartitionedScan<RelationshipScanCursor> scan = read.allRelationshipsScan(10, NULL_CONTEXT);
 
         for (int i = 0; i < scan.getNumberOfPartitions(); i++) {
             // when
-            try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
-                scan.reservePartition(
-                        relationships, NULL_CONTEXT, tx.securityContext().mode());
+            try (var statement = tx.acquireStatement();
+                    var executionContext = tx.createExecutionContext();
+                    RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
+                api.reservePartition(scan, relationships, tx, executionContext);
                 {
                     while (relationships.next()) {
                         ids.add(relationships.relationshipReference());
                     }
                 }
+
+                executionContext.complete();
             }
         }
 
@@ -137,19 +152,23 @@ public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends Ke
         assertEquals(RELATIONSHIPS, ids);
     }
 
-    @Test
-    void shouldScanAllRelationshipsInBatchesWithoutGetNumberOfPartitions() {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldScanAllRelationshipsInBatchesWithoutGetNumberOfPartitions(PartitionedScanAPI api) {
         // given
         PartitionedScan<RelationshipScanCursor> scan = read.allRelationshipsScan(10, NULL_CONTEXT);
         LongArrayList ids = new LongArrayList();
 
-        try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
-            while (scan.reservePartition(
-                    relationships, NULL_CONTEXT, tx.securityContext().mode())) {
+        try (var statement = tx.acquireStatement();
+                var executionContext = tx.createExecutionContext();
+                RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
+            while (api.reservePartition(scan, relationships, tx, executionContext)) {
                 while (relationships.next()) {
                     ids.add(relationships.relationshipReference());
                 }
             }
+
+            executionContext.complete();
             // when
         }
 
@@ -157,8 +176,9 @@ public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends Ke
         assertEquals(RELATIONSHIPS, ids);
     }
 
-    @Test
-    void shouldHandleMorePartitionsThanRelationships() {
+    @ParameterizedTest
+    @EnumSource(PartitionedScanAPI.class)
+    void shouldHandleMorePartitionsThanRelationships(PartitionedScanAPI api) {
         // given
         LongArrayList ids = new LongArrayList();
         PartitionedScan<RelationshipScanCursor> scan =
@@ -166,14 +186,17 @@ public abstract class ParallelPartitionedRelationshipCursorTestBase<G extends Ke
 
         for (int i = 0; i < scan.getNumberOfPartitions(); i++) {
             // when
-            try (RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
-                scan.reservePartition(
-                        relationships, NULL_CONTEXT, tx.securityContext().mode());
+            try (var statement = tx.acquireStatement();
+                    var executionContext = tx.createExecutionContext();
+                    RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor(NULL_CONTEXT)) {
+                api.reservePartition(scan, relationships, tx, executionContext);
                 {
                     while (relationships.next()) {
                         ids.add(relationships.relationshipReference());
                     }
                 }
+
+                executionContext.complete();
             }
         }
 
