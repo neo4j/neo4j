@@ -70,7 +70,6 @@ import org.neo4j.codegen.api.SizeEstimationTest.arrayField
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.memory.Measurable
 import org.neo4j.values.storable.LongValue
-import org.neo4j.values.storable.Values
 import org.objectweb.asm.Opcodes
 
 import java.nio.ByteBuffer

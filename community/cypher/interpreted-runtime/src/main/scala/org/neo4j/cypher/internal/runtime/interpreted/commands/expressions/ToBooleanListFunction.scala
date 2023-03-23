@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
-case class ToBooleanListFunction(a: Expression) extends NullInNullOutExpression(a) {
+case class ToBooleanListFunction(a: Expression) extends Expression {
 
   override def arguments: Seq[Expression] = Seq(a)
 
   override def rewrite(f: Expression => Expression): Expression = f(ToBooleanListFunction(a.rewrite(f)))
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.toBooleanList(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toBooleanList(a(ctx, state))
 
   override def children: Seq[AstNode[_]] = Seq(a)
 }

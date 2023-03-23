@@ -541,8 +541,9 @@ public final class CursorUtils {
             NodeCursor nodeCursor,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor) {
-        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (container instanceof VirtualNodeValue) {
+        if (container == NO_VALUE) {
+            return NO_VALUE;
+        } else if (container instanceof VirtualNodeValue) {
             return nodeGetProperty(
                     read, nodeCursor, ((VirtualNodeValue) container).id(), propertyCursor, dbAccess.propertyKey(key));
         } else if (container instanceof VirtualRelationshipValue) {

@@ -25,14 +25,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 
-case class ToFloatOrNullFunction(arg: Expression) extends NullInNullOutExpression(arg) {
+case class ToFloatOrNullFunction(arg: Expression) extends Expression {
 
   override def arguments: Seq[Expression] = Seq(arg)
 
   override def rewrite(f: Expression => Expression): Expression = f(ToFloatOrNullFunction(arg.rewrite(f)))
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.toFloatOrNull(value)
+  override def apply(ctx: ReadableRow, state: QueryState): AnyValue =
+    CypherFunctions.toFloatOrNull(arg(ctx, state))
 
   override def children: Seq[AstNode[_]] = Seq(arg)
 }

@@ -470,36 +470,6 @@ public final class CypherFunctions {
     }
 
     @CalledFromGeneratedCode
-    public static BooleanValue propertyExists(
-            String key,
-            AnyValue container,
-            DbAccess dbAccess,
-            NodeCursor nodeCursor,
-            RelationshipScanCursor relationshipScanCursor,
-            PropertyCursor propertyCursor) {
-        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (container instanceof VirtualNodeValue) {
-            return dbAccess.nodeHasProperty(
-                            ((VirtualNodeValue) container).id(), dbAccess.propertyKey(key), nodeCursor, propertyCursor)
-                    ? TRUE
-                    : FALSE;
-        } else if (container instanceof VirtualRelationshipValue) {
-            return dbAccess.relationshipHasProperty(
-                            ((VirtualRelationshipValue) container).id(),
-                            dbAccess.propertyKey(key),
-                            relationshipScanCursor,
-                            propertyCursor)
-                    ? TRUE
-                    : FALSE;
-        } else if (container instanceof MapValue) {
-            return ((MapValue) container).get(key) != NO_VALUE ? TRUE : FALSE;
-        } else {
-            throw new CypherTypeException(format(
-                    "Invalid input for function 'exists()': Expected %s to be a node, relationship or map", container));
-        }
-    }
-
-    @CalledFromGeneratedCode
     public static AnyValue propertyGet(
             String key,
             AnyValue container,
@@ -507,30 +477,27 @@ public final class CypherFunctions {
             NodeCursor nodeCursor,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor) {
-        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (container instanceof VirtualNodeValue) {
-            return dbAccess.nodeProperty(
-                    ((VirtualNodeValue) container).id(), dbAccess.propertyKey(key), nodeCursor, propertyCursor, true);
-        } else if (container instanceof VirtualRelationshipValue) {
+        if (container == NO_VALUE) {
+            return NO_VALUE;
+        } else if (container instanceof VirtualNodeValue node) {
+            return dbAccess.nodeProperty(node.id(), dbAccess.propertyKey(key), nodeCursor, propertyCursor, true);
+        } else if (container instanceof VirtualRelationshipValue rel) {
             return dbAccess.relationshipProperty(
-                    ((VirtualRelationshipValue) container).id(),
-                    dbAccess.propertyKey(key),
-                    relationshipScanCursor,
-                    propertyCursor,
-                    true);
-        } else if (container instanceof MapValue) {
-            return ((MapValue) container).get(key);
-        } else if (container instanceof TemporalValue<?, ?>) {
-            return ((TemporalValue) container).get(key);
-        } else if (container instanceof DurationValue) {
-            return ((DurationValue) container).get(key);
-        } else if (container instanceof PointValue) {
-            return ((PointValue) container).get(key);
+                    rel.id(), dbAccess.propertyKey(key), relationshipScanCursor, propertyCursor, true);
+        } else if (container instanceof MapValue map) {
+            return map.get(key);
+        } else if (container instanceof TemporalValue<?, ?> temporal) {
+            return temporal.get(key);
+        } else if (container instanceof DurationValue duration) {
+            return duration.get(key);
+        } else if (container instanceof PointValue point) {
+            return point.get(key);
         } else {
             throw new CypherTypeException(format("Type mismatch: expected a map but was %s", container));
         }
     }
 
+    @CalledFromGeneratedCode
     public static AnyValue containerIndex(
             AnyValue container,
             AnyValue index,
@@ -538,26 +505,18 @@ public final class CypherFunctions {
             NodeCursor nodeCursor,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor) {
-        assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (container instanceof VirtualNodeValue) {
-            return dbAccess.nodeProperty(
-                    ((VirtualNodeValue) container).id(),
-                    propertyKeyId(dbAccess, index),
-                    nodeCursor,
-                    propertyCursor,
-                    true);
-        } else if (container instanceof VirtualRelationshipValue) {
+        if (container == NO_VALUE || index == NO_VALUE) {
+            return NO_VALUE;
+        } else if (container instanceof VirtualNodeValue node) {
+            return dbAccess.nodeProperty(node.id(), propertyKeyId(dbAccess, index), nodeCursor, propertyCursor, true);
+        } else if (container instanceof VirtualRelationshipValue rel) {
             return dbAccess.relationshipProperty(
-                    ((VirtualRelationshipValue) container).id(),
-                    propertyKeyId(dbAccess, index),
-                    relationshipScanCursor,
-                    propertyCursor,
-                    true);
+                    rel.id(), propertyKeyId(dbAccess, index), relationshipScanCursor, propertyCursor, true);
         }
-        if (container instanceof MapValue) {
-            return mapAccess((MapValue) container, index);
-        } else if (container instanceof SequenceValue) {
-            return listAccess((SequenceValue) container, index);
+        if (container instanceof MapValue map) {
+            return mapAccess(map, index);
+        } else if (container instanceof SequenceValue seq) {
+            return listAccess(seq, index);
         } else {
             throw new CypherTypeException(format(
                     "`%s` is not a collection or a map. Element access is only possible by performing a collection "
@@ -567,32 +526,29 @@ public final class CypherFunctions {
     }
 
     @CalledFromGeneratedCode
-    public static boolean containerIndexExists(
+    public static Value containerIndexExists(
             AnyValue container,
             AnyValue index,
             DbAccess dbAccess,
             NodeCursor nodeCursor,
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor) {
-        assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (container instanceof VirtualNodeValue) {
-            return dbAccess.nodeHasProperty(
-                    ((VirtualNodeValue) container).id(), propertyKeyId(dbAccess, index), nodeCursor, propertyCursor);
-        } else if (container instanceof VirtualRelationshipValue) {
-            return dbAccess.relationshipHasProperty(
-                    ((VirtualRelationshipValue) container).id(),
-                    propertyKeyId(dbAccess, index),
-                    relationshipScanCursor,
-                    propertyCursor);
+        if (container == NO_VALUE || index == NO_VALUE) {
+            return NO_VALUE;
+        } else if (container instanceof VirtualNodeValue node) {
+            return booleanValue(
+                    dbAccess.nodeHasProperty(node.id(), propertyKeyId(dbAccess, index), nodeCursor, propertyCursor));
+        } else if (container instanceof VirtualRelationshipValue rel) {
+            return booleanValue(dbAccess.relationshipHasProperty(
+                    rel.id(), propertyKeyId(dbAccess, index), relationshipScanCursor, propertyCursor));
         }
-        if (container instanceof MapValue) {
-            return ((MapValue) container)
-                    .containsKey(asString(
-                            index,
-                            () ->
-                                    // this string assumes that the asString method fails and gives context which
-                                    // operation went wrong
-                                    "Cannot use non string value as or in map keys. It was " + index.toString()));
+        if (container instanceof MapValue map) {
+            return booleanValue(map.containsKey(asString(
+                    index,
+                    () ->
+                            // this string assumes that the asString method fails and gives context which
+                            // operation went wrong
+                            "Cannot use non string value as or in map keys. It was " + index.toString())));
         } else {
             throw new CypherTypeException(format(
                     "`%s` is not a map. Element access is only possible by performing a collection "
@@ -780,9 +736,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static LongValue id(AnyValue item) {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof VirtualNodeValue) {
+    public static Value id(AnyValue item) {
+        if (item == NO_VALUE) {
+            return NO_VALUE;
+        } else if (item instanceof VirtualNodeValue) {
             return longValue(((VirtualNodeValue) item).id());
         } else if (item instanceof VirtualRelationshipValue) {
             return longValue(((VirtualRelationshipValue) item).id());
@@ -873,9 +830,10 @@ public final class CypherFunctions {
         return Values.stringValue(idMapper.relationshipElementId(id));
     }
 
-    public static ListValue labels(AnyValue item, DbAccess access, NodeCursor nodeCursor) {
-        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (item instanceof VirtualNodeValue node) {
+    public static AnyValue labels(AnyValue item, DbAccess access, NodeCursor nodeCursor) {
+        if (item == NO_VALUE) {
+            return NO_VALUE;
+        } else if (item instanceof VirtualNodeValue node) {
             return access.getLabelsForNode(node.id(), nodeCursor);
         } else {
             throw new CypherTypeException("Invalid input for function 'labels()': Expected a Node, got: " + item);
@@ -1148,20 +1106,18 @@ public final class CypherFunctions {
     }
 
     public static Value toBoolean(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof BooleanValue) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof BooleanValue) {
             return (BooleanValue) in;
         } else if (in instanceof TextValue) {
-            switch (((TextValue) in).trim().stringValue().toLowerCase()) {
-                case "true":
-                    return TRUE;
-                case "false":
-                    return FALSE;
-                default:
-                    return NO_VALUE;
-            }
-        } else if (in instanceof IntegralValue) {
-            return ((IntegralValue) in).longValue() == 0L ? FALSE : TRUE;
+            return switch (((TextValue) in).trim().stringValue().toLowerCase()) {
+                case "true" -> TRUE;
+                case "false" -> FALSE;
+                default -> NO_VALUE;
+            };
+        } else if (in instanceof IntegralValue integer) {
+            return integer.longValue() == 0L ? FALSE : TRUE;
         } else {
             throw new CypherTypeException(
                     "Invalid input for function 'toBoolean()': Expected a Boolean, Integer or String, got: " + in);
@@ -1169,8 +1125,9 @@ public final class CypherFunctions {
     }
 
     public static Value toBooleanOrNull(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof BooleanValue || in instanceof TextValue || in instanceof IntegralValue) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof BooleanValue || in instanceof TextValue || in instanceof IntegralValue) {
             return toBoolean(in);
         } else {
             return NO_VALUE;
@@ -1178,20 +1135,22 @@ public final class CypherFunctions {
     }
 
     public static AnyValue toBooleanList(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (!(in instanceof ListValue lv)) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof ListValue lv) {
+            return Arrays.stream(lv.asArray())
+                    .map(entry -> entry == NO_VALUE ? NO_VALUE : toBooleanOrNull(entry))
+                    .collect(ListValueBuilder.collector());
+        } else {
             throw new CypherTypeException(
                     String.format("Invalid input for function 'toBooleanList()': Expected a List, got: %s", in));
         }
-
-        return Arrays.stream(lv.asArray())
-                .map(entry -> entry == NO_VALUE ? NO_VALUE : toBooleanOrNull(entry))
-                .collect(ListValueBuilder.collector());
     }
 
     public static Value toFloat(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof DoubleValue) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof DoubleValue) {
             return (DoubleValue) in;
         } else if (in instanceof NumberValue) {
             return doubleValue(((NumberValue) in).doubleValue());
@@ -1208,7 +1167,6 @@ public final class CypherFunctions {
     }
 
     public static Value toFloatOrNull(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (in instanceof NumberValue || in instanceof TextValue) {
             return toFloat(in);
         } else {
@@ -1217,20 +1175,22 @@ public final class CypherFunctions {
     }
 
     public static AnyValue toFloatList(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (!(in instanceof ListValue lv)) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof ListValue lv) {
+            return Arrays.stream(lv.asArray())
+                    .map(entry -> entry == NO_VALUE ? NO_VALUE : toFloatOrNull(entry))
+                    .collect(ListValueBuilder.collector());
+        } else {
             throw new CypherTypeException(
                     String.format("Invalid input for function 'toFloatList()': Expected a List, got: %s", in));
         }
-
-        return Arrays.stream(lv.asArray())
-                .map(entry -> entry == NO_VALUE ? NO_VALUE : toFloatOrNull(entry))
-                .collect(ListValueBuilder.collector());
     }
 
     public static Value toInteger(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof IntegralValue) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof IntegralValue) {
             return (IntegralValue) in;
         } else if (in instanceof NumberValue) {
             return longValue(((NumberValue) in).longValue());
@@ -1249,7 +1209,6 @@ public final class CypherFunctions {
     }
 
     public static Value toIntegerOrNull(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (in instanceof NumberValue || in instanceof BooleanValue) {
             return toInteger(in);
         } else if (in instanceof TextValue) {
@@ -1263,9 +1222,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static ListValue toIntegerList(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof IntegralArray array) {
+    public static AnyValue toIntegerList(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof IntegralArray array) {
             return VirtualValues.fromArray(array);
         } else if (in instanceof FloatingPointArray array) {
             return toIntegerList(array);
@@ -1277,9 +1237,10 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue toString(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (in instanceof TextValue) {
+    public static Value toString(AnyValue in) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof TextValue) {
             return (TextValue) in;
         } else if (in instanceof NumberValue) {
             return stringValue(((NumberValue) in).prettyPrint());
@@ -1295,7 +1256,6 @@ public final class CypherFunctions {
     }
 
     public static AnyValue toStringOrNull(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (in instanceof TextValue
                 || in instanceof NumberValue
                 || in instanceof BooleanValue
@@ -1309,15 +1269,16 @@ public final class CypherFunctions {
     }
 
     public static AnyValue toStringList(AnyValue in) {
-        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        if (!(in instanceof ListValue lv)) {
+        if (in == NO_VALUE) {
+            return NO_VALUE;
+        } else if (in instanceof ListValue lv) {
+            return Arrays.stream(lv.asArray())
+                    .map(entry -> entry == NO_VALUE ? NO_VALUE : toStringOrNull(entry))
+                    .collect(ListValueBuilder.collector());
+        } else {
             throw new CypherTypeException(
                     String.format("Invalid input for function 'toStringList()': Expected a List, got: %s", in));
         }
-
-        return Arrays.stream(lv.asArray())
-                .map(entry -> entry == NO_VALUE ? NO_VALUE : toStringOrNull(entry))
-                .collect(ListValueBuilder.collector());
     }
 
     public static ListValue fromSlice(AnyValue collection, AnyValue fromValue) {

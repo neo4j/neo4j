@@ -39,7 +39,7 @@ abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(a
 case class ToStringFunction(argument: Expression) extends StringFunction(argument) {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.toString(argument(ctx, state))
+    CypherFunctions.toString(value)
 
   override def rewrite(f: Expression => Expression): Expression = f(ToStringFunction(argument.rewrite(f)))
 
@@ -49,7 +49,7 @@ case class ToStringFunction(argument: Expression) extends StringFunction(argumen
 case class ToStringOrNullFunction(argument: Expression) extends StringFunction(argument) {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.toStringOrNull(argument(ctx, state))
+    CypherFunctions.toStringOrNull(value)
 
   override def rewrite(f: Expression => Expression): Expression = f(ToStringOrNullFunction(argument.rewrite(f)))
 
@@ -59,7 +59,7 @@ case class ToStringOrNullFunction(argument: Expression) extends StringFunction(a
 case class ToStringListFunction(argument: Expression) extends StringFunction(argument) {
 
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue =
-    CypherFunctions.toStringList(argument(ctx, state))
+    CypherFunctions.toStringList(value)
 
   override def rewrite(f: Expression => Expression): Expression = f(ToStringListFunction(argument.rewrite(f)))
 

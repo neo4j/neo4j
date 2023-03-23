@@ -76,7 +76,6 @@ public final class ValueBooleanLogic {
 
     @CalledFromGeneratedCode
     public static Value equals(AnyValue lhs, AnyValue rhs) {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         Equality compare = lhs.ternaryEquals(rhs);
         return switch (compare) {
             case TRUE -> Values.TRUE;
@@ -87,7 +86,6 @@ public final class ValueBooleanLogic {
 
     @CalledFromGeneratedCode
     public static Value notEquals(AnyValue lhs, AnyValue rhs) {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         Equality compare = lhs.ternaryEquals(rhs);
         return switch (compare) {
             case TRUE -> Values.FALSE;

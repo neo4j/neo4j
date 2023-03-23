@@ -63,6 +63,13 @@ sealed trait IsMatchResult {
 
 object IsMatchResult {
   def apply(boolean: Boolean): IsMatchResult = if (boolean) IsTrue else IsFalse
+
+  def apply(boolean: Value): IsMatchResult = boolean match {
+    case IsNoValue()  => IsUnknown
+    case Values.TRUE  => IsTrue
+    case Values.FALSE => IsFalse
+    case _            => throw new CypherTypeException(s"$boolean is not a boolean value")
+  }
 }
 
 case object IsTrue extends IsMatchResult {
