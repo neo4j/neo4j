@@ -216,6 +216,11 @@ public class EnrichmentCommandReaderFactoryTest {
 
                     throw new IllegalArgumentException("Invalid commandType: " + commandType);
                 }
+
+                @Override
+                public KernelVersion kernelVersion() {
+                    return version;
+                }
             };
         }
     }

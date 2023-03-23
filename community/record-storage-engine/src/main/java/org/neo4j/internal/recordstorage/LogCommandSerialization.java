@@ -22,11 +22,10 @@ package org.neo4j.internal.recordstorage;
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPositionAwareChannel;
 import org.neo4j.storageengine.api.BaseCommandReader;
 
-public abstract class LogCommandSerialization extends BaseCommandReader implements KernelVersionProvider {
+public abstract class LogCommandSerialization extends BaseCommandReader {
 
     @Override
     public final Command read(byte commandType, ReadableChannel channel) throws IOException {

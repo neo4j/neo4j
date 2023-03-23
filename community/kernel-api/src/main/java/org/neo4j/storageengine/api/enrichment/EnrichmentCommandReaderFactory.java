@@ -62,6 +62,11 @@ public class EnrichmentCommandReaderFactory implements CommandReaderFactory {
 
                     return baseReader.read(commandType, channel);
                 }
+
+                @Override
+                public KernelVersion kernelVersion() {
+                    return baseReader.kernelVersion();
+                }
             };
         } else {
             // need to use the base version as we've already read the command byte

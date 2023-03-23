@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.IOException;
+import org.neo4j.configuration.Config;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.storageengine.api.CommandReader;
@@ -42,6 +43,7 @@ public class TestCommandReaderFactory implements CommandReaderFactory {
     }
 
     private static class TestCommandReader implements CommandReader {
+        private static final KernelVersion LATEST_VERSION = KernelVersion.getLatestVersion(Config.defaults());
         static final TestCommandReader INSTANCE = new TestCommandReader();
 
         private TestCommandReader() {}
@@ -52,6 +54,11 @@ public class TestCommandReaderFactory implements CommandReaderFactory {
             byte[] bytes = new byte[length];
             channel.get(bytes, length);
             return new TestCommand(bytes);
+        }
+
+        @Override
+        public KernelVersion kernelVersion() {
+            return LATEST_VERSION;
         }
     }
 }
