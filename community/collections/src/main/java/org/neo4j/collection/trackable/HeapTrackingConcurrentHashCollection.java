@@ -108,7 +108,7 @@ abstract class HeapTrackingConcurrentHashCollection<E> extends AbstractHeapTrack
     }
 
     private void unconditionalCopy(AtomicReferenceArray<Object> dest, Node<E> toCopyNode) {
-        int hash = toCopyNode.hash;
+        int hash = this.hash(toCopyNode.value);
         AtomicReferenceArray<Object> currentArray = dest;
         while (true) {
             int length = currentArray.length();
@@ -122,10 +122,10 @@ abstract class HeapTrackingConcurrentHashCollection<E> extends AbstractHeapTrack
                     if (toCopyNode.getNext() == null) {
                         newNode = toCopyNode; // no need to duplicate
                     } else {
-                        newNode = new Node<>(toCopyNode.value, hash);
+                        newNode = new Node<>(toCopyNode.value);
                     }
                 } else {
-                    newNode = new Node<>(toCopyNode.value, hash, (Node<E>) o);
+                    newNode = new Node<>(toCopyNode.value, (Node<E>) o);
                 }
                 if (currentArray.compareAndSet(index, o, newNode)) {
                     return;
@@ -161,18 +161,15 @@ abstract class HeapTrackingConcurrentHashCollection<E> extends AbstractHeapTrack
 
     static final class Node<T> implements Wrapper<Node<T>> {
         final T value;
-        final int hash;
         final Node<T> next;
 
-        Node(T value, int hash) {
+        Node(T value) {
             this.value = value;
-            this.hash = hash;
             this.next = null;
         }
 
-        Node(T value, int hash, Node<T> next) {
+        Node(T value, Node<T> next) {
             this.value = value;
-            this.hash = hash;
             this.next = next;
         }
 

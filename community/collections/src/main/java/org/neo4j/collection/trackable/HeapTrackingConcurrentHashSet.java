@@ -56,7 +56,7 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
         int index = indexFor(hash, length);
         Object o = currentArray.get(index);
         if (o == null) {
-            Node<E> newNode = new Node<>(value, hash, null);
+            Node<E> newNode = new Node<>(value, null);
             this.addToSize(1);
             if (currentArray.compareAndSet(index, null, newNode)) {
                 return true;
@@ -76,12 +76,13 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
             } else {
                 Node<E> e = (Node<E>) o;
                 while (e != null) {
-                    if (e.hash == hash && e.value.equals(value)) {
+                    Object candidate = e.value;
+                    if (candidate.equals(value)) {
                         return false;
                     }
-                    e = e.next;
+                    e = e.getNext();
                 }
-                Node<E> newNode = new Node<>(value, hash, (Node<E>) o);
+                Node<E> newNode = new Node<>(value, (Node<E>) o);
                 if (currentArray.compareAndSet(index, o, newNode)) {
                     this.incrementSizeAndPossiblyResize(currentArray, length, o);
                     return true;
@@ -118,10 +119,11 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
             } else {
                 Node<E> e = (Node<E>) o;
                 while (e != null) {
-                    if (e.hash == hash && e.value.equals(value)) {
+                    Object candidate = e.value;
+                    if (candidate.equals(value)) {
                         return true;
                     }
-                    e = e.next;
+                    e = e.getNext();
                 }
                 return false;
             }
@@ -144,7 +146,7 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
                         int removedEntries = 0;
                         while (e != null) {
                             removedEntries++;
-                            e = e.next;
+                            e = e.getNext();
                         }
                         this.addToSize(-removedEntries);
                     }
@@ -181,7 +183,7 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
                 }
                 return this.slowRemove(value, hash, currentArray);
             }
-            e = e.next;
+            e = e.getNext();
         }
         return false;
     }
@@ -249,7 +251,7 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
                         //noinspection ContinueStatementWithLabel
                         continue outer;
                     }
-                    e = e.next;
+                    e = e.getNext();
                 }
                 return false;
             }
@@ -258,15 +260,15 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
 
     private Node<E> createReplacementChainForRemoval(Node<E> original, Node<E> toRemove) {
         if (original == toRemove) {
-            return original.next;
+            return original.getNext();
         }
         Node<E> replacement = null;
         Node<E> e = original;
         while (e != null) {
             if (e != toRemove) {
-                replacement = new Node<>(e.value, e.hash, replacement);
+                replacement = new Node<>(e.value, replacement);
             }
-            e = e.next;
+            e = e.getNext();
         }
         return replacement;
     }
@@ -284,7 +286,7 @@ public final class HeapTrackingConcurrentHashSet<E> extends HeapTrackingConcurre
             while (e != null) {
                 Object value = e.value;
                 h += (value == null ? 0 : value.hashCode());
-                e = e.next;
+                e = e.getNext();
             }
         }
         return h;
