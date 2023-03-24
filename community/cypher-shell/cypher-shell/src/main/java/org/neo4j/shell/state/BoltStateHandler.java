@@ -532,8 +532,12 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     /**
      * Reset the current session. This rolls back any open transactions.
      */
+    @SuppressWarnings("deprecation")
     public void reset() {
         if (isConnected()) {
+            if (session instanceof org.neo4j.driver.internal.InternalSession internalSession) {
+                internalSession.reset(); // Temporary private API to cancel queries
+            }
             // Clear current state
             if (isTransactionOpen()) {
                 // Bolt has already rolled back the transaction but it doesn't close it properly
