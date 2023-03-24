@@ -95,7 +95,7 @@ object Rewritable {
           case _: collection.Set[_] =>
             children.toSet
           case _: collection.Map[_, _] =>
-            children.map(value => value.asInstanceOf[(String, AnyRef)]).toMap
+            children.asInstanceOf[Seq[(String, AnyRef)]].toMap
           case p: Product =>
             copyConstructor(p).invoke(p, children: _*)
           case t =>
