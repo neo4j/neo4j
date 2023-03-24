@@ -35,13 +35,10 @@ import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.logging.log4j.LogConfig.getFormatPattern;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Properties;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.graphdb.config.Setting;
@@ -61,30 +58,18 @@ class LoggingSettingsMigrator {
     private final PrintStream out;
     private final Path destinationConfigFile;
 
-    LoggingSettingsMigrator(Path sourceConfigFile, PrintStream out, Path destinationConfigFile) {
+    LoggingSettingsMigrator(PrintStream out, Path destinationConfigFile, Map<String, String> rawConfig) {
         this.out = out;
         this.destinationConfigFile = destinationConfigFile;
 
-        // Read raw config as string values
-        rawConfig = new HashMap<>();
-        try (InputStream stream = Files.newInputStream(sourceConfigFile)) {
-            new Properties() {
-                @Override
-                public synchronized Object put(Object key, Object value) {
-                    rawConfig.put(key.toString(), value.toString());
-                    return null;
-                }
-            }.load(stream);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        this.rawConfig = rawConfig;
 
         // Manually migrate dependencies
-        if (rawConfig.containsKey("dbms.directories.neo4j_home")) {
-            rawConfig.put(neo4j_home.name(), rawConfig.get("dbms.directories.neo4j_home"));
+        if (this.rawConfig.containsKey("dbms.directories.neo4j_home")) {
+            this.rawConfig.put(neo4j_home.name(), this.rawConfig.get("dbms.directories.neo4j_home"));
         }
-        if (rawConfig.containsKey("dbms.directories.logs")) {
-            rawConfig.put(logs_directory.name(), rawConfig.get("dbms.directories.logs"));
+        if (this.rawConfig.containsKey("dbms.directories.logs")) {
+            this.rawConfig.put(logs_directory.name(), this.rawConfig.get("dbms.directories.logs"));
         }
     }
 

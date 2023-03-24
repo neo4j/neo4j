@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.configuration.SettingImpl.newBuilder;
 import static org.neo4j.configuration.SettingValueParsers.STRING;
 
@@ -133,6 +134,44 @@ class MigrateConfigCommandTest {
                     #Tail comment
                     """;
 
+    private static final String OLD_CONFIG_APOC =
+            """
+                    #A removed setting
+                    dbms.record_format=high_limit
+                    db.tx_log.preallocate=true
+
+                    #Apoc setting that should have been moved to separate file
+                    apoc.trigger.refresh=50000
+
+                    #A non existing setting
+                    setting.that.does.not.exist=true
+
+                    #Apoc setting that should have been moved to separate file
+                    apoc.export.file.enabled=true
+                    """;
+
+    private static final String MIGRATED_CONFIG_APOC =
+            """
+                    #A removed setting
+                    # dbms.record_format=high_limit REMOVED SETTING
+                    db.tx_log.preallocate=true
+
+                    #Apoc setting that should have been moved to separate file
+                    # apoc.trigger.refresh=50000 REMOVED SETTING
+
+                    #A non existing setting
+                    # setting.that.does.not.exist=true UNKNOWN SETTING
+
+                    #Apoc setting that should have been moved to separate file
+                    # apoc.export.file.enabled=true REMOVED SETTING
+                    """;
+
+    private static final String NEW_CONFIG_APOC =
+            """
+                    apoc.trigger.refresh=50000
+                    apoc.export.file.enabled=true
+                    """;
+
     @Inject
     private Neo4jLayout neo4jLayout;
 
@@ -180,6 +219,7 @@ class MigrateConfigCommandTest {
         var result = runConfigMigrationCommand();
         assertEquals(0, result.exitCode);
         assertThat(Files.readString(configFile)).isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG));
+        assertFalse(Files.exists(configFile.resolve("apoc.conf"))); // No apoc conf since there were no apoc settings.
     }
 
     @Test
@@ -205,7 +245,49 @@ class MigrateConfigCommandTest {
                         "dbms.jvm.additional=-XX:+UnlockDiagnosticVMOptions MIGRATED -> server.jvm.additional=-XX:+UnlockDiagnosticVMOptions")
                 .contains(
                         "dbms.jvm.additional=-XX:+DebugNonSafepoints MIGRATED -> server.jvm.additional=-XX:+DebugNonSafepoints")
-                .contains("server.directories.data= UNCHANGED");
+                .contains("server.directories.data= UNCHANGED")
+                .doesNotContain("APOC");
+    }
+
+    @Test
+    void shouldMigrateApocSettings() throws IOException {
+        var configFile = createConfigFileInDefaultLocation(OLD_CONFIG_APOC);
+        var newApocConf = configFile.resolveSibling("apoc.conf");
+        var result = runConfigMigrationCommand();
+        assertEquals(0, result.exitCode);
+        assertThat(Files.readString(configFile)).isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG_APOC));
+        assertThat(Files.readString(newApocConf)).isEqualTo(maybeChangeLineSeparators(NEW_CONFIG_APOC));
+
+        assertThat(result.err).contains("setting.that.does.not.exist=true REMOVED UNKNOWN");
+
+        assertThat(result.out)
+                .contains("dbms.record_format=high_limit REMOVED")
+                .contains("db.tx_log.preallocate=true UNCHANGED")
+                .contains("apoc.trigger.refresh=50000 REMOVED")
+                .contains("apoc.export.file.enabled=true REMOVED")
+                .contains("APOC settings were present in the neo4j.conf file.")
+                .contains("APOC settings moved to separate file:");
+    }
+
+    @Test
+    void shouldPreserveOldApocFiles() throws IOException {
+        var configFile = createConfigFileInDefaultLocation(OLD_CONFIG_APOC);
+        var apocConf = configFile.resolveSibling("apoc.conf");
+
+        Files.writeString(apocConf, "Old apoc.conf", StandardCharsets.UTF_8);
+
+        var result = runConfigMigrationCommand();
+        assertEquals(0, result.exitCode);
+        assertThat(Files.readString(configFile)).isEqualTo(maybeChangeLineSeparators(MIGRATED_CONFIG_APOC));
+        assertThat(Files.readString(apocConf)).isEqualTo(maybeChangeLineSeparators(NEW_CONFIG_APOC));
+        Path oldApocConf = apocConf.resolveSibling(apocConf.getFileName() + ".old");
+        assertThat(oldApocConf).exists();
+        assertThat(Files.readString(oldApocConf, StandardCharsets.UTF_8)).contains("Old apoc.conf");
+
+        assertThat(result.out)
+                .contains("APOC settings were present in the neo4j.conf file.")
+                .contains("Keeping original apoc.conf file at")
+                .contains("APOC settings moved to separate file:");
     }
 
     @Test

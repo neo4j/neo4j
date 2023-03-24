@@ -76,8 +76,18 @@ public class Config implements Configuration {
     private static final String STRICT_FAILURE_MESSAGE =
             String.format(" Cleanup the config or disable '%s' to continue.", strict_config_validation.name());
     private static final String LEGACY_4_X_DBMS_JVM_ADDITIONAL = "dbms.jvm.additional";
+    public static final String APOC_NAMESPACE = "apoc.";
     private static final List<String> SUPPORTED_NAMESPACES = List.of(
-            "dbms.", "db.", "browser.", "server.", "internal.", "client.", "initial.", "fabric.", "gds.", "apoc.");
+            "dbms.",
+            "db.",
+            "browser.",
+            "server.",
+            "internal.",
+            "client.",
+            "initial.",
+            "fabric.",
+            "gds.",
+            APOC_NAMESPACE);
 
     @SuppressWarnings("unchecked")
     private static final Collection<Class<SettingsDeclaration>> DEFAULT_SETTING_CLASSES =

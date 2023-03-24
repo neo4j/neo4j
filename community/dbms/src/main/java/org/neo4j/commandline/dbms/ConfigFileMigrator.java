@@ -39,6 +39,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -110,16 +111,60 @@ public class ConfigFileMigrator {
 
     public void migrate(Path sourceConfigFile, Path destinationConfigFile) throws IOException {
         try {
+            doSpecializedMigrations(sourceConfigFile, out, destinationConfigFile);
+
+            // Special migrator that removes the apoc settings to get them printed as REMOVED instead of UNKNOWN.
+            // This is how the logging settings are printed as well
+            migrators.add(ApocSettingsMigrator.ApocSettingRemover.INSTANCE);
+
             PropertiesConfiguration config = readIntoConfig(sourceConfigFile);
-            LoggingSettingsMigrator loggingSettingsMigrator =
-                    new LoggingSettingsMigrator(sourceConfigFile, out, destinationConfigFile);
-            loggingSettingsMigrator.migrate();
             migrateSettings(config);
             writeToFile(config, destinationConfigFile);
             validate(destinationConfigFile);
         } catch (ConfigurationException e) {
             throw new CommandFailedException(e.getMessage(), e);
         }
+    }
+
+    private void doSpecializedMigrations(Path sourceConfigFile, PrintStream out, Path destinationConfigFile)
+            throws IOException {
+        List<String> apocKeys = new ArrayList<>();
+        Map<String, String> rawConfig = buildRawConfig(sourceConfigFile, apocKeys);
+        LoggingSettingsMigrator loggingSettingsMigrator =
+                new LoggingSettingsMigrator(out, destinationConfigFile, rawConfig);
+        loggingSettingsMigrator.migrate();
+
+        if (!apocKeys.isEmpty()) {
+            out.println("APOC settings were present in the neo4j.conf file. In Neo4j v5 APOC settings must be in their "
+                    + "own configuration file called apoc.conf. The migration tool cannot verify the "
+                    + "correctness of these settings, lines starting with \"apoc.\" have been copied "
+                    + "\"as is\" to the apoc.conf file.");
+            ApocSettingsMigrator apocSettingsMigrator =
+                    new ApocSettingsMigrator(out, destinationConfigFile, rawConfig, apocKeys);
+            apocSettingsMigrator.migrate();
+        }
+    }
+
+    static Map<String, String> buildRawConfig(Path sourceConfigFile, List<String> apocKeys) {
+        // Read raw config as string values
+        Map<String, String> rawConfig = new HashMap<>();
+        try (InputStream stream = Files.newInputStream(sourceConfigFile)) {
+            new Properties() {
+                @Override
+                public synchronized Object put(Object key, Object value) {
+                    String keyString = key.toString();
+                    rawConfig.put(keyString, value.toString());
+                    if (ApocSettingsMigrator.isApocSetting(keyString)) {
+                        apocKeys.add(keyString);
+                    }
+                    return null;
+                }
+            }.load(stream);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return rawConfig;
     }
 
     private void migrateSettings(PropertiesConfiguration config) {

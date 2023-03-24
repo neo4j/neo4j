@@ -323,7 +323,9 @@ class LoggingSettingsMigratorTest {
 
     private void migrateConfig(String cfg) throws IOException {
         Files.writeString(neo4jConfig, cfg, StandardCharsets.UTF_8);
-        new LoggingSettingsMigrator(neo4jConfig, new PrintStream(out), neo4jConfig).migrate();
+        new LoggingSettingsMigrator(
+                        new PrintStream(out), neo4jConfig, ConfigFileMigrator.buildRawConfig(neo4jConfig, null))
+                .migrate();
         migratedUserLogs = Files.readString(userLogs, StandardCharsets.UTF_8);
         migratedServerLogs = Files.readString(serverLogs, StandardCharsets.UTF_8);
 
