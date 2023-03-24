@@ -263,7 +263,7 @@ trait SinglePlannerQuery extends PlannerQuery {
 
   override def asSinglePlannerQuery: SinglePlannerQuery = this
 
-  override def flattenForeach: SinglePlannerQuery = {
+  override lazy val flattenForeach: SinglePlannerQuery = {
     val flatUpdates = queryGraph.mutatingPatterns.collect {
       case ForeachPattern(_, _, innerUpdates) =>
         innerUpdates.flattenForeach.fold(Seq.empty[MutatingPattern]) {
