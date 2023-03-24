@@ -24,6 +24,7 @@ import static java.util.Collections.singletonList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assumptions.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.cli.CommandTestUtils.withSuppressedOutput;
@@ -240,6 +241,60 @@ class DiagnosticsReportCommandIT {
             assertTrue(Files.exists(confDir.resolve("neo4j.conf")));
             assertTrue(Files.exists(confDir.resolve("neo4j-admin.conf")));
             assertTrue(Files.exists(confDir.resolve("neo4j-admin-database-check.conf")));
+        }
+    }
+
+    @Test
+    void includeKubernetesConfigFiles() throws IOException {
+        // Given
+        // Create some kubernetes style configs dirs
+        Path neo4jConf = configDir.resolve("neo4j.conf");
+        Path adminConf = configDir.resolve("neo4j-admin.conf");
+        Files.delete(neo4jConf);
+        Files.createDirectories(neo4jConf);
+        Files.createDirectories(adminConf);
+
+        Files.writeString(neo4jConf.resolve(GraphDatabaseSettings.db_format.name()), "foo");
+        Files.writeString(neo4jConf.resolve(GraphDatabaseSettings.auth_enabled.name()), "false");
+        Files.writeString(neo4jConf.resolve(GraphDatabaseSettings.log_queries.name()), "off");
+        Files.writeString(adminConf.resolve(GraphDatabaseSettings.pagecache_memory.name()), "100000");
+
+        // And include some garbage subdirs/files that should be skipped
+        Path rootSubDir = configDir.resolve("foo");
+        Files.createDirectories(rootSubDir);
+        Files.writeString(rootSubDir.resolve(GraphDatabaseSettings.db_format.name()), "foo");
+        Path confSubDir = neo4jConf.resolve("bar");
+        Files.createDirectories(confSubDir);
+        Files.writeString(confSubDir.resolve(GraphDatabaseSettings.db_format.name()), "foo");
+
+        // When
+        String[] args = {"config", "--to-path=" + testDirectory.absolutePath() + "/reports"};
+        withSuppressedOutput(homeDir, configDir, fs, ctx -> {
+            DiagnosticsReportCommand diagnosticsReportCommand = populateCommand(ctx, args);
+            diagnosticsReportCommand.execute();
+        });
+
+        // Then
+        Path[] files = FileUtils.listPaths(testDirectory.homePath().resolve("reports"));
+        assertThat(files.length).isEqualTo(1);
+
+        try (FileSystem fileSystem = FileSystems.newFileSystem(files[0])) {
+            Path conf =
+                    fileSystem.getPath("config").resolve(neo4jConf.getFileName().toString());
+            assertTrue(Files.isDirectory(conf));
+            assertTrue(Files.exists(conf.resolve(GraphDatabaseSettings.db_format.name())));
+            assertTrue(Files.exists(conf.resolve(GraphDatabaseSettings.auth_enabled.name())));
+            assertTrue(Files.exists(conf.resolve(GraphDatabaseSettings.log_queries.name())));
+
+            Path admin =
+                    fileSystem.getPath("config").resolve(adminConf.getFileName().toString());
+            assertTrue(Files.isDirectory(admin));
+            assertTrue(Files.exists(admin.resolve(GraphDatabaseSettings.pagecache_memory.name())));
+
+            assertFalse(Files.exists(fileSystem
+                    .getPath("config")
+                    .resolve(rootSubDir.getFileName().toString())));
+            assertFalse(Files.exists(conf.resolve(confSubDir.getFileName().toString())));
         }
     }
 

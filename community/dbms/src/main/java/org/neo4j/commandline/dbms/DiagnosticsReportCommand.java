@@ -22,6 +22,7 @@ package org.neo4j.commandline.dbms;
 import static java.lang.String.join;
 import static org.apache.commons.text.StringEscapeUtils.escapeCsv;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
+import static org.neo4j.kernel.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Help.Visibility.ALWAYS;
 import static picocli.CommandLine.Option;
@@ -48,6 +49,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.diagnostics.jmx.JMXDumper;
 import org.neo4j.dbms.diagnostics.jmx.JmxDump;
 import org.neo4j.dbms.diagnostics.profile.ProfileCommand;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
 import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
 import org.neo4j.kernel.diagnostics.DiagnosticsReporter;
@@ -177,30 +179,52 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
 
         Path storeDirectory = config.get(databases_root_path);
 
+        FileSystemAbstraction fs = ctx.fs();
         reporter.registerAllOfflineProviders(
-                config, storeDirectory, ctx.fs(), config.get(GraphDatabaseSettings.initial_default_database));
+                config, storeDirectory, fs, config.get(GraphDatabaseSettings.initial_default_database));
 
         // Register sources provided by this tool
-        reporter.registerSource(
-                "config", DiagnosticsReportSources.newDiagnosticsFile("config/neo4j.conf", ctx.fs(), configFile()));
-        DiagnosticsReportSources.newDiagnosticsMatchingFiles("config/", ctx.fs(), ctx.confDir(), path -> {
-                    String fileName = path.getFileName().toString();
-                    return fileName.startsWith("neo4j-admin") && fileName.endsWith(".conf");
-                })
-                .forEach(conf -> reporter.registerSource("config", conf));
+        try {
+            Path[] configs = fs.listFiles(ctx.confDir(), path -> {
+                String fileName = path.getFileName().toString();
+                return fileName.startsWith("neo4j") && fileName.endsWith(".conf");
+            });
 
-        Path serverLogsConfig = config.get(GraphDatabaseSettings.server_logging_config_path);
-        if (ctx.fs().fileExists(serverLogsConfig)) {
+            for (Path cfg : configs) {
+                String destination = "config/" + cfg.getFileName();
+                if (fs.isDirectory(cfg)) {
+                    // Likely a kubernetes config
+                    DiagnosticsReportSources.newDiagnosticsMatchingFiles(
+                                    destination + "/",
+                                    fs,
+                                    cfg,
+                                    path -> !fs.isDirectory(path)
+                                            && !path.getFileName().toString().startsWith("."))
+                            .forEach(conf -> reporter.registerSource("config", conf));
+                } else {
+                    // Normal config file
+                    reporter.registerSource(
+                            "config", DiagnosticsReportSources.newDiagnosticsFile(destination, fs, cfg));
+                }
+            }
+        } catch (IOException e) {
             reporter.registerSource(
                     "config",
-                    DiagnosticsReportSources.newDiagnosticsFile("config/server-logs.xml", ctx.fs(), serverLogsConfig));
+                    newDiagnosticsString("config error", () -> "Error reading files in directory: " + e.getMessage()));
+            throw new RuntimeException(e);
+        }
+
+        Path serverLogsConfig = config.get(GraphDatabaseSettings.server_logging_config_path);
+        if (fs.fileExists(serverLogsConfig)) {
+            reporter.registerSource(
+                    "config",
+                    DiagnosticsReportSources.newDiagnosticsFile("config/server-logs.xml", fs, serverLogsConfig));
         }
 
         Path userLogsConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
-        if (ctx.fs().fileExists(userLogsConfig)) {
+        if (fs.fileExists(userLogsConfig)) {
             reporter.registerSource(
-                    "config",
-                    DiagnosticsReportSources.newDiagnosticsFile("config/user-logs.xml", ctx.fs(), userLogsConfig));
+                    "config", DiagnosticsReportSources.newDiagnosticsFile("config/user-logs.xml", fs, userLogsConfig));
         }
 
         reporter.registerSource("ps", runningProcesses());
@@ -262,7 +286,7 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
     }
 
     private static DiagnosticsReportSource runningProcesses() {
-        return DiagnosticsReportSources.newDiagnosticsString("ps.csv", () -> {
+        return newDiagnosticsString("ps.csv", () -> {
             List<ProcessInfo> processesList = JProcesses.getProcessList();
 
             StringBuilder sb = new StringBuilder();
