@@ -134,7 +134,7 @@ object ShowProcFuncCommandHelper {
     val boostedExecutePrivilegesRes = stx.execute(boostQuery, Map[String, Object]("seg" -> executeSegment).asJava)
     val boostedExecutePrivileges = boostedExecutePrivilegesRes.asScala.map(_.asScala.toMap).toList
 
-    // `EXECUTE ADMIN` is `EXECUTE BOOSTED` for all @Admin procedures, don't need the segment
+    // `EXECUTE ADMIN` is `EXECUTE` and `EXECUTE BOOSTED` for all @Admin procedures, don't need the segment
     val adminPrivileges =
       if (executeSegment.equals("PROCEDURE")) {
         val adminQuery =
@@ -173,36 +173,52 @@ object ShowProcFuncCommandHelper {
      * - no DENY EXECUTE ADMIN
      * - GRANT EXECUTE ADMIN
      */
-    val (grantedExecuteRoles, grantedBoostedRoles, deniedExecuteRoles, deniedBoostedRoles) =
-      if (isAdmin) {
-        val grantBoosted = privileges.grantedBoostedExecuteRoles(name)
-        val grantExecuteAndExecuteBoosted =
-          grantBoosted.intersect(privileges.grantedExecuteRoles(name))
+    if (isAdmin) {
+      val explicitlyGrantedBoosted = privileges.grantedBoostedExecuteRoles(name)
+      val explicitlyGrantedExecute = privileges.grantedExecuteRoles(name)
 
-        val grantedExecute = privileges.grantedAdminExecuteRoles ++ grantExecuteAndExecuteBoosted
-        val grantedBoosted = privileges.grantedAdminExecuteRoles ++ grantBoosted
-        val deniedBoosted = privileges.deniedAdminExecuteRoles ++ privileges.deniedBoostedExecuteRoles(name)
-        val deniedExecute = privileges.deniedExecuteRoles(name) ++ deniedBoosted
-        (grantedExecute, grantedBoosted, deniedExecute, deniedBoosted)
-      } else {
-        val grantedExecute = privileges.grantedExecuteRoles(name)
-        val grantedBoosted = privileges.grantedBoostedExecuteRoles(name)
-        val deniedExecute = privileges.deniedExecuteRoles(name)
-        val deniedBoosted = privileges.deniedBoostedExecuteRoles(name)
-        (grantedExecute, grantedBoosted, deniedExecute, deniedBoosted)
-      }
+      val grantedExecuteAndBoosted =
+        privileges.grantedAdminExecuteRoles ++ explicitlyGrantedBoosted.intersect(explicitlyGrantedExecute)
+      val grantedBoosted = privileges.grantedAdminExecuteRoles ++ explicitlyGrantedBoosted
+      val deniedBoosted = privileges.deniedAdminExecuteRoles ++ privileges.deniedBoostedExecuteRoles(name)
+      val deniedExecute = privileges.deniedExecuteRoles(name) ++ deniedBoosted
 
-    val allowedBoostedRoles = grantedBoostedRoles -- deniedBoostedRoles
-    val allowedExecuteRoles = grantedExecuteRoles -- deniedExecuteRoles
+      val allowedBoostedRoles = grantedBoosted -- deniedBoosted
+      val allowedExecuteRoles = grantedExecuteAndBoosted -- deniedExecute
 
-    /* Test if the user is allowed executing (from mix of roles):
-     * - no DENY EXECUTE
-     * - GRANT EXECUTE
-     */
-    val allowedExecute =
-      userRoles.exists(r => grantedExecuteRoles.contains(r)) && userRoles.forall(r => !deniedExecuteRoles.contains(r))
+      /* Test if the user is allowed executing admin procedure (from mix of roles):
+       * - no DENY
+       * - GRANT EXECUTE and GRANT EXECUTE BOOSTED
+       */
+      val allowedExecute =
+        // no DENY
+        userRoles.forall(r => !deniedExecute.contains(r)) && {
+          // Single role allow executing
+          userRoles.exists(r => allowedExecuteRoles.contains(r)) || {
+            // Combination of roles allow executing
+            userRoles.exists(explicitlyGrantedExecute.contains) && userRoles.exists(grantedBoosted.contains)
+          }
+        }
 
-    (allowedExecuteRoles, allowedBoostedRoles, allowedExecute)
+      (allowedExecuteRoles, allowedBoostedRoles, allowedExecute)
+    } else {
+      val grantedExecute = privileges.grantedExecuteRoles(name)
+      val grantedBoosted = privileges.grantedBoostedExecuteRoles(name)
+      val deniedExecute = privileges.deniedExecuteRoles(name)
+      val deniedBoosted = privileges.deniedBoostedExecuteRoles(name)
+
+      val allowedBoostedRoles = grantedBoosted -- deniedBoosted
+      val allowedExecuteRoles = grantedExecute -- deniedExecute
+
+      /* Test if the user is allowed executing (from mix of roles):
+       * - no DENY EXECUTE
+       * - GRANT EXECUTE
+       */
+      val allowedExecute =
+        userRoles.exists(r => grantedExecute.contains(r)) && userRoles.forall(r => !deniedExecute.contains(r))
+
+      (allowedExecuteRoles, allowedBoostedRoles, allowedExecute)
+    }
   }
 
   def roleValues(allowedExecuteRoles: Set[String], allowedBoostedRoles: Set[String]): (ListValue, ListValue) = {
