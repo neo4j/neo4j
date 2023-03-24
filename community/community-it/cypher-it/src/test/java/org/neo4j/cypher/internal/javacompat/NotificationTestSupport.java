@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription;
+import org.neo4j.graphdb.impl.notification.NotificationImplementation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
@@ -103,7 +104,7 @@ public class NotificationTestSupport {
             // when
             try (Result result = transaction.execute(query)) {
                 // then
-                NotificationCodeWithDescription.Notification notification = code.notification(pos);
+                NotificationImplementation notification = code.notification(pos);
                 assertThat(result.getNotifications()).contains(notification);
             }
             transaction.commit();
@@ -116,7 +117,7 @@ public class NotificationTestSupport {
             // when
             try (Result result = transaction.execute(query)) {
                 // then
-                NotificationCodeWithDescription.Notification notification = code.notification(pos, detail);
+                NotificationImplementation notification = code.notification(pos, detail);
                 assertThat(result.getNotifications()).contains(notification);
             }
             transaction.commit();

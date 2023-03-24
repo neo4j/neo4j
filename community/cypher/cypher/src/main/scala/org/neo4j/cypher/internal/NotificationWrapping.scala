@@ -62,6 +62,7 @@ import org.neo4j.cypher.internal.util.UnsatisfiableRelationshipTypeExpression
 import org.neo4j.graphdb
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription
 import org.neo4j.graphdb.impl.notification.NotificationDetail
+import org.neo4j.graphdb.impl.notification.NotificationImplementation
 
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
@@ -69,7 +70,7 @@ import scala.jdk.CollectionConverters.SetHasAsJava
 object NotificationWrapping {
 
   def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification)
-    : NotificationCodeWithDescription#Notification = notification match {
+    : NotificationImplementation = notification match {
     case CartesianProductNotification(pos, variables) =>
       NotificationCodeWithDescription.CARTESIAN_PRODUCT.notification(
         pos.withOffset(offset).asInputPosition,

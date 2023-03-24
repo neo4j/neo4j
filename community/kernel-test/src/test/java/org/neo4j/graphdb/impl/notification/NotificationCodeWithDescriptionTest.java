@@ -202,7 +202,7 @@ class NotificationCodeWithDescriptionTest {
                 "This query is not supported by the chosen runtime.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.RuntimeUnsupportedWarning",
-                "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default.",
+                "Selected runtime is unsupported for this query, please use a different runtime instead or fallback to default. (%s)",
                 NotificationCategory.UNSUPPORTED);
     }
 
@@ -215,7 +215,7 @@ class NotificationCodeWithDescriptionTest {
                 "Queries using dynamic properties will use neither index seeks nor index scans for those properties",
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Statement.DynamicProperty",
-                "Using a dynamic property makes it impossible to use an index lookup for this query",
+                "Using a dynamic property makes it impossible to use an index lookup for this query (%s)",
                 NotificationCategory.PERFORMANCE);
     }
 
@@ -228,7 +228,7 @@ class NotificationCodeWithDescriptionTest {
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The query used a deprecated function.",
+                "The query used a deprecated function. (%s)",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -241,7 +241,7 @@ class NotificationCodeWithDescriptionTest {
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The query used a deprecated runtime option.",
+                "The query used a deprecated runtime option. (%s)",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -254,7 +254,7 @@ class NotificationCodeWithDescriptionTest {
                 "The query used a procedure that generated a warning.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Procedure.ProcedureWarning",
-                "The query used a procedure that generated a warning.",
+                "The query used a procedure that generated a warning. (%s)",
                 NotificationCategory.GENERIC);
     }
 
@@ -267,7 +267,7 @@ class NotificationCodeWithDescriptionTest {
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The query used a deprecated field from a procedure.",
+                "The query used a deprecated field from a procedure. (%s)",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -280,7 +280,7 @@ class NotificationCodeWithDescriptionTest {
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The semantics of using colon in the separation of alternative relationship types will change in a future version.",
+                "The semantics of using colon in the separation of alternative relationship types will change in a future version. (%s)",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -339,7 +339,7 @@ class NotificationCodeWithDescriptionTest {
                 "The client made a request for a format which has been deprecated.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Request.DeprecatedFormat",
-                "The requested format has been deprecated.",
+                "The requested format has been deprecated. (%s)",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -367,7 +367,7 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.UnknownLabelWarning",
                 "One of the labels in your query is not available in the database, make sure you didn't "
-                        + "misspell it or that the label is available when you run this statement in your application",
+                        + "misspell it or that the label is available when you run this statement in your application (%s)",
                 NotificationCategory.UNRECOGNIZED);
     }
 
@@ -381,7 +381,7 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.UnknownRelationshipTypeWarning",
                 "One of the relationship types in your query is not available in the database, make sure you didn't "
-                        + "misspell it or that the label is available when you run this statement in your application",
+                        + "misspell it or that the label is available when you run this statement in your application (%s)",
                 NotificationCategory.UNRECOGNIZED);
     }
 
@@ -395,7 +395,7 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.UnknownPropertyKeyWarning",
                 "One of the property names in your query is not available in the database, make sure you didn't "
-                        + "misspell it or that the label is available when you run this statement in your application",
+                        + "misspell it or that the label is available when you run this statement in your application (%s)",
                 NotificationCategory.UNRECOGNIZED);
     }
 
@@ -439,7 +439,7 @@ class NotificationCodeWithDescriptionTest {
                 "This feature is experimental and should not be used in production systems.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.RuntimeExperimental",
-                "You are using an experimental feature",
+                "You are using an experimental feature (%s)",
                 NotificationCategory.UNSUPPORTED);
     }
 
@@ -452,7 +452,8 @@ class NotificationCodeWithDescriptionTest {
                 "The statement refers to a parameter that was not provided in the request.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.ParameterNotProvided",
-                "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN.",
+                "Did not supply query with enough parameters. "
+                        + "The produced query plan will not be cached and is not executable without EXPLAIN. (%s)",
                 NotificationCategory.GENERIC);
     }
 
@@ -465,7 +466,7 @@ class NotificationCodeWithDescriptionTest {
                 "The database was unable to generate code for the query. A stacktrace can be found in the debug.log.",
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Statement.CodeGenerationFailed",
-                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log.",
+                "The database was unable to generate code for the query. A stacktrace can be found in the debug.log. (%s)",
                 NotificationCategory.PERFORMANCE);
     }
 
@@ -479,7 +480,7 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Statement.SubqueryVariableShadowing",
                 "Variable in subquery is shadowing a variable with the same name from the outer scope. "
-                        + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause.",
+                        + "If you want to use that variable instead, it must be imported into the subquery using importing WITH clause. (%s)",
                 NotificationCategory.GENERIC);
     }
 
@@ -492,7 +493,8 @@ class NotificationCodeWithDescriptionTest {
                 "The request referred to a home database that does not exist.",
                 SeverityLevel.INFORMATION,
                 "Neo.ClientNotification.Database.HomeDatabaseNotFound",
-                "The home database provided does not currently exist in the DBMS. This command will not take effect until this database is created.",
+                "The home database provided does not currently exist in the DBMS. "
+                        + "This command will not take effect until this database is created. (%s)",
                 NotificationCategory.UNRECOGNIZED);
     }
 
@@ -506,7 +508,7 @@ class NotificationCodeWithDescriptionTest {
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
                 "Databases and aliases with unescaped `.` are deprecated unless to indicate that they belong to a composite database. "
-                        + "Names containing `.` should be escaped.",
+                        + "Names containing `.` should be escaped. (%s)",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -633,8 +635,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -84, 122, 85, 9, -106, 48, -91, 45, -32, -10, 105, -29, 100, 82, -59, -31, -60, 51, -7, 127, -107, -12, 54,
-            -90, 114, -22, 9, 21, 4, -80, 100, 28
+            -73, -7, 78, -95, -12, 20, 119, -111, 125, 95, -100, -2, 11, 116, 16, -22, -59, 75, -128, -72, 58, 6, 99,
+            55, 111, -118, -122, 47, -18, -110, -60, -31
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

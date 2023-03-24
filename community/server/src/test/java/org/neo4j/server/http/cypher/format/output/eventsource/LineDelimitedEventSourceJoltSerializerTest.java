@@ -747,7 +747,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
                         + "product between all those parts. This may produce a large amount of data and slow down query "
                         + "processing. While occasionally intended, it may often be possible to reformulate the query "
                         + "that avoids the use of this cross product, perhaps by adding a relationship between the "
-                        + "different parts or by using OPTIONAL MATCH\","
+                        + "different parts or by using OPTIONAL MATCH (%s)\","
                         + "\"position\":{\"offset\":1,\"line\":2,\"column\":3}}],"
                         + "\"commit\":\"commit/uri/1\"}}\n",
                 result);
@@ -838,7 +838,7 @@ public class LineDelimitedEventSourceJoltSerializerTest extends AbstractEventSou
                         + "product between all those parts. This may produce a large amount of data and slow down query "
                         + "processing. While occasionally intended, it may often be possible to reformulate the query "
                         + "that avoids the use of this cross product, perhaps by adding a relationship between the "
-                        + "different parts or by using OPTIONAL MATCH\"}],"
+                        + "different parts or by using OPTIONAL MATCH (%s)\"}],"
                         + "\"commit\":\"commit/uri/1\"}}\n",
                 result);
     }
