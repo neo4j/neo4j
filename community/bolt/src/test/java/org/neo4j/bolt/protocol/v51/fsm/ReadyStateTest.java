@@ -45,7 +45,7 @@ public class ReadyStateTest {
 
     @BeforeEach
     public void setupState() {
-        stateInTest = new ReadyState(null);
+        stateInTest = new ReadyState();
         authenticationState = new AuthenticationState();
 
         stateInTest.setAuthenticationState(authenticationState);

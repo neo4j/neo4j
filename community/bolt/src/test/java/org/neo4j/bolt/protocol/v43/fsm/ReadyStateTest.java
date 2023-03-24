@@ -28,37 +28,39 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.bolt.protocol.common.connector.Connector;
+import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.MutableConnectionState;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
-import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
 import org.neo4j.bolt.protocol.v40.fsm.state.FailedState;
 import org.neo4j.bolt.protocol.v43.fsm.state.ReadyState;
+import org.neo4j.dbms.routing.RoutingResult;
+import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValueBuilder;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 
 class ReadyStateTest {
-    private RoutingTableGetter routingTableGetter;
-
     private State failedState;
     private ReadyState state;
+    private RoutingService routingService;
 
     @BeforeEach
     void prepareStateMachine() {
-        this.routingTableGetter = mock(RoutingTableGetter.class);
+        this.routingService = mock(RoutingService.class);
 
         this.failedState = mock(FailedState.class);
         var streamingState = mock(State.class);
         var transactionReadyState = mock(State.class);
 
-        this.state = new ReadyState(this.routingTableGetter);
+        this.state = new ReadyState();
         state.setFailedState(failedState);
         state.setStreamingState(streamingState);
         state.setTransactionReadyState(transactionReadyState);
@@ -72,15 +74,19 @@ class ReadyStateTest {
         doReturn(connectionState).when(context).connectionState();
         doReturn("123").when(context).connectionId();
 
-        var routingTable = routingTable();
-        doReturn(CompletableFuture.completedFuture(routingTable))
-                .when(routingTableGetter)
-                .get(any(), eq(routingMessage.getRequestContext()), eq(routingMessage.getDatabaseName()));
+        // RoutingService mock
+        Connection connection = mock(Connection.class);
+        Connector connector = mock(Connector.class);
+        doReturn(routingService).when(connector).routingService();
+        doReturn(connector).when(connection).connector();
+        doReturn(connection).when(context).connection();
+
+        doReturn(routingResult()).when(routingService).route(eq(routingMessage.getDatabaseName()), any(), any());
 
         var nextState = this.state.process(routingMessage, context);
 
         assertEquals(this.state, nextState);
-        verify(connectionState).onMetadata("rt", routingTable);
+        verify(connectionState).onMetadata("rt", routingTableMap());
     }
 
     @Test
@@ -92,11 +98,16 @@ class ReadyStateTest {
         doReturn(mutableConnectionState).when(context).connectionState();
         doReturn("123").when(context).connectionId();
 
+        // RoutingService mock
+        Connection connection = mock(Connection.class);
+        Connector connector = mock(Connector.class);
+        doReturn(routingService).when(connector).routingService();
+        doReturn(connector).when(connection).connector();
+        doReturn(connection).when(context).connection();
+
         var runtimeException = new RuntimeException("Something happened");
 
-        doReturn(CompletableFuture.failedFuture(runtimeException))
-                .when(routingTableGetter)
-                .get(any(), eq(routingMessage.getRequestContext()), eq(routingMessage.getDatabaseName()));
+        doThrow(runtimeException).when(routingService).route(eq(routingMessage.getDatabaseName()), any(), any());
 
         var nextState = this.state.process(routingMessage, context);
 
@@ -113,10 +124,15 @@ class ReadyStateTest {
         doReturn(mutableConnectionState).when(context).connectionState();
         doReturn("123").when(context).connectionId();
 
+        // RoutingService mock
+        Connection connection = mock(Connection.class);
+        Connector connector = mock(Connector.class);
+        doReturn(routingService).when(connector).routingService();
+        doReturn(connector).when(connection).connector();
+        doReturn(connection).when(context).connection();
+
         var runtimeException = new RuntimeException("Something happened");
-        doThrow(runtimeException)
-                .when(routingTableGetter)
-                .get(any(), eq(routingMessage.getRequestContext()), eq(routingMessage.getDatabaseName()));
+        doThrow(runtimeException).when(routingService).route(eq(routingMessage.getDatabaseName()), any(), any());
 
         var nextState = this.state.process(routingMessage, context);
 
@@ -124,11 +140,15 @@ class ReadyStateTest {
         verify(context).handleFailure(runtimeException, false);
     }
 
-    private static MapValue routingTable() {
+    private static MapValue routingTableMap() {
         var builder = new MapValueBuilder();
-        builder.add("TTL", Values.intValue(300));
+        builder.add("ttl", Values.intValue(300));
         var serversBuilder = ListValueBuilder.newListBuilder();
         builder.add("servers", serversBuilder.build());
         return builder.build();
+    }
+
+    private static RoutingResult routingResult() {
+        return new RoutingResult(new ArrayList<>(), new ArrayList<>(), new ArrayList<>(), 300000);
     }
 }

@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.procedure.builtin.routing;
+package org.neo4j.dbms.routing.result;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.neo4j.procedure.builtin.routing.Role.READ;
-import static org.neo4j.procedure.builtin.routing.Role.ROUTE;
-import static org.neo4j.procedure.builtin.routing.Role.WRITE;
+import static org.neo4j.dbms.routing.result.Role.READ;
+import static org.neo4j.dbms.routing.result.Role.ROUTE;
+import static org.neo4j.dbms.routing.result.Role.WRITE;
+import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.utf8Value;
 
@@ -141,5 +142,17 @@ public final class RoutingResultFormat {
                 .map(SocketAddress::toString)
                 .map(Values::utf8Value)
                 .collect(ListValueBuilder.collector());
+    }
+
+    // This feels a little fragile perhaps bolt needs to be decouple from the procedure output but that would need a
+    // driver change so perhaps this is fine?
+    public static MapValue buildMap(RoutingResult result) {
+        AnyValue[] builtResult = build(result);
+
+        MapValueBuilder builder = new MapValueBuilder();
+        builder.add(ParameterNames.TTL.parameterName(), intValue((int) ((LongValue) builtResult[0]).value()));
+        builder.add(ParameterNames.SERVERS.parameterName(), builtResult[1]);
+
+        return builder.build();
     }
 }

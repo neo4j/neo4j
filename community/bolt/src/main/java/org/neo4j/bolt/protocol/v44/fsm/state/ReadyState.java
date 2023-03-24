@@ -25,7 +25,6 @@ import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
 import org.neo4j.bolt.protocol.common.message.request.transaction.BeginMessage;
 import org.neo4j.bolt.protocol.common.message.request.transaction.RunMessage;
-import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
 import org.neo4j.bolt.security.error.AuthenticationException;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.storable.Values;
@@ -33,10 +32,6 @@ import org.neo4j.values.virtual.MapValue;
 
 public class ReadyState extends org.neo4j.bolt.protocol.v43.fsm.state.ReadyState {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ReadyState.class);
-
-    public ReadyState(RoutingTableGetter routingTableGetter) {
-        super(routingTableGetter);
-    }
 
     @Override
     public State processUnsafe(RequestMessage message, StateMachineContext context) throws Exception {

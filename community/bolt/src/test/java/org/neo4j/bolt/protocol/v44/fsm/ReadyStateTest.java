@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
@@ -44,7 +45,6 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
 import org.neo4j.bolt.protocol.common.message.request.transaction.BeginMessage;
 import org.neo4j.bolt.protocol.common.message.request.transaction.RunMessage;
-import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
 import org.neo4j.bolt.protocol.common.signal.StateSignal;
 import org.neo4j.bolt.protocol.v43.fsm.state.FailedState;
 import org.neo4j.bolt.protocol.v44.fsm.state.ReadyState;
@@ -55,6 +55,7 @@ import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.bolt.tx.statement.Statement;
+import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.values.virtual.MapValue;
@@ -68,7 +69,7 @@ class ReadyStateTest {
     private TransactionManager transactionManager;
     private Transaction transaction;
     private Statement statement;
-    private RoutingTableGetter routingTableGetter;
+    private RoutingService routingService;
 
     private LoginContext originalContext;
     private LoginContext impersonationContext;
@@ -92,7 +93,7 @@ class ReadyStateTest {
         when(this.transactionManager.create(any(), any(), anyString(), any(), anyList(), any(), anyMap(), any()))
                 .thenReturn(this.transaction);
 
-        this.routingTableGetter = mock(RoutingTableGetter.class, RETURNS_MOCKS);
+        this.routingService = mock(RoutingService.class, RETURNS_MOCKS);
 
         var originalSubject = mock(AuthSubject.class);
         when(originalSubject.executingUser()).thenReturn("alice");
@@ -138,7 +139,11 @@ class ReadyStateTest {
 
         when(context.connection()).thenReturn(this.connection);
 
-        this.state = new ReadyState(this.routingTableGetter);
+        Connector connector = mock(Connector.class);
+        when(connection.connector()).thenReturn(connector);
+        when(connector.routingService()).thenReturn(routingService);
+
+        this.state = new ReadyState();
         this.state.setTransactionReadyState(this.inTransactionState);
         this.state.setStreamingState(this.streamingState);
         this.state.setFailedState(new FailedState());
@@ -180,16 +185,13 @@ class ReadyStateTest {
 
         assertSame(this.state, nextState);
 
-        var inOrder = Mockito.inOrder(this.connection, this.context, this.spi, this.routingTableGetter);
+        var inOrder = Mockito.inOrder(this.connection, this.context, this.spi, this.routingService);
 
         inOrder.verify(this.context).connection();
         inOrder.verify(this.connection).impersonate("bob");
-        inOrder.verify(this.connection)
-                .beginTransaction(
-                        eq(TransactionType.EXPLICIT), eq("system"), eq(AccessMode.READ), any(), any(), any(), any());
 
         // in 4.3 implementation
-        inOrder.verify(this.routingTableGetter).get(any(), any(), eq("neo4j"));
+        inOrder.verify(this.routingService).route(eq("neo4j"), any(), any());
 
         inOrder.verify(this.connection).impersonate(null);
     }

@@ -40,6 +40,7 @@ import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
+import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLogProvider;
@@ -83,6 +84,7 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
+            RoutingService routingService,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         super(
@@ -101,6 +103,7 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
+                routingService,
                 userLogProvider,
                 logging);
         if (encryptionRequired && sslContext == null) {
@@ -143,6 +146,7 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
+            RoutingService routingService,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         this(
@@ -170,6 +174,7 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
+                routingService,
                 userLogProvider,
                 logging);
     }

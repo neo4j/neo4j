@@ -25,7 +25,6 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.fsm.AbstractStateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
 import org.neo4j.bolt.protocol.common.fsm.state.InterruptedState;
-import org.neo4j.bolt.protocol.common.routing.ProcedureRoutingTableGetter;
 import org.neo4j.bolt.protocol.v40.fsm.state.AutoCommitState;
 import org.neo4j.bolt.protocol.v43.fsm.state.FailedState;
 import org.neo4j.bolt.protocol.v44.fsm.state.InTransactionState;
@@ -57,7 +56,7 @@ public class StateMachineV51 extends AbstractStateMachine {
         var autoCommitState = new AutoCommitState(); // v4
         var inTransaction = new InTransactionState(); // v4.4
         var failed = new FailedState(); // v4.3
-        var ready = new ReadyState(new ProcedureRoutingTableGetter()); // v5.1
+        var ready = new ReadyState(); // v5.1
         var interrupted = new InterruptedState(); // v3
 
         negotiation.setAuthenticationState(authentication);

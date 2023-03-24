@@ -19,18 +19,19 @@
  */
 package org.neo4j.procedure.builtin.routing;
 
+import static org.neo4j.dbms.routing.result.ParameterNames.CONTEXT;
+import static org.neo4j.dbms.routing.result.ParameterNames.DATABASE;
+import static org.neo4j.dbms.routing.result.ParameterNames.SERVERS;
+import static org.neo4j.dbms.routing.result.ParameterNames.TTL;
 import static org.neo4j.internal.kernel.api.procs.DefaultParameterValue.nullValue;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
-import static org.neo4j.procedure.builtin.routing.ParameterNames.CONTEXT;
-import static org.neo4j.procedure.builtin.routing.ParameterNames.DATABASE;
-import static org.neo4j.procedure.builtin.routing.ParameterNames.SERVERS;
-import static org.neo4j.procedure.builtin.routing.ParameterNames.TTL;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.List;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.dbms.routing.RoutingException;
 import org.neo4j.dbms.routing.RoutingService;
+import org.neo4j.dbms.routing.result.RoutingResultFormat;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;

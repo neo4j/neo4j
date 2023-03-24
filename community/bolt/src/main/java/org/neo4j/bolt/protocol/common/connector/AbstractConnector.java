@@ -30,6 +30,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLogProvider;
@@ -51,6 +52,8 @@ public abstract class AbstractConnector implements Connector {
     private final ConnectionHintProvider connectionHintProvider;
     private final BookmarkParser bookmarkParser;
     private final TransactionManager transactionManager;
+
+    private final RoutingService routingService;
 
     private final ConnectionRegistry connectionRegistry;
 
@@ -74,6 +77,7 @@ public abstract class AbstractConnector implements Connector {
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
+            RoutingService routingService,
             InternalLogProvider logging) {
         this.id = id;
         this.memoryPool = memoryPool;
@@ -86,6 +90,8 @@ public abstract class AbstractConnector implements Connector {
         this.connectionHintProvider = connectionHintProvider;
         this.bookmarkParser = bookmarkParser;
         this.transactionManager = transactionManager;
+
+        this.routingService = routingService;
 
         this.streamingBufferSize = streamingBufferSize;
         this.streamingFlushThreshold = streamingFlushThreshold;
@@ -146,6 +152,11 @@ public abstract class AbstractConnector implements Connector {
     @Override
     public TransactionManager transactionManager() {
         return this.transactionManager;
+    }
+
+    @Override
+    public RoutingService routingService() {
+        return this.routingService;
     }
 
     @Override

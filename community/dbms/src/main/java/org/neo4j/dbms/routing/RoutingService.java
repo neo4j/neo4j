@@ -20,11 +20,8 @@
 
 package org.neo4j.dbms.routing;
 
-import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.values.virtual.MapValue;
 
 public interface RoutingService {
-    RoutingResult route(DatabaseReference databaseReference, MapValue routingContext) throws RoutingException;
-
     RoutingResult route(String databaseName, String user, MapValue routingContext) throws RoutingException;
 }

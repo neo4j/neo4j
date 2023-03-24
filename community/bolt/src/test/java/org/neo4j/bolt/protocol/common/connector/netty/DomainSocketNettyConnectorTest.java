@@ -46,6 +46,7 @@ import org.neo4j.bolt.protocol.common.connector.transport.NioConnectorTransport;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.helpers.PortBindException;
+import org.neo4j.dbms.routing.RoutingService;
 
 class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSocketNettyConnector> {
 
@@ -112,6 +113,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                 Mockito.mock(TransactionManager.class),
                 512,
                 0,
+                Mockito.mock(RoutingService.class),
                 logging,
                 logging);
     }
@@ -174,6 +176,7 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                         Mockito.mock(TransactionManager.class),
                         512,
                         0,
+                        Mockito.mock(RoutingService.class),
                         logging,
                         logging))
                 .withMessageContaining("Unsupported transport: NIO does not support domain sockets")

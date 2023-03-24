@@ -36,6 +36,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.configuration.helpers.PortBindException;
+import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLog;
@@ -69,6 +70,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
+            RoutingService routingService,
             InternalLogProvider userLogProvider,
             InternalLogProvider internalLogProvider) {
         super(
@@ -86,6 +88,7 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
+                routingService,
                 internalLogProvider);
         this.bindAddress = bindAddress;
         this.userLog = userLogProvider.getLog(getClass());

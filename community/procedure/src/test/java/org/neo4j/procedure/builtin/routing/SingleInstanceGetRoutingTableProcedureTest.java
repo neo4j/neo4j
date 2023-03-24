@@ -78,6 +78,7 @@ import org.neo4j.dbms.routing.RoutingResult;
 import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.dbms.routing.SimpleClientRoutingDomainChecker;
 import org.neo4j.dbms.routing.SingleAddressRoutingTableProvider;
+import org.neo4j.dbms.routing.result.RoutingResultFormat;
 import org.neo4j.internal.helpers.HostnamePort;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;

@@ -24,16 +24,11 @@ import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.request.authentication.LogoffMessage;
-import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
 import org.neo4j.memory.HeapEstimator;
 
 public class ReadyState extends org.neo4j.bolt.protocol.v44.fsm.state.ReadyState {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ReadyState.class);
     AuthenticationState authenticationState;
-
-    public ReadyState(RoutingTableGetter routingTableGetter) {
-        super(routingTableGetter);
-    }
 
     public void setAuthenticationState(AuthenticationState authenticationState) {
         this.authenticationState = authenticationState;

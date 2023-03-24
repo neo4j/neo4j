@@ -29,6 +29,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.tx.TransactionManager;
+import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.memory.MemoryPool;
@@ -128,6 +129,13 @@ public interface Connector extends Lifecycle {
      * @return a transaction manager.
      */
     TransactionManager transactionManager();
+
+    /**
+     * Retrieves the configured routingService
+     *
+     * @return a routing service
+     */
+    RoutingService routingService();
 
     /**
      * Identifies the total number of bytes to be requested from the pool when streaming records.

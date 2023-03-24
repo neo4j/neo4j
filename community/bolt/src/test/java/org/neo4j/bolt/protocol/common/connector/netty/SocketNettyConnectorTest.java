@@ -43,6 +43,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.PortBindException;
+import org.neo4j.dbms.routing.RoutingService;
 
 class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyConnector> {
 
@@ -99,6 +100,7 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 Mockito.mock(TransactionManager.class),
                 512,
                 0,
+                Mockito.mock(RoutingService.class),
                 logging,
                 logging);
     }

@@ -76,17 +76,12 @@ public class DefaultRoutingService implements RoutingService {
     }
 
     @Override
-    public RoutingResult route(DatabaseReference databaseReference, MapValue routingContext) throws RoutingException {
-        return routeInternal(databaseReference, routingContext);
-    }
-
-    @Override
     public RoutingResult route(String databaseName, String user, MapValue routingContext) throws RoutingException {
         var databaseReference = extractDatabaseReference(databaseName, user);
         assertDatabaseExists(databaseReference);
         assertBoltConnectorEnabled(databaseReference);
         assertNotIllegalAliasChain(databaseReference, routingContext);
-        return route(databaseReference, routingContext);
+        return routeInternal(databaseReference, routingContext);
     }
 
     private RoutingResult routeInternal(DatabaseReference databaseReference, MapValue routingContext)

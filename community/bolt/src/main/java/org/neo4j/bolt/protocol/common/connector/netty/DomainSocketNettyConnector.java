@@ -42,6 +42,7 @@ import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.helpers.PortBindException;
+import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLogProvider;
@@ -85,6 +86,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
+            RoutingService routingService,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         super(
@@ -103,6 +105,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
+                routingService,
                 userLogProvider,
                 logging);
         checkArgument(
@@ -137,6 +140,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
+            RoutingService routingService,
             InternalLogProvider userLogProvider,
             InternalLogProvider logging) {
         this(
@@ -159,6 +163,7 @@ public class DomainSocketNettyConnector extends AbstractNettyConnector {
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
+                routingService,
                 userLogProvider,
                 logging);
     }

@@ -75,6 +75,7 @@ import org.neo4j.configuration.connectors.BoltConnectorInternalSettings;
 import org.neo4j.configuration.connectors.CommonConnectorConfig;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
+import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -120,6 +121,7 @@ public class BoltServer extends LifecycleAdapter {
     private final AuthConfigProvider authConfigProvider;
     private final BookmarkParser bookmarkParser;
     private final TransactionManager transactionManager;
+    private final RoutingService routingService;
     private final InternalLog log;
 
     private final LifeSupport connectorLife = new LifeSupport();
@@ -145,6 +147,7 @@ public class BoltServer extends LifecycleAdapter {
             AuthManager internalAuthManager,
             AuthManager loopbackAuthManager,
             MemoryPools memoryPools,
+            RoutingService routingService,
             DefaultDatabaseResolver defaultDatabaseResolver) {
         this.dbmsInfo = dbmsInfo;
         this.jobScheduler = jobScheduler;
@@ -169,6 +172,8 @@ public class BoltServer extends LifecycleAdapter {
                 config.get(BoltConnector.thread_pool_keep_alive),
                 config.get(BoltConnectorInternalSettings.unsupported_thread_pool_queue_size),
                 this.jobScheduler.threadFactory(Group.BOLT_WORKER));
+
+        this.routingService = routingService;
 
         this.sslPolicyLoader = dependencyResolver.resolveDependency(SslPolicyLoader.class);
         this.authConfigProvider = dependencyResolver.resolveDependency(AuthConfigProvider.class);
@@ -477,6 +482,7 @@ public class BoltServer extends LifecycleAdapter {
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
+                routingService,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }
@@ -512,6 +518,7 @@ public class BoltServer extends LifecycleAdapter {
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
+                routingService,
                 logService.getUserLogProvider(),
                 logService.getInternalLogProvider());
     }

@@ -19,17 +19,13 @@
  */
 package org.neo4j.bolt.protocol.v43.fsm.state;
 
-import java.util.Collections;
-import java.util.concurrent.CompletionException;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
-import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
-import org.neo4j.bolt.protocol.common.routing.RoutingTableGetter;
-import org.neo4j.bolt.tx.TransactionType;
-import org.neo4j.bolt.tx.error.TransactionException;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.routing.RoutingException;
+import org.neo4j.dbms.routing.RoutingResult;
+import org.neo4j.dbms.routing.result.RoutingResultFormat;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.values.virtual.MapValue;
 
@@ -39,12 +35,6 @@ import org.neo4j.values.virtual.MapValue;
 public class ReadyState extends org.neo4j.bolt.protocol.v40.fsm.state.ReadyState {
     public static final long SHALLOW_SIZE = HeapEstimator.shallowSizeOfInstance(ReadyState.class);
     private static final String ROUTING_TABLE_KEY = "rt";
-
-    private final RoutingTableGetter routingTableGetter;
-
-    public ReadyState(RoutingTableGetter routingTableGetter) {
-        this.routingTableGetter = routingTableGetter;
-    }
 
     @Override
     public State processUnsafe(RequestMessage message, StateMachineContext context) throws Exception {
@@ -56,21 +46,15 @@ public class ReadyState extends org.neo4j.bolt.protocol.v40.fsm.state.ReadyState
     }
 
     protected State processRouteMessage(RouteMessage message, StateMachineContext context) throws Exception {
-        var tx = context.connection()
-                .beginTransaction(
-                        TransactionType.EXPLICIT,
-                        GraphDatabaseSettings.SYSTEM_DATABASE_NAME,
-                        AccessMode.READ,
-                        message.getBookmarks(),
-                        null,
-                        Collections.emptyMap(),
-                        null);
         try {
-            routingTableGetter
-                    .get(tx, message.getRequestContext(), message.getDatabaseName())
-                    .thenAccept(routingTable -> this.onRoutingTableReceived(context, message, routingTable))
-                    .join();
-        } catch (CompletionException ex) {
+            String user = context.connection().username();
+            RoutingResult result = context.connection()
+                    .connector()
+                    .routingService()
+                    .route(message.getDatabaseName(), user, message.getRequestContext());
+
+            this.onRoutingTableReceived(context, message, RoutingResultFormat.buildMap(result));
+        } catch (RoutingException ex) {
             var cause = ex.getCause();
             if (cause != null) {
                 context.handleFailure(cause, false);
@@ -78,16 +62,6 @@ public class ReadyState extends org.neo4j.bolt.protocol.v40.fsm.state.ReadyState
             }
 
             throw ex;
-        } finally {
-            try {
-                tx.commit();
-            } catch (TransactionException ignore) {
-            }
-
-            try {
-                context.connection().closeTransaction();
-            } catch (TransactionException ignore) {
-            }
         }
 
         return this;

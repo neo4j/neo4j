@@ -200,7 +200,8 @@ public class DatabaseManagementServiceFactory {
                 edition,
                 boltGraphDatabaseManagementServiceSPI,
                 transactionManager,
-                databaseContextProvider.databaseIdRepository());
+                databaseContextProvider.databaseIdRepository(),
+                routingService);
 
         globalLife.add(boltServer);
         globalDependencies.satisfyDependency(boltServer);
@@ -418,7 +419,8 @@ public class DatabaseManagementServiceFactory {
             AbstractEditionModule edition,
             BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             TransactionManager transactionManager,
-            DatabaseIdRepository databaseIdRepository) {
+            DatabaseIdRepository databaseIdRepository,
+            RoutingService routingService) {
 
         // Must be called before loading any Netty classes in order to override the factory
         InternalLoggerFactory.setDefaultFactory(
@@ -441,6 +443,7 @@ public class DatabaseManagementServiceFactory {
                 edition.getBoltInClusterAuthManager(),
                 edition.getBoltLoopbackAuthManager(),
                 globalModule.getMemoryPools(),
+                routingService,
                 edition.getDefaultDatabaseResolver());
     }
 
