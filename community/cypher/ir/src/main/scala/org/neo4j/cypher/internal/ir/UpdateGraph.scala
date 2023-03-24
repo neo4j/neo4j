@@ -473,17 +473,17 @@ trait UpdateGraph {
   def setLabelOverlap(qgWithInfo: QgWithLeafInfo)(implicit
   semanticTable: SemanticTable): Seq[EagernessReason.Reason] = {
     // For SET label, we even have to look at the arguments for which we don't know if they are a node or not, so we consider HasLabelsOrTypes predicates.
-    def overlapWithKnownLabels = qgWithInfo.patternNodesAndArguments(semanticTable)
-      .flatMap(p => qgWithInfo.allKnownUnstableNodeLabelsFor(p).intersect(labelsToSet))
-    def overlapWithLabelsFunction = qgWithInfo.folder.treeExists {
+    lazy val overlapWithKnownLabels: Seq[LabelName] = qgWithInfo.patternNodesAndArguments(semanticTable)
+      .flatMap(p => qgWithInfo.allKnownUnstableNodeLabelsFor(p).intersect(labelsToSet)).toSeq
+    def overlapWithLabelsFunction: Boolean = qgWithInfo.folder.treeExists {
       case f: FunctionInvocation => f.function == Labels
     }
-    def overlapWithWildcard = qgWithInfo.folder.treeExists {
+    def overlapWithWildcard: Boolean = qgWithInfo.folder.treeExists {
       case _: HasALabel => true
     }
 
-    if (overlapWithKnownLabels.nonEmpty)
-      overlapWithKnownLabels.toSeq.map(EagernessReason.LabelReadSetConflict(_))
+    if (labelsToSet.nonEmpty && overlapWithKnownLabels.nonEmpty)
+      overlapWithKnownLabels.map(EagernessReason.LabelReadSetConflict(_))
     else if (labelsToSet.nonEmpty && overlapWithLabelsFunction)
       labelsToSet.toSeq.map(EagernessReason.LabelReadSetConflict(_))
     else if (labelsToSet.nonEmpty && overlapWithWildcard)
