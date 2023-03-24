@@ -48,7 +48,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.shell.Environment;
-import org.neo4j.shell.parameter.ParameterService.RawParameter;
+import org.neo4j.shell.parameter.ParameterService.RawParameters;
 import org.neo4j.shell.test.LocaleDependentTestBase;
 
 class CliArgHelperTest extends LocaleDependentTestBase {
@@ -326,14 +326,14 @@ class CliArgHelperTest extends LocaleDependentTestBase {
     void shouldParseSingleStringArg() {
         CliArgs cliArgs = parser.parse("-P", "foo=>'nanana'");
         assertNotNull(cliArgs);
-        assertEquals(List.of(new RawParameter("foo", "'nanana'")), cliArgs.getParameters());
+        assertEquals(List.of(new RawParameters("{foo: 'nanana'}")), cliArgs.getParameters());
     }
 
     @Test
     void shouldParseTwoArgs() {
         CliArgs cliArgs = parser.parse("-P", "foo=>'nanana'", "-P", "bar=>35");
         assertThat(cliArgs).isNotNull();
-        var expected = List.of(new RawParameter("foo", "'nanana'"), new RawParameter("bar", "35"));
+        var expected = List.of(new RawParameters("{foo: 'nanana'}"), new RawParameters("{bar: 35}"));
         assertThat(cliArgs.getParameters()).isEqualTo(expected);
     }
 

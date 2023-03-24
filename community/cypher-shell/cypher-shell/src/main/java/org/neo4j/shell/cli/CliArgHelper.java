@@ -53,7 +53,6 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.neo4j.shell.Environment;
 import org.neo4j.shell.log.Logger;
 import org.neo4j.shell.parameter.ParameterService;
-import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
 /**
  * Command line argument parsing and related stuff
@@ -301,10 +300,11 @@ public class CliArgHelper {
                 .setDefault(Format.AUTO.name().toLowerCase());
 
         parser.addArgument("-P", "--param")
-                .help("Add a parameter to this session. Example: `-P \"number => 3\"` or `-P \"country => 'Spain'\"`. "
-                        + "This argument can be specified multiple times.")
+                .help("Add a parameter to this session."
+                        + " Example: `-P {a: 1}` or `-P {a: 1, b: duration({seconds: 1})}`."
+                        + " This argument can be specified multiple times.")
                 .action(new AddParamArgumentAction(ParameterService.createParser()))
-                .setDefault(new ArrayList<RawParameter>());
+                .setDefault(new ArrayList<ParameterService.RawParameters>());
 
         parser.addArgument("--non-interactive")
                 .help("force non-interactive mode, only useful if auto-detection fails (like on Windows)")

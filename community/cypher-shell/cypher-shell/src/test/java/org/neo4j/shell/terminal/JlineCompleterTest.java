@@ -30,6 +30,7 @@ import org.jline.reader.LineReader;
 import org.jline.reader.Parser;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Values;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.parameter.ParameterService;
@@ -52,7 +53,6 @@ class JlineCompleterTest {
             ":help",
             ":history",
             ":param",
-            ":params",
             ":rollback",
             ":source",
             ":use",
@@ -105,8 +105,8 @@ class JlineCompleterTest {
 
     @Test
     void completeCypherParametersSanity() {
-        parameters.setParameter(new Parameter("myParam", "1", 1L));
-        parameters.setParameter(new Parameter("myOtherParam", "2", 2L));
+        parameters.setParameters(List.of(new Parameter("myParam", Values.value(1L))));
+        parameters.setParameters(List.of(new Parameter("myOtherParam", Values.value(2L))));
 
         assertThat(complete("")).contains("$myParam", "$myOtherParam");
         assertThat(complete("match (n) where n.p = ")).contains("$myParam", "$myOtherParam");

@@ -20,7 +20,6 @@
 package org.neo4j.shell.parameter;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -29,25 +28,20 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.shell.TransactionHandler.TransactionType.USER_TRANSPILED;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.CARTESIAN;
 
-import java.time.Duration;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.internal.value.IntegerValue;
+import org.neo4j.driver.internal.value.MapValue;
+import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parameter.ParameterService.Parameter;
-import org.neo4j.shell.parameter.ParameterService.RawParameter;
+import org.neo4j.shell.parameter.ParameterService.RawParameters;
 import org.neo4j.shell.state.BoltResult;
-import org.neo4j.values.storable.Values;
 
 class ShellParameterServiceTest {
     private ShellParameterService parameters;
@@ -69,31 +63,33 @@ class ShellParameterServiceTest {
         assertEvaluate("[1, 'hej']", List.of(1L, "hej"));
         assertEvaluate("{ hej: 1 }", Map.of("hej", 1L));
         assertEvaluate("true", true);
-        assertEvaluate("point({x: 1.0, y: 2.0})", Values.pointValue(CARTESIAN, 1.0, 2.0));
-        assertEvaluate("date('2021-01-13')", LocalDate.of(2021, 1, 13));
-        assertEvaluate("datetime('2022-01-13T11:00Z')", ZonedDateTime.of(2022, 1, 13, 11, 0, 0, 0, ZoneOffset.UTC));
-        assertEvaluate("localdatetime('2022-01-13T11:00')", LocalDateTime.of(2022, 1, 13, 11, 0));
-        assertEvaluate("localtime('12:00')", LocalTime.of(12, 0));
-        assertEvaluate("duration({ hours: 23 })", Values.durationValue(Duration.ofHours(23)));
+        assertEvaluate("point({x: 1.0, y: 2.0})", Values.point(CARTESIAN.getCode(), 1.0, 2.0));
+        assertEvaluate("duration({ hours: 23 })", Values.isoDuration(0, 0, 60 * 60 * 23, 0));
+        assertEvaluate("duration('PT1S')", Values.isoDuration(0, 0, 1, 0));
+        assertEvaluate("duration('P1M1W1DT1H1.001S')", Values.isoDuration(1, 8, 60 * 60 + 1, 1000000));
+        assertEvaluate("[{b:[{id:1}]}]", List.of(Map.of("b", List.of(Map.of("id", 1L)))));
+        assertEvaluate("null", NullValue.NULL);
     }
 
     @Test
     void evaluateOnline() throws CommandException {
         var mockRecord = mock(org.neo4j.driver.Record.class);
-        when(mockRecord.get("result")).thenReturn(new IntegerValue(6));
+        var result = new MapValue(Map.of("hello", new IntegerValue(6L)));
+        when(mockRecord.get("result")).thenReturn(result);
         var mockBoltResult = mock(BoltResult.class);
         when(mockBoltResult.iterate()).thenReturn(List.of(mockRecord).iterator());
-        when(transactionHandler.runCypher(eq("RETURN 1 + 2 + 3 AS `result`;"), any(), eq(USER_TRANSPILED)))
+        when(transactionHandler.runCypher(eq("RETURN {hello:1 + 2 + 3} AS `result`"), any(), eq(USER_TRANSPILED)))
                 .thenReturn(Optional.of(mockBoltResult));
 
-        assertEvaluate("1 + 2 + 3", 6L);
+        assertEvaluate("1 + 2 + 3", new IntegerValue(6L));
     }
 
     @Test
     void failToEvaluate() {
         var exception = assertThrows(
-                CommandException.class, () -> parameters.evaluate(new RawParameter("somename", "INVALID")));
-        assertThat(exception).hasMessage("Failed to evaluate parameter somename: INVALID");
+                ParameterService.ParameterEvaluationException.class,
+                () -> parameters.evaluate(new RawParameters("INVALID")));
+        assertThat(exception).hasMessageContaining("Failed to evaluate expression INVALID");
     }
 
     @Test
@@ -101,16 +97,16 @@ class ShellParameterServiceTest {
         final var tests = List.of(
                 List.of("bob   9", "bob", "9"),
                 List.of("bob => 9", "bob", "9"),
-                List.of("`bob` => 9", "bob", "9"),
+                List.of("`bob` => 9", "`bob`", "9"),
                 List.of("bØb   9", "bØb", "9"),
-                List.of("`first=>Name` => \"Bruce\"", "first=>Name", "\"Bruce\""),
-                List.of("`bob#`   9", "bob#", "9"),
-                List.of(" `bo `` sömething ```   9", "bo ` sömething `", "9"),
+                List.of("`first=>Name` => \"Bruce\"", "`first=>Name`", "\"Bruce\""),
+                List.of("`bob#`   9", "`bob#`", "9"),
+                List.of(" `bo `` sömething ```   9", "`bo `` sömething ```", "9"),
                 List.of("bob 'one two'", "bob", "'one two'"),
                 List.of("böb 'one two'", "böb", "'one two'"),
                 List.of("bob: \"one\"", "bob", "\"one\""),
-                List.of("`bob:`: 'one'", "bob:", "'one'"),
-                List.of("`t:om` 'two'", "t:om", "'two'"),
+                List.of("`bob:`: 'one'", "`bob:`", "'one'"),
+                List.of("`t:om` 'two'", "`t:om`", "'two'"),
                 List.of("bob \"RETURN 5 as bob\"", "bob", "\"RETURN 5 as bob\""));
         for (var test : tests) {
             assertParse(test.get(0), test.get(1), test.get(2));
@@ -120,44 +116,42 @@ class ShellParameterServiceTest {
 
     @Test
     void setParameter() {
-        var parameter = new Parameter("key", "'value'", "value");
-        parameters.setParameter(parameter);
-        assertThat(parameters.parameters()).isEqualTo(Map.of("key", parameter));
-        assertThat(parameters.parameterValues()).isEqualTo(Map.of("key", parameter.value()));
+        var parameter = param("key", "value");
+        parameters.setParameters(List.of(parameter));
+        assertThat(parameters.parameters()).isEqualTo(Map.of("key", parameter.value()));
     }
 
     @Test
     void setExistingParameter() {
-        parameters.setParameter(new Parameter("key", "'old'", "old"));
-        var parameter = new Parameter("key", "'value'", "value");
-        parameters.setParameter(parameter);
-        assertThat(parameters.parameters()).isEqualTo(Map.of("key", parameter));
-        assertThat(parameters.parameterValues()).isEqualTo(Map.of("key", parameter.value()));
+        parameters.setParameters(List.of(param("key", "old")));
+        var parameter = param("key", "value");
+        parameters.setParameters(List.of(parameter));
+        assertThat(parameters.parameters()).isEqualTo(Map.of("key", parameter.value()));
     }
 
     @Test
     void setMultipleParameters() {
-        var parameter1 = new Parameter("key1", "'value1'", "value1");
-        var parameter2 = new Parameter("key2", "'value2'", "value2");
+        var parameter1 = param("key1", "value1");
+        var parameter2 = param("key2", "value2");
 
-        parameters.setParameter(parameter1);
-        parameters.setParameter(parameter2);
-        assertThat(parameters.parameters()).isEqualTo(Map.of("key1", parameter1, "key2", parameter2));
-        assertThat(parameters.parameterValues())
-                .isEqualTo(Map.of("key1", parameter1.value(), "key2", parameter2.value()));
+        parameters.setParameters(List.of(parameter1));
+        parameters.setParameters(List.of(parameter2));
+        assertThat(parameters.parameters()).isEqualTo(Map.of("key1", parameter1.value(), "key2", parameter2.value()));
     }
 
     private void assertEvaluate(String expression, Object expectedValue) throws CommandException {
-        var raw = new RawParameter("someName", expression);
-        var value = parameters.evaluate(raw);
-        Supplier<String> message = () -> " Expected " + expectedValue + " but got " + value.value() + " ("
-                + value.value().getClass().getName() + ")";
-        assertEquals(new Parameter(raw.name(), raw.expression(), expectedValue), value, message);
+        var rawParameters = new RawParameters(String.format("{hello:%s}", expression));
+        var expected = param("hello", expectedValue);
+        assertThat(parameters.evaluate(rawParameters)).containsExactly(expected);
     }
 
     private void assertParse(String input, String expectedName, String expectedExpression)
             throws ParameterService.ParameterParsingException {
-        var parsed = parameters.parse(input);
-        assertThat(parsed).isEqualTo(new RawParameter(expectedName, expectedExpression));
+        assertThat(parameters.parse(input))
+                .isEqualTo(new RawParameters(String.format("{%s: %s}", expectedName, expectedExpression)));
+    }
+
+    private Parameter param(String name, Object value) {
+        return new Parameter(name, org.neo4j.driver.Values.value(value));
     }
 }

@@ -28,7 +28,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.neo4j.shell.parameter.ParameterService;
 import org.neo4j.shell.parameter.ParameterService.ParameterParser;
-import org.neo4j.shell.parameter.ParameterService.RawParameter;
 
 /**
  * Action that parses and appends query parameters.
@@ -47,13 +46,13 @@ public class AddParamArgumentAction implements ArgumentAction {
         if (attrs.get(arg.getDest()) instanceof List queryParams) {
             queryParams.add(parse(value.toString()));
         } else {
-            var queryParams = new ArrayList<RawParameter>();
+            var queryParams = new ArrayList<ParameterService.RawParameters>();
             queryParams.add(parse(value.toString()));
             attrs.put(arg.getDest(), queryParams);
         }
     }
 
-    private RawParameter parse(String input) {
+    private ParameterService.RawParameters parse(String input) {
         try {
             return queryParameterParser.parse(input);
         } catch (ParameterService.ParameterParsingException e) {

@@ -99,7 +99,7 @@ class CliArgsTest {
 
     @Test
     void getParameters() {
-        var list = List.of(new ParameterService.RawParameter("bla", "bla"));
+        var list = List.of(new ParameterService.RawParameters("{bla: 'bla'}"));
         cliArgs.setParameters(list);
         assertEquals(list, cliArgs.getParameters());
     }

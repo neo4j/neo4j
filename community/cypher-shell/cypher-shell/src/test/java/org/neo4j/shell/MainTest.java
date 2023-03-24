@@ -33,13 +33,13 @@ import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.test.Util.testConnectionConfig;
 
 import java.io.IOException;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Values;
 import org.neo4j.driver.exceptions.AuthenticationException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.SecurityException;
@@ -271,15 +271,15 @@ class MainTest {
                 .args("-u bob -p secret")
                 .addArgs("--param", "purple => 'rain'")
                 .addArgs("--param", "advice => ['talk', 'less', 'smile', 'more']")
-                .addArgs("--param", "when => date('2021-01-12')")
+                .addArgs("--param", "when => 12")
                 .run()
                 .assertSuccess();
 
         var expectedParams = Map.of(
-                "purple", "rain",
-                "advice", List.of("talk", "less", "smile", "more"),
-                "when", LocalDate.of(2021, 1, 12));
-        assertThat(parameters.parameterValues()).isEqualTo(expectedParams);
+                "purple", Values.value("rain"),
+                "advice", Values.value(List.of("talk", "less", "smile", "more")),
+                "when", Values.value(12L));
+        assertThat(parameters.parameters()).isEqualTo(expectedParams);
     }
 
     @Test

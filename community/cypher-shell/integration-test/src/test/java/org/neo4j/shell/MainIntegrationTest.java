@@ -20,6 +20,7 @@
 package org.neo4j.shell;
 
 import static java.lang.String.format;
+import static java.util.Map.entry;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.assertj.core.api.Assertions.allOf;
@@ -48,6 +49,9 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.assertj.core.api.Condition;
 import org.junit.jupiter.api.Test;
@@ -789,6 +793,113 @@ class MainIntegrationTest {
     }
 
     @Test
+    void parametersSupportsAllCypherTypes() throws Exception {
+        final var paramExpressions = List.of(
+                entry("int", "1"),
+                entry("float", "1.0"),
+                entry("string", "'s'"),
+                entry("bool", "true"),
+                entry("point", "point({x: 1, y: 2})"),
+                entry("date", "date('2009-06-18')"),
+                entry("time", "time('02:00')"),
+                entry("localtime", "localtime('02:00')"),
+                entry("datetime", "datetime('2023-03-21T11:17:15.1Z')"),
+                entry("localdatetime", "localdatetime('2023-03-21T11:17:15.1')"),
+                entry("duration", "duration('P1M8DT3601.1S')"),
+                entry("functionCall", "toString(1+1)"),
+                entry("` backticks `", "true"),
+                entry("string_escape", "'\\'yes?\\''"),
+                entry("string_escape2_judgement_day", "\"\\\"mjau\\\"\""));
+        // Combine all parameters in a map force online evaluation of all types as well
+        final var evalutateOnlineExp = paramExpressions.stream()
+                .map(e -> e.getKey() + ":" + e.getValue())
+                .collect(Collectors.joining(",", "{", "}"));
+        final var allParams = Stream.concat(paramExpressions.stream(), Stream.of(entry("online", evalutateOnlineExp)))
+                .toList();
+        final var paramCalls = allParams.stream()
+                .map(e -> format(":param {%s:%s}", e.getKey(), e.getValue()))
+                .toList();
+        final var verifyQuery = allParams.stream()
+                .map(e -> format("{%s: $%s = %s}", e.getKey(), e.getKey(), e.getValue()))
+                .collect(Collectors.joining(",\n", "unwind [", "] as result return result;"));
+
+        final var userInput = Stream.concat(paramCalls.stream(), Stream.of(":params", verifyQuery))
+                .toList()
+                .toArray(new String[0]);
+        buildTest()
+                .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
+                .userInputLines(userInput)
+                .run()
+                .assertSuccessAndConnected()
+                .assertThatOutput(
+                        contains(
+                                """
+                                        > :params
+                                        {
+                                          ` backticks `: true,
+                                          bool: true,
+                                          date: date('2009-06-18'),
+                                          datetime: datetime('2023-03-21T11:17:15.1Z'),
+                                          duration: duration('P1M8DT1H1.1S'),
+                                          float: 1.0,
+                                          functionCall: '2',
+                                          int: 1,
+                                          localdatetime: localdatetime('2023-03-21T11:17:15.1'),
+                                          localtime: localtime('02:00:00'),
+                                          online: {
+                                            ` backticks `: true,
+                                            bool: true,
+                                            date: date('2009-06-18'),
+                                            datetime: datetime('2023-03-21T11:17:15.1Z'),
+                                            duration: duration('P1M8DT1H1.1S'),
+                                            float: 1.0,
+                                            functionCall: '2',
+                                            int: 1,
+                                            localdatetime: localdatetime('2023-03-21T11:17:15.1'),
+                                            localtime: localtime('02:00:00'),
+                                            point: point( {
+                                              srid: 7203,
+                                              x: 1.0,
+                                              y: 2.0
+                                            }),
+                                            string: 's',
+                                            string_escape: '\\'yes?\\'',
+                                            string_escape2_judgement_day: '\\"mjau\\"',
+                                            time: time('02:00:00Z')
+                                          },
+                                          point: point( {
+                                            srid: 7203,
+                                            x: 1.0,
+                                            y: 2.0
+                                          }),
+                                          string: 's',
+                                          string_escape: '\\'yes?\\'',
+                                          string_escape2_judgement_day: '\\"mjau\\"',
+                                          time: time('02:00:00Z')
+                                        }"""),
+                        contains(
+                                """
+                                        result
+                                        {int: TRUE}
+                                        {float: TRUE}
+                                        {string: TRUE}
+                                        {bool: TRUE}
+                                        {point: TRUE}
+                                        {date: TRUE}
+                                        {time: TRUE}
+                                        {localtime: TRUE}
+                                        {datetime: TRUE}
+                                        {localdatetime: TRUE}
+                                        {duration: TRUE}
+                                        {functionCall: TRUE}
+                                        {` backticks `: TRUE}
+                                        {string_escape: TRUE}
+                                        {string_escape2_judgement_day: TRUE}
+                                        {online: TRUE}
+                                        neo4j@neo4j>"""));
+    }
+
+    @Test
     void evaluatesParameterArguments() throws Exception {
         buildTest()
                 .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
@@ -797,23 +908,45 @@ class MainIntegrationTest {
                 .addArgs("--param", "when => date('2021-01-12')")
                 .addArgs("--param", "repeatAfterMe => 'A' + 'B' + 'C'")
                 .addArgs("--param", "easyAs => 1 + 2 + 3")
-                .userInputLines(":params", "return $purple, $advice, $when, $repeatAfterMe, $easyAs;")
+                .addArgs("--param", "{a: 1, b: duration({seconds:1}), c:'hi'}")
+                .addArgs("--param", "{a: 2*2, d: toString(3)}")
+                .userInputLines(
+                        ":params",
+                        """
+                        unwind [$purple,$advice,$when,$repeatAfterMe,$easyAs,$a,$b,$c,$d] as param
+                        return param;
+                        """)
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
                         contains(
                                 """
                                  > :params
-                                 :param advice        => ['talk', 'less', 'smile', 'more']
-                                 :param easyAs        => 1 + 2 + 3
-                                 :param purple        => 'rain'
-                                 :param repeatAfterMe => 'A' + 'B' + 'C'
-                                 :param when          => date('2021-01-12')"""),
+                                 {
+                                   a: 4,
+                                   advice: ['talk', 'less', 'smile', 'more'],
+                                   b: duration('PT1S'),
+                                   c: 'hi',
+                                   d: '3',
+                                   easyAs: 6,
+                                   purple: 'rain',
+                                   repeatAfterMe: 'ABC',
+                                   when: date('2021-01-12')
+                                 }"""),
                         contains(
                                 """
-                                 > return $purple, $advice, $when, $repeatAfterMe, $easyAs;
-                                 $purple, $advice, $when, $repeatAfterMe, $easyAs
-                                 "rain", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6
+                                 neo4j@neo4j> unwind [$purple,$advice,$when,$repeatAfterMe,$easyAs,$a,$b,$c,$d] as param
+                                              return param;
+                                 param
+                                 "rain"
+                                 ["talk", "less", "smile", "more"]
+                                 2021-01-12
+                                 "ABC"
+                                 6
+                                 4
+                                 PT1S
+                                 "hi"
+                                 "3"
                                  """));
     }
 
@@ -840,21 +973,23 @@ class MainIntegrationTest {
                 .assertThatOutput(
                         contains(
                                 """
-                                        > :params
-                                        :param advice        => ['talk', 'less', 'smile', 'more']
-                                        :param dt            => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))
-                                        :param dt2           => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))
-                                        :param easyAs        => 1 + 2 + 3
-                                        :param purple        => 'rain'
-                                        :param repeatAfterMe => 'A' + 'B' + 'C'
-                                        :param when          => date('2021-01-12')
-                                        :param white         => "space"  ;  """),
+                            > :params
+                            {
+                              advice: ['talk', 'less', 'smile', 'more'],
+                              dt: datetime('2023-02-06T00:00:00-06:00[America/Chicago]'),
+                              dt2: datetime('2023-02-06T00:00:00-06:00[America/Chicago]'),
+                              easyAs: 6,
+                              purple: 'rain',
+                              repeatAfterMe: 'ABC',
+                              when: date('2021-01-12'),
+                              white: 'space'
+                            }"""),
                         contains(
                                 """
-                                 > return $purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;
-                                 $purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2
-                                 "rain", "space", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6, 2023-02-06T00:00-06:00[America/Chicago], 2023-02-06T00:00-06:00[America/Chicago]
-                                 """));
+                             > return $purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;
+                             $purple, $white, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2
+                             "rain", "space", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6, 2023-02-06T00:00-06:00[America/Chicago], 2023-02-06T00:00-06:00[America/Chicago]
+                             """));
     }
 
     @Test
@@ -862,30 +997,49 @@ class MainIntegrationTest {
         buildTest()
                 .addArgs("-u", USER, "-p", PASSWORD, "--format", "plain")
                 .userInputLines(
+                        ":param purple => 'roin'",
                         ":param purple => 'rain'",
                         ":param advice => ['talk', 'less', 'smile', 'more']",
                         ":param when => date('2021-01-12')",
                         ":param repeatAfterMe => 'A' + 'B' + 'C'",
                         ":param easyAs => 1 + 2 + 3",
+                        ":param {a: {a:[duration('PT1M'), 1*2*3]}, b: toString(23)}",
+                        ":param {c: 1.1, d: true}",
                         ":params",
-                        "return $purple, $advice, $when, $repeatAfterMe, $easyAs;")
+                        "unwind [$purple,$advice,$when,$repeatAfterMe,$easyAs,$a,$b,$c,$d] as param return param;")
                 .run()
                 .assertSuccessAndConnected()
                 .assertThatOutput(
                         contains(
                                 """
-                                        > :params
-                                        :param advice        => ['talk', 'less', 'smile', 'more']
-                                        :param easyAs        => 1 + 2 + 3
-                                        :param purple        => 'rain'
-                                        :param repeatAfterMe => 'A' + 'B' + 'C'
-                                        :param when          => date('2021-01-12')"""),
+                        > :params
+                        {
+                          a: {
+                            a: [duration('PT1M'), 6]
+                          },
+                          advice: ['talk', 'less', 'smile', 'more'],
+                          b: '23',
+                          c: 1.1,
+                          d: true,
+                          easyAs: 6,
+                          purple: 'rain',
+                          repeatAfterMe: 'ABC',
+                          when: date('2021-01-12')
+                        }
+                        """),
                         contains(
                                 """
-                                        > return $purple, $advice, $when, $repeatAfterMe, $easyAs;
-                                        $purple, $advice, $when, $repeatAfterMe, $easyAs
-                                        "rain", ["talk", "less", "smile", "more"], 2021-01-12, "ABC", 6
-                                        """));
+                        > unwind [$purple,$advice,$when,$repeatAfterMe,$easyAs,$a,$b,$c,$d] as param return param;
+                        param
+                        "rain"
+                        ["talk", "less", "smile", "more"]
+                        2021-01-12
+                        "ABC"
+                        6
+                        {a: [PT1M, 6]}
+                        "23"
+                        1.1
+                        TRUE"""));
     }
 
     @Test
@@ -908,13 +1062,15 @@ class MainIntegrationTest {
                         contains(
                                 """
                                         > :params
-                                        :param advice        => ['talk', 'less', 'smile', 'more']
-                                        :param dt            => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))
-                                        :param dt2           => datetime.truncate('day', datetime({ year: 2023, month: 2, day: 6, hour: 2,  timezone: 'America/Chicago' }))
-                                        :param easyAs        => 1 + 2 + 3
-                                        :param purple        => 'rain'
-                                        :param repeatAfterMe => 'A' + 'B' + 'C'
-                                        :param when          => date('2021-01-12')"""),
+                                        {
+                                          advice: ['talk', 'less', 'smile', 'more'],
+                                          dt: datetime('2023-02-06T00:00:00-06:00[America/Chicago]'),
+                                          dt2: datetime('2023-02-06T00:00:00-06:00[America/Chicago]'),
+                                          easyAs: 6,
+                                          purple: 'rain',
+                                          repeatAfterMe: 'ABC',
+                                          when: date('2021-01-12')
+                                        }"""),
                         contains(
                                 """
                                         > return $purple, $advice, $when, $repeatAfterMe, $easyAs, $dt, $dt2;

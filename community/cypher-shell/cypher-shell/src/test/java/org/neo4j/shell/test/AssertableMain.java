@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.shell.Main.EXIT_FAILURE;
 import static org.neo4j.shell.Main.EXIT_SUCCESS;
 import static org.neo4j.shell.terminal.CypherShellTerminalBuilder.terminalBuilder;
@@ -94,7 +95,10 @@ public class AssertableMain {
     public AssertableMain assertSuccess(boolean isErrorOutputEmpty) {
         assertEquals(EXIT_SUCCESS, exitCode, failureSupplier("Unexpected exit code"));
         if (isErrorOutputEmpty) {
-            assertEquals("", err.toString(UTF_8), "Error output expected to be empty");
+            final var errString = err.toString(UTF_8);
+            if (!"".equals(errString)) {
+                fail("Error output expected to be empty, but was:\n" + errString);
+            }
         }
         return this;
     }

@@ -398,17 +398,17 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     }
 
     @Override
-    public Optional<BoltResult> runUserCypher(String cypher, Map<String, Object> queryParams) throws CommandException {
+    public Optional<BoltResult> runUserCypher(String cypher, Map<String, Value> queryParams) throws CommandException {
         return runCypher(cypher, queryParams, USER_DIRECT_TX_CONF);
     }
 
     @Override
-    public Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams, TransactionType type)
+    public Optional<BoltResult> runCypher(String cypher, Map<String, Value> queryParams, TransactionType type)
             throws CommandException {
         return runCypher(cypher, queryParams, txConfig(type));
     }
 
-    private Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams, TransactionConfig config)
+    private Optional<BoltResult> runCypher(String cypher, Map<String, Value> queryParams, TransactionConfig config)
             throws CommandException {
         if (!isConnected()) {
             throw new CommandException("Not connected to Neo4j");
@@ -487,14 +487,14 @@ public class BoltStateHandler implements TransactionHandler, Connector, Database
     /**
      * @throws SessionExpiredException when server no longer serves writes anymore
      */
-    private Optional<BoltResult> getBoltResult(String cypher, Map<String, Object> queryParams, TransactionConfig config)
+    private Optional<BoltResult> getBoltResult(String cypher, Map<String, Value> queryParams, TransactionConfig config)
             throws SessionExpiredException {
         Result statementResult;
 
         if (isTransactionOpen()) {
-            statementResult = tx.run(new Query(cypher, queryParams));
+            statementResult = tx.run(new Query(cypher, Values.value(queryParams)));
         } else {
-            statementResult = session.run(new Query(cypher, queryParams), config);
+            statementResult = session.run(new Query(cypher, Values.value(queryParams)), config);
         }
 
         if (statementResult == null) {

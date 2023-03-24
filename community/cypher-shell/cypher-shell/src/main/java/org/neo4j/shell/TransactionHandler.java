@@ -21,6 +21,7 @@ package org.neo4j.shell;
 
 import java.util.Map;
 import java.util.Optional;
+import org.neo4j.driver.Value;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.state.BoltResult;
 
@@ -54,9 +55,9 @@ public interface TransactionHandler {
     /**
      * Run a cypher query directly submitted by the user.
      */
-    Optional<BoltResult> runUserCypher(String cypher, Map<String, Object> queryParams) throws CommandException;
+    Optional<BoltResult> runUserCypher(String cypher, Map<String, Value> queryParams) throws CommandException;
 
-    Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams, TransactionType type)
+    Optional<BoltResult> runCypher(String cypher, Map<String, Value> queryParams, TransactionType type)
             throws CommandException;
 
     enum TransactionType {

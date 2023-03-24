@@ -19,50 +19,57 @@
  */
 package org.neo4j.shell.parameter;
 
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.MONTHS;
+import static java.time.temporal.ChronoUnit.NANOS;
+import static java.time.temporal.ChronoUnit.SECONDS;
+import static org.neo4j.driver.internal.types.InternalTypeSystem.TYPE_SYSTEM;
 import static org.neo4j.shell.TransactionHandler.TransactionType.USER_TRANSPILED;
-import static org.neo4j.shell.prettyprint.CypherVariablesFormatter.unescapedCypherVariable;
 
+import java.time.temporal.Temporal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.cypher.internal.literal.interpreter.LiteralInterpreter;
 import org.neo4j.cypher.internal.parser.javacc.Cypher;
 import org.neo4j.cypher.internal.parser.javacc.CypherCharStream;
+import org.neo4j.driver.internal.value.NullValue;
 import org.neo4j.shell.TransactionHandler;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.exception.ParameterException;
 import org.neo4j.shell.log.Logger;
-import org.neo4j.values.storable.Value;
 
 public interface ParameterService {
     /**
      * Returns all set parameters.
      */
-    Map<String, Parameter> parameters();
+    Map<String, org.neo4j.driver.Value> parameters();
 
     /**
-     * Returns all parameter values by name.
+     * Evaluate parameters.
+     *
+     * Simple expressions are evaluated offline,
+     * but complex expressions needs an open connection for this call to succeed.
      */
-    Map<String, Object> parameterValues();
+    List<Parameter> evaluate(RawParameters parameter) throws CommandException;
 
-    /**
-     * Evaluate parameter. Simple expressions are evaluated offline, but complex needs an open connection.
-     */
-    Parameter evaluate(RawParameter parameter) throws CommandException;
+    /** Set parameters. */
+    void setParameters(List<Parameter> parameters);
 
-    /**
-     * Set parameter.
-     */
-    void setParameter(Parameter parameter);
+    /** Parse parameters. */
+    RawParameters parse(String input) throws ParameterParsingException;
 
-    /**
-     * Returns parsed parameter.
-     */
-    RawParameter parse(String input) throws ParameterParsingException;
+    /** Returns a pretty formatted string of currently set parameters. */
+    String pretty();
+
+    /** Clear parameters. */
+    void clear();
 
     static ParameterService create(TransactionHandler db) {
         return new ShellParameterService(db);
@@ -73,58 +80,109 @@ public interface ParameterService {
     }
 
     interface ParameterParser {
-        RawParameter parse(String input) throws ParameterParsingException;
+        RawParameters parse(String input) throws ParameterParsingException;
     }
 
     interface ParameterEvaluator {
-        Parameter evaluate(RawParameter parameter) throws CommandException;
+        List<Parameter> evaluate(RawParameters parameter) throws CommandException;
     }
 
-    record RawParameter(String name, String expression) {}
+    /** Parameters represented as a Cypher map expression */
+    record RawParameters(String expression) {}
 
-    record Parameter(String name, String expressionString, Object value) {}
+    record Parameter(String name, org.neo4j.driver.Value value) {}
 
-    class ParameterParsingException extends Exception {}
+    class ParameterParsingException extends RuntimeException {}
+
+    class ParameterEvaluationException extends RuntimeException {
+        ParameterEvaluationException(String message, Throwable cause) {
+            super(message, cause);
+        }
+
+        ParameterEvaluationException(String message) {
+            super(message);
+        }
+    }
 }
 
 class ShellParameterService implements ParameterService {
     private static final Logger log = Logger.create();
-    private final Map<String, Parameter> parameters = new HashMap<>(0);
-    private final Map<String, Object> parameterValues = new HashMap<>(0);
+    private final Map<String, org.neo4j.driver.Value> parameters = new HashMap<>();
     private final ParameterParser parser = new ShellParameterParser();
     private final ParameterEvaluator evaluator;
+    private final ParameterPrettyRenderer prettyRenderer = ParameterPrettyRenderer.create();
 
     ShellParameterService(TransactionHandler db) {
         this.evaluator = new ShellParameterEvaluator(db);
     }
 
     @Override
-    public Map<String, Parameter> parameters() {
+    public Map<String, org.neo4j.driver.Value> parameters() {
         return parameters;
     }
 
     @Override
-    public Map<String, Object> parameterValues() {
-        return parameterValues;
+    public void setParameters(List<Parameter> parameters) {
+        parameters.forEach(p -> {
+            this.parameters.put(p.name(), p.value());
+        });
     }
 
     @Override
-    public void setParameter(Parameter parameter) {
-        parameters.put(parameter.name(), parameter);
-        parameterValues.put(parameter.name(), parameter.value());
-    }
-
-    @Override
-    public Parameter evaluate(RawParameter parameter) throws CommandException {
+    public List<Parameter> evaluate(RawParameters parameter) throws CommandException {
         return evaluator.evaluate(parameter);
     }
 
     @Override
-    public RawParameter parse(String input) throws ParameterParsingException {
+    public RawParameters parse(String input) throws ParameterParsingException {
         return parser.parse(input);
     }
 
+    @Override
+    public String pretty() {
+        return prettyRenderer.pretty(parameters());
+    }
+
+    @Override
+    public void clear() {
+        parameters.clear();
+    }
+
     public static class ShellParameterParser implements ParameterParser {
+        private final CypherMapParameterParser mapParser = new CypherMapParameterParser();
+        private final ArrowParameterParser arrowParser = new ArrowParameterParser();
+
+        @Override
+        public RawParameters parse(String input) throws ParameterParsingException {
+            return doParse(stripTrailingSemicolon(input));
+        }
+
+        private RawParameters doParse(String input) throws ParameterParsingException {
+            return Optional.ofNullable(mapParser.parse(input))
+                    .or(() -> Optional.ofNullable(arrowParser.parse(input)))
+                    .orElseThrow(ParameterParsingException::new);
+        }
+
+        private static String stripTrailingSemicolon(String input) {
+            return StringUtils.stripEnd(input.trim(), ";");
+        }
+    }
+
+    private static class CypherMapParameterParser implements ParameterParser {
+        private static final Pattern CYPHER_MAP_PATTERN = Pattern.compile("^\\s*\\{");
+
+        @Override
+        public RawParameters parse(String input) throws ParameterParsingException {
+            if (CYPHER_MAP_PATTERN.matcher(input).find()) {
+                return new RawParameters(input);
+            } else {
+                return null;
+            }
+        }
+    }
+
+    // Legacy parser
+    private static class ArrowParameterParser implements ParameterParser {
         private final List<Pattern> patterns = List.of(
                 Pattern.compile("^\\s*(?<key>[\\p{L}_][\\p{L}0-9_]*)\\s*=>\\s*(?<value>.+)$"),
                 Pattern.compile("^\\s*(?<key>[\\p{L}_][\\p{L}0-9_]*):?\\s+(?<value>.+)$"),
@@ -134,11 +192,7 @@ class ShellParameterService implements ParameterService {
                 Pattern.compile("^\\s*(?<key>[\\p{L}_][\\p{L}0-9_]*):\\s*=>\\s*(?<value>.+)$");
 
         @Override
-        public RawParameter parse(String input) throws ParameterParsingException {
-            return doParse(stripTrailingSemicolon(input));
-        }
-
-        private RawParameter doParse(String input) throws ParameterParsingException {
+        public RawParameters parse(String input) throws ParameterParsingException {
             if (invalidPattern.matcher(input).matches()) {
                 throw new ParameterParsingException();
             }
@@ -147,13 +201,9 @@ class ShellParameterService implements ParameterService {
                     .map(p -> p.matcher(input))
                     .filter(Matcher::matches)
                     .findFirst()
-                    .map(m -> new RawParameter(unescapedCypherVariable(m.group("key")), m.group("value")))
-                    .filter(p -> !p.name().isBlank())
-                    .orElseThrow(ParameterParsingException::new);
-        }
-
-        private static String stripTrailingSemicolon(String input) {
-            return input.endsWith(";") ? StringUtils.stripEnd(input, ";") : input;
+                    .filter(m -> !m.group("key").isBlank() && !m.group("key").equals("``"))
+                    .map(m -> new RawParameters(String.format("{%s: %s}", m.group("key"), m.group("value"))))
+                    .orElse(null);
         }
     }
 
@@ -166,47 +216,90 @@ class ShellParameterService implements ParameterService {
         }
 
         @Override
-        public Parameter evaluate(RawParameter parameter) throws CommandException {
-            return evaluateOffline(parameter)
-                    .or(() -> evaluateOnline(parameter))
-                    .map(v -> new Parameter(parameter.name(), parameter.expression(), v))
-                    .orElseThrow(() -> failedToEvaluate(parameter));
+        public List<Parameter> evaluate(RawParameters parameter) throws CommandException {
+            final var exp = parameter.expression();
+            final var parameterMap = evaluateOffline(exp).orElseGet(() -> evaluateOnline(exp));
+            return asParameters(exp, parameterMap);
         }
 
-        private CommandException failedToEvaluate(RawParameter parameter) {
-            return new CommandException(
-                    "Failed to evaluate parameter " + parameter.name() + ": " + parameter.expression());
+        private List<Parameter> asParameters(String expression, org.neo4j.driver.Value value) {
+            if (value.hasType(TYPE_SYSTEM.MAP())) {
+                return value.asMap(v -> v).entrySet().stream()
+                        .map(e -> new Parameter(e.getKey(), e.getValue()))
+                        .toList();
+            } else {
+                final var message = "Failed to evaluate parameters " + expression + ", got " + value;
+                throw new ParameterEvaluationException(message);
+            }
         }
 
         @SuppressWarnings({"rawtypes", "unchecked"})
-        private Optional<Object> evaluateOffline(RawParameter parameter) {
-            Object value;
+        private Optional<org.neo4j.driver.Value> evaluateOffline(String expression) {
             try {
-                value = new Cypher(
-                                interpreter, ParameterException.FACTORY, new CypherCharStream(parameter.expression()))
-                        .Expression();
+                final var charStream = new CypherCharStream(expression);
+                final var value = new Cypher(interpreter, ParameterException.FACTORY, charStream).Expression();
+                return Optional.of(toDriverValue(value));
             } catch (Exception e) {
-                log.warn("Failed to evaluate expression " + parameter.expression() + " locally", e);
+                log.warn("Failed to evaluate expression " + expression + " locally", e);
                 return Optional.empty();
             }
-
-            if (value instanceof Value neo4jValue) {
-                value = neo4jValue.asObject();
-            }
-
-            return Optional.ofNullable(value);
         }
 
-        private Optional<Object> evaluateOnline(RawParameter parameter) {
+        /*
+         * Converts JavaCC parser output to driver values.
+         * JavaCC returns std lib java classes most of the time,
+         * but there are some exceptions where it returns neo4j values.
+         */
+        private static org.neo4j.driver.Value toDriverValue(Object input) {
+            if (input == null) {
+                return NullValue.NULL;
+            } else if (input instanceof Map<?, ?> map) {
+                return new org.neo4j.driver.internal.value.MapValue(map.entrySet().stream()
+                        .collect(Collectors.toMap(e -> (String) e.getKey(), e -> toDriverValue(e.getValue()))));
+            } else if (input instanceof Iterable<?> iterable) {
+                return org.neo4j.driver.Values.value(StreamSupport.stream(iterable.spliterator(), false)
+                        .map(ShellParameterEvaluator::toDriverValue)
+                        .toList());
+            } else if (input instanceof org.neo4j.values.storable.DurationValue duration) {
+                if (duration.getUnits().equals(List.of(MONTHS, DAYS, SECONDS, NANOS))) {
+                    final var months = duration.get(MONTHS);
+                    final var days = duration.get(DAYS);
+                    final var seconds = duration.get(SECONDS);
+                    final var nanos = Math.toIntExact(duration.get(NANOS));
+                    return org.neo4j.driver.Values.isoDuration(months, days, seconds, nanos);
+                } else {
+                    throw new ParameterEvaluationException("Paths not supported");
+                }
+            } else if (input instanceof org.neo4j.values.storable.PointValue point) {
+                final var srid = point.getCoordinateReferenceSystem().getCode();
+                final var coords = point.getCoordinate().getCoordinate();
+                if (coords.length == 2) {
+                    return org.neo4j.driver.Values.point(srid, coords[0], coords[1]);
+                } else if (coords.length == 3) {
+                    return org.neo4j.driver.Values.point(srid, coords[0], coords[1], coords[2]);
+                } else {
+                    throw new ParameterParsingException();
+                }
+            } else if (!(input instanceof Temporal)) {
+                // Temporal values are not safe to use
+                // because for example default time zone can be different between client and server
+                return org.neo4j.driver.Values.value(input);
+            } else {
+                throw new ParameterParsingException();
+            }
+        }
+
+        private org.neo4j.driver.Value evaluateOnline(String expression) {
             try {
                 // Feels very wrong to execute user data unescaped...
-                var query = "RETURN " + parameter.expression() + " AS `result`;";
+                final var query = "RETURN " + expression + " AS `result`";
 
-                return db.runCypher(query, parameterValues(), USER_TRANSPILED)
-                        .map(r -> r.iterate().next().get("result").asObject());
+                return db.runCypher(query, parameters(), USER_TRANSPILED)
+                        .map(r -> r.iterate().next().get("result"))
+                        .orElseThrow();
             } catch (Exception e) {
-                log.error("Failed to evaluate expression " + parameter.expression() + " online", e);
-                return Optional.empty();
+                final var message = "Failed to evaluate expression " + expression + ": " + e.getMessage();
+                throw new ParameterEvaluationException(message, e);
             }
         }
     }

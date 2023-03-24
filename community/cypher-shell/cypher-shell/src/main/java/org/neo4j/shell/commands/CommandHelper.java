@@ -74,7 +74,6 @@ public class CommandHelper {
                 entry(Help.class, new Help.Factory()),
                 entry(History.class, new History.Factory()),
                 entry(Param.class, new Param.Factory()),
-                entry(Params.class, new Params.Factory()),
                 entry(Rollback.class, new Rollback.Factory()),
                 entry(Source.class, new Source.Factory()),
                 entry(Use.class, new Use.Factory()),

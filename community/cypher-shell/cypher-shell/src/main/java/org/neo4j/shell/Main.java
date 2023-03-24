@@ -238,7 +238,7 @@ public class Main implements Closeable {
 
     private void setArgumentParameters() throws CommandException {
         for (var parameter : args.getParameters()) {
-            parameters.setParameter(parameters.evaluate(parameter));
+            parameters.setParameters(parameters.evaluate(parameter));
         }
     }
 

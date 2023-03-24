@@ -25,6 +25,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.neo4j.driver.Value;
 import org.neo4j.driver.exceptions.DiscoveryException;
 import org.neo4j.driver.exceptions.Neo4jException;
 import org.neo4j.driver.exceptions.ServiceUnavailableException;
@@ -129,7 +130,7 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         }
 
         try {
-            final Optional<BoltResult> result = boltStateHandler.runUserCypher(cypher, parameters.parameterValues());
+            final Optional<BoltResult> result = boltStateHandler.runUserCypher(cypher, parameters.parameters());
             result.ifPresent(boltResult -> {
                 prettyPrinter.format(boltResult, printer);
                 boltStateHandler.updateActualDbName(boltResult.getSummary());
@@ -233,12 +234,12 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
     }
 
     @Override
-    public Optional<BoltResult> runUserCypher(String cypher, Map<String, Object> queryParams) throws CommandException {
+    public Optional<BoltResult> runUserCypher(String cypher, Map<String, Value> queryParams) throws CommandException {
         return boltStateHandler.runUserCypher(cypher, queryParams);
     }
 
     @Override
-    public Optional<BoltResult> runCypher(String cypher, Map<String, Object> queryParams, TransactionType type)
+    public Optional<BoltResult> runCypher(String cypher, Map<String, Value> queryParams, TransactionType type)
             throws CommandException {
         return boltStateHandler.runCypher(cypher, queryParams, type);
     }

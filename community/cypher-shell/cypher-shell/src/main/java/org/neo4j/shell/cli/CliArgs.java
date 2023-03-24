@@ -28,7 +28,7 @@ import java.util.Optional;
 import java.util.logging.Handler;
 import org.neo4j.shell.ConnectionConfig;
 import org.neo4j.shell.Historian;
-import org.neo4j.shell.parameter.ParameterService.RawParameter;
+import org.neo4j.shell.parameter.ParameterService;
 
 @SuppressWarnings("OptionalUsedAsFieldOrParameterType")
 public class CliArgs {
@@ -52,7 +52,7 @@ public class CliArgs {
     private int numSampleRows = DEFAULT_NUM_SAMPLE_ROWS;
     private boolean wrap = true;
     private String inputFilename;
-    private List<RawParameter> parameters;
+    private List<ParameterService.RawParameters> parameters;
     private boolean changePassword;
     private Path historyFile = Historian.defaultHistoryFile();
     private Handler logHandler;
@@ -127,7 +127,7 @@ public class CliArgs {
         this.format = format;
     }
 
-    public void setParameters(List<RawParameter> parameters) {
+    public void setParameters(List<ParameterService.RawParameters> parameters) {
         this.parameters = parameters;
     }
 
@@ -202,7 +202,7 @@ public class CliArgs {
         }
     }
 
-    public List<RawParameter> getParameters() {
+    public List<ParameterService.RawParameters> getParameters() {
         return parameters;
     }
 
