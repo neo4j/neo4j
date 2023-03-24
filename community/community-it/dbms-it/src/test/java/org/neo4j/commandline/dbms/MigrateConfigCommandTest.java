@@ -95,7 +95,7 @@ class MigrateConfigCommandTest {
 
                     #Tail comment
                     """;
-    private static final String MIGRATED_CONFIG =
+    static final String MIGRATED_CONFIG =
             """
                     #Some initial comment
 

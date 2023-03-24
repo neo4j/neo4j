@@ -716,7 +716,7 @@ public class Config implements Configuration {
                         .filter(e -> key.startsWith(e.getKey() + '.'))
                         .findAny();
                 if (groupEntryOpt.isEmpty()) {
-                    String msg = format("Unrecognized setting. No declared setting with name: %s.", key);
+                    String msg = createUnrecognizedSettingMessage(key);
                     if (strict) {
                         throw new IllegalArgumentException(msg + STRICT_FAILURE_MESSAGE);
                     }
@@ -747,7 +747,7 @@ public class Config implements Configuration {
                     try {
                         group = createStringInstance(groupEntry.getValue(), id);
                     } catch (IllegalArgumentException e) {
-                        String msg = format("Unrecognized setting. No declared setting with name: %s.", key);
+                        String msg = createUnrecognizedSettingMessage(key);
                         if (strict) {
                             throw new IllegalArgumentException(msg + STRICT_FAILURE_MESSAGE);
                         }
@@ -762,6 +762,15 @@ public class Config implements Configuration {
             }
         }
         return newSettings;
+    }
+
+    private String createUnrecognizedSettingMessage(String key) {
+        if (key.startsWith(APOC_NAMESPACE)) {
+            return format(
+                    "Setting '%s' for APOC was found in the configuration file. In Neo4j v5, APOC settings must be in their own configuration file called apoc.conf.",
+                    key);
+        }
+        return format("Unrecognized setting. No declared setting with name: %s.", key);
     }
 
     @SuppressWarnings("unchecked")
