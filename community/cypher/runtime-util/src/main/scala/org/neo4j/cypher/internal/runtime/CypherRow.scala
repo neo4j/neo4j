@@ -142,6 +142,10 @@ class MapCypherRow(
 
   override def copyFrom(input: ReadableRow, nLongs: Int, nRefs: Int): Unit = fail()
 
+  override def copyLongsFrom(input: ReadableRow, fromOffset: Int, toOffset: Int, count: Int): Unit = fail()
+
+  override def copyRefsFrom(input: ReadableRow, fromOffset: Int, toOffset: Int, length: Int): Unit = fail()
+
   override def copyFromOffset(
     input: ReadableRow,
     sourceLongOffset: Int,

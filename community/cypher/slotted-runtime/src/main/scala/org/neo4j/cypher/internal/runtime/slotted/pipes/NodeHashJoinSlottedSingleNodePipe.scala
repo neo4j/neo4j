@@ -30,7 +30,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.SlotMappings
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SingleKeyOffset
-import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMapping
+import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMapper
+import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMappers
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.copyDataFromRow
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection.LongProbeTable
@@ -46,8 +47,7 @@ case class NodeHashJoinSlottedSingleNodePipe(
   rhsSlotMappings: SlotMappings
 )(val id: Id = Id.INVALID_ID) extends PipeWithSource(left) {
 
-  private val rhsMappings: Array[SlotMapping] = rhsSlotMappings.slotMapping
-  private val rhsCachedPropertyMappings: Array[(Int, Int)] = rhsSlotMappings.cachedPropertyMappings
+  private val rhsMappers: Array[SlotMapper] = SlotMappers(rhsSlotMappings)
   private val lhsOffset: Int = lhsKeyOffset.offset
   private val lhsIsReference: Boolean = lhsKeyOffset.isReference
   private val rhsOffset: Int = rhsKeyOffset.offset
@@ -113,7 +113,7 @@ case class NodeHashJoinSlottedSingleNodePipe(
           val lhs = matches.next()
           val newRow = SlottedRow(slots)
           newRow.copyAllFrom(lhs)
-          copyDataFromRow(rhsMappings, rhsCachedPropertyMappings, newRow, currentRhsRow, queryContext)
+          copyDataFromRow(rhsMappers, newRow, currentRhsRow, queryContext)
           return Some(newRow)
         }
 

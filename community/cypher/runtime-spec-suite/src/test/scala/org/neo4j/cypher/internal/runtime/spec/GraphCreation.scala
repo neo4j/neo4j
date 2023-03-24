@@ -624,6 +624,18 @@ trait GraphCreation[CONTEXT <: RuntimeContext] {
     }
   }
 
+  def nodePropertyGraphFunctional(
+    nNodes: Int,
+    properties: Int => Map[String, Any],
+    labels: Int => Seq[String]
+  ): Seq[Node] = {
+    for (i <- 0 until nNodes) yield {
+      val node = runtimeTestSupport.tx.createNode(labels(i).map(Label.label): _*)
+      properties(i).foreach { case (key, value) => node.setProperty(key, value) }
+      node
+    }
+  }
+
   /**
    * Connect the given nodes.
    *

@@ -25,7 +25,9 @@ import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
+import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
+import org.neo4j.graphdb.Label
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
@@ -33,7 +35,8 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
+) extends RuntimeTestSuite[CONTEXT](edition, runtime)
+    with RandomValuesTestSupport {
 
   test("should support simple hash join between two identifiers") {
     // given
@@ -490,5 +493,54 @@ abstract class ValueHashJoinTestBase[CONTEXT <: RuntimeContext](
 
     val result = execute(logicalQuery, runtime, inputValues(input.map(_.toArray[Any]): _*))
     result.awaitAll()
+  }
+
+  test("should copy random types") {
+    val size = random.nextInt(50) + 50
+    val props = Range(0, random.nextInt(8)).map(i => s"prop$i")
+    def randomProps(): Map[String, Any] = {
+      Map("key" -> random.nextInt(4)) ++ props.map(p => p -> randomValues.nextValue().asObject())
+    }
+    def randomLabels(): Seq[String] = {
+      randomAmong(Seq(Seq("LHS"), Seq("RHS"), Seq("LHS", "RHS")))
+    }
+    // given
+    val nodes = given {
+      nodePropertyGraphFunctional(size, i => randomProps(), i => randomLabels())
+    }
+
+    // when
+    val produce = Seq("a", "b", "a_alias", "b_alias") ++ props.flatMap(p =>
+      Seq(s"lhs_$p", s"lhs_${p}_alias", s"rhs_$p", s"rhs_${p}_alias")
+    )
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults(produce: _*)
+      .valueHashJoin("a.key=b.key")
+      .|.projection(props.map(p => s"rhs_$p as rhs_${p}_alias"): _*)
+      .|.projection(props.map(p => s"b.$p as rhs_$p"): _*)
+      .|.projection("b as b_alias")
+      .|.nodeByLabelScan("b", "RHS")
+      .projection(props.map(p => s"lhs_$p as lhs_${p}_alias"): _*)
+      .projection(props.map(p => s"a.$p as lhs_$p"): _*)
+      .projection("a as a_alias")
+      .nodeByLabelScan("a", "LHS")
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val lhsByKey = nodes.filter(_.hasLabel(Label.label("LHS"))).groupBy(_.getProperty("key"))
+    val expected = for {
+      rhsNode <- nodes.filter(_.hasLabel(Label.label("RHS")))
+      lhsNode <- lhsByKey(rhsNode.getProperty("key"))
+    } yield {
+      val propValues = props.flatMap { p =>
+        val rhsProp = rhsNode.getProperty(p)
+        val lhsProp = lhsNode.getProperty(p)
+        Seq(lhsProp, lhsProp, rhsProp, rhsProp)
+      }
+      (Seq(lhsNode, rhsNode, lhsNode, rhsNode) ++ propValues).toArray
+    }
+
+    runtimeResult should beColumns(produce: _*).withRows(expected)
   }
 }

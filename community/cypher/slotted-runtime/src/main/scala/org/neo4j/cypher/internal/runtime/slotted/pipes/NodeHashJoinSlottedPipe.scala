@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
-import org.neo4j.cypher.internal.physicalplanning.SlotAllocationFailed
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -33,15 +32,16 @@ import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.SlotMappings
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
 import org.neo4j.cypher.internal.runtime.slotted.helpers.NullChecker
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.KeyOffsets
-import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMapping
+import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMapper
+import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMappers
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.copyDataFromRow
 import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.fillKeyArray
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection.ProbeTable
 import org.neo4j.values.storable.LongArray
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.RelationshipValue
 import org.neo4j.values.virtual.VirtualNodeValue
+import org.neo4j.values.virtual.VirtualRelationshipValue
 
 import java.util
 
@@ -61,8 +61,7 @@ case class NodeHashJoinSlottedPipe(
 
   private val width: Int = lhsOffsets.length
 
-  private val rhsMappings: Array[SlotMapping] = rhsSlotMappings.slotMapping
-  private val rhsCachedPropertyMappings: Array[(Int, Int)] = rhsSlotMappings.cachedPropertyMappings
+  private val rhsMappers: Array[SlotMapper] = SlotMappers(rhsSlotMappings)
 
   override def buildProbeTable(
     lhsInput: ClosingIterator[CypherRow],
@@ -101,7 +100,7 @@ case class NodeHashJoinSlottedPipe(
           val lhs = matches.next()
           val newRow = SlottedRow(slots)
           newRow.copyAllFrom(lhs)
-          copyDataFromRow(rhsMappings, rhsCachedPropertyMappings, newRow, currentRhsRow, queryState.query)
+          copyDataFromRow(rhsMappers, newRow, currentRhsRow, queryState.query)
           return Some(newRow)
         }
 
@@ -131,12 +130,132 @@ object NodeHashJoinSlottedPipe {
 
   case class SlotMapping(fromOffset: Int, toOffset: Int, fromIsLongSlot: Boolean, toIsLongSlot: Boolean)
 
+  object SlotMappers {
+
+    def apply(mappings: SlotMappings): Array[SlotMapper] = {
+      val slots = mappings.slotMapping.iterator
+        .map(SlotMapper.apply)
+        .map(toMultiMapperIfPossible)
+        .foldLeft(List.empty[SlotMapper])(combineMultiMappers) // Combine adjacent slot mappings
+        .map(toSingleMapperIfPossible)
+        .reverse
+
+      val cachedProps = mappings.cachedPropertyMappings.iterator
+        .map { case (from, to) => CachedPropSlotMapper(from, to) }
+
+      (slots ++ cachedProps).toArray
+    }
+
+    private def combineMultiMappers(previous: List[SlotMapper], current: SlotMapper): List[SlotMapper] = {
+      (previous, current) match {
+        case ((last: MultiLongSlotMapper) :: tail, next: MultiLongSlotMapper) if canCombine(last, next) =>
+          last.copy(length = last.length + next.length) :: tail
+        case ((last: MultiRefSlotMapper) :: tail, next: MultiRefSlotMapper) if canCombine(last, next) =>
+          last.copy(length = last.length + next.length) :: tail
+        case (acc, mapper) =>
+          mapper :: acc
+      }
+    }
+
+    private def toMultiMapperIfPossible(mapper: SlotMapper): SlotMapper = {
+      mapper match {
+        case LongSlotMapper(fromOffset, toOffset) => MultiLongSlotMapper(fromOffset, toOffset, 1)
+        case RefSlotMapper(fromOffset, toOffset)  => MultiRefSlotMapper(fromOffset, toOffset, 1)
+        case other                                => other
+      }
+    }
+
+    private def toSingleMapperIfPossible(mapper: SlotMapper): SlotMapper = {
+      mapper match {
+        case MultiLongSlotMapper(fromOffset, toOffset, 1) => LongSlotMapper(fromOffset, toOffset)
+        case MultiRefSlotMapper(fromOffset, toOffset, 1)  => RefSlotMapper(fromOffset, toOffset)
+        case other                                        => other
+      }
+    }
+
+    private def canCombine(a: MultiLongSlotMapper, b: MultiLongSlotMapper): Boolean = {
+      a.fromOffset + a.length == b.fromOffset && a.toOffset + a.length == b.toOffset
+    }
+
+    private def canCombine(a: MultiRefSlotMapper, b: MultiRefSlotMapper): Boolean = {
+      a.fromOffset + a.length == b.fromOffset && a.toOffset + a.length == b.toOffset
+    }
+  }
+
+  object SlotMapper {
+
+    def apply(mapping: SlotMapping): SlotMapper = {
+      mapping match {
+        case SlotMapping(fromOffset, toOffset, true, true)   => LongSlotMapper(fromOffset, toOffset)
+        case SlotMapping(fromOffset, toOffset, false, false) => RefSlotMapper(fromOffset, toOffset)
+        case SlotMapping(fromOffset, toOffset, false, true)  => RefToLongSlotMapper(fromOffset, toOffset)
+        case SlotMapping(fromOffset, toOffset, true, false)  => LongToRefSlotMapper(fromOffset, toOffset)
+      }
+    }
+  }
+
+  trait SlotMapper {
+    def copyRow(read: ReadQueryContext, source: ReadableRow, target: WritableRow): Unit
+  }
+
+  case class LongSlotMapper(fromOffset: Int, toOffset: Int) extends SlotMapper {
+
+    override def copyRow(read: ReadQueryContext, source: ReadableRow, target: WritableRow): Unit = {
+      target.setLongAt(toOffset, source.getLongAt(fromOffset))
+    }
+  }
+
+  case class MultiLongSlotMapper(fromOffset: Int, toOffset: Int, length: Int) extends SlotMapper {
+
+    override def copyRow(read: ReadQueryContext, source: ReadableRow, target: WritableRow): Unit = {
+      target.copyLongsFrom(source, fromOffset, toOffset, length)
+    }
+  }
+
+  case class RefSlotMapper(fromOffset: Int, toOffset: Int) extends SlotMapper {
+
+    override def copyRow(read: ReadQueryContext, source: ReadableRow, target: WritableRow): Unit = {
+      target.setRefAt(toOffset, source.getRefAt(fromOffset))
+    }
+  }
+
+  case class MultiRefSlotMapper(fromOffset: Int, toOffset: Int, length: Int) extends SlotMapper {
+
+    override def copyRow(read: ReadQueryContext, source: ReadableRow, target: WritableRow): Unit = {
+      target.copyRefsFrom(source, fromOffset, toOffset, length)
+    }
+  }
+
+  case class LongToRefSlotMapper(fromOffset: Int, toOffset: Int) extends SlotMapper {
+
+    override def copyRow(read: ReadQueryContext, source: ReadableRow, target: WritableRow): Unit = {
+      // TODO How do we know it's a node and not a relationship?
+      target.setRefAt(toOffset, read.nodeById(source.getLongAt(fromOffset)))
+    }
+  }
+
+  case class RefToLongSlotMapper(fromOffset: Int, toOffset: Int) extends SlotMapper {
+
+    override def copyRow(read: ReadQueryContext, source: ReadableRow, target: WritableRow): Unit = {
+      source.getRefAt(fromOffset) match {
+        case node: VirtualNodeValue        => target.setLongAt(toOffset, node.id())
+        case rel: VirtualRelationshipValue => target.setLongAt(toOffset, rel.id())
+      }
+    }
+  }
+
+  case class CachedPropSlotMapper(fromOffset: Int, toOffset: Int) extends SlotMapper {
+
+    override def copyRow(read: ReadQueryContext, source: ReadableRow, target: WritableRow): Unit = {
+      target.setCachedPropertyAt(toOffset, source.getCachedPropertyAt(fromOffset))
+    }
+  }
+
   /**
    * Copies longs, refs, and cached properties from source row into target row.
    */
   def copyDataFromRow(
-    slotMappings: Array[SlotMapping],
-    cachedPropertyMappings: Array[(Int, Int)],
+    slotMappings: Array[SlotMapper],
     target: WritableRow,
     source: ReadableRow,
     queryContext: ReadQueryContext
@@ -144,26 +263,7 @@ object NodeHashJoinSlottedPipe {
 
     var i = 0
     while (i < slotMappings.length) {
-      slotMappings(i) match {
-        case SlotMapping(fromOffset, toOffset, true, true)   => target.setLongAt(toOffset, source.getLongAt(fromOffset))
-        case SlotMapping(fromOffset, toOffset, false, false) => target.setRefAt(toOffset, source.getRefAt(fromOffset))
-        case SlotMapping(fromOffset, toOffset, false, true) =>
-          target.setLongAt(
-            toOffset,
-            source.getRefAt(fromOffset) match {
-              case v: VirtualNodeValue  => v.id()
-              case v: RelationshipValue => v.id()
-            }
-          )
-        case SlotMapping(fromOffset, toOffset, true, false) =>
-          target.setRefAt(toOffset, queryContext.nodeById(source.getLongAt(fromOffset)))
-      }
-      i += 1
-    }
-    i = 0
-    while (i < cachedPropertyMappings.length) {
-      val (from, to) = cachedPropertyMappings(i)
-      target.setCachedPropertyAt(to, source.getCachedPropertyAt(from))
+      slotMappings(i).copyRow(queryContext, source, target)
       i += 1
     }
   }
@@ -201,10 +301,7 @@ object NodeHashJoinSlottedPipe {
 
     def create(slots: SlotConfiguration, keyVariables: Array[String]): KeyOffsets = {
       val (offsets, isReference) =
-        keyVariables.map(k =>
-          slots.get(k)
-            .getOrElse(throw new SlotAllocationFailed(s"No slot for variable $k"))
-        )
+        keyVariables.map(slots.apply)
           .map(slot => (slot.offset, !slot.isLongSlot))
           .unzip
 

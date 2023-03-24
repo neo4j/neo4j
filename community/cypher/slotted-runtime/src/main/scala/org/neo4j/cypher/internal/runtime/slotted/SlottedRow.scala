@@ -90,7 +90,8 @@ object SlottedRow {
 
 trait SlottedCompatible {
   def copyAllToSlottedRow(target: SlottedRow): Unit
-  def copyToSlottedRow(target: SlottedRow, nLongs: Int, nRefs: Int): Unit
+  def copyLongsToSlottedRow(target: SlottedRow, fromOffset: Int, toOffset: Int, length: Int): Unit
+  def copyRefsToSlottedRow(target: SlottedRow, fromOffset: Int, toOffset: Int, length: Int): Unit
 }
 
 /**
@@ -134,10 +135,27 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
         System.arraycopy(other.refs, 0, refs, 0, nRefs)
 
       case other: SlottedCompatible =>
-        other.copyToSlottedRow(this, nLongs, nRefs)
+        other.copyLongsToSlottedRow(this, 0, 0, nLongs)
+        other.copyRefsToSlottedRow(this, 0, 0, nRefs)
 
       case _ => fail()
     }
+
+  override def copyLongsFrom(input: ReadableRow, fromOffset: Int, toOffset: Int, length: Int): Unit = {
+    input match {
+      case from: SlottedRow        => System.arraycopy(from.longs, fromOffset, longs, toOffset, length)
+      case from: SlottedCompatible => from.copyLongsToSlottedRow(this, fromOffset, toOffset, length)
+      case _                       => fail()
+    }
+  }
+
+  override def copyRefsFrom(input: ReadableRow, fromOffset: Int, toOffset: Int, length: Int): Unit = {
+    input match {
+      case from: SlottedRow        => System.arraycopy(from.refs, fromOffset, refs, toOffset, length)
+      case from: SlottedCompatible => from.copyRefsToSlottedRow(this, fromOffset, toOffset, length)
+      case _                       => fail()
+    }
+  }
 
   def copyMapped(func: AnyValue => AnyValue): CypherRow = {
     val clone = SlottedRow(slots)
@@ -514,9 +532,9 @@ case class SlottedRow(slots: SlotConfiguration) extends CypherRow {
 
   /**
    * Removes slots that have been marked as "discarded" in the slot configuration.
-   * 
+   *
    * Caution!! Only safe to call when the current "pipeline" is done processing this row.
-   * In slotted this is before a "break", where rows are copied 
+   * In slotted this is before a "break", where rows are copied
    * (see [[SlottedPipelineBreakingPolicy]]).
    */
   // Note, consider adding a test case in SlottedPipelineBreakingPolicyTest

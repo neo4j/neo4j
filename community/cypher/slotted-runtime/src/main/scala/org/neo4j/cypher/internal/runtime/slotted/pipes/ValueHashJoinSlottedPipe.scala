@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.Pipe
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.SlotMappings
 import org.neo4j.cypher.internal.runtime.slotted.SlottedRow
-import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMapping
+import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMapper
+import org.neo4j.cypher.internal.runtime.slotted.pipes.NodeHashJoinSlottedPipe.SlotMappers
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.kernel.impl.util.collection
 import org.neo4j.kernel.impl.util.collection.ProbeTable
@@ -44,8 +45,7 @@ case class ValueHashJoinSlottedPipe(
 )(val id: Id = Id.INVALID_ID)
     extends AbstractHashJoinPipe[AnyValue](left, right) {
 
-  private val rhsMappings: Array[SlotMapping] = rhsSlotMappings.slotMapping
-  private val rhsCachedPropertyMappings: Array[(Int, Int)] = rhsSlotMappings.cachedPropertyMappings
+  private val rhsMappers: Array[SlotMapper] = SlotMappers(rhsSlotMappings)
 
   override def probeInput(
     rhsIterator: ClosingIterator[CypherRow],
@@ -59,7 +59,7 @@ case class ValueHashJoinSlottedPipe(
     } yield {
       val newRow = SlottedRow(slots)
       newRow.copyAllFrom(lhs)
-      NodeHashJoinSlottedPipe.copyDataFromRow(rhsMappings, rhsCachedPropertyMappings, newRow, rhs, state.query)
+      NodeHashJoinSlottedPipe.copyDataFromRow(rhsMappers, newRow, rhs, state.query)
       newRow
     }
     result.closing(table)

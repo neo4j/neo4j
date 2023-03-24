@@ -37,6 +37,8 @@ trait WritableRow extends CachedPropertiesRow {
   def mergeWith(other: ReadableRow, entityById: EntityById, checkNullability: Boolean = true): Unit
   def copyAllFrom(input: ReadableRow): Unit
   def copyFrom(input: ReadableRow, nLongs: Int, nRefs: Int): Unit
+  def copyLongsFrom(input: ReadableRow, fromOffset: Int, toOffset: Int, length: Int): Unit
+  def copyRefsFrom(input: ReadableRow, fromOffset: Int, toOffset: Int, length: Int): Unit
 
   def copyFromOffset(
     input: ReadableRow,
