@@ -552,15 +552,19 @@ trait UpdateGraph {
     qgWithInfo: QgWithLeafInfo,
     leafPlansPredicatesResolver: LeafPlansPredicatesResolver
   ): Seq[EagernessReason.Reason] = {
-    val identifiersToRead =
-      qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(
-        _.name
-      ) ++ qgWithInfo.queryGraph.argumentIds
-    val overlaps = (identifiersToRead intersect identifiersToDelete).toSeq
-    if (overlaps.nonEmpty) {
-      overlaps.map(EagernessReason.ReadDeleteConflict(_))
-    } else {
+    if (identifiersToDelete.isEmpty) {
       deleteLabelExpressionOverlap(qgWithInfo, leafPlansPredicatesResolver)
+    } else {
+      val identifiersToRead =
+        qgWithInfo.unstablePatternNodes ++ qgWithInfo.queryGraph.allPatternRelationshipsRead.map(
+          _.name
+        ) ++ qgWithInfo.queryGraph.argumentIds
+      val overlaps = (identifiersToDelete intersect identifiersToRead).toSeq
+      if (overlaps.nonEmpty) {
+        overlaps.map(EagernessReason.ReadDeleteConflict(_))
+      } else {
+        deleteLabelExpressionOverlap(qgWithInfo, leafPlansPredicatesResolver)
+      }
     }
   }
 
