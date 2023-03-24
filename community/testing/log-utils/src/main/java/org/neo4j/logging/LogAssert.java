@@ -286,6 +286,16 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
         return this;
     }
 
+    public LogAssert containsMessageWithoutException(String message) {
+        isNotNull();
+        if (!haveMessageWithoutException(message)) {
+            failWithMessage(
+                    "Expected log to contain message `%s` without an exception. But no matches found in:%n%s",
+                    message, actual.serialize());
+        }
+        return this;
+    }
+
     public LogAssert containsMessageWithExceptionMatching(String message, Predicate<Throwable> predicate) {
         isNotNull();
         requireNonNull(predicate);
@@ -327,6 +337,14 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
                 .anyMatch(call -> matchedLogger(call)
                         && matchedLevel(call)
                         && t.equals(call.getThrowable())
+                        && matchedMessage(message, call));
+    }
+
+    private boolean haveMessageWithoutException(String message) {
+        return actual.getLogCalls().stream()
+                .anyMatch(call -> matchedLogger(call)
+                        && matchedLevel(call)
+                        && call.getThrowable() == null
                         && matchedMessage(message, call));
     }
 
