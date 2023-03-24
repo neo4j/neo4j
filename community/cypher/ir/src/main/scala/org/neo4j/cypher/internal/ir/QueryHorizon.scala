@@ -36,7 +36,7 @@ trait QueryHorizon extends Foldable {
 
   def exposedSymbols(coveredIds: Set[String]): Set[String]
 
-  def dependingExpressions: Seq[Expression]
+  def dependingExpressions: Iterable[Expression]
 
   def dependencies: Set[String] = dependingExpressions.folder.treeFold(Set.empty[String]) {
     case id: Variable =>
@@ -63,12 +63,12 @@ trait QueryHorizon extends Foldable {
   }
 
   /**
-     * @return all recursively included query graphs, with leaf information for Eagerness analysis.
-     *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
-     *         is not safe to use for planning pattern expressions and pattern comprehensions.
-     */
+   * @return all recursively included query graphs, with leaf information for Eagerness analysis.
+   *         Query graphs from pattern expressions and pattern comprehensions will generate variable names that might clash with existing names, so this method
+   *         is not safe to use for planning pattern expressions and pattern comprehensions.
+   */
   protected def getAllQGsWithLeafInfo: Seq[QgWithLeafInfo] = {
-    val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable])
+    val filtered = dependingExpressions.filter(!_.isInstanceOf[Variable]).toSeq
     val iRExpressions: Seq[QgWithLeafInfo] = filtered.folder.findAllByClass[IRExpression].flatMap((e: IRExpression) =>
       e.query.allQGsWithLeafInfo
     )
@@ -179,7 +179,7 @@ sealed abstract class QueryProjection extends QueryHorizon {
   def withPagination(queryPagination: QueryPagination): QueryProjection
   def withIsTerminating(boolean: Boolean): QueryProjection
 
-  override def dependingExpressions: Seq[Expression] = projections.values.toSeq ++ selections.predicates.map(_.expr)
+  override def dependingExpressions: Iterable[Expression] = projections.view.values ++ selections.predicates.map(_.expr)
 
   def updatePagination(f: QueryPagination => QueryPagination): QueryProjection = withPagination(f(queryPagination))
 
@@ -260,7 +260,7 @@ final case class AggregatingQueryProjection(
 
   override def keySet: Set[String] = groupingExpressions.keySet ++ aggregationExpressions.keySet
 
-  override def dependingExpressions: Seq[Expression] = super.dependingExpressions ++ aggregationExpressions.values
+  override def dependingExpressions: Iterable[Expression] = super.dependingExpressions ++ aggregationExpressions.values
 
   override def withAddedProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
     copy(groupingExpressions = this.groupingExpressions ++ groupingKeys)
