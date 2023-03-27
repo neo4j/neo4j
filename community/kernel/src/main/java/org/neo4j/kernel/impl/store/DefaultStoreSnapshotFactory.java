@@ -52,12 +52,15 @@ public class DefaultStoreSnapshotFactory implements StoreSnapshot.Factory {
             return Optional.empty();
         }
 
-        var unrecoverableFiles = unrecoverableFiles(database);
-        var recoverableFiles = recoverableFiles(database);
-
+        // Checkpoint must happen before listing files, otherwise we might miss
+        // updates that happen between listing and checkpoint since the listing
+        // is a sort of point in time snapshot of the state.
         var checkPointer = database.getDependencyResolver().resolveDependency(CheckPointer.class);
         var checkpointMutex = tryCheckpointAndAcquireMutex(checkPointer);
         var lastCommittedTransactionId = checkPointer.latestCheckPointInfo().checkpointedTransactionId();
+
+        var unrecoverableFiles = unrecoverableFiles(database);
+        var recoverableFiles = recoverableFiles(database);
         var snapshot = new StoreSnapshot(
                 unrecoverableFiles,
                 recoverableFiles,
