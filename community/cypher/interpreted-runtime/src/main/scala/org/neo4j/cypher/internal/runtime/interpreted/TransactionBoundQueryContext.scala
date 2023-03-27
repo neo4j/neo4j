@@ -1169,6 +1169,15 @@ private[internal] class TransactionBoundReadQueryContext(
       CursorUtils.nodeGetProperty(reads(), nodeCursor, id, propertyCursor, propertyKeyId, throwOnDeleted)
     }
 
+    override def getProperties(
+      node: Long,
+      properties: Array[Int],
+      cursor: NodeCursor,
+      propertyCursor: PropertyCursor
+    ): Array[Value] = {
+      CursorUtils.propertiesGet(properties, node, reads(), cursor, propertyCursor);
+    }
+
     override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Value =
       getTxStateNodePropertyOrNull(nodeId, propertyKeyId)
 
@@ -1246,6 +1255,15 @@ private[internal] class TransactionBoundReadQueryContext(
     ): Value = {
       CursorUtils
         .relationshipGetProperty(reads(), relationshipCursor, id, propertyCursor, propertyKeyId, throwOnDeleted)
+    }
+
+    override def getProperties(
+      id: Long,
+      properties: Array[Int],
+      cursor: RelationshipScanCursor,
+      propertyCursor: PropertyCursor
+    ): Array[Value] = {
+      CursorUtils.propertiesGet(properties, id, reads(), cursor, propertyCursor)
     }
 
     override def hasProperty(

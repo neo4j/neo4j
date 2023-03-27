@@ -193,6 +193,14 @@ object ParallelTransactionBoundQueryContext {
       throwOnDeleted: Boolean
     ): Value = unsupported()
 
+    override def getProperties(
+      obj: Long,
+      properties: Array[Int],
+      cursor: CURSOR,
+      propertyCursor: PropertyCursor
+    ): Array[Value] =
+      unsupported()
+
     override def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
       unsupported()
     override def getTxStateProperty(obj: Long, propertyKeyId: Int): Value = unsupported()

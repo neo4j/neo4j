@@ -494,6 +494,14 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
     ): Value =
       translateException(tokenNameLookup, inner.getProperty(id, propertyKeyId, cursor, propertyCursor, throwOnDeleted))
 
+    override def getProperties(
+      obj: Long,
+      properties: Array[Int],
+      cursor: CURSOR,
+      propertyCursor: PropertyCursor
+    ): Array[Value] =
+      translateException(tokenNameLookup, inner.getProperties(obj, properties, cursor, propertyCursor))
+
     override def hasProperty(id: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
       translateException(tokenNameLookup, inner.hasProperty(id, propertyKeyId, cursor, propertyCursor))
 

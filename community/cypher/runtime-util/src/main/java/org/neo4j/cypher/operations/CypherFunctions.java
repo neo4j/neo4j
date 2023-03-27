@@ -22,6 +22,7 @@ package org.neo4j.cypher.operations;
 import static java.lang.Double.parseDouble;
 import static java.lang.Long.parseLong;
 import static java.lang.String.format;
+import static org.neo4j.cypher.operations.CursorUtils.propertyKeys;
 import static org.neo4j.internal.kernel.api.Read.NO_ID;
 import static org.neo4j.values.storable.Values.EMPTY_STRING;
 import static org.neo4j.values.storable.Values.FALSE;
@@ -494,6 +495,24 @@ public final class CypherFunctions {
             return point.get(key);
         } else {
             throw new CypherTypeException(format("Type mismatch: expected a map but was %s", container));
+        }
+    }
+
+    @CalledFromGeneratedCode
+    public static AnyValue[] propertiesGet(
+            String[] keys,
+            AnyValue container,
+            DbAccess dbAccess,
+            NodeCursor nodeCursor,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor) {
+        if (container instanceof VirtualNodeValue node) {
+            return dbAccess.nodeProperties(node.id(), propertyKeys(keys, dbAccess), nodeCursor, propertyCursor);
+        } else if (container instanceof VirtualRelationshipValue rel) {
+            return dbAccess.relationshipProperties(
+                    rel.id(), propertyKeys(keys, dbAccess), relationshipScanCursor, propertyCursor);
+        } else {
+            return CursorUtils.propertiesGet(keys, container);
         }
     }
 

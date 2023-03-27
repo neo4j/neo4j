@@ -147,20 +147,21 @@ public final class CursorUtils {
      *
      * Note, NoValue will be used for tokens that does not exist, including TokenConstants.NO_TOKEN.
      */
-    public static AnyValue[] entityGetProperties(
-            EntityCursor entityCursor, PropertyCursor propertyCursor, int[] tokens) {
+    public static Value[] entityGetProperties(EntityCursor entityCursor, PropertyCursor propertyCursor, int[] tokens) {
         assert entityCursor.reference() != StatementConstants.NO_SUCH_ENTITY;
 
+        final Value[] values = emptyPropertyArray(tokens.length);
         entityCursor.properties(propertyCursor, PropertySelection.selection(tokens));
-
-        final AnyValue[] values = new Value[tokens.length];
-        Arrays.fill(values, NO_VALUE);
-
         while (propertyCursor.next()) {
             final int index = indexOf(tokens, propertyCursor.propertyKey());
             values[index] = propertyCursor.propertyValue();
         }
+        return values;
+    }
 
+    public static Value[] emptyPropertyArray(int len) {
+        Value[] values = new Value[len];
+        Arrays.fill(values, NO_VALUE);
         return values;
     }
 
@@ -543,26 +544,120 @@ public final class CursorUtils {
             PropertyCursor propertyCursor) {
         if (container == NO_VALUE) {
             return NO_VALUE;
-        } else if (container instanceof VirtualNodeValue) {
-            return nodeGetProperty(
-                    read, nodeCursor, ((VirtualNodeValue) container).id(), propertyCursor, dbAccess.propertyKey(key));
-        } else if (container instanceof VirtualRelationshipValue) {
+        } else if (container instanceof VirtualNodeValue node) {
+            return nodeGetProperty(read, nodeCursor, node.id(), propertyCursor, dbAccess.propertyKey(key));
+        } else if (container instanceof VirtualRelationshipValue rel) {
             return relationshipGetProperty(
-                    read,
-                    relationshipScanCursor,
-                    ((VirtualRelationshipValue) container).id(),
-                    propertyCursor,
-                    dbAccess.propertyKey(key));
-        } else if (container instanceof MapValue) {
-            return ((MapValue) container).get(key);
-        } else if (container instanceof TemporalValue<?, ?>) {
-            return ((TemporalValue) container).get(key);
-        } else if (container instanceof DurationValue) {
-            return ((DurationValue) container).get(key);
-        } else if (container instanceof PointValue) {
-            return ((PointValue) container).get(key);
+                    read, relationshipScanCursor, rel.id(), propertyCursor, dbAccess.propertyKey(key));
+        } else if (container instanceof MapValue map) {
+            return map.get(key);
+        } else if (container instanceof TemporalValue<?, ?> temporal) {
+            return temporal.get(key);
+        } else if (container instanceof DurationValue duration) {
+            return duration.get(key);
+        } else if (container instanceof PointValue point) {
+            return point.get(key);
         } else {
             throw new CypherTypeException(format("Type mismatch: expected a map but was %s", container), null);
         }
+    }
+
+    public static AnyValue[] propertiesGet(
+            String[] keys,
+            AnyValue container,
+            Read read,
+            DbAccess dbAccess,
+            NodeCursor nodeCursor,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor) {
+        if (container == NO_VALUE) {
+            return emptyPropertyArray(keys.length);
+        } else if (container instanceof VirtualNodeValue node) {
+            return propertiesGet(propertyKeys(keys, dbAccess), node.id(), read, nodeCursor, propertyCursor);
+        } else if (container instanceof VirtualRelationshipValue rel) {
+            return propertiesGet(propertyKeys(keys, dbAccess), rel.id(), read, relationshipScanCursor, propertyCursor);
+        } else {
+            return propertiesGet(keys, container);
+        }
+    }
+
+    public static AnyValue[] propertiesGet(String[] keys, AnyValue container) {
+        if (container instanceof MapValue map) {
+            return propertiesGet(keys, map);
+        } else if (container instanceof TemporalValue<?, ?> temporal) {
+            return propertiesGet(keys, temporal);
+        } else if (container instanceof DurationValue duration) {
+            return propertiesGet(keys, duration);
+        } else if (container instanceof PointValue point) {
+            return propertiesGet(keys, point);
+        } else {
+            throw new CypherTypeException(format("Type mismatch: expected a map but was %s", container), null);
+        }
+    }
+
+    public static Value[] propertiesGet(
+            int[] keys, long node, Read read, NodeCursor nodeCursor, PropertyCursor propertyCursor) {
+        read.singleNode(node, nodeCursor);
+        if (nodeCursor.next()) {
+            return entityGetProperties(nodeCursor, propertyCursor, keys);
+        } else if (read.nodeDeletedInTransaction(node)) {
+            throw new EntityNotFoundException(
+                    String.format("Node with id %d has been deleted in this transaction", node));
+        } else {
+            return emptyPropertyArray(keys.length);
+        }
+    }
+
+    public static Value[] propertiesGet(
+            int[] keys, long rel, Read read, RelationshipScanCursor relCursor, PropertyCursor propertyCursor) {
+        read.singleRelationship(rel, relCursor);
+        if (relCursor.next()) {
+            return entityGetProperties(relCursor, propertyCursor, keys);
+        } else if (read.relationshipDeletedInTransaction(rel)) {
+            throw new EntityNotFoundException(
+                    String.format("Relationship with id %d has been deleted in this transaction", rel));
+        } else {
+            return emptyPropertyArray(keys.length);
+        }
+    }
+
+    public static int[] propertyKeys(String[] keys, DbAccess dbAccess) {
+        int[] tokens = new int[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            tokens[i] = dbAccess.propertyKey(keys[i]);
+        }
+        return tokens;
+    }
+
+    public static AnyValue[] propertiesGet(String[] keys, MapValue map) {
+        var result = new AnyValue[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            result[i] = map.get(keys[i]);
+        }
+        return result;
+    }
+
+    public static AnyValue[] propertiesGet(String[] keys, TemporalValue<?, ?> map) {
+        var result = new AnyValue[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            result[i] = map.get(keys[i]);
+        }
+        return result;
+    }
+
+    public static AnyValue[] propertiesGet(String[] keys, DurationValue map) {
+        var result = new AnyValue[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            result[i] = map.get(keys[i]);
+        }
+        return result;
+    }
+
+    public static AnyValue[] propertiesGet(String[] keys, PointValue map) {
+        var result = new AnyValue[keys.length];
+        for (int i = 0; i < keys.length; i++) {
+            result[i] = map.get(keys[i]);
+        }
+        return result;
     }
 }

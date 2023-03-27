@@ -649,6 +649,14 @@ class DelegatingReadOperations[T, CURSOR](protected val inner: ReadOperations[T,
   ): Value =
     singleDbHit(inner.getProperty(obj, propertyKeyId, cursor, propertyCursor, throwOnDeleted))
 
+  override def getProperties(
+    obj: Long,
+    properties: Array[Int],
+    cursor: CURSOR,
+    propertyCursor: PropertyCursor
+  ): Array[Value] =
+    singleDbHit(inner.getProperties(obj, properties, cursor, propertyCursor))
+
   override def getTxStateProperty(obj: Long, propertyKeyId: Int): Value = inner.getTxStateProperty(obj, propertyKeyId)
 
   override def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =

@@ -38,6 +38,8 @@ public interface DbAccess extends EntityById {
     Value nodeProperty(
             long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor, boolean throwOnDeleted);
 
+    Value[] nodeProperties(long node, int[] properties, NodeCursor nodeCursor, PropertyCursor propertyCursor);
+
     int[] nodePropertyIds(long node, NodeCursor nodeCursor, PropertyCursor propertyCursor);
 
     int propertyKey(String name);
@@ -60,6 +62,12 @@ public interface DbAccess extends EntityById {
             RelationshipScanCursor relationshipScanCursor,
             PropertyCursor propertyCursor,
             boolean throwOnDeleted);
+
+    Value[] relationshipProperties(
+            long relationship,
+            int[] properties,
+            RelationshipScanCursor relationshipScanCursor,
+            PropertyCursor propertyCursor);
 
     int[] relationshipPropertyIds(
             long node, RelationshipScanCursor relationshipScanCursor, PropertyCursor propertyCursor);

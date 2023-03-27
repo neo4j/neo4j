@@ -332,6 +332,14 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   ): Value =
     nodeReadOps.getProperty(node, property, nodeCursor, propertyCursor, throwOnDeleted)
 
+  override def nodeProperties(
+    node: Long,
+    properties: Array[Int],
+    nodeCursor: NodeCursor,
+    propertyCursor: PropertyCursor
+  ): Array[Value] =
+    nodeReadOps.getProperties(node, properties, nodeCursor, propertyCursor)
+
   override def nodePropertyIds(node: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Array[Int] =
     nodeReadOps.propertyKeyIds(node, nodeCursor, propertyCursor)
 
@@ -351,6 +359,14 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
     throwOnDeleted: Boolean
   ): Value =
     relationshipReadOps.getProperty(relationship, property, relationshipScanCursor, propertyCursor, throwOnDeleted)
+
+  override def relationshipProperties(
+    relationship: Long,
+    properties: Array[Int],
+    relationshipScanCursor: RelationshipScanCursor,
+    propertyCursor: PropertyCursor
+  ): Array[Value] =
+    relationshipReadOps.getProperties(relationship, properties, relationshipScanCursor, propertyCursor)
 
   override def relationshipPropertyIds(
     relationship: Long,
@@ -558,6 +574,13 @@ trait ReadOperations[T, CURSOR] {
     propertyCursor: PropertyCursor,
     throwOnDeleted: Boolean
   ): Value
+
+  def getProperties(
+    obj: Long,
+    properties: Array[Int],
+    cursor: CURSOR,
+    propertyCursor: PropertyCursor
+  ): Array[Value]
 
   def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean
 
