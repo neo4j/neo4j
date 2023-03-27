@@ -150,7 +150,8 @@ import org.neo4j.cypher.internal.logical.plans.EmptyResult
 import org.neo4j.cypher.internal.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ExpansionMode
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpansionMode
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
@@ -247,7 +248,6 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
-import org.neo4j.cypher.internal.logical.plans.VariablePredicate
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor.IndexType
@@ -1121,11 +1121,11 @@ case class LogicalPlanProducer(
         innerStart = startBinding.inner,
         innerEnd = endBinding.inner,
         nodeVariableGroupings = pattern.nodeVariableGroupings.map { case VariableGrouping(singleton, group) =>
-          plans.VariableGrouping(singleton, group)
+          plans.Trail.VariableGrouping(singleton, group)
         },
         relationshipVariableGroupings = pattern.relationshipVariableGroupings.map {
           case VariableGrouping(singleton, group) =>
-            plans.VariableGrouping(singleton, group)
+            plans.Trail.VariableGrouping(singleton, group)
         },
         innerRelationships = pattern.pattern.patternRelationships.map(_.name),
         previouslyBoundRelationships = previouslyBoundRelationships,

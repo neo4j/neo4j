@@ -43,7 +43,7 @@ sealed trait SeekableArgs {
 }
 
 case class SingleSeekableArg(expr: Expression) extends SeekableArgs {
-  def sizeHint = Some(1)
+  def sizeHint: Option[Int] = Some(1)
 
   override def mapValues(f: Expression => Expression): SingleSeekableArg = copy(f(expr))
 
@@ -80,7 +80,7 @@ case class ManySeekableArgs(expr: Expression) extends SeekableArgs {
 
 object WithSeekableArgs {
 
-  def unapply(v: Any) = v match {
+  def unapply(v: Any): Option[(Expression, SeekableArgs)] = v match {
     case In(lhs, rhs)     => Some(lhs -> ManySeekableArgs(rhs))
     case Equals(lhs, rhs) => Some(lhs -> SingleSeekableArg(rhs))
     case _                => None

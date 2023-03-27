@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.expressions.Variable
 // This is when dynamic properties are used
 object AsDynamicPropertyNonSeekable {
 
-  def unapply(v: Any) = v match {
+  def unapply(v: Any): Option[Variable] = v match {
     case WithSeekableArgs(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
     case _ =>
@@ -47,7 +47,7 @@ object AsDynamicPropertyNonSeekable {
 // This is when dynamic properties are used
 object AsDynamicPropertyNonScannable {
 
-  def unapply(v: Any) = v match {
+  def unapply(v: Any): Option[Variable] = v match {
 
     case IsNotNull(ContainerIndex(variable: Variable, _)) =>
       Some(variable)
@@ -81,7 +81,7 @@ object AsDynamicPropertyNonScannable {
 // This is when dynamic properties are used
 object AsStringRangeNonSeekable {
 
-  def unapply(v: Any) = v match {
+  def unapply(v: Any): Option[Variable] = v match {
     case StartsWith(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
     case Contains(prop @ ContainerIndex(variable: Variable, _), _) =>
@@ -96,7 +96,7 @@ object AsStringRangeNonSeekable {
 // This is when dynamic properties are used
 object AsValueRangeNonSeekable {
 
-  def unapply(v: Any) = v match {
+  def unapply(v: Any): Option[Variable] = v match {
     case GreaterThan(prop @ ContainerIndex(variable: Variable, _), _) =>
       Some(variable)
     case GreaterThan(_, prop @ ContainerIndex(variable: Variable, _)) =>

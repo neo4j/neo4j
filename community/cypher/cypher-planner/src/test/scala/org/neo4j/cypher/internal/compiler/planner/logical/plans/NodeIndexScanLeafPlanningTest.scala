@@ -73,7 +73,6 @@ class NodeIndexScanLeafPlanningTest extends CypherFunSuite with LogicalPlanningT
   private val propContainsBepa = contains(prop("n", "prop"), litBepa)
   private val propEndsWithApa = endsWith(prop("n", "prop"), litApa)
   private val propEndsWithBepa = endsWith(prop("n", "prop"), litBepa)
-  private val propInLit12 = in(prop("n", "prop"), listOf(lit12))
 
   private val fooIsNotNull = isNotNull(prop("n", "foo"))
   private val fooContainsApa = contains(prop("n", "foo"), litApa)

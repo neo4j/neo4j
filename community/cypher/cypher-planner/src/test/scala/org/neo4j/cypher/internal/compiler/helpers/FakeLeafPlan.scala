@@ -20,10 +20,12 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlanExtension
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
-case class FakeLeafPlan(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
+case class FakeLeafPlan(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen)
+    extends LogicalLeafPlanExtension(idGen) {
   override val availableSymbols: Set[String] = argumentIds
 
   override def usedVariables: Set[String] = Set.empty

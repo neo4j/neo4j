@@ -26,7 +26,7 @@ sealed trait QueryExpression[+T] {
   def map[R](f: T => R): QueryExpression[R]
 }
 
-trait SingleExpression[+T] {
+sealed trait SingleExpression[+T] {
 
   def expression: T
 

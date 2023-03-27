@@ -47,7 +47,7 @@ import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.SecurityAdministrationException
 
 abstract class AdministrationCommandLogicalPlan(source: Option[AdministrationCommandLogicalPlan] = None)(implicit
-idGen: IdGen) extends LogicalPlan(idGen) {
+idGen: IdGen) extends LogicalPlanExtension(idGen) {
   override def lhs: Option[LogicalPlan] = source
 
   override def rhs: Option[LogicalPlan] = None

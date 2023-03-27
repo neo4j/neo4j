@@ -23,7 +23,7 @@ import org.neo4j.collection.trackable.HeapTrackingArrayList
 import org.neo4j.collection.trackable.HeapTrackingCollections
 import org.neo4j.collection.trackable.HeapTrackingCollections.newArrayDeque
 import org.neo4j.collection.trackable.HeapTrackingLongHashSet
-import org.neo4j.cypher.internal.logical.plans.VariableGrouping
+import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.runtime.CastSupport.castOrFail
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow

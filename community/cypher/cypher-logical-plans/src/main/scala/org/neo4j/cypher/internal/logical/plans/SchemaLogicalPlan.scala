@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.graphdb.schema.IndexType
 
-abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlan(idGen) {
+abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlanExtension(idGen) {
   override def lhs: Option[LogicalPlan] = None
 
   override def rhs: Option[LogicalPlan] = None

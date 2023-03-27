@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.util.Cardinality.lift
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.MapKeys
 import org.neo4j.cypher.internal.util.test_helpers.TestName
-import org.neo4j.graphdb.schema.IndexType
 
 import scala.math.cbrt
 import scala.math.sqrt

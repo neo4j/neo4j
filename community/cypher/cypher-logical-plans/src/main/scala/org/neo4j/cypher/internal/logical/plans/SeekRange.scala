@@ -220,37 +220,31 @@ final case class MaxBoundOrdering[T](inner: Ordering[T]) extends Ordering[Bound[
 
 case class MinMaxOrdering[T](ordering: Ordering[T]) {
 
-  val forMin = ordering.withNullsFirst
-  val forMax = ordering.withNullsLast
+  val forMin: Ordering[T] = ordering.withNullsFirst
+  val forMax: Ordering[T] = ordering.withNullsLast
 }
 
 object MinMaxOrdering {
 
   implicit class NullOrdering[T](ordering: Ordering[T]) {
 
-    def withNullsFirst = new Ordering[T] {
-
-      override def compare(x: T, y: T): Int = {
-        if (x == null) {
-          if (y == null) 0 else -1
-        } else if (y == null) {
-          +1
-        } else {
-          ordering.compare(x, y)
-        }
+    def withNullsFirst: Ordering[T] = (x: T, y: T) => {
+      if (x == null) {
+        if (y == null) 0 else -1
+      } else if (y == null) {
+        +1
+      } else {
+        ordering.compare(x, y)
       }
     }
 
-    def withNullsLast = new Ordering[T] {
-
-      override def compare(x: T, y: T): Int = {
-        if (x == null) {
-          if (y == null) 0 else +1
-        } else if (y == null) {
-          -1
-        } else {
-          ordering.compare(x, y)
-        }
+    def withNullsLast: Ordering[T] = (x: T, y: T) => {
+      if (x == null) {
+        if (y == null) 0 else +1
+      } else if (y == null) {
+        -1
+      } else {
+        ordering.compare(x, y)
       }
     }
   }

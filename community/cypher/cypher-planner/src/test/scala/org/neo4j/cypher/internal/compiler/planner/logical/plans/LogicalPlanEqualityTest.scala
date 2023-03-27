@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -96,7 +97,8 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
     )
   }
 
-  case class Binary(left: LogicalPlan, right: LogicalPlan, value: Any) extends LogicalPlan(new SequentialIdGen) {
+  case class Binary(left: LogicalPlan, right: LogicalPlan, value: Any)
+      extends LogicalPlanExtension(new SequentialIdGen) {
 
     override val availableSymbols: Set[String] = Set.empty
 
@@ -105,7 +107,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
     override def rhs: Option[LogicalPlan] = Some(right)
   }
 
-  case class Unary(child: LogicalPlan, value: Any) extends LogicalPlan(new SequentialIdGen) {
+  case class Unary(child: LogicalPlan, value: Any) extends LogicalPlanExtension(new SequentialIdGen) {
 
     override val availableSymbols: Set[String] = Set.empty
 
@@ -114,7 +116,7 @@ class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSup
     override def lhs: Option[LogicalPlan] = Some(child)
   }
 
-  case class Leaf(value: Any) extends LogicalPlan(new SequentialIdGen) {
+  case class Leaf(value: Any) extends LogicalPlanExtension(new SequentialIdGen) {
 
     override def lhs: Option[LogicalPlan] = None
 

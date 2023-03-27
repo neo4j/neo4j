@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
 import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.VarPatternLength
-import org.neo4j.cypher.internal.logical.plans.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 
 import scala.collection.immutable.ListSet
 

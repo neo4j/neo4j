@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.physicalplanning
 
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -160,7 +161,7 @@ class TreeBuilderTest extends CypherFunSuite {
   def branch(str: String, lhs: StringPlan, rhs: StringPlan) = StringPlan(str, Some(lhs), Some(rhs))
 
   case class StringPlan(str: String, override val lhs: Option[StringPlan], override val rhs: Option[StringPlan])
-      extends LogicalPlan(idGen) {
+      extends LogicalPlanExtension(idGen) {
 
     override def availableSymbols: Set[String] = ???
   }

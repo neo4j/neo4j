@@ -49,8 +49,8 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setR
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
-import org.neo4j.cypher.internal.logical.plans.ExpandAll
-import org.neo4j.cypher.internal.logical.plans.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderDescending
@@ -2237,6 +2237,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.expressions.RelTypeName
             |import org.neo4j.cypher.internal.expressions.PropertyKeyName
             |import org.neo4j.cypher.internal.logical.plans._
+            |import org.neo4j.cypher.internal.logical.plans.Expand._
             |import org.neo4j.cypher.internal.logical.builder.TestException
             |import org.neo4j.cypher.internal.ir.HasHeaders
             |import org.neo4j.cypher.internal.ir.NoHeaders

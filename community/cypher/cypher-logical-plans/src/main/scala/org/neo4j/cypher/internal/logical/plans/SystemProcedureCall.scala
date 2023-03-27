@@ -34,7 +34,7 @@ case class SystemProcedureCall(
   params: MapValue,
   checkCredentialsExpired: Boolean
 )(implicit idGen: IdGen)
-    extends LogicalPlan(idGen) {
+    extends LogicalPlanExtension(idGen) {
 
   override def lhs: Option[LogicalPlan] = None
   override def rhs: Option[LogicalPlan] = None
