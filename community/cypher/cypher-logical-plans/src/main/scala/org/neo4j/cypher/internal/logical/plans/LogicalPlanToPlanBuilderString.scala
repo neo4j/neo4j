@@ -255,6 +255,8 @@ object LogicalPlanToPlanBuilderString {
         projectStrs(Map(variable -> expression))
       case AllNodesScan(idName, argumentIds) =>
         wrapInQuotationsAndMkString(idName +: argumentIds.toSeq)
+      case SimulatedNodeScan(idName, numberOfRows) =>
+        wrapInQuotationsAndMkString(Seq(idName, numberOfRows.toString))
       case Argument(argumentIds) =>
         wrapInQuotationsAndMkString(argumentIds.toSeq)
       case CacheProperties(_, properties) =>
@@ -282,6 +284,8 @@ object LogicalPlanToPlanBuilderString {
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
         s""" "($from)$dirStrA[$relName$typeStr]$dirStrB($to)" """.trim
+      case SimulatedExpand(_, from, rel, to, factor) =>
+        wrapInQuotationsAndMkString(Seq(from, rel, to, factor.toString))
       case VarExpand(_, from, dir, pDir, types, to, relName, length, mode, nodePredicates, relationshipPredicates) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
@@ -554,6 +558,8 @@ object LogicalPlanToPlanBuilderString {
         s""" ${wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(expression)))}, $removeOtherProps """.trim
       case Selection(ands, _) =>
         wrapInQuotationsAndMkString(ands.exprs.map(expressionStringifier(_)))
+      case SimulatedSelection(_, selectivity) =>
+        wrapInQuotationsAndMkString(Seq(selectivity.toString))
       case SelectOrSemiApply(_, _, predicate) => wrapInQuotations(expressionStringifier(predicate))
       case LetSelectOrSemiApply(_, _, idName, predicate) =>
         wrapInQuotationsAndMkString(Seq(idName, expressionStringifier(predicate)))

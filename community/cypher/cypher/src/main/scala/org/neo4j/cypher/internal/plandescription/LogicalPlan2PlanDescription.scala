@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorContinue
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -47,6 +48,7 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyToken
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Point
 import org.neo4j.cypher.internal.expressions.functions.Type
@@ -228,6 +230,9 @@ import org.neo4j.cypher.internal.logical.plans.ShowIndexes
 import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.ShowSettings
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
+import org.neo4j.cypher.internal.logical.plans.SimulatedExpand
+import org.neo4j.cypher.internal.logical.plans.SimulatedNodeScan
+import org.neo4j.cypher.internal.logical.plans.SimulatedSelection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -268,6 +273,7 @@ import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringInte
 import org.neo4j.cypher.internal.plandescription.asPrettyString.PrettyStringMaker
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
@@ -874,6 +880,20 @@ case class LogicalPlan2PlanDescription(
         val info = nodeIndexInfoString(idName, unique = false, label, tokens, indexType, predicates, p.cachedProperties)
         PlanDescriptionImpl(id, "NodeIndexScan", NoChildren, Seq(Details(info)), variables, withRawCardinalities)
 
+      case SimulatedNodeScan(idName, numberOfRows) =>
+        val details = Details(Seq(
+          asPrettyString(idName),
+          asPrettyString(UnsignedDecimalIntegerLiteral(numberOfRows.toString)(InputPosition.NONE))
+        ))
+        PlanDescriptionImpl(
+          id,
+          "SimulatedNodeScan",
+          NoChildren,
+          Seq(details),
+          variables,
+          withRawCardinalities
+        )
+
       case ProcedureCall(_, call) =>
         PlanDescriptionImpl(
           id,
@@ -1430,6 +1450,23 @@ case class LogicalPlan2PlanDescription(
         }
         PlanDescriptionImpl(id, modeText, children, Seq(expression), variables, withRawCardinalities)
 
+      case SimulatedExpand(_, fromName, relName, toName, factor) =>
+        val prettyFactor = asPrettyString(DecimalDoubleLiteral(factor.toString)(InputPosition.NONE))
+        val details = Details(Seq(
+          expandExpressionDescription(
+            fromName,
+            Some(relName),
+            Seq.empty,
+            toName,
+            SemanticDirection.OUTGOING,
+            1,
+            Some(1),
+            None
+          ),
+          prettyFactor
+        ))
+        PlanDescriptionImpl(id, "SimulatedExpand", children, Seq(details), variables, withRawCardinalities)
+
       case Limit(_, count) =>
         PlanDescriptionImpl(id, "Limit", children, Seq(Details(asPrettyString(count))), variables, withRawCardinalities)
 
@@ -1480,6 +1517,10 @@ case class LogicalPlan2PlanDescription(
 
       case Selection(predicate, _) =>
         val details = Details(asPrettyString(predicate))
+        PlanDescriptionImpl(id, "Filter", children, Seq(details), variables, withRawCardinalities)
+
+      case SimulatedSelection(_, selectivity) =>
+        val details = Details(asPrettyString(DecimalDoubleLiteral(selectivity.toString)(InputPosition.NONE)))
         PlanDescriptionImpl(id, "Filter", children, Seq(details), variables, withRawCardinalities)
 
       case Skip(_, count) =>

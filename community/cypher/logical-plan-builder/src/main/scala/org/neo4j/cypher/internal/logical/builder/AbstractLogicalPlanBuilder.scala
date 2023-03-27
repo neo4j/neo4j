@@ -201,6 +201,9 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.SimulatedExpand
+import org.neo4j.cypher.internal.logical.plans.SimulatedNodeScan
+import org.neo4j.cypher.internal.logical.plans.SimulatedSelection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
@@ -461,6 +464,19 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
           )(_)
         ))
     }
+    self
+  }
+
+  def simulatedExpand(fromNode: String, rel: String, toNode: String, factor: Double): IMPL = {
+    val from = VariableParser.unescaped(fromNode)
+    val urel = VariableParser.unescaped(rel)
+    val to = VariableParser.unescaped(toNode)
+    newNode(varFor(from))
+    newRelationship(varFor(urel))
+    newNode(varFor(to))
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      SimulatedExpand(lp, from, urel, to, factor)(_)
+    ))
     self
   }
 
@@ -897,6 +913,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     val n = VariableParser.unescaped(node)
     newNode(varFor(n))
     appendAtCurrentIndent(LeafOperator(AllNodesScan(n, args.map(VariableParser.unescaped).toSet)(_)))
+  }
+
+  def simulatedNodeScan(node: String, numberOfRows: Long): IMPL = {
+    val n = VariableParser.unescaped(node)
+    newNode(varFor(n))
+    appendAtCurrentIndent(LeafOperator(SimulatedNodeScan(n, numberOfRows)(_)))
   }
 
   def argument(args: String*): IMPL = {
@@ -1946,6 +1968,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp => {
       val rewrittenPredicates = predicates.map(rewriteExpression)
       Selection(rewrittenPredicates, lp)(_)
+    }))
+  }
+
+  def simulatedFilter(selectivity: Double): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(lp => {
+      SimulatedSelection(lp, selectivity)(_)
     }))
   }
 

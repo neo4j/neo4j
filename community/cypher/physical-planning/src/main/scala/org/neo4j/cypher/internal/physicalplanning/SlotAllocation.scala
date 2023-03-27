@@ -122,6 +122,8 @@ import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.SimulatedExpand
+import org.neo4j.cypher.internal.logical.plans.SimulatedSelection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
@@ -715,6 +717,10 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case Expand(_, _, _, _, _, relName, ExpandInto) =>
         slots.newLong(relName, nullable, CTRelationship)
 
+      case SimulatedExpand(_, _, rel, to, _) =>
+        slots.newLong(rel, nullable, CTRelationship)
+        slots.newLong(to, nullable, CTNode)
+
       case Optional(_, _) =>
         recordArgument(lp)
 
@@ -723,6 +729,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
       case _: ProduceResult |
         _: Selection |
+        _: SimulatedSelection |
         _: Limit |
         _: ExhaustiveLimit |
         _: Skip |
