@@ -60,10 +60,19 @@ public class GroupedDaemonThreadFactory implements SchedulerThreadFactory {
 
     @Override
     public ForkJoinWorkerThread newThread(ForkJoinPool pool) {
+        return allocateForkJoinThread(pool, ForkJoinPool.defaultForkJoinWorkerThreadFactory);
+    }
+
+    @Override
+    public ThreadGroup getThreadGroup() {
+        return threadGroup;
+    }
+
+    protected ForkJoinWorkerThread allocateForkJoinThread(
+            ForkJoinPool pool, ForkJoinPool.ForkJoinWorkerThreadFactory factory) {
         // We do this complicated dance of allocating the ForkJoinThread in a separate thread,
         // because there is no way to give it a specific ThreadGroup, other than through inheritance
         // from the allocating thread.
-        ForkJoinPool.ForkJoinWorkerThreadFactory factory = ForkJoinPool.defaultForkJoinWorkerThreadFactory;
         AtomicReference<ForkJoinWorkerThread> reference = new AtomicReference<>();
         Thread allocator = newThread(() -> reference.set(factory.newThread(pool)));
         allocator.start();
@@ -76,10 +85,5 @@ public class GroupedDaemonThreadFactory implements SchedulerThreadFactory {
         ForkJoinWorkerThread worker = reference.get();
         worker.setName(group.threadName());
         return worker;
-    }
-
-    @Override
-    public ThreadGroup getThreadGroup() {
-        return threadGroup;
     }
 }

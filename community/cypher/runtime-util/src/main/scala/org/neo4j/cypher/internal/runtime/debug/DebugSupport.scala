@@ -30,6 +30,7 @@ object DebugSupport {
   final val DEBUG_TRACKER = false
   final val DEBUG_LOCKS = false
   final val DEBUG_ERROR_HANDLING = false
+  final val DEBUG_CLEANUP = false
   final val DEBUG_CURSORS = false
   final val DEBUG_BUFFERS = false
   final val DEBUG_SCHEDULING = false
@@ -49,6 +50,7 @@ object DebugSupport {
   final val TRACKER = new DebugLog(DEBUG_TRACKER, Yellow)
   final val LOCKS = new DebugLog(DEBUG_LOCKS, Blue)
   final val ERROR_HANDLING = new DebugLog(DEBUG_ERROR_HANDLING, Red)
+  final val CLEANUP = new DebugLog(DEBUG_CLEANUP, Green)
   final val CURSORS = new DebugLog(DEBUG_CURSORS, "")
   final val BUFFERS = new DebugLog(DEBUG_BUFFERS, Magenta)
   final val SCHEDULING = new DebugLog(DEBUG_SCHEDULING, Cyan)
@@ -76,6 +78,22 @@ object DebugSupport {
 
   /** TOOLING **/
 
+  def stackTraceOfCurrentThread(depth: Int = 0): String = {
+    stackTraceSlice(Thread.currentThread().getStackTrace, skipTop = 2, depth)
+  }
+
+  def stackTraceOfThrowable(throwable: Throwable, depth: Int = 0): String = {
+    stackTraceSlice(throwable.getStackTrace, skipTop = 0, depth)
+  }
+
+  private def stackTraceSlice(stackTrace: Array[StackTraceElement], skipTop: Int, depth: Int): String = {
+    val stackTraceSlice = if (depth > 0) stackTrace.slice(skipTop, skipTop + depth) else stackTrace.drop(skipTop)
+    val stackTraceSliceString = stackTraceSlice.map(e =>
+      s"          ${e.getClassName}.${e.getMethodName} (${e.getFileName}:${e.getLineNumber()})"
+    ).mkString("\n")
+    stackTraceSliceString
+  }
+
   def logPipelines(rows: => collection.Seq[String]): Unit = {
     if (DEBUG_PIPELINES) {
       for (row <- rows) {
@@ -84,7 +102,7 @@ object DebugSupport {
     }
   }
 
-  final class DebugLog(private[this] var enabled: Boolean, val color: String) {
+  final class DebugLog(private[this] var enabled: Boolean, val color: String, val filter: String => Boolean = null) {
 
     def enable(): Unit = {
       enabled = true
@@ -98,7 +116,10 @@ object DebugSupport {
     // parallel problems.
     def log(str: String): Unit = {
       if (enabled) {
-        print(s"        $color$str$Reset\n")
+        val s = s"        $color$str$Reset\n"
+        if (filter == null || filter(s)) {
+          print(s)
+        }
       }
     }
 

@@ -297,16 +297,39 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
 
     @Internal
     @Description(
-            "Maximum number of cached thread execution contexts used by Cypher workers for the parallel runtime. If set to 0, a default value based on"
-                    + " `internal.cypher.number_of_workers` will be chosen. If not 0, it has to be greater than `internal.cypher.number_of_workers`.")
+            "Maximum number of queries that the Cypher worker threads for the parallel runtime will start working on concurrently. "
+                    + "If set to 0, a default value of `internal.cypher.number_of_workers` will be chosen.")
+    public static final Setting<Integer> cypher_max_active_queries_count = newBuilder(
+                    "internal.cypher.max_number_of_active_queries", INT, 0)
+            .addConstraint(min(0))
+            .dynamic()
+            .build();
+
+    @Internal
+    @Description(
+            "Maximum number of cached thread execution contexts per query used by Cypher workers for the parallel runtime. If set to 0, a default value that is"
+                    + " a multiple of `internal.cypher.number_of_workers` will be chosen. If not 0, it will be round up to minimum `internal.cypher.number_of_workers`,"
+                    + " and round down to the nearest multiple of `internal.cypher.number_of_workers`. The default value should be good enough for most use cases, "
+                    + " but it can be tweaked based on the workload as a trade-off between performance and available memory.")
     public static final Setting<Integer> cypher_max_cached_worker_resources_count = newBuilder(
                     "internal.cypher.max_number_of_cached_worker_resources", INT, 0)
             .build();
 
-    public enum CypherWorkerManagement {
-        DEFAULT,
-        THREAD_POOL
-    }
+    @Internal
+    @Description("Configures the time interval between Cypher query monitor checks. Determines how often "
+            + "monitor thread will check the query queue of the parallel runtime for timeouts. "
+            + "A duration of zero disables query monitor checks.")
+    public static final Setting<Duration> cypher_query_monitor_check_interval = newBuilder(
+                    "internal.cypher.query_monitor_check_interval", DURATION, ofSeconds(5))
+            .dynamic()
+            .build();
+
+    @Internal
+    @Description("TODO")
+    public static final Setting<Duration> cypher_query_pending_release_timeout = newBuilder(
+                    "internal.cypher.query_pending_release_timeout", DURATION, ofSeconds(30))
+            .dynamic()
+            .build();
 
     @Internal
     @Description(
@@ -332,10 +355,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     CypherWorkerManagement.DEFAULT)
             .build();
 
-    public enum CypherOperatorEngine {
+    public enum CypherWorkerManagement {
         DEFAULT,
-        COMPILED,
-        INTERPRETED
+        THREAD_POOL
     }
 
     @Internal
@@ -357,6 +379,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     ofEnum(CypherOperatorEngine.class),
                     CypherOperatorEngine.DEFAULT)
             .build();
+
+    public enum CypherOperatorEngine {
+        DEFAULT,
+        COMPILED,
+        INTERPRETED
+    }
 
     @Internal
     @Description("The maximum size in bytes of methods generated for fused operators")

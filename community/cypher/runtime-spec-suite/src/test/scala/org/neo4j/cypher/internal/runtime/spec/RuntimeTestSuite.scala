@@ -83,6 +83,7 @@ import java.util
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Random
+import scala.util.Using
 
 object RuntimeTestSuite {
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
@@ -432,18 +433,18 @@ trait RuntimeTestResultConsumptionController {
 case object ConsumeAllThenCloseResultConsumer extends RuntimeTestResultConsumptionController {
 
   override def consume(runtimeResult: RuntimeResult): Unit = {
-    runtimeResult.consumeAll()
-    runtimeResult.close()
+    Using.resource(runtimeResult)(r => r.consumeAll())
   }
 }
 
 case class ConsumeNByNThenCloseResultConsumer(nRowsPerRequest: Int) extends RuntimeTestResultConsumptionController {
 
   override def consume(runtimeResult: RuntimeResult): Unit = {
-    do {
-      runtimeResult.request(nRowsPerRequest)
-    } while (runtimeResult.await())
-    runtimeResult.close()
+    Using.resource(runtimeResult) { r =>
+      do {
+        r.request(nRowsPerRequest)
+      } while (r.await())
+    }
   }
 }
 
@@ -451,11 +452,12 @@ case class ConsumeSlowlyNByNThenCloseResultConsumer(nRowsPerRequest: Int, sleepN
     extends RuntimeTestResultConsumptionController {
 
   override def consume(runtimeResult: RuntimeResult): Unit = {
-    do {
-      Thread.sleep(0L, sleepNanos)
-      runtimeResult.request(nRowsPerRequest)
-    } while (runtimeResult.await())
-    runtimeResult.close()
+    Using.resource(runtimeResult) { r =>
+      do {
+        Thread.sleep(0L, sleepNanos)
+        r.request(nRowsPerRequest)
+      } while (r.await())
+    }
   }
 }
 

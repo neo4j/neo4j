@@ -702,11 +702,9 @@ class DelegatingOperations[T, CURSOR](override protected val inner: Operations[T
 
 class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) extends QueryTransactionalContext {
 
-  override def isTopLevelTx: Boolean = inner.isTopLevelTx
+  override def isTransactionOpen: Boolean = inner.isTransactionOpen
 
-  override def isOpen: Boolean = inner.isOpen
-
-  override def assertOpen(): Unit = inner.assertOpen
+  override def assertTransactionOpen(): Unit = inner.assertTransactionOpen
 
   override def close(): Unit = inner.close()
 

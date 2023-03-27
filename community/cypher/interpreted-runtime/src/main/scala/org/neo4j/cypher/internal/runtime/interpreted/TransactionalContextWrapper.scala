@@ -115,11 +115,9 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
 
   override def accessMode: AccessMode = tc.kernelTransaction.securityContext.mode
 
-  override def isTopLevelTx: Boolean = tc.isTopLevelTx
+  override def isTransactionOpen: Boolean = tc.kernelTransaction.isOpen && !tc.kernelTransaction.isTerminated
 
-  override def isOpen: Boolean = tc.kernelTransaction.isOpen
-
-  override def assertOpen(): Unit = tc.kernelTransaction.assertOpen()
+  override def assertTransactionOpen(): Unit = tc.kernelTransaction.assertOpen()
 
   override def close(): Unit = {
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {

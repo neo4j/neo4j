@@ -681,11 +681,9 @@ trait QueryTransactionalContext extends CloseableResource {
 
   def accessMode: AccessMode
 
-  def isTopLevelTx: Boolean
+  def isTransactionOpen: Boolean
 
-  def isOpen: Boolean
-
-  def assertOpen(): Unit
+  def assertTransactionOpen(): Unit
 
   def close(): Unit
 

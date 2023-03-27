@@ -26,7 +26,6 @@ import org.neo4j.values.AnyValue
 
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 import java.util.concurrent.atomic.AtomicReference
 
@@ -38,11 +37,13 @@ trait TestSubscriber extends QuerySubscriber {
 
   def lastSeen: Seq[AnyValue]
 
-  def numberOfSeenResults: Int
+  def numberOfSeenResults: Long
 
   def allSeen: Seq[Seq[AnyValue]]
 
   def queryStatistics: graphdb.QueryStatistics
+
+  def error: Option[Throwable]
 }
 
 object TestSubscriber {
@@ -51,11 +52,11 @@ object TestSubscriber {
   def counting: CountingSubscriber = new CountingSubscriber
 
   private class ConcurrentTestSubscriber extends TestSubscriber {
-
     private val records = new ConcurrentLinkedQueue[Seq[AnyValue]]()
     private var current: ConcurrentLinkedQueue[AnyValue] = _
     private val done = new AtomicBoolean(false)
-    private val numberOfSeenRecords = new AtomicInteger(0)
+    @volatile private var _error: Throwable = _
+    private val numberOfSeenRecords = new AtomicLong(0)
     private val statistics = new AtomicReference[graphdb.QueryStatistics](null)
 
     override def onResult(numberOfFields: Int): Unit = {
@@ -75,7 +76,10 @@ object TestSubscriber {
       records.add(current.asScala.toSeq)
     }
 
-    override def onError(throwable: Throwable): Unit = {}
+    override def onError(throwable: Throwable): Unit = this.synchronized {
+      _error = Exceptions.chain(_error, throwable)
+      done.set(true)
+    }
 
     override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = {
       this.statistics.set(statistics)
@@ -86,11 +90,12 @@ object TestSubscriber {
 
     override def lastSeen: Seq[AnyValue] = current.asScala.toSeq
 
-    override def numberOfSeenResults: Int = numberOfSeenRecords.get()
+    override def numberOfSeenResults: Long = numberOfSeenRecords.get()
 
     override def allSeen: Seq[Seq[AnyValue]] = records.asScala.toSeq
 
     override def queryStatistics: graphdb.QueryStatistics = statistics.get()
+    override def error: Option[Throwable] = Option(_error)
   }
 
   private class SingleThreadedTestSubscriber extends TestSubscriber {
@@ -117,7 +122,11 @@ object TestSubscriber {
       records += current.toSeq
     }
 
-    override def onError(throwable: Throwable): Unit = {}
+    override def onError(throwable: Throwable): Unit = {
+      // TODO: Support errors
+    }
+
+    override def error: Option[Throwable] = None // TODO: Support errors
 
     override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = {
       this.statistics = statistics
@@ -128,30 +137,46 @@ object TestSubscriber {
 
     override def lastSeen: Seq[AnyValue] = current.toSeq
 
-    override def numberOfSeenResults: Int = numberOfSeenRecords
+    override def numberOfSeenResults: Long = numberOfSeenRecords
 
     override def allSeen: Seq[Seq[AnyValue]] = records.toSeq
 
     override def queryStatistics: graphdb.QueryStatistics = statistics
   }
 
-  final class CountingSubscriber extends QuerySubscriber {
-    private val _records = new AtomicLong(0)
+  final class CountingSubscriber extends TestSubscriber {
+    private val _numberOfSeenRecords = new AtomicLong(0)
     private val _completed = new AtomicBoolean(false)
     private var _error: Throwable = null
+    private val _statistics = new AtomicReference[graphdb.QueryStatistics](null)
 
-    def recordCount: Long = _records.get()
-    def completed: Boolean = _completed.get()
-    def error: Option[Throwable] = Option(_error)
+    override def error: Option[Throwable] = Option(_error)
 
     override def onResult(numberOfFields: Int): Unit = {}
     override def onRecord(): Unit = {}
     override def onField(offset: Int, value: AnyValue): Unit = {}
-    override def onRecordCompleted(): Unit = _records.incrementAndGet()
+    override def onRecordCompleted(): Unit = _numberOfSeenRecords.incrementAndGet()
 
     override def onError(throwable: Throwable): Unit = this.synchronized {
       _error = Exceptions.chain(_error, throwable)
+      _completed.set(true)
     }
-    override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = _completed.set(true)
+
+    override def onResultCompleted(statistics: graphdb.QueryStatistics): Unit = {
+      _statistics.set(statistics)
+      _completed.set(true)
+    }
+
+    override def isCompleted: Boolean = _completed.get()
+
+    override def lastSeen: Seq[AnyValue] =
+      throw new UnsupportedOperationException("Use TestSubscriber.concurrent instead")
+
+    override def numberOfSeenResults: Long = _numberOfSeenRecords.get()
+
+    override def allSeen: Seq[Seq[AnyValue]] =
+      throw new UnsupportedOperationException("Use TestSubscriber.concurrent instead")
+
+    override def queryStatistics: graphdb.QueryStatistics = _statistics.get()
   }
 }

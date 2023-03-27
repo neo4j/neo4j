@@ -49,6 +49,7 @@ class ClosingRuntimeTestResult(
   private var error: Throwable = _
   private var _pageCacheHits: Long = -1L
   private var _pageCacheMisses: Long = -1L
+  private var _isClosed: Boolean = _
 
   @VisibleForTesting
   def getInner: RuntimeResult = inner
@@ -64,20 +65,24 @@ class ClosingRuntimeTestResult(
   override def queryProfile(): QueryProfile = inner.queryProfile()
 
   override def close(): Unit = {
-    inner.close()
-    // TODO: Consider sharing implementation with StandardInternalExecutionResult
-    inner match {
-      case result: AsyncCleanupOnClose =>
-        val onFinishedCallback = () => {
-          closeResources()
-        }
-        result.registerOnFinishedCallback(onFinishedCallback)
-        inner.cancel()
-        inner.awaitCleanup()
+    if (!_isClosed) {
+      inner.close()
+      // TODO: Consider sharing implementation with StandardInternalExecutionResult
+      inner match {
+        case result: AsyncCleanupOnClose =>
+          val onFinishedCallback = () => {
+            closeResources()
+          }
+          result.registerOnFinishedCallback(onFinishedCallback)
+          inner.cancel()
+          inner.awaitCleanup()
 
-      case _ =>
-        inner.cancel()
-        closeResources()
+        case _ =>
+          inner.cancel()
+          closeResources()
+      }
+      _isClosed = true
+      assertAllReleased()
     }
   }
 
@@ -97,7 +102,6 @@ class ClosingRuntimeTestResult(
             }
             throw t
         }
-
     }
   }
 
@@ -120,7 +124,7 @@ class ClosingRuntimeTestResult(
           close()
         } catch {
           case t2: Throwable =>
-            if (!(t eq t2)) {
+            if (t ne t2) {
               t.addSuppressed(t2)
             }
         }
@@ -138,7 +142,6 @@ class ClosingRuntimeTestResult(
       _pageCacheMisses = txContext.kernelStatisticProvider().getPageCacheMisses
 
     resourceManager.close()
-    assertAllReleased()
   }
 
   def pageCacheHits: Long = _pageCacheHits

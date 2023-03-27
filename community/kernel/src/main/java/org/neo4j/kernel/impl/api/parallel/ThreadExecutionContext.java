@@ -223,7 +223,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             // this indicates incorrect usage
             throw new IllegalStateException("Execution context closed before it was marked as completed.");
         }
-        mergeUnblocked(cursorTracer);
+        mergeBlocked(cursorTracer);
     }
 
     private void mergeBlocked(ExecutionContextCursorTracer cursorTracer) {

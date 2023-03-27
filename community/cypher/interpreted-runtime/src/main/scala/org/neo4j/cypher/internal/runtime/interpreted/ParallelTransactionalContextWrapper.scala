@@ -56,8 +56,7 @@ class ParallelTransactionalContextWrapper(
   private[this] val tc: TransactionalContext
 ) extends TransactionalContextWrapper {
 
-  // TODO: Make parallel transaction use safe.
-  //       We want all methods going through kernelExecutionContext when it is supported instead of through tc.kernelTransaction, which is not thread-safe
+  // NOTE: We want all methods going through kernelExecutionContext instead of through tc.kernelTransaction, which is not thread-safe
   private[this] val kernelExecutionContext: ExecutionContext = {
     val ktx = tc.kernelTransaction()
     ktx.assertOpen()
@@ -72,7 +71,7 @@ class ParallelTransactionalContextWrapper(
 
   override def cursorContext: CursorContext = kernelExecutionContext.cursorContext
 
-  // TODO: We eventually want to support memory tracking through ThreadExecutionContext, but currently memory tracking is disabled in parallel runtime anyway
+  // TODO: We want to use memory tracker from ThreadExecutionContext when we enable memory tracking in parallel runtime
   override def memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE // kernelExecutionContext.memoryTracker()
 
   override def locks: Locks = kernelExecutionContext.locks()
@@ -100,11 +99,9 @@ class ParallelTransactionalContextWrapper(
 
   override def accessMode: AccessMode = kernelExecutionContext.securityContext().mode()
 
-  override def isTopLevelTx: Boolean = tc.isTopLevelTx
+  override def isTransactionOpen: Boolean = kernelExecutionContext.isTransactionOpen
 
-  override def isOpen: Boolean = tc.kernelTransaction.isOpen
-
-  override def assertOpen(): Unit = tc.kernelTransaction.assertOpen()
+  override def assertTransactionOpen(): Unit = kernelExecutionContext.performCheckBeforeOperation()
 
   override def close(): Unit = {
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
@@ -134,12 +131,11 @@ class ParallelTransactionalContextWrapper(
 
   override def validateSameDB[E <: Entity](entity: E): Unit = tc.transaction().validateSameDB(entity)
 
-  override def kernelTransaction: KernelTransaction = unsupported
+  override def kernelTransaction: KernelTransaction = unsupported()
 
-  // TODO: Make parallel transaction use safe. We do not want to support this in parallel, since it exposes non-thread safe APIs
-  override def kernelTransactionalContext: TransactionalContext = tc
+  override def kernelTransactionalContext: TransactionalContext = unsupported()
 
-  override def graph: GraphDatabaseQueryService = unsupported
+  override def graph: GraphDatabaseQueryService = unsupported()
 
   private def unsupported(): Nothing = {
     throw new UnsupportedOperationException("Not supported in parallel runtime.")

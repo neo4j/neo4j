@@ -97,7 +97,7 @@ interface ExecutorServiceFactory {
             if (threadCount == 0) {
                 threadCount = getRuntime().availableProcessors();
             }
-            return new ForkJoinPool(threadCount, factory, null, false);
+            return new ForkJoinPool(threadCount, factory, null, false); // TODO: Maybe we should use asyncMode
         };
     }
 

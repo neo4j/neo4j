@@ -86,6 +86,9 @@ public enum Group {
     CYPHER_WORKER("CypherWorker", ExecutorServiceFactory.workStealing()),
     CYPHER_CACHE("CypherCache", ExecutorServiceFactory.workStealing()),
 
+    /** Removes queries that have timed out */
+    CYPHER_QUERY_MONITOR("CypherQueryMonitor"),
+
     // DATA COLLECTOR
     DATA_COLLECTOR("DataCollector"),
 

@@ -535,7 +535,7 @@ private[internal] class TransactionBoundReadQueryContext(
   override val nodeReadOps: NodeReadOperations = new NodeReadOperations
   override val relationshipReadOps: RelationshipReadOperations = new RelationshipReadOperations
 
-  // TODO: Make parallel transaction use safe. Entity values hold a reference to InternalTransaction, which is not thread-safe.
+  // NOTE: Not supported in parallel runtime. Entity values hold a reference to InternalTransaction, which is not thread-safe.
   private[internal] lazy val entityAccessor: TransactionalEntityFactory =
     transactionalContext.kernelTransactionalContext.transaction()
 

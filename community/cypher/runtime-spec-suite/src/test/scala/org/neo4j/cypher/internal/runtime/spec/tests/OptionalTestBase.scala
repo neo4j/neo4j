@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
@@ -249,7 +250,8 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
 
   test("should stream") {
     // given
-    val stream = batchedInputValues(10, (0 until sizeHint).map(Array[Any](_)): _*).stream()
+    val batchSize = Math.max(10, getConfig.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big) + 1)
+    val stream = batchedInputValues(batchSize, (0 until sizeHint).map(Array[Any](_)): _*).stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
