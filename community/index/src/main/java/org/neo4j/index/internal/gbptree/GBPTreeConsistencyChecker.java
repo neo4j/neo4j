@@ -121,6 +121,7 @@ class GBPTreeConsistencyChecker<KEY> {
             long rootGeneration = root.goTo(cursor);
             KeyRange<KEY> openRange = new KeyRange<>(-1, -1, comparator, null, null, layout, null);
             var rightmostPerLevel = new RightmostInChainShard(file, true);
+            var seenIds = state.newLocalSeenIds();
             checkSubtree(
                     cursor,
                     openRange,
@@ -129,10 +130,11 @@ class GBPTreeConsistencyChecker<KEY> {
                     GBPTreePointerType.noPointer(),
                     0,
                     visitor,
-                    state.seenIds,
+                    seenIds,
                     context,
                     rightmostPerLevel,
                     progress);
+            state.addLocalSeenIds(seenIds);
             rightmostPerLevel.assertLast(visitor);
         }
     }
@@ -300,7 +302,7 @@ class GBPTreeConsistencyChecker<KEY> {
                                     var shardCursor = cursorFactory.apply(shardContext);
                                     var shardProgress = progress.threadLocalReporter()) {
                                 goTo(shardCursor, "child at pos " + pos, treeNodeId);
-                                var shardSeenIds = new BitSet(toIntExact(state.highId()));
+                                var shardSeenIds = state.newLocalSeenIds();
                                 checkSubtree(
                                         shardCursor,
                                         childRange,
@@ -313,10 +315,7 @@ class GBPTreeConsistencyChecker<KEY> {
                                         cursorContext,
                                         shardRightmostPerLevel,
                                         shardProgress);
-                                synchronized (seenIds) {
-                                    shardSeenIds.stream()
-                                            .forEach(id -> addToSeenList(file, seenIds, id, state.lastId, visitor));
-                                }
+                                state.addLocalSeenIds(shardSeenIds);
                                 return null;
                             }
                         }));
@@ -716,6 +715,14 @@ class GBPTreeConsistencyChecker<KEY> {
             IdProvider.IdProviderVisitor freelistSeenIdsVisitor =
                     new FreelistSeenIdsVisitor(file, seenIds, lastId, visitor, progress);
             idProvider.visitFreelist(freelistSeenIdsVisitor, cursorCreator);
+        }
+
+        synchronized void addLocalSeenIds(BitSet seenIds) {
+            seenIds.stream().forEach(id -> addToSeenList(file, this.seenIds, id, lastId, visitor));
+        }
+
+        BitSet newLocalSeenIds() {
+            return new BitSet(toIntExact(highId()));
         }
 
         private long highId() {
