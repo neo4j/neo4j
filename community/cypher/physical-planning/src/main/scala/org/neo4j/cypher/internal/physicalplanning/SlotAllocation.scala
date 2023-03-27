@@ -27,6 +27,10 @@ import org.neo4j.cypher.internal.expressions.CachedHasProperty
 import org.neo4j.cypher.internal.expressions.CachedProperty
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.Literal
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.ir.CreatePattern
@@ -797,8 +801,19 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         _: ErrorPlan |
         _: Eager =>
 
-      case UnwindCollection(_, variable, _) =>
-        slots.newReference(variable, nullable = true, CTAny)
+      case UnwindCollection(_, variable, expression) =>
+        val nullable = expression match {
+          case ListLiteral(expressions) => expressions.exists {
+              case Null()             => true
+              case _: Literal         => false
+              case v: LogicalVariable => slots.get(v.name).exists(_.nullable)
+              case _                  => true
+            }
+          case v: LogicalVariable => slots.get(v.name).exists(_.nullable)
+          case _                  => true
+        }
+
+        slots.newReference(variable, nullable, CTAny)
 
       case _: DeleteNode |
         _: DeleteRelationship |
