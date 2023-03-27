@@ -365,6 +365,7 @@ public interface Status {
     }
 
     enum Routing implements Status {
+        DbmsInPanic(ClientError, "Server is in panic"),
         RoutingFailed(ClientError, "Failed to Route");
 
         private final Code code;

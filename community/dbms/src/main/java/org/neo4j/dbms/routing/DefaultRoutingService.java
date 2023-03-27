@@ -28,10 +28,13 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Optional;
 import java.util.function.Supplier;
+import org.neo4j.common.panic.PanicEventHandler;
+import org.neo4j.common.panic.PanicReason;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
+import org.neo4j.kernel.api.exceptions.Status.Routing;
 import org.neo4j.kernel.database.DatabaseReference;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
@@ -40,7 +43,7 @@ import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.virtual.MapValue;
 
-public class DefaultRoutingService implements RoutingService {
+public class DefaultRoutingService implements RoutingService, PanicEventHandler {
     private final InternalLog log;
     private final RoutingTableServiceValidator validator;
     private final ClientSideRoutingTableProvider clientSideRoutingTableProvider;
@@ -52,6 +55,7 @@ public class DefaultRoutingService implements RoutingService {
     private final DefaultDatabaseResolver defaultDatabaseResolver;
 
     private final DatabaseReferenceRepository databaseReferenceRepo;
+    private volatile PanicReason panicReason;
 
     public DefaultRoutingService(
             InternalLogProvider logProvider,
@@ -77,11 +81,18 @@ public class DefaultRoutingService implements RoutingService {
 
     @Override
     public RoutingResult route(String databaseName, String user, MapValue routingContext) throws RoutingException {
+        assertNotInPanic();
         var databaseReference = extractDatabaseReference(databaseName, user);
         assertDatabaseExists(databaseReference);
         assertBoltConnectorEnabled(databaseReference);
         assertNotIllegalAliasChain(databaseReference, routingContext);
         return routeInternal(databaseReference, routingContext);
+    }
+
+    private void assertNotInPanic() throws RoutingException {
+        if (panicReason != null) {
+            throw new RoutingException(Routing.DbmsInPanic, panicReason.toString());
+        }
     }
 
     private RoutingResult routeInternal(DatabaseReference databaseReference, MapValue routingContext)
@@ -180,5 +191,10 @@ public class DefaultRoutingService implements RoutingService {
                             + databaseReference.alias().name() + "' because the request came from another alias '"
                             + sourceAliasString + "' and alias chains " + "are not permitted.");
         }
+    }
+
+    @Override
+    public void onPanic(PanicReason reason, Throwable error) {
+        this.panicReason = reason;
     }
 }
