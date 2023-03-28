@@ -272,6 +272,9 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           _: Union =>
           distinctHorizon
 
+        /**
+         * [[ValueHashJoin]] needs its own case so dependencies from its join expression can be tracked.
+         */
         case ValueHashJoin(_, _, org.neo4j.cypher.internal.expressions.Equals(lhs, rhs)) =>
           distinctHorizon.copy(dependencies =
             distinctHorizon.dependencies ++ Seq(lhs, rhs).flatMap(_.dependencies.map(_.name))
