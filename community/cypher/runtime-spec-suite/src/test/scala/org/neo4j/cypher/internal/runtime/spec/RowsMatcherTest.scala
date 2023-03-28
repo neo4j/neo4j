@@ -117,7 +117,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName {
 
     EqualInAnyOrder(rows).matches(Array("X"), rows.take(73) ++ rowsAt21 ++ rows.drop(87)) should be(
       RowsDontMatch(
-        """    ... 22 matching rows ...
+        """Expected 100 rows, but got 93 rows
+          |    ... 22 matching rows ...
           | + Int(2100)
           | + Int(2101)
           | + Int(2102)
@@ -147,7 +148,8 @@ class RowsMatcherTest extends CypherFunSuite with TestName {
 
     EqualInAnyOrder(rows).matches(Array("X"), rows.slice(1, 99) :+ row(-1) :+ row(999999)) should be(
       RowsDontMatch(
-        """ + Int(-1)
+        """Expected 100 rows, and got 100 rows
+          | + Int(-1)
           | - Int(0)
           |    ... 98 matching rows ...
           | - Int(9900)

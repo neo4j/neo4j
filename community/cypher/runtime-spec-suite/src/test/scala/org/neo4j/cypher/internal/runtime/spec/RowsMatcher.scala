@@ -185,10 +185,14 @@ abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
 
     if (matchStreak == expRows.size && matchStreak == gotRows.size)
       RowsMatch
-    else
+    else {
+      val expRowCount = expRows.size
+      val gotRowCount = gotRows.size
+      val conjunction = if (expRowCount == gotRowCount) "and" else "but"
       RowsDontMatch(
-        s"Expected ${expRows.size} rows, but got ${gotRows.size} rows${System.lineSeparator()}${diffString.result}"
+        s"Expected ${expRowCount} rows, $conjunction got ${gotRowCount} rows${System.lineSeparator()}${diffString.result}"
       )
+    }
   }
 }
 

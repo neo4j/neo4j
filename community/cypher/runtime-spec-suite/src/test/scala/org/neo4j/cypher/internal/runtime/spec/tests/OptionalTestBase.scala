@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Descending
+import org.neo4j.cypher.internal.runtime.InputValues
 import org.neo4j.cypher.internal.runtime.TestSubscriber
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
@@ -250,8 +251,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
 
   test("should stream") {
     // given
-    val batchSize = Math.max(10, getConfig.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big) + 1)
-    val stream = batchedInputValues(batchSize, (0 until sizeHint).map(Array[Any](_)): _*).stream()
+    val stream = createBatchedInputValues().stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -309,7 +309,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
 
   test("should work on top of distinct") {
     // given
-    val stream = batchedInputValues(10, (0 until sizeHint).map(Array[Any](_)): _*).stream()
+    val stream = createBatchedInputValues().stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -330,6 +330,27 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     stream.hasMore should be(true)
   }
 
+  def createBatchedInputValues(): InputValues = {
+    val (batchSize, numberOfWorkers) = runtime.name.toLowerCase match {
+      case "pipelined" =>
+        val morselSize = getConfig.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big)
+        (Math.max(10, morselSize + 1), 1)
+      case "parallel" =>
+        val morselSize = getConfig.get(GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big)
+        val numberOfWorkers = getConfig.get(GraphDatabaseInternalSettings.cypher_worker_count).toInt match {
+          case 0 => Runtime.getRuntime.availableProcessors
+          case n => n
+        }
+        (Math.max(10, morselSize + 1), numberOfWorkers)
+      case _ =>
+        (10, 1)
+    }
+    // NOTE: Parallel runtime will exhaust input until intermediate buffers are full
+    val inputSize = Math.max(sizeHint, (batchSize + 1) * numberOfWorkers * numberOfWorkers)
+
+    batchedInputValues(batchSize, (0 until inputSize).map(Array[Any](_)): _*)
+  }
+
 }
 
 // Supported by interpreted, slotted, pipelined
@@ -338,7 +359,7 @@ trait OptionalFailureTestBase[CONTEXT <: RuntimeContext] {
 
   test("should cancel outstanding work") {
     // given
-    val stream = batchedInputValues(10, (0 until sizeHint).map(Array[Any](_)): _*).stream()
+    val stream = createBatchedInputValues().stream()
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
