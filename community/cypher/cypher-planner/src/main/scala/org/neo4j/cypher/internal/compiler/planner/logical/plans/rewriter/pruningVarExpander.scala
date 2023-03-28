@@ -69,7 +69,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
     override def aggregationExpressions: Map[String, Expression] = aggregatingPlan.aggregationExpressions
   }
 
-  private case class ApplyHorizonPlan(applyPlan: AbstractSemiApply) extends HorizonPlan {
+  private case object SemiApplyHorizonPlan extends HorizonPlan {
     override def aggregationExpressions: Map[String, Expression] = Map.empty
   }
 
@@ -174,15 +174,6 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
   private object DistinctHorizon {
     val empty: DistinctHorizon = DistinctHorizon(Set.empty, null)
 
-    def create(dependencies: Set[String], plan: LogicalPlan): DistinctHorizon = plan match {
-      case aggregatingPlan: AggregatingPlan =>
-        DistinctHorizon(dependencies, AggregatingHorizonPlan(aggregatingPlan))
-      case apply: AbstractSemiApply =>
-        DistinctHorizon(dependencies, ApplyHorizonPlan(apply))
-      case _ =>
-        throw new IllegalArgumentException(s"Plan must be an AggregatingPlan or AbstractSemiApply but was: $plan")
-    }
-
     def isDistinct(e: Expression): Boolean = e match {
       case f: FunctionInvocation => f.distinct
       case _                     => false
@@ -227,7 +218,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
             DistinctHorizon.isDistinct(e) || DistinctHorizon.isMinPathLength(e)
           ) =>
           val groupingDependencies = aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
-          DistinctHorizon.create(groupingDependencies, aggPlan)
+          DistinctHorizon(groupingDependencies, AggregatingHorizonPlan(aggPlan))
 
         case expand: VarExpand =>
           distinctHorizon.getRewrite(expand) match {
@@ -310,7 +301,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
            * For predicate-type binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
            * Because the rows of RHS are never passed downstream, the LHS is traversed with same horizon.
            */
-          (newDistinctHorizon, DistinctHorizon.create(Set.empty, apply))
+          (newDistinctHorizon, DistinctHorizon(Set.empty, SemiApplyHorizonPlan))
         case _: Apply =>
           /**
            * For Apply plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
