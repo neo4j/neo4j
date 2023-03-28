@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
@@ -53,8 +54,8 @@ import org.neo4j.values.AnyValue;
  * directory at startup, but also allows programmatic registration of them - and then, of course, allows
  * invoking procedures.
  */
-public class GlobalProceduresRegistry extends LifecycleAdapter implements GlobalProcedures {
-    private final ProcedureRegistry registry = new ProcedureRegistry();
+public class GlobalProceduresRegistry extends LifecycleAdapter implements GlobalProcedures, ProcedureView {
+    private ProcedureRegistry registry = new ProcedureRegistry();
     private final TypeCheckers typeCheckers;
     private final ComponentRegistry safeComponents = new ComponentRegistry();
     private final ComponentRegistry allComponents = new ComponentRegistry();
@@ -62,6 +63,8 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
     private final Supplier<List<CallableProcedure>> builtin;
     private final Path proceduresDirectory;
     private final InternalLog log;
+
+    private ProcedureView currentProcedureView = new ProcedureViewImpl(registry, safeComponents, allComponents);
 
     @VisibleForTesting
     public GlobalProceduresRegistry() {
@@ -247,6 +250,10 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
         allComponents.register(cls, provider);
     }
 
+    public ProcedureView getCurrentView() {
+        return currentProcedureView;
+    }
+
     /**
      * Lookup registered component providers functions that capable to provide user requested type in scope of procedure invocation context
      * @param cls the type of registered component
@@ -255,69 +262,68 @@ public class GlobalProceduresRegistry extends LifecycleAdapter implements Global
      */
     @Override
     public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe) {
-        var registry = safe ? safeComponents : allComponents;
-        return registry.providerFor(cls);
+        return currentProcedureView.lookupComponentProvider(cls, safe);
     }
 
     @Override
     public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
-        return registry.procedure(name);
+        return currentProcedureView.procedure(name);
     }
 
     @Override
     public UserFunctionHandle function(QualifiedName name) {
-        return registry.function(name);
+        return currentProcedureView.function(name);
     }
 
     @Override
     public UserFunctionHandle aggregationFunction(QualifiedName name) {
-        return registry.aggregationFunction(name);
+        return currentProcedureView.aggregationFunction(name);
     }
 
     @Override
     public int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
-        return registry.getIdsOfFunctionsMatching(predicate);
+        return currentProcedureView.getIdsOfFunctionsMatching(predicate);
     }
 
     @Override
     public int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
-        return registry.getIdsOfAggregatingFunctionsMatching(predicate);
+        return currentProcedureView.getIdsOfAggregatingFunctionsMatching(predicate);
     }
 
     @Override
     public Set<ProcedureSignature> getAllProcedures() {
-        return registry.getAllProcedures();
+        return currentProcedureView.getAllProcedures();
     }
 
     @Override
     public int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
-        return registry.getIdsOfProceduresMatching(predicate);
+        return currentProcedureView.getIdsOfProceduresMatching(predicate);
     }
 
     @Override
     public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
-        return registry.getAllNonAggregatingFunctions();
+        return currentProcedureView.getAllNonAggregatingFunctions();
     }
 
     @Override
     public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
-        return registry.getAllAggregatingFunctions();
+        return currentProcedureView.getAllAggregatingFunctions();
     }
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> callProcedure(
             Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
-        return registry.callProcedure(ctx, id, input, resourceMonitor);
+        return currentProcedureView.callProcedure(ctx, id, input, resourceMonitor);
     }
 
     @Override
     public AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException {
-        return registry.callFunction(ctx, id, input);
+        return currentProcedureView.callFunction(ctx, id, input);
     }
 
     @Override
     public UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException {
-        return registry.createAggregationFunction(ctx, id);
+        return currentProcedureView.createAggregationFunction(ctx, id);
     }
 
     @Override

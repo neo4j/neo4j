@@ -59,6 +59,8 @@ public interface GlobalProcedures extends ProcedureView {
 
     <T> void registerComponent(Class<T> cls, ThrowingFunction<Context, T, ProcedureException> provider, boolean safe);
 
+    ProcedureView getCurrentView();
+
     @VisibleForTesting
     // Allow tests to unregister some procedures so far intended only for tests usages
     void unregister(QualifiedName name);

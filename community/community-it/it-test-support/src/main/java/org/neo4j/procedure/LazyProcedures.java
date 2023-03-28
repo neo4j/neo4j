@@ -42,11 +42,14 @@ import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.values.AnyValue;
 
 public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<GlobalProcedures>> {
     private Supplier<GlobalProcedures> initializer;
     private volatile GlobalProcedures globalProcedures;
+
+    private final LazyProcedureView LAZY_PROCEDURE_VIEW = new LazyProcedureView();
 
     private void init() {
         if (globalProcedures != null) {
@@ -162,81 +165,68 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
 
     @Override
     public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
-        init();
-        return globalProcedures.procedure(name);
+        return LAZY_PROCEDURE_VIEW.procedure(name);
     }
 
     @Override
     public UserFunctionHandle function(QualifiedName name) {
-        init();
-        return globalProcedures.function(name);
+        return LAZY_PROCEDURE_VIEW.function(name);
     }
 
     @Override
     public UserFunctionHandle aggregationFunction(QualifiedName name) {
-        init();
-        return globalProcedures.aggregationFunction(name);
+        return LAZY_PROCEDURE_VIEW.aggregationFunction(name);
     }
 
     @Override
     public int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
-        init();
-        return globalProcedures.getIdsOfFunctionsMatching(predicate);
+        return LAZY_PROCEDURE_VIEW.getIdsOfFunctionsMatching(predicate);
     }
 
     @Override
     public int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
-        init();
-        return globalProcedures.getIdsOfAggregatingFunctionsMatching(predicate);
+        return LAZY_PROCEDURE_VIEW.getIdsOfAggregatingFunctionsMatching(predicate);
     }
 
     @Override
     public Set<ProcedureSignature> getAllProcedures() {
-        init();
-        return globalProcedures.getAllProcedures();
+        return LAZY_PROCEDURE_VIEW.getAllProcedures();
     }
 
     @Override
     public int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
-        init();
-        return globalProcedures.getIdsOfProceduresMatching(predicate);
+        return LAZY_PROCEDURE_VIEW.getIdsOfProceduresMatching(predicate);
     }
 
     @Override
     public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
-        init();
-        return globalProcedures.getAllNonAggregatingFunctions();
+        return LAZY_PROCEDURE_VIEW.getAllNonAggregatingFunctions();
     }
 
     @Override
     public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
-        init();
-        return globalProcedures.getAllAggregatingFunctions();
+        return LAZY_PROCEDURE_VIEW.getAllAggregatingFunctions();
     }
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> callProcedure(
             Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
-        init();
-        return globalProcedures.callProcedure(ctx, id, input, resourceMonitor);
+        return LAZY_PROCEDURE_VIEW.callProcedure(ctx, id, input, resourceMonitor);
     }
 
     @Override
     public AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException {
-        init();
-        return globalProcedures.callFunction(ctx, id, input);
+        return LAZY_PROCEDURE_VIEW.callFunction(ctx, id, input);
     }
 
     @Override
     public UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException {
-        init();
-        return globalProcedures.createAggregationFunction(ctx, id);
+        return LAZY_PROCEDURE_VIEW.createAggregationFunction(ctx, id);
     }
 
     @Override
     public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe) {
-        init();
-        return globalProcedures.lookupComponentProvider(cls, safe);
+        return LAZY_PROCEDURE_VIEW.lookupComponentProvider(cls, safe);
     }
 
     @Override
@@ -254,5 +244,123 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
             throw new IllegalStateException("Lazy procedures already have initializer: " + initializer);
         }
         initializer = procedureSupplier;
+    }
+
+    @Override
+    public ProcedureView getCurrentView() {
+        /* To honor the LazyProcedures ideal, we want to delay initialization until a call explicitly needs a procedure.
+          Typically, a ProcedureView will be collected at KernelTransaction.initialize, which may occur before any call
+          made to query the procedure state. This means that we still want to delay initialization a while longer,
+          until a call that actually needs the procedure is detected.
+
+         To achieve this, we return a LazyProcedureView in case LazyProcedures has not been initialized. The purpose
+         of this class is to forward the initialization signal to LazyProcedures. Once LazyProcedures has been initialized,
+         we revert to the normal behaviour of returning a ProcedureView.
+        */
+        if (globalProcedures == null) {
+            return LAZY_PROCEDURE_VIEW;
+        }
+
+        return globalProcedures.getCurrentView();
+    }
+
+    private class LazyProcedureView implements ProcedureView {
+
+        private ProcedureView view;
+
+        private LazyProcedureView() {}
+
+        private void initView() {
+            if (view != null) {
+                return;
+            }
+
+            synchronized (this) {
+                if (view == null) {
+                    init();
+                    view = globalProcedures.getCurrentView();
+                }
+            }
+        }
+
+        @Override
+        public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
+            initView();
+            return view.procedure(name);
+        }
+
+        @Override
+        public UserFunctionHandle function(QualifiedName name) {
+            initView();
+            return view.function(name);
+        }
+
+        @Override
+        public UserFunctionHandle aggregationFunction(QualifiedName name) {
+            initView();
+            return view.aggregationFunction(name);
+        }
+
+        @Override
+        public int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
+            initView();
+            return view.getIdsOfFunctionsMatching(predicate);
+        }
+
+        @Override
+        public int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
+            initView();
+            return view.getIdsOfAggregatingFunctionsMatching(predicate);
+        }
+
+        @Override
+        public Set<ProcedureSignature> getAllProcedures() {
+            initView();
+            return view.getAllProcedures();
+        }
+
+        @Override
+        public int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
+            initView();
+            return view.getIdsOfProceduresMatching(predicate);
+        }
+
+        @Override
+        public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
+            initView();
+            return view.getAllNonAggregatingFunctions();
+        }
+
+        @Override
+        public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
+            initView();
+            return view.getAllAggregatingFunctions();
+        }
+
+        @Override
+        public RawIterator<AnyValue[], ProcedureException> callProcedure(
+                Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
+            initView();
+            return view.callProcedure(ctx, id, input, resourceMonitor);
+        }
+
+        @Override
+        public AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException {
+            initView();
+            return view.callFunction(ctx, id, input);
+        }
+
+        @Override
+        public UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException {
+            initView();
+            return view.createAggregationFunction(ctx, id);
+        }
+
+        @Override
+        public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(
+                Class<T> cls, boolean safe) {
+            initView();
+            return view.lookupComponentProvider(cls, safe);
+        }
     }
 }
