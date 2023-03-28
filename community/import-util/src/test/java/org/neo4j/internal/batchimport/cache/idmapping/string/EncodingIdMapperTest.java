@@ -526,11 +526,6 @@ public class EncodingIdMapperTest {
                 var groupId = nodeIdToGroupId.apply(nodeId);
                 var inputId = lookup.lookupProperty(nodeId);
                 var actual = getter.get(inputId, groups.get(groupId));
-                if (actual != nodeId) {
-                    // TODO there's an issue which is very hard to reproduce, so dumping debug information
-                    //  in order to help investigation
-                    mapper.dumpState(System.err);
-                }
                 assertEquals(nodeId, actual);
             }
         }
