@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.ir.AbstractProcedureCallProjection
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 
-case class ProcedureCallProjection(call: ResolvedCall) extends QueryHorizon {
+case class ProcedureCallProjection(call: ResolvedCall) extends AbstractProcedureCallProjection {
 
   override def exposedSymbols(coveredIds: Set[String]): Set[String] = coveredIds ++ call.callResults.map { result =>
     result.variable.name

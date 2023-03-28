@@ -20,8 +20,10 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.ast.CommandClause
 import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsParameters
+import org.neo4j.cypher.internal.ast.TransactionsCommandClause
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
@@ -32,7 +34,7 @@ import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.exceptions.InternalException
 
-trait QueryHorizon extends Foldable {
+sealed trait QueryHorizon extends Foldable {
 
   def exposedSymbols(coveredIds: Set[String]): Set[String]
 
@@ -298,3 +300,25 @@ final case class DistinctQueryProjection(
 
   override def withSelection(selections: Selections): QueryProjection = copy(selections = selections)
 }
+
+case class CommandProjection(clause: CommandClause) extends QueryHorizon {
+
+  override def exposedSymbols(coveredIds: Set[String]): Set[String] = {
+    val columnNames = clause match {
+      case t: TransactionsCommandClause if t.yieldItems.nonEmpty =>
+        t.yieldItems.map(_.aliasedVariable.name)
+      case _ => clause.unfilteredColumns.columns.map(_.name)
+    }
+    coveredIds ++ columnNames
+  }
+
+  override def dependingExpressions: Seq[Expression] = Seq()
+
+  override def allHints: Set[Hint] = Set.empty
+
+  override def withoutHints(hintsToIgnore: Set[Hint]): QueryHorizon = this
+
+  override def isTerminatingProjection: Boolean = false
+}
+
+abstract class AbstractProcedureCallProjection extends QueryHorizon
