@@ -63,6 +63,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsAggregate
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LogicalProperty
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -470,6 +471,9 @@ object ClauseConverters {
               relVar
             )
         )
+
+      case x =>
+        throw new IllegalArgumentException(s"The pattern element must be a NodePattern or a RelationshipChain. Got: $x")
     }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
@@ -590,19 +594,19 @@ object ClauseConverters {
   private def toSetPattern(semanticTable: SemanticTable)(setItem: SetItem): SetMutatingPattern = setItem match {
     case SetLabelItem(id, labels) => SetLabelPattern(id.name, labels)
 
-    case SetPropertyItem(Property(node: Variable, propertyKey), expr) if semanticTable.isNode(node) =>
+    case SetPropertyItem(LogicalProperty(node: Variable, propertyKey), expr) if semanticTable.isNode(node) =>
       SetNodePropertyPattern(node.name, propertyKey, expr)
 
     case SetPropertyItems(node: Variable, items) if semanticTable.isNode(node) =>
       SetNodePropertiesPattern(node.name, items)
 
-    case SetPropertyItem(Property(rel: Variable, propertyKey), expr) if semanticTable.isRelationship(rel) =>
+    case SetPropertyItem(LogicalProperty(rel: Variable, propertyKey), expr) if semanticTable.isRelationship(rel) =>
       SetRelationshipPropertyPattern(rel.name, propertyKey, expr)
 
     case SetPropertyItems(rel: Variable, items) if semanticTable.isRelationship(rel) =>
       SetRelationshipPropertiesPattern(rel.name, items)
 
-    case SetPropertyItem(Property(entityExpr, propertyKey), expr) =>
+    case SetPropertyItem(LogicalProperty(entityExpr, propertyKey), expr) =>
       SetPropertyPattern(entityExpr, propertyKey, expr)
 
     case SetPropertyItems(entityExpr, items) =>

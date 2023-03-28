@@ -104,8 +104,8 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
   ): Multiplier = {
     val totalNbrOfNodes = stats.nodesAllCardinality()
     val (lhs, rhs) = pattern.nodes
-    val Seq(labelsOnLhs, labelsOnRhs) =
-      Seq(lhs, rhs).map(side => mapToLabelTokenSpecs(labels.getOrElse(side, Set.empty)))
+    val labelsOnLhs = mapToLabelTokenSpecs(labels.getOrElse(lhs, Set.empty))
+    val labelsOnRhs = mapToLabelTokenSpecs(labels.getOrElse(rhs, Set.empty))
 
     val lhsCardinality = totalNbrOfNodes * calculateLabelSelectivity(labelsOnLhs, totalNbrOfNodes)
     val rhsCardinality = totalNbrOfNodes * calculateLabelSelectivity(labelsOnRhs, totalNbrOfNodes)
@@ -382,22 +382,22 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
         rhsLabel <- labelsOnRhs
       } yield {
         // For each combination of label, type, label, get the cardinality from the store
-        val cardinalityForOneLabelCombination = (lhsLabel, typ, rhsLabel) match {
+        val cardinalityForOneLabelCombination = (lhsLabel, typ, rhsLabel, dir) match {
           // If the rel-type or either label are unknown to the schema, we know no matches will be had
-          case (SpecifiedButUnknown(), _, _) | (_, SpecifiedButUnknown(), _) | (_, _, SpecifiedButUnknown()) =>
-            val cardinality = MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY
-            if (dir == SemanticDirection.BOTH)
-              cardinality + cardinality
-            else
-              cardinality
+          case (SpecifiedButUnknown(), _, _, SemanticDirection.BOTH) |
+            (_, SpecifiedButUnknown(), _, SemanticDirection.BOTH) |
+            (_, _, SpecifiedButUnknown(), SemanticDirection.BOTH) =>
+            2 * MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY
+          case (SpecifiedButUnknown(), _, _, _) | (_, SpecifiedButUnknown(), _, _) | (_, _, SpecifiedButUnknown(), _) =>
+            MinimumGraphStatistics.MIN_PATTERN_STEP_CARDINALITY
 
-          case _ if dir == SemanticDirection.OUTGOING =>
+          case (_, _, _, SemanticDirection.OUTGOING) =>
             stats.patternStepCardinality(lhsLabel.id, typ.id, rhsLabel.id)
 
-          case _ if dir == SemanticDirection.INCOMING =>
+          case (_, _, _, SemanticDirection.INCOMING) =>
             stats.patternStepCardinality(rhsLabel.id, typ.id, lhsLabel.id)
 
-          case _ if dir == SemanticDirection.BOTH =>
+          case (_, _, _, SemanticDirection.BOTH) =>
             val cardinalities = Seq(
               stats.patternStepCardinality(lhsLabel.id, typ.id, rhsLabel.id),
               stats.patternStepCardinality(rhsLabel.id, typ.id, lhsLabel.id)

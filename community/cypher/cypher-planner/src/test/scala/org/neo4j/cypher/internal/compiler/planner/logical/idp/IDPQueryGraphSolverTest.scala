@@ -63,6 +63,8 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.exceptions.TestFailedException
 
+import scala.language.reflectiveCalls
+
 class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
   self =>
 

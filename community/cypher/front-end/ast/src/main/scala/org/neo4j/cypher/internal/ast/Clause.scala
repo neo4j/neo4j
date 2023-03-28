@@ -1624,7 +1624,7 @@ object ShowFunctionsClause {
   }
 }
 
-trait TransactionsCommandClause extends CommandClause with CommandClauseAllowedOnSystem {
+sealed trait TransactionsCommandClause extends CommandClause with CommandClauseAllowedOnSystem {
   // Original columns before potential rename or filtering in YIELD
   def transactionColumns: List[TransactionColumn]
 

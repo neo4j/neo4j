@@ -63,6 +63,7 @@ object SelectorHeuristic {
   val constant: SelectorHeuristic = (_: LogicalPlan) => 0
 }
 
+@FunctionalInterface
 trait SelectorHeuristic {
 
   /** Heuristic used to break ties between plans with the same cost */

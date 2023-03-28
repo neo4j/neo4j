@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.MapSupport.PowerMap
-import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.LabelInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphCardinalityModel
@@ -39,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.ir.AbstractProcedureCallProjection
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.CommandProjection
@@ -177,7 +177,7 @@ class StatisticsBackedCardinalityModel(
       cardinalityAndInput.copy(cardinality = cardinalityAndInput.cardinality * multiplier)
 
     // ProcedureCall
-    case _: ProcedureCallProjection =>
+    case _: AbstractProcedureCallProjection =>
       cardinalityAndInput.copy(cardinality =
         Cardinality.max(cardinalityAndInput.cardinality * DEFAULT_MULTIPLIER, 1.0)
       ) // At least 1 row
@@ -209,7 +209,7 @@ class StatisticsBackedCardinalityModel(
       // Cardinality of the subquery times current cardinality is the result
       cardinalityAndInput.copy(cardinality = cardinalityAndInput.cardinality * subQueryCardinality)
 
-    case CallSubqueryHorizon(subquery, _, false, _) =>
+    case CallSubqueryHorizon(_, _, false, _) =>
       // Unit subquery call does not affect the driving table
       cardinalityAndInput
   }

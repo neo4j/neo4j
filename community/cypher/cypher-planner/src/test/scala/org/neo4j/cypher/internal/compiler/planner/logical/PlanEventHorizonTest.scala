@@ -413,7 +413,6 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("planHorizon, no required order") {
     // Given
     new given().withLogicalPlanningContext { (_, context) =>
-      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
       val horizon = RegularQueryProjection(Map("x" -> varFor("x")))
       val pq = RegularSinglePlannerQuery(
         interestingOrder = InterestingOrder.empty,

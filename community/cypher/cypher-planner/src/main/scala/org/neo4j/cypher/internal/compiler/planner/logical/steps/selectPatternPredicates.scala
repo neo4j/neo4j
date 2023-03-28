@@ -65,6 +65,9 @@ case object SelectPatternPredicates extends SelectionCandidateGenerator {
             "planPredicates is supposed to solve all predicates in an OR clause."
           )
           context.staticComponents.logicalPlanProducer.solvePredicate(plan, o)
+        case p => throw new IllegalStateException(
+            s"Only ExistsIRExpression (potentially nested in Not/Ors) allowed here. Got: $p"
+          )
       }
       SelectionCandidate(plan, Set(pattern))
     }

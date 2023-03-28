@@ -177,7 +177,10 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
       .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
       .updated(expr2, ExpressionTypeInfo(TypeSpec.exact(CTInteger)))
 
-    val AsPropertySeekable(seekable) = in(prop("a", "id"), listOf(expr1, expr2))
+    val seekable = in(prop("a", "id"), listOf(expr1, expr2)) match {
+      case AsPropertySeekable(seekable) => seekable
+      case _                            => null
+    }
 
     seekable.propertyValueType(SemanticTable(types)) should be(CTNumber)
   }
@@ -188,7 +191,10 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
       .updated(expr1, ExpressionTypeInfo(TypeSpec.exact(CTFloat)))
 
-    val AsPropertySeekable(seekable) = equals(prop("a", "id"), expr1)
+    val seekable = equals(prop("a", "id"), expr1) match {
+      case AsPropertySeekable(seekable) => seekable
+      case _                            => null
+    }
 
     seekable.propertyValueType(SemanticTable(types)) should be(CTFloat)
   }
@@ -198,7 +204,10 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val types = ASTAnnotationMap.empty[Expression, ExpressionTypeInfo]
       .updated(rightExpr, ExpressionTypeInfo(TypeSpec.exact(CTList(CTString))))
 
-    val AsPropertySeekable(seekable) = in(prop("a", "id"), rightExpr)
+    val seekable = in(prop("a", "id"), rightExpr) match {
+      case AsPropertySeekable(seekable) => seekable
+      case _                            => null
+    }
 
     seekable.propertyValueType(SemanticTable(types)) should be(CTString)
   }
@@ -210,11 +219,14 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val table = SemanticTable()
       .addTypeInfo(min, CTInteger.invariant)
       .addTypeInfo(max, CTFloat.invariant)
-    val AsValueRangeSeekable(seekable) = AndedPropertyInequalities(
+    val seekable = AndedPropertyInequalities(
       nodeA,
       leftExpr,
       NonEmptyList(greaterThan(leftExpr, min), lessThanOrEqual(leftExpr, max))
-    )
+    ) match {
+      case AsValueRangeSeekable(seekable) => seekable
+      case _                              => null
+    }
 
     seekable.propertyValueType(table) should be(CTNumber)
   }
@@ -224,11 +236,14 @@ class SargableTest extends CypherFunSuite with AstConstructionTestSupport {
     val min = literalInt(10)
     val max = literalFloat(20.5)
     val table = SemanticTable()
-    val AsValueRangeSeekable(seekable) = AndedPropertyInequalities(
+    val seekable = AndedPropertyInequalities(
       nodeA,
       leftExpr,
       NonEmptyList(greaterThan(leftExpr, min), lessThanOrEqual(leftExpr, max))
-    )
+    ) match {
+      case AsValueRangeSeekable(seekable) => seekable
+      case _                              => null
+    }
 
     seekable.propertyValueType(table) should be(CTAny)
   }

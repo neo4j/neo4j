@@ -37,7 +37,6 @@ import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
@@ -45,7 +44,7 @@ import org.neo4j.cypher.internal.util.topDown
 import scala.collection.mutable
 
 /**
- * Removes [[Distinct]] and [[Aggregation]] plans that are no longer necessary after rewriting [[VarExpand]] into [[BFSPruningVarExpand]].
+ * Removes [[Distinct]] and [[Aggregation]] plans that are no longer necessary after rewriting [[org.neo4j.cypher.internal.logical.plans.VarExpand]] into [[BFSPruningVarExpand]].
  */
 case object bfsAggregationRemover extends Rewriter {
 

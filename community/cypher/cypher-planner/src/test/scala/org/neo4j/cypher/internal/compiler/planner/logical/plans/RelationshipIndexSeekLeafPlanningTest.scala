@@ -52,6 +52,8 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 
+import scala.language.reflectiveCalls
+
 class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     with LogicalPlanningTestSupport2
     with AstConstructionTestSupport {
@@ -432,7 +434,6 @@ class RelationshipIndexSeekLeafPlanningTest extends CypherFunSuite
     val rPropStartsWith = startsWith(rProp, literalFoo)
     val rPropEndsWith = endsWith(rProp, literalFoo)
     val rPropContains = contains(rProp, literalFoo)
-    val point = function("point", mapOfInt("x" -> 1, "y" -> 2))
     new given {
       addTypeToSemanticTable(rProp, CTInteger.invariant)
       addTypeToSemanticTable(lit42, CTInteger.invariant)

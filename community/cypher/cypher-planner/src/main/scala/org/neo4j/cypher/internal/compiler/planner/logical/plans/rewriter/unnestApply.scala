@@ -149,6 +149,7 @@ case class unnestApply(
         cardinalities.set(res.id, cardinalities(p.id) * cardinalities(bottom.id))
         providedOrders.copy(bottom.id, res.id)
         res
+      case p => throw new IllegalArgumentException(s"top must either be Argument or LogicalUnaryPlan. Got: $p")
     }
   }
 

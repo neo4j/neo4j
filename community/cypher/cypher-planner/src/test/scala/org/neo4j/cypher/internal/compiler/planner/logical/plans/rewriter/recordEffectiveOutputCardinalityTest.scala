@@ -34,7 +34,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport
     with AstConstructionTestSupport {
-  private val precision = 0.00001
   private val leafCardinality = 10
 
   test("Should update effective cardinality through cartesian product") {

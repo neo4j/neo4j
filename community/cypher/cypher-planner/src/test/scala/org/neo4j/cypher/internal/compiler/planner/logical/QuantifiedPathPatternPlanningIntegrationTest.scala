@@ -46,7 +46,7 @@ import scala.collection.immutable.ListSet
 class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
     with AstConstructionTestSupport {
 
-  private def disjoint(lhs: String, rhs: String, unnamedOffset: Int = 0): String =
+  private def disjoint(lhs: String, rhs: String, unnamedOffset: Int): String =
     s"NONE(anon_$unnamedOffset IN $lhs WHERE anon_$unnamedOffset IN $rhs)"
 
   private val planner = plannerBuilder()

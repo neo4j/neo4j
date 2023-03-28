@@ -44,7 +44,6 @@ import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.InputPosition
@@ -204,7 +203,7 @@ object SubqueryExpressionSolver {
   )
 
   /**
-   * Solve a ListIRExpression by planning it recursively and attach it to the given plan with [[RollUpApply]]
+   * Solve a ListIRExpression by planning it recursively and attach it to the given plan with [[org.neo4j.cypher.internal.logical.plans.RollUpApply]]
    *
    * @param source   the current plan
    * @param expr     the ListIRExpression with the subquery
@@ -325,7 +324,7 @@ object SubqueryExpressionSolver {
 
   /**
    * Rewrite any [[IRExpression]] inside `expression`. If RollupApply/Apply/LetSemiApply/... is not possible,
-   * it will use the [[irExpressionRewriter]] to generate [[NestedPlanExpression]]s.
+   * it will use the [[irExpressionRewriter]] to generate [[org.neo4j.cypher.internal.logical.plans.NestedPlanExpression]]s.
    * 
    * @param plan the current plan
    * @param expression the expression to rewrite

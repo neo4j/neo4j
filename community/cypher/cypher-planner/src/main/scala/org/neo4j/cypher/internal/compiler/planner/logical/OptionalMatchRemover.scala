@@ -411,7 +411,9 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
   private def findPathBetween(qg: QueryGraph, startFromL: String, startFromR: String): Set[String] = {
     var l = Seq(PathSoFar(startFromL, Set.empty))
     var r = Seq(PathSoFar(startFromR, Set.empty))
-    (0 to qg.patternRelationships.size) foreach { i =>
+
+    var i = 0
+    while (i <= qg.patternRelationships.size) {
       if (i % 2 == 0) {
         l = expand(qg, l)
         val matches = hasExpandedInto(l, r)
@@ -423,6 +425,7 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
         if (matches.nonEmpty)
           return matches.minBy(_.size)
       }
+      i += 1
     }
 
     // Did not find any path. Let's do the safe thing and return everything

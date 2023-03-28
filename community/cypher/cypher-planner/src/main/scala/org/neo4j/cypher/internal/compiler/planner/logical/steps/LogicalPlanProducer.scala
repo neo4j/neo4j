@@ -2249,7 +2249,10 @@ case class LogicalPlanProducer(
     )
   }
 
-  @deprecated("Uses the old shortest path implementation. Available for feature toggle. use planShortestPath instead.")
+  @deprecated(
+    "Uses the old shortest path implementation. Available for feature toggle. use planShortestPath instead.",
+    since = "5.3.0"
+  )
   def planLegacyShortestPath(
     inner: LogicalPlan,
     shortestPaths: ShortestPathPattern,
@@ -2442,6 +2445,7 @@ case class LogicalPlanProducer(
           val newHints = lhs.allHints ++ rhs.allHints
           that.withQueryGraph(solvedQueryGraph.withHints(newHints))
         }
+      case q => throw new IllegalStateException(s"Expected orPlan to solve a UnionQuery, got: $q")
     }
     val cardinality = cardinalityModel(
       solved,

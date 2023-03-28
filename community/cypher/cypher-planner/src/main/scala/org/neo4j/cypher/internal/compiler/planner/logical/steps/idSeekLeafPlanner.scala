@@ -66,7 +66,8 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
       }
 
       idSeekPredicates flatMap {
-        case (predicate, variable @ Variable(id), idValues, idType) if !queryGraph.argumentIds.contains(id) =>
+        case (predicate, variable, idValues, idType) =>
+          val id = variable.name
           if (skipIDs.contains(id)) {
             None
           } else {
@@ -77,7 +78,7 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
                   relationship,
                   context,
                   planRelationshipByIdSeek(
-                    variable,
+                    variable.asInstanceOf[Variable],
                     _,
                     _,
                     _,
@@ -95,7 +96,13 @@ case class idSeekLeafPlanner(skipIDs: Set[String]) extends LeafPlanner {
                   case IdType.ElementId => context.staticComponents.logicalPlanProducer.planNodeByElementIdSeek _
                 }
 
-                Some(producePlan(variable, idValues, Seq(predicate), queryGraph.argumentIds, context))
+                Some(producePlan(
+                  variable.asInstanceOf[Variable],
+                  idValues,
+                  Seq(predicate),
+                  queryGraph.argumentIds,
+                  context
+                ))
             }
           }
       }

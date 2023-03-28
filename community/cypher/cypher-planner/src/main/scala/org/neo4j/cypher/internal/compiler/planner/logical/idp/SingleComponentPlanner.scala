@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.leafPlanOptions
 import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
-import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.exceptions.InternalException
 import org.neo4j.time.Stopwatch

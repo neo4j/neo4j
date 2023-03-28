@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.Selection
-import org.neo4j.cypher.internal.util.PredicateOrdering
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
@@ -41,7 +40,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     with LogicalPlanningIntegrationTestSupport with Inside {
 
   /**
-   * The assumptions on the ordering for these selectivities is based on that [[PredicateOrdering]] is used.
+   * The assumptions on the ordering for these selectivities is based on that [[org.neo4j.cypher.internal.util.PredicateOrdering]] is used.
    */
   test("Should order predicates in selection first by cost then by selectivity") {
     val label = hasLabels("n", "Label")

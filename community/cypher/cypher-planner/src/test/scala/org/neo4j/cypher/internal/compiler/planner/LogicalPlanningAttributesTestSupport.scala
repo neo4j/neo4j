@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.attribution.Attribute
-import org.neo4j.cypher.internal.util.attribution.Default
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
@@ -153,7 +152,7 @@ trait LogicalPlanningAttributesTestSupport {
 /** Strategy used to compare attributes, such as cardinalities or provided orders, between two plans.
  *
  *  When comparing attributes between two plans:
- *  - [[AttributeComparisonStrategy.ComparingAllAttributes]] will compare every attribute that is either explicitly defined or with a default value (provided by [[Default]]).
+ *  - [[AttributeComparisonStrategy.ComparingAllAttributes]] will compare every attribute that is either explicitly defined or with a default value (provided by [[org.neo4j.cypher.internal.util.attribution.Default]]).
  *  - [[AttributeComparisonStrategy.ComparingProvidedAttributesOnly]] will only compare explicitly provided attributes, ignoring default values.
  */
 sealed trait AttributeComparisonStrategy

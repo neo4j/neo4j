@@ -797,7 +797,7 @@ class OptionalMatchRemoverTest extends CypherFunSuite with PlannerQueryRewriterT
     val result = smallestGraphIncluding(qg, Set(n, m))
     result should contain(n)
     result should contain(m)
-    result should contain oneOf (r1, r2)
+    result should contain.oneOf(r1, r2)
   }
 
   test("finds shortest path starting from two nodes with an intermediate relationship in the QG") {

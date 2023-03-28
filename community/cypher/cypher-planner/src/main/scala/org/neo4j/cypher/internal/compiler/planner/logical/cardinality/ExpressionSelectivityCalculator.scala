@@ -395,16 +395,18 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     val labels = labelInfo.getOrElse(variable, Set.empty)
     val relTypes = relTypeInfo.get(variable)
 
-    val entityTypeAndPropertyIds: Seq[(NameId, PropertyKeyId)] = (labels ++ relTypes).toIndexedSeq.flatMap {
-      case labelName: LabelName => for {
+    val entityTypeAndPropertyIds: Seq[(NameId, PropertyKeyId)] = {
+      labels.toIndexedSeq.flatMap { labelName: LabelName =>
+        for {
           labelId <- semanticTable.id(labelName)
           propId <- semanticTable.id(propertyKey)
         } yield (labelId, propId)
-
-      case relTypeName: RelTypeName => for {
+      } ++ relTypes.toIndexedSeq.flatMap { relTypeName: RelTypeName =>
+        for {
           relTypeId <- semanticTable.id(relTypeName)
           propId <- semanticTable.id(propertyKey)
         } yield (relTypeId, propId)
+      }
     }
 
     entityTypeAndPropertyIds.flatMap { case (entityTypeId, propertyKeyId) =>
@@ -498,27 +500,26 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     val labels = labelInfo.getOrElse(seekable.ident.name, Set.empty)
     val relTypes = relTypeInfo.get(seekable.ident.name)
-    val indexRangeSelectivities: Seq[Selectivity] = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
-      val ids = name match {
-        case labelName: LabelName => (semanticTable.id(labelName), semanticTable.id(seekable.expr.property.propertyKey))
-        case relTypeName: RelTypeName =>
-          (semanticTable.id(relTypeName), semanticTable.id(seekable.expr.property.propertyKey))
-      }
 
-      ids match {
-        case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
-          val selectivities = for {
-            descriptor <- indexTypesToConsider.map(IndexDescriptor.forNameId(_, labelOrRelTypeId, Seq(propertyKeyId)))
-            propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
-            propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
-          } yield {
-            val pRangeBounded: Selectivity = getPropertyPredicateRangeSelectivity(seekable, propEqValueSelectivity)
-            pRangeBounded * propertyExistsSelectivity
-          }
-          selectivities.headOption
+    val idTuples = labels.toIndexedSeq.map { name =>
+      (semanticTable.id(name), semanticTable.id(seekable.expr.property.propertyKey))
+    } ++ relTypes.toIndexedSeq.map { name =>
+      (semanticTable.id(name), semanticTable.id(seekable.expr.property.propertyKey))
+    }
 
-        case _ => Some(Selectivity.ZERO)
-      }
+    val indexRangeSelectivities: Seq[Selectivity] = idTuples.flatMap {
+      case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
+        val selectivities = for {
+          descriptor <- indexTypesToConsider.map(IndexDescriptor.forNameId(_, labelOrRelTypeId, Seq(propertyKeyId)))
+          propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
+          propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
+        } yield {
+          val pRangeBounded: Selectivity = getPropertyPredicateRangeSelectivity(seekable, propEqValueSelectivity)
+          pRangeBounded * propertyExistsSelectivity
+        }
+        selectivities.headOption
+
+      case _ => Some(Selectivity.ZERO)
     }
 
     combiner.orTogetherSelectivities(indexRangeSelectivities).getOrElse(default)
@@ -566,31 +567,30 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     val labels = labelInfo.getOrElse(seekable.ident.name, Set.empty)
     val relTypes = relTypeInfo.get(seekable.ident.name)
-    val indexRangeSelectivities: Seq[Selectivity] = (labels ++ relTypes).toIndexedSeq.flatMap { name =>
-      val ids = name match {
-        case labelName: LabelName => (semanticTable.id(labelName), semanticTable.id(seekable.property.propertyKey))
-        case relTypeName: RelTypeName =>
-          (semanticTable.id(relTypeName), semanticTable.id(seekable.property.propertyKey))
-      }
 
-      ids match {
-        case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
-          val selectivitiesInIndexPriorityOrder = for {
-            descriptor <- indexTypesPriorityForPointPredicates.map(IndexDescriptor.forNameId(
-              _,
-              labelOrRelTypeId,
-              Seq(propertyKeyId)
-            ))
-            propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
-            propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
-          } yield {
-            val pRangeBounded: Selectivity = getPropertyPredicateRangeSelectivity(propEqValueSelectivity)
-            pRangeBounded * propertyExistsSelectivity
-          }
-          selectivitiesInIndexPriorityOrder.headOption
+    val idTuples = labels.toIndexedSeq.map { name =>
+      (semanticTable.id(name), semanticTable.id(seekable.property.propertyKey))
+    } ++ relTypes.toIndexedSeq.map { name =>
+      (semanticTable.id(name), semanticTable.id(seekable.property.propertyKey))
+    }
 
-        case _ => Some(Selectivity.ZERO)
-      }
+    val indexRangeSelectivities: Seq[Selectivity] = idTuples.flatMap {
+      case (Some(labelOrRelTypeId), Some(propertyKeyId)) =>
+        val selectivitiesInIndexPriorityOrder = for {
+          descriptor <- indexTypesPriorityForPointPredicates.map(IndexDescriptor.forNameId(
+            _,
+            labelOrRelTypeId,
+            Seq(propertyKeyId)
+          ))
+          propertyExistsSelectivity <- stats.indexPropertyIsNotNullSelectivity(descriptor)
+          propEqValueSelectivity <- stats.uniqueValueSelectivity(descriptor)
+        } yield {
+          val pRangeBounded: Selectivity = getPropertyPredicateRangeSelectivity(propEqValueSelectivity)
+          pRangeBounded * propertyExistsSelectivity
+        }
+        selectivitiesInIndexPriorityOrder.headOption
+
+      case _ => Some(Selectivity.ZERO)
     }
     combiner.orTogetherSelectivities(indexRangeSelectivities).getOrElse(default)
   }

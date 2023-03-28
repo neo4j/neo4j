@@ -31,7 +31,6 @@ import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 
 object nodeIndexScanPlanProvider extends NodeIndexPlanProvider {
 

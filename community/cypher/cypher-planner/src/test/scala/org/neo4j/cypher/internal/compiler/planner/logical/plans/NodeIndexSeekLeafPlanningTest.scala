@@ -69,6 +69,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.Extractors.SetExtractor
 import org.neo4j.graphdb.schema.IndexType
 
+import scala.language.reflectiveCalls
+
 class NodeIndexSeekLeafPlanningTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   private val idName = "n"

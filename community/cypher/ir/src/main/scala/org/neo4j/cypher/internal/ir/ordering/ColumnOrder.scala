@@ -65,7 +65,7 @@ sealed trait ColumnOrder {
 
 object ColumnOrder {
 
-  def unapply(arg: ColumnOrder): Option[Expression] = {
+  def unapply(arg: ColumnOrder): Some[Expression] = {
     Some(arg.expression)
   }
 

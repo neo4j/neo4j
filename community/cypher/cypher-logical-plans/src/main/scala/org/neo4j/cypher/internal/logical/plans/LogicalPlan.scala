@@ -1686,7 +1686,7 @@ case class PathPropagatingBFS(
   length: VarPatternLength,
   nodePredicates: Seq[VariablePredicate] = Seq.empty,
   relationshipPredicates: Seq[VariablePredicate] = Seq.empty
-)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) {
+)(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
 

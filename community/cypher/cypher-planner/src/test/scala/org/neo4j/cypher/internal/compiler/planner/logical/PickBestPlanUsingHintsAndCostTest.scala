@@ -144,6 +144,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       case `b` => 4
       case `c` => 1
       case `d` => 2
+      case _   => 0
     }
 
     assertTopPlan(winner = b, newStubbedPlanningAttributes, Seq(a, b, c, d), preferPlanB)(GIVEN_FIXED_COST)
@@ -166,6 +167,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       case `b` => 4
       case `c` => 1
       case `d` => 2
+      case _   => 0
     }
 
     assertTopPlan(winner = a, newStubbedPlanningAttributes.copy(solveds = solveds), Seq(a, b, c, d), preferPlanB)(
@@ -184,6 +186,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
       case `b` => 4
       case `c` => 1
       case `d` => 2
+      case _   => 0
     }
 
     assertTopPlan(winner = d, newStubbedPlanningAttributes, Seq(a, b, c, d), preferPlanB)(new given {

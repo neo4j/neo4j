@@ -20,21 +20,16 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.assertIsNode
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.getDegree
-import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.greaterThan
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.relTypeName
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
-import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
-import org.neo4j.cypher.internal.util.DummyPosition
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 

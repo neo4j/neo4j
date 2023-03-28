@@ -21,12 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelTypeName
-import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.Predicate
@@ -60,13 +55,6 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   private val relName2 = "  UNNAMED3"
   private val patternRel2 = PatternRelationship(relName2, (argName, nodeName2), dir, types, SimplePatternLength)
 
-  // MATCH (a) WHERE (a)-->()
-  private val relChain = RelationshipChain(
-    NodePattern(Some(varFor(argName)), None, None, None) _,
-    RelationshipPattern(Some(varFor(relName)), None, None, None, None, dir) _,
-    NodePattern(Some(varFor(nodeName)), None, None, None) _
-  ) _
-
   private val subqueryExp = ExistsIRExpression(
     RegularSinglePlannerQuery(
       QueryGraph(
@@ -92,8 +80,6 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     "",
     s"exists((a)-[`$relName2`]->(`$nodeName2`))"
   )(pos, Some(Set(varFor(relName2), varFor(nodeName2))), Some(Set(varFor(argName))))
-
-  private val pattern: Pattern = Pattern(Seq(PatternPart(relChain))) _
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given

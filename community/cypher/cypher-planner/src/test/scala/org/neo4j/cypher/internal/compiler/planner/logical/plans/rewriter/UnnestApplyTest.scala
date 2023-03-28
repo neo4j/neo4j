@@ -37,14 +37,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.schema.IndexType
 import org.scalatest.Assertion
 
-import scala.language.postfixOps
-
 class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport
     with LogicalPlanConstructionTestSupport with AstConstructionTestSupport {
 
   private val po_n: ProvidedOrder = ProvidedOrder.asc(varFor("n"))
-  private val po_n_m: ProvidedOrder = ProvidedOrder.asc(varFor("n")).asc(varFor("m"))
-  private val po_m_n: ProvidedOrder = ProvidedOrder.asc(varFor("m")).asc(varFor("n"))
 
   test("should unnest apply with a single Argument on the lhs") {
     // If we tracked distinctness, we would get input plans where the RHS provided order

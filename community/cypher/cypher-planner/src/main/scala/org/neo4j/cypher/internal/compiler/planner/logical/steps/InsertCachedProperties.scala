@@ -212,7 +212,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
       }
 
       def originalProperty(prop: Property): Property = {
-        val Property(v: Variable, _) = prop
+        val v = prop.map.asInstanceOf[Variable]
         prop.copy(variableWithOriginalName(v))(prop.position)
       }
 

@@ -32,12 +32,15 @@ object Chainer {
    */
   def chainTransformers(transformers: Seq[Transformer[_ <: BaseContext, _, _]]): Transformer[_ <: BaseContext, _, _] = {
     transformers.reduceLeft[Transformer[_ <: BaseContext, _, _]] {
-      case (t1: Transformer[BaseContext, BaseState, BaseState], t2: Transformer[BaseContext, BaseState, BaseState]) =>
-        t1 andThen t2
-      case (
-          t1: Transformer[BaseContext, BaseState, LogicalPlanState],
-          t2: Transformer[BaseContext, LogicalPlanState, LogicalPlanState]
-        ) => t1 andThen t2
+      case (t1: Transformer[_, _, _], t2: Transformer[_, _, _]) =>
+        // We need these asInstanceOf to make the compiler happy.
+        // Because of type erasure, they won't actually do anything.
+        // This will even work for Transformers from/to LogicalPlanState.
+        t1.asInstanceOf[Transformer[BaseContext, BaseState, BaseState]] andThen t2.asInstanceOf[Transformer[
+          BaseContext,
+          BaseState,
+          BaseState
+        ]]
     }
   }
 }

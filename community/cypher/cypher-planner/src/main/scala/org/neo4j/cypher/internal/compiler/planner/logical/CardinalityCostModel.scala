@@ -81,6 +81,7 @@ import org.neo4j.cypher.internal.logical.plans.LimitingLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.NodeByIdSeek
@@ -97,7 +98,6 @@ import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
-import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
@@ -710,6 +710,9 @@ object CardinalityCostModel {
         s"childrenWorkReduction: No case for ${lp.getClass.getSimpleName} added."
       )
       (parentWorkReduction, WorkReduction.NoReduction)
+
+    case p: LogicalPlanExtension =>
+      throw new IllegalArgumentException(s"Did not expect this plan here: $p")
   }
 
   /**

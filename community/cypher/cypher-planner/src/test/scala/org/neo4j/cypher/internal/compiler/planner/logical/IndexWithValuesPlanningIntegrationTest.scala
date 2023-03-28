@@ -163,7 +163,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       } getLogicalPlanFor "MATCH (n:Awesome:Awesome2) WHERE n.prop1 = 42 OR n.prop2 = 3 RETURN n.prop1, n.prop2"
 
     // We don't want to assert on the produce results or the projection in this test
-    val Projection(unionPlan, _, _) = plan._1
+    val Projection(unionPlan, _, _) = plan._1.asInstanceOf[Projection]
 
     val hasLabel1 = hasLabels("n", "Awesome")
     val hasLabel2 = hasLabels("n", "Awesome2")

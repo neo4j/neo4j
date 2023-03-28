@@ -43,8 +43,6 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
-import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.collection.immutable.ListSet
@@ -193,7 +191,7 @@ object expandSolverStep {
   }
 
   /**
-   * Update a [[QuantifiedPathPattern]] so that it can be used to plan a [[Trail]] operator.
+   * Update a [[QuantifiedPathPattern]] so that it can be used to plan a [[org.neo4j.cypher.internal.logical.plans.Trail]] operator.
    */
   private def updateQpp(
     qpp: QuantifiedPathPattern,
@@ -213,7 +211,7 @@ object expandSolverStep {
   }
 
   /**
-   * Plan [[ProjectEndpoints]] on top of the given plan for the given [[PatternRelationship]].
+   * Plan [[org.neo4j.cypher.internal.logical.plans.ProjectEndpoints]] on top of the given plan for the given [[PatternRelationship]].
    */
   def planSingleProjectEndpoints(
     patternRel: PatternRelationship,

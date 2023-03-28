@@ -1273,7 +1273,6 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   test("equality with one label, explicit parameter of size 42") {
     val bucketSize = SizeBucket.computeBucket(42)
     val sizeHint = bucketSize.toOption.get
-    val literalWriters = (1 to sizeHint).map(literalInt(_))
     val param =
       ExplicitParameter("PARAM", CTList(CTAny), bucketSize)(pos)
     val equals = nPredicate(in(nProp, param))

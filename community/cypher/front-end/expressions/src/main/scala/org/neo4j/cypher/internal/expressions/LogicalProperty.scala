@@ -24,5 +24,5 @@ abstract class LogicalProperty extends Expression {
 }
 
 object LogicalProperty {
-  def unapply(p: LogicalProperty): Option[(Expression, PropertyKeyName)] = Some((p.map, p.propertyKey))
+  def unapply(p: LogicalProperty): Some[(Expression, PropertyKeyName)] = Some((p.map, p.propertyKey))
 }
