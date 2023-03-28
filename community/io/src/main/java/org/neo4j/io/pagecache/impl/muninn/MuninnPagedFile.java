@@ -1035,7 +1035,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable {
 
     @Override
     public synchronized void preAllocate(long newFileSizeInPages) throws IOException {
-        if (getLastPageId() >= newFileSizeInPages) {
+        if (getLastPageId() >= newFileSizeInPages || !preAllocateSupported()) {
             return;
         }
 
