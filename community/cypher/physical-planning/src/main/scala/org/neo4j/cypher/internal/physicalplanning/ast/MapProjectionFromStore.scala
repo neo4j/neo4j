@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.physicalplanning.ast
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.physicalplanning.ast.IsNodeProjectionFromStore.equalOffset
 import org.neo4j.cypher.internal.util.InputPosition
 
@@ -44,6 +46,14 @@ case class RelationshipProjectionFromStore(entityOffset: Int, entries: Seq[Prope
   val position: InputPosition
 ) extends MapProjectionFromStore
 
+/**
+ * Map projection of the form map{.foo, .bar, baz} where we don't know at compile
+ * time if properties are projected from store or from some other map-like structure.
+ */
+case class PropertyProjection(map: Expression, entries: Seq[PropertyProjectionEntry])(
+  val position: InputPosition
+) extends MapProjectionFromStore {}
+
 object MapProjectionFromStore {
 
   def unapply(projection: DesugaredMapProjection): Option[MapProjectionFromStore] = projection match {
@@ -52,6 +62,10 @@ object MapProjectionFromStore {
       Some(NodeProjectionFromStore(offset, properties)(m.position))
     case m @ DesugaredMapProjection(_, IsRelationshipProjectionFromStore(offset, properties), false) =>
       Some(RelationshipProjectionFromStore(offset, properties)(m.position))
+
+    case m @ DesugaredMapProjection(map: Expression, IsPropertyProjection(innerMap, propertyProjection), false)
+      if map == innerMap =>
+      Some(PropertyProjection(map, propertyProjection)(m.position))
     case _ => None
   }
 }
@@ -84,3 +98,26 @@ object IsRelationshipProjectionFromStore {
     equalOffset(items, entries)
   }
 }
+
+object IsPropertyProjection {
+
+  def unapply(items: Seq[LiteralEntry]): Option[(Expression, Seq[PropertyProjectionEntry])] = {
+    val propertiesLookup = items.collect { case LiteralEntry(key, p: LogicalProperty) => key.name -> p }
+
+    if (propertiesLookup.size == items.size) {
+      propertiesLookup.headOption.collect {
+        case (_, head) if propertiesLookup.map(_._2).forall(_.map == head.map) =>
+          (
+            head.map,
+            propertiesLookup.map {
+              case (n, p) => PropertyProjectionEntry(n, p.propertyKey)
+            }
+          )
+      }
+    } else {
+      None
+    }
+  }
+}
+
+case class PropertyProjectionEntry(key: String, propertyKeyName: PropertyKeyName)

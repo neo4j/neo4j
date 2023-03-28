@@ -284,6 +284,8 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan, maybeOwningPi
         Some(slotted.expressions.NodeProjectionFromStore(offset, properties))
       case physicalplanning.ast.RelationshipProjectionFromStore(offset, properties) =>
         Some(slotted.expressions.RelationshipProjectionFromStore(offset, properties))
+      case physicalplanning.ast.PropertyProjection(map, properties) =>
+        Some(slotted.expressions.PropertyProjection(self.toCommandExpression(id, map), properties))
       case physicalplanning.ast.PrimitiveEquals(a, b) =>
         val lhs = self.toCommandExpression(id, a)
         val rhs = self.toCommandExpression(id, b)

@@ -20,18 +20,21 @@
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.physicalplanning.ast.PropertyMapEntry
+import org.neo4j.cypher.internal.physicalplanning.ast.PropertyProjectionEntry
 import org.neo4j.cypher.internal.runtime.PropertyTokensResolver
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CursorUtils.entityGetProperties
+import org.neo4j.cypher.operations.CypherFunctions.propertiesGet
 import org.neo4j.internal.kernel.api.EntityCursor
 import org.neo4j.internal.kernel.api.TokenRead
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValueBuilder
+import org.neo4j.values.virtual.VirtualValues
 
 abstract class MapProjectionFromStore extends Expression with SlottedExpression {
 
@@ -87,4 +90,32 @@ case class RelationshipProjectionFromStore(entityOffset: Int, entries: Seq[Prope
     state.query.singleRelationship(id, cursor)
     cursor
   }
+}
+
+case class PropertyProjection(mapExpression: Expression, entries: Seq[PropertyProjectionEntry])
+    extends Expression with SlottedExpression {
+  private val outerKeys = entries.map(_.key).toArray
+  private val innerKeys = entries.map(_.propertyKeyName.name).toArray
+
+  override def apply(row: ReadableRow, state: QueryState): AnyValue = {
+    val map = mapExpression(row, state)
+    if (map eq Values.NO_VALUE) {
+      Values.NO_VALUE
+    } else {
+      val cursors = state.cursors
+      VirtualValues.map(
+        outerKeys,
+        propertiesGet(
+          innerKeys,
+          map,
+          state.query,
+          cursors.nodeCursor,
+          cursors.relationshipScanCursor,
+          cursors.propertyCursor
+        )
+      )
+    }
+  }
+
+  override def children: collection.Seq[AstNode[_]] = Seq.empty
 }
