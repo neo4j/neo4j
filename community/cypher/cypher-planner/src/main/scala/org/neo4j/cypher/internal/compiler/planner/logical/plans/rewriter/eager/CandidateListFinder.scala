@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
+import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.SingleFromRightLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -163,6 +164,15 @@ object CandidateListFinder {
         emptyCandidateListsForRHSvsTopConflicts: Boolean
       )
 
+      def assertNoLhsVsRHSConflicts: Boolean = {
+        if (solvedConflicts.nonEmpty) {
+          throw new IllegalStateException(
+            s"We do not expect conflicts between the two branches of a ${plan.getClass.getSimpleName} yet. "
+          )
+        }
+        false
+      }
+
       val eagerizationStrategy = plan match {
         case _: EagerLogicalPlan => BinaryPlanEagerizationStrategy(
             eagerizeLHSvsRHSConflicts = false,
@@ -172,37 +182,28 @@ object CandidateListFinder {
             eagerizeLHSvsRHSConflicts = false,
             emptyCandidateListsForRHSvsTopConflicts = false
           )
-        case _: OrderedUnion if solvedConflicts.nonEmpty =>
-          // do not expect conflicts between lhs and rhs
-          throw new IllegalStateException(
-            "We do not expect conflicts between the two branches of an OrderedUnion yet."
-          )
         case _: OrderedUnion => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = false,
+            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts,
             emptyCandidateListsForRHSvsTopConflicts = false
           )
-        case _: AssertSameNode if solvedConflicts.nonEmpty =>
-          // do not expect conflicts between lhs and rhs
-          throw new IllegalStateException(
-            "We do not expect conflicts between the two branches of an AssertSameNode yet."
-          )
         case _: AssertSameNode => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = false,
+            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts,
             emptyCandidateListsForRHSvsTopConflicts = true
           )
-        case _: AssertSameRelationship if solvedConflicts.nonEmpty =>
-          // do not expect conflicts between lhs and rhs
-          throw new IllegalStateException(
-            "We do not expect conflicts between the two branches of an AssertSameRelationship yet."
-          )
         case _: AssertSameRelationship => BinaryPlanEagerizationStrategy(
-            eagerizeLHSvsRHSConflicts = false,
+            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts,
             emptyCandidateListsForRHSvsTopConflicts = true
           )
         case _: CartesianProduct => BinaryPlanEagerizationStrategy(
             eagerizeLHSvsRHSConflicts = true,
             emptyCandidateListsForRHSvsTopConflicts = true
           )
+        case _: RepeatOptions => BinaryPlanEagerizationStrategy(
+            eagerizeLHSvsRHSConflicts = assertNoLhsVsRHSConflicts,
+            emptyCandidateListsForRHSvsTopConflicts = true
+          )
+        case p: ApplyPlan =>
+          throw new IllegalStateException(s"combineWithRhs is not supposed to be called with ApplyPlans. Got: $p")
       }
 
       // Compute new open sequences

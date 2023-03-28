@@ -61,7 +61,9 @@ import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetProperties
 import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
@@ -197,116 +199,143 @@ object WriteFinder {
    * Collects the writes of a single plan, not traversing into child plans.
    */
   private[eager] def collectWrites(plan: LogicalPlan): PlanWrites = plan match {
-    case SetNodeProperty(_, _, propertyName, _) =>
-      PlanWrites(sets = PlanSets(writtenNodeProperties = Seq(propertyName)))
+    case up: UpdatingPlan => up match {
+        case SetNodeProperty(_, _, propertyName, _) =>
+          PlanWrites(sets = PlanSets(writtenNodeProperties = Seq(propertyName)))
 
-    case SetRelationshipProperty(_, _, propertyName, _) =>
-      PlanWrites(sets = PlanSets(writtenRelProperties = Seq(propertyName)))
+        case SetRelationshipProperty(_, _, propertyName, _) =>
+          PlanWrites(sets = PlanSets(writtenRelProperties = Seq(propertyName)))
 
-    case SetNodeProperties(_, _, assignments) =>
-      PlanWrites(sets = PlanSets(writtenNodeProperties = assignments.map(_._1)))
+        case SetNodeProperties(_, _, assignments) =>
+          PlanWrites(sets = PlanSets(writtenNodeProperties = assignments.map(_._1)))
 
-    case SetRelationshipProperties(_, _, assignments) =>
-      PlanWrites(sets = PlanSets(writtenRelProperties = assignments.map(_._1)))
+        case SetRelationshipProperties(_, _, assignments) =>
+          PlanWrites(sets = PlanSets(writtenRelProperties = assignments.map(_._1)))
 
-    case _: SetPropertiesFromMap =>
-      PlanWrites(sets = PlanSets(writesUnknownNodeProperties = true, writesUnknownRelProperties = true))
+        // Set concrete properties, do not delete any other properties
+        case SetPropertiesFromMap(_, _, properties: MapExpression, false) =>
+          PlanWrites(sets =
+            PlanSets(
+              writtenNodeProperties = properties.items.map(_._1),
+              writtenRelProperties = properties.items.map(_._1)
+            )
+          )
 
-    // Set concrete relationship properties, do not delete any other properties
-    case SetRelationshipPropertiesFromMap(_, _, properties: MapExpression, false) =>
-      PlanWrites(sets = PlanSets(writtenRelProperties = properties.items.map(_._1)))
+        case _: SetPropertiesFromMap =>
+          PlanWrites(sets = PlanSets(writesUnknownNodeProperties = true, writesUnknownRelProperties = true))
 
-    case _: SetRelationshipPropertiesFromMap =>
-      PlanWrites(sets = PlanSets(writesUnknownRelProperties = true))
+        case SetProperty(_, _, propertyName, _) =>
+          PlanWrites(sets =
+            PlanSets(
+              writtenNodeProperties = Seq(propertyName),
+              writtenRelProperties = Seq(propertyName)
+            )
+          )
 
-    // Set concrete node properties, do not delete any other properties
-    case SetNodePropertiesFromMap(_, _, properties: MapExpression, false) =>
-      PlanWrites(sets = PlanSets(writtenNodeProperties = properties.items.map(_._1)))
+        case SetProperties(_, _, assignments) =>
+          PlanWrites(sets =
+            PlanSets(
+              writtenNodeProperties = assignments.map(_._1),
+              writtenRelProperties = assignments.map(_._1)
+            )
+          )
 
-    // Set unknown properties (i.e. not a MapExpression) or delete any other properties
-    case _: SetNodePropertiesFromMap =>
-      PlanWrites(sets = PlanSets(writesUnknownNodeProperties = true))
+        // Set concrete relationship properties, do not delete any other properties
+        case SetRelationshipPropertiesFromMap(_, _, properties: MapExpression, false) =>
+          PlanWrites(sets = PlanSets(writtenRelProperties = properties.items.map(_._1)))
 
-    case SetLabels(_, _, labelNames) =>
-      PlanWrites(sets = PlanSets(writtenLabels = labelNames))
+        case _: SetRelationshipPropertiesFromMap =>
+          PlanWrites(sets = PlanSets(writesUnknownRelProperties = true))
 
-    case RemoveLabels(_, _, labelNames) =>
-      PlanWrites(sets = PlanSets(writtenLabels = labelNames))
+        // Set concrete node properties, do not delete any other properties
+        case SetNodePropertiesFromMap(_, _, properties: MapExpression, false) =>
+          PlanWrites(sets = PlanSets(writtenNodeProperties = properties.items.map(_._1)))
 
-    case Create(_, nodes, relationships) =>
-      val nodeCreates = processCreateNodes(PlanCreates(), nodes)
-      val creates = processCreateRelationships(nodeCreates, relationships)
-      PlanWrites(creates = creates)
+        // Set unknown properties (i.e. not a MapExpression) or delete any other properties
+        case _: SetNodePropertiesFromMap =>
+          PlanWrites(sets = PlanSets(writesUnknownNodeProperties = true))
 
-    case Merge(_, nodes, relationships, onMatch, onCreate, _) =>
-      val setPart = Function.chain[PlanSets](Seq(
-        processSetMutatingPatterns(_, onMatch),
-        processSetMutatingPatterns(_, onCreate)
-      ))(PlanSets())
+        case SetLabels(_, _, labelNames) =>
+          PlanWrites(sets = PlanSets(writtenLabels = labelNames))
 
-      val nodeCreatePart = processCreateNodes(PlanCreates(), nodes)
-      val createPart = processCreateRelationships(nodeCreatePart, relationships)
+        case RemoveLabels(_, _, labelNames) =>
+          PlanWrites(sets = PlanSets(writtenLabels = labelNames))
 
-      PlanWrites(setPart, createPart)
+        case Create(_, nodes, relationships) =>
+          val nodeCreates = processCreateNodes(PlanCreates(), nodes)
+          val creates = processCreateRelationships(nodeCreates, relationships)
+          PlanWrites(creates = creates)
 
-    case Foreach(_, _, _, mutations) =>
-      val (setMutatingPatterns: Seq[SetMutatingPattern], otherMutatingPatterns) =
-        mutations.toSeq.partition(mutation => mutation.isInstanceOf[SetMutatingPattern])
-      val (deleteMutatingPatterns: Seq[DeleteMutatingPattern], restMutatingPatterns) =
-        otherMutatingPatterns.partition(mutation => mutation.isInstanceOf[DeleteMutatingPattern])
-      val setPart = processSetMutatingPatterns(PlanSets(), setMutatingPatterns)
-      val createPart = processCreateMutatingPatterns(PlanCreates(), restMutatingPatterns)
-      val deletePart = processDeleteMutatingPatterns(PlanDeletes(), deleteMutatingPatterns)
+        case Merge(_, nodes, relationships, onMatch, onCreate, _) =>
+          val setPart = Function.chain[PlanSets](Seq(
+            processSetMutatingPatterns(_, onMatch),
+            processSetMutatingPatterns(_, onCreate)
+          ))(PlanSets())
 
-      PlanWrites(setPart, createPart, deletePart)
+          val nodeCreatePart = processCreateNodes(PlanCreates(), nodes)
+          val createPart = processCreateRelationships(nodeCreatePart, relationships)
 
-    case DeleteNode(_, v: Variable) =>
-      val deletes = PlanDeletes().withDeletedNodeVariable(v)
-      PlanWrites(deletes = deletes)
+          PlanWrites(setPart, createPart)
 
-    case DeleteRelationship(_, v: Variable) =>
-      val deletes = PlanDeletes().withDeletedRelationshipVariable(v)
-      PlanWrites(deletes = deletes)
+        case Foreach(_, _, _, mutations) =>
+          val allMutations = mutations.toSet
+          val setMutatingPatterns = allMutations.collect {
+            case pattern: SetMutatingPattern => pattern
+          }
+          val deleteMutatingPatterns = allMutations.collect {
+            case pattern: DeleteMutatingPattern => pattern
+          }
+          val restMutatingPatterns = allMutations -- setMutatingPatterns -- deleteMutatingPatterns
 
-    case _: DeleteNode =>
-      val deletes = PlanDeletes().withDeletedNodeExpression
-      PlanWrites(deletes = deletes)
+          val setPart = processSetMutatingPatterns(PlanSets(), setMutatingPatterns.toSeq)
+          val createPart = processCreateMutatingPatterns(PlanCreates(), restMutatingPatterns.toSeq)
+          val deletePart = processDeleteMutatingPatterns(PlanDeletes(), deleteMutatingPatterns.toSeq)
 
-    case _: DeleteRelationship =>
-      val deletes = PlanDeletes().withDeletedRelationshipExpression
-      PlanWrites(deletes = deletes)
+          PlanWrites(setPart, createPart, deletePart)
 
-    case _: DeleteExpression =>
-      val deletes = PlanDeletes().withDeletedUnknownTypeExpression
-      PlanWrites(deletes = deletes)
+        case DeleteNode(_, v: Variable) =>
+          val deletes = PlanDeletes().withDeletedNodeVariable(v)
+          PlanWrites(deletes = deletes)
 
-    case DetachDeleteNode(_, v: Variable) =>
-      val deletes = PlanDeletes().withDeletedNodeVariable(v)
-        .withDeletedRelationshipExpression
-      PlanWrites(deletes = deletes)
+        case DeleteRelationship(_, v: Variable) =>
+          val deletes = PlanDeletes().withDeletedRelationshipVariable(v)
+          PlanWrites(deletes = deletes)
 
-    case _: DetachDeleteNode =>
-      val deletes = PlanDeletes().withDeletedNodeExpression
-        .withDeletedRelationshipExpression
-      PlanWrites(deletes = deletes)
+        case _: DeleteNode =>
+          val deletes = PlanDeletes().withDeletedNodeExpression
+          PlanWrites(deletes = deletes)
 
-    case _: DetachDeleteExpression =>
-      val deletes = PlanDeletes().withDeletedUnknownTypeExpression
-        .withDeletedRelationshipExpression
-      PlanWrites(deletes = deletes)
+        case _: DeleteRelationship =>
+          val deletes = PlanDeletes().withDeletedRelationshipExpression
+          PlanWrites(deletes = deletes)
 
-    case _: DeletePath =>
-      val deletes = PlanDeletes().withDeletedUnknownTypeExpression
-      PlanWrites(deletes = deletes)
+        case _: DeleteExpression =>
+          val deletes = PlanDeletes().withDeletedUnknownTypeExpression
+          PlanWrites(deletes = deletes)
 
-    case _: DetachDeletePath =>
-      val deletes = PlanDeletes().withDeletedUnknownTypeExpression
-      PlanWrites(deletes = deletes)
+        case DetachDeleteNode(_, v: Variable) =>
+          val deletes = PlanDeletes().withDeletedNodeVariable(v)
+            .withDeletedRelationshipExpression
+          PlanWrites(deletes = deletes)
 
-    case plan: UpdatingPlan =>
-      throw new UnsupportedOperationException(
-        s"Eagerness support for operator ${plan.productPrefix} not implemented yet."
-      )
+        case _: DetachDeleteNode =>
+          val deletes = PlanDeletes().withDeletedNodeExpression
+            .withDeletedRelationshipExpression
+          PlanWrites(deletes = deletes)
+
+        case _: DetachDeleteExpression =>
+          val deletes = PlanDeletes().withDeletedUnknownTypeExpression
+            .withDeletedRelationshipExpression
+          PlanWrites(deletes = deletes)
+
+        case _: DeletePath =>
+          val deletes = PlanDeletes().withDeletedUnknownTypeExpression
+          PlanWrites(deletes = deletes)
+
+        case _: DetachDeletePath =>
+          val deletes = PlanDeletes().withDeletedUnknownTypeExpression
+          PlanWrites(deletes = deletes)
+      }
     case _ => PlanWrites()
   }
 

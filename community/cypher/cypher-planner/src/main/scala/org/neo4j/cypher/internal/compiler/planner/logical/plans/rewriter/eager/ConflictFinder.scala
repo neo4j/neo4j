@@ -173,12 +173,12 @@ object ConflictFinder {
       val conflict = Some(Conflict(writePlan.id, readPlan.id))
       // If no labels are read or written this is a ReadCreateConflict, otherwise a LabelReadSetConflict
       val reasons: Set[Reason] = overlap match {
-        // Other cases have been filtered out above
         case CreateOverlaps.Overlap(_, propertiesOverlap, entityOverlap) =>
           val entityReasons: Set[Reason] = entityOverlap match {
             case NodeLabels.KnownLabels(entityNames) => entityNames
                 .map(ln => createEntityReason(ln, conflict))
-            // SomeUnknownLabels is not possible for a CREATE conflict
+            case NodeLabels.SomeUnknownLabels =>
+              throw new IllegalStateException("SomeUnknownLabels is not possible for a CREATE conflict")
           }
           val propertyReasons = propertiesOverlap match {
             case PropertiesOverlap.Overlap(properties) =>
@@ -189,6 +189,10 @@ object ConflictFinder {
           val allReasons = entityReasons ++ propertyReasons
           if (allReasons.isEmpty) Set(ReadCreateConflict(conflict))
           else allReasons
+
+        // Other cases have been filtered out above
+        case x @ (CreateOverlaps.NoLabelOverlap | CreateOverlaps.NoPropertyOverlap) =>
+          throw new IllegalStateException(s"Only Overlap expected at this point, but got: $x")
       }
       ConflictingPlanPair(Ref(writePlan), Ref(readPlan), reasons)
     }
@@ -424,6 +428,7 @@ object ConflictFinder {
 
     map.map {
       case (SetExtractor(plan1, plan2), reasons) => ConflictingPlanPair(plan1, plan2, reasons)
+      case (set, _) => throw new IllegalStateException(s"Set must have 2 elements. Got: $set")
     }.toSeq
   }
 
@@ -473,7 +478,7 @@ object ConflictFinder {
     acc: Seq[LogicalPlan] = Seq.empty
   ): Option[Seq[LogicalPlan]] = {
     outerPlan match {
-      case plan: LogicalPlan if (plan eq innerPlan) => Some(acc)
+      case plan: LogicalPlan if plan eq innerPlan => Some(acc)
       case _ =>
         def recurse = plan => parentsOfIn(innerPlan, plan, acc :+ outerPlan)
         val maybeLhs = outerPlan.lhs.flatMap(recurse)

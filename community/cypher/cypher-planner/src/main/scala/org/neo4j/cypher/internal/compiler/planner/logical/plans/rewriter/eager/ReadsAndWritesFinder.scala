@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
+import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
@@ -57,6 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlans
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
+import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
 import org.neo4j.cypher.internal.logical.plans.SemiApply
@@ -192,7 +194,7 @@ object ReadsAndWritesFinder {
       copy(expression = compositeExpression)
     }
 
-    def ++(other: FilterExpressions, mergePlan: LogicalBinaryPlan): FilterExpressions = {
+    def mergeWith(other: FilterExpressions, mergePlan: LogicalBinaryPlan): FilterExpressions = {
       val allPlans = this.plansThatIntroduceVariable ++ other.plansThatIntroduceVariable
 
       val lhs = this
@@ -201,7 +203,7 @@ object ReadsAndWritesFinder {
         case _: Union | _: OrderedUnion =>
           // Union expresses OR
           Ors(Seq(lhs.expression, rhs.expression))(InputPosition.NONE)
-        case _: NodeHashJoin | _: ValueHashJoin | _: AssertSameNode =>
+        case _: NodeHashJoin | _: ValueHashJoin | _: AssertSameNode | _: AssertSameRelationship =>
           // Joins express AND
           // Let's use withAddedExpression to avoid nesting Ands
           lhs.withAddedExpression(rhs.expression).expression
@@ -215,6 +217,9 @@ object ReadsAndWritesFinder {
           // If under an apply, the branches can share an argument variable and then we want to combine the predicates,
           // but the rhs includes the lhs already, so no need to merge.
           rhs.expression
+        case _: RepeatOptions =>
+          // The two branches should have the exact same reads, we can simply take the lhs
+          lhs.expression
         case _: AbstractLetSelectOrSemiApply |
           _: AbstractSelectOrSemiApply |
           _: AbstractLetSemiApply =>
@@ -550,22 +555,22 @@ object ReadsAndWritesFinder {
      */
     def mergeFilterExpressions(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
       copy(
-        nodeFilterExpressions = other.nodeFilterExpressions.fuse(this.nodeFilterExpressions)(_ ++ (_, mergePlan)),
+        nodeFilterExpressions = other.nodeFilterExpressions.fuse(this.nodeFilterExpressions)(_.mergeWith(_, mergePlan)),
         relationshipFilterExpressions =
-          other.relationshipFilterExpressions.fuse(this.relationshipFilterExpressions)(_ ++ (_, mergePlan))
+          other.relationshipFilterExpressions.fuse(this.relationshipFilterExpressions)(_.mergeWith(_, mergePlan))
       )
     }
 
-    def ++(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
+    def mergeWith(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
       copy(
         readNodeProperties = this.readNodeProperties ++ other.readNodeProperties,
         readLabels = this.readLabels ++ other.readLabels,
-        nodeFilterExpressions = this.nodeFilterExpressions.fuse(other.nodeFilterExpressions)(_ ++ (_, mergePlan)),
+        nodeFilterExpressions = this.nodeFilterExpressions.fuse(other.nodeFilterExpressions)(_.mergeWith(_, mergePlan)),
         possibleNodeDeleteConflictPlans =
           this.possibleNodeDeleteConflictPlans.fuse(other.possibleNodeDeleteConflictPlans)(_ ++ _),
         readRelProperties = this.readRelProperties ++ other.readRelProperties,
         relationshipFilterExpressions =
-          this.relationshipFilterExpressions.fuse(other.relationshipFilterExpressions)(_ ++ (_, mergePlan)),
+          this.relationshipFilterExpressions.fuse(other.relationshipFilterExpressions)(_.mergeWith(_, mergePlan)),
         possibleRelDeleteConflictPlans =
           this.possibleRelDeleteConflictPlans.fuse(other.possibleRelDeleteConflictPlans)(_ ++ _)
       )
@@ -896,9 +901,9 @@ object ReadsAndWritesFinder {
       )
     }
 
-    def ++(other: ReadsAndWrites, mergePlan: LogicalBinaryPlan): ReadsAndWrites = {
+    def mergeWith(other: ReadsAndWrites, mergePlan: LogicalBinaryPlan): ReadsAndWrites = {
       copy(
-        reads = this.reads ++ (other.reads, mergePlan),
+        reads = this.reads.mergeWith(other.reads, mergePlan),
         writes = this.writes ++ other.writes
       )
     }
@@ -949,7 +954,7 @@ object ReadsAndWritesFinder {
             processPlan(acc, plan)
           case _ =>
             // We need to merge LHS and RHS
-            val acc = lhsAcc ++ (rhsAcc, plan)
+            val acc = lhsAcc.mergeWith(rhsAcc, plan)
             processPlan(acc, plan)
         }
     )

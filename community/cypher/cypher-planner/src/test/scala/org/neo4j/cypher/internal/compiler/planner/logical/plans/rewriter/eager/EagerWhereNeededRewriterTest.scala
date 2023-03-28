@@ -756,6 +756,32 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
+    "inserts eager between label set and label read (RelationshipCountFromCountStore) if label read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setLabels("m", "N")
+      .apply()
+      .|.relationshipCountFromCountStore("count", Some("N"), Seq("REL"), None)
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setLabels("m", "N")
+        .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.relationshipCountFromCountStore("count", Some("N"), Seq("REL"), None)
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
     "inserts no eager between label set and label read (NodeCountFromCountStore) if label read through stable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
@@ -970,6 +996,30 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   }
 
   test(
+    "inserts eager between Create and All relationships read (RelationshipCountFromCountStore) if read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("m")
+      .create(Seq.empty, Seq(createRelationship("r", "m", "REL", "m")))
+      .apply()
+      .|.relationshipCountFromCountStore("count", Some("N"), Seq("REL"), None)
+      .nodeByLabelScan("m", "M")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("m")
+        .create(Seq.empty, Seq(createRelationship("r", "m", "REL", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("REL"), Some(Conflict(Id(1), Id(3))))))
+        .apply()
+        .|.relationshipCountFromCountStore("count", Some("N"), Seq("REL"), None)
+        .nodeByLabelScan("m", "M")
+        .build()
+    )
+  }
+
+  test(
     "inserts no eager between Create and All nodes read (NodeCountFromCountStore) if read through stable iterator"
   ) {
     val planBuilder = new LogicalPlanBuilder()
@@ -1003,6 +1053,32 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(LabelReadSetConflict(labelName("N"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.nodeCountFromCountStore("count", Seq(Some("N")))
+        .allNodeScan("m")
+        .build()
+    )
+  }
+
+  test(
+    "inserts eager between create and type read (RelationshipCountFromCountStore) if label read through unstable iterator"
+  ) {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .create(Seq.empty, Seq(createRelationship("r", "m", "REL", "m")))
+      .apply()
+      .|.relationshipCountFromCountStore("count", None, Seq("REL"), None)
+      .allNodeScan("m")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .create(Seq.empty, Seq(createRelationship("r", "m", "REL", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("REL"), Some(Conflict(Id(2), Id(4))))))
+        .apply()
+        .|.relationshipCountFromCountStore("count", None, Seq("REL"), None)
         .allNodeScan("m")
         .build()
     )
@@ -4741,6 +4817,168 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("Should be eager in read/create conflict with DirectedRelationshipIndexEndsWithScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop ENDS WITH 'foo')]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop ENDS WITH 'foo')]->(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with UndirectedRelationshipIndexEndsWithScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop ENDS WITH 'foo')]-(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop ENDS WITH 'foo')]-(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with DirectedRelationshipIndexContainsScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop CONTAINS 'foo')]->(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop CONTAINS 'foo')]->(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with UndirectedRelationshipIndexContainsScan") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop CONTAINS 'foo')]-(m)")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop CONTAINS 'foo')]-(m)")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with DirectedRelationshipUniqueIndexSeek") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop>5)]->(m)", unique = true)
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop>5)]->(m)", unique = true)
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with UndirectedRelationshipUniqueIndexSeek") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.relationshipIndexOperator("(n)-[r:R(prop>5)]-(m)", unique = true)
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
+          PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.relationshipIndexOperator("(n)-[r:R(prop>5)]-(m)", unique = true)
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
   test("Should be eager in read/create conflict with DirectedRelationshipIndexScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
@@ -4841,6 +5079,58 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         ))
         .apply()
         .|.undirectedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with DirectedRelationshipByElementIdSeek") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.directedRelationshipByElementIdSeek("r1", "x", "y", Set(), "23", "22.0", "-1")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.directedRelationshipByElementIdSeek("r1", "x", "y", Set(), "23", "22.0", "-1")
+        .unwind("[1,2,3] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("Should be eager in read/create conflict with UndirectedRelationshipByElementIdSeek") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .apply()
+      .|.undirectedRelationshipByElementIdSeek("r1", "x", "y", Set(), "23", "22.0", "-1")
+      .unwind("[1,2,3] AS i")
+      .argument()
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .eager(ListSet(
+          TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))
+        ))
+        .apply()
+        .|.undirectedRelationshipByElementIdSeek("r1", "x", "y", Set(), "23", "22.0", "-1")
         .unwind("[1,2,3] AS i")
         .argument()
         .build()
@@ -5283,7 +5573,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  test("Should be eager in read/set conflict with a SetPropertiesFromMap") {
+  test("Should be eager in read/set conflict with a SetPropertiesFromMap (relationship), removeOtherProps = true") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("result")
       .projection("1 AS result")
@@ -5302,6 +5592,167 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(2), Id(3))))))
         .filter("r.prop = 0")
         .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/set conflict with a SetPropertiesFromMap (node), removeOtherProps = true") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setPropertiesFromMap("a", "{prop: 42}", removeOtherProps = true)
+      .filter("a.prop = 0")
+      .allNodeScan("a")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setPropertiesFromMap("a", "{prop: 42}", removeOtherProps = true)
+        .eager(ListSet(UnknownPropertyReadSetConflict(Some(Conflict(Id(2), Id(3))))))
+        .filter("a.prop = 0")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/set conflict with a SetPropertiesFromMap (relationship), removeOtherProps = false") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setPropertiesFromMap("r", "{prop: 42, foo: a.bar}", removeOtherProps = false)
+      .filter("r.prop = 0")
+      .allRelationshipsScan("(a)-[r]->(b)")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setPropertiesFromMap("r", "{prop: 42, foo: a.bar}", removeOtherProps = false)
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(3))))))
+        .filter("r.prop = 0")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/set conflict with a SetPropertiesFromMap (node), removeOtherProps = false") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setPropertiesFromMap("a", "{prop: 42}", removeOtherProps = false)
+      .filter("a.prop = 0")
+      .allNodeScan("a")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setPropertiesFromMap("a", "{prop: 42}", removeOtherProps = false)
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(3))))))
+        .filter("a.prop = 0")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/set conflict with a SetProperties (relationship)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setProperties("r", "prop" -> "42")
+      .filter("r.prop = 0")
+      .allRelationshipsScan("(a)-[r]->(b)")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setProperties("r", "prop" -> "42")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(3))))))
+        .filter("r.prop = 0")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/set conflict with a SetProperties (node)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setProperties("r", "prop" -> "42")
+      .filter("a.prop = 0")
+      .allNodeScan("a")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setProperties("r", "prop" -> "42")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(3))))))
+        .filter("a.prop = 0")
+        .allNodeScan("a")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/set conflict with a SetProperty (relationship)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setProperty("r", "prop", "42")
+      .filter("r.prop = 0")
+      .allRelationshipsScan("(a)-[r]->(b)")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setProperty("r", "prop", "42")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(3))))))
+        .filter("r.prop = 0")
+        .allRelationshipsScan("(a)-[r]->(b)")
+        .build()
+    )
+  }
+
+  test("Should be eager in read/set conflict with a SetProperty (node)") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("result")
+      .projection("1 AS result")
+      .setProperty("r", "prop", "42")
+      .filter("a.prop = 0")
+      .allNodeScan("a")
+
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("result")
+        .projection("1 AS result")
+        .setProperty("r", "prop", "42")
+        .eager(ListSet(PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(2), Id(3))))))
+        .filter("a.prop = 0")
+        .allNodeScan("a")
         .build()
     )
   }
