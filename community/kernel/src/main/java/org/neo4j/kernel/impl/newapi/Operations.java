@@ -170,7 +170,6 @@ public class Operations implements Write, SchemaWrite {
     private final ConstraintIndexCreator constraintIndexCreator;
     private final ConstraintSemantics constraintSemantics;
     private final IndexingProvidersService indexProviders;
-    private final Config config;
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final boolean relationshipUniquenessConstraintEnabled;
@@ -210,7 +209,6 @@ public class Operations implements Write, SchemaWrite {
         this.constraintSemantics = constraintSemantics;
         this.indexProviders = indexProviders;
         this.memoryTracker = memoryTracker;
-        this.config = config;
         this.additionLockVerification = config.get(additional_lock_verification);
         this.relationshipUniquenessConstraintEnabled = config.get(GraphDatabaseInternalSettings.rel_unique_constraints);
     }
@@ -1579,8 +1577,7 @@ public class Operations implements Write, SchemaWrite {
         if (schema.entityType() == RELATIONSHIP) {
             if (!relationshipUniquenessConstraintEnabled) {
                 throw new UnsupportedOperationException("Relationship uniqueness constraints are not supported yet");
-            } else if (KernelVersion.getLatestVersion(config)
-                    .isAtLeast(KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)) {
+            } else {
                 assertSupportedInVersion(
                         "Failed to create Relationship Uniqueness constraint.",
                         KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);
@@ -1760,8 +1757,7 @@ public class Operations implements Write, SchemaWrite {
         if (schema.entityType() == RELATIONSHIP) {
             if (!relationshipUniquenessConstraintEnabled) {
                 throw new UnsupportedOperationException("Relationship key constraints are not supported yet");
-            } else if (KernelVersion.getLatestVersion(config)
-                    .isAtLeast(KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)) {
+            } else {
                 assertSupportedInVersion(
                         "Failed to create Relationship Key constraint.",
                         KernelVersion.VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED);

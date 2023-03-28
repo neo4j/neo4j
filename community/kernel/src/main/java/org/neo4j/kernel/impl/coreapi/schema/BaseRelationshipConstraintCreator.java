@@ -58,16 +58,7 @@ public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator
         throw new UnsupportedOperationException("Node key constraints are not supported on relationships.");
     }
 
-    /**
-     * FIXME RELKEY This is just here until we are ready to expose it on Core API
-     *
-     * Imposes both a uniqueness constraint, and a property existence constraint, for the given property.
-     * This means that all relationships with the given relationship type must have this property, and they must all have different values for the property.
-     * Multiple calls to this method will result in compound relationship key constraint.
-     *
-     * @param propertyKey property to use as the relationship key.
-     * @return a {@link ConstraintCreator} instance to be used for further interaction.
-     */
+    @Override
     public ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey) {
         return new RelationshipKeyConstraintCreator(actions, name, type, List.of(propertyKey), indexType, indexConfig);
     }

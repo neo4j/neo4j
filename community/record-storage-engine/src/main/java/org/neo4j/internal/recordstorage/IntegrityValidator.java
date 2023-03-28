@@ -49,11 +49,7 @@ class IntegrityValidator {
      */
     static void validateSchemaRule(SchemaRule schemaRule, KernelVersion kernelVersion)
             throws TransactionFailureException {
-        // Yes!, this never does anything. Until relationship uniqueness constraints are enabled
-        // this creating during rolling upgrade block is not needed yet but to be able to test the upgrade
-        // easily before the enabling we keep this around
-        if (false
-                && kernelVersion.isLessThan(VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)
+        if (kernelVersion.isLessThan(VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED)
                 && schemaRule instanceof ConstraintDescriptor constraint) {
             if (constraint.isRelationshipKeyConstraint() || constraint.isRelationshipUniquenessConstraint()) {
                 throw new TransactionFailureException(

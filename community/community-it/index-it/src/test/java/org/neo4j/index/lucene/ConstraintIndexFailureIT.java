@@ -65,7 +65,6 @@ class ConstraintIndexFailureIT {
         DatabaseManagementService managementService = new TestDatabaseManagementServiceBuilder(dir)
                 // use delegating index provider with custom descriptor, so it can be replaced with failing provider
                 .addExtension(new BuiltInDelegatingIndexProviderFactory(new RangeIndexProviderFactory(), DESCRIPTOR))
-                .noOpSystemGraphInitializer()
                 .setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true)
                 .build();
         GraphDatabaseService db = managementService.database(DEFAULT_DATABASE_NAME);
@@ -81,7 +80,6 @@ class ConstraintIndexFailureIT {
         FileUtils.deleteDirectory(IndexDirectoryStructure.baseSchemaIndexFolder(dir));
         managementService = new TestDatabaseManagementServiceBuilder(dir)
                 .addExtension(new FailingNativeIndexProviderFactory(INITIAL_STATE))
-                .noOpSystemGraphInitializer()
                 .build();
         db = managementService.database(DEFAULT_DATABASE_NAME);
         // when
