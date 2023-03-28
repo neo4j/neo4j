@@ -361,10 +361,10 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
       .newLong("lhsLong0", false, CTNode)
       .newLong("rhsLong0", false, CTNode)
       .newLong("rhsLong1", false, CTNode) // kept because we don't break pipeline on distinct
-      .newReference("lhsRef0", true, CTAny)
-      .newReference("lhsRef1", true, CTAny)
-      .newReference("rhsRef0", true, CTAny) // kept because we don't break pipeline on distinct
-      .newReference("rhsRef1", true, CTAny))
+      .newReference("lhsRef0", false, CTAny)
+      .newReference("lhsRef1", false, CTAny)
+      .newReference("rhsRef0", false, CTAny) // kept because we don't break pipeline on distinct
+      .newReference("rhsRef1", false, CTAny))
   }
 
   test("Aggregation should retain argument slots") {
@@ -399,8 +399,8 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     slots(aggregation.id) should be(SlotConfiguration.empty
       .newLong("lhsLong0", false, CTNode)
       .newLong("rhsLong0", false, CTNode)
-      .newReference("lhsRef0", true, CTAny)
-      .newReference("lhsRef1", true, CTAny)
+      .newReference("lhsRef0", false, CTAny)
+      .newReference("lhsRef1", false, CTAny)
       .newReference("rhsRef1", true, CTAny))
   }
 
