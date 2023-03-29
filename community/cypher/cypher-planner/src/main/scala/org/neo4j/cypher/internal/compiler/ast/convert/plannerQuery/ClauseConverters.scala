@@ -188,7 +188,7 @@ object ClauseConverters {
     acc: PlannerQueryBuilder,
     clause: InputDataStream
   ): PlannerQueryBuilder =
-    acc.withQueryInput(clause.variables.map(_.name))
+    acc.withQueryInput(clause.variables)
 
   private def asSelections(optWhere: Option[Where]) =
     Selections(optWhere.map(_.expression.asPredicates).getOrElse(Set.empty))

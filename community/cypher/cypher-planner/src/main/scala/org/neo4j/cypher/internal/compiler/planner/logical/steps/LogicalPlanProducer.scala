@@ -924,7 +924,7 @@ case class LogicalPlanProducer(
   def planInputApply(
     left: LogicalPlan,
     right: LogicalPlan,
-    symbols: Seq[String],
+    symbols: Seq[Variable],
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(right.id).asSinglePlannerQuery.withInput(symbols)
@@ -1961,9 +1961,9 @@ case class LogicalPlanProducer(
     )
   }
 
-  def planInput(symbols: Seq[String], context: LogicalPlanningContext): LogicalPlan = {
+  def planInput(symbols: Seq[Variable], context: LogicalPlanningContext): LogicalPlan = {
     val solved = RegularSinglePlannerQuery(queryInput = Some(symbols))
-    annotate(Input(symbols), solved, ProvidedOrder.empty, context)
+    annotate(Input(symbols.map(_.name)), solved, ProvidedOrder.empty, context)
   }
 
   def planUnwind(

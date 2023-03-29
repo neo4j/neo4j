@@ -119,7 +119,7 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
   /**
    * Optionally, an input to the query provided using INPUT DATA STREAM. These are the column names provided by IDS.
    */
-  val queryInput: Option[Seq[String]]
+  val queryInput: Option[Seq[Variable]]
 
   /**
    * The part of query from a MATCH/MERGE/CREATE until (excluding) the next WITH/RETURN.
@@ -167,8 +167,11 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
     case None                        => None
   }
 
-  def withInput(queryInput: Seq[String]): SinglePlannerQuery =
-    copy(input = Some(queryInput), queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput))
+  def withInput(queryInput: Seq[Variable]): SinglePlannerQuery =
+    copy(
+      input = Some(queryInput),
+      queryGraph = queryGraph.copy(argumentIds = queryGraph.argumentIds ++ queryInput.map(_.name))
+    )
 
   override def withoutHints(hintsToIgnore: Set[Hint]): SinglePlannerQuery = {
     copy(
@@ -290,7 +293,7 @@ sealed trait SinglePlannerQuery extends PlannerQuery {
     interestingOrder: InterestingOrder = interestingOrder,
     horizon: QueryHorizon = horizon,
     tail: Option[SinglePlannerQuery] = tail,
-    input: Option[Seq[String]] = queryInput
+    input: Option[Seq[Variable]] = queryInput
   ): SinglePlannerQuery
 
   def foldMap(f: (SinglePlannerQuery, SinglePlannerQuery) => SinglePlannerQuery): SinglePlannerQuery = tail match {
@@ -425,7 +428,7 @@ case class RegularSinglePlannerQuery(
   interestingOrder: InterestingOrder = InterestingOrder.empty,
   horizon: QueryHorizon = QueryProjection.empty,
   tail: Option[SinglePlannerQuery] = None,
-  queryInput: Option[Seq[String]] = None
+  queryInput: Option[Seq[Variable]] = None
 ) extends SinglePlannerQuery {
 
   // This is here to stop usage of copy from the outside
@@ -434,7 +437,7 @@ case class RegularSinglePlannerQuery(
     interestingOrder: InterestingOrder = interestingOrder,
     horizon: QueryHorizon = horizon,
     tail: Option[SinglePlannerQuery] = tail,
-    queryInput: Option[Seq[String]] = queryInput
+    queryInput: Option[Seq[Variable]] = queryInput
   ): SinglePlannerQuery =
     RegularSinglePlannerQuery(queryGraph, interestingOrder, horizon, tail, queryInput)
 

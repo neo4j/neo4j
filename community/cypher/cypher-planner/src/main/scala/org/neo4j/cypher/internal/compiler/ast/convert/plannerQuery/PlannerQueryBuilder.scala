@@ -67,7 +67,7 @@ case class PlannerQueryBuilder(private val q: SinglePlannerQuery, semanticTable:
     )
   }
 
-  def withQueryInput(inputVariables: Seq[String]): PlannerQueryBuilder = {
+  def withQueryInput(inputVariables: Seq[Variable]): PlannerQueryBuilder = {
     copy(q = q.withInput(inputVariables))
   }
 

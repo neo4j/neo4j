@@ -825,13 +825,13 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("InputApply should fail when rhs contains update") {
     shouldFailAssertion(ctx =>
-      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithUpdate, Seq("x"), ctx.context)
+      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithUpdate, Seq(varFor("x")), ctx.context)
     )
   }
 
   test("InputApply should retain provided order when rhs contains no update") {
     shouldRetainProvidedOrder(ctx =>
-      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq("x"), ctx.context)
+      ctx.producer.planInputApply(ctx.lhs, ctx.rhsWithoutUpdate, Seq(varFor("x")), ctx.context)
     )
   }
 
