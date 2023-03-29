@@ -765,6 +765,9 @@ case class InterpretedPipeMapper(
 
       case Input(nodes, relationships, variables, _) =>
         InputPipe(nodes.toArray ++ relationships ++ variables)(id = id)
+
+      case x =>
+        throw new InternalException(s"Received a logical plan that has no physical operator $x")
     }
   }
 
