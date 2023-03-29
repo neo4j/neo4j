@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.startup;
 
-import java.util.Comparator;
 import org.neo4j.annotations.service.Service;
 import org.neo4j.service.PrioritizedService;
 import org.neo4j.service.Services;
@@ -27,15 +26,12 @@ import org.neo4j.service.Services;
 @Service
 public interface EntryPoint extends PrioritizedService {
     enum Priority {
-        LOW, // Community
+        HIGH, // Reserved for testing
         MEDIUM, // Enterprise
-        HIGH // Reserved for testing
+        LOW, // Community
     }
 
     static Class<? extends EntryPoint> serviceloadEntryPoint() {
-        return Services.loadAll(EntryPoint.class).stream()
-                .max(Comparator.comparingInt(PrioritizedService::getPriority))
-                .orElseThrow()
-                .getClass();
+        return Services.loadByPriority(EntryPoint.class).orElseThrow().getClass();
     }
 }

@@ -30,6 +30,6 @@ public interface CommandProvider extends PrioritizedService {
 
     @Override
     default int getPriority() {
-        return 1;
+        return Integer.MAX_VALUE;
     }
 }

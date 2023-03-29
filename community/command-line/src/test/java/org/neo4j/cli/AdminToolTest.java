@@ -46,7 +46,7 @@ class AdminToolTest {
     @Test
     public void filterShouldKeepTheProviderWithHigherPriorityIfBothOfThemCreateTheCommandWithSameType() {
         // given
-        List<CommandProvider> commandProvider = List.of(createCommandProvider(LOAD, 2), createCommandProvider(LOAD, 1));
+        List<CommandProvider> commandProvider = List.of(createCommandProvider(LOAD, 1), createCommandProvider(LOAD, 2));
 
         // when
         Collection<CommandProvider> filterCommandProviders =

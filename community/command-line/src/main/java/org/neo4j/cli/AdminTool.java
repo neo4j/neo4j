@@ -160,7 +160,7 @@ public class AdminTool {
                                 cp1.getClass(), cp2.getClass()));
                     }
 
-                    return cp1.getPriority() > cp2.getPriority() ? cp1 : cp2;
+                    return cp1.getPriority() < cp2.getPriority() ? cp1 : cp2;
                 }))
                 .values();
     }
