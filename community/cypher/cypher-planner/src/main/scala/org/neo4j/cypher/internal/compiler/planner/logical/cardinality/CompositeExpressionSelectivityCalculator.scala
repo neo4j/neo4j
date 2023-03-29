@@ -46,8 +46,10 @@ import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
+import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -100,6 +102,16 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
 
   private val hasCompositeIndexes = planContext.propertyIndexesGetAll().exists(_.properties.size > 1)
 
+  private val getNodePropertiesWithExistenceConstraint = CachedFunction[LabelName, Set[(ElementTypeName, String)]] {
+    label => planContext.getNodePropertiesWithExistenceConstraint(label.name).map(label -> _)
+  }
+
+  private val getRelationshipPropertiesWithExistenceConstraint =
+    CachedFunction[RelTypeName, Set[(ElementTypeName, String)]] {
+      relTypeName =>
+        planContext.getRelationshipPropertiesWithExistenceConstraint(relTypeName.name).map(relTypeName -> _)
+    }
+
   override def apply(
     selections: Selections,
     labelInfo: LabelInfo,
@@ -122,14 +134,8 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
     )
 
     val existenceConstraints: Set[(ElementTypeName, String)] = {
-      val forLabels: Set[(ElementTypeName, String)] = labelInfo.values.flatten.flatMap { label =>
-        planContext.getNodePropertiesWithExistenceConstraint(label.name).map(label -> _)
-      }.toSet
-
-      val forRelationships: Set[(ElementTypeName, String)] = relTypeInfo.values.flatMap { rel =>
-        planContext.getRelationshipPropertiesWithExistenceConstraint(rel.name).map(rel -> _)
-      }.toSet
-
+      val forLabels = labelInfo.values.flatten.flatMap(getNodePropertiesWithExistenceConstraint).toSet
+      val forRelationships = relTypeInfo.values.flatMap(getRelationshipPropertiesWithExistenceConstraint).toSet
       forLabels ++ forRelationships
     }
 
