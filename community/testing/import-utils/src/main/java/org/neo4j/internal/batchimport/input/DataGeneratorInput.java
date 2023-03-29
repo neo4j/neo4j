@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.neo4j.csv.reader.Extractors;
@@ -474,16 +475,27 @@ public class DataGeneratorInput implements Input {
 
     public static class DefaultPropertyValueGenerator implements BiFunction<Entry, RandomValues, Object> {
         private final int maxStringLength;
+        private final boolean uniqueStrings;
+        private final AtomicLong nextId = new AtomicLong();
 
         public DefaultPropertyValueGenerator(int maxStringLength) {
+            this(maxStringLength, false);
+        }
+
+        public DefaultPropertyValueGenerator(int maxStringLength, boolean uniqueStrings) {
             this.maxStringLength = maxStringLength;
+            this.uniqueStrings = uniqueStrings;
         }
 
         @Override
         public Object apply(Entry entry, RandomValues random) {
             return switch (entry.extractor().name()) {
-                case "String" -> random.nextAlphaNumericTextValue(5, maxStringLength)
-                        .stringValue();
+                case "String" -> {
+                    var string = random.nextAlphaNumericTextValue(5, maxStringLength);
+                    yield uniqueStrings
+                            ? String.format("%s_%s", string, nextId.getAndIncrement())
+                            : string.stringValue();
+                }
                 case "long" -> random.nextInt(Integer.MAX_VALUE);
                 case "int" -> random.nextInt(20);
                 default -> throw new IllegalArgumentException("" + entry);
