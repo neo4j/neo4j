@@ -120,7 +120,6 @@ public abstract class AllStoreHolder extends Read {
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
     private final GlobalProcedures globalProcedures;
-    private final boolean enableIndexUsageStatistics;
     private final MemoryTracker memoryTracker;
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
@@ -136,8 +135,7 @@ public abstract class AllStoreHolder extends Read {
             DefaultPooledCursors cursors,
             StoreCursors storageCursors,
             StorageLocks storageLocks,
-            LockTracer lockTracer,
-            boolean enableIndexUsageStatistics) {
+            LockTracer lockTracer) {
         super(storageReader, tokenRead, cursors, storageCursors, storageLocks, lockTracer);
         this.schemaState = schemaState;
         this.valueIndexReaderCache = new IndexReaderCache<>(
@@ -148,7 +146,6 @@ public abstract class AllStoreHolder extends Read {
         this.indexStatisticsStore = indexStatisticsStore;
         this.memoryTracker = memoryTracker;
         this.globalProcedures = globalProcedures;
-        this.enableIndexUsageStatistics = enableIndexUsageStatistics;
     }
 
     @Override
@@ -762,9 +759,6 @@ public abstract class AllStoreHolder extends Read {
     public IndexUsageStats indexUsageStats(IndexDescriptor index) throws IndexNotFoundKernelException {
         performCheckBeforeOperation();
         assertValidIndex(index);
-        if (!enableIndexUsageStatistics) {
-            throw new UnsupportedOperationException("Index usage statistics are not supported yet");
-        }
 
         acquireSharedSchemaLock(index);
         return indexStatisticsStore.usageStats(index.getId());
@@ -1022,8 +1016,7 @@ public abstract class AllStoreHolder extends Read {
                 IndexingService indexingService,
                 IndexStatisticsStore indexStatisticsStore,
                 Dependencies databaseDependencies,
-                MemoryTracker memoryTracker,
-                boolean enableIndexUsageStatistics) {
+                MemoryTracker memoryTracker) {
             super(
                     storageReader,
                     tokenRead,
@@ -1035,8 +1028,7 @@ public abstract class AllStoreHolder extends Read {
                     cursors,
                     ktx.storeCursors(),
                     storageLocks,
-                    ktx.lockTracer(),
-                    enableIndexUsageStatistics);
+                    ktx.lockTracer());
 
             this.ktx = ktx;
             this.procedureCaller = new ProcedureCaller.ForTransactionScope(ktx, globalProcedures, databaseDependencies);
@@ -1107,8 +1099,7 @@ public abstract class AllStoreHolder extends Read {
                 OverridableSecurityContext overridableSecurityContext,
                 AssertOpen assertOpen,
                 SecurityAuthorizationHandler securityAuthorizationHandler,
-                Supplier<ClockContext> clockContextSupplier,
-                boolean enableIndexUsageStatistics) {
+                Supplier<ClockContext> clockContextSupplier) {
             super(
                     storageReader,
                     executionContext.tokenRead(),
@@ -1120,8 +1111,7 @@ public abstract class AllStoreHolder extends Read {
                     cursors,
                     storageCursors,
                     storageLocks,
-                    lockTracer,
-                    enableIndexUsageStatistics);
+                    lockTracer);
             this.overridableSecurityContext = overridableSecurityContext;
             this.cursorContext = cursorContext;
             this.lockClient = lockClient;

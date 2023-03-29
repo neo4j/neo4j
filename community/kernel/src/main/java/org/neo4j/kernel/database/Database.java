@@ -499,7 +499,8 @@ public class Database extends AbstractDatabase {
                 databaseSchemaState,
                 indexStoreViewFactory,
                 indexStatisticsStore,
-                otherDatabaseMemoryTracker);
+                otherDatabaseMemoryTracker,
+                metadataCache);
 
         databaseDependencies.satisfyDependency(storageEngine.countsAccessor());
 
@@ -782,7 +783,8 @@ public class Database extends AbstractDatabase {
             DatabaseSchemaState databaseSchemaState,
             IndexStoreViewFactory indexStoreViewFactory,
             IndexStatisticsStore indexStatisticsStore,
-            MemoryTracker memoryTracker) {
+            MemoryTracker memoryTracker,
+            KernelVersionProvider kernelVersionProvider) {
         return life.add(buildIndexingService(
                 storageEngine,
                 databaseSchemaState,
@@ -798,7 +800,8 @@ public class Database extends AbstractDatabase {
                 memoryTracker,
                 namedDatabaseId.name(),
                 readOnlyDatabaseChecker,
-                clock));
+                clock,
+                kernelVersionProvider));
     }
 
     /**
@@ -819,7 +822,8 @@ public class Database extends AbstractDatabase {
             MemoryTracker memoryTracker,
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker,
-            Clock clock) {
+            Clock clock,
+            KernelVersionProvider kernelVersionProvider) {
         IndexingService indexingService = IndexingServiceFactory.createIndexingService(
                 storageEngine,
                 config,
@@ -836,7 +840,8 @@ public class Database extends AbstractDatabase {
                 memoryTracker,
                 databaseName,
                 readOnlyChecker,
-                clock);
+                clock,
+                kernelVersionProvider);
         storageEngine.addIndexUpdateListener(indexingService);
         return indexingService;
     }

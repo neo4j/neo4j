@@ -106,7 +106,6 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.UnderlyingStorageException;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.helpers.collection.BoundedIterable;
@@ -134,6 +133,8 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryConflictHandler;
@@ -439,7 +440,8 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                Clocks.nanoClock()));
+                Clocks.nanoClock(),
+                mock(KernelVersionProvider.class)));
 
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
@@ -489,7 +491,8 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                Clocks.nanoClock());
+                Clocks.nanoClock(),
+                mock(KernelVersionProvider.class));
 
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
@@ -1128,7 +1131,8 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                Clocks.nanoClock()));
+                Clocks.nanoClock(),
+                mock(KernelVersionProvider.class)));
 
         nameLookup.propertyKey(1, "prop");
 
@@ -1185,7 +1189,8 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                Clocks.nanoClock());
+                Clocks.nanoClock(),
+                mock(KernelVersionProvider.class));
         when(indexStatisticsStore.indexSample(anyLong())).thenReturn(new IndexSample(100, 32, 32));
         nameLookup.propertyKey(1, "prop");
 
@@ -1336,7 +1341,8 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                Config.defaults());
+                Config.defaults(),
+                mock(KernelVersionProvider.class));
         // and where index population starts
         indexingService.init();
 
@@ -1501,7 +1507,8 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                Clocks.nanoClock()));
+                Clocks.nanoClock(),
+                mock(KernelVersionProvider.class)));
 
         // when
         life.init();
@@ -1725,7 +1732,10 @@ class IndexingServiceTest {
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
 
         MockIndexProviderMap providerMap = life.add(new MockIndexProviderMap(indexProvider));
-        var config = Config.defaults(GraphDatabaseInternalSettings.enable_index_usage_statistics, true);
+        var config = Config.defaults();
+        var kernelVersionProvider = mock(KernelVersionProvider.class);
+        when(kernelVersionProvider.kernelVersion()).thenReturn(KernelVersion.getLatestVersion(config));
+
         return life.add(IndexingServiceFactory.createIndexingService(
                 storageEngine,
                 config,
@@ -1742,7 +1752,8 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                clock));
+                clock,
+                kernelVersionProvider));
     }
 
     private static DataUpdates withData(Update... updates) {
@@ -1895,7 +1906,8 @@ class IndexingServiceTest {
                 INSTANCE,
                 "",
                 writable(),
-                Config.defaults());
+                Config.defaults(),
+                mock(KernelVersionProvider.class));
     }
 
     private static IndexProvider mockIndexProviderWithAccessor(IndexProviderDescriptor descriptor) throws IOException {

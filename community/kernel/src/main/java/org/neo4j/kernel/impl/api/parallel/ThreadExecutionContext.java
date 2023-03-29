@@ -94,8 +94,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             ElementIdMapper elementIdMapper,
             ExtendedAssertOpen assertOpen,
             Supplier<ClockContext> clockContextSupplier,
-            List<AutoCloseable> otherResources,
-            boolean enableIndexUsageStatistics) {
+            List<AutoCloseable> otherResources) {
         this.cursors = cursors;
         this.context = context;
         this.overridableSecurityContext = overridableSecurityContext;
@@ -126,8 +125,7 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 overridableSecurityContext,
                 assertOpen,
                 securityAuthorizationHandler,
-                clockContextSupplier,
-                enableIndexUsageStatistics);
+                clockContextSupplier);
     }
 
     @Override

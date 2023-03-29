@@ -50,7 +50,6 @@ class IndexProxyCreator {
     private final InternalLogProvider logProvider;
     private final ImmutableSet<OpenOption> openOptions;
     private final Clock clock;
-    private final boolean enableIndexUsageStatistics;
 
     IndexProxyCreator(
             IndexSamplingConfig samplingConfig,
@@ -59,8 +58,7 @@ class IndexProxyCreator {
             TokenNameLookup tokenNameLookup,
             InternalLogProvider logProvider,
             ImmutableSet<OpenOption> openOptions,
-            Clock clock,
-            boolean enableIndexUsageStatistics) {
+            Clock clock) {
         this.samplingConfig = samplingConfig;
         this.indexStatisticsStore = indexStatisticsStore;
         this.providerMap = providerMap;
@@ -68,7 +66,6 @@ class IndexProxyCreator {
         this.logProvider = logProvider;
         this.openOptions = openOptions;
         this.clock = clock;
-        this.enableIndexUsageStatistics = enableIndexUsageStatistics;
     }
 
     IndexProxy createPopulatingIndexProxy(
@@ -175,6 +172,6 @@ class IndexProxyCreator {
     }
 
     private IndexUsageTracking createIndexUsageTracking() {
-        return enableIndexUsageStatistics ? new DefaultIndexUsageTracking(clock) : IndexUsageTracking.NO_USAGE_TRACKING;
+        return new DefaultIndexUsageTracking(clock);
     }
 }

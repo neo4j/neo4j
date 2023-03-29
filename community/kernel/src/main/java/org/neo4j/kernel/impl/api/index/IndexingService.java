@@ -53,7 +53,6 @@ import org.neo4j.common.EntityType;
 import org.neo4j.common.Subject;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnderlyingStorageException;
@@ -72,6 +71,8 @@ import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -135,7 +136,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     private final IndexPopulationJobController populationJobController;
     private final IndexStoreView storeView;
     private final StorageEngineIndexingBehaviour storageEngineIndexingBehaviour;
-    private final boolean enableIndexUsageStatistics;
+    private final KernelVersionProvider kernelVersionProvider;
 
     private volatile JobHandle<?> usageReportJob;
 
@@ -166,7 +167,8 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             MemoryTracker memoryTracker,
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker,
-            Config config) {
+            Config config,
+            KernelVersionProvider kernelVersionProvider) {
         this.storageEngineIndexingBehaviour = storageEngine.indexingBehaviour();
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
@@ -188,7 +190,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
         this.config = config;
         this.openOptions = storageEngine.getOpenOptions();
         this.storeView = indexStoreViewFactory.createTokenIndexStoreView(indexMapRef::getIndexProxy);
-        this.enableIndexUsageStatistics = config.get(GraphDatabaseInternalSettings.enable_index_usage_statistics);
+        this.kernelVersionProvider = kernelVersionProvider;
     }
 
     /**
@@ -318,14 +320,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             awaitOnlineAfterRecovery(proxy);
         });
 
-        if (enableIndexUsageStatistics) {
-            this.usageReportJob = jobScheduler.scheduleRecurring(
-                    Group.STORAGE_MAINTENANCE,
-                    this::reportUsageStatistics,
-                    USAGE_REPORT_FREQUENCY_SECONDS,
-                    USAGE_REPORT_FREQUENCY_SECONDS,
-                    TimeUnit.SECONDS);
-        }
+        usageReportJob = jobScheduler.scheduleRecurring(
+                Group.STORAGE_MAINTENANCE,
+                this::reportUsageStatistics,
+                USAGE_REPORT_FREQUENCY_SECONDS,
+                USAGE_REPORT_FREQUENCY_SECONDS,
+                TimeUnit.SECONDS);
 
         state = State.RUNNING;
     }
@@ -418,9 +418,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
     // races between checkpoint flush and index jobs
     @Override
     public void stop() throws Exception {
-        if (enableIndexUsageStatistics) {
-            usageReportJob.cancel();
-        }
+        usageReportJob.cancel();
         samplingController.stop();
         populationJobController.stop();
     }
@@ -747,10 +745,9 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     @VisibleForTesting
     public void reportUsageStatistics() {
-        if (!enableIndexUsageStatistics) {
-            throw new UnsupportedOperationException("Index usage statistics are not supported yet");
+        if (kernelVersionProvider.kernelVersion().isAtLeast(KernelVersion.VERSION_INDEX_USAGE_STATISTICS_INTRODUCED)) {
+            indexMapRef.getAllIndexProxies().forEach(p -> p.reportUsageStatistics(indexStatisticsStore));
         }
-        indexMapRef.getAllIndexProxies().forEach(p -> p.reportUsageStatistics(indexStatisticsStore));
     }
 
     private final class IndexPopulationStarter implements UnaryOperator<IndexMap> {

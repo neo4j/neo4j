@@ -1063,11 +1063,6 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             newBuilder("internal.dbms.latest_kernel_version", BYTE, null).build();
 
     @Internal
-    @Description("A feature toggle behind which index usage statistics feature is developed")
-    public static final Setting<Boolean> enable_index_usage_statistics =
-            newBuilder("internal.dbms.index_usage_statistics", BOOL, false).build();
-
-    @Internal
     @Description(
             """
             Ask page cache to close memory allocator on shutdown to clear native memory allocated for page cache pages.

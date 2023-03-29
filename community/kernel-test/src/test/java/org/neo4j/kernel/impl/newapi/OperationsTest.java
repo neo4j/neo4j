@@ -178,8 +178,7 @@ abstract class OperationsTest {
                 indexingService,
                 mock(IndexStatisticsStore.class),
                 dependencies,
-                INSTANCE,
-                false);
+                INSTANCE);
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
         creationContext = mock(CommandCreationContext.class);
         IndexingProvidersService indexingProvidersService = mock(IndexingProvidersService.class);

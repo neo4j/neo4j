@@ -621,7 +621,8 @@ public final class Recovery {
                 memoryTracker,
                 databaseLayout.getDatabaseName(),
                 readOnlyChecker,
-                clock);
+                clock,
+                recoveryMetaDataCache);
 
         MetadataProvider metadataProvider = storageEngine.metadataProvider();
 

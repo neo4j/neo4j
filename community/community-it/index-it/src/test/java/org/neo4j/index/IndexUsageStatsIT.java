@@ -21,6 +21,7 @@ package org.neo4j.index;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unorderedValues;
 import static org.neo4j.internal.kernel.api.PropertyIndexQuery.allEntries;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -33,9 +34,9 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -64,23 +65,12 @@ class IndexUsageStatsIT {
     @ExtensionCallback
     void configuration(TestDatabaseManagementServiceBuilder builder) {
         builder.setClock(fakeClock);
-        builder.setConfig(GraphDatabaseInternalSettings.enable_index_usage_statistics, true);
     }
 
     @BeforeEach
-    void createIndex() {
+    void setup() {
         beforeCreateTime = fakeClock.millis();
-        try (var tx = db.beginTx()) {
-            tx.schema()
-                    .indexFor(Label.label(LABEL))
-                    .on(KEY)
-                    .withName(INDEX_NAME)
-                    .create();
-            tx.commit();
-        }
-        try (var tx = db.beginTx()) {
-            tx.schema().awaitIndexesOnline(1, TimeUnit.MINUTES);
-        }
+        createIndex();
         fakeClock.forward(100, TimeUnit.MILLISECONDS);
         beforeQueryTime = fakeClock.millis();
     }
@@ -187,16 +177,105 @@ class IndexUsageStatsIT {
         assertEventuallyIndexUsageStats(stats -> stats.trackedSince() >= beforeCreateTime);
     }
 
+    @Test
+    void shouldThrowWhenTryingToGetStatsFromDroppedIndex() throws KernelException {
+        // given
+        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            var ktx = tx.kernelTransaction();
+            var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+            try (var cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
+                var indexSession = ktx.dataRead().indexReadSession(index);
+                ktx.dataRead().nodeIndexSeek(ktx.queryContext(), indexSession, cursor, unorderedValues(), allEntries());
+                while (cursor.next()) {
+                    // just go through it
+                }
+            }
+            tx.commit();
+        }
+        triggerReportUsageStatistics();
+        assertIndexUsageStats(stats -> {
+            assertThat(stats.trackedSince()).isGreaterThanOrEqualTo(beforeCreateTime);
+            assertThat(stats.lastRead()).isGreaterThanOrEqualTo(beforeQueryTime);
+            assertThat(stats.readCount()).isEqualTo(1);
+        });
+
+        // when
+        dropIndex();
+
+        // then
+        assertThatThrownBy(this::getIndexUsageStats).isInstanceOf(IndexNotFoundKernelException.class);
+    }
+
+    @Test
+    void shouldResetIndexStatsBetweenDropAndRecreate() throws KernelException {
+        // given
+        try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
+            var ktx = tx.kernelTransaction();
+            var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
+            try (var cursor = ktx.cursors().allocateNodeValueIndexCursor(NULL_CONTEXT, INSTANCE)) {
+                var indexSession = ktx.dataRead().indexReadSession(index);
+                ktx.dataRead().nodeIndexSeek(ktx.queryContext(), indexSession, cursor, unorderedValues(), allEntries());
+                while (cursor.next()) {
+                    // just go through it
+                }
+            }
+            tx.commit();
+        }
+        triggerReportUsageStatistics();
+        assertIndexUsageStats(stats -> {
+            assertThat(stats.trackedSince()).isGreaterThanOrEqualTo(beforeCreateTime);
+            assertThat(stats.lastRead()).isGreaterThanOrEqualTo(beforeQueryTime);
+            assertThat(stats.readCount()).isEqualTo(1);
+        });
+
+        // when
+        dropIndex();
+        createIndex();
+
+        // then
+        triggerReportUsageStatistics();
+        assertIndexUsageStats(stats -> {
+            assertThat(stats.trackedSince()).isGreaterThanOrEqualTo(beforeCreateTime);
+            assertThat(stats.lastRead()).isEqualTo(0);
+            assertThat(stats.readCount()).isEqualTo(0);
+        });
+    }
+
+    private void createIndex() {
+        try (var tx = db.beginTx()) {
+            tx.schema()
+                    .indexFor(Label.label(LABEL))
+                    .on(KEY)
+                    .withName(INDEX_NAME)
+                    .create();
+            tx.commit();
+        }
+        try (var tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(1, TimeUnit.MINUTES);
+        }
+    }
+
+    private void dropIndex() {
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().getIndexByName(INDEX_NAME).drop();
+            tx.commit();
+        }
+    }
+
     private void triggerReportUsageStatistics() {
         db.getDependencyResolver().resolveDependency(IndexingService.class).reportUsageStatistics();
     }
 
     private void assertIndexUsageStats(Consumer<IndexUsageStats> asserter) throws IndexNotFoundKernelException {
+        var usageStats = getIndexUsageStats();
+        asserter.accept(usageStats);
+    }
+
+    private IndexUsageStats getIndexUsageStats() throws IndexNotFoundKernelException {
         try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
             var ktx = tx.kernelTransaction();
             var index = ktx.schemaRead().indexGetForName(INDEX_NAME);
-            var usageStats = ktx.schemaRead().indexUsageStats(index);
-            asserter.accept(usageStats);
+            return ktx.schemaRead().indexUsageStats(index);
         }
     }
 

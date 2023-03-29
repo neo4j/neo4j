@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.api.index;
 import java.time.Clock;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -59,7 +59,8 @@ public final class IndexingServiceFactory {
             MemoryTracker memoryTracker,
             String databaseName,
             DatabaseReadOnlyChecker readOnlyChecker,
-            Clock clock) {
+            Clock clock,
+            KernelVersionProvider kernelVersionProvider) {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig(config);
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory = new IndexSamplingControllerFactory(
@@ -79,8 +80,7 @@ public final class IndexingServiceFactory {
                 tokenNameLookup,
                 internalLogProvider,
                 storageEngine.getOpenOptions(),
-                clock,
-                config.get(GraphDatabaseInternalSettings.enable_index_usage_statistics));
+                clock);
 
         return new IndexingService(
                 storageEngine,
@@ -100,6 +100,7 @@ public final class IndexingServiceFactory {
                 memoryTracker,
                 databaseName,
                 readOnlyChecker,
-                config);
+                config,
+                kernelVersionProvider);
     }
 }

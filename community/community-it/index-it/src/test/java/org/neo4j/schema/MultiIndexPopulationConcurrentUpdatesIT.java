@@ -73,6 +73,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -376,7 +377,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                     INSTANCE,
                     "",
                     writable(),
-                    Clocks.nanoClock());
+                    Clocks.nanoClock(),
+                    mock(KernelVersionProvider.class));
             indexService.start();
 
             rules = createIndexRules(provider, indexType, labelNameIdMap, propertyId);
