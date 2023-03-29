@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexMatch
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.NodeIndexLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.RelationshipIndexLeafPlanner
 import org.neo4j.cypher.internal.expressions.Contains
+import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -120,12 +121,24 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
       )
     )
 
+    val existenceConstraints: Set[(ElementTypeName, String)] = {
+      val forLabels: Set[(ElementTypeName, String)] = labelInfo.values.flatten.flatMap { label =>
+        planContext.getNodePropertiesWithExistenceConstraint(label.name).map(label -> _)
+      }.toSet
+
+      val forRelationships: Set[(ElementTypeName, String)] = relTypeInfo.values.flatMap { rel =>
+        planContext.getRelationshipPropertiesWithExistenceConstraint(rel.name).map(rel -> _)
+      }.toSet
+
+      forLabels ++ forRelationships
+    }
+
     // Used when we can conclude that no composite index influences the result
     def fallback: Selectivity = {
       val simpleSelectivities =
         unwrappedSelections
           .flatPredicates
-          .map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(
+          .map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo, existenceConstraints)(
             semanticTable,
             indexPredicateProviderContext,
             cardinalityModel
@@ -211,7 +224,7 @@ case class CompositeExpressionSelectivityCalculator(planContext: PlanContext) ex
 
     // Forward all not covered predicates to the singleExpressionSelectivityCalculator.
     val notCoveredPredicatesSelectivities =
-      notCoveredPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo)(
+      notCoveredPredicates.map(singleExpressionSelectivityCalculator(_, labelInfo, relTypeInfo, existenceConstraints)(
         semanticTable,
         indexPredicateProviderContext,
         cardinalityModel

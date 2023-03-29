@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.DifferentRelationships
+import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
@@ -138,7 +139,12 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     IndexType.Range
   )
 
-  def apply(exp: Expression, labelInfo: LabelInfo, relTypeInfo: RelTypeInfo)(
+  def apply(
+    exp: Expression,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    existenceConstraints: Set[(ElementTypeName, String)]
+  )(
     implicit semanticTable: SemanticTable,
     indexPredicateProviderContext: IndexCompatiblePredicatesProviderContext,
     cardinalityModel: CardinalityModel
@@ -157,7 +163,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
 
     // SubPredicate(sub, super)
     case partial: PartialPredicate[_] =>
-      apply(partial.coveredPredicate, labelInfo, relTypeInfo)
+      apply(partial.coveredPredicate, labelInfo, relTypeInfo, existenceConstraints)
 
     // WHERE x.prop =/IN ...
     case AsPropertySeekable(seekable) =>
@@ -234,16 +240,23 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
     // WHERE NOT a.prop [...]
     case Not(inner @ AsPropertyScannable(scannable)) =>
       // Whether negated or not, predicates like CONTAINS and ENDS WITH will only apply to string properties
-      val propertyTypeSelectivity = propertyTypeSelectivityForScannable(scannable, labelInfo, relTypeInfo)
-      apply(inner, labelInfo, relTypeInfo).negate * propertyTypeSelectivity
+      val propertyTypeSelectivity =
+        propertyTypeSelectivityForScannable(scannable, labelInfo, relTypeInfo, existenceConstraints)
+      apply(inner, labelInfo, relTypeInfo, existenceConstraints).negate * propertyTypeSelectivity
 
     // WHERE NOT [...]
     case Not(inner) =>
-      apply(inner, labelInfo, relTypeInfo).negate
+      apply(inner, labelInfo, relTypeInfo, existenceConstraints).negate
 
     // WHERE x.prop IS NOT NULL
     case AsPropertyScannable(scannable) =>
-      calculateSelectivityForPropertyExistence(scannable.name, labelInfo, relTypeInfo, scannable.propertyKey)
+      calculateSelectivityForPropertyExistence(
+        scannable.name,
+        labelInfo,
+        relTypeInfo,
+        scannable.propertyKey,
+        existenceConstraints
+      )
 
     // Implicit relation uniqueness predicates
     case _: DifferentRelationships =>
@@ -261,7 +274,7 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
       Selectivity.ONE
 
     case Ors(expressions) =>
-      val selectivities = expressions.toIndexedSeq.map(apply(_, labelInfo, relTypeInfo))
+      val selectivities = expressions.toIndexedSeq.map(apply(_, labelInfo, relTypeInfo, existenceConstraints))
       combiner.orTogetherSelectivities(selectivities).get // We can trust the AST to never have empty ORs
 
     // WHERE id(x) =/IN [...]
@@ -304,6 +317,23 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   }
 
   private def calculateSelectivityForPropertyExistence(
+    variable: String,
+    labelInfo: LabelInfo,
+    relTypeInfo: RelTypeInfo,
+    propertyKey: PropertyKeyName,
+    existenceConstraints: Set[(ElementTypeName, String)]
+  )(implicit semanticTable: SemanticTable): Selectivity = {
+    val labels = labelInfo.getOrElse(variable, Set.empty)
+    val relTypes = relTypeInfo.get(variable)
+    val relevantConstraints: Set[(ElementTypeName, String)] = (labels ++ relTypes).map(_ -> propertyKey.name)
+
+    if (relevantConstraints.intersect(existenceConstraints).nonEmpty)
+      Selectivity.ONE
+    else
+      calculateSelectivityForPropertyExistenceFromIndex(variable, labelInfo, relTypeInfo, propertyKey)
+  }
+
+  private def calculateSelectivityForPropertyExistenceFromIndex(
     variable: String,
     labelInfo: LabelInfo,
     relTypeInfo: RelTypeInfo,
@@ -612,7 +642,8 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
   private def propertyTypeSelectivityForScannable(
     scannable: Scannable[Expression],
     labelInfo: LabelInfo,
-    relTypeInfo: RelTypeInfo
+    relTypeInfo: RelTypeInfo,
+    existenceConstraints: Set[(ElementTypeName, String)]
   )(implicit semanticTable: SemanticTable): Selectivity = {
     scannable.cypherType match {
       case CTString =>
@@ -632,7 +663,13 @@ case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: Sel
           indexTypesPriorityForPointPredicates
         )
       case _ =>
-        calculateSelectivityForPropertyExistence(scannable.name, labelInfo, relTypeInfo, scannable.propertyKey)
+        calculateSelectivityForPropertyExistence(
+          scannable.name,
+          labelInfo,
+          relTypeInfo,
+          scannable.propertyKey,
+          existenceConstraints
+        )
     }
   }
 }

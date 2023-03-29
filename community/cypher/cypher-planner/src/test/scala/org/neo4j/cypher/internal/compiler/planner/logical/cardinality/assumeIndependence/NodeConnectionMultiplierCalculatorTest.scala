@@ -221,6 +221,10 @@ class NodeConnectionMultiplierCalculatorTest extends CypherFunSuite with AstCons
         )
 
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
+
+      override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
+
+      override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
     }
 
     val selectivityCalculator = CompositeExpressionSelectivityCalculator(planContext)

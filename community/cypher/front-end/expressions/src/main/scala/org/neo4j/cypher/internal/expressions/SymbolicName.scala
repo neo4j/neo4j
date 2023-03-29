@@ -26,17 +26,19 @@ trait SymbolicName extends ASTNode {
   override def asCanonicalStringVal: String = name
 }
 
+trait ElementTypeName
+
 case class Namespace(parts: List[String] = List.empty)(val position: InputPosition) extends ASTNode
 
 case class ProcedureName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName
 
 case class ProcedureOutput(name: String)(val position: InputPosition) extends ASTNode with SymbolicName
 
-case class LabelName(name: String)(val position: InputPosition) extends LabelExpressionLeafName
+case class LabelName(name: String)(val position: InputPosition) extends LabelExpressionLeafName with ElementTypeName
 
 case class PropertyKeyName(name: String)(val position: InputPosition) extends SymbolicName
 
-case class RelTypeName(name: String)(val position: InputPosition) extends LabelExpressionLeafName
+case class RelTypeName(name: String)(val position: InputPosition) extends LabelExpressionLeafName with ElementTypeName
 
 case class LabelOrRelTypeName(name: String)(val position: InputPosition) extends LabelExpressionLeafName {
   def asLabelName: LabelName = LabelName(name)(position)

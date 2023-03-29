@@ -89,6 +89,10 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
       )
 
       override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = Iterator.empty
+
+      override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
+
+      override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
     }
   }
 

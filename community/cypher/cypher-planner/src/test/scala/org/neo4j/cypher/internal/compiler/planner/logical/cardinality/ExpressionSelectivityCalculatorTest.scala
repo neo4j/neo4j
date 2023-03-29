@@ -42,6 +42,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.BooleanExpression
+import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
@@ -96,15 +97,17 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
 
   protected val indexAnimal: IndexDescriptor = IndexDescriptor.forLabel(getIndexType, LabelId(1), Seq(PropertyKeyId(0)))
 
-  protected val nProp: Property = prop("n", "nodeProp")
+  protected val nodePropName = "nodeProp"
+  protected val nProp: Property = prop("n", nodePropName)
 
-  protected val nIsPerson: Predicate = nPredicate(HasLabels(varFor("n"), Seq(labelName("Person"))) _)
+  protected val personLabelName: LabelName = labelName("Person")
+  protected val nIsPerson: Predicate = nPredicate(HasLabels(varFor("n"), Seq(personLabelName)) _)
   protected val nIsAnimal: Predicate = nPredicate(HasLabels(varFor("n"), Seq(labelName("Animal"))) _)
 
-  protected val nIsPersonLabelInfo: Map[String, Set[LabelName]] = Map("n" -> Set(labelName("Person")))
+  protected val nIsPersonLabelInfo: Map[String, Set[LabelName]] = Map("n" -> Set(personLabelName))
 
   protected val nIsPersonAndAnimalLabelInfo: Map[String, Set[LabelName]] =
-    Map("n" -> Set(labelName("Person"), labelName("Animal")))
+    Map("n" -> Set(personLabelName, labelName("Animal")))
 
   protected val personPropIsNotNullSel: Double = 0.2
   protected val personTextPropIsNotNullSel: Double = 0.1
@@ -119,9 +122,11 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   protected val indexFriends: IndexDescriptor =
     IndexDescriptor.forRelType(getIndexType, RelTypeId(0), Seq(PropertyKeyId(0)))
 
-  protected val rProp: Property = prop("r", "relProp")
+  protected val relPropName = "relProp"
+  protected val rProp: Property = prop("r", relPropName)
 
-  protected val rFriendsRelTypeInfo: Map[String, RelTypeName] = Map("r" -> relTypeName("Friends"))
+  protected val friendsRelTypeName: RelTypeName = relTypeName("Friends")
+  protected val rFriendsRelTypeInfo: Map[String, RelTypeName] = Map("r" -> friendsRelTypeName)
 
   protected val friendsPropIsNotNullSel: Double = 0.2
   protected val indexFriendsUniqueSel: Double = 1.0 / 180.0
@@ -1791,6 +1796,26 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     )
   }
 
+  test("IS NOT NULL with node property existence constraint") {
+    val predicate = isNotNull(nProp)
+
+    val calculator =
+      setUpCalculator(labelInfo = nIsPersonLabelInfo, existenceConstraints = Set(personLabelName -> nodePropName))
+
+    val result = calculator(predicate)
+    result shouldBe Selectivity.ONE
+  }
+
+  test("IS NOT NULL with relationship property existence constraint") {
+    val predicate = isNotNull(rProp)
+
+    val calculator =
+      setUpCalculator(relTypeInfo = rFriendsRelTypeInfo, existenceConstraints = Set(friendsRelTypeName -> relPropName))
+
+    val result = calculator(predicate)
+    result shouldBe Selectivity.ONE
+  }
+
   // HELPER METHODS
 
   protected def setupSemanticTable(): SemanticTable = {
@@ -1815,13 +1840,14 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     labelInfo: LabelInfo = Map.empty,
     relTypeInfo: RelTypeInfo = Map.empty,
     stats: GraphStatistics = mockStats(),
-    semanticTable: SemanticTable = setupSemanticTable()
+    semanticTable: SemanticTable = setupSemanticTable(),
+    existenceConstraints: Set[(ElementTypeName, String)] = Set.empty
   ): Expression => Selectivity = {
     implicit val sT: SemanticTable = semanticTable
     implicit val indexCPPC: IndexCompatiblePredicatesProviderContext = IndexCompatiblePredicatesProviderContext.default
 
     val combiner = IndependenceCombiner
-    val planContext = mockPlanContext(stats)
+    val planContext = mockPlanContext(stats, existenceConstraints)
     val calculator = ExpressionSelectivityCalculator(planContext.statistics, combiner)
     val compositeCalculator = CompositeExpressionSelectivityCalculator(planContext)
     implicit val cardinalityModel: CardinalityModel = SimpleMetricsFactory.newCardinalityEstimator(
@@ -1830,7 +1856,7 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       simpleExpressionEvaluator
     )
 
-    exp: Expression => calculator(exp, labelInfo, relTypeInfo)
+    exp: Expression => calculator(exp, labelInfo, relTypeInfo, existenceConstraints)
   }
 
   /**
@@ -1909,7 +1935,10 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     }
   }
 
-  protected def mockPlanContext(stats: GraphStatistics): PlanContext = new NotImplementedPlanContext {
+  protected def mockPlanContext(
+    stats: GraphStatistics,
+    existenceConstraints: Set[(ElementTypeName, String)]
+  ): PlanContext = new NotImplementedPlanContext {
 
     val indexMap: Map[Int, IndexDescriptor] = stats match {
       case mockStats(_, _, _, indexCardinalities, _) =>
@@ -1917,11 +1946,19 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
       case _ => Map.empty
     }
 
-    override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
+    override def getNodePropertiesWithExistenceConstraint(labelName: String): Set[String] = {
+      existenceConstraints.collect {
+        case (LabelName(`labelName`), prop) => prop
+      }
+    }
+
+    override def getRelationshipPropertiesWithExistenceConstraint(relTypeName: String): Set[String] = {
+      existenceConstraints.collect {
+        case (RelTypeName(`relTypeName`), prop) => prop
+      }
+    }
 
     override def propertyIndexesGetAll(): Iterator[IndexDescriptor] = indexMap.valuesIterator
-
-    override def getRelationshipPropertiesWithExistenceConstraint(labelName: String): Set[String] = Set.empty
 
     override def statistics: InstrumentedGraphStatistics =
       InstrumentedGraphStatistics(stats, new MutableGraphStatisticsSnapshot())
