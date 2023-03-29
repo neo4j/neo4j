@@ -332,6 +332,9 @@ import org.neo4j.cypher.internal.logical.plans.ShowServers
 import org.neo4j.cypher.internal.logical.plans.ShowSettings
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
+import org.neo4j.cypher.internal.logical.plans.SimulatedExpand
+import org.neo4j.cypher.internal.logical.plans.SimulatedNodeScan
+import org.neo4j.cypher.internal.logical.plans.SimulatedSelection
 import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
@@ -6142,6 +6145,45 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         ),
         List(details("(anon_0) (...){0, *} (end)")),
         Set("r", "a", "anon_2", "anon_0", "end")
+      )
+    )
+  }
+
+  test("SimulatedNodeScan") {
+    assertGood(
+      attach(SimulatedNodeScan("a", 1000), 1.0, providedOrder = ProvidedOrder.asc(varFor("a"))),
+      planDescription(
+        id,
+        "SimulatedNodeScan",
+        NoChildren,
+        Seq(details(Seq("a", "1000")), Order(asPrettyString.raw("a ASC"))),
+        Set("a")
+      )
+    )
+  }
+
+  test("SimulatedExpand") {
+    assertGood(
+      attach(SimulatedExpand(lhsLP, "a", "r1", "b", 1.0), 95.0),
+      planDescription(
+        id,
+        "SimulatedExpand",
+        SingleChild(lhsPD),
+        Seq(details(Seq("(a)-[r1]->(b)", "1.0"))),
+        Set("a", "r1", "b")
+      )
+    )
+  }
+
+  test("SimulatedSelection") {
+    assertGood(
+      attach(SimulatedSelection(lhsLP, 1.0), 2345.0),
+      planDescription(
+        id,
+        "SimulatedFilter",
+        SingleChild(lhsPD),
+        Seq(details("1.0")),
+        Set("a")
       )
     )
   }

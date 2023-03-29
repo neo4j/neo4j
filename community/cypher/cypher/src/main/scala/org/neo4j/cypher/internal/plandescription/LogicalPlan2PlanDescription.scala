@@ -1521,7 +1521,7 @@ case class LogicalPlan2PlanDescription(
 
       case SimulatedSelection(_, selectivity) =>
         val details = Details(asPrettyString(DecimalDoubleLiteral(selectivity.toString)(InputPosition.NONE)))
-        PlanDescriptionImpl(id, "Filter", children, Seq(details), variables, withRawCardinalities)
+        PlanDescriptionImpl(id, "SimulatedFilter", children, Seq(details), variables, withRawCardinalities)
 
       case Skip(_, count) =>
         PlanDescriptionImpl(
