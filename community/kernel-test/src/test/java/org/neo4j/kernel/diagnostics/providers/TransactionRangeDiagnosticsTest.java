@@ -37,7 +37,6 @@ import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.io.device.DeviceMapper;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
@@ -137,9 +136,6 @@ class TransactionRangeDiagnosticsTest {
         LogPosition afterCheckpointLogPosition = new LogPosition(checkpointLogHighVersion, 36);
         LogPosition readerPostPosition = new LogPosition(checkpointLogHighVersion, 36);
         TransactionId transactionId = new TransactionId(37, 38, 39, 40);
-        assertThat(LatestVersions.LATEST_KERNEL_VERSION)
-                .describedAs("Guard for used version of checkpoint entry bellow.")
-                .isEqualTo(KernelVersion.V5_7);
         Database database = databaseWithLogFilesContainingLowestTxId(logs(
                 transactionLogsWithTransaction(txLogLowVersion, txLogHighVersion, 42),
                 checkpointLogsWithLastCheckpoint(

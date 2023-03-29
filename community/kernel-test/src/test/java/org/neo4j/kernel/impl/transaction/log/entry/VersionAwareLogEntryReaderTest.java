@@ -60,7 +60,7 @@ class VersionAwareLogEntryReaderTest {
     @Test
     void shouldReadACommitLogEntry() throws IOException {
         // given
-        final LogEntryCommit commit = new LogEntryCommit(LATEST_KERNEL_VERSION, 42, 21, 1740832678);
+        final LogEntryCommit commit = new LogEntryCommit(LATEST_KERNEL_VERSION, 42, 21, 1756102029);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel(true);
 
         writeCommitEntry(channel, commit);
