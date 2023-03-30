@@ -25,6 +25,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.transaction_termination_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.time.Duration;
@@ -42,6 +43,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.GraphDatabaseSettings.TransactionTracingLevel;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.TerminationMark;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
@@ -68,11 +70,14 @@ class KernelTransactionTimeoutMonitorTest {
         logService = new SimpleLogService(logProvider);
     }
 
-    @Test
-    void terminateExpiredTransactions() {
+    @ParameterizedTest
+    @EnumSource(
+            value = Status.Transaction.class,
+            names = {"TransactionTimedOut", "TransactionTimedOutClientConfiguration"})
+    void terminateExpiredTransactions(Status status) {
         Set<KernelTransactionHandle> transactions = new HashSet<>();
-        KernelTransactionImplementation tx1 = prepareTxMock(3, 1, 3);
-        KernelTransactionImplementation tx2 = prepareTxMock(4, 1, 8);
+        KernelTransactionImplementation tx1 = prepareTxMock(3, 1, 3, status);
+        KernelTransactionImplementation tx2 = prepareTxMock(4, 1, 8, status);
         KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle(tx1, fakeClock);
         KernelTransactionImplementationHandle handle2 = new KernelTransactionImplementationHandle(tx2, fakeClock);
         transactions.add(handle1);
@@ -85,30 +90,30 @@ class KernelTransactionTimeoutMonitorTest {
         fakeClock.forward(3, TimeUnit.MILLISECONDS);
         transactionMonitor.run();
 
-        verify(tx1, never()).markForTermination(Status.Transaction.TransactionTimedOut);
-        verify(tx2, never()).markForTermination(Status.Transaction.TransactionTimedOut);
+        verify(tx1, never()).markForTermination(status);
+        verify(tx2, never()).markForTermination(status);
         assertThat(logProvider).doesNotContainMessage("timeout");
 
         fakeClock.forward(2, TimeUnit.MILLISECONDS);
         transactionMonitor.run();
 
-        verify(tx1).markForTermination(EXPECTED_USER_TRANSACTION_ID, Status.Transaction.TransactionTimedOut);
-        verify(tx2, never()).markForTermination(Status.Transaction.TransactionTimedOut);
+        verify(tx1).markForTermination(EXPECTED_USER_TRANSACTION_ID, status);
+        verify(tx2, never()).markForTermination(status);
         assertThat(logProvider).containsMessages("timeout");
 
         logProvider.clear();
         fakeClock.forward(10, TimeUnit.MILLISECONDS);
         transactionMonitor.run();
 
-        verify(tx2).markForTermination(EXPECTED_USER_TRANSACTION_ID, Status.Transaction.TransactionTimedOut);
+        verify(tx2).markForTermination(EXPECTED_USER_TRANSACTION_ID, status);
         assertThat(logProvider).containsMessages("timeout");
     }
 
     @Test
     void skipTransactionWithoutTimeout() {
         Set<KernelTransactionHandle> transactions = new HashSet<>();
-        KernelTransactionImplementation tx1 = prepareTxMock(7, 3, 0);
-        KernelTransactionImplementation tx2 = prepareTxMock(8, 4, 0);
+        KernelTransactionImplementation tx1 = prepareTxMock(7, 3, 0, TransactionTimedOut);
+        KernelTransactionImplementation tx2 = prepareTxMock(8, 4, 0, TransactionTimedOut);
         KernelTransactionImplementationHandle handle1 = new KernelTransactionImplementationHandle(tx1, fakeClock);
         KernelTransactionImplementationHandle handle2 = new KernelTransactionImplementationHandle(tx2, fakeClock);
         transactions.add(handle1);
@@ -121,8 +126,8 @@ class KernelTransactionTimeoutMonitorTest {
         fakeClock.forward(300, TimeUnit.MILLISECONDS);
         transactionMonitor.run();
 
-        verify(tx1, never()).markForTermination(Status.Transaction.TransactionTimedOut);
-        verify(tx2, never()).markForTermination(Status.Transaction.TransactionTimedOut);
+        verify(tx1, never()).markForTermination(TransactionTimedOut);
+        verify(tx2, never()).markForTermination(TransactionTimedOut);
         assertThat(logProvider).doesNotContainMessage("timeout");
     }
 
@@ -140,7 +145,7 @@ class KernelTransactionTimeoutMonitorTest {
         TraceProvider traceProvider = TraceProviderFactory.getTraceProvider(config);
 
         Set<KernelTransactionHandle> transactions = new HashSet<>();
-        KernelTransactionImplementation tx1 = prepareTxMock(3, 1, 0);
+        KernelTransactionImplementation tx1 = prepareTxMock(3, 1, 0, TransactionTimedOut);
         when(tx1.getTerminationMark())
                 .thenReturn(Optional.of(
                         new TerminationMark(Status.Transaction.TransactionMarkedAsFailed, fakeClock.nanos())));
@@ -196,7 +201,7 @@ class KernelTransactionTimeoutMonitorTest {
                 .build();
 
         Set<KernelTransactionHandle> transactions = new HashSet<>();
-        KernelTransactionImplementation tx1 = prepareTxMock(3, 1, 0);
+        KernelTransactionImplementation tx1 = prepareTxMock(3, 1, 0, TransactionTimedOut);
         when(tx1.getTerminationMark())
                 .thenReturn(Optional.of(
                         new TerminationMark(Status.Transaction.TransactionMarkedAsFailed, fakeClock.nanos())));
@@ -229,13 +234,14 @@ class KernelTransactionTimeoutMonitorTest {
         return new KernelTransactionMonitor(kernelTransactions, config, fakeClock, logService);
     }
 
-    private static KernelTransactionImplementation prepareTxMock(long userTxId, long startMillis, long timeoutMillis) {
+    private static KernelTransactionImplementation prepareTxMock(
+            long userTxId, long startMillis, long timeoutMillis, Status timoutStatus) {
         KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
         when(transaction.startTime()).thenReturn(startMillis);
         when(transaction.getTransactionSequenceNumber()).thenReturn(userTxId);
         when(transaction.getTransactionSequenceNumber()).thenReturn(EXPECTED_USER_TRANSACTION_ID);
-        when(transaction.timeout()).thenReturn(timeoutMillis);
-        when(transaction.markForTermination(EXPECTED_USER_TRANSACTION_ID, Status.Transaction.TransactionTimedOut))
+        when(transaction.timeout()).thenReturn(new TransactionTimeout(Duration.ofMillis(timeoutMillis), timoutStatus));
+        when(transaction.markForTermination(EXPECTED_USER_TRANSACTION_ID, timoutStatus))
                 .thenReturn(true);
         return transaction;
     }

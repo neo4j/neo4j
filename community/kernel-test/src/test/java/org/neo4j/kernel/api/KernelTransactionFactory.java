@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
+import static org.neo4j.kernel.api.TransactionTimeout.NO_TIMEOUT;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
@@ -148,7 +149,7 @@ public final class KernelTransactionFactory {
                 KernelTransaction.Type.IMPLICIT,
                 loginContext.authorize(
                         LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG),
-                0L,
+                NO_TIMEOUT,
                 1L,
                 EMBEDDED_CONNECTION);
 

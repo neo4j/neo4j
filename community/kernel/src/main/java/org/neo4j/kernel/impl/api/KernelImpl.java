@@ -21,7 +21,10 @@ package org.neo4j.kernel.impl.api;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 
+import java.time.Duration;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -30,6 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.procedure.CallableProcedure;
 import org.neo4j.kernel.api.procedure.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.procedure.CallableUserFunction;
@@ -98,16 +102,31 @@ public class KernelImpl extends LifecycleAdapter implements Kernel {
         if (!isRunning) {
             throw new IllegalStateException("Kernel is not running, so it is not possible to use it");
         }
+
         return beginTransaction(
                 type,
                 loginContext,
                 connectionInfo,
-                config.get(transaction_timeout).toMillis());
+                new TransactionTimeout(config.get(transaction_timeout), TransactionTimedOut));
     }
 
     @Override
     public KernelTransaction beginTransaction(
             KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout)
+            throws TransactionFailureException {
+
+        return beginTransaction(
+                type,
+                loginContext,
+                connectionInfo,
+                new TransactionTimeout(Duration.ofMillis(timeout), TransactionTimedOutClientConfiguration));
+    }
+
+    private KernelTransaction beginTransaction(
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo connectionInfo,
+            TransactionTimeout timeout)
             throws TransactionFailureException {
         panic.assertNoPanic(TransactionFailureException.class);
         KernelTransaction transaction = transactions.newInstance(type, loginContext, connectionInfo, timeout);

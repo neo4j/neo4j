@@ -54,10 +54,9 @@ public interface KernelTransactionHandle {
     long startTimeNanos();
 
     /**
-     * Underlying transaction specific timeout. In case if timeout is 0 - transaction does not have a timeout.
-     * @return transaction timeout in milliseconds, <b>0 in case if transaction does not have a timeout<b/>
+     * Underlying transaction specific timeout.
      */
-    long timeoutMillis();
+    TransactionTimeout timeout();
 
     /**
      * Check if the underlying transaction is open.

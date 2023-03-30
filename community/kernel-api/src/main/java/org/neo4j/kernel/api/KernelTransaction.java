@@ -342,10 +342,9 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
     long startTimeNanos();
 
     /**
-     * Timeout for transaction in milliseconds.
-     * @return transaction timeout in milliseconds.
+     * @return transaction timeout configuration.
      */
-    long timeout();
+    TransactionTimeout timeout();
 
     /**
      * Kernel transaction type

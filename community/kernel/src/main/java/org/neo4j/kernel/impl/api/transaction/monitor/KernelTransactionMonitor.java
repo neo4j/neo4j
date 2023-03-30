@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api.transaction.monitor;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.TerminationMark;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
@@ -61,8 +61,8 @@ public class KernelTransactionMonitor extends TransactionMonitor {
         }
 
         @Override
-        public long timeoutNanos() {
-            return TimeUnit.MILLISECONDS.toNanos(kernelTransaction.timeoutMillis());
+        public TransactionTimeout timeout() {
+            return kernelTransaction.timeout();
         }
 
         @Override

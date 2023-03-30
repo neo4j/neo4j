@@ -53,6 +53,7 @@ import org.neo4j.kernel.api.InnerTransactionHandler;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TerminationMark;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -214,7 +215,7 @@ public class StubKernelTransaction implements KernelTransaction {
     }
 
     @Override
-    public long timeout() {
+    public TransactionTimeout timeout() {
         throw new UnsupportedOperationException("not implemented");
     }
 

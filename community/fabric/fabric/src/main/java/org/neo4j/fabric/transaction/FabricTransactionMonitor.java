@@ -19,6 +19,9 @@
  */
 package org.neo4j.fabric.transaction;
 
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
+
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -28,6 +31,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.TerminationMark;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitor;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
@@ -49,14 +53,14 @@ public class FabricTransactionMonitor extends TransactionMonitor {
 
     public void startMonitoringTransaction(FabricTransactionImpl transaction, FabricTransactionInfo transactionInfo) {
         long startTimeNanos = clock.nanos();
-        long timeoutNanos;
+        TransactionTimeout timeout;
         if (transactionInfo.getTxTimeout() != null) {
-            timeoutNanos = transactionInfo.getTxTimeout().toNanos();
+            timeout = new TransactionTimeout(transactionInfo.getTxTimeout(), TransactionTimedOutClientConfiguration);
         } else {
-            timeoutNanos = fabricConfig.getTransactionTimeout().toNanos();
+            timeout = new TransactionTimeout(fabricConfig.getTransactionTimeout(), TransactionTimedOut);
         }
 
-        transactions.put(transaction, new FabricMonitoredTransaction(transaction, startTimeNanos, timeoutNanos));
+        transactions.put(transaction, new FabricMonitoredTransaction(transaction, startTimeNanos, timeout));
     }
 
     public void stopMonitoringTransaction(FabricTransactionImpl transaction) {
@@ -71,12 +75,13 @@ public class FabricTransactionMonitor extends TransactionMonitor {
     private static class FabricMonitoredTransaction implements MonitoredTransaction {
         private final FabricTransactionImpl fabricTransaction;
         private final long startTimeNanos;
-        private final long timeoutNanos;
+        private final TransactionTimeout timeout;
 
-        FabricMonitoredTransaction(FabricTransactionImpl fabricTransaction, long startTimeNanos, long timeoutNanos) {
+        FabricMonitoredTransaction(
+                FabricTransactionImpl fabricTransaction, long startTimeNanos, TransactionTimeout timeout) {
             this.fabricTransaction = fabricTransaction;
             this.startTimeNanos = startTimeNanos;
-            this.timeoutNanos = timeoutNanos;
+            this.timeout = timeout;
         }
 
         @Override
@@ -85,8 +90,8 @@ public class FabricTransactionMonitor extends TransactionMonitor {
         }
 
         @Override
-        public long timeoutNanos() {
-            return timeoutNanos;
+        public TransactionTimeout timeout() {
+            return timeout;
         }
 
         @Override

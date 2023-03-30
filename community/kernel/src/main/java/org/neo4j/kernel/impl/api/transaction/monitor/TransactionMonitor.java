@@ -27,6 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.api.TerminationMark;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.logging.InternalLog;
@@ -59,11 +60,11 @@ public abstract class TransactionMonitor implements Runnable {
     protected abstract Set<MonitoredTransaction> getActiveTransactions();
 
     private void checkExpiredTransaction(MonitoredTransaction transaction, long nowNanos) {
-        long transactionTimeoutNanos = transaction.timeoutNanos();
+        long transactionTimeoutNanos = transaction.timeout().timeout().toNanos();
         if (transactionTimeoutNanos > 0) {
             if (isTransactionExpired(transaction, nowNanos, transactionTimeoutNanos)
                     && !transaction.isSchemaTransaction()) {
-                if (transaction.markForTermination(Status.Transaction.TransactionTimedOut)) {
+                if (transaction.markForTermination(transaction.timeout().timoutStatus())) {
                     log.warn("Transaction %s timeout.", transaction.getIdentifyingDescription());
                 }
             }
@@ -120,7 +121,7 @@ public abstract class TransactionMonitor implements Runnable {
     public interface MonitoredTransaction {
         long startTimeNanos();
 
-        long timeoutNanos();
+        TransactionTimeout timeout();
 
         boolean isSchemaTransaction();
 

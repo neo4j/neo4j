@@ -53,8 +53,10 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionValidationFailed;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +90,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -109,6 +112,10 @@ import org.neo4j.test.DoubleLatch;
 import org.neo4j.util.concurrent.Futures;
 
 class KernelTransactionImplementationTest extends KernelTransactionTestBase {
+
+    private static final TransactionTimeout DEFAULT_TX_TIMEOUT =
+            new TransactionTimeout(Duration.ZERO, TransactionTimedOutClientConfiguration);
+
     private static Stream<Arguments> parameters() {
         Consumer<KernelTransaction> readTxInitializer = tx -> {};
         Consumer<KernelTransaction> writeTxInitializer =
@@ -410,7 +417,12 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
         try (KernelTransactionImplementation transaction = newTransaction(loginContext(isWriteTx))) {
             transaction.initialize(
-                    5L, KernelTransaction.Type.IMPLICIT, SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION);
+                    5L,
+                    KernelTransaction.Type.IMPLICIT,
+                    SecurityContext.AUTH_DISABLED,
+                    DEFAULT_TX_TIMEOUT,
+                    1L,
+                    EMBEDDED_CONNECTION);
             transaction.txState().nodeDoCreate(1L);
             // WHEN committing it at a later point
             clock.forward(5, MILLISECONDS);
@@ -568,7 +580,10 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
     void transactionWithCustomTimeout() {
         long transactionTimeout = 5L;
         KernelTransactionImplementation transaction = newTransaction(transactionTimeout);
-        assertEquals(transactionTimeout, transaction.timeout(), "Transaction should have custom configured timeout.");
+        assertEquals(
+                new TransactionTimeout(Duration.ofMillis(transactionTimeout), TransactionTimedOutClientConfiguration),
+                transaction.timeout(),
+                "Transaction should have custom configured timeout.");
     }
 
     @Test
@@ -585,7 +600,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         long userTransactionId = 10;
         Status.Transaction terminationReason = Status.Transaction.Terminated;
 
-        KernelTransactionImplementation tx = newTransaction(2L, AUTH_DISABLED, 0L, userTransactionId);
+        KernelTransactionImplementation tx = newTransaction(2L, AUTH_DISABLED, DEFAULT_TX_TIMEOUT, userTransactionId);
 
         assertTrue(tx.markForTermination(userTransactionId, terminationReason));
 
@@ -600,7 +615,7 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         long wrongUserTransactionId = userTransactionId + 2;
         Status.Transaction terminationReason = Status.Transaction.Terminated;
 
-        KernelTransactionImplementation tx = newTransaction(2L, AUTH_DISABLED, 0L, userTransactionId);
+        KernelTransactionImplementation tx = newTransaction(2L, AUTH_DISABLED, DEFAULT_TX_TIMEOUT, userTransactionId);
 
         assertFalse(tx.markForTermination(wrongUserTransactionId, terminationReason));
 
@@ -666,7 +681,12 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         });
         KernelTransactionImplementation transaction = newNotInitializedTransaction(leaseClient);
         transaction.initialize(
-                0, KernelTransaction.Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
+                0,
+                KernelTransaction.Type.IMPLICIT,
+                mock(SecurityContext.class),
+                DEFAULT_TX_TIMEOUT,
+                1L,
+                EMBEDDED_CONNECTION);
         assertEquals("KernelTransaction[lease:" + leaseId + "]", transaction.toString());
     }
 
@@ -686,7 +706,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             }
         });
         var transaction = newNotInitializedTransaction(leaseService);
-        transaction.initialize(0, Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
+        transaction.initialize(
+                0, Type.IMPLICIT, mock(SecurityContext.class), DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
 
         // when / then
         assertThrows(LeaseException.class, transaction::txState);
@@ -701,7 +722,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         var config = Config.defaults(configValues);
 
         var transaction = newNotInitializedTransaction(config, fooDb);
-        transaction.initialize(0, Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
+        transaction.initialize(
+                0, Type.IMPLICIT, mock(SecurityContext.class), DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
 
         // when / then
         var rte = assertThrows(RuntimeException.class, transaction::txState);
@@ -714,7 +736,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         var config = spy(Config.defaults());
 
         var transaction = newNotInitializedTransaction(config);
-        transaction.initialize(0, Type.IMPLICIT, mock(SecurityContext.class), 0, 1L, EMBEDDED_CONNECTION);
+        transaction.initialize(
+                0, Type.IMPLICIT, mock(SecurityContext.class), DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
 
         verify(config, times(3)).addListener(any(), any());
 
@@ -736,7 +759,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
             // Increase limit and try again
             config.setDynamic(memory_transaction_max_size, mebiBytes(4), "test");
-            transaction.initialize(5L, Type.IMPLICIT, SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION);
+            transaction.initialize(
+                    5L, Type.IMPLICIT, SecurityContext.AUTH_DISABLED, DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
 
             transaction.memoryTracker().allocateHeap(mebiBytes(3));
         }
@@ -803,7 +827,12 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
     @Test
     void shouldNotCheckLeaseOnSuccessfulTx() {
         KernelTransactionImplementation transaction = newNotInitializedTransaction(new ExpiredLeases());
-        initialize(0, AUTH_DISABLED, 1000L, 1L, transaction);
+        initialize(
+                0,
+                AUTH_DISABLED,
+                new TransactionTimeout(Duration.ofSeconds(1), TransactionTimedOutClientConfiguration),
+                1L,
+                transaction);
         assertThatCode(transaction::commit).doesNotThrowAnyException();
     }
 
@@ -811,7 +840,12 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
     void shouldCheckLeaseOnUnexpectedException() {
         ExpiredLeases leases = new ExpiredLeases();
         KernelTransactionImplementation transaction = newNotInitializedTransaction(leases);
-        initialize(0, AUTH_DISABLED, 1000L, 1L, transaction);
+        initialize(
+                0,
+                AUTH_DISABLED,
+                new TransactionTimeout(Duration.ofSeconds(1), TransactionTimedOutClientConfiguration),
+                1L,
+                transaction);
         RuntimeException foo = new RuntimeException("foo");
         doThrow(foo).when(locksClient).close();
         assertThatThrownBy(transaction::commit).isSameAs(foo).hasSuppressedException(leases.expired());

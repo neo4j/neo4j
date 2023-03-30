@@ -27,8 +27,11 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -60,6 +63,7 @@ import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.DefaultVersionStorageTracer;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -118,8 +122,8 @@ class KernelTransactionTestBase {
     protected CollectionsFactory collectionsFactory;
 
     protected final Config config = Config.defaults();
-    private final long defaultTransactionTimeoutMillis =
-            config.get(GraphDatabaseSettings.transaction_timeout).toMillis();
+    private final TransactionTimeout defaultTransactionTimeoutMillis =
+            new TransactionTimeout(config.get(GraphDatabaseSettings.transaction_timeout), TransactionTimedOut);
 
     @BeforeEach
     public void before() throws Exception {
@@ -141,7 +145,12 @@ class KernelTransactionTestBase {
     }
 
     public KernelTransactionImplementation newTransaction(long transactionTimeoutMillis) {
-        return newTransaction(0, AUTH_DISABLED, transactionTimeoutMillis, 1L);
+        return newTransaction(
+                0,
+                AUTH_DISABLED,
+                new TransactionTimeout(
+                        Duration.ofMillis(transactionTimeoutMillis), TransactionTimedOutClientConfiguration),
+                1L);
     }
 
     public KernelTransactionImplementation newTransaction(LoginContext loginContext) {
@@ -151,7 +160,7 @@ class KernelTransactionTestBase {
     public KernelTransactionImplementation newTransaction(
             long lastTransactionIdWhenStarted,
             LoginContext loginContext,
-            long transactionTimeout,
+            TransactionTimeout transactionTimeout,
             long userTransactionId) {
         KernelTransactionImplementation tx = newNotInitializedTransaction();
         initialize(lastTransactionIdWhenStarted, loginContext, transactionTimeout, userTransactionId, tx);
@@ -161,7 +170,7 @@ class KernelTransactionTestBase {
     void initialize(
             long lastTransactionIdWhenStarted,
             LoginContext loginContext,
-            long transactionTimeout,
+            TransactionTimeout transactionTimeout,
             long userTransactionId,
             KernelTransactionImplementation tx) {
         SecurityContext securityContext = loginContext.authorize(

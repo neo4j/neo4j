@@ -92,6 +92,7 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TerminationMark;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -216,7 +217,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile TerminationMark terminationMark;
     private long startTimeMillis;
     private volatile long startTimeNanos;
-    private volatile long timeoutMillis;
+    private volatile TransactionTimeout timeout;
     private long lastTransactionIdWhenStarted;
     private final Statistics statistics;
     private TransactionEvent transactionEvent;
@@ -401,7 +402,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             long lastCommittedTx,
             Type type,
             SecurityContext frozenSecurityContext,
-            long transactionTimeout,
+            TransactionTimeout transactionTimeout,
             long transactionSequenceNumber,
             ClientConnectionInfo clientInfo) {
         assert transactionMemoryPool.usedHeap() == 0;
@@ -420,7 +421,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clocks.systemClock().millis();
         this.startTimeNanos = clocks.systemClock().nanos();
-        this.timeoutMillis = transactionTimeout;
+        this.timeout = transactionTimeout;
         this.lastTransactionIdWhenStarted = lastCommittedTx;
         this.transactionEvent = transactionTracer.beginTransaction(cursorContext);
         this.overridableSecurityContext = new OverridableSecurityContext(frozenSecurityContext);
@@ -531,8 +532,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public long timeout() {
-        return timeoutMillis;
+    public TransactionTimeout timeout() {
+        return timeout;
     }
 
     @Override

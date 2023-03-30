@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.TerminationMark;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
@@ -58,7 +59,7 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle {
     }
 
     @Override
-    public long timeoutMillis() {
+    public TransactionTimeout timeout() {
         return tx.timeout();
     }
 

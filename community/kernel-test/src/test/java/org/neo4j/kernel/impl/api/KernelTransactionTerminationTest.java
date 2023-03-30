@@ -32,6 +32,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.TransactionTimeout.NO_TIMEOUT;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
@@ -313,7 +314,7 @@ class KernelTransactionTerminationTest {
         }
 
         TestKernelTransaction initialize() {
-            initialize(42, Type.IMPLICIT, AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION);
+            initialize(42, Type.IMPLICIT, AUTH_DISABLED, NO_TIMEOUT, 1L, EMBEDDED_CONNECTION);
             monitor.reset();
             return this;
         }

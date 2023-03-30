@@ -52,6 +52,7 @@ import org.neo4j.io.pagecache.context.VersionContext;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
@@ -245,7 +246,10 @@ public class KernelTransactions extends LifecycleAdapter
     }
 
     public KernelTransaction newInstance(
-            KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout) {
+            KernelTransaction.Type type,
+            LoginContext loginContext,
+            ClientConnectionInfo clientInfo,
+            TransactionTimeout timeout) {
         assertCurrentThreadIsNotBlockingNewTransactions();
         SecurityContext securityContext =
                 loginContext.authorize(tokenHoldersIdLookup, namedDatabaseId.name(), securityLog);

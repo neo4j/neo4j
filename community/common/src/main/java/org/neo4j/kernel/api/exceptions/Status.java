@@ -137,6 +137,10 @@ public interface Status {
                 ClientError,
                 "The transaction has not completed within the specified timeout (db.transaction.timeout). You may want to retry with a longer "
                         + "timeout."),
+        TransactionTimedOutClientConfiguration(
+                ClientError,
+                "The transaction has not completed within the timeout specified at its start by the client. You may want to retry with a longer "
+                        + "timeout."),
         InvalidBookmark(
                 ClientError,
                 "Supplied bookmark cannot be interpreted. You should only supply a bookmark that was "

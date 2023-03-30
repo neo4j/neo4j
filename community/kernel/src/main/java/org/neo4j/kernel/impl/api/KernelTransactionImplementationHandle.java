@@ -29,6 +29,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.TerminationMark;
+import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
@@ -46,7 +47,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
 
     private final long startTime;
     private final long startTimeNanos;
-    private final long timeoutMillis;
+    private final TransactionTimeout timeout;
     private final KernelTransactionImplementation tx;
     private final SystemNanoClock clock;
     private final ClientConnectionInfo clientInfo;
@@ -64,7 +65,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
         this.transactionStamp = new KernelTransactionStamp(tx);
         this.startTime = tx.startTime();
         this.startTimeNanos = tx.startTimeNanos();
-        this.timeoutMillis = tx.timeout();
+        this.timeout = tx.timeout();
         this.subject = tx.subjectOrAnonymous();
         this.terminationMark = tx.getTerminationMark();
         this.executingQuery = tx.executingQuery();
@@ -89,8 +90,8 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     }
 
     @Override
-    public long timeoutMillis() {
-        return timeoutMillis;
+    public TransactionTimeout timeout() {
+        return timeout;
     }
 
     @Override
