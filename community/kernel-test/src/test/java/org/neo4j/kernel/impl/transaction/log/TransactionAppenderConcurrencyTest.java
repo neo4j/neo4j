@@ -218,7 +218,7 @@ public class TransactionAppenderConcurrencyTest {
 
         // Check number of transactions, should only have one
         LogEntryReader logEntryReader =
-                new VersionAwareLogEntryReader(new TestCommandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION);
+                new VersionAwareLogEntryReader(new TestCommandReaderFactory(), LatestVersions.BINARY_VERSIONS);
 
         LogFile logFile = logFiles.getLogFile();
         assertThat(logFile.getLowestLogVersion()).isEqualTo(logFile.getHighestLogVersion());

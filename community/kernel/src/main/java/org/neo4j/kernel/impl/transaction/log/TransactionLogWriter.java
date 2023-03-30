@@ -23,6 +23,7 @@ import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIn
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -38,8 +39,8 @@ public class TransactionLogWriter {
     public TransactionLogWriter(
             FlushableLogPositionAwareChannel channel,
             KernelVersionProvider versionProvider,
-            KernelVersion latestRecognizedKernelVersion) {
-        this(channel, new LogEntryWriter<>(channel, latestRecognizedKernelVersion), versionProvider);
+            BinarySupportedKernelVersions binarySupportedKernelVersions) {
+        this(channel, new LogEntryWriter<>(channel, binarySupportedKernelVersions), versionProvider);
     }
 
     @VisibleForTesting

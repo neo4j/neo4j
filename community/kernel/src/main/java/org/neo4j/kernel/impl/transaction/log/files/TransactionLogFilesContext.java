@@ -27,6 +27,7 @@ import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
@@ -59,6 +60,7 @@ public class TransactionLogFilesContext {
     private final String databaseName;
     private final Config config;
     private final LogTailMetadata externalTailInfo;
+    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
 
     public TransactionLogFilesContext(
             AtomicLong rotationThreshold,
@@ -81,7 +83,8 @@ public class TransactionLogFilesContext {
             Clock clock,
             String databaseName,
             Config config,
-            LogTailMetadata externalTailInfo) {
+            LogTailMetadata externalTailInfo,
+            BinarySupportedKernelVersions binarySupportedKernelVersions) {
         this.rotationThreshold = rotationThreshold;
         this.tryPreallocateTransactionLogs = tryPreallocateTransactionLogs;
         this.commandReaderFactory = commandReaderFactory;
@@ -103,6 +106,7 @@ public class TransactionLogFilesContext {
         this.databaseName = databaseName;
         this.config = config;
         this.externalTailInfo = externalTailInfo;
+        this.binarySupportedKernelVersions = binarySupportedKernelVersions;
     }
 
     AtomicLong getRotationThreshold() {
@@ -187,5 +191,9 @@ public class TransactionLogFilesContext {
 
     public LogTailMetadata getExternalTailInfo() {
         return externalTailInfo;
+    }
+
+    public BinarySupportedKernelVersions getBinarySupportedKernelVersions() {
+        return binarySupportedKernelVersions;
     }
 }

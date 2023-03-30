@@ -23,6 +23,7 @@ import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 
 import java.io.IOException;
 import org.neo4j.io.fs.ReadPastEndException;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.LogPositionMarker;
@@ -38,25 +39,25 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
     private static final boolean VERIFY_CHECKSUM_CHAIN =
             FeatureToggles.flag(LogEntryReader.class, "verifyChecksumChain", false);
     private final CommandReaderFactory commandReaderFactory;
-    private final KernelVersion latestRecognizedKernelVersion;
+    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private final LogPositionMarker positionMarker;
     private final boolean verifyChecksumChain;
     private LogEntrySerializationSet parserSet;
     private int lastTxChecksum = BASE_TX_CHECKSUM;
 
     public VersionAwareLogEntryReader(
-            CommandReaderFactory commandReaderFactory, KernelVersion latestRecognizedKernelVersion) {
-        this(commandReaderFactory, true, latestRecognizedKernelVersion);
+            CommandReaderFactory commandReaderFactory, BinarySupportedKernelVersions binarySupportedKernelVersions) {
+        this(commandReaderFactory, true, binarySupportedKernelVersions);
     }
 
     public VersionAwareLogEntryReader(
             CommandReaderFactory commandReaderFactory,
             boolean verifyChecksumChain,
-            KernelVersion latestRecognizedKernelVersion) {
+            BinarySupportedKernelVersions binarySupportedKernelVersions) {
         this.commandReaderFactory = commandReaderFactory;
         this.positionMarker = new LogPositionMarker();
         this.verifyChecksumChain = verifyChecksumChain;
-        this.latestRecognizedKernelVersion = latestRecognizedKernelVersion;
+        this.binarySupportedKernelVersions = binarySupportedKernelVersions;
     }
 
     @Override
@@ -89,15 +90,15 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
 
         try {
             parserSet = LogEntrySerializationSets.serializationSet(
-                    KernelVersion.getForVersion(versionCode), latestRecognizedKernelVersion);
+                    KernelVersion.getForVersion(versionCode), binarySupportedKernelVersions);
         } catch (IllegalArgumentException e) {
             String msg;
-            if (latestRecognizedKernelVersion.isLessThan(versionCode)) {
+            if (binarySupportedKernelVersions.latestSupportedIsLessThan(versionCode)) {
                 msg = String.format(
                         "Log file contains entries with prefix %d, and the highest supported prefix is %s. This "
                                 + "indicates that the log files originates from an newer version of neo4j, which we don't support "
                                 + "downgrading from.",
-                        versionCode, latestRecognizedKernelVersion);
+                        versionCode, binarySupportedKernelVersions);
             } else {
                 msg = String.format(
                         "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This "

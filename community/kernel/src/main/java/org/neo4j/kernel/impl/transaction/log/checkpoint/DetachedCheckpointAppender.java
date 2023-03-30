@@ -31,6 +31,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.NativeScopedBuffer;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -65,7 +66,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
     private final TransactionLogFilesContext context;
     private final Panic databasePanic;
     private final LogRotation logRotation;
-    private final KernelVersion latestRecognizedKernelVersion;
+    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private StoreId storeId;
     private PhysicalFlushableLogPositionAwareChannel writer;
     private NativeScopedBuffer buffer;
@@ -81,7 +82,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             CheckpointFile checkpointFile,
             LogRotation checkpointRotation,
             DetachedLogTailScanner logTailScanner,
-            KernelVersion latestRecognizedKernelVersion) {
+            BinarySupportedKernelVersions binarySupportedKernelVersions) {
         this.logFiles = logFiles;
         this.checkpointFile = requireNonNull(checkpointFile);
         this.context = requireNonNull(context);
@@ -90,7 +91,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         this.logRotation = requireNonNull(checkpointRotation);
         this.log = context.getLogProvider().getLog(DetachedCheckpointAppender.class);
         this.logTailScanner = logTailScanner;
-        this.latestRecognizedKernelVersion = latestRecognizedKernelVersion;
+        this.binarySupportedKernelVersions = binarySupportedKernelVersions;
     }
 
     @Override
@@ -131,9 +132,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
         try (var reader = new ReadAheadLogChannel(
                         new UnclosableChannel(channel), NO_MORE_CHANNELS, context.getMemoryTracker());
                 var logEntryCursor = new LogEntryCursor(
-                        new VersionAwareLogEntryReader(
-                                NO_COMMANDS, true, KernelVersion.getLatestVersion(context.getConfig())),
-                        reader)) {
+                        new VersionAwareLogEntryReader(NO_COMMANDS, true, binarySupportedKernelVersions), reader)) {
             while (logEntryCursor.next()) {
                 logEntryCursor.get();
             }
@@ -167,7 +166,7 @@ public class DetachedCheckpointAppender extends LifecycleAdapter implements Chec
             try {
                 databasePanic.assertNoPanic(IOException.class);
                 var logPositionBeforeCheckpoint = writer.getCurrentLogPosition();
-                serializationSet(kernelVersion, latestRecognizedKernelVersion)
+                serializationSet(kernelVersion, binarySupportedKernelVersions)
                         .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0)
                         .write(
                                 writer,

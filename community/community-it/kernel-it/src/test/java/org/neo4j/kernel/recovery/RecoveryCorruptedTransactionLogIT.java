@@ -34,7 +34,6 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_TRANSACTION_ID;
-import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
 import java.io.IOException;
@@ -953,7 +952,7 @@ class RecoveryCorruptedTransactionLogIT {
     }
 
     private boolean checkpointEntryLooksCorrupted(byte[] array) {
-        var testReader = new VersionAwareLogEntryReader(version -> null, LatestVersions.LATEST_KERNEL_VERSION);
+        var testReader = new VersionAwareLogEntryReader(version -> null, LatestVersions.BINARY_VERSIONS);
         var ch = new InMemoryVersionableReadableClosablePositionAwareChannel();
         for (byte b : array) {
             ch.put(b);
@@ -1013,7 +1012,7 @@ class RecoveryCorruptedTransactionLogIT {
 
     private LogPosition getLastReadablePosition(Path logFile) throws IOException {
         VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
-                storageEngineFactory.commandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION);
+                storageEngineFactory.commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
         LogFile txLogFile = logFiles.getLogFile();
         long logVersion = txLogFile.getLogVersion(logFile);
         LogPosition startPosition = txLogFile.extractHeader(logVersion).getStartPosition();
@@ -1036,7 +1035,7 @@ class RecoveryCorruptedTransactionLogIT {
 
     private LogPosition getLastReadablePosition(LogFile logFile) throws IOException {
         VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
-                storageEngineFactory.commandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION);
+                storageEngineFactory.commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
         LogPosition startPosition = logFile.extractHeader(logFiles.getLogFile().getHighestLogVersion())
                 .getStartPosition();
         try (ReadableLogChannel reader = logFile.getReader(startPosition)) {
@@ -1224,7 +1223,7 @@ class RecoveryCorruptedTransactionLogIT {
 
     private static class CorruptedLogEntryWriter<T extends WritableChannel> extends LogEntryWriter<T> {
         CorruptedLogEntryWriter(T channel) {
-            super(channel, LATEST_KERNEL_VERSION);
+            super(channel, LatestVersions.BINARY_VERSIONS);
         }
 
         @Override
@@ -1241,7 +1240,7 @@ class RecoveryCorruptedTransactionLogIT {
 
     private static class CorruptedLogEntryVersionWriter<T extends WritableChannel> extends LogEntryWriter<T> {
         CorruptedLogEntryVersionWriter(T channel) {
-            super(channel, LATEST_KERNEL_VERSION);
+            super(channel, LatestVersions.BINARY_VERSIONS);
         }
 
         /**

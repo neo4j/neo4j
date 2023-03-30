@@ -39,6 +39,7 @@ import org.neo4j.internal.nativeimpl.NativeAccessProvider;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -305,7 +306,8 @@ public class LogFilesBuilder {
                 clock,
                 databaseLayout.getDatabaseName(),
                 config,
-                externalLogTail);
+                externalLogTail,
+                new BinarySupportedKernelVersions(config));
     }
 
     private CommandReaderFactory commandReaderFactory() {

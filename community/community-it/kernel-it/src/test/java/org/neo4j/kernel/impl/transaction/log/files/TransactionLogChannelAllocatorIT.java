@@ -250,7 +250,8 @@ class TransactionLogChannelAllocatorIT {
                 Clock.systemUTC(),
                 DEFAULT_DATABASE_NAME,
                 config,
-                null);
+                null,
+                LatestVersions.BINARY_VERSIONS);
     }
 
     private static class AdviseCountingChannelNativeAccessor extends ChannelNativeAccessor.EmptyChannelNativeAccessor {

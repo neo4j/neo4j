@@ -51,7 +51,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.NativeScopedBuffer;
-import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.UnclosableChannel;
 import org.neo4j.kernel.impl.transaction.log.LogHeaderCache;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -142,9 +141,8 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
                 channel,
                 new NativeScopedBuffer(
                         context.getConfig().get(transaction_log_buffer_size), ByteOrder.LITTLE_ENDIAN, memoryTracker));
-        KernelVersion latestRecognizedKernelVersion = KernelVersion.getLatestVersion(context.getConfig());
-        transactionLogWriter =
-                new TransactionLogWriter(writer, context.getKernelVersionProvider(), latestRecognizedKernelVersion);
+        transactionLogWriter = new TransactionLogWriter(
+                writer, context.getKernelVersionProvider(), context.getBinarySupportedKernelVersions());
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence
@@ -633,7 +631,7 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         try (ReadAheadLogChannel readAheadLogChannel =
                 new ReadAheadLogChannel(new UnclosableChannel(channel), memoryTracker)) {
             LogEntryReader logEntryReader = new VersionAwareLogEntryReader(
-                    context.getCommandReaderFactory(), KernelVersion.getLatestVersion(context.getConfig()));
+                    context.getCommandReaderFactory(), context.getBinarySupportedKernelVersions());
             LogEntry entry;
             do {
                 // seek to the end the records.

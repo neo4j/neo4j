@@ -40,7 +40,7 @@ import java.util.ListIterator;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.HeapScopedBuffer;
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.CheckpointInfo;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -76,7 +76,7 @@ public class DetachedLogTailScanner {
     private final boolean failOnCorruptedLogFiles;
     private final FileSystemAbstraction fileSystem;
     private final KernelVersionProvider fallbackKernelVersionProvider;
-    private final KernelVersion latestKernelVersion;
+    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
 
     private LogTailMetadata logTail;
 
@@ -94,7 +94,7 @@ public class DetachedLogTailScanner {
         this.fallbackKernelVersionProvider = context.getKernelVersionProvider();
         this.logTail = context.getExternalTailInfo();
         this.monitor = monitor;
-        this.latestKernelVersion = KernelVersion.getLatestVersion(context.getConfig());
+        this.binarySupportedKernelVersions = context.getBinarySupportedKernelVersions();
     }
 
     public LogTailInformation findLogTail() {
@@ -212,7 +212,8 @@ public class DetachedLogTailScanner {
                             ? logPosition
                             : logFile.extractHeader(logVersion).getStartPosition();
 
-                    var logEntryReader = new VersionAwareLogEntryReader(commandReaderFactory, latestKernelVersion);
+                    var logEntryReader =
+                            new VersionAwareLogEntryReader(commandReaderFactory, binarySupportedKernelVersions);
                     try (var reader = logFile.getReader(lookupPosition, NO_MORE_CHANNELS);
                             var cursor = new LogEntryCursor(logEntryReader, reader)) {
                         LogEntry entry;

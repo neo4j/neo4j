@@ -31,7 +31,6 @@ import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryR
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
-import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
 
 import java.io.IOException;
@@ -269,7 +268,7 @@ class ReversedSingleFileCommandBatchCursorTest {
 
     private static class CorruptedLogEntryWriter<T extends WritableChannel> extends LogEntryWriter<T> {
         CorruptedLogEntryWriter(T channel) {
-            super(channel, LATEST_KERNEL_VERSION);
+            super(channel, LatestVersions.BINARY_VERSIONS);
         }
 
         @Override

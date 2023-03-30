@@ -231,7 +231,7 @@ class TransactionLogsRecoveryTest {
                             mock(InternalLog.class),
                             Clocks.systemClock(),
                             false,
-                            LATEST_KERNEL_VERSION) {
+                            LatestVersions.BINARY_VERSIONS) {
                         private int nr;
 
                         @Override
@@ -348,7 +348,7 @@ class TransactionLogsRecoveryTest {
                             mock(InternalLog.class),
                             Clocks.systemClock(),
                             false,
-                            LATEST_KERNEL_VERSION),
+                            LatestVersions.BINARY_VERSIONS),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -647,7 +647,7 @@ class TransactionLogsRecoveryTest {
                             mock(InternalLog.class),
                             Clocks.systemClock(),
                             false,
-                            LATEST_KERNEL_VERSION),
+                            LatestVersions.BINARY_VERSIONS),
                     logPruner,
                     schemaLife,
                     monitor,
@@ -691,7 +691,7 @@ class TransactionLogsRecoveryTest {
                             BASE_TX_CHECKSUM),
                     INSTANCE);
             writableLogChannel.beginChecksum();
-            LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, LATEST_KERNEL_VERSION);
+            LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, LatestVersions.BINARY_VERSIONS);
             visitor.visit(new DataWriters(first, writableLogChannel));
         }
     }

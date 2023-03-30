@@ -77,7 +77,7 @@ class VersionAwareLogEntryReaderIT {
         databaseLayout = database.databaseLayout();
         storageEngineFactory = database.getDependencyResolver().resolveDependency(StorageEngineFactory.class);
         entryReader = new VersionAwareLogEntryReader(
-                storageEngineFactory.commandReaderFactory(), LatestVersions.LATEST_KERNEL_VERSION);
+                storageEngineFactory.commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
         managementService.shutdown();
     }
 

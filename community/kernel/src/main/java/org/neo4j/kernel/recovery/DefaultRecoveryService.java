@@ -32,6 +32,7 @@ import java.time.Clock;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -61,7 +62,7 @@ public class DefaultRecoveryService implements RecoveryService {
     private final InternalLog log;
     private final Clock clock;
     private final boolean doParallelRecovery;
-    private final KernelVersion latestRecognizedKernelVersion;
+    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
 
     DefaultRecoveryService(
             StorageEngine storageEngine,
@@ -74,7 +75,7 @@ public class DefaultRecoveryService implements RecoveryService {
             InternalLog log,
             Clock clock,
             boolean doParallelRecovery,
-            KernelVersion latestRecognizedKernelVersion) {
+            BinarySupportedKernelVersions binarySupportedKernelVersions) {
         this.storageEngine = storageEngine;
         this.transactionIdStore = transactionIdStore;
         this.logicalTransactionStore = logicalTransactionStore;
@@ -84,7 +85,7 @@ public class DefaultRecoveryService implements RecoveryService {
         this.log = log;
         this.clock = clock;
         this.doParallelRecovery = doParallelRecovery;
-        this.latestRecognizedKernelVersion = latestRecognizedKernelVersion;
+        this.binarySupportedKernelVersions = binarySupportedKernelVersions;
         this.recoveryStartInformationProvider = new RecoveryStartInformationProvider(logFiles, monitor);
     }
 
@@ -120,7 +121,7 @@ public class DefaultRecoveryService implements RecoveryService {
         try (var tempRollbackBuffer = new HeapScopedBuffer(
                         DEFAULT_BUFFER_SIZE, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE);
                 var writerChannel = new PhysicalFlushableLogPositionAwareChannel(channel, tempRollbackBuffer)) {
-            var entryWriter = new LogEntryWriter<>(writerChannel, latestRecognizedKernelVersion);
+            var entryWriter = new LogEntryWriter<>(writerChannel, binarySupportedKernelVersions);
             long time = clock.millis();
             for (long notCompletedTransaction : notCompletedTransactions) {
                 entryWriter.writeRollbackEntry(kernelVersion, notCompletedTransaction, time);

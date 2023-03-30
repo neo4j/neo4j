@@ -32,7 +32,6 @@ import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.StoreIdSerialization.MAX_STORE_ID_LENGTH;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
-import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -57,6 +56,7 @@ import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.StoreIdSerialization;
 import org.neo4j.storageengine.api.TransactionId;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.arguments.KernelVersionSource;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
@@ -83,7 +83,7 @@ class DetachedCheckpointLogEntrySerializerTest {
             }
 
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
-                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LATEST_KERNEL_VERSION);
+                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
             try (var readChannel = new ReadAheadLogChannel(
                     new PhysicalLogVersionedStoreChannel(
                             fs.read(path), -1 /* ignored */, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
@@ -123,7 +123,7 @@ class DetachedCheckpointLogEntrySerializerTest {
             }
 
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
-                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LATEST_KERNEL_VERSION);
+                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
             try (var readChannel = new ReadAheadLogChannel(
                     new PhysicalLogVersionedStoreChannel(
                             fs.read(path), 1, (byte) 2, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
@@ -184,7 +184,7 @@ class DetachedCheckpointLogEntrySerializerTest {
             throws IOException {
         var transactionId = new TransactionId(70, 80, 90, 10);
         LogPosition logPosition = new LogPosition(100, 200);
-        serializationSet(kernelVersion, LATEST_KERNEL_VERSION)
+        serializationSet(kernelVersion, LatestVersions.BINARY_VERSIONS)
                 .select(LogEntryTypeCodes.DETACHED_CHECK_POINT_V5_0)
                 .write(
                         channel,

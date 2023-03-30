@@ -29,6 +29,7 @@ import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_S
 
 import java.io.IOException;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -41,13 +42,13 @@ import org.neo4j.util.VisibleForTesting;
 
 public class LogEntryWriter<T extends WritableChannel> {
     protected final T channel;
-    private final KernelVersion latestRecognizedKernelVersion;
+    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
     private LogEntrySerializationSet logEntrySerializationSet;
     private KernelVersion currentVersion;
 
-    public LogEntryWriter(T channel, KernelVersion latestRecognizedKernelVersion) {
+    public LogEntryWriter(T channel, BinarySupportedKernelVersions binarySupportedKernelVersions) {
         this.channel = channel;
-        this.latestRecognizedKernelVersion = latestRecognizedKernelVersion;
+        this.binarySupportedKernelVersions = binarySupportedKernelVersions;
     }
 
     public void writeStartEntry(
@@ -133,7 +134,7 @@ public class LogEntryWriter<T extends WritableChannel> {
 
     private void updateSerializationSet(KernelVersion version) {
         if (version != currentVersion) {
-            logEntrySerializationSet = serializationSet(version, latestRecognizedKernelVersion);
+            logEntrySerializationSet = serializationSet(version, binarySupportedKernelVersions);
             currentVersion = version;
         }
     }

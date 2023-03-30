@@ -57,6 +57,7 @@ import org.neo4j.io.fs.watcher.FileWatcher;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.locker.Locker;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.availability.CompositeDatabaseAvailabilityGuard;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.ExtensionFactory;
@@ -136,6 +137,7 @@ public class GlobalModule {
     private final GlobalMemoryGroupTracker transactionsMemoryPool;
     private final GlobalMemoryGroupTracker otherMemoryPool;
     private final CapabilitiesService capabilitiesService;
+    private final BinarySupportedKernelVersions binarySupportedKernelVersions;
 
     /**
      * @param globalConfig         configuration affecting global aspects of the system.
@@ -159,6 +161,8 @@ public class GlobalModule {
         this.neo4jLayout = Neo4jLayout.of(globalConfig);
 
         this.globalConfig = globalDependencies.satisfyDependency(globalConfig);
+        binarySupportedKernelVersions = new BinarySupportedKernelVersions(this.globalConfig);
+        globalDependencies.satisfyDependency(binarySupportedKernelVersions);
 
         fileSystem = tryResolveOrCreate(FileSystemAbstraction.class, this::createFileSystemAbstraction);
         globalDependencies.satisfyDependency(fileSystem);
@@ -454,6 +458,10 @@ public class GlobalModule {
 
     public FileSystemAbstraction getFileSystem() {
         return fileSystem;
+    }
+
+    public BinarySupportedKernelVersions getBinarySupportedKernelVersions() {
+        return binarySupportedKernelVersions;
     }
 
     public Tracers getTracers() {

@@ -119,7 +119,7 @@ class BatchingTransactionAppenderTest {
             throws IOException, ExecutionException, InterruptedException {
         CountingVersionProvider versionProvider = new CountingVersionProvider();
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, versionProvider, LATEST_KERNEL_VERSION));
+                .thenReturn(new TransactionLogWriter(channel, versionProvider, LatestVersions.BINARY_VERSIONS));
 
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
@@ -152,7 +152,8 @@ class BatchingTransactionAppenderTest {
     void shouldAppendSingleTransaction() throws Exception {
         // GIVEN
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
+                .thenReturn(new TransactionLogWriter(
+                        channel, LATEST_KERNEL_VERSION_PROVIDER, LatestVersions.BINARY_VERSIONS));
         long txId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -185,7 +186,7 @@ class BatchingTransactionAppenderTest {
     void shouldAppendBatchOfTransactions() throws Exception {
         // GIVEN
         TransactionLogWriter logWriter =
-                new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION);
+                new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LatestVersions.BINARY_VERSIONS);
         TransactionLogWriter logWriterSpy = spy(logWriter);
         when(logFile.getTransactionLogWriter()).thenReturn(logWriterSpy);
 
@@ -209,7 +210,8 @@ class BatchingTransactionAppenderTest {
     void shouldAppendCommittedTransactions() throws Exception {
         // GIVEN
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
+                .thenReturn(new TransactionLogWriter(
+                        channel, LATEST_KERNEL_VERSION_PROVIDER, LatestVersions.BINARY_VERSIONS));
 
         long nextTxId = 15;
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(nextTxId);
@@ -262,7 +264,8 @@ class BatchingTransactionAppenderTest {
         // GIVEN
         InMemoryClosableChannel channel = new InMemoryClosableChannel();
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
+                .thenReturn(new TransactionLogWriter(
+                        channel, LATEST_KERNEL_VERSION_PROVIDER, LatestVersions.BINARY_VERSIONS));
 
         TransactionAppender appender = life.add(createTransactionAppender());
 
@@ -304,7 +307,8 @@ class BatchingTransactionAppenderTest {
         IOException failure = new IOException(failureMessage);
         when(channel.putLong(anyLong())).thenThrow(failure);
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
+                .thenReturn(new TransactionLogWriter(
+                        channel, LATEST_KERNEL_VERSION_PROVIDER, LatestVersions.BINARY_VERSIONS));
 
         when(transactionIdStore.nextCommittingTransactionId()).thenReturn(txId);
         when(transactionIdStore.getLastCommittedTransaction())
@@ -353,7 +357,8 @@ class BatchingTransactionAppenderTest {
                 .prepareForFlush();
         when(logFile.forceAfterAppend(any())).thenThrow(failure);
         when(logFile.getTransactionLogWriter())
-                .thenReturn(new TransactionLogWriter(channel, LATEST_KERNEL_VERSION_PROVIDER, LATEST_KERNEL_VERSION));
+                .thenReturn(new TransactionLogWriter(
+                        channel, LATEST_KERNEL_VERSION_PROVIDER, LatestVersions.BINARY_VERSIONS));
 
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         TransactionIdStore transactionIdStore = mock(TransactionIdStore.class);

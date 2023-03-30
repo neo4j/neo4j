@@ -98,7 +98,7 @@ public class CheckpointInfoFactory {
                         new UnclosableChannel(channel), NO_MORE_CHANNELS, context.getMemoryTracker());
                 var logEntryCursor = new LogEntryCursor(
                         new VersionAwareLogEntryReader(
-                                context.getCommandReaderFactory(), KernelVersion.getLatestVersion(context.getConfig())),
+                                context.getCommandReaderFactory(), context.getBinarySupportedKernelVersions()),
                         reader)) {
             LogPosition checkedPosition = null;
             LogEntryStart logEntryStart = null;
@@ -169,7 +169,7 @@ public class CheckpointInfoFactory {
         try (var fallbackReader = new ReadAheadLogChannel(
                 new UnclosableChannel(fallbackChannel), NO_MORE_CHANNELS, context.getMemoryTracker())) {
             byte versionCode = fallbackReader.get();
-            if (KernelVersion.getLatestVersion(context.getConfig()).isLessThan(versionCode)) {
+            if (context.getBinarySupportedKernelVersions().latestSupportedIsLessThan(versionCode)) {
                 return Optional.empty();
             }
             var kernelVersion = KernelVersion.EARLIEST.isGreaterThan(versionCode)

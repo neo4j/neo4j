@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.log.entry;
 import static java.lang.String.format;
 
 import java.util.EnumMap;
+import org.neo4j.kernel.BinarySupportedKernelVersions;
 import org.neo4j.kernel.KernelVersion;
 
 public class LogEntrySerializationSets {
@@ -44,10 +45,11 @@ public class LogEntrySerializationSets {
      * @return LogEntrySerializationSet for the given {@code version}.
      */
     public static LogEntrySerializationSet serializationSet(
-            KernelVersion version, KernelVersion latestRecognizedKernelVersion) {
+            KernelVersion version, BinarySupportedKernelVersions binarySupportedKernelVersions) {
         LogEntrySerializationSet parserSet = SERIALIZATION_SETS.get(version);
         if (parserSet == null) {
-            if (version == KernelVersion.GLORIOUS_FUTURE && latestRecognizedKernelVersion.isAtLeast(version)) {
+            if (version == KernelVersion.GLORIOUS_FUTURE
+                    && binarySupportedKernelVersions.latestSupportedIsAtLeast(version)) {
                 return new LogEntrySerializationSetVGloriousFuture();
             }
             throw new IllegalArgumentException(format("No log entries version matching %s", version));

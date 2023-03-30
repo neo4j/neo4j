@@ -17,19 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log;
+package org.neo4j.kernel;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.kernel.BinarySupportedKernelVersions;
-import org.neo4j.kernel.impl.api.TestCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 
-public final class TestLogEntryReader {
-    private TestLogEntryReader() {}
+/**
+ * Class that keeps track of the latest kernel version the binaries support.
+ * Kept in config to be able to override in tests.
+ */
+public final class BinarySupportedKernelVersions {
 
-    public static LogEntryReader logEntryReader() {
-        return new VersionAwareLogEntryReader(
-                new TestCommandReaderFactory(), new BinarySupportedKernelVersions(Config.defaults()));
+    private final KernelVersion latestKernelVersionSupportedByBinaries;
+
+    public BinarySupportedKernelVersions(Config config) {
+        this.latestKernelVersionSupportedByBinaries = KernelVersion.getLatestVersion(config);
+    }
+
+    public boolean latestSupportedIsAtLeast(KernelVersion version) {
+        return latestKernelVersionSupportedByBinaries.isAtLeast(version);
+    }
+
+    public boolean latestSupportedIsLessThan(byte version) {
+        return latestKernelVersionSupportedByBinaries.isLessThan(version);
     }
 }

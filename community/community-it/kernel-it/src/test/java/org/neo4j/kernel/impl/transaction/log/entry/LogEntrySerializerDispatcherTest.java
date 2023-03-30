@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.v57.LogEntryChunkStart;
 import org.neo4j.kernel.impl.transaction.tracing.DatabaseTracer;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.StorageEngineFactory;
+import org.neo4j.test.LatestVersions;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
 import org.neo4j.test.utils.TestDirectory;
@@ -74,7 +75,7 @@ class LogEntrySerializerDispatcherTest {
             Path path = directory.createFile("a");
             StoreChannel storeChannel = fs.write(path);
             try (PhysicalFlushableLogChannel writeChannel = new PhysicalFlushableLogChannel(storeChannel, buffer)) {
-                var entryWriter = new LogEntryWriter<>(writeChannel, LATEST_KERNEL_VERSION);
+                var entryWriter = new LogEntryWriter<>(writeChannel, LatestVersions.BINARY_VERSIONS);
                 entryWriter.writeStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY);
                 entryWriter.writeChunkEndEntry(LATEST_KERNEL_VERSION, 17, 13);
                 entryWriter.writeChunkStartEntry(LATEST_KERNEL_VERSION, 11, 13, new LogPosition(14, 15));
@@ -82,7 +83,7 @@ class LogEntrySerializerDispatcherTest {
             }
 
             VersionAwareLogEntryReader entryReader = new VersionAwareLogEntryReader(
-                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LATEST_KERNEL_VERSION);
+                    StorageEngineFactory.defaultStorageEngine().commandReaderFactory(), LatestVersions.BINARY_VERSIONS);
             try (var readChannel = new ReadAheadLogChannel(
                     new PhysicalLogVersionedStoreChannel(
                             fs.read(path), 1, (byte) -1, path, EMPTY_ACCESSOR, DatabaseTracer.NULL),
@@ -124,8 +125,8 @@ class LogEntrySerializerDispatcherTest {
         channel.getCurrentLogPosition(marker);
 
         // when
-        final LogEntrySerializer parser =
-                serializationSet(LATEST_KERNEL_VERSION, LATEST_KERNEL_VERSION).select(LogEntryTypeCodes.TX_START);
+        final LogEntrySerializer parser = serializationSet(LATEST_KERNEL_VERSION, LatestVersions.BINARY_VERSIONS)
+                .select(LogEntryTypeCodes.TX_START);
         final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
@@ -145,8 +146,8 @@ class LogEntrySerializerDispatcherTest {
         channel.getCurrentLogPosition(marker);
 
         // when
-        final LogEntrySerializer parser =
-                serializationSet(LATEST_KERNEL_VERSION, LATEST_KERNEL_VERSION).select(LogEntryTypeCodes.TX_COMMIT);
+        final LogEntrySerializer parser = serializationSet(LATEST_KERNEL_VERSION, LatestVersions.BINARY_VERSIONS)
+                .select(LogEntryTypeCodes.TX_COMMIT);
         final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
@@ -164,8 +165,8 @@ class LogEntrySerializerDispatcherTest {
         channel.getCurrentLogPosition(marker);
 
         // when
-        final LogEntrySerializer parser =
-                serializationSet(LATEST_KERNEL_VERSION, LATEST_KERNEL_VERSION).select(LogEntryTypeCodes.COMMAND);
+        final LogEntrySerializer parser = serializationSet(LATEST_KERNEL_VERSION, LatestVersions.BINARY_VERSIONS)
+                .select(LogEntryTypeCodes.COMMAND);
         final LogEntry logEntry = parser.parse(version, channel, marker, commandReader);
 
         // then
@@ -174,8 +175,8 @@ class LogEntrySerializerDispatcherTest {
 
     @Test
     void shouldThrowWhenParsingUnknownEntry() {
-        assertThrows(
-                IllegalArgumentException.class, () -> serializationSet(LATEST_KERNEL_VERSION, LATEST_KERNEL_VERSION)
-                        .select((byte) 42)); // unused, at lest for now
+        assertThrows(IllegalArgumentException.class, () -> serializationSet(
+                        LATEST_KERNEL_VERSION, LatestVersions.BINARY_VERSIONS)
+                .select((byte) 42)); // unused, at lest for now
     }
 }

@@ -121,7 +121,7 @@ class DetachedCheckpointAppenderTest {
                 logFiles.getCheckpointFile(),
                 NO_ROTATION,
                 mock(DetachedLogTailScanner.class),
-                LATEST_KERNEL_VERSION);
+                LatestVersions.BINARY_VERSIONS);
         assertDoesNotThrow(() -> appender.checkPoint(
                 LogCheckPointEvent.NULL,
                 UNKNOWN_TRANSACTION_ID,
