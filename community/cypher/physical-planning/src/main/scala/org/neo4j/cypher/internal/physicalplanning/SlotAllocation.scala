@@ -809,7 +809,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
               case v: LogicalVariable => slots.get(v.name).exists(_.nullable)
               case _                  => true
             }
-          case v: LogicalVariable => slots.get(v.name).exists(_.nullable)
+          case v: LogicalVariable => slots.get(v.name).forall(_.nullable)
           case _                  => true
         }
 
