@@ -243,21 +243,11 @@ class DeleteDuplicateNodesStepTest {
         return Arrays.copyOf(nodeIds, cursor);
     }
 
-    private static class Ids {
-        private final NodeRecord node;
-        private final PropertyRecord[] properties;
-
-        Ids(NodeRecord node, PropertyRecord[] properties) {
-            this.node = node;
-            this.properties = properties;
-        }
-    }
-
     private Ids createNode(DataImporter.Monitor monitor, NeoStores neoStores, int propertyCount, int labelCount) {
         PropertyStore propertyStore = neoStores.getPropertyStore();
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.newRecord();
-        nodeRecord.setId(nodeStore.nextId(NULL_CONTEXT));
+        nodeRecord.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         nodeRecord.setInUse(true);
         NodeLabelsField.parseLabelsField(nodeRecord)
                 .put(
@@ -291,7 +281,7 @@ class DeleteDuplicateNodesStepTest {
             if (current == null || block.getValueBlocks().length > space) {
                 PropertyRecord next = propertyStore.newRecord();
                 nodeRecord.setIdTo(next);
-                next.setId(propertyStore.nextId(NULL_CONTEXT));
+                next.setId(propertyStore.getIdGenerator().nextId(NULL_CONTEXT));
                 if (current != null) {
                     next.setPrevProp(current.getId());
                     current.setNextProp(next.getId());
@@ -323,4 +313,6 @@ class DeleteDuplicateNodesStepTest {
         step.receive(0, null);
         step.awaitCompleted();
     }
+
+    private record Ids(NodeRecord node, PropertyRecord[] properties) {}
 }

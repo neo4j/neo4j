@@ -63,9 +63,9 @@ class CountsState implements AutoCloseable {
 
     CountsState(NeoStores neoStores, CacheAccess cacheAccess, MemoryTracker memoryTracker) {
         this(
-                neoStores.getLabelTokenStore().getHighId(),
-                neoStores.getRelationshipTypeTokenStore().getHighId(),
-                neoStores.getNodeStore().getHighId(),
+                neoStores.getLabelTokenStore().getIdGenerator().getHighId(),
+                neoStores.getRelationshipTypeTokenStore().getIdGenerator().getHighId(),
+                neoStores.getNodeStore().getIdGenerator().getHighId(),
                 cacheAccess,
                 memoryTracker);
     }

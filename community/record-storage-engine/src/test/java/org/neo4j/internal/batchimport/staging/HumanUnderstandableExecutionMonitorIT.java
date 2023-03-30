@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.staging;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.Config.defaults;
@@ -145,8 +146,8 @@ class HumanUnderstandableExecutionMonitorIT {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency(Input.knownEstimates(10, 10, 10, 10, 10, 10, 10));
         BatchingNeoStores neoStores = mock(BatchingNeoStores.class);
-        NodeStore nodeStore = mock(NodeStore.class);
-        RelationshipStore relationshipStore = mock(RelationshipStore.class);
+        NodeStore nodeStore = mock(NodeStore.class, RETURNS_MOCKS);
+        RelationshipStore relationshipStore = mock(RelationshipStore.class, RETURNS_MOCKS);
         when(neoStores.getNodeStore()).thenReturn(nodeStore);
         when(neoStores.getRelationshipStore()).thenReturn(relationshipStore);
         dependencies.satisfyDependency(neoStores);

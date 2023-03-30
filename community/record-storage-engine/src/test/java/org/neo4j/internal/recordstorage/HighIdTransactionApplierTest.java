@@ -134,24 +134,49 @@ class HighIdTransactionApplierTest {
         tracker.close();
 
         // THEN
-        assertEquals(20 + 1, neoStores.getNodeStore().getHighId(), "NodeStore");
-        assertEquals(5 + 1, neoStores.getNodeStore().getDynamicLabelStore().getHighId(), "DynamicNodeLabelStore");
-        assertEquals(45 + 1, neoStores.getRelationshipStore().getHighId(), "RelationshipStore");
-        assertEquals(5 + 1, neoStores.getRelationshipTypeTokenStore().getHighId(), "RelationshipTypeStore");
+        assertEquals(20 + 1, neoStores.getNodeStore().getIdGenerator().getHighId(), "NodeStore");
+        assertEquals(
+                5 + 1,
+                neoStores.getNodeStore().getDynamicLabelStore().getIdGenerator().getHighId(),
+                "DynamicNodeLabelStore");
+        assertEquals(45 + 1, neoStores.getRelationshipStore().getIdGenerator().getHighId(), "RelationshipStore");
+        assertEquals(
+                5 + 1,
+                neoStores.getRelationshipTypeTokenStore().getIdGenerator().getHighId(),
+                "RelationshipTypeStore");
         assertEquals(
                 1 + 1,
-                neoStores.getRelationshipTypeTokenStore().getNameStore().getHighId(),
+                neoStores
+                        .getRelationshipTypeTokenStore()
+                        .getNameStore()
+                        .getIdGenerator()
+                        .getHighId(),
                 "RelationshipType NameStore");
-        assertEquals(5 + 1, neoStores.getPropertyKeyTokenStore().getHighId(), "PropertyKeyStore");
-        assertEquals(1 + 1, neoStores.getPropertyKeyTokenStore().getNameStore().getHighId(), "PropertyKey NameStore");
-        assertEquals(5 + 1, neoStores.getLabelTokenStore().getHighId(), "LabelStore");
-        assertEquals(1 + 1, neoStores.getLabelTokenStore().getNameStore().getHighId(), "Label NameStore");
-        assertEquals(20 + 1, neoStores.getPropertyStore().getHighId(), "PropertyStore");
         assertEquals(
-                7 + 1, neoStores.getPropertyStore().getStringStore().getHighId(), "PropertyStore DynamicStringStore");
+                5 + 1, neoStores.getPropertyKeyTokenStore().getIdGenerator().getHighId(), "PropertyKeyStore");
         assertEquals(
-                9 + 1, neoStores.getPropertyStore().getArrayStore().getHighId(), "PropertyStore DynamicArrayStore");
-        assertEquals(20 + 1, neoStores.getSchemaStore().getHighId(), "SchemaStore");
+                1 + 1,
+                neoStores
+                        .getPropertyKeyTokenStore()
+                        .getNameStore()
+                        .getIdGenerator()
+                        .getHighId(),
+                "PropertyKey NameStore");
+        assertEquals(5 + 1, neoStores.getLabelTokenStore().getIdGenerator().getHighId(), "LabelStore");
+        assertEquals(
+                1 + 1,
+                neoStores.getLabelTokenStore().getNameStore().getIdGenerator().getHighId(),
+                "Label NameStore");
+        assertEquals(20 + 1, neoStores.getPropertyStore().getIdGenerator().getHighId(), "PropertyStore");
+        assertEquals(
+                7 + 1,
+                neoStores.getPropertyStore().getStringStore().getIdGenerator().getHighId(),
+                "PropertyStore DynamicStringStore");
+        assertEquals(
+                9 + 1,
+                neoStores.getPropertyStore().getArrayStore().getIdGenerator().getHighId(),
+                "PropertyStore DynamicArrayStore");
+        assertEquals(20 + 1, neoStores.getSchemaStore().getIdGenerator().getHighId(), "SchemaStore");
     }
 
     @Test
@@ -178,12 +203,14 @@ class HighIdTransactionApplierTest {
         tracker.close();
 
         // THEN
-        assertEquals(node.getSecondaryUnitId() + 1, neoStores.getNodeStore().getHighId());
+        assertEquals(
+                node.getSecondaryUnitId() + 1,
+                neoStores.getNodeStore().getIdGenerator().getHighId());
         assertEquals(
                 relationship.getSecondaryUnitId() + 1,
-                neoStores.getRelationshipStore().getHighId());
+                neoStores.getRelationshipStore().getIdGenerator().getHighId());
         assertEquals(
                 relationshipGroup.getSecondaryUnitId() + 1,
-                neoStores.getRelationshipGroupStore().getHighId());
+                neoStores.getRelationshipGroupStore().getIdGenerator().getHighId());
     }
 }

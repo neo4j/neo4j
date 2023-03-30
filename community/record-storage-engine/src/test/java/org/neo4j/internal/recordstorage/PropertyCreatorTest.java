@@ -365,9 +365,10 @@ class PropertyCreatorTest {
 
     private void existingChain(ExpectedRecord... initialRecords) {
         PropertyRecord prev = null;
+        var idGenerator = propertyStore.getIdGenerator();
         for (ExpectedRecord initialRecord : initialRecords) {
             PropertyRecord record = this.records
-                    .create(propertyStore.nextId(cursorContext), primitive.record, NULL_CONTEXT)
+                    .create(idGenerator.nextId(cursorContext), primitive.record, NULL_CONTEXT)
                     .forChangingData();
             record.setInUse(true);
             existingRecord(record, initialRecord);
@@ -513,10 +514,10 @@ class PropertyCreatorTest {
     }
 
     private long propertyRecordsInUse() {
-        return propertyStore.getHighId();
+        return propertyStore.getIdGenerator().getHighId();
     }
 
     private long dynamicStringRecordsInUse() {
-        return propertyStore.getStringStore().getHighId();
+        return propertyStore.getStringStore().getIdGenerator().getHighId();
     }
 }

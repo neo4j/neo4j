@@ -41,6 +41,7 @@ import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.PrimitiveConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -66,13 +67,15 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
         // given
         long nodeId1;
         long nodeId2;
+        IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         try (AutoCloseable ignored = tx()) {
             // (N1)────>(P1)────>(P2)
             //            ▲───────┘
             {
-                long firstPropId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-                long secondPropId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-                nodeId1 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), firstPropId, NULL);
+                long firstPropId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                long secondPropId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                nodeId1 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), firstPropId, NULL);
                 property(firstPropId, NULL, secondPropId, propertyValue(propertyKey1, intValue(1)));
                 property(secondPropId, firstPropId, firstPropId, propertyValue(propertyKey2, intValue(1)));
             }
@@ -80,8 +83,8 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
             // (N2)────>(P3)─┐
             //            ▲──┘
             {
-                nodeId2 = nodeStore.nextId(CursorContext.NULL_CONTEXT);
-                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+                nodeId2 = nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
                 node(nodeId2, propId, NULL);
                 property(propId, NULL, propId, propertyValue(propertyKey1, intValue(1)));
             }
@@ -101,20 +104,22 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
         // given
         long nodeId1;
         long nodeId2;
+        IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         try (AutoCloseable ignored = tx()) {
             // (N)---> X
             {
                 nodeId1 = node(
-                        nodeStore.nextId(CursorContext.NULL_CONTEXT),
-                        propertyStore.nextId(CursorContext.NULL_CONTEXT),
+                        nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT),
+                        propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT),
                         NULL);
             }
 
             // (N)--->(P1)---> X
             {
-                long propId1 = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-                long propId2 = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-                nodeId2 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId1, NULL);
+                long propId1 = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                long propId2 = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                nodeId2 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId1, NULL);
                 property(propId1, NULL, propId2, propertyValue(propertyKey1, longValue(10)));
             }
         }
@@ -134,15 +139,17 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
     void shouldReportPropertyNotFirstInChain() throws Exception {
         // given
         long nodeId;
+        IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         try (AutoCloseable ignored = tx()) {
             // (N)--->(P1)--->(P2)
             //        /
             //       v
             //     (P0)
-            long prop0Id = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            long prop1Id = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            long prop2Id = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), prop1Id, NULL);
+            long prop0Id = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long prop1Id = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long prop2Id = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), prop1Id, NULL);
             property(prop0Id, NULL, prop1Id, propertyValue(propertyKey1, stringValue("a")));
             property(prop1Id, prop0Id, prop2Id, propertyValue(propertyKey2, stringValue("b")));
             property(prop2Id, prop1Id, NULL, propertyValue(propertyKey3, stringValue("c")));
@@ -165,10 +172,12 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
             //                  prev
             //                  v
             //                (P3)
-            long prop1Id = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            long prop2Id = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            long prop3Id = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), prop1Id, NULL);
+            IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+            IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
+            long prop1Id = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long prop2Id = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long prop3Id = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), prop1Id, NULL);
             property(prop1Id, NULL, prop2Id, propertyValue(propertyKey1, stringValue("a")));
             property(prop2Id, prop3Id, NULL, propertyValue(propertyKey2, stringValue("b")));
             property(prop3Id, NULL, NULL, propertyValue(propertyKey3, stringValue("c")));
@@ -187,8 +196,10 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
         long nodeId;
         try (AutoCloseable ignored = tx()) {
             // (N)--->(P)*unusedKey
-            long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL);
+            IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+            IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
+            long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL);
             property(propId, NULL, NULL, propertyValue(99, intValue(1)));
         }
 
@@ -310,8 +321,10 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
         long nodeId;
         try (AutoCloseable ignored = tx()) {
             // (N)--->(P)---> (vandalized dynamic value chain)
-            long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL);
+            IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+            IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
+            long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL);
             PropertyBlock dynamicBlock = propertyValue(propertyKey1, consistentValue);
             property(propId, NULL, NULL, dynamicBlock);
             vandal.accept(dynamicBlock);
@@ -330,29 +343,31 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
         // given
         long nodeId1;
         long nodeId2;
+        IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         try (AutoCloseable ignored = tx()) {
             // (N)--->(P)
             //         *key=value1
             //         *key=value2
             {
-                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+                long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
                 property(
                         propId,
                         NULL,
                         NULL,
                         propertyValue(propertyKey1, intValue(1)),
                         propertyValue(propertyKey1, intValue(2)));
-                nodeId1 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL);
+                nodeId1 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL);
             }
 
             // (N)--->(P1)--------->(P2)
             //         *key=value1   *key=value2
             {
-                long propId1 = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-                long propId2 = propertyStore.nextId(CursorContext.NULL_CONTEXT);
+                long propId1 = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                long propId2 = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
                 property(propId1, NULL, propId2, propertyValue(propertyKey1, intValue(1)));
                 property(propId2, propId1, NULL, propertyValue(propertyKey1, intValue(2)));
-                nodeId2 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId1, NULL);
+                nodeId2 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId1, NULL);
             }
         }
 
@@ -371,9 +386,11 @@ class SafePropertyChainReaderTest extends CheckerTestBase {
         // given
         long propId;
         long nodeId;
+        IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         try (AutoCloseable ignored = tx()) {
-            propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL);
+            propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL);
             property(propId, NULL, NULL, propertyValue(propertyKey1, longValue(10)));
         }
         markAsDeletedId(propertyStore, propId);

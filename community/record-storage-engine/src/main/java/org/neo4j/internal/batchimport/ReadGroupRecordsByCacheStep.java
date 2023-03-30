@@ -29,6 +29,7 @@ import org.neo4j.internal.batchimport.cache.NodeType;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 public class ReadGroupRecordsByCacheStep extends ProcessorStep<RangedLongIterator> {
     private static final String READ_RELATIONSHIP_GROUPS_STEP_TAG = "readRelationshipGroupsStep";
     private final RecordStore<RelationshipGroupRecord> store;
+    private final IdGenerator storeIdGenerator;
     private final NodeRelationshipCache cache;
 
     public ReadGroupRecordsByCacheStep(
@@ -52,6 +54,7 @@ public class ReadGroupRecordsByCacheStep extends ProcessorStep<RangedLongIterato
             CursorContextFactory contextFactory) {
         super(control, ">", config, 0, contextFactory);
         this.store = store;
+        this.storeIdGenerator = store.getIdGenerator();
         this.cache = cache;
     }
 
@@ -79,7 +82,7 @@ public class ReadGroupRecordsByCacheStep extends ProcessorStep<RangedLongIterato
 
         @Override
         public long visit(long nodeId, int typeId, long out, long in, long loop) {
-            long id = store.nextId(cursorContext);
+            long id = storeIdGenerator.nextId(cursorContext);
             RelationshipGroupRecord record = store.newRecord();
             record.setId(id);
             record.initialize(true, typeId, out, in, loop, nodeId, loop);

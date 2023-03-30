@@ -56,7 +56,10 @@ public class RelationshipLinkforwardStage extends Stage {
         super(NAME, topic, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES);
         RelationshipStore store = stores.getRelationshipStore();
         add(new BatchFeedStep(
-                control(), config, RecordIdIterator.forwards(0, store.getHighId(), config), store.getRecordSize()));
+                control(),
+                config,
+                RecordIdIterator.forwards(0, store.getIdGenerator().getHighId(), config),
+                store.getRecordSize()));
         add(new ReadRecordsStep<>(
                 control(),
                 config,

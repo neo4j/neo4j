@@ -71,7 +71,7 @@ class RelationshipChainChecker implements Checker {
         this.progress = context.progressReporter(
                 this,
                 "Relationship chains",
-                context.neoStores.getRelationshipStore().getHighId() * 2);
+                context.neoStores.getRelationshipStore().getIdGenerator().getHighId() * 2);
     }
 
     @Override
@@ -88,7 +88,7 @@ class RelationshipChainChecker implements Checker {
 
     private void checkDirection(LongRange nodeIdRange, ScanDirection direction) throws Exception {
         RelationshipStore relationshipStore = context.neoStores.getRelationshipStore();
-        long highId = relationshipStore.getHighId();
+        long highId = relationshipStore.getIdGenerator().getHighId();
         AtomicBoolean end = new AtomicBoolean();
         int numberOfThreads = numberOfChainCheckers + 1;
         ThrowingRunnable[] workers = new ThrowingRunnable[numberOfThreads];
@@ -423,10 +423,10 @@ class RelationshipChainChecker implements Checker {
 
     @Override
     public String toString() {
+        var relGroupStore = context.neoStores.getRelationshipStore();
         return String.format(
                 "%s[highId:%d]",
-                getClass().getSimpleName(),
-                context.neoStores.getRelationshipStore().getHighId());
+                getClass().getSimpleName(), relGroupStore.getIdGenerator().getHighId());
     }
 
     private enum ScanDirection {

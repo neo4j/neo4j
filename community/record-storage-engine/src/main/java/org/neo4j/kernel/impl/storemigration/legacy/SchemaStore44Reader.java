@@ -151,7 +151,7 @@ public class SchemaStore44Reader implements AutoCloseable {
 
     public List<SchemaRule44> loadAllSchemaRules(StoreCursors storeCursors) {
         long startId = schemaStore.getNumberOfReservedLowIds();
-        long endId = schemaStore.getHighId();
+        long endId = schemaStore.getIdGenerator().getHighId();
 
         List<SchemaRule44> schemaRules = new ArrayList<>();
         maybeAddFormerLabelScanStore(schemaRules);

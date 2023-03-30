@@ -310,9 +310,11 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
     }
 
     private long createStoreEntry(int type) {
-        long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-        long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-        long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+        var relIdGenerator = relationshipStore.getIdGenerator();
+        var nodeIdGenerator = nodeStore.getIdGenerator();
+        long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+        long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+        long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
         relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         return relationship;
     }
@@ -333,7 +335,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
 
     private void check(CheckerContext context) throws Exception {
         new RelationshipChecker(context, noMandatoryProperties)
-                .check(LongRange.range(0, nodeStore.getHighId()), true, true);
+                .check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
     }
 
     private IndexUpdater relationshipTypeIndexWriter() {

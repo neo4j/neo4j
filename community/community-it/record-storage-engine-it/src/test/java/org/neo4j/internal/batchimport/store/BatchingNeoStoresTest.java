@@ -286,12 +286,11 @@ class BatchingNeoStoresTest {
                 for (StoreType type : relevantRecordStores()) {
                     RecordStore<AbstractBaseRecord> store =
                             stores.getNeoStores().getRecordStore(type);
+                    long highId = store.getIdGenerator().getHighId();
                     if (type == typeToTest) {
-                        assertThat(store.getHighId())
-                                .as(store.toString())
-                                .isGreaterThan(store.getNumberOfReservedLowIds());
+                        assertThat(highId).as(store.toString()).isGreaterThan(store.getNumberOfReservedLowIds());
                     } else {
-                        assertEquals(store.getNumberOfReservedLowIds(), store.getHighId(), store.toString());
+                        assertEquals(store.getNumberOfReservedLowIds(), highId, store.toString());
                     }
                 }
             }
@@ -531,7 +530,7 @@ class BatchingNeoStoresTest {
 
     private static <RECORD extends AbstractBaseRecord> void createRecordIn(RecordStore<RECORD> store) {
         RECORD record = store.newRecord();
-        record.setId(store.nextId(NULL_CONTEXT));
+        record.setId(store.getIdGenerator().nextId(NULL_CONTEXT));
         record.setInUse(true);
         if (record instanceof PropertyRecord) {
             // Special hack for property store, since it's not enough to simply set a record as in use there
@@ -698,7 +697,7 @@ class BatchingNeoStoresTest {
 
         @Override
         public int createToken(String name, boolean internal) {
-            int id = (int) store.nextId(NULL_CONTEXT);
+            int id = (int) store.getIdGenerator().nextId(NULL_CONTEXT);
             create(name, internal, id);
             return id;
         }

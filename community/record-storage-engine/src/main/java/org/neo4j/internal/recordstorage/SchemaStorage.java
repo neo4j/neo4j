@@ -69,7 +69,7 @@ public class SchemaStorage implements SchemaRuleAccess {
 
     @Override
     public long newRuleId(CursorContext cursorContext) {
-        return schemaStore.nextId(cursorContext);
+        return schemaStore.getIdGenerator().nextId(cursorContext);
     }
 
     @Override
@@ -209,7 +209,8 @@ public class SchemaStorage implements SchemaRuleAccess {
             schemaRecord.setId(rule.getId());
             schemaRecord.setCreated();
             schemaStore.updateRecord(schemaRecord, idUpdateListener, schemaCursor, cursorContext, storeCursors);
-            schemaStore.setHighestPossibleIdInUse(rule.getId());
+            long highId = rule.getId();
+            schemaStore.getIdGenerator().setHighestPossibleIdInUse(highId);
         }
     }
 
@@ -256,7 +257,7 @@ public class SchemaStorage implements SchemaRuleAccess {
     private static PropertyRecord newInitialisedPropertyRecord(
             PropertyStore propertyStore, SchemaRule rule, CursorContext cursorContext) {
         PropertyRecord record = propertyStore.newRecord();
-        record.setId(propertyStore.nextId(cursorContext));
+        record.setId(propertyStore.getIdGenerator().nextId(cursorContext));
         record.setSchemaRuleId(rule.getId());
         record.setCreated();
         return record;
@@ -275,7 +276,8 @@ public class SchemaStorage implements SchemaRuleAccess {
         record.setPrevProp(prevPropId);
         record.setNextProp(nextProp);
         propertyStore.updateRecord(record, idUpdateListener, propertyCursor, cursorContext, storeCursors);
-        propertyStore.setHighestPossibleIdInUse(record.getId());
+        long highId = record.getId();
+        propertyStore.getIdGenerator().setHighestPossibleIdInUse(highId);
     }
 
     private static void deletePropertyRecord(
@@ -299,7 +301,7 @@ public class SchemaStorage implements SchemaRuleAccess {
     @VisibleForTesting
     Stream<SchemaRule> streamAllSchemaRules(boolean ignoreMalformed, StoreCursors storeCursors) {
         long startId = schemaStore.getNumberOfReservedLowIds();
-        long endId = schemaStore.getHighId();
+        long endId = schemaStore.getIdGenerator().getHighId();
 
         return LongStream.range(startId, endId)
                 .mapToObj(id -> schemaStore.getRecordByCursor(

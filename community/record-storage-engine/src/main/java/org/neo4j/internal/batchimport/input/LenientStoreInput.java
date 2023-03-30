@@ -117,10 +117,10 @@ public class LenientStoreInput implements Input {
                 + storeSize(propertyStore.getStringStore()) / 2
                 + storeSize(propertyStore.getArrayStore()) / 2;
         return Input.knownEstimates(
-                nodeStore.getNumberOfIdsInUse(),
-                relationshipStore.getNumberOfIdsInUse(),
-                propertyStore.getNumberOfIdsInUse(),
-                propertyStore.getNumberOfIdsInUse(),
+                nodeStore.getIdGenerator().getHighId(),
+                relationshipStore.getIdGenerator().getHighId(),
+                propertyStore.getIdGenerator().getHighId(),
+                propertyStore.getIdGenerator().getHighId(),
                 propertyStoreSize / 2,
                 propertyStoreSize / 2,
                 tokenHolders.labelTokens().size());

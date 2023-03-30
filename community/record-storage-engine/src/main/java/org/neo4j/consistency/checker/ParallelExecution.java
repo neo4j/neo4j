@@ -87,7 +87,8 @@ class ParallelExecution {
     }
 
     ThrowingRunnable[] partition(RecordStore<?> store, RangeOperation rangeOperation) {
-        LongRange range = LongRange.range(store.getNumberOfReservedLowIds(), store.getHighId());
+        LongRange range = LongRange.range(
+                store.getNumberOfReservedLowIds(), store.getIdGenerator().getHighId());
         return partition(range, rangeOperation);
     }
 

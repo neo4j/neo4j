@@ -45,8 +45,8 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     @Test
     void shouldReportRelationshipTypeNotInUse() throws Exception {
         testRelationshipGroupInconsistency(
-                owner -> relationshipGroup(
-                        relationshipGroupStore.nextId(NULL_CONTEXT), NULL, owner, 999, NULL, NULL, NULL),
+                owner ->
+                        relationshipGroup(relGroupIdGenerator.nextId(NULL_CONTEXT), NULL, owner, 999, NULL, NULL, NULL),
                 report -> report.relationshipTypeNotInUse(any()));
     }
 
@@ -54,8 +54,8 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportNextGroupNotInUse() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> relationshipGroup(
-                        relationshipGroupStore.nextId(NULL_CONTEXT),
-                        relationshipGroupStore.nextId(NULL_CONTEXT),
+                        relGroupIdGenerator.nextId(NULL_CONTEXT),
+                        relGroupIdGenerator.nextId(NULL_CONTEXT),
                         owner,
                         type1,
                         NULL,
@@ -68,9 +68,9 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportInvalidTypeSortOrder() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> {
-                    long group1 = relationshipGroupStore.nextId(NULL_CONTEXT);
-                    long group2 = relationshipGroupStore.nextId(NULL_CONTEXT);
-                    long group3 = relationshipGroupStore.nextId(NULL_CONTEXT);
+                    long group1 = relGroupIdGenerator.nextId(NULL_CONTEXT);
+                    long group2 = relGroupIdGenerator.nextId(NULL_CONTEXT);
+                    long group3 = relGroupIdGenerator.nextId(NULL_CONTEXT);
                     relationshipGroup(group1, group2, owner, type2, NULL, NULL, NULL);
                     relationshipGroup(group2, group3, owner, type3, NULL, NULL, NULL);
                     relationshipGroup(group3, NULL, owner, type1, NULL, NULL, NULL);
@@ -82,11 +82,11 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportFirstOutgoingRelationshipNotInUse() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> relationshipGroup(
-                        relationshipGroupStore.nextId(NULL_CONTEXT),
+                        relGroupIdGenerator.nextId(NULL_CONTEXT),
                         NULL,
                         owner,
                         type1,
-                        relationshipStore.nextId(NULL_CONTEXT),
+                        relStoreIdGenerator.nextId(NULL_CONTEXT),
                         NULL,
                         NULL),
                 RelationshipGroupConsistencyReport::firstOutgoingRelationshipNotInUse);
@@ -96,12 +96,12 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportFirstIncomingRelationshipNotInUse() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> relationshipGroup(
-                        relationshipGroupStore.nextId(NULL_CONTEXT),
+                        relGroupIdGenerator.nextId(NULL_CONTEXT),
                         NULL,
                         owner,
                         type1,
                         NULL,
-                        relationshipStore.nextId(NULL_CONTEXT),
+                        relStoreIdGenerator.nextId(NULL_CONTEXT),
                         NULL),
                 RelationshipGroupConsistencyReport::firstIncomingRelationshipNotInUse);
     }
@@ -110,13 +110,13 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportFirstLoopRelationshipNotInUse() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> relationshipGroup(
-                        relationshipGroupStore.nextId(NULL_CONTEXT),
+                        relGroupIdGenerator.nextId(NULL_CONTEXT),
                         NULL,
                         owner,
                         type1,
                         NULL,
                         NULL,
-                        relationshipStore.nextId(NULL_CONTEXT)),
+                        relStoreIdGenerator.nextId(NULL_CONTEXT)),
                 RelationshipGroupConsistencyReport::firstLoopRelationshipNotInUse);
     }
 
@@ -124,9 +124,9 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportFirstOutgoingRelationshipNotFirstInChain() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> {
-                    long otherNode = nodePlusCached(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
+                    long otherNode = nodePlusCached(nodeStoreIdGenerator.nextId(NULL_CONTEXT), NULL, NULL);
                     long relationship = relationship(
-                            relationshipStore.nextId(NULL_CONTEXT),
+                            relStoreIdGenerator.nextId(NULL_CONTEXT),
                             owner,
                             otherNode,
                             type1,
@@ -137,7 +137,7 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
                             false,
                             true);
                     relationshipGroup(
-                            relationshipGroupStore.nextId(NULL_CONTEXT), NULL, owner, type1, relationship, NULL, NULL);
+                            relGroupIdGenerator.nextId(NULL_CONTEXT), NULL, owner, type1, relationship, NULL, NULL);
                 },
                 RelationshipGroupConsistencyReport::firstOutgoingRelationshipNotFirstInChain);
     }
@@ -146,9 +146,9 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportFirstIncomingRelationshipNotFirstInChain() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> {
-                    long otherNode = nodePlusCached(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
+                    long otherNode = nodePlusCached(nodeStoreIdGenerator.nextId(NULL_CONTEXT), NULL, NULL);
                     long relationship = relationship(
-                            relationshipStore.nextId(NULL_CONTEXT),
+                            relStoreIdGenerator.nextId(NULL_CONTEXT),
                             owner,
                             otherNode,
                             type1,
@@ -159,7 +159,7 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
                             true,
                             false);
                     relationshipGroup(
-                            relationshipGroupStore.nextId(NULL_CONTEXT), NULL, owner, type1, NULL, relationship, NULL);
+                            relGroupIdGenerator.nextId(NULL_CONTEXT), NULL, owner, type1, NULL, relationship, NULL);
                 },
                 RelationshipGroupConsistencyReport::firstIncomingRelationshipNotFirstInChain);
     }
@@ -168,9 +168,9 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportFirstLoopRelationshipNotFirstInChain() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> {
-                    long otherNode = nodePlusCached(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
+                    long otherNode = nodePlusCached(nodeStoreIdGenerator.nextId(NULL_CONTEXT), NULL, NULL);
                     long relationship = relationship(
-                            relationshipStore.nextId(NULL_CONTEXT),
+                            relStoreIdGenerator.nextId(NULL_CONTEXT),
                             owner,
                             otherNode,
                             type1,
@@ -181,7 +181,7 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
                             false,
                             false);
                     relationshipGroup(
-                            relationshipGroupStore.nextId(NULL_CONTEXT), NULL, owner, type1, NULL, NULL, relationship);
+                            relGroupIdGenerator.nextId(NULL_CONTEXT), NULL, owner, type1, NULL, NULL, relationship);
                 },
                 RelationshipGroupConsistencyReport::firstLoopRelationshipNotFirstInChain);
     }
@@ -190,9 +190,9 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportFirstOutgoingRelationshipOfOfOtherType() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> {
-                    long otherNode = nodePlusCached(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
+                    long otherNode = nodePlusCached(nodeStoreIdGenerator.nextId(NULL_CONTEXT), NULL, NULL);
                     long relationship = relationship(
-                            relationshipStore.nextId(NULL_CONTEXT),
+                            relStoreIdGenerator.nextId(NULL_CONTEXT),
                             owner,
                             otherNode,
                             type2,
@@ -203,7 +203,7 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
                             true,
                             true);
                     relationshipGroup(
-                            relationshipGroupStore.nextId(NULL_CONTEXT), NULL, owner, type1, relationship, NULL, NULL);
+                            relGroupIdGenerator.nextId(NULL_CONTEXT), NULL, owner, type1, relationship, NULL, NULL);
                 },
                 RelationshipGroupConsistencyReport::firstOutgoingRelationshipOfOtherType);
     }
@@ -212,9 +212,9 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportFirstIncomingRelationshipOfOfOtherType() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> {
-                    long otherNode = nodePlusCached(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
+                    long otherNode = nodePlusCached(nodeStoreIdGenerator.nextId(NULL_CONTEXT), NULL, NULL);
                     long relationship = relationship(
-                            relationshipStore.nextId(NULL_CONTEXT),
+                            relStoreIdGenerator.nextId(NULL_CONTEXT),
                             owner,
                             otherNode,
                             type2,
@@ -225,7 +225,7 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
                             true,
                             true);
                     relationshipGroup(
-                            relationshipGroupStore.nextId(NULL_CONTEXT), NULL, owner, type1, NULL, relationship, NULL);
+                            relGroupIdGenerator.nextId(NULL_CONTEXT), NULL, owner, type1, NULL, relationship, NULL);
                 },
                 RelationshipGroupConsistencyReport::firstIncomingRelationshipOfOtherType);
     }
@@ -234,9 +234,9 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportFirstLoopRelationshipOfOfOtherType() throws Exception {
         testRelationshipGroupInconsistency(
                 owner -> {
-                    long otherNode = nodePlusCached(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
+                    long otherNode = nodePlusCached(nodeStoreIdGenerator.nextId(NULL_CONTEXT), NULL, NULL);
                     long relationship = relationship(
-                            relationshipStore.nextId(NULL_CONTEXT),
+                            relStoreIdGenerator.nextId(NULL_CONTEXT),
                             owner,
                             otherNode,
                             type2,
@@ -247,7 +247,7 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
                             true,
                             true);
                     relationshipGroup(
-                            relationshipGroupStore.nextId(NULL_CONTEXT), NULL, owner, type1, NULL, NULL, relationship);
+                            relGroupIdGenerator.nextId(NULL_CONTEXT), NULL, owner, type1, NULL, NULL, relationship);
                 },
                 RelationshipGroupConsistencyReport::firstLoopRelationshipOfOtherType);
     }
@@ -257,9 +257,9 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
         // given
         try (AutoCloseable ignored = tx()) {
             relationshipGroup(
-                    relationshipGroupStore.nextId(NULL_CONTEXT),
+                    relGroupIdGenerator.nextId(NULL_CONTEXT),
                     NULL,
-                    nodeStore.nextId(NULL_CONTEXT),
+                    nodeStoreIdGenerator.nextId(NULL_CONTEXT),
                     type1,
                     NULL,
                     NULL,
@@ -277,7 +277,7 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportIllegalOwner() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            relationshipGroup(relationshipGroupStore.nextId(NULL_CONTEXT), NULL, -1, type1, NULL, NULL, NULL);
+            relationshipGroup(relGroupIdGenerator.nextId(NULL_CONTEXT), NULL, -1, type1, NULL, NULL, NULL);
         }
 
         // when
@@ -291,10 +291,10 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     void shouldReportNextHasOtherOwner() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long node1 = nodePlusCached(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
-            long node2 = nodePlusCached(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
-            long group1 = relationshipGroupStore.nextId(NULL_CONTEXT);
-            long group2 = relationshipGroupStore.nextId(NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeStoreIdGenerator.nextId(NULL_CONTEXT), NULL, NULL);
+            long node2 = nodePlusCached(nodeStoreIdGenerator.nextId(NULL_CONTEXT), NULL, NULL);
+            long group1 = relGroupIdGenerator.nextId(NULL_CONTEXT);
+            long group2 = relGroupIdGenerator.nextId(NULL_CONTEXT);
             relationshipGroup(group1, group2, node1, type1, NULL, NULL, NULL);
             relationshipGroup(group2, NULL, node2, type2, NULL, NULL, NULL);
         }
@@ -310,7 +310,7 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
             LongConsumer groupCreator, Consumer<RelationshipGroupConsistencyReport> report) throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long owner = nodePlusCached(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
+            long owner = nodePlusCached(nodeStoreIdGenerator.nextId(NULL_CONTEXT), NULL, NULL);
             groupCreator.accept(owner);
         }
 
@@ -322,6 +322,7 @@ class RelationshipGroupCheckerTest extends CheckerTestBase {
     }
 
     private void check() throws Exception {
-        new RelationshipGroupChecker(context()).check(LongRange.range(0, nodeStore.getHighId()), true, true);
+        new RelationshipGroupChecker(context())
+                .check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
     }
 }

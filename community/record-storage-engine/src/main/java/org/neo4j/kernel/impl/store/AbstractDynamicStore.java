@@ -185,7 +185,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
 
     @Override
     public DynamicRecord nextRecord(CursorContext cursorContext) {
-        return StandardDynamicRecordAllocator.allocateRecord(nextId(cursorContext));
+        return StandardDynamicRecordAllocator.allocateRecord(getIdGenerator().nextId(cursorContext));
     }
 
     void allocateRecordsFromBytes(

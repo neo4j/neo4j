@@ -88,7 +88,8 @@ public class RelationshipImporter extends EntityImporter {
         this.relationshipRecord = relationshipStore.newRecord();
         this.relationshipIds = new BatchingIdGetter(relationshipStore);
         this.typeCounts = typeDistribution.newClient();
-        this.prepareIdSequence = PrepareIdSequence.of(doubleRecordUnits).apply(stores.getRelationshipStore());
+        this.prepareIdSequence = PrepareIdSequence.of(doubleRecordUnits)
+                .apply(stores.getRelationshipStore().getIdGenerator());
         this.relationshipUpdateCursor = relationshipStore.openPageCursorForWriting(0, cursorContext);
         relationshipRecord.setInUse(true);
     }

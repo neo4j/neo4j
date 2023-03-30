@@ -269,14 +269,15 @@ class CommonAbstractStoreBehaviourTest {
         createStore();
         store.start(NULL_CONTEXT);
         MutableLongSet holes = LongSets.mutable.empty();
-        holes.add(store.nextId(NULL_CONTEXT));
-        holes.add(store.nextId(NULL_CONTEXT));
+        var idGenerator = store.getIdGenerator();
+        holes.add(idGenerator.nextId(NULL_CONTEXT));
+        holes.add(idGenerator.nextId(NULL_CONTEXT));
         try (var storeCursor = store.openPageCursorForWriting(0, NULL_CONTEXT)) {
             store.updateRecord(
-                    new IntRecord(store.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
-            holes.add(store.nextId(NULL_CONTEXT));
+                    new IntRecord(idGenerator.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
+            holes.add(idGenerator.nextId(NULL_CONTEXT));
             store.updateRecord(
-                    new IntRecord(store.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
+                    new IntRecord(idGenerator.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
         }
 
         // when
@@ -284,11 +285,12 @@ class CommonAbstractStoreBehaviourTest {
         fs.deleteFile(Path.of(MyStore.ID_FILENAME));
         createStore();
         store.start(NULL_CONTEXT);
+        var restartedGenerator = store.getIdGenerator();
 
         // then
         int numberOfHoles = holes.size();
         for (int i = 0; i < numberOfHoles; i++) {
-            assertTrue(holes.remove(store.nextId(NULL_CONTEXT)));
+            assertTrue(holes.remove(restartedGenerator.nextId(NULL_CONTEXT)));
         }
         assertTrue(holes.isEmpty());
     }
@@ -298,17 +300,18 @@ class CommonAbstractStoreBehaviourTest {
         // given
         createStore();
         store.start(NULL_CONTEXT);
+        var idGenerator = store.getIdGenerator();
         MutableLongSet holes = LongSets.mutable.empty();
         try (var storeCursor = store.openPageCursorForWriting(0, NULL_CONTEXT)) {
             store.updateRecord(
-                    new IntRecord(store.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
-            holes.add(store.nextId(NULL_CONTEXT));
-            holes.add(store.nextId(NULL_CONTEXT));
+                    new IntRecord(idGenerator.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
+            holes.add(idGenerator.nextId(NULL_CONTEXT));
+            holes.add(idGenerator.nextId(NULL_CONTEXT));
             store.updateRecord(
-                    new IntRecord(store.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
-            holes.add(store.nextId(NULL_CONTEXT));
+                    new IntRecord(idGenerator.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
+            holes.add(idGenerator.nextId(NULL_CONTEXT));
             store.updateRecord(
-                    new IntRecord(store.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
+                    new IntRecord(idGenerator.nextId(NULL_CONTEXT), 1), storeCursor, NULL_CONTEXT, StoreCursors.NULL);
         }
 
         // when
@@ -316,11 +319,12 @@ class CommonAbstractStoreBehaviourTest {
         fs.deleteFile(Path.of(MyStore.STORE_FILENAME));
         createStore();
         store.start(NULL_CONTEXT);
+        var restartedGenerator = store.getIdGenerator();
 
         // then
         int numberOfReservedLowIds = store.getNumberOfReservedLowIds();
         for (int i = 0; i < 10; i++) {
-            assertEquals(numberOfReservedLowIds + i, store.nextId(NULL_CONTEXT));
+            assertEquals(numberOfReservedLowIds + i, restartedGenerator.nextId(NULL_CONTEXT));
         }
     }
 

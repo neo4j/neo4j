@@ -93,7 +93,8 @@ public abstract class AbstractNeo4jTestCase {
     private static <RECORD extends AbstractBaseRecord> int numberOfRecordsInUse(RecordStore<RECORD> store) {
         int inUse = 0;
         try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
-            for (long id = store.getNumberOfReservedLowIds(); id < store.getHighId(); id++) {
+            IdGenerator idGenerator = store.getIdGenerator();
+            for (long id = store.getNumberOfReservedLowIds(); id < idGenerator.getHighId(); id++) {
                 RECORD record = store.getRecordByCursor(id, store.newRecord(), RecordLoad.FORCE, cursor);
                 if (record.inUse()) {
                     inUse++;
@@ -104,8 +105,9 @@ public abstract class AbstractNeo4jTestCase {
     }
 
     protected static <RECORD extends AbstractBaseRecord> long lastUsedRecordId(RecordStore<RECORD> store) {
-        try (var cursor = store.openPageCursorForReading(store.getHighId(), NULL_CONTEXT)) {
-            for (long id = store.getHighId(); id > store.getNumberOfReservedLowIds(); id--) {
+        long usedIds = store.getIdGenerator().getHighId();
+        try (var cursor = store.openPageCursorForReading(usedIds, NULL_CONTEXT)) {
+            for (long id = usedIds; id > store.getNumberOfReservedLowIds(); id--) {
                 RECORD record = store.getRecordByCursor(id, store.newRecord(), RecordLoad.FORCE, cursor);
                 if (record.inUse()) {
                     return id;

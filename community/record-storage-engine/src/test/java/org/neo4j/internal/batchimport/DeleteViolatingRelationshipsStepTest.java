@@ -231,7 +231,7 @@ class DeleteViolatingRelationshipsStepTest {
         PropertyStore propertyStore = neoStores.getPropertyStore();
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         RelationshipRecord relationshipRecord = relationshipStore.newRecord();
-        relationshipRecord.setId(relationshipStore.nextId(NULL_CONTEXT));
+        relationshipRecord.setId(relationshipStore.getIdGenerator().nextId(NULL_CONTEXT));
         relationshipRecord.setInUse(true);
         int type = random.nextInt(NBR_TYPES);
         relationshipRecord.setType(type);
@@ -254,13 +254,14 @@ class DeleteViolatingRelationshipsStepTest {
         List<PropertyRecord> records = new ArrayList<>();
         PropertyRecord current = null;
         int space = PropertyType.getPayloadSizeLongs();
+        var idGenerator = propertyStore.getIdGenerator();
         for (int i = 0; i < numberOfProperties; i++) {
             PropertyBlock block = new PropertyBlock();
             propertyStore.encodeValue(block, i, random.nextValue(), NULL_CONTEXT, INSTANCE);
             if (current == null || block.getValueBlocks().length > space) {
                 PropertyRecord next = propertyStore.newRecord();
                 relationshipRecord.setIdTo(next);
-                next.setId(propertyStore.nextId(NULL_CONTEXT));
+                next.setId(idGenerator.nextId(NULL_CONTEXT));
                 if (current != null) {
                     next.setPrevProp(current.getId());
                     current.setNextProp(next.getId());

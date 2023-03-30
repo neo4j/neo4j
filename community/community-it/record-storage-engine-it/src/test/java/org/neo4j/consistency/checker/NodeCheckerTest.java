@@ -40,6 +40,7 @@ import org.neo4j.consistency.report.ConsistencyReport.LabelScanConsistencyReport
 import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -77,7 +78,7 @@ class NodeCheckerTest extends CheckerTestBase {
         // given
         try (AutoCloseable ignored = tx()) {
             // (N) w/ some labels
-            node(nodeStore.nextId(NULL_CONTEXT), NULL, NULL, labels);
+            node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, labels);
         }
 
         // when
@@ -109,8 +110,10 @@ class NodeCheckerTest extends CheckerTestBase {
             // Label index having (N) which is not in use in the store
             try (IndexUpdater writer = labelIndexWriter()) {
                 writer.process(IndexEntryUpdate.change(
-                        nodeStore.nextId(NULL_CONTEXT), IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[] {label1
-                        }));
+                        nodeStore.getIdGenerator().nextId(NULL_CONTEXT),
+                        IndexDescriptor.NO_INDEX,
+                        EMPTY_LONG_ARRAY,
+                        new long[] {label1}));
             }
         }
 
@@ -126,9 +129,10 @@ class NodeCheckerTest extends CheckerTestBase {
         // given
         try (AutoCloseable ignored = tx()) {
             // A couple of nodes w/ correct label indexing
+            IdGenerator idGenerator = nodeStore.getIdGenerator();
             try (IndexUpdater writer = labelIndexWriter()) {
                 for (int i = 0; i < 10; i++) {
-                    long nodeId = node(nodeStore.nextId(NULL_CONTEXT), NULL, NULL, label1);
+                    long nodeId = node(idGenerator.nextId(NULL_CONTEXT), NULL, NULL, label1);
                     writer.process(IndexEntryUpdate.change(
                             nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[] {label1}));
                 }
@@ -137,7 +141,7 @@ class NodeCheckerTest extends CheckerTestBase {
             // Label index having (N) which is not in use in the store
             try (IndexUpdater writer = labelIndexWriter()) {
                 writer.process(IndexEntryUpdate.change(
-                        nodeStore.nextId(NULL_CONTEXT), IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[] {label1
+                        idGenerator.nextId(NULL_CONTEXT), IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[] {label1
                         }));
             }
         }
@@ -214,7 +218,7 @@ class NodeCheckerTest extends CheckerTestBase {
             Consumer<NodeRecord> vandal, Class<T> expectedReportClass, Consumer<T> report) throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long nodeId = nodeStore.nextId(NULL_CONTEXT);
+            long nodeId = nodeStore.getIdGenerator().nextId(NULL_CONTEXT);
             NodeRecord node = new NodeRecord(nodeId).initialize(true, NULL, false, NULL, 0);
             new InlineNodeLabels(node)
                     .put(
@@ -247,7 +251,7 @@ class NodeCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
-            long nodeId = node(nodeStore.nextId(NULL_CONTEXT), NULL, NULL);
+            long nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL);
             try (IndexUpdater writer = labelIndexWriter()) {
                 writer.process(IndexEntryUpdate.change(
                         nodeId, IndexDescriptor.NO_INDEX, EMPTY_LONG_ARRAY, new long[] {label1}));
@@ -267,7 +271,7 @@ class NodeCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             // (N) w/ label L
             // LabelIndex does not have the N:L entry
-            node(nodeStore.nextId(NULL_CONTEXT), NULL, NULL, label1);
+            node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, label1);
         }
 
         // when
@@ -283,7 +287,7 @@ class NodeCheckerTest extends CheckerTestBase {
         try (AutoCloseable ignored = tx()) {
             try (IndexUpdater writer = labelIndexWriter()) {
                 for (int i = 0; i < 20; i++) {
-                    long nodeId = node(nodeStore.nextId(NULL_CONTEXT), NULL, NULL, label1, label2);
+                    long nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, label1, label2);
                     // node 10 missing label2 in index
                     writer.process(IndexEntryUpdate.change(
                             nodeId,
@@ -305,8 +309,8 @@ class NodeCheckerTest extends CheckerTestBase {
     void shouldReportNodeLabelHigherThanInt() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            NodeRecord node =
-                    new NodeRecord(nodeStore.nextId(NULL_CONTEXT)).initialize(true, NULL, false, NULL, 0x171f5bd081L);
+            NodeRecord node = new NodeRecord(nodeStore.getIdGenerator().nextId(NULL_CONTEXT))
+                    .initialize(true, NULL, false, NULL, 0x171f5bd081L);
             try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
                 nodeStore.updateRecord(node, storeCursor, NULL_CONTEXT, storeCursors);
             }
@@ -324,7 +328,7 @@ class NodeCheckerTest extends CheckerTestBase {
         // Given
         long nodeId;
         try (AutoCloseable ignored = tx()) {
-            nodeId = node(nodeStore.nextId(NULL_CONTEXT), NULL, NULL, label1);
+            nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, label1);
         }
 
         markAsDeletedId(nodeStore, nodeId);
@@ -341,7 +345,7 @@ class NodeCheckerTest extends CheckerTestBase {
         // Given
         long nodeId;
         try (AutoCloseable ignored = tx()) {
-            nodeId = node(nodeStore.nextId(NULL_CONTEXT), NULL, NULL, label1);
+            nodeId = node(nodeStore.getIdGenerator().nextId(NULL_CONTEXT), NULL, NULL, label1);
         }
         try (AutoCloseable ignored = tx()) {
             try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
@@ -362,6 +366,6 @@ class NodeCheckerTest extends CheckerTestBase {
 
     private void check() throws Exception {
         NodeChecker checker = new NodeChecker(context(), noMandatoryProperties);
-        checker.check(LongRange.range(0, nodeStore.getHighId()), true, true);
+        checker.check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
     }
 }

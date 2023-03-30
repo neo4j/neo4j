@@ -61,6 +61,10 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      */
     void setHighId(long id);
 
+    default void setHighestPossibleIdInUse(long highestInUse) {
+        setHighId(highestInUse + 1);
+    }
+
     void markHighestWrittenAtHighId();
 
     @VisibleForTesting

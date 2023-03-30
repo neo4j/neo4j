@@ -261,8 +261,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
 
         try (NeoStores stores = newStoreFactory(databaseLayout, idGeneratorFactory, contextFactory, immutable.empty())
                 .openNeoStores(StoreType.NODE, StoreType.RELATIONSHIP)) {
-            return stores.getNodeStore().getHighId() > 0
-                    || stores.getRelationshipStore().getHighId() > 0;
+            return stores.getNodeStore().getIdGenerator().getHighId() > 0
+                    || stores.getRelationshipStore().getIdGenerator().getHighId() > 0;
         }
     }
 

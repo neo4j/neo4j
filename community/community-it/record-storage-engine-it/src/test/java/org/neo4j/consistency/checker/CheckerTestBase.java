@@ -75,6 +75,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -146,6 +147,11 @@ class CheckerTestBase {
     ConsistencyReporter.Monitor monitor;
     SchemaStorage schemaStorage;
 
+    IdGenerator relGroupIdGenerator;
+    IdGenerator nodeStoreIdGenerator;
+    IdGenerator relStoreIdGenerator;
+    IdGenerator schemaIdGenerator;
+
     private DatabaseManagementService dbms;
     private CheckerContext context;
     private CountsState countsState;
@@ -186,6 +192,10 @@ class CheckerTestBase {
         cacheAccess.setCacheSlotSizes(DEFAULT_SLOT_SIZES);
         pageCache = dependencies.resolveDependency(PageCache.class);
         storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT);
+        relGroupIdGenerator = relationshipGroupStore.getIdGenerator();
+        nodeStoreIdGenerator = nodeStore.getIdGenerator();
+        relStoreIdGenerator = relationshipStore.getIdGenerator();
+        schemaIdGenerator = schemaStore.getIdGenerator();
     }
 
     @AfterEach
@@ -261,7 +271,9 @@ class CheckerTestBase {
         reporter = new ConsistencyReporter(report, monitor);
         countsState = new CountsState(neoStores, cacheAccess, INSTANCE);
         EntityBasedMemoryLimiter limiter = EntityBasedMemoryLimiter.defaultMemoryLimiter(mebiBytes(80))
-                .create(nodeStore.getHighId(), relationshipStore.getHighId());
+                .create(
+                        nodeStore.getIdGenerator().getHighId(),
+                        relationshipStore.getIdGenerator().getHighId());
         ProgressMonitorFactory.MultiPartBuilder progress = ProgressMonitorFactory.NONE.multipleParts("Test");
         ParallelExecution execution = new ParallelExecution(numberOfThreads, NOOP_EXCEPTION_HANDLER, IDS_PER_CHUNK);
         context = new CheckerContext(

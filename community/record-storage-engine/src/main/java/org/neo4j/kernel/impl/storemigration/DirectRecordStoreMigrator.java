@@ -130,7 +130,7 @@ class DirectRecordStoreMigrator {
             RecordStore<RECORD> to,
             CursorContext cursorContext,
             StoreCursors toStoreCursors) {
-        to.setHighestPossibleIdInUse(from.getHighestPossibleIdInUse(cursorContext));
+        to.getIdGenerator().setHighestPossibleIdInUse(from.getHighestPossibleIdInUse(cursorContext));
         try (var toCursor = to.openPageCursorForWriting(0, cursorContext);
                 var fromCursor = from.openPageCursorForReading(0, cursorContext)) {
             from.scanAllRecords(

@@ -64,6 +64,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.collection.Visitor;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
@@ -228,9 +229,10 @@ class NodeStoreTest {
     void shouldTellNodeInUse() {
         // Given
         NodeStore store = newNodeStore(fs);
+        IdGenerator idGenerator = store.getIdGenerator();
 
-        long exists = store.nextId(NULL_CONTEXT);
-        long deleted = store.nextId(NULL_CONTEXT);
+        long exists = idGenerator.nextId(NULL_CONTEXT);
+        long deleted = idGenerator.nextId(NULL_CONTEXT);
         try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
             store.updateRecord(
                     new NodeRecord(exists).initialize(true, 20, false, 10, 0), storeCursor, NULL_CONTEXT, storeCursors);
@@ -256,6 +258,7 @@ class NodeStoreTest {
     void scanningRecordsShouldVisitEachInUseRecordOnce() throws IOException {
         // GIVEN we have a NodeStore with data that spans several pages...
         nodeStore = newNodeStore(fs);
+        IdGenerator idGenerator = nodeStore.getIdGenerator();
 
         ThreadLocalRandom rng = ThreadLocalRandom.current();
         final MutableLongSet nextRelSet = new LongHashSet();
@@ -263,7 +266,7 @@ class NodeStoreTest {
             // Enough records to span several pages
             int nextRelCandidate = rng.nextInt(0, Integer.MAX_VALUE);
             if (nextRelSet.add(nextRelCandidate)) {
-                long nodeId = nodeStore.nextId(NULL_CONTEXT);
+                long nodeId = idGenerator.nextId(NULL_CONTEXT);
                 NodeRecord record = new NodeRecord(nodeId).initialize(true, 20, false, nextRelCandidate, 0);
                 try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
                     nodeStore.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
@@ -335,7 +338,7 @@ class NodeStoreTest {
         try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
             nodeStore.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
         }
-        nodeStore.setHighestPossibleIdInUse(10L);
+        nodeStore.getIdGenerator().setHighestPossibleIdInUse(10L);
 
         // WHEN
         record.setInUse(false);
@@ -359,7 +362,7 @@ class NodeStoreTest {
         try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
             nodeStore.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
         }
-        nodeStore.setHighestPossibleIdInUse(10L);
+        nodeStore.getIdGenerator().setHighestPossibleIdInUse(10L);
 
         // WHEN
         record.setRequiresSecondaryUnit(false);
@@ -474,9 +477,10 @@ class NodeStoreTest {
     void shouldSayNotEmptyIfHasRecords() {
         // given
         nodeStore = newNodeStore(fs);
+        var idGenerator = nodeStore.getIdGenerator();
         var record = nodeStore.newRecord();
         record.initialize(true, 1, true, 2, NO_LABELS_FIELD.longValue());
-        record.setId(nodeStore.nextId(NULL_CONTEXT));
+        record.setId(idGenerator.nextId(NULL_CONTEXT));
         try (var storeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
             nodeStore.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
         }

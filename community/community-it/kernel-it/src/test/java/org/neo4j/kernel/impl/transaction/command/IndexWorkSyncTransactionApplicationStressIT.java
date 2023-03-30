@@ -242,7 +242,7 @@ class IndexWorkSyncTransactionApplicationStressIT {
                 TransactionIdGenerator transactionIdGenerator)
                 throws Exception {
             TransactionState txState = new TxState();
-            long nodeId = nodeIds.nextId(NULL_CONTEXT);
+            long nodeId = nodeIds.getIdGenerator().nextId(NULL_CONTEXT);
             txState.nodeDoCreate(nodeId);
             txState.nodeDoAddLabel(descriptor.getLabelId(), nodeId);
             txState.nodeDoAddProperty(nodeId, descriptor.getPropertyId(), propertyValue(id, progress));

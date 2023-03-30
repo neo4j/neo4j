@@ -51,7 +51,7 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest {
     protected EntityBasedMemoryLimiter.Factory memoryLimit() {
         // Make it so that it will have to do the checking in a couple of node id ranges
         return EntityBasedMemoryLimiter.defaultMemoryLimiter(
-                fixture.neoStores().getNodeStore().getHighId() * CACHE_LINE_SIZE_BYTES / 3);
+                fixture.neoStores().getNodeStore().getIdGenerator().getHighId() * CACHE_LINE_SIZE_BYTES / 3);
     }
 
     @Test
@@ -94,8 +94,8 @@ class LimitedFullCheckIT extends FullCheckIntegrationTest {
     void shouldFindIndexInconsistenciesWhenHaveDifferentNumberRangesForEntityTypes(boolean moreNodesThanRelationships)
             throws ConsistencyCheckIncompleteException, IOException, IndexEntryConflictException {
         long highEntityId = Math.max(
-                fixture.neoStores().getNodeStore().getHighId(),
-                fixture.neoStores().getRelationshipStore().getHighId());
+                fixture.neoStores().getNodeStore().getIdGenerator().getHighId(),
+                fixture.neoStores().getRelationshipStore().getIdGenerator().getHighId());
 
         // Adds more indexed entities to get more ranges for the entity type we want to have the most of.
         // Then removes the last indexed entity to make sure we can find problems in the last range for both

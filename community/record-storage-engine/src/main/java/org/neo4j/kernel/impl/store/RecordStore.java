@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import org.neo4j.internal.helpers.collection.Visitor;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.PageCursor;
@@ -49,32 +50,37 @@ import org.neo4j.storageengine.util.IdUpdateListener;
  *
  * @param <RECORD> type of {@link AbstractBaseRecord}.
  */
-public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequence {
+public interface RecordStore<RECORD extends AbstractBaseRecord> {
     /**
      * @return the {@link Path} that backs this store.
      */
     Path getStorageFile();
 
-    /**
-     * @return high id of this store, i.e an id higher than any in use record.
-     */
-    long getHighId();
+    IdGenerator getIdGenerator();
 
     /**
+     * Checks for highest possible id in use in id generator (if that is already available) otherwise performs store scan.
      * @param cursorContext underlying page cursor context.
      * @return highest id in use in this store.
      */
     long getHighestPossibleIdInUse(CursorContext cursorContext);
 
     /**
-     * Sets highest id in use for this store. This is for when records are applied to this store where
-     * the ids have been generated through some other means. Having an up to date highest possible id
-     * makes sure that closing this store truncates at the right place and that "all record scans" can
-     * see all records.
+     * Some stores may have meta data stored in the header of the store file. Since all records in a store
+     * are of the same size the means of storing that meta data is to occupy one or more records at the
+     * beginning of the store (0...).
      *
-     * @param highestIdInUse highest id that is now in use in this store.
+     * @return the number of records in the beginning of the file that are reserved for header meta data.
      */
-    void setHighestPossibleIdInUse(long highestIdInUse);
+    int getNumberOfReservedLowIds();
+
+    /**
+     * Returns store header (see {@link #getNumberOfReservedLowIds()}) as {@code int}. Exposed like this
+     * for convenience since all known store headers are ints.
+     *
+     * @return store header as an int value, e.g the first 4 bytes of the first (reserved) record in this store.
+     */
+    int getStoreHeaderInt();
 
     /**
      * @return a new record instance for receiving data by {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
@@ -256,23 +262,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> extends IdSequen
      * once the call returns.
      */
     void flush(FileFlushEvent flushEvent, CursorContext cursorContext);
-
-    /**
-     * Some stores may have meta data stored in the header of the store file. Since all records in a store
-     * are of the same size the means of storing that meta data is to occupy one or more records at the
-     * beginning of the store (0...).
-     *
-     * @return the number of records in the beginning of the file that are reserved for header meta data.
-     */
-    int getNumberOfReservedLowIds();
-
-    /**
-     * Returns store header (see {@link #getNumberOfReservedLowIds()}) as {@code int}. Exposed like this
-     * for convenience since all known store headers are ints.
-     *
-     * @return store header as an int value, e.g the first 4 bytes of the first (reserved) record in this store.
-     */
-    int getStoreHeaderInt();
 
     /**
      * Called once all changes to a record is ready to be converted into a command.

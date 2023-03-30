@@ -239,7 +239,7 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
 
     private R createInUseRecord(List<DynamicRecord> nameRecords) {
         R tokenRecord = store.newRecord();
-        tokenRecord.setId(store.nextId(NULL_CONTEXT));
+        tokenRecord.setId(store.getIdGenerator().nextId(NULL_CONTEXT));
         tokenRecord.initialize(true, nameRecords.get(0).getIntId());
         tokenRecord.addNameRecords(nameRecords);
         tokenRecord.setCreated();

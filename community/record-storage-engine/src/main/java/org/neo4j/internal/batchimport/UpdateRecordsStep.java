@@ -72,7 +72,7 @@ public class UpdateRecordsStep<RECORD extends AbstractBaseRecord> extends Proces
 
     @Override
     protected void process(RECORD[] batch, BatchSender sender, CursorContext cursorContext) {
-        LongFunction<IdSequence> idSequence = prepareIdSequence.apply(store);
+        LongFunction<IdSequence> idSequence = prepareIdSequence.apply(store.getIdGenerator());
         int recordsUpdatedInThisBatch = 0;
         try (var storeCursors = storeCursorsCreator.apply(cursorContext);
                 var cursor = storeCursors.writeCursor(cursorType)) {

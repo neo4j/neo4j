@@ -137,7 +137,7 @@ class RelationshipGroupStageTest {
         superviseDynamicExecution(INVISIBLE, config, stage);
 
         // then
-        var groupHighId = store.getHighId();
+        var groupHighId = store.getIdGenerator().getHighId();
         var group = store.newRecord();
         try (var cursor = store.openPageCursorForReading(0, NULL_CONTEXT)) {
             for (var id = store.getNumberOfReservedLowIds(); id < groupHighId; id++) {

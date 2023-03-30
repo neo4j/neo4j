@@ -27,6 +27,7 @@ import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.LongRange;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -43,11 +44,12 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportSourceNodeNotInUse() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long relationship = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
+            IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
+            long node = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relationship(
                     relationship,
-                    nodeStore.nextId(CursorContext.NULL_CONTEXT),
+                    nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT),
                     node,
                     type,
                     NULL,
@@ -69,12 +71,13 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportTargetNodeNotInUse() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long relationship = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long node = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relationship(
                     relationship,
                     node,
-                    nodeStore.nextId(CursorContext.NULL_CONTEXT),
+                    nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT),
                     type,
                     NULL,
                     NULL,
@@ -95,8 +98,9 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportSourceNodeNotInUseWhenAboveHighId() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long relationship = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
+            long node =
+                    nodePlusCached(nodeStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relationship(relationship, node + 10, node, type, NULL, NULL, NULL, NULL, true, true);
         }
 
@@ -111,8 +115,9 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportTargetNodeNotInUseWhenAboveHighId() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long relationship = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
+            long node =
+                    nodePlusCached(nodeStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relationship(relationship, node, node + 10, type, NULL, NULL, NULL, NULL, true, true);
         }
 
@@ -127,12 +132,14 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportSourceNodeDoesNotReferenceBack() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
             long node1 = nodePlusCached(
-                    nodeStore.nextId(CursorContext.NULL_CONTEXT),
+                    nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT),
                     NULL,
-                    relationshipStore.nextId(CursorContext.NULL_CONTEXT));
-            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+                    relIdGenerator.nextId(CursorContext.NULL_CONTEXT));
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
 
@@ -147,12 +154,14 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportTargetNodeDoesNotReferenceBack() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             long node2 = nodePlusCached(
-                    nodeStore.nextId(CursorContext.NULL_CONTEXT),
+                    nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT),
                     NULL,
-                    relationshipStore.nextId(CursorContext.NULL_CONTEXT));
+                    relIdGenerator.nextId(CursorContext.NULL_CONTEXT));
             relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
 
@@ -167,9 +176,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportRelationshipNotFirstInSourceChain() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, false, true);
         }
 
@@ -184,9 +195,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportRelationshipNotFirstInTargetChain() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, false);
         }
 
@@ -201,9 +214,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportSourceNodeHasNoRelationships() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, NULL);
-            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, NULL);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
 
@@ -218,9 +233,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportTargetNodeHasNoRelationships() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, NULL);
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, NULL);
             relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
 
@@ -235,9 +252,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
     void shouldReportRelationshipTypeNotInUse() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relationship(relationship, node1, node2, type + 1, NULL, NULL, NULL, NULL, true, true);
         }
 
@@ -253,9 +272,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
         // Given
         long relId;
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relId = relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
 
@@ -273,9 +294,11 @@ class RelationshipCheckerTest extends CheckerTestBase {
         // Given
         long relId;
         try (AutoCloseable ignored = tx()) {
-            long relationship = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long node1 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
-            long node2 = nodePlusCached(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            var relIdGenerator = relationshipStore.getIdGenerator();
+            var nodeIdGenerator = nodeStore.getIdGenerator();
+            long relationship = relIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            long node1 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
+            long node2 = nodePlusCached(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relationship);
             relId = relationship(relationship, node1, node2, type, NULL, NULL, NULL, NULL, true, true);
         }
         try (AutoCloseable ignored = tx()) {
@@ -300,6 +323,6 @@ class RelationshipCheckerTest extends CheckerTestBase {
 
     private void check(CheckerContext checkerContext) throws Exception {
         new RelationshipChecker(checkerContext, noMandatoryProperties)
-                .check(LongRange.range(0, nodeStore.getHighId()), true, true);
+                .check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
     }
 }

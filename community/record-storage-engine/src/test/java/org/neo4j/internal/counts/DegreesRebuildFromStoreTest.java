@@ -42,6 +42,7 @@ import org.neo4j.collection.diffset.LongDiffSets;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -107,7 +108,7 @@ class DegreesRebuildFromStoreTest {
             RelationshipGroupStore groupStore =
                     storageEngine.testAccessNeoStores().getRelationshipGroupStore();
             try (StoreCursors storageCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-                long highId = groupStore.getHighId();
+                long highId = groupStore.getIdGenerator().getHighId();
                 assertThat(highId).isGreaterThan(1);
                 for (int i = 10; i < highId; i++) {
                     RelationshipGroupRecord record = groupStore.getRecordByCursor(
@@ -225,11 +226,12 @@ class DegreesRebuildFromStoreTest {
 
     private static int[] createRelationshipTypes(RecordStorageEngine storageEngine) {
         int[] types = new int[3];
+        IdGenerator idGenerator = storageEngine
+                .testAccessNeoStores()
+                .getRelationshipTypeTokenStore()
+                .getIdGenerator();
         for (int i = 0; i < types.length; i++) {
-            types[i] = (int) storageEngine
-                    .testAccessNeoStores()
-                    .getRelationshipTypeTokenStore()
-                    .nextId(NULL_CONTEXT);
+            types[i] = (int) idGenerator.nextId(NULL_CONTEXT);
         }
         return types;
     }
@@ -240,19 +242,21 @@ class DegreesRebuildFromStoreTest {
         long[] nodes = new long[numNodes];
         applyLogicalChanges(storageEngine, (state, tx) -> {
             NodeStore nodeStore = storageEngine.testAccessNeoStores().getNodeStore();
+            IdGenerator idGenerator = nodeStore.getIdGenerator();
             for (int i = 0; i < numNodes; i++) {
-                nodes[i] = nodeStore.nextId(NULL_CONTEXT);
+                nodes[i] = idGenerator.nextId(NULL_CONTEXT);
                 tx.visitCreatedNode(nodes[i]);
             }
         });
 
         RelationshipStore relationshipStore =
                 storageEngine.testAccessNeoStores().getRelationshipStore();
+        IdGenerator idGenerator = relationshipStore.getIdGenerator();
         List<RelationshipData> relationships = new ArrayList<>();
         int numRelationships = numNodes * denseThreshold;
         for (int i = 0; i < numRelationships; i++) {
             relationships.add(new RelationshipData(
-                    relationshipStore.nextId(NULL_CONTEXT),
+                    idGenerator.nextId(NULL_CONTEXT),
                     random.among(relationshipTypes),
                     random.among(nodes),
                     random.among(nodes)));

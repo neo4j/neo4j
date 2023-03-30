@@ -413,7 +413,7 @@ class OnlineIndexUpdatesTest {
     private long createProperty(PrimitiveRecord nodeRecord, Value value, int propertyKey) {
         var propertyStore = neoStores.getPropertyStore();
         var propertyRecord = recordAccess
-                .create(propertyStore.nextId(NULL_CONTEXT), nodeRecord, NULL_CONTEXT)
+                .create(propertyStore.getIdGenerator().nextId(NULL_CONTEXT), nodeRecord, NULL_CONTEXT)
                 .forChangingData();
         propertyRecord.setInUse(true);
         propertyRecord.setCreated();

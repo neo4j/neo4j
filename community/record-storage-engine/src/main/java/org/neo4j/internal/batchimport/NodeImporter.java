@@ -206,7 +206,8 @@ public class NodeImporter extends EntityImporter {
     public void close() {
         super.close();
         monitor.nodesImported(nodeCount);
-        nodeStore.setHighestPossibleIdInUse(highestId); // for the case of #id(long)
+        // for the case of #id(long)
+        nodeStore.getIdGenerator().setHighestPossibleIdInUse(highestId);
         nodeUpdateCursor.close();
         idPropertyUpdateCursor.close();
         cursorContext.close();

@@ -38,6 +38,7 @@ import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -52,8 +53,10 @@ class RecordNodeCursorTest {
     void shouldConsiderHighestPossibleIdInUseInScan() {
         // given
         NodeStore nodeStore = mock(NodeStore.class);
+        IdGenerator idGenerator = mock(IdGenerator.class);
+        when(nodeStore.getIdGenerator()).thenReturn(idGenerator);
         when(nodeStore.getHighestPossibleIdInUse(NULL_CONTEXT)).thenReturn(200L);
-        when(nodeStore.getHighId()).thenReturn(20L);
+        when(idGenerator.getHighId()).thenReturn(20L);
         doAnswer(invocationOnMock -> {
                     long id = invocationOnMock.getArgument(0);
                     NodeRecord record = invocationOnMock.getArgument(1);

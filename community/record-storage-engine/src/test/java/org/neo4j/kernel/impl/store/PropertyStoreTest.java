@@ -103,7 +103,7 @@ class PropertyStoreTest {
                     immutable.empty())) {
                 store.initialise(new CursorContextFactory(pageCacheTracer, EMPTY));
                 store.start(NULL_CONTEXT);
-                final long propertyRecordId = store.nextId(NULL_CONTEXT);
+                final long propertyRecordId = store.getIdGenerator().nextId(NULL_CONTEXT);
 
                 PropertyRecord record = new PropertyRecord(propertyRecordId);
                 record.setInUse(true);

@@ -28,6 +28,7 @@ import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -262,8 +263,9 @@ public class RecordBuilders {
             PrimitiveRecord owner,
             List<PropertyBlock> properties,
             RecordAccess<PropertyRecord, PrimitiveRecord> propertyRecords) {
+        IdGenerator idGenerator = propertyStore.getIdGenerator();
         PropertyRecord currentRecord = propertyRecords
-                .create(propertyStore.nextId(NULL_CONTEXT), owner, NULL_CONTEXT)
+                .create(idGenerator.nextId(NULL_CONTEXT), owner, NULL_CONTEXT)
                 .forChangingData();
         currentRecord.setInUse(true);
         PropertyRecord firstRecord = currentRecord;
@@ -272,7 +274,7 @@ public class RecordBuilders {
                 // Here it means the current block is done for
                 PropertyRecord prevRecord = currentRecord;
                 // Create new record
-                long propertyId = propertyStore.nextId(NULL_CONTEXT);
+                long propertyId = idGenerator.nextId(NULL_CONTEXT);
                 currentRecord =
                         propertyRecords.create(propertyId, owner, NULL_CONTEXT).forChangingData();
                 currentRecord.setInUse(true);

@@ -480,34 +480,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     /**
-     * Returns the next id for this store's {@link IdGenerator}.
-     *
-     * @return The next free id
-     */
-    @Override
-    public long nextId(CursorContext cursorContext) {
-        assertIdGeneratorInitialized();
-        return idGenerator.nextId(cursorContext);
-    }
-
-    private void assertIdGeneratorInitialized() {
-        if (idGenerator == null) {
-            throw new IllegalStateException("IdGenerator is not initialized");
-        }
-    }
-
-    /**
-     * Return the highest id in use. If this store is not OK yet, the high id is calculated from the highest
-     * in use record on the store, using {@link #scanForHighId(CursorContext)}.
-     *
-     * @return The high id, i.e. highest id in use + 1.
-     */
-    @Override
-    public long getHighId() {
-        return idGenerator.getHighId();
-    }
-
-    /**
      * Sets the high id, i.e. highest id in use + 1 (use this when rebuilding id generator).
      *
      * @param highId The high id to set.
@@ -518,11 +490,11 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
 
     /**
      * @return {@code true} if this store has no records in it, i.e. is empty. Otherwise {@code false}.
-     * This is different than checking if {@link #getHighId()} is larger than 0, since some stores may have
+     * This is different than checking if {@link IdGenerator#getHighId()} is larger than 0, since some stores may have
      * records in the beginning that are reserved, see {@link #getNumberOfReservedLowIds()}.
      */
     public boolean isEmpty() {
-        return getHighId() == getNumberOfReservedLowIds();
+        return getIdGenerator().getHighId() == getNumberOfReservedLowIds();
     }
 
     /**
@@ -623,7 +595,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     /**
      * Starts from the end of the file and scans backwards to find the highest in use record.
      * Can be used even if {@link #start(CursorContext)} hasn't been called. Basically this method should be used
-     * over {@link #getHighestPossibleIdInUse(CursorContext)} and {@link #getHighId()} in cases where a store has been opened
+     * over {@link #getHighestPossibleIdInUse(CursorContext)} and {@link IdGenerator#getHighId()} in cases where a store has been opened
      * but is in a scenario where recovery isn't possible, like some tooling or migration.
      *
      * @return the id of the highest in use record + 1, i.e. highId.
@@ -736,22 +708,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     /**
-     * Sets the highest id in use. After this call highId will be this given id + 1.
-     *
-     * @param highId The highest id in use to set.
-     */
-    @Override
-    public void setHighestPossibleIdInUse(long highId) {
-        setHighId(highId + 1);
-    }
-
-    /** @return The total number of ids in use. */
-    public long getNumberOfIdsInUse() {
-        assertIdGeneratorInitialized();
-        return idGenerator.getHighId();
-    }
-
-    /**
      * @return the number of records at the beginning of the store file that are reserved for other things
      * than actual records. Stuff like permanent configuration data.
      */
@@ -769,7 +725,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
                 "%s[%s]: used=%s high=%s",
                 getTypeDescriptor(),
                 getStorageFile().getFileName(),
-                getNumberOfIdsInUse(),
+                getIdGenerator().getHighId(),
                 getHighestPossibleIdInUse(cursorContext)));
     }
 
@@ -880,7 +836,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
 
     @Override
     public void prepareForCommit(RECORD record, CursorContext cursorContext) {
-        prepareForCommit(record, this, cursorContext);
+        prepareForCommit(record, idGenerator, cursorContext);
     }
 
     @Override
@@ -894,7 +850,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     public <EXCEPTION extends Exception> void scanAllRecords(Visitor<RECORD, EXCEPTION> visitor, PageCursor pageCursor)
             throws EXCEPTION {
         RECORD record = newRecord();
-        long highId = getHighId();
+        long highId = getIdGenerator().getHighId();
         for (long id = getNumberOfReservedLowIds(); id < highId; id++) {
             getRecordByCursor(id, record, LENIENT_CHECK, pageCursor);
             if (record.inUse()) {

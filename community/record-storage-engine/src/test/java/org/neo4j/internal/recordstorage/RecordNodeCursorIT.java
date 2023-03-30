@@ -242,7 +242,7 @@ class RecordNodeCursorIT {
 
     private NodeRecord createNodeRecord() {
         final var nodeRecord = nodeStore.newRecord();
-        nodeRecord.setId(nodeStore.nextId(NULL_CONTEXT));
+        nodeRecord.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         nodeRecord.initialize(
                 true,
                 Record.NO_NEXT_PROPERTY.longValue(),

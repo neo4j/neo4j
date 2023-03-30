@@ -108,7 +108,9 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
                     .withIndexProvider(providerDescriptor);
             String name = defaultIfEmpty(
                     config.indexName(entityType), generateName(prototype, new String[] {}, new String[] {}));
-            IndexDescriptor descriptor = prototype.withName(name).materialise(schemaStore.nextId(cursorContext));
+            IndexDescriptor descriptor = prototype
+                    .withName(name)
+                    .materialise(schemaStore.getIdGenerator().nextId(cursorContext));
             schemaRule.writeSchemaRule(descriptor, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors);
             return descriptor;
         } catch (KernelException e) {

@@ -597,9 +597,11 @@ class CountsComputerTest {
         try (NeoStores neoStores = storeFactory.openAllNeoStores()) {
             NodeStore nodeStore = neoStores.getNodeStore();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-            int highLabelId = (int) neoStores.getLabelTokenStore().getHighId();
+            var labelTokenStore = neoStores.getLabelTokenStore();
+            int highLabelId = (int) labelTokenStore.getIdGenerator().getHighId();
+            var relTypeTokenStore = neoStores.getRelationshipTypeTokenStore();
             int highRelationshipTypeId =
-                    (int) neoStores.getRelationshipTypeTokenStore().getHighId();
+                    (int) relTypeTokenStore.getIdGenerator().getHighId();
             CountsComputer countsComputer = new CountsComputer(
                     neoStores,
                     lastCommittedTransactionId,
@@ -608,7 +610,6 @@ class CountsComputerTest {
                     highLabelId,
                     highRelationshipTypeId,
                     NumberArrayFactories.AUTO_WITHOUT_PAGECACHE,
-                    databaseLayout,
                     progressReporter,
                     CONTEXT_FACTORY,
                     INSTANCE);

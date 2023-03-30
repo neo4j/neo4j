@@ -38,7 +38,7 @@ abstract class StoreScanAsInputIterator<RECORD extends AbstractBaseRecord> imple
 
     StoreScanAsInputIterator(RecordStore<RECORD> store) {
         this.batchSize = store.getRecordsPerPage() * 10;
-        this.highId = store.getHighId();
+        this.highId = store.getIdGenerator().getHighId();
     }
 
     @Override

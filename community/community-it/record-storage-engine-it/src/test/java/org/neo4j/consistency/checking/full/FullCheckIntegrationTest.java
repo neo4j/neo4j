@@ -1489,9 +1489,10 @@ public class FullCheckIntegrationTest {
         NeoStores neoStores = fixture.directStoreAccess().nativeStores();
         StoreCursors storeCursors = fixture.getStoreCursors();
         RecordStore<RelationshipTypeTokenRecord> relTypeStore = neoStores.getRelationshipTypeTokenStore();
+        var idGenerator = relTypeStore.getIdGenerator();
         RelationshipTypeTokenRecord record = relTypeStore.newRecord();
         relTypeStore.getRecordByCursor(
-                (int) relTypeStore.nextId(NULL_CONTEXT), record, FORCE, storeCursors.readCursor(REL_TYPE_TOKEN_CURSOR));
+                (int) idGenerator.nextId(NULL_CONTEXT), record, FORCE, storeCursors.readCursor(REL_TYPE_TOKEN_CURSOR));
         record.setNameId(20);
         record.setInUse(true);
         try (var storeCursor = storeCursors.writeCursor(REL_TYPE_TOKEN_CURSOR)) {
@@ -3100,9 +3101,11 @@ public class FullCheckIntegrationTest {
     }
 
     protected EntityBasedMemoryLimiter.Factory memoryLimit() {
+        var relStore = fixture.neoStores().getRelationshipStore();
+        var nodeStore = fixture.neoStores().getNodeStore();
         long highId = Long.max(
-                fixture.neoStores().getNodeStore().getHighId(),
-                fixture.neoStores().getRelationshipStore().getHighId());
+                nodeStore.getIdGenerator().getHighId(),
+                relStore.getIdGenerator().getHighId());
         return EntityBasedMemoryLimiter.defaultMemoryLimiter(highId * CACHE_LINE_SIZE_BYTES);
     }
 
@@ -3294,9 +3297,10 @@ public class FullCheckIntegrationTest {
     private void createUniquenessConstraintRule(IndexType indexType, SchemaDescriptor schemaDescriptor)
             throws KernelException {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
+        var schemaIdGenerator = schemaStore.getIdGenerator();
 
-        long ruleId1 = schemaStore.nextId(NULL_CONTEXT);
-        long ruleId2 = schemaStore.nextId(NULL_CONTEXT);
+        long ruleId1 = schemaIdGenerator.nextId(NULL_CONTEXT);
+        long ruleId2 = schemaIdGenerator.nextId(NULL_CONTEXT);
 
         String name = "constraint_" + ruleId2;
         IndexDescriptor indexRule = uniqueForSchema(schemaDescriptor, DESCRIPTOR)
@@ -3335,9 +3339,10 @@ public class FullCheckIntegrationTest {
     private void createEntityKeyConstraintRule(IndexType indexType, SchemaDescriptor schemaDescriptor)
             throws KernelException {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
+        var schemaIdGenerator = schemaStore.getIdGenerator();
 
-        long ruleId1 = schemaStore.nextId(NULL_CONTEXT);
-        long ruleId2 = schemaStore.nextId(NULL_CONTEXT);
+        long ruleId1 = schemaIdGenerator.nextId(NULL_CONTEXT);
+        long ruleId2 = schemaIdGenerator.nextId(NULL_CONTEXT);
 
         String name = "constraint_" + ruleId2;
         IndexDescriptor indexRule = uniqueForSchema(schemaDescriptor, DESCRIPTOR)
@@ -3356,7 +3361,7 @@ public class FullCheckIntegrationTest {
 
     private void createNodePropertyExistenceConstraint(int labelId, int propertyKeyId) throws KernelException {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-        long ruleId = schemaStore.nextId(NULL_CONTEXT);
+        long ruleId = schemaStore.getIdGenerator().nextId(NULL_CONTEXT);
         ConstraintDescriptor rule = nodePropertyExistenceConstraintRule(ruleId, labelId, propertyKeyId)
                 .withName("constraint_" + ruleId);
         writeToSchemaStore(schemaStore, rule);
@@ -3365,8 +3370,8 @@ public class FullCheckIntegrationTest {
     private void createRelationshipPropertyExistenceConstraint(int relTypeId, int propertyKeyId)
             throws KernelException {
         SchemaStore schemaStore = fixture.directStoreAccess().nativeStores().getSchemaStore();
-        ConstraintDescriptor rule =
-                relPropertyExistenceConstraintRule(schemaStore.nextId(NULL_CONTEXT), relTypeId, propertyKeyId);
+        ConstraintDescriptor rule = relPropertyExistenceConstraintRule(
+                schemaStore.getIdGenerator().nextId(NULL_CONTEXT), relTypeId, propertyKeyId);
         writeToSchemaStore(schemaStore, rule);
     }
 

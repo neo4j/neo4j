@@ -151,7 +151,7 @@ class PropertyDeleterTest {
         startStore(log);
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord node = nodeStore.newRecord();
-        node.setId(nodeStore.nextId(NULL_CONTEXT));
+        node.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         List<PropertyBlock> properties = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             properties.add(encodedValue(i, random.nextValue()));
@@ -198,7 +198,7 @@ class PropertyDeleterTest {
         startStore(log);
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord node = nodeStore.newRecord();
-        node.setId(nodeStore.nextId(NULL_CONTEXT));
+        node.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         List<PropertyBlock> properties = new ArrayList<>();
         for (int i = 0; i < 20; i++) {
             properties.add(encodedValue(i, random.nextValue()));
@@ -242,7 +242,7 @@ class PropertyDeleterTest {
         startStore(log);
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord node = nodeStore.newRecord();
-        node.setId(nodeStore.nextId(NULL_CONTEXT));
+        node.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         List<PropertyBlock> properties =
                 Collections.singletonList(encodedValue(0, random.randomValues().nextAsciiTextValue(1000, 1000)));
         DirectRecordAccessSet initialChanges = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
@@ -272,7 +272,7 @@ class PropertyDeleterTest {
         startStore(log);
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord node = nodeStore.newRecord();
-        node.setId(nodeStore.nextId(NULL_CONTEXT));
+        node.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         List<PropertyBlock> properties =
                 Collections.singletonList(encodedValue(0, random.randomValues().nextAsciiTextValue(1000, 1000)));
         DirectRecordAccessSet initialChanges = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
@@ -300,7 +300,7 @@ class PropertyDeleterTest {
         startStore(true);
         NodeStore nodeStore = neoStores.getNodeStore();
         NodeRecord node = nodeStore.newRecord();
-        node.setId(nodeStore.nextId(NULL_CONTEXT));
+        node.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         List<PropertyBlock> properties = new ArrayList<>();
         // We're not tampering with our "small" values and they should therefore be readable and logged during deletion
         Value value1 = randomValueWithMaxSingleDynamicRecord();

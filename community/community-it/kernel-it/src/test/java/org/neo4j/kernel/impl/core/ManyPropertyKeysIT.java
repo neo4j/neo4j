@@ -152,7 +152,8 @@ class ManyPropertyKeysIT {
         try (var storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
                 var cursor = storeCursors.writeCursor(PROPERTY_KEY_TOKEN_CURSOR)) {
             for (int i = 0; i < propertyKeyCount; i++) {
-                PropertyKeyTokenRecord record = new PropertyKeyTokenRecord((int) store.nextId(cursorContext));
+                PropertyKeyTokenRecord record =
+                        new PropertyKeyTokenRecord((int) store.getIdGenerator().nextId(cursorContext));
                 record.setInUse(true);
                 Collection<DynamicRecord> nameRecords =
                         store.allocateNameRecords(PropertyStore.encodeString(key(i)), cursorContext, INSTANCE);

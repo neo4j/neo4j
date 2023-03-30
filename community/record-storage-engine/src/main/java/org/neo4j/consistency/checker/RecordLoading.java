@@ -203,7 +203,7 @@ class RecordLoading {
 
     static <RECORD extends TokenRecord> List<NamedToken> safeLoadTokens(
             TokenStore<RECORD> tokenStore, CursorContext cursorContext) {
-        long highId = tokenStore.getHighId();
+        long highId = tokenStore.getIdGenerator().getHighId();
         List<NamedToken> tokens = new ArrayList<>();
         DynamicStringStore nameStore = tokenStore.getNameStore();
         List<DynamicRecord> nameRecords = new ArrayList<>();

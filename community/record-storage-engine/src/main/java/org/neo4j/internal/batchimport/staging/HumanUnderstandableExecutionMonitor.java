@@ -273,7 +273,8 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
         // The reason the highId of the relationship store is used, as opposed to actual number of imported
         // relationships
         // is that the stages underneath operate on id ranges, not knowing which records are actually in use.
-        long relationshipRecordIdCount = neoStores.getRelationshipStore().getHighId();
+        long relationshipRecordIdCount =
+                neoStores.getRelationshipStore().getIdGenerator().getHighId();
         // The progress counting of linking stages is special anyway, in that it uses the "progress" stats key,
         // which is based on actual number of relationships, not relationship ids.
         long actualRelationshipCount = distribution.getRelationshipCount();
@@ -295,8 +296,10 @@ public class HumanUnderstandableExecutionMonitor implements ExecutionMonitor {
         // The reason the highId of the relationship store is used, as opposed to actual number of imported
         // relationships
         // is that the stages underneath operate on id ranges, not knowing which records are actually in use.
-        long relationshipRecordIdCount = neoStores.getRelationshipStore().getHighId();
-        long groupCount = neoStores.getTemporaryRelationshipGroupStore().getHighId();
+        var relStore = neoStores.getRelationshipStore();
+        long relationshipRecordIdCount = relStore.getIdGenerator().getHighId();
+        long groupCount =
+                neoStores.getTemporaryRelationshipGroupStore().getIdGenerator().getHighId();
         initializeProgress(
                 groupCount
                         + // Count groups

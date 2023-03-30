@@ -85,7 +85,9 @@ class RelationshipChecker implements Checker {
         this.mandatoryProperties = mandatoryProperties;
         this.indexes = context.indexSizes.smallIndexes(RELATIONSHIP);
         this.progress = context.progressReporter(
-                this, "Relationships", neoStores.getRelationshipStore().getHighId());
+                this,
+                "Relationships",
+                neoStores.getRelationshipStore().getIdGenerator().getHighId());
     }
 
     @Override
@@ -499,8 +501,9 @@ class RelationshipChecker implements Checker {
 
     @Override
     public String toString() {
+        var relStore = neoStores.getRelationshipStore();
         return String.format(
                 "%s[highId:%d,indexesToCheck:%d]",
-                getClass().getSimpleName(), neoStores.getRelationshipStore().getHighId(), indexes.size());
+                getClass().getSimpleName(), relStore.getIdGenerator().getHighId(), indexes.size());
     }
 }

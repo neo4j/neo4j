@@ -108,7 +108,7 @@ class RelationshipGroupGetterTest {
                 storeCursors);
         nodeRecords = new DirectRecordAccess<>(
                 nodeStore, Loaders.nodeLoader(nodeStore, storeCursors), NULL_CONTEXT, NODE_CURSOR, storeCursors);
-        groupGetter = new RelationshipGroupGetter(groupStore, NULL_CONTEXT);
+        groupGetter = new RelationshipGroupGetter(groupStore.getIdGenerator(), NULL_CONTEXT);
     }
 
     @AfterEach
@@ -124,7 +124,7 @@ class RelationshipGroupGetterTest {
         RelationshipGroupRecord group10 = group(10);
         RelationshipGroupRecord group23 = group(23);
         linkAndWrite(group2, group4, group10, group23);
-        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter(groupStore, NULL_CONTEXT);
+        RelationshipGroupGetter groupGetter = new RelationshipGroupGetter(groupStore.getIdGenerator(), NULL_CONTEXT);
         NodeRecord node = new NodeRecord(0)
                 .initialize(true, NULL_REFERENCE.longValue(), true, group2.getId(), NO_LABELS_FIELD.longValue());
 
@@ -260,7 +260,7 @@ class RelationshipGroupGetterTest {
     }
 
     private RelationshipGroupRecord group(int type) {
-        return new RelationshipGroupRecord(groupStore.nextId(NULL_CONTEXT))
+        return new RelationshipGroupRecord(groupStore.getIdGenerator().nextId(NULL_CONTEXT))
                 .initialize(
                         true,
                         type,

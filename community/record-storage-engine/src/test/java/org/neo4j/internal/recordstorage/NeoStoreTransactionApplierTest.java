@@ -148,6 +148,7 @@ class NeoStoreTransactionApplierTest {
 
     private static <T extends CommonAbstractStore> T mockedStore(Class<T> cls, IdType idType) {
         T store = mock(cls);
+        when(store.getIdGenerator()).thenReturn(mock(IdGenerator.class));
         when(store.getIdType()).thenReturn(idType);
         return store;
     }
@@ -214,9 +215,9 @@ class NeoStoreTransactionApplierTest {
         assertFalse(result);
 
         verify(lockService).acquireNodeLock(command.getKey(), EXCLUSIVE);
-        verify(nodeStore).setHighestPossibleIdInUse(after.getId());
+        verify(nodeStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(nodeStore).updateRecord(eq(after), any(), any(), any(), any());
-        verify(dynamicLabelStore).setHighestPossibleIdInUse(three.getId());
+        verify(dynamicLabelStore.getIdGenerator()).setHighestPossibleIdInUse(three.getId());
     }
 
     @Test
@@ -300,7 +301,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(relationshipStore).setHighestPossibleIdInUse(record.getId());
+        verify(relationshipStore.getIdGenerator()).setHighestPossibleIdInUse(record.getId());
         verify(relationshipStore).updateRecord(eq(record), any(), any(), any(), any());
     }
 
@@ -341,7 +342,7 @@ class NeoStoreTransactionApplierTest {
         assertFalse(result);
 
         verify(lockService).acquireNodeLock(42, EXCLUSIVE);
-        verify(propertyStore).setHighestPossibleIdInUse(after.getId());
+        verify(propertyStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(propertyStore).updateRecord(eq(after), any(), any(), any(), any());
     }
 
@@ -378,7 +379,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(propertyStore).setHighestPossibleIdInUse(12);
+        verify(propertyStore.getIdGenerator()).setHighestPossibleIdInUse(12);
         verify(propertyStore).updateRecord(eq(after), any(), any(), any(), any());
     }
 
@@ -430,7 +431,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(relationshipGroupStore).setHighestPossibleIdInUse(after.getId());
+        verify(relationshipGroupStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(relationshipGroupStore).updateRecord(eq(after), any(), any(), any(), any());
     }
 
@@ -476,7 +477,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(relationshipTypeTokenStore).setHighestPossibleIdInUse(after.getId());
+        verify(relationshipTypeTokenStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(relationshipTypeTokenStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(cacheAccess).addRelationshipTypeToken(token);
     }
@@ -521,7 +522,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(labelTokenStore).setHighestPossibleIdInUse(after.getId());
+        verify(labelTokenStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(labelTokenStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(cacheAccess).addLabelToken(token);
     }
@@ -568,7 +569,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(propertyKeyTokenStore).setHighestPossibleIdInUse(after.getId());
+        verify(propertyKeyTokenStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(propertyKeyTokenStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(cacheAccess).addPropertyKeyToken(token);
     }
@@ -612,7 +613,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(schemaStore).setHighestPossibleIdInUse(after.getId());
+        verify(schemaStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(indexingService).createIndexes(AUTH_DISABLED, rule);
         verify(cacheAccess).addSchemaRule(rule);
@@ -678,7 +679,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(schemaStore).setHighestPossibleIdInUse(after.getId());
+        verify(schemaStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(indexingService).activateIndex(rule);
         verify(cacheAccess).addSchemaRule(rule);
@@ -801,7 +802,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(schemaStore).setHighestPossibleIdInUse(after.getId());
+        verify(schemaStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(indexingService).dropIndex(rule);
         verify(cacheAccess).removeSchemaRuleFromCache(command.getKey());
@@ -847,7 +848,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(schemaStore).setHighestPossibleIdInUse(after.getId());
+        verify(schemaStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(cacheAccess).addSchemaRule(rule);
     }
@@ -890,7 +891,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(schemaStore).setHighestPossibleIdInUse(after.getId());
+        verify(schemaStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(cacheAccess).addSchemaRule(rule);
     }
@@ -931,7 +932,7 @@ class NeoStoreTransactionApplierTest {
         // then
         assertFalse(result);
 
-        verify(schemaStore).setHighestPossibleIdInUse(after.getId());
+        verify(schemaStore.getIdGenerator()).setHighestPossibleIdInUse(after.getId());
         verify(schemaStore).updateRecord(eq(after), any(), any(), any(), any());
         verify(cacheAccess).removeSchemaRuleFromCache(command.getKey());
     }

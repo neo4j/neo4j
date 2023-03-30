@@ -34,7 +34,7 @@ public class HighIdTransactionApplier extends HighIdTransactionApplierBase {
         // Notifies the stores about the recovered ids and will bump those high ids atomically if
         // they surpass the current high ids
         for (Map.Entry<RecordStore<?>, HighId> highId : highIds.entrySet()) {
-            highId.getKey().setHighestPossibleIdInUse(highId.getValue().id);
+            highId.getKey().getIdGenerator().setHighestPossibleIdInUse(highId.getValue().id);
         }
     }
 }

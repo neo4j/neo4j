@@ -237,6 +237,6 @@ class RelationshipChainCheckerTest extends CheckerTestBase {
 
     private void check() throws Exception {
         new RelationshipChainChecker(context(numberOfThreads()))
-                .check(LongRange.range(0, nodeStore.getHighId()), true, true);
+                .check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
     }
 }

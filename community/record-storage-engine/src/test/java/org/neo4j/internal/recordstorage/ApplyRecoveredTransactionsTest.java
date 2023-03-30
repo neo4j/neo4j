@@ -107,8 +107,8 @@ class ApplyRecoveredTransactionsTest {
     @Test
     void shouldSetCorrectHighIdWhenApplyingExternalTransactions() throws Exception {
         // WHEN recovering a transaction that creates some data
-        long nodeId = neoStores.getNodeStore().nextId(NULL_CONTEXT);
-        long relationshipId = neoStores.getRelationshipStore().nextId(NULL_CONTEXT);
+        long nodeId = neoStores.getNodeStore().getIdGenerator().nextId(NULL_CONTEXT);
+        long relationshipId = neoStores.getRelationshipStore().getIdGenerator().nextId(NULL_CONTEXT);
         int type = 1;
         LogCommandSerialization serialization = LATEST_LOG_SERIALIZATION;
         applyExternalTransaction(
@@ -126,8 +126,10 @@ class ApplyRecoveredTransactionsTest {
                 new RelationshipCommand(serialization, null, new RelationshipRecord(relationshipId)));
 
         // THEN that should be possible and the high ids should be correct, i.e. highest applied + 1
-        assertEquals(nodeId + 1, neoStores.getNodeStore().getHighId());
-        assertEquals(relationshipId + 1, neoStores.getRelationshipStore().getHighId());
+        assertEquals(nodeId + 1, neoStores.getNodeStore().getIdGenerator().getHighId());
+        assertEquals(
+                relationshipId + 1,
+                neoStores.getRelationshipStore().getIdGenerator().getHighId());
     }
 
     private static RelationshipRecord with(RelationshipRecord relationship, long startNode, long endNode, int type) {

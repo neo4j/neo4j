@@ -105,10 +105,11 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
                 NullLog.getInstance(),
                 databaseLayout.getDatabaseName());
         try (GroupDegreesCache cache = new GroupDegreesCache(
-                numberArrayFactory, neoStores.getNodeStore().getHighId(), memoryTracker)) {
+                numberArrayFactory, neoStores.getNodeStore().getIdGenerator().getHighId(), memoryTracker)) {
             LogProgressReporter progress = new LogProgressReporter(log);
-            progress.start(neoStores.getRelationshipGroupStore().getHighId()
-                    + neoStores.getRelationshipStore().getHighId());
+            progress.start(
+                    neoStores.getRelationshipGroupStore().getIdGenerator().getHighId()
+                            + neoStores.getRelationshipStore().getIdGenerator().getHighId());
             superviseDynamicExecution(new PrepareCacheStage(
                     processingConfig, neoStores.getRelationshipGroupStore(), cache, contextFactory, progress));
             if (cache.hasAnyGroup()) {
@@ -264,7 +265,12 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
             add(new BatchFeedStep(
                     control(),
                     config,
-                    withProgress(forwards(store.getNumberOfReservedLowIds(), store.getHighId(), config), progress),
+                    withProgress(
+                            forwards(
+                                    store.getNumberOfReservedLowIds(),
+                                    store.getIdGenerator().getHighId(),
+                                    config),
+                            progress),
                     store.getRecordSize()));
             add(new ReadRecordsStep<>(control(), config, false, store, cursorContextFactory));
             add(new PrepareCacheStep(control(), config, cache, cursorContextFactory));
@@ -309,7 +315,7 @@ public class DegreesRebuildFromStore implements GBPTreeRelationshipGroupDegreesS
             add(new BatchFeedStep(
                     control(),
                     config,
-                    withProgress(forwards(0, store.getHighId(), config), progress),
+                    withProgress(forwards(0, store.getIdGenerator().getHighId(), config), progress),
                     store.getRecordSize()));
             add(new ReadRecordsStep<>(control(), config, false, store, cursorContextFactory));
             add(new CalculateDegreesStep(control(), config, cache, cursorContextFactory));

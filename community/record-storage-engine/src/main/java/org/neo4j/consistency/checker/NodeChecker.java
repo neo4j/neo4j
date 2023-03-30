@@ -54,7 +54,9 @@ import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NoStoreHeader;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -91,7 +93,7 @@ class NodeChecker implements Checker {
         // indices are checked in following method via shouldBeChecked and so can't be null
         this.smallIndexes = context.indexSizes.smallIndexes(NODE);
         this.nodeProgress = context.roundInsensitiveProgressReporter(
-                this, "Nodes", neoStores.getNodeStore().getHighId());
+                this, "Nodes", neoStores.getNodeStore().getIdGenerator().getHighId());
     }
 
     @Override
@@ -493,9 +495,13 @@ class NodeChecker implements Checker {
 
     @Override
     public String toString() {
+        CommonAbstractStore<NodeRecord, NoStoreHeader> nodeRecordNoStoreHeaderCommonAbstractStore =
+                neoStores.getNodeStore();
         return String.format(
                 "%s[highId:%d,indexesToCheck:%d]",
-                getClass().getSimpleName(), neoStores.getNodeStore().getHighId(), smallIndexes.size());
+                getClass().getSimpleName(),
+                nodeRecordNoStoreHeaderCommonAbstractStore.getIdGenerator().getHighId(),
+                smallIndexes.size());
     }
 
     public static long[] sortAndDeduplicate(long[] labels) {

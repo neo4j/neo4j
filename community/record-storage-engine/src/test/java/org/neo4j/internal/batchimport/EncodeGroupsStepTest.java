@@ -33,12 +33,14 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.batchimport.ReadGroupsFromCacheStepTest.Group;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -52,11 +54,18 @@ class EncodeGroupsStepTest {
     private static final CursorContextFactory CONTEXT_FACTORY = new CursorContextFactory(PageCacheTracer.NULL, EMPTY);
     private final StageControl control = new SimpleStageControl();
     private final RecordStore<RelationshipGroupRecord> store = mock(RecordStore.class);
+    private IdGenerator idGenerator;
+
+    @BeforeEach
+    void setUp() {
+        idGenerator = mock(IdGenerator.class);
+        when(store.getIdGenerator()).thenReturn(idGenerator);
+    }
 
     @Test
     void shouldEncodeGroupChains() throws Throwable {
         final AtomicLong nextId = new AtomicLong();
-        when(store.nextId(NULL_CONTEXT)).thenAnswer(invocation -> nextId.incrementAndGet());
+        when(idGenerator.nextId(NULL_CONTEXT)).thenAnswer(invocation -> nextId.incrementAndGet());
         doAnswer(invocation -> {
                     // our own way of marking that this has record been prepared (firstOut=1)
                     invocation.<RelationshipGroupRecord>getArgument(0).setFirstOut(1);
@@ -89,7 +98,7 @@ class EncodeGroupsStepTest {
 
     @Test
     void tracePageCacheAccessOnEncode() throws Exception {
-        when(store.nextId(any(CursorContext.class))).thenAnswer(invocation -> {
+        when(idGenerator.nextId(any(CursorContext.class))).thenAnswer(invocation -> {
             CursorContext cursorContext = invocation.getArgument(0);
             var swapper = mock(PageSwapper.class, RETURNS_MOCKS);
             try (var event = cursorContext.getCursorTracer().beginPin(false, 1, swapper)) {

@@ -35,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -115,12 +116,13 @@ class NodeInputIdPropertyLookupTest {
     private void createValues(PropertyStore propertyStore, int numNodes, LongFunction<String> valueFunction) {
         try (var cursor = propertyStore.openPageCursorForWriting(0, NULL_CONTEXT);
                 var cursors = new CachedStoreCursors(store, NULL_CONTEXT)) {
+            IdGenerator idGenerator = propertyStore.getIdGenerator();
             for (var nodeId = 0; nodeId < numNodes; nodeId++) {
                 var block = new PropertyBlock();
                 var record = propertyStore.newRecord();
                 propertyStore.encodeValue(block, 0, Values.of(valueFunction.apply(nodeId)), NULL_CONTEXT, INSTANCE);
                 record.addPropertyBlock(block);
-                record.setId(propertyStore.nextId(NULL_CONTEXT));
+                record.setId(idGenerator.nextId(NULL_CONTEXT));
                 record.setInUse(true);
                 propertyStore.updateRecord(record, IdUpdateListener.DIRECT, cursor, NULL_CONTEXT, cursors);
             }

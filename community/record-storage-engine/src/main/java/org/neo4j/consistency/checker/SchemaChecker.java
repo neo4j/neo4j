@@ -106,7 +106,7 @@ class SchemaChecker {
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties,
             CursorContext cursorContext,
             StoreCursors storeCursors) {
-        long highId = schemaStore.getHighId();
+        long highId = schemaStore.getIdGenerator().getHighId();
         try (RecordReader<SchemaRecord> schemaReader = new RecordReader<>(schemaStore, true, cursorContext)) {
             MutableLongObjectMap<SchemaRecord> indexObligations = LongObjectMaps.mutable.empty();
             MutableLongObjectMap<ConstraintObligation> constraintObligations = LongObjectMaps.mutable.empty();
@@ -297,7 +297,7 @@ class SchemaChecker {
             CursorContextFactory contextFactory) {
         DynamicStringStore nameStore = store.getNameStore();
         DynamicRecord nameRecord = nameStore.newRecord();
-        long highId = store.getHighId();
+        long highId = store.getIdGenerator().getHighId();
         MutableLongSet seenNameRecordIds = LongSets.mutable.empty();
         int blockSize = store.getNameStore().getRecordDataSize();
         try (var cursorContext = contextFactory.create(CONSISTENCY_TOKEN_CHECKER_TAG);
@@ -379,7 +379,7 @@ class SchemaChecker {
         @Override
         public void processSpecific(SchemaDescriptor schema) {
             switch (schema.entityType()) {
-                case NODE:
+                case NODE -> {
                     for (int labelTokenId : schema.getEntityTokenIds()) {
                         checkValidToken(
                                 null,
@@ -390,8 +390,8 @@ class SchemaChecker {
                                 (ignore, token) -> reporter.forSchema(record).labelNotInUse(token),
                                 storeCursors);
                     }
-                    break;
-                case RELATIONSHIP:
+                }
+                case RELATIONSHIP -> {
                     for (int relationshipTypeTokenId : schema.getEntityTokenIds()) {
                         checkValidToken(
                                 null,
@@ -402,10 +402,9 @@ class SchemaChecker {
                                 (ignore, token) -> reporter.forSchema(record).relationshipTypeNotInUse(token),
                                 storeCursors);
                     }
-                    break;
-                default:
-                    throw new IllegalArgumentException(
-                            "Schema with given entity type is not supported: " + schema.entityType());
+                }
+                default -> throw new IllegalArgumentException(
+                        "Schema with given entity type is not supported: " + schema.entityType());
             }
             checkValidPropertyKeyIds(schema);
         }

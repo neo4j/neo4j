@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport;
 import org.neo4j.internal.batchimport.staging.BatchSender;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -32,6 +33,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
  * {@link RelationshipGroupRecord#getNext() next pointers}, making them ready for writing to store.
  */
 public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
+    private final IdGenerator idGenerator;
     private long nextId = -1;
     private final RecordStore<RelationshipGroupRecord> store;
 
@@ -42,6 +44,7 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
             CursorContextFactory contextFactory) {
         super(control, "ENCODE", config, 1, contextFactory);
         this.store = store;
+        this.idGenerator = store.getIdGenerator();
     }
 
     @Override
@@ -55,9 +58,9 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
             long count = group.getNext();
             boolean lastInChain = count == 0;
 
-            group.setId(nextId == -1 ? nextId = store.nextId(cursorContext) : nextId);
+            group.setId(nextId == -1 ? nextId = idGenerator.nextId(cursorContext) : nextId);
             if (!lastInChain) {
-                group.setNext(nextId = store.nextId(cursorContext));
+                group.setNext(nextId = idGenerator.nextId(cursorContext));
             } else {
                 group.setNext(nextId = -1);
 

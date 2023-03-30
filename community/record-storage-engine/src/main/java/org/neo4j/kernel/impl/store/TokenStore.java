@@ -115,7 +115,7 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
     }
 
     private List<NamedToken> readAllTokens(boolean ignoreInconsistentTokens, StoreCursors storeCursors) {
-        long highId = getHighId();
+        long highId = getIdGenerator().getHighId();
         ArrayList<NamedToken> records = new ArrayList<>(Math.toIntExact(highId));
         RECORD record = newRecord();
         var cursor = getTokenStoreCursor(storeCursors);

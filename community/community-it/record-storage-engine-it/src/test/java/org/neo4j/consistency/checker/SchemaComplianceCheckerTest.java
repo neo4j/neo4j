@@ -41,6 +41,7 @@ import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.junit.jupiter.api.Test;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -115,19 +116,21 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
         LabelSchemaDescriptor descriptor = forLabel(label1, propertyKey1);
         var index = uniqueIndex(descriptor);
         long nodeId;
+        IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         try (AutoCloseable ignored = tx()) {
             TextValue value = stringValue("a");
             // (N1) indexed w/ property A
             {
-                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-                nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
                 indexValue(descriptor, index, nodeId, value);
             }
             // (N2) indexed w/ property A
             {
-                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-                long nodeId2 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                long nodeId2 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
                 indexValue(descriptor, index, nodeId2, value);
             }
@@ -148,10 +151,12 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
         LabelSchemaDescriptor descriptor = forLabel(label1, propertyKey1);
         index(descriptor);
         long nodeId;
+        IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         try (AutoCloseable ignored = tx()) {
             // (N1) w/ property A (NOT indexed)
-            long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+            long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
             property(propId, NULL, NULL, propertyValue(propertyKey1, stringValue("a")));
         }
 
@@ -168,11 +173,13 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
         RelationTypeSchemaDescriptor descriptor = forRelType(relType1, propertyKey1);
         index(descriptor);
         long relId;
+        IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         try (AutoCloseable ignored = tx()) {
             // Rel w/ property (NOT indexed)
-            long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-            relId = relationshipStore.nextId(CursorContext.NULL_CONTEXT);
-            long nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), NULL, relId);
+            long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+            relId = relationshipStore.getIdGenerator().nextId(CursorContext.NULL_CONTEXT);
+            long nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), NULL, relId);
             relationship(relId, nodeId, nodeId, relType1, propId, NULL, NULL, NULL, NULL, true, true);
             property(propId, NULL, NULL, propertyValue(propertyKey1, stringValue("a")));
         }
@@ -190,21 +197,23 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
         LabelSchemaDescriptor descriptor = forLabel(label1, propertyKey1);
         var index = uniqueIndex(descriptor);
         long nodeId;
+        IdGenerator propertyIdGenerator = propertyStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         try (AutoCloseable ignored = tx()) {
             PointValue value = pointValue(CoordinateReferenceSystem.WGS_84, 2, 4);
 
             // (N1) w/ property
             {
-                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-                nodeId = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                nodeId = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
                 indexValue(descriptor, index, nodeId, value);
             }
 
             // (N2) w/ property
             {
-                long propId = propertyStore.nextId(CursorContext.NULL_CONTEXT);
-                long nodeId2 = node(nodeStore.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
+                long propId = propertyIdGenerator.nextId(CursorContext.NULL_CONTEXT);
+                long nodeId2 = node(nodeIdGenerator.nextId(CursorContext.NULL_CONTEXT), propId, NULL, label1);
                 property(propId, NULL, NULL, propertyValue(propertyKey1, value));
                 indexValue(descriptor, index, nodeId2, value);
             }

@@ -255,12 +255,12 @@ public class RecordStorageReader implements StorageReader {
         }
         // else this reader was instantiated as a simpler reader only over a NeoStores
 
-        return nodeStore.getNumberOfIdsInUse();
+        return nodeStore.getIdGenerator().getHighId();
     }
 
     @Override
     public long relationshipsGetCount(CursorContext cursorContext) {
-        return relationshipStore.getNumberOfIdsInUse();
+        return relationshipStore.getIdGenerator().getHighId();
     }
 
     @Override

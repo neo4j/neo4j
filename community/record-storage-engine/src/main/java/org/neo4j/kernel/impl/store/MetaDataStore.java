@@ -188,7 +188,6 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord, NoStoreHe
         }
     }
 
-    @Override
     public long getHighId() {
         Position[] values = Position.values();
         Position lastPosition = values[values.length - 1];

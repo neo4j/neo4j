@@ -24,6 +24,7 @@ import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 import java.util.Collection;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -45,6 +46,7 @@ public class DirectTokenCreator<R extends TokenRecord> implements TokenCreator {
     private final TokenStore<R> store;
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
+    private final IdGenerator storeIdGenerator;
 
     public DirectTokenCreator(
             NeoStores neoStores,
@@ -53,6 +55,7 @@ public class DirectTokenCreator<R extends TokenRecord> implements TokenCreator {
             MemoryTracker memoryTracker) {
         this.neoStores = neoStores;
         this.store = store;
+        this.storeIdGenerator = store.getIdGenerator();
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
     }
@@ -63,7 +66,7 @@ public class DirectTokenCreator<R extends TokenRecord> implements TokenCreator {
         try (CursorContext cursorContext = contextFactory.create("create token");
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext);
                 PageCursor cursor = store.openPageCursorForWriting(0, cursorContext)) {
-            keyId = (int) store.nextId(cursorContext);
+            keyId = (int) storeIdGenerator.nextId(cursorContext);
             R record = store.newRecord();
             record.setId(keyId);
             record.setInUse(true);

@@ -758,7 +758,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         immutable.empty())
                 .openNeoStores(StoreType.NODE_LABEL, StoreType.NODE)) {
-            long highNodeId = neoStores.getNodeStore().getHighId();
+            var nodeStore = neoStores.getNodeStore();
+            long highNodeId = nodeStore.getIdGenerator().getHighId();
             return ByteArrayBitsManipulator.MAX_BYTES * highNodeId;
         }
     }
@@ -854,10 +855,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 try (PageCursor cursor = storeCursors.writeCursor(DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR)) {
                     nameRecords.forEach(record -> nameStore.updateRecord(record, cursor, cursorContext, storeCursors));
                 }
-                nameRecords.forEach(record -> nameStore.setHighestPossibleIdInUse(record.getId()));
+                nameRecords.forEach(record -> {
+                    long highId = record.getId();
+                    nameStore.getIdGenerator().setHighestPossibleIdInUse(highId);
+                });
                 int nameId = Iterables.first(nameRecords).getIntId();
                 PropertyKeyTokenRecord keyTokenRecord = keyTokenStore.newRecord();
-                long tokenId = keyTokenStore.nextId(cursorContext);
+                long tokenId = keyTokenStore.getIdGenerator().nextId(cursorContext);
                 keyTokenRecord.setId(tokenId);
                 keyTokenRecord.initialize(true, nameId);
                 keyTokenRecord.setInternal(internal);
@@ -866,7 +870,8 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 try (PageCursor pageCursor = storeCursors.writeCursor(PROPERTY_KEY_TOKEN_CURSOR)) {
                     keyTokenStore.updateRecord(keyTokenRecord, pageCursor, cursorContext, storeCursors);
                 }
-                keyTokenStore.setHighestPossibleIdInUse(keyTokenRecord.getId());
+                long highId = keyTokenRecord.getId();
+                keyTokenStore.getIdGenerator().setHighestPossibleIdInUse(highId);
                 return Math.toIntExact(tokenId);
             }
         };

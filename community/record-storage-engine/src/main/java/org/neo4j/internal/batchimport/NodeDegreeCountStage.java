@@ -44,7 +44,8 @@ public class NodeDegreeCountStage extends Stage {
             StatsProvider memoryUsageStatsProvider,
             CursorContextFactory contextFactory) {
         super(NAME, null, config, Step.RECYCLE_BATCHES);
-        add(new BatchFeedStep(control(), config, forwards(0, store.getHighId(), config), store.getRecordSize()));
+        add(new BatchFeedStep(
+                control(), config, forwards(0, store.getIdGenerator().getHighId(), config), store.getRecordSize()));
         add(new ReadRecordsStep<>(control(), config, false, store, contextFactory));
         add(new CalculateDenseNodesStep(control(), config, cache, contextFactory, memoryUsageStatsProvider));
     }

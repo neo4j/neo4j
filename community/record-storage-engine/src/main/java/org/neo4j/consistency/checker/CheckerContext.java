@@ -129,8 +129,9 @@ class CheckerContext {
             ConsistencyFlags consistencyFlags,
             CursorContextFactory contextFactory) {
         this.neoStores = neoStores;
-        this.highNodeId = neoStores.getNodeStore().getHighId();
-        this.highRelationshipId = neoStores.getRelationshipStore().getHighId();
+        this.highNodeId = neoStores.getNodeStore().getIdGenerator().getHighId();
+        this.highRelationshipId =
+                neoStores.getRelationshipStore().getIdGenerator().getHighId();
         this.indexAccessors = indexAccessors;
         this.nodeLabelIndex = indexAccessors.nodeLabelIndex();
         this.relationshipTypeIndex = indexAccessors.relationshipTypeIndex();

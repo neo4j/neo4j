@@ -24,10 +24,12 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
 public class RecordIdIterators {
     static RecordIdIterator allIn(RecordStore<? extends AbstractBaseRecord> store, Configuration config) {
-        return RecordIdIterator.forwards(store.getNumberOfReservedLowIds(), store.getHighId(), config);
+        return RecordIdIterator.forwards(
+                store.getNumberOfReservedLowIds(), store.getIdGenerator().getHighId(), config);
     }
 
     static RecordIdIterator allInReversed(RecordStore<? extends AbstractBaseRecord> store, Configuration config) {
-        return RecordIdIterator.backwards(store.getNumberOfReservedLowIds(), store.getHighId(), config);
+        return RecordIdIterator.backwards(
+                store.getNumberOfReservedLowIds(), store.getIdGenerator().getHighId(), config);
     }
 }

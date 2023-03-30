@@ -57,7 +57,7 @@ class RelationshipGroupChecker implements Checker {
         this.progress = context.progressReporter(
                 this,
                 "Relationship groups",
-                neoStores.getRelationshipGroupStore().getHighId());
+                neoStores.getRelationshipGroupStore().getIdGenerator().getHighId());
     }
 
     @Override
@@ -84,7 +84,7 @@ class RelationshipGroupChecker implements Checker {
     private void checkToOwner(LongRange nodeIdRange, CursorContextFactory contextFactory) {
         RelationshipGroupStore groupStore = neoStores.getRelationshipGroupStore();
         CacheAccess.Client client = context.cacheAccess.client();
-        final long highId = groupStore.getHighId();
+        final long highId = groupStore.getIdGenerator().getHighId();
 
         try (var cursorContext = contextFactory.create(RELATIONSHIP_GROUPS_CHECKER_TAG);
                 var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
@@ -247,6 +247,6 @@ class RelationshipGroupChecker implements Checker {
         return String.format(
                 "%s[highId:%d]",
                 getClass().getSimpleName(),
-                neoStores.getRelationshipGroupStore().getHighId());
+                neoStores.getRelationshipGroupStore().getIdGenerator().getHighId());
     }
 }

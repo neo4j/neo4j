@@ -71,7 +71,8 @@ public class RelationshipLinkbackStage extends Stage {
             StatsProvider... additionalStatsProvider) {
         super(NAME, topic, config, Step.ORDER_SEND_DOWNSTREAM | Step.RECYCLE_BATCHES);
         RelationshipStore store = stores.getRelationshipStore();
-        add(new BatchFeedStep(control(), config, backwards(0, store.getHighId(), config), store.getRecordSize()));
+        add(new BatchFeedStep(
+                control(), config, backwards(0, store.getIdGenerator().getHighId(), config), store.getRecordSize()));
         add(new ReadRecordsStep<>(
                 control(),
                 config,

@@ -48,7 +48,6 @@ public class CountsComputer implements CountsBuilder {
     private final int highLabelId;
     private final int highRelationshipTypeId;
     private final long lastCommittedTransactionId;
-    private final DatabaseLayout databaseLayout;
     private final ProgressReporter progressMonitor;
     private final NumberArrayFactory numberArrayFactory;
     private final CursorContextFactory contextFactory;
@@ -84,8 +83,8 @@ public class CountsComputer implements CountsBuilder {
                 lastCommittedTransactionId,
                 stores.getNodeStore(),
                 stores.getRelationshipStore(),
-                (int) stores.getLabelTokenStore().getHighId(),
-                (int) stores.getRelationshipTypeTokenStore().getHighId(),
+                (int) stores.getLabelTokenStore().getIdGenerator().getHighId(),
+                (int) stores.getRelationshipTypeTokenStore().getIdGenerator().getHighId(),
                 NumberArrayFactories.auto(
                         pageCache,
                         contextFactory,
@@ -94,7 +93,6 @@ public class CountsComputer implements CountsBuilder {
                         NO_MONITOR,
                         log,
                         databaseLayout.getDatabaseName()),
-                databaseLayout,
                 ProgressReporter.SILENT,
                 contextFactory,
                 memoryTracker);
@@ -108,7 +106,6 @@ public class CountsComputer implements CountsBuilder {
             int highLabelId,
             int highRelationshipTypeId,
             NumberArrayFactory numberArrayFactory,
-            DatabaseLayout databaseLayout,
             ProgressReporter progressMonitor,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
@@ -119,7 +116,6 @@ public class CountsComputer implements CountsBuilder {
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
         this.numberArrayFactory = numberArrayFactory;
-        this.databaseLayout = databaseLayout;
         this.progressMonitor = progressMonitor;
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
@@ -142,8 +138,8 @@ public class CountsComputer implements CountsBuilder {
     }
 
     private void populateCountStore(CountsAccessor.Updater countsUpdater) {
-        try (NodeLabelsCache cache =
-                new NodeLabelsCache(numberArrayFactory, nodes.getHighId(), highLabelId, memoryTracker)) {
+        try (NodeLabelsCache cache = new NodeLabelsCache(
+                numberArrayFactory, nodes.getIdGenerator().getHighId(), highLabelId, memoryTracker)) {
             Configuration configuration = Configuration.defaultConfiguration();
 
             // Count nodes

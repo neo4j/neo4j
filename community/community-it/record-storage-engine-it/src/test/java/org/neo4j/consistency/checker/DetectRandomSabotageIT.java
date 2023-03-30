@@ -1280,7 +1280,10 @@ public class DetectRandomSabotageIT {
             var propertyCursor = storeCursors.readCursor(RecordCursorTypes.PROPERTY_CURSOR);
             while (true) {
                 propertyStore.getRecordByCursor(
-                        random.nextLong(propertyStore.getHighId()), propertyRecord, RecordLoad.CHECK, propertyCursor);
+                        random.nextLong(propertyStore.getIdGenerator().getHighId()),
+                        propertyRecord,
+                        RecordLoad.CHECK,
+                        propertyCursor);
                 if (propertyRecord.inUse()) {
                     try (var dynamicCursor = storeCursors.writeCursor(dynamicCursorType)) {
                         for (PropertyBlock block : propertyRecord) {
@@ -1328,7 +1331,7 @@ public class DetectRandomSabotageIT {
 
         protected static <T extends AbstractBaseRecord> T randomRecord(
                 RandomSupport random, RecordStore<T> store, Predicate<T> filter, PageCursor readCursor) {
-            long highId = store.getHighId();
+            long highId = store.getIdGenerator().getHighId();
             T record = store.newRecord();
             do {
                 // Load with FORCE to ignore not-in-use and decoding errors at this stage.

@@ -100,11 +100,11 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index1 = IndexPrototype.forSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             IndexDescriptor index2 = IndexPrototype.forSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME2)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(index1, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
             schemaStorage.writeSchemaRule(index2, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
         }
@@ -124,7 +124,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
         }
 
@@ -144,7 +144,7 @@ class SchemaCheckerTest extends CheckerTestBase {
                             SchemaDescriptors.forAnyEntityTokens(EntityType.NODE), TokenIndexProvider.DESCRIPTOR)
                     .withName(NAME)
                     .withIndexType(IndexType.LOOKUP)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
         }
 
@@ -163,7 +163,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forLabel(UNUSED, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
         }
 
@@ -182,7 +182,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forRelType(UNUSED, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
         }
 
@@ -201,7 +201,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forRelType(relationshipType1, UNUSED))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
         }
 
@@ -220,7 +220,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext))
+                    .materialise(schemaIdGenerator.nextId(cursorContext))
                     .withOwningConstraintId(UNUSED);
             schemaStorage.writeSchemaRule(index1, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
         }
@@ -239,7 +239,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             UniquenessConstraintDescriptor constraintDescriptor = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME)
                     .withOwnedIndexId(UNUSED);
             schemaStorage.writeSchemaRule(
@@ -261,7 +261,7 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.forSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             schemaStorage.writeSchemaRule(index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
             SchemaRecord schemaRecord = schemaStore.newRecord();
             schemaStore.getRecordByCursor(
@@ -290,10 +290,10 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME)
                     .withOwnedIndexId(index.getId());
             index = index.withOwningConstraintId(UNUSED);
@@ -317,10 +317,10 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME)
                     .withOwnedIndexId(UNUSED);
             index = index.withOwningConstraintId(uniquenessConstraint.getId());
@@ -345,10 +345,10 @@ class SchemaCheckerTest extends CheckerTestBase {
                     .withIndexType(IndexType.TEXT)
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             IndexType.RANGE, label1, propertyKey1)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME)
                     .withOwnedIndexId(index.getId());
             index = index.withOwningConstraintId(uniquenessConstraint.getId());
@@ -372,14 +372,14 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index1 = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             IndexDescriptor index2 = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label2, propertyKey2))
                     .withName(NAME2)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME)
                     .withOwnedIndexId(index1.getId());
             index1 = index1.withOwningConstraintId(uniquenessConstraint.getId());
@@ -405,15 +405,15 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint1 = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME)
                     .withOwnedIndexId(index.getId());
             UniquenessConstraintDescriptor uniquenessConstraint2 = ConstraintDescriptorFactory.uniqueForLabel(
                             label2, propertyKey2)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2)
                     .withOwnedIndexId(index.getId());
             index = index.withOwningConstraintId(uniquenessConstraint1.getId());
@@ -438,19 +438,19 @@ class SchemaCheckerTest extends CheckerTestBase {
             var cursorContext = CursorContext.NULL_CONTEXT;
             NodeExistenceConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForLabel(
                             label1, propertyKey1)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME);
             NodeExistenceConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForLabel(
                             label2, propertyKey1, propertyKey2)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2);
             RelExistenceConstraintDescriptor constraint3 = ConstraintDescriptorFactory.existsForRelType(
                             relationshipType1, propertyKey2)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME);
             RelExistenceConstraintDescriptor constraint4 = ConstraintDescriptorFactory.existsForRelType(
                             relationshipType2, propertyKey1, propertyKey2)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2);
             schemaStorage.writeSchemaRule(constraint1, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
             schemaStorage.writeSchemaRule(constraint2, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
@@ -480,10 +480,10 @@ class SchemaCheckerTest extends CheckerTestBase {
             IndexDescriptor index = IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(label1, propertyKey1))
                     .withName(NAME)
                     .withIndexProvider(DESCRIPTOR)
-                    .materialise(schemaStore.nextId(cursorContext));
+                    .materialise(schemaIdGenerator.nextId(cursorContext));
             UniquenessConstraintDescriptor uniquenessConstraint = ConstraintDescriptorFactory.uniqueForLabel(
                             label1, propertyKey1)
-                    .withId(schemaStore.nextId(cursorContext))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME)
                     .withOwnedIndexId(index.getId());
             schemaStorage.writeSchemaRule(index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);

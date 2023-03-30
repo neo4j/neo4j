@@ -575,16 +575,16 @@ class NeoStoresTest {
     private long nextId(Class<?> clazz) {
         NeoStores neoStores = storageEngine.testAccessNeoStores();
         if (clazz.equals(PropertyKeyTokenRecord.class)) {
-            return neoStores.getPropertyKeyTokenStore().nextId(NULL_CONTEXT);
+            return neoStores.getPropertyKeyTokenStore().getIdGenerator().nextId(NULL_CONTEXT);
         }
         if (clazz.equals(RelationshipType.class)) {
-            return neoStores.getRelationshipTypeTokenStore().nextId(NULL_CONTEXT);
+            return neoStores.getRelationshipTypeTokenStore().getIdGenerator().nextId(NULL_CONTEXT);
         }
         if (clazz.equals(Node.class)) {
-            return neoStores.getNodeStore().nextId(NULL_CONTEXT);
+            return neoStores.getNodeStore().getIdGenerator().nextId(NULL_CONTEXT);
         }
         if (clazz.equals(Relationship.class)) {
-            return neoStores.getRelationshipStore().nextId(NULL_CONTEXT);
+            return neoStores.getRelationshipStore().getIdGenerator().nextId(NULL_CONTEXT);
         }
         throw new IllegalArgumentException(clazz.getName());
     }

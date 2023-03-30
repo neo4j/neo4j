@@ -350,7 +350,8 @@ public class ImportLogic implements Closeable {
     public void calculateNodeDegrees() {
         Configuration relationshipConfig =
                 configWithRecordsPerPageBasedBatchSize(config, neoStore.getRelationshipStore());
-        nodeRelationshipCache.setNodeCount(neoStore.getNodeStore().getHighId());
+        var nodeStore = neoStore.getNodeStore();
+        nodeRelationshipCache.setNodeCount(nodeStore.getIdGenerator().getHighId());
         MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider(neoStore, nodeRelationshipCache);
         NodeDegreeCountStage nodeDegreeStage = new NodeDegreeCountStage(
                 relationshipConfig,
@@ -556,6 +557,7 @@ public class ImportLogic implements Closeable {
      */
     public void defragmentRelationshipGroups() {
         // Defragment relationships groups for better performance
+        var nodeStore = neoStore.getNodeStore();
         new RelationshipGroupDefragmenter(
                         config,
                         executionMonitor,
@@ -566,7 +568,7 @@ public class ImportLogic implements Closeable {
                 .run(
                         max(maxMemory, peakMemoryUsage),
                         neoStore,
-                        neoStore.getNodeStore().getHighId());
+                        nodeStore.getIdGenerator().getHighId());
     }
 
     public void buildAuxiliaryStores() {
@@ -587,14 +589,16 @@ public class ImportLogic implements Closeable {
                                 CursorContext cursorContext,
                                 MemoryTracker memoryTracker) {
                             MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
-                            int highLabelId = toIntExact(
-                                    neoStore.getNeoStores().getLabelTokenStore().getHighId());
-                            int highRelationshipTypeId = toIntExact(neoStore.getNeoStores()
-                                    .getRelationshipTypeTokenStore()
-                                    .getHighId());
+                            var labelTokenStore = neoStore.getNeoStores().getLabelTokenStore();
+                            int highLabelId =
+                                    toIntExact(labelTokenStore.getIdGenerator().getHighId());
+                            var relTypeTokenStore = neoStore.getNeoStores().getRelationshipTypeTokenStore();
+                            int highRelationshipTypeId = toIntExact(
+                                    relTypeTokenStore.getIdGenerator().getHighId());
+                            var nodeStore = neoStore.getNodeStore();
                             nodeLabelsCache = new NodeLabelsCache(
                                     numberArrayFactory,
-                                    neoStore.getNodeStore().getHighId(),
+                                    nodeStore.getIdGenerator().getHighId(),
                                     highLabelId,
                                     memoryTracker);
                             MemoryUsageStatsProvider memoryUsageStats =

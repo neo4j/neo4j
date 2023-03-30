@@ -435,12 +435,16 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                 DirectRecordAccess<PropertyRecord, PrimitiveRecord> recordAccess) {
             this.neoStores = neoStores;
             this.recordAccess = recordAccess;
+            var propertyKeyNameStore = neoStores.getPropertyKeyTokenStore().getNameStore();
             this.propKeyDynIds = new AtomicInteger(
-                    (int) neoStores.getPropertyKeyTokenStore().getNameStore().getHighId());
-            this.labelDynIds = new AtomicInteger(
-                    (int) neoStores.getLabelTokenStore().getNameStore().getHighId());
-            this.relTypeDynIds = new AtomicInteger((int)
-                    neoStores.getRelationshipTypeTokenStore().getNameStore().getHighId());
+                    (int) propertyKeyNameStore.getIdGenerator().getHighId());
+            var labelTokenNameStore = neoStores.getLabelTokenStore().getNameStore();
+            this.labelDynIds =
+                    new AtomicInteger((int) labelTokenNameStore.getIdGenerator().getHighId());
+            var relTypeTokenNameStore =
+                    neoStores.getRelationshipTypeTokenStore().getNameStore();
+            this.relTypeDynIds = new AtomicInteger(
+                    (int) relTypeTokenNameStore.getIdGenerator().getHighId());
             this.writer = writer;
             this.nodes = neoStores.getNodeStore();
             this.indexingService = indexingService;
@@ -667,7 +671,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
     }
 
     private void keepHighId(StoreType storeType, RecordStore<? extends AbstractBaseRecord> store) {
-        highIds[storeType.ordinal()] = store.getHighId();
+        highIds[storeType.ordinal()] = store.getIdGenerator().getHighId();
     }
 
     protected abstract Map<Setting<?>, Object> getConfig();

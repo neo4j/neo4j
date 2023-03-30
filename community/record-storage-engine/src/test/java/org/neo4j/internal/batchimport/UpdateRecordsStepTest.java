@@ -40,6 +40,7 @@ import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.stats.Keys;
 import org.neo4j.internal.batchimport.stats.Stat;
 import org.neo4j.internal.batchimport.store.StorePrepareIdSequence;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -86,6 +87,7 @@ class UpdateRecordsStepTest {
     @Test
     void recordWithReservedIdIsSkipped() {
         RecordStore<NodeRecord> store = mock(NodeStore.class);
+        when(store.getIdGenerator()).thenReturn(mock(IdGenerator.class));
         StageControl stageControl = mock(StageControl.class);
         UpdateRecordsStep<NodeRecord> step = new UpdateRecordsStep<>(
                 stageControl,

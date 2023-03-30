@@ -355,11 +355,14 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
             long propertyStoreSize = storeSize(legacyStore.getPropertyStore()) / 2
                     + storeSize(legacyStore.getPropertyStore().getStringStore()) / 2
                     + storeSize(legacyStore.getPropertyStore().getArrayStore()) / 2;
+            var legacyPropertyStore = legacyStore.getPropertyStore();
+            var legacyRelStore = legacyStore.getRelationshipStore();
+            var legacyNodeStore = legacyStore.getNodeStore();
             Estimates estimates = Input.knownEstimates(
-                    legacyStore.getNodeStore().getNumberOfIdsInUse(),
-                    legacyStore.getRelationshipStore().getNumberOfIdsInUse(),
-                    legacyStore.getPropertyStore().getNumberOfIdsInUse(),
-                    legacyStore.getPropertyStore().getNumberOfIdsInUse(),
+                    legacyNodeStore.getIdGenerator().getHighId(),
+                    legacyRelStore.getIdGenerator().getHighId(),
+                    legacyPropertyStore.getIdGenerator().getHighId(),
+                    legacyPropertyStore.getIdGenerator().getHighId(),
                     propertyStoreSize / 2,
                     propertyStoreSize / 2,
                     0 /*node labels left as 0 for now*/);
@@ -404,7 +407,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private static long storeSize(CommonAbstractStore<? extends AbstractBaseRecord, ? extends StoreHeader> store) {
-        return store.getNumberOfIdsInUse() * store.getRecordSize();
+        return store.getIdGenerator().getHighId() * store.getRecordSize();
     }
 
     private NeoStores instantiateLegacyStore(RecordFormats format, RecordDatabaseLayout directoryStructure) {
@@ -559,9 +562,11 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
 
     private static ExecutionMonitor migrationBatchImporterMonitor(
             NeoStores legacyStore, final ProgressReporter progressReporter, Configuration config) {
+        var legacyRelStore = legacyStore.getRelationshipStore();
+        var legacyNodeStore = legacyStore.getNodeStore();
         return new BatchImporterProgressMonitor(
-                legacyStore.getNodeStore().getHighId(),
-                legacyStore.getRelationshipStore().getHighId(),
+                legacyNodeStore.getIdGenerator().getHighId(),
+                legacyRelStore.getIdGenerator().getHighId(),
                 config,
                 progressReporter);
     }

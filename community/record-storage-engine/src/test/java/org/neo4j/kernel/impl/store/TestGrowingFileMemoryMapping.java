@@ -31,6 +31,7 @@ import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -84,16 +85,17 @@ class TestGrowingFileMemoryMapping {
         try (NeoStores neoStores = storeFactory.openAllNeoStores();
                 var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT)) {
             NodeStore nodeStore = neoStores.getNodeStore();
+            IdGenerator idGenerator = nodeStore.getIdGenerator();
             // when
             int iterations = 2 * NUMBER_OF_RECORDS;
-            long startingId = nodeStore.nextId(CursorContext.NULL_CONTEXT);
+            long startingId = idGenerator.nextId(CursorContext.NULL_CONTEXT);
             long nodeId = startingId;
             try (PageCursor pageCursor = storeCursors.writeCursor(NODE_CURSOR)) {
                 for (int i = 0; i < iterations; i++) {
                     NodeRecord record = new NodeRecord(nodeId).initialize(false, 0, false, i, 0);
                     record.setInUse(true);
                     nodeStore.updateRecord(record, pageCursor, CursorContext.NULL_CONTEXT, StoreCursors.NULL);
-                    nodeId = nodeStore.nextId(CursorContext.NULL_CONTEXT);
+                    nodeId = idGenerator.nextId(CursorContext.NULL_CONTEXT);
                 }
             }
 

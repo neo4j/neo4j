@@ -79,7 +79,9 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.impl.SingleFilePageSwapperFactory;
 import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.NoStoreHeader;
 import org.neo4j.kernel.impl.store.PropertyValueRecordSizeCalculator;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -191,11 +193,13 @@ class CsvInputEstimateCalculationIT {
                                     false,
                                     LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
                             .openAllNeoStores()) {
+                var nodeStore = stores.getNodeStore();
                 assertRoughlyEqual(
-                        estimates.numberOfNodes(), stores.getNodeStore().getNumberOfIdsInUse());
+                        estimates.numberOfNodes(), nodeStore.getIdGenerator().getHighId());
+                var relStore = stores.getRelationshipStore();
                 assertRoughlyEqual(
                         estimates.numberOfRelationships(),
-                        stores.getRelationshipStore().getNumberOfIdsInUse());
+                        relStore.getIdGenerator().getHighId());
                 assertRoughlyEqual(
                         estimates.numberOfNodeProperties() + estimates.numberOfRelationshipProperties(),
                         calculateNumberOfProperties(stores));
@@ -320,7 +324,11 @@ class CsvInputEstimateCalculationIT {
         long count = 0;
         PropertyRecord record = stores.getPropertyStore().newRecord();
         try (PageCursor cursor = stores.getPropertyStore().openPageCursorForReading(0, CursorContext.NULL_CONTEXT)) {
-            long highId = stores.getPropertyStore().getHighId();
+            CommonAbstractStore<PropertyRecord, NoStoreHeader> propertyRecordNoStoreHeaderCommonAbstractStore =
+                    stores.getPropertyStore();
+            long highId = propertyRecordNoStoreHeaderCommonAbstractStore
+                    .getIdGenerator()
+                    .getHighId();
             for (long id = 0; id < highId; id++) {
                 stores.getPropertyStore().getRecordByCursor(id, record, CHECK, cursor);
                 if (record.inUse()) {

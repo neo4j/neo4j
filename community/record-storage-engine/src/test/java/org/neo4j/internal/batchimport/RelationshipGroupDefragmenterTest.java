@@ -50,6 +50,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactories;
 import org.neo4j.internal.batchimport.staging.ExecutionMonitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
@@ -172,6 +173,8 @@ class RelationshipGroupDefragmenterTest {
         NodeRecord nodeRecord = nodeStore.newRecord();
         long cursor = 0;
         BitSet initializedNodes = new BitSet();
+        var groupIidGenerator = groupStore.getIdGenerator();
+        IdGenerator nodeIdGenerator = nodeStore.getIdGenerator();
         // note that group store is separate and not covered by store cursors here
         try (var groupCursor = groupStore.openPageCursorForWriting(0, NULL_CONTEXT);
                 var nodeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
@@ -186,14 +189,14 @@ class RelationshipGroupDefragmenterTest {
                         // next doesn't matter at all, as we're rewriting it anyway
                         // firstOut/In/Loop we could use in verification phase later
                         groupRecord.initialize(true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4);
-                        groupRecord.setId(groupStore.nextId(NULL_CONTEXT));
+                        groupRecord.setId(groupIidGenerator.nextId(NULL_CONTEXT));
                         groupStore.updateRecord(groupRecord, groupCursor, NULL_CONTEXT, storeCursors);
 
                         if (!initializedNodes.get(nodeId)) {
                             nodeRecord.initialize(true, -1, true, groupRecord.getId(), 0);
                             nodeRecord.setId(nodeId);
                             nodeStore.updateRecord(nodeRecord, nodeCursor, NULL_CONTEXT, storeCursors);
-                            nodeStore.setHighestPossibleIdInUse(nodeId);
+                            nodeIdGenerator.setHighestPossibleIdInUse(nodeId);
                             initializedNodes.set(nodeId);
                         }
                     }
@@ -214,6 +217,8 @@ class RelationshipGroupDefragmenterTest {
         RecordStore<NodeRecord> nodeStore = stores.getNodeStore();
         NodeRecord nodeRecord = nodeStore.newRecord();
         long cursor = 0;
+        var groupIdGenerator = groupStore.getIdGenerator();
+        var nodeIdGenerator = nodeStore.getIdGenerator();
         // note that group store is separate and not covered by store cursors here
         try (var groupCursor = groupStore.openPageCursorForWriting(0, NULL_CONTEXT);
                 var nodeCursor = storeCursors.writeCursor(NODE_CURSOR)) {
@@ -222,7 +227,7 @@ class RelationshipGroupDefragmenterTest {
                     // next doesn't matter at all, as we're rewriting it anyway
                     // firstOut/In/Loop we could use in verification phase later
                     groupRecord.initialize(true, typeId, cursor, cursor + 1, cursor + 2, nodeId, 4);
-                    groupRecord.setId(groupStore.nextId(NULL_CONTEXT));
+                    groupRecord.setId(groupIdGenerator.nextId(NULL_CONTEXT));
                     groupStore.updateRecord(groupRecord, groupCursor, NULL_CONTEXT, storeCursors);
 
                     if (typeId == 0) {
@@ -230,7 +235,7 @@ class RelationshipGroupDefragmenterTest {
                         nodeRecord.initialize(true, -1, true, groupRecord.getId(), 0);
                         nodeRecord.setId(nodeId);
                         nodeStore.updateRecord(nodeRecord, nodeCursor, NULL_CONTEXT, storeCursors);
-                        nodeStore.setHighestPossibleIdInUse(nodeId);
+                        nodeIdGenerator.setHighestPossibleIdInUse(nodeId);
                     }
                 }
             }
@@ -254,7 +259,7 @@ class RelationshipGroupDefragmenterTest {
 
         // Calculation below correlates somewhat to calculation in RelationshipGroupDefragmenter.
         // Anyway we verify below that we exercise the multi-pass bit, which is what we want
-        long memory = groupStore.getHighId() * 15 + 200;
+        long memory = groupStore.getIdGenerator().getHighId() * 15 + 200;
         defragmenter.run(memory, stores, nodeCount);
 
         // Verify that we exercise the multi-pass functionality
@@ -265,9 +270,9 @@ class RelationshipGroupDefragmenterTest {
     private void verifyGroupsAreSequentiallyOrderedByNode() {
         RelationshipGroupStore store = stores.getRelationshipGroupStore();
         long firstId = store.getNumberOfReservedLowIds();
-        long groupCount = store.getHighId() - firstId;
+        long highGroupId = store.getIdGenerator().getHighId();
+        long groupCount = highGroupId - firstId;
         RelationshipGroupRecord groupRecord = store.newRecord();
-        long highGroupId = store.getHighId();
         long currentNodeId = -1;
         int currentTypeId = -1;
         int newGroupCount = 0;
