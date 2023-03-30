@@ -679,6 +679,7 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction], where: Option[Wher
   override def semanticCheck: SemanticCheck =
     SemanticPatternCheck.check(Pattern.SemanticContext.Merge, pattern) chain
       actions.semanticCheck chain
+      where.semanticCheck chain
       checkRelTypes(pattern)
 }
 

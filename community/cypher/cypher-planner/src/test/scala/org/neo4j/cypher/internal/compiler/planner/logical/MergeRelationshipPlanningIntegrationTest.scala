@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfiguration
 import org.neo4j.cypher.internal.compiler.planner.UsingMatcher.using
+import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -193,6 +194,31 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       .|.argument("a")
       .projection("n AS a")
       .allNodeScan("n")
+      .build()
+  }
+
+
+  test("should plan merge multiple names relationships and reused variable") {
+    val cfg = plannerBuilder().setAllNodesCardinality(100)
+      .setRelationshipCardinality("()-[:REL]->()", 100)
+      .build()
+    val plan = cfg.plan("WITH [b IN [1]] AS ignored MERGE (a)-[b:REL]->(c)<-[d:REL]-(e)").stripProduceResults
+    plan shouldEqual cfg.subPlanBuilder()
+      .emptyResult()
+      .apply()
+      .|.merge(
+      Seq(createNode("a"), createNode("c"), createNode("e")),
+      Seq(createRelationship("b", "a", "REL", "c", OUTGOING), createRelationship("d", "c", "REL", "e", INCOMING)),
+      Seq(),
+      Seq(),
+      Set()
+    )
+      .|.filter("not d = b")
+      .|.expandAll("(c)<-[b:REL]-(a)")
+      .|.expandAll("(e)-[d:REL]->(c)")
+      .|.allNodeScan("e")
+      .projection("[b IN [1]] AS ignored")
+      .argument()
       .build()
   }
 }
