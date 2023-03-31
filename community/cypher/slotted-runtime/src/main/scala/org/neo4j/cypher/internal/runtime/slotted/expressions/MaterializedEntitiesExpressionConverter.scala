@@ -58,6 +58,7 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.virtual.VirtualValues
 
 case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContext) extends ExpressionConverter {
 
@@ -65,19 +66,24 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
     id: Id,
     expression: expressions.Expression,
     self: ExpressionConverters
-  ): Option[commands.expressions.Expression] =
+  ): Option[commands.expressions.Expression] = {
     expression match {
       case e: expressions.LogicalProperty  => Some(toCommandProperty(id, e, self))
       case e: expressions.HasLabels        => hasLabels(id, e, self)
       case e: expressions.HasTypes         => hasTypes(id, e, self)
       case e: expressions.HasLabelsOrTypes => hasLabelsOrTypes(id, e, self)
       case e: expressions.DesugaredMapProjection =>
-        Some(MaterializedDesugaredMapExpression(self.toCommandExpression(id, e.variable)))
+        Some(MaterializedDesugaredMapExpression(
+          self.toCommandExpression(id, e.variable),
+          e.items.map(le => le.key.name -> self.toCommandExpression(id, le.exp)).toMap,
+          e.includeAllProps
+        ))
       case e: physicalplanning.ast.PropertyProjection =>
         Some(MaterializedPropertyProjectionExpression(self.toCommandExpression(id, e.map), e.entries))
       case e: expressions.FunctionInvocation => toCommandExpression(id, e.function, e, self)
       case _                                 => None
     }
+  }
 
   override def toGroupingExpression(
     id: Id,
@@ -293,10 +299,15 @@ case class MaterializedEntityKeysFunction(expr: Expression) extends NullInNullOu
   override def children: Seq[AstNode[_]] = Seq(expr)
 }
 
-case class MaterializedDesugaredMapExpression(entityExpr: Expression) extends NullInNullOutExpression(entityExpr) {
+case class MaterializedDesugaredMapExpression(
+  entityExpr: Expression,
+  entries: Map[String, Expression],
+  includeAll: Boolean
+) extends NullInNullOutExpression(entityExpr) {
 
-  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): MapValue =
-    value match {
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): MapValue = {
+    val allProps = value match {
+      case _ if !includeAll     => VirtualValues.EMPTY_MAP
       case n: NodeValue         => n.properties()
       case r: RelationshipValue => r.properties()
       case _ =>
@@ -309,12 +320,28 @@ case class MaterializedDesugaredMapExpression(entityExpr: Expression) extends Nu
         )
     }
 
+    if (entries.nonEmpty) {
+      val mapBuilder = new MapValueBuilder()
+      entries.foreach {
+        case (k, e) => mapBuilder.add(k, e(ctx, state))
+      }
+      allProps.updatedWith(mapBuilder.build())
+    } else {
+      allProps
+    }
+
+  }
+
   override def rewrite(f: Expression => Expression): Expression =
-    f(MaterializedDesugaredMapExpression(entityExpr.rewrite(f)))
+    f(MaterializedDesugaredMapExpression(
+      entityExpr.rewrite(f),
+      entries.map { case (k, e) => k -> e.rewrite(f) },
+      includeAll
+    ))
 
-  override def arguments: Seq[Expression] = Seq(entityExpr)
+  override def arguments: Seq[Expression] = Seq(entityExpr) ++ entries.values
 
-  override def children: Seq[AstNode[_]] = Seq(entityExpr)
+  override def children: Seq[AstNode[_]] = Seq(entityExpr) ++ entries.values
 }
 
 case class MaterializedEntityLabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
