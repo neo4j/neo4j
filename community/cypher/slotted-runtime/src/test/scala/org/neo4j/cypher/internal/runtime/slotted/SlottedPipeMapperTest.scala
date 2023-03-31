@@ -820,7 +820,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val pipe = build(sort)
 
     // then
-    val xSlot = RefSlot(0, nullable = true, CTAny)
+    val xSlot = RefSlot(0, nullable = false, CTAny)
     val expectedSlots2 = SlotConfiguration.empty
       .newReference("x", xSlot.nullable, xSlot.typ)
 

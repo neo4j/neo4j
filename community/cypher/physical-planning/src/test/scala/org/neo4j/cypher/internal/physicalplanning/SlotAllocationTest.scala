@@ -1102,7 +1102,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     allocations should have size 3
     allocations(leaf.id) should equal(SlotConfiguration.empty)
 
-    allocations(unwind.id) should equal(SlotConfiguration.empty.newReference("x", nullable = true, CTAny))
+    allocations(unwind.id) should equal(SlotConfiguration.empty.newReference("x", nullable = false, CTAny))
     allocations(produceResult.id) shouldBe theSameInstanceAs(allocations(unwind.id))
   }
 
@@ -1127,7 +1127,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
     allocations should have size 4
     allocations(leaf.id) should equal(SlotConfiguration.empty)
 
-    val expectedPipeline = SlotConfiguration.empty.newReference("x", nullable = true, CTAny)
+    val expectedPipeline = SlotConfiguration.empty.newReference("x", nullable = false, CTAny)
     allocations(unwind.id) should equal(expectedPipeline)
     allocations(sort.id) shouldBe theSameInstanceAs(allocations(unwind.id))
     allocations(produceResult.id) shouldBe theSameInstanceAs(allocations(unwind.id))
