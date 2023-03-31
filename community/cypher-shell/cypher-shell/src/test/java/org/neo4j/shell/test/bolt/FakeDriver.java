@@ -27,8 +27,8 @@ import java.util.concurrent.CompletionStage;
 import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
+import org.neo4j.driver.ExecutableQuery;
 import org.neo4j.driver.Metrics;
-import org.neo4j.driver.QueryTask;
 import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.async.AsyncSession;
@@ -41,13 +41,13 @@ public class FakeDriver implements Driver {
     public List<SessionConfig> sessionConfigs = new LinkedList<>();
 
     @Override
-    public QueryTask queryTask(String query) {
-        throw new UnsupportedOperationException("queryTask is not supported in FakeDriver");
+    public ExecutableQuery executableQuery(String s) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public BookmarkManager queryTaskBookmarkManager() {
-        throw new UnsupportedOperationException("queryBookmarkManager is not supported in FakeDriver");
+    public BookmarkManager executableQueryBookmarkManager() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
