@@ -55,6 +55,12 @@ class IndexPopulationJobController {
 
     void startIndexPopulation(IndexPopulationJob job) {
         populationJobs.add(job);
+
+        // There is a small race where this jobHandle hasn't been set yet and the population job gets to run and
+        // is stopped (job.jobHandle == null and won't get cancelled).
+        // It is a benign race since we will wait for the IndexPopulationJob:s to get to done in stop() of
+        // this class, which means there is not really a need to cancel the handle. The population jobs will do
+        // as little as possible when seeing the stopped status.
         job.setHandle(scheduler.schedule(
                 INDEX_POPULATION, job.getMonitoringParams(), new IndexPopulationJobWrapper(job, this)));
     }

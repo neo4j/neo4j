@@ -124,7 +124,7 @@ public class IndexPopulationJob implements Runnable {
     @Override
     public void run() {
         try (var cursorContext = contextFactory.create(INDEX_POPULATION_TAG)) {
-            if (!multiPopulator.hasPopulators()) {
+            if (!multiPopulator.hasPopulators() || stopped) { // Don't start if asked to stop
                 return;
             }
             if (storeScan != null) {
@@ -160,7 +160,9 @@ public class IndexPopulationJob implements Runnable {
 
     private void indexAllEntities(CursorContextFactory contextFactory) {
         storeScan = multiPopulator.createStoreScan(contextFactory);
-        storeScan.run(multiPopulator);
+        if (!stopped) {
+            storeScan.run(multiPopulator);
+        }
     }
 
     PopulationProgress getPopulationProgress(MultipleIndexPopulator.IndexPopulation indexPopulation) {
@@ -178,11 +180,15 @@ public class IndexPopulationJob implements Runnable {
      * Asynchronous call, need to {@link #awaitCompletion(long, TimeUnit) await completion}.
      */
     public void stop() {
+        stopped = true;
         // Stop the population
         if (storeScan != null) {
-            stopped = true;
             storeScan.stop();
-            jobHandle.cancel();
+
+            // Only cancelling if we have the storeScan because we need the doneSignal to not hang in awaitCompletion
+            if (jobHandle != null) {
+                jobHandle.cancel();
+            }
             monitor.populationCancelled();
         }
     }
