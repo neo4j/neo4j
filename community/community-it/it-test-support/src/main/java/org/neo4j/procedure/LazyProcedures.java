@@ -49,7 +49,7 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
     private Supplier<GlobalProcedures> initializer;
     private volatile GlobalProcedures globalProcedures;
 
-    private final LazyProcedureView LAZY_PROCEDURE_VIEW = new LazyProcedureView();
+    private final LazyProcedureView lazyProcedureView = new LazyProcedureView();
 
     private void init() {
         if (globalProcedures != null) {
@@ -165,68 +165,68 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
 
     @Override
     public ProcedureHandle procedure(QualifiedName name) throws ProcedureException {
-        return LAZY_PROCEDURE_VIEW.procedure(name);
+        return lazyProcedureView.procedure(name);
     }
 
     @Override
     public UserFunctionHandle function(QualifiedName name) {
-        return LAZY_PROCEDURE_VIEW.function(name);
+        return lazyProcedureView.function(name);
     }
 
     @Override
     public UserFunctionHandle aggregationFunction(QualifiedName name) {
-        return LAZY_PROCEDURE_VIEW.aggregationFunction(name);
+        return lazyProcedureView.aggregationFunction(name);
     }
 
     @Override
     public int[] getIdsOfFunctionsMatching(Predicate<CallableUserFunction> predicate) {
-        return LAZY_PROCEDURE_VIEW.getIdsOfFunctionsMatching(predicate);
+        return lazyProcedureView.getIdsOfFunctionsMatching(predicate);
     }
 
     @Override
     public int[] getIdsOfAggregatingFunctionsMatching(Predicate<CallableUserAggregationFunction> predicate) {
-        return LAZY_PROCEDURE_VIEW.getIdsOfAggregatingFunctionsMatching(predicate);
+        return lazyProcedureView.getIdsOfAggregatingFunctionsMatching(predicate);
     }
 
     @Override
     public Set<ProcedureSignature> getAllProcedures() {
-        return LAZY_PROCEDURE_VIEW.getAllProcedures();
+        return lazyProcedureView.getAllProcedures();
     }
 
     @Override
     public int[] getIdsOfProceduresMatching(Predicate<CallableProcedure> predicate) {
-        return LAZY_PROCEDURE_VIEW.getIdsOfProceduresMatching(predicate);
+        return lazyProcedureView.getIdsOfProceduresMatching(predicate);
     }
 
     @Override
     public Stream<UserFunctionSignature> getAllNonAggregatingFunctions() {
-        return LAZY_PROCEDURE_VIEW.getAllNonAggregatingFunctions();
+        return lazyProcedureView.getAllNonAggregatingFunctions();
     }
 
     @Override
     public Stream<UserFunctionSignature> getAllAggregatingFunctions() {
-        return LAZY_PROCEDURE_VIEW.getAllAggregatingFunctions();
+        return lazyProcedureView.getAllAggregatingFunctions();
     }
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> callProcedure(
             Context ctx, int id, AnyValue[] input, ResourceMonitor resourceMonitor) throws ProcedureException {
-        return LAZY_PROCEDURE_VIEW.callProcedure(ctx, id, input, resourceMonitor);
+        return lazyProcedureView.callProcedure(ctx, id, input, resourceMonitor);
     }
 
     @Override
     public AnyValue callFunction(Context ctx, int id, AnyValue[] input) throws ProcedureException {
-        return LAZY_PROCEDURE_VIEW.callFunction(ctx, id, input);
+        return lazyProcedureView.callFunction(ctx, id, input);
     }
 
     @Override
     public UserAggregationReducer createAggregationFunction(Context ctx, int id) throws ProcedureException {
-        return LAZY_PROCEDURE_VIEW.createAggregationFunction(ctx, id);
+        return lazyProcedureView.createAggregationFunction(ctx, id);
     }
 
     @Override
     public <T> ThrowingFunction<Context, T, ProcedureException> lookupComponentProvider(Class<T> cls, boolean safe) {
-        return LAZY_PROCEDURE_VIEW.lookupComponentProvider(cls, safe);
+        return lazyProcedureView.lookupComponentProvider(cls, safe);
     }
 
     @Override
@@ -258,7 +258,7 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
          we revert to the normal behaviour of returning a ProcedureView.
         */
         if (globalProcedures == null) {
-            return LAZY_PROCEDURE_VIEW;
+            return lazyProcedureView;
         }
 
         return globalProcedures.getCurrentView();
@@ -266,7 +266,7 @@ public class LazyProcedures implements GlobalProcedures, Consumer<Supplier<Globa
 
     private class LazyProcedureView implements ProcedureView {
 
-        private ProcedureView view;
+        private volatile ProcedureView view;
 
         private LazyProcedureView() {}
 
