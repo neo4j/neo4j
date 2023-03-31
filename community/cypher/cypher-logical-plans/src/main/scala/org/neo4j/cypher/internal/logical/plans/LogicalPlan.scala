@@ -3704,3 +3704,54 @@ idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
 
   override val availableSymbols: Set[String] = left.availableSymbols ++ right.availableSymbols
 }
+
+/**
+ * Marker trait of light-weight simulations of a basic plans that can be used to test or benchmark runtime frameworks
+ * in isolation from the database.
+ */
+sealed trait SimulatedPlan
+
+/**
+ * Produce the given number of nodes
+ */
+case class SimulatedNodeScan(idName: String, numberOfRows: Long)(implicit idGen: IdGen)
+    extends NodeLogicalLeafPlan(idGen) with StableLeafPlan with SimulatedPlan {
+
+  override val availableSymbols: Set[String] = Set(idName)
+
+  override def usedVariables: Set[String] = Set.empty
+
+  override def argumentIds: Set[String] = Set.empty
+
+  override def withoutArgumentIds(argsToExclude: Set[String]): SimulatedNodeScan = this
+}
+
+/**
+ * Expand incoming rows by the given factor
+ */
+case class SimulatedExpand(
+  override val source: LogicalPlan,
+  fromNode: String,
+  relName: String,
+  toNode: String,
+  factor: Double
+)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) with SimulatedPlan {
+  assert(factor >= 0.0d, "Factor must be greater or equal to 0")
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override val availableSymbols: Set[String] = source.availableSymbols + relName + toNode
+}
+
+/**
+ * Filter incoming rows by the given selectivity.
+ */
+case class SimulatedSelection(override val source: LogicalPlan, selectivity: Double)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) with SimulatedPlan {
+  assert(selectivity >= 0.0d && selectivity <= 1.0d, "Selectivity must be a fraction between 0 and 1")
+
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  val availableSymbols: Set[String] = source.availableSymbols
+}
