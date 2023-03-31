@@ -31,10 +31,11 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -64,7 +65,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
+            Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
             Seq(),
             Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
           ),
@@ -87,7 +88,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
+            Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
             Seq(),
             Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
           ),
@@ -110,7 +111,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
+            Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
             Seq(),
             Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
           ),
@@ -133,7 +134,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(NodePattern(Some(Variable("n")), None, None, None)))),
+            Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
             Seq(),
             Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
           ),
@@ -156,18 +157,21 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(RelationshipChain(
-              NodePattern(None, None, None, None),
-              RelationshipPattern(
-                None,
-                Some(Leaf(relTypeToken: RelTypeName, _)),
-                None,
-                None,
-                None,
-                SemanticDirection.OUTGOING
+            Pattern(Seq(PatternPartWithSelector(
+              RelationshipChain(
+                NodePattern(None, None, None, None),
+                RelationshipPattern(
+                  None,
+                  Some(Leaf(relTypeToken: RelTypeName, _)),
+                  None,
+                  None,
+                  None,
+                  SemanticDirection.OUTGOING
+                ),
+                NodePattern(None, None, None, None)
               ),
-              NodePattern(None, None, None, None)
-            )))),
+              AllPaths()
+            ))),
             Seq(),
             None
           ),
@@ -190,18 +194,21 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
-            Pattern(Seq(EveryPath(RelationshipChain(
-              NodePattern(None, None, None, None),
-              RelationshipPattern(
-                None,
-                Some(Leaf(relTypeToken: RelTypeName, _)),
-                None,
-                None,
-                None,
-                SemanticDirection.OUTGOING
+            Pattern(Seq(PatternPartWithSelector(
+              RelationshipChain(
+                NodePattern(None, None, None, None),
+                RelationshipPattern(
+                  None,
+                  Some(Leaf(relTypeToken: RelTypeName, _)),
+                  None,
+                  None,
+                  None,
+                  SemanticDirection.OUTGOING
+                ),
+                NodePattern(None, None, None, None)
               ),
-              NodePattern(None, None, None, None)
-            )))),
+              AllPaths()
+            ))),
             Seq(),
             None
           ),

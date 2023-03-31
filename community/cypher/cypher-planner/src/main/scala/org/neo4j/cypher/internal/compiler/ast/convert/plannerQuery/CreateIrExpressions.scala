@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.StatementConverters.toPlannerQuery
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByGetDegree.SetExtractor
 import org.neo4j.cypher.internal.expressions.CountStar
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
@@ -35,6 +34,8 @@ import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
@@ -69,7 +70,7 @@ case class CreateIrExpressions(
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   semanticTable: SemanticTable
 ) extends Rewriter {
-  private val pathStepBuilder: EveryPath => PathStep = projectNamedPaths.patternPartPathExpression
+  private val pathStepBuilder: PatternPartWithSelector => PathStep = projectNamedPaths.patternPartPathExpression
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
   private val inlinedWhereClausesNormalizer = PredicateNormalizer.normalizeInlinedWhereClauses
 
@@ -87,7 +88,7 @@ case class CreateIrExpressions(
 
   private def createPathExpression(pattern: PatternExpression): PathExpression = {
     val pos = pattern.position
-    val path = EveryPath(pattern.pattern.element)
+    val path = PatternPart(pattern.pattern.element)
     val step: PathStep = pathStepBuilder(path)
     PathExpression(step)(pos)
   }

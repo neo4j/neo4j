@@ -20,7 +20,7 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.PreparatoryRewritingRewriterFactory
@@ -39,7 +39,7 @@ case object NoShortestPathWithFixedLength extends StepSequencer.Condition
 object rewriteShortestPathWithFixedLengthRel extends Rewriter {
 
   private val instance = topDown(Rewriter.lift {
-    case s @ ShortestPaths(
+    case s @ ShortestPathsPatternPart(
         r @ RelationshipChain(_: NodePattern, relPat @ RelationshipPattern(_, _, None, _, _, _), _),
         _
       ) =>

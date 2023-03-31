@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
@@ -39,11 +38,12 @@ import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RepeatPathStep
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
@@ -108,7 +108,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
   def apply(input: AnyRef): AnyRef = instance(input)
 
   private val addGroupVariablesToQPPs: Rewriter = topDown(Rewriter.lift {
-    case qpp @ QuantifiedPath(EveryPath(element), _, _, _) =>
+    case qpp @ QuantifiedPath(PatternPartWithSelector(element, _), _, _, _) =>
       val allSingletonVariables = collectVar(element).toSet
       val notYetExportedSingletonVars = allSingletonVariables -- qpp.variableGroupings.map(_.singleton)
       val newGroupings = notYetExportedSingletonVars.map(QuantifiedPath.getGrouping(_, qpp.position))
@@ -127,7 +127,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
       case ident: Variable if !protectedVariables(Ref(ident)) =>
         variableRewrites.getOrElse(Ref(ident), ident)
 
-      case namedPart @ NamedPatternPart(_, _: ShortestPaths) =>
+      case namedPart @ NamedPatternPart(_, _: ShortestPathsPatternPart) =>
         namedPart
 
       case NamedPatternPart(_, part) =>
@@ -219,7 +219,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
         // WITH clauses inside of the query might have removed the paths.
         TraverseChildrenNewAccForSiblings(acc, insideAcc => insideAcc.copy(paths = acc.paths))
 
-    case NamedPatternPart(_, _: ShortestPaths) =>
+    case NamedPatternPart(_, _: ShortestPathsPatternPart) =>
       acc =>
         // We do not want to replace named shortest paths
         TraverseChildren(acc)
@@ -232,8 +232,8 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
   }
 
   def patternPartPathExpression(patternPart: AnonymousPatternPart): PathStep = patternPart match {
-    case EveryPath(element) => patternPartPathExpression(element)
-    case x                  => throw new IllegalStateException(s"Unknown pattern part: $x")
+    case PatternPartWithSelector(element, _) => patternPartPathExpression(element)
+    case x                                   => throw new IllegalStateException(s"Unknown pattern part: $x")
   }
 
   def patternPartPathExpression(element: PatternElement): PathStep = flip(element, NilPathStep()(element.position))
@@ -262,7 +262,7 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
         factors.reverse.foldLeft(step) {
           // Remove the first NodePathStep after a QPP (list is traversed in reverse).
           // This is needed because it will be included as the toNode of the RepeatPathStep, instead.
-          case (NodePathStep(node, innerStep), qpp @ QuantifiedPath(EveryPath(element), _, _, _)) =>
+          case (NodePathStep(node, innerStep), qpp @ QuantifiedPath(PatternPartWithSelector(element, _), _, _, _)) =>
             val qppSingletonVars = collectVar(element)
             val groupVars =
               qppSingletonVars.map(singletonVar => qpp.variableGroupings.find(_.singleton == singletonVar).get.group)

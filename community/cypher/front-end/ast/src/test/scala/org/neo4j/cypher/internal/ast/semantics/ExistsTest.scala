@@ -18,9 +18,9 @@ package org.neo4j.cypher.internal.ast.semantics
 
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -34,7 +34,7 @@ class ExistsTest extends SemanticFunSuite {
   val x: NodePattern = expressions.NodePattern(Some(variable("x")), None, None, None)(pos)
   val r: RelationshipPattern = RelationshipPattern(None, None, None, None, None, SemanticDirection.OUTGOING)(pos)
   val relChain: RelationshipChain = RelationshipChain(n, r, x)(pos)
-  val pattern: Pattern = Pattern(Seq(EveryPath(relChain)))(pos)
+  val pattern: Pattern = Pattern(Seq(PatternPart(relChain)))(pos)
   val property: Property = Property(variable("x"), PropertyKeyName("prop")(pos))(pos)
   val failingProperty: Property = Property(variable("missing"), PropertyKeyName("prop")(pos))(pos)
 
@@ -48,7 +48,7 @@ class ExistsTest extends SemanticFunSuite {
   }
 
   test("multiple patterns in inner match should not report error") {
-    val multiPattern: Pattern = Pattern(Seq(EveryPath(x), EveryPath(n)))(pos)
+    val multiPattern: Pattern = Pattern(Seq(PatternPart(x), PatternPart(n)))(pos)
     val expression = simpleExistsExpression(multiPattern, Some(where(property)))
 
     val result =

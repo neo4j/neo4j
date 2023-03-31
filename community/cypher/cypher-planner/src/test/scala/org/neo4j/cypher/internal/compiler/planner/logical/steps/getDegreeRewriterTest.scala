@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.CreateIrExpressions
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.getDegreeRewriterTest.relPattern
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.GetDegree
 import org.neo4j.cypher.internal.expressions.GreaterThan
@@ -44,6 +43,7 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -157,7 +157,7 @@ class GetDegreeRewriterExistsExpressionTest extends GetDegreeRewriterExistsLikeT
   ): Expression = {
     val maybeWhere: Option[Where] = predicate.map(p => Where(p)(p.position))
     simpleExistsExpression(
-      Pattern(Seq(EveryPath(relPattern(from, to, relationships).element)))(pos),
+      Pattern(Seq(PatternPart(relPattern(from, to, relationships).element)))(pos),
       maybeWhere = maybeWhere,
       introducedVariables = introducedVariables,
       scopeDependencies = scopeDependencies
@@ -289,7 +289,7 @@ class GetDegreeRewriterCountExpressionTest extends GetDegreeRewriterCountLikeTes
   ): Expression = {
     val maybeWhere: Option[Where] = predicate.map(p => Where(p)(p.position))
     simpleCountExpression(
-      Pattern(Seq(EveryPath(relPattern(from, to, relationships).element)))(pos),
+      Pattern(Seq(PatternPart(relPattern(from, to, relationships).element)))(pos),
       maybeWhere = maybeWhere,
       introducedVariables = introducedVariables,
       scopeDependencies = scopeDependencies

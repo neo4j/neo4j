@@ -76,6 +76,21 @@ class PrettifierIT extends CypherFunSuite {
     "unwind [1,2,3] AS x RETURN x" ->
       """UNWIND [1, 2, 3] AS x
         |RETURN x""".stripMargin,
+    "mAtch all (a)-->(b)     rETuRN a" ->
+      """MATCH (a)-->(b)
+        |RETURN a""".stripMargin,
+    "mAtch aNy 2 path (a)-->(b)     rETuRN a" ->
+      """MATCH ANY 2 PATHS (a)-->(b)
+        |RETURN a""".stripMargin,
+    "mAtch aNy SHORTeST pathS (a)-->(b)     rETuRN a" ->
+      """MATCH SHORTEST 1 PATHS (a)-->(b)
+        |RETURN a""".stripMargin,
+    "mAtch all SHORTeST path (a)-->(b)     rETuRN a" ->
+      """MATCH ALL SHORTEST PATHS (a)-->(b)
+        |RETURN a""".stripMargin,
+    "mAtch SHORTeST path group (a)-->(b)     rETuRN a" ->
+      """MATCH SHORTEST 1 PATH GROUPS (a)-->(b)
+        |RETURN a""".stripMargin,
     "CALL nsp.proc()" ->
       """CALL nsp.proc()""".stripMargin,
     "CALL proc()" ->

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.ir
 
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.util.Rewritable
 
 //noinspection ZeroIndexToHead
 final case class ShortestPathPattern(name: Option[String], rel: PatternRelationship, single: Boolean)(
-  val expr: ShortestPaths
+  val expr: ShortestPathsPatternPart
 ) extends Rewritable {
 
   def dup(children: Seq[AnyRef]): this.type =

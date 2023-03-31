@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -93,7 +93,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     s"exists((a)-[`$relName2`]->(`$nodeName2`))"
   )(pos, Some(Set(varFor(relName2), varFor(nodeName2))), Some(Set(varFor(argName))))
 
-  private val pattern: Pattern = Pattern(Seq(EveryPath(relChain))) _
+  private val pattern: Pattern = Pattern(Seq(PatternPart(relChain))) _
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given

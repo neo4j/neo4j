@@ -29,10 +29,10 @@ import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -344,7 +344,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
           Pattern(Seq(
             NamedPatternPart(
               varFor("pt"),
-              EveryPath(
+              PatternPart(
                 relationshipChain(
                   nodePat(Some("a"), namePos = InputPosition(38, 1, 39), position = InputPosition(37, 1, 38)),
                   relPat(position = InputPosition(40, 1, 41)),

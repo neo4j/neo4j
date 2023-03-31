@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
@@ -49,7 +48,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
 
   test("(n)") {
     givesIncludingPositions {
-      EveryPath(
+      PatternPart(
         nodePat(name = Some("n"), position = (1, 1, 0))
       )
     }
@@ -57,7 +56,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
 
   test("(((n)))") {
     gives {
-      EveryPath(ParenthesizedPath(EveryPath(ParenthesizedPath(EveryPath(
+      PatternPart(ParenthesizedPath(PatternPart(ParenthesizedPath(PatternPart(
         nodePat(Some("n"))
       ))(pos)))(pos))
     }
@@ -65,8 +64,8 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
 
   test("((n)-[r]->(m))*") {
     givesIncludingPositions {
-      EveryPath(QuantifiedPath(
-        EveryPath(
+      PatternPart(QuantifiedPath(
+        PatternPart(
           RelationshipChain(
             nodePat(Some("n"), position = (1, 2, 1)),
             relPat(Some("r"), direction = SemanticDirection.OUTGOING, position = (1, 5, 4)),
@@ -81,10 +80,10 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
 
   test("(p = (n)-[r]->(m))*") {
     gives {
-      EveryPath(QuantifiedPath(
+      PatternPart(QuantifiedPath(
         NamedPatternPart(
           Variable("p"),
-          EveryPath(
+          PatternPart(
             RelationshipChain(
               nodePat(Some("n")),
               relPat(Some("r"), direction = SemanticDirection.OUTGOING),
@@ -100,11 +99,11 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
 
   test("(a) ((n)-[r]->(m))*") {
     givesIncludingPositions {
-      EveryPath(
+      PatternPart(
         PathConcatenation(Seq(
           nodePat(name = Some("a"), position = (1, 1, 0)),
           QuantifiedPath(
-            EveryPath(
+            PatternPart(
               RelationshipChain(
                 nodePat(Some("n"), position = (1, 6, 5)),
                 relPat(Some("r"), direction = SemanticDirection.OUTGOING, position = (1, 9, 8)),
@@ -121,10 +120,10 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
 
   test("((n)-[r]->(m))* (b)") {
     givesIncludingPositions {
-      EveryPath(
+      PatternPart(
         PathConcatenation(Seq(
           QuantifiedPath(
-            EveryPath(
+            PatternPart(
               RelationshipChain(
                 nodePat(Some("n"), position = (1, 2, 1)),
                 relPat(Some("r"), direction = SemanticDirection.OUTGOING, position = (1, 5, 4)),
@@ -144,13 +143,13 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
     """(a) (p = (n)-[r]->(m)){1,3} (b)""".stripMargin
   ) {
     gives {
-      EveryPath(
+      PatternPart(
         PathConcatenation(Seq(
           nodePat(name = Some("a")),
           QuantifiedPath(
             NamedPatternPart(
               Variable("p"),
-              EveryPath(
+              PatternPart(
                 RelationshipChain(
                   nodePat(Some("n")),
                   relPat(Some("r"), direction = SemanticDirection.OUTGOING),
@@ -175,11 +174,11 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
   // we allow arbitrary juxtaposition in the parser and only disallow it in semantic analysis
   test("(a) ((n)-[r]->(m))* (b) (c) ((p)-[q]->(s))+") {
     givesIncludingPositions {
-      EveryPath(
+      PatternPart(
         PathConcatenation(Seq(
           nodePat(name = Some("a"), position = (1, 1, 0)),
           QuantifiedPath(
-            EveryPath(
+            PatternPart(
               RelationshipChain(
                 nodePat(Some("n"), position = (1, 6, 5)),
                 relPat(Some("r"), direction = SemanticDirection.OUTGOING, position = (1, 9, 8)),
@@ -192,7 +191,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
           nodePat(name = Some("b"), position = (1, 21, 20)),
           nodePat(name = Some("c"), position = (1, 25, 24)),
           QuantifiedPath(
-            EveryPath(
+            PatternPart(
               RelationshipChain(
                 nodePat(Some("p"), position = (1, 30, 29)),
                 relPat(Some("q"), direction = SemanticDirection.OUTGOING, position = (1, 33, 32)),
@@ -211,7 +210,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
     gives {
       NamedPatternPart(
         varFor("p"),
-        EveryPath(ParenthesizedPath(EveryPath(RelationshipChain(
+        PatternPart(ParenthesizedPath(PatternPart(RelationshipChain(
           nodePat(Some("a")),
           relPat(),
           nodePat(Some("b"))
@@ -223,14 +222,14 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
   // We parse this and fail later in semantic checking
   test("(p = (q = (n)-[r]->(m))*)*") {
     gives {
-      EveryPath(
+      PatternPart(
         QuantifiedPath(
           NamedPatternPart(
             varFor("p"),
-            EveryPath(QuantifiedPath(
+            PatternPart(QuantifiedPath(
               NamedPatternPart(
                 varFor("q"),
-                EveryPath(RelationshipChain(
+                PatternPart(RelationshipChain(
                   nodePat(Some("n")),
                   relPat(Some("r")),
                   nodePat(Some("m"))
@@ -252,11 +251,11 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
     gives {
       NamedPatternPart(
         varFor("p"),
-        EveryPath(PathConcatenation(Seq(
+        PatternPart(PathConcatenation(Seq(
           nodePat(Some("n")),
           ParenthesizedPath(NamedPatternPart(
             varFor("q"),
-            EveryPath(RelationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b")))(pos))
+            PatternPart(RelationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b")))(pos))
           )(pos))(pos)
         ))(pos))
       )(pos)
@@ -265,10 +264,10 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite with JavaccParserAs
 
   test("((a)-->(b)) ((x)-->(y))*") {
     gives {
-      EveryPath(PathConcatenation(Seq(
-        ParenthesizedPath(EveryPath(RelationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b")))(pos)))(pos),
+      PatternPart(PathConcatenation(Seq(
+        ParenthesizedPath(PatternPart(RelationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b")))(pos)))(pos),
         QuantifiedPath(
-          EveryPath(RelationshipChain(nodePat(Some("x")), relPat(), nodePat(Some("y")))(pos)),
+          PatternPart(RelationshipChain(nodePat(Some("x")), relPat(), nodePat(Some("y")))(pos)),
           StarQuantifier()(pos),
           None
         )(pos)
@@ -288,7 +287,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccP
         optional = false,
         Pattern(Seq(NamedPatternPart(
           varFor("p"),
-          EveryPath(ParenthesizedPath(EveryPath(RelationshipChain(
+          PatternPart(ParenthesizedPath(PatternPart(RelationshipChain(
             nodePat(Some("a")),
             relPat(),
             nodePat(Some("b"))
@@ -305,15 +304,15 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccP
       Match(
         optional = false,
         Pattern(Seq(
-          EveryPath(nodePat(Some("a"))),
-          EveryPath(PathConcatenation(Seq(
+          PatternPart(nodePat(Some("a"))),
+          PatternPart(PathConcatenation(Seq(
             RelationshipChain(
               nodePat(Some("b")),
               relPat(direction = BOTH),
               nodePat(Some("c"))
             )(pos),
             QuantifiedPath(
-              EveryPath(RelationshipChain(
+              PatternPart(RelationshipChain(
                 nodePat(Some("d")),
                 relPat(direction = BOTH),
                 nodePat(Some("e"))
@@ -411,7 +410,7 @@ class QuantifiedPathParserTest extends CypherFunSuite
   test("((n)-[r]->(m))*") {
     gives {
       QuantifiedPath(
-        EveryPath(
+        PatternPart(
           RelationshipChain(
             nodePat(Some("n")),
             relPat(Some("r"), direction = SemanticDirection.OUTGOING),
@@ -429,7 +428,7 @@ class QuantifiedPathParserTest extends CypherFunSuite
       QuantifiedPath(
         NamedPatternPart(
           Variable("p"),
-          EveryPath(
+          PatternPart(
             RelationshipChain(
               nodePat(Some("n")),
               relPat(Some("r"), direction = SemanticDirection.OUTGOING),
@@ -446,7 +445,7 @@ class QuantifiedPathParserTest extends CypherFunSuite
   test("((n)-[r]->(m) WHERE n.prop = m.prop)*") {
     gives {
       QuantifiedPath(
-        EveryPath(
+        PatternPart(
           RelationshipChain(
             nodePat(Some("n")),
             relPat(Some("r"), direction = SemanticDirection.OUTGOING),
@@ -460,14 +459,25 @@ class QuantifiedPathParserTest extends CypherFunSuite
   }
 
   test("((a)-->(b) WHERE a.prop > b.prop)") {
-    failsToParse
+    gives {
+      ParenthesizedPath(
+        PatternPart(
+          RelationshipChain(
+            nodePat(Some("a")),
+            relPat(direction = SemanticDirection.OUTGOING),
+            nodePat(Some("b"))
+          )(pos)
+        ),
+        Some(greaterThan(prop("a", "prop"), prop("b", "prop")))
+      )(pos)
+    }
   }
 
   // combining all previous GPM features
   test("((n:A|B)-[r:REL|LER WHERE r.prop > 0]->(m:% WHERE m.prop IS NOT NULL))*") {
     gives {
       QuantifiedPath(
-        EveryPath(
+        PatternPart(
           RelationshipChain(
             nodePat(
               name = Some("n"),

@@ -81,7 +81,8 @@ public interface ASTFactory<
                 ENTITY_TYPE,
                 PATH_PATTERN_QUANTIFIER,
                 PATTERN_ATOM,
-                DATABASE_NAME>
+                DATABASE_NAME,
+                PATTERN_SELECTOR>
         extends ASTExpressionFactory<
                 EXPRESSION,
                 LABEL_EXPRESSION,
@@ -213,7 +214,17 @@ public interface ASTFactory<
 
     PATTERN allShortestPathsPattern(POS p, PATTERN pattern);
 
-    PATTERN everyPathPattern(List<PATTERN_ATOM> atoms);
+    PATTERN pathPattern(List<PATTERN_ATOM> atoms, PATTERN_SELECTOR selector);
+
+    PATTERN_SELECTOR anyPathSelector(String count, POS countPosition, POS position);
+
+    PATTERN_SELECTOR allPathSelector(POS position);
+
+    PATTERN_SELECTOR anyShortestPathSelector(String count, POS countPosition, POS position);
+
+    PATTERN_SELECTOR allShortestPathSelector(POS position);
+
+    PATTERN_SELECTOR shortestGroupsSelector(String count, POS countPosition, POS position);
 
     NODE_PATTERN nodePattern(
             POS p, VARIABLE v, LABEL_EXPRESSION labelExpression, EXPRESSION properties, EXPRESSION predicate);

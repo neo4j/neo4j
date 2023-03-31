@@ -16,7 +16,6 @@
  */
 package org.neo4j.cypher.internal.ast.prettifier
 
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
@@ -27,13 +26,15 @@ import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.StarQuantifier
 
 trait PatternStringifier {
@@ -58,9 +59,10 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
     p.patternParts.map(apply).mkString(", ")
 
   override def apply(p: PatternPart): String = p match {
-    case e: EveryPath        => apply(e.element)
-    case s: ShortestPaths    => s"${s.name}(${apply(s.element)})"
-    case n: NamedPatternPart => s"${expr(n.variable)} = ${apply(n.patternPart)}"
+    case allPaths @ PatternPartWithSelector(_, AllPaths()) => apply(allPaths.element)
+    case withSelector: PatternPartWithSelector => s"${withSelector.selector.prettified} ${apply(withSelector.element)}"
+    case shortestPaths: ShortestPathsPatternPart => s"${shortestPaths.name}(${apply(shortestPaths.element)})"
+    case namedPattern: NamedPatternPart => s"${expr(namedPattern.variable)} = ${apply(namedPattern.patternPart)}"
   }
 
   override def apply(element: PatternElement): String = element match {

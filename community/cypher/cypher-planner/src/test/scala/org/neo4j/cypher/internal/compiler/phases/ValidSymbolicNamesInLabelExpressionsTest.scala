@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.phases
 
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -98,7 +98,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends AnyFunSuite with Matchers
     val wildcard = Wildcard()(InputPosition.NONE)
     val disjunction = Disjunctions(Seq(Leaf(labelName), wildcard))(InputPosition.NONE)
     val nodePattern = NodePattern(Some(variable), Some(disjunction), None, None)(InputPosition.NONE)
-    val pattern = Pattern(Seq(EveryPath(nodePattern)))(InputPosition.NONE)
+    val pattern = Pattern(Seq(PatternPart(nodePattern)))(InputPosition.NONE)
     val labelOrRelTypeName = LabelOrRelTypeName("B")(InputPosition.NONE)
     val labelExpressionPredicate = LabelExpressionPredicate(variable, Leaf(labelOrRelTypeName))(InputPosition.NONE)
     val where = Where(labelExpressionPredicate)(InputPosition.NONE)
@@ -112,7 +112,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends AnyFunSuite with Matchers
     val wildcard = Wildcard()(InputPosition.NONE)
     val disjunction = Disjunctions(Seq(Leaf(relTypeName), wildcard))(InputPosition.NONE)
     val nodePattern = NodePattern(Some(variable), Some(disjunction), None, None)(InputPosition.NONE)
-    val pattern = Pattern(Seq(EveryPath(nodePattern)))(InputPosition.NONE)
+    val pattern = Pattern(Seq(PatternPart(nodePattern)))(InputPosition.NONE)
     val labelName = LabelName("B")(InputPosition(41, 10, 42))
     val labelExpressionPredicate = LabelExpressionPredicate(variable, Leaf(labelName))(InputPosition.NONE)
     val where = Where(labelExpressionPredicate)(InputPosition.NONE)

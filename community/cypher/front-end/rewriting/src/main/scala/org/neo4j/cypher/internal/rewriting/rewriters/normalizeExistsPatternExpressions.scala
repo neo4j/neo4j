@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -32,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Size
@@ -74,7 +74,7 @@ case class normalizeExistsPatternExpressions(
   private val instance = bottomUp(Rewriter.lift {
     case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
       ExistsExpression(PatternToQueryConverter.convertPatternToQuery(
-        Pattern(Seq(EveryPath(p.pattern.element)))(p.position),
+        Pattern(Seq(PatternPart(p.pattern.element)))(p.position),
         None,
         p.position
       ))(
@@ -84,7 +84,7 @@ case class normalizeExistsPatternExpressions(
       )
     case Exists(p: PatternExpression) =>
       ExistsExpression(PatternToQueryConverter.convertPatternToQuery(
-        Pattern(Seq(EveryPath(p.pattern.element)))(p.position),
+        Pattern(Seq(PatternPart(p.pattern.element)))(p.position),
         None,
         p.position
       ))(
@@ -134,7 +134,7 @@ case object CountLikeToExistsConverter {
     case Size(p @ PatternComprehension(_, pattern, maybePredicate, _)) =>
       Some(ExistsExpression(
         PatternToQueryConverter.convertPatternToQuery(
-          Pattern(Seq(EveryPath(pattern.element)))(p.position),
+          Pattern(Seq(PatternPart(pattern.element)))(p.position),
           maybePredicate.map(mp => Where(mp)(mp.position)),
           p.position
         )

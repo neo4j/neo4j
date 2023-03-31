@@ -261,7 +261,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     val expected = String.format("\"%s\"\n %s", query, expectedCaret)
     val got = error.getMessage.linesIterator
     got.next() should startWith(expectedError)
-    got.mkString("\n") should equal(expected)
+    got.mkString("\n") should endWith(expected)
   }
 
   private def executeQuery(query: String): Unit = {

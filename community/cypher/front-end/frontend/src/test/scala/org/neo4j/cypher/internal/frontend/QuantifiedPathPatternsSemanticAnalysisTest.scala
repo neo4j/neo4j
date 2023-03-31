@@ -34,7 +34,7 @@ abstract class QuantifiedPathPatternsInDifferentClausesSemanticAnalysisTest(stat
 
   test("((a)-[:Rel]->(b)){2}") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      s"Quantified path patterns are not allowed in $statement, but only in MATCH clause."
+      s"Quantified path patterns cannot be used in a $statement clause, but only in a MATCH clause."
     )
   }
 }
@@ -78,7 +78,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
   test("MERGE (var0 WHERE COUNT { ((var1)--())+ } > 1 ) RETURN *") {
     // This test asserts that we give semantic errors instead of throwing "java.util.NoSuchElementException: key not found"
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
-      "Node pattern predicates are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension",
+      "Node pattern predicates are not allowed in a MERGE clause, but only in a MATCH clause or inside a pattern comprehension",
       "Subquery expressions are not allowed in a MERGE clause."
     )
   }
@@ -120,7 +120,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
   test("MATCH (p = shortestPath((a)-[]->(b)))+ RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       "Assigning a path in a quantified path pattern is not yet supported.",
-      "shortestPath is only allowed as a top-level element and not inside a quantified path pattern",
+      "shortestPath(...) is only allowed as a top-level element and not inside a quantified path pattern",
       "Mixing variable-length relationships ('-[*]-') with quantified relationships ('()-->*()') or quantified path patterns ('(()-->())*') is not allowed."
     )
   }
@@ -135,7 +135,7 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
   test("MATCH (shortestPath((a)-[]->(b))) RETURN count(*)") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldEqual Seq(
       // this is the error message that we ultimately expect
-      "shortestPath is only allowed as a top-level element and not inside a parenthesized path pattern"
+      "shortestPath(...) is only allowed as a top-level element and not inside a parenthesized path pattern"
     )
   }
 
@@ -582,6 +582,47 @@ class QuantifiedPathPatternsSemanticAnalysisTest extends NameBasedSemanticAnalys
   // ... in different statements
   test("MATCH (s)-[:A*2..2]->(n) MATCH (n)-[:B]->{2}(t) RETURN s.p AS sp, t.p AS tp") {
     runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errorMessages shouldBe empty
+  }
+
+  // should not throw error about mixing if they are in different scopes
+  test("MATCH ((a)--(b) WHERE EXISTS { (c)-[r*]-(d) })+ RETURN 1") {
+    val result =
+      runSemanticAnalysisWithSemanticFeatures(
+        SemanticFeature.QuantifiedPathPatterns
+      )
+    result.errorMessages shouldBe empty
+  }
+
+  test("MATCH ((a)--(b WHERE EXISTS { (c)-[r*]-(d) }))+ RETURN 1") {
+    val result =
+      runSemanticAnalysisWithSemanticFeatures(
+        SemanticFeature.QuantifiedPathPatterns
+      )
+    result.errorMessages shouldBe empty
+  }
+
+  test("MATCH (a)-[r*]-(b WHERE EXISTS { (a)(()-[r1]->())*(b) }) RETURN 1") {
+    val result =
+      runSemanticAnalysisWithSemanticFeatures(
+        SemanticFeature.QuantifiedPathPatterns
+      )
+    result.errorMessages shouldBe empty
+  }
+
+  test(
+    """MATCH (n)
+      |CALL {
+      |  MATCH ((a)--(b))+
+      |  MATCH (c)-[r*]-(d)
+      |  RETURN *
+      |}
+      |RETURN 1""".stripMargin
+  ) {
+    val result =
+      runSemanticAnalysisWithSemanticFeatures(
+        SemanticFeature.QuantifiedPathPatterns
+      )
+    result.errorMessages shouldBe empty
   }
 
   // pattern comprehension

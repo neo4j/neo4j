@@ -102,6 +102,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FUNCTIONS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRANT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRAPH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.GRAPHS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.GROUP;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.GROUPS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.HEADERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.HOME;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IDENTIFIER;
@@ -145,6 +147,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ORDER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.OUTPUT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PASSWORD;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PASSWORDS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PATH;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PATHS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PERIODIC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.PLAINTEXT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.POINT;
@@ -188,6 +192,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SERVERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SET;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SETTING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SETTINGS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SHORTEST;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SHORTEST_PATH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SHOW;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SINGLE;
@@ -316,6 +321,8 @@ public class IdentifierTokens {
             GRANT,
             GRAPH,
             GRAPHS,
+            GROUP,
+            GROUPS,
             HEADERS,
             HOME,
             IDENTIFIER,
@@ -359,6 +366,8 @@ public class IdentifierTokens {
             OUTPUT,
             PASSWORD,
             PASSWORDS,
+            PATH,
+            PATHS,
             PERIODIC,
             PLAINTEXT,
             POINT,
@@ -402,6 +411,7 @@ public class IdentifierTokens {
             SET,
             SETTING,
             SETTINGS,
+            SHORTEST,
             SHORTEST_PATH,
             SHOW,
             SINGLE,

@@ -47,7 +47,6 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
@@ -71,6 +70,7 @@ import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -202,11 +202,14 @@ sealed trait Clause extends ASTNode with SemanticCheckable with SemanticAnalysis
   }
 
   private def checkIfMixingLegacyVarLengthWithQPPs: SemanticCheck = {
-    val legacyVarLengthRelationships = this.folder.fold(Seq.empty[RelationshipPattern]) {
-      case r @ RelationshipPattern(_, _, Some(_), _, _, _) => _ :+ r
+    val legacyVarLengthRelationships = this.folder.treeFold(Seq.empty[RelationshipPattern]) {
+      case r @ RelationshipPattern(_, _, Some(_), _, _, _) => acc => TraverseChildren(acc :+ r)
+      case _: SubqueryCall | _: FullSubqueryExpression     => acc => SkipChildren(acc)
     }
-    val hasQPP = this.folder.treeExists {
-      case _: QuantifiedPath => true
+    val hasQPP = this.folder.treeFold(false) {
+      case _: QuantifiedPath                           => _ => SkipChildren(true)
+      case _: SubqueryCall | _: FullSubqueryExpression => acc => SkipChildren(acc)
+      case _                                           => acc => if (acc) SkipChildren(acc) else TraverseChildren(acc)
     }
 
     when(hasQPP) {
@@ -359,8 +362,8 @@ trait SingleRelTypeCheck {
 
   protected def checkRelTypes(patternPart: PatternPart): SemanticCheck =
     patternPart match {
-      case EveryPath(element) => checkRelTypes(element)
-      case _                  => success
+      case PatternPartWithSelector(element, _) => checkRelTypes(element)
+      case _                                   => success
     }
 
   protected def checkRelTypes(pattern: Pattern): SemanticCheck =
@@ -478,7 +481,7 @@ case class Match(
         element match {
           case PathConcatenation(factors) =>
             partitionPatternElements(factors.toList ++ otherElements, quantifiedPaths, simplePatterns)
-          case ParenthesizedPath(part) =>
+          case ParenthesizedPath(part, _) =>
             partitionPatternElements(part.element :: otherElements, quantifiedPaths, simplePatterns)
           case quantifiedPath: QuantifiedPath =>
             partitionPatternElements(otherElements, quantifiedPath :: quantifiedPaths, simplePatterns)

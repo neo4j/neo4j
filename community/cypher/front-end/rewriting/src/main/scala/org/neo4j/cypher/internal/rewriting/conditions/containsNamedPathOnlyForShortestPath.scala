@@ -17,13 +17,13 @@
 package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.rewriting.ValidatingCondition
 
 case object containsNamedPathOnlyForShortestPath extends ValidatingCondition {
 
   private val matcher = containsNoMatchingNodes({
-    case namedPart @ NamedPatternPart(_, part) if !part.isInstanceOf[ShortestPaths] =>
+    case namedPart @ NamedPatternPart(_, part) if !part.isInstanceOf[ShortestPathsPatternPart] =>
       namedPart.toString
   })
 

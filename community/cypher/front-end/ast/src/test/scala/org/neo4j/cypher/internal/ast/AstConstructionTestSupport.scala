@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.ElementIdToLongId
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
@@ -92,6 +91,7 @@ import org.neo4j.cypher.internal.expressions.NumberLiteral
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathFactor
@@ -101,6 +101,7 @@ import org.neo4j.cypher.internal.expressions.PatternAtom
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.ProcedureName
@@ -646,7 +647,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     quantifier: GraphPatternQuantifier,
     optionalWhereExpression: Option[Expression] = None
   ): QuantifiedPath =
-    QuantifiedPath(EveryPath(relChain), quantifier, optionalWhereExpression)(pos)
+    QuantifiedPath(PatternPart(relChain), quantifier, optionalWhereExpression)(pos)
 
   def quantifiedPath(
     relChain: RelationshipChain,
@@ -654,7 +655,28 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     optionalWhereExpression: Option[Expression],
     variableGroupings: Set[VariableGrouping]
   ): QuantifiedPath =
-    QuantifiedPath(EveryPath(relChain), quantifier, optionalWhereExpression)(pos)
+    QuantifiedPath(PatternPart(relChain), quantifier, optionalWhereExpression)(pos)
+
+  def parenthesizedPath(
+    relChain: RelationshipChain,
+    optionalWhereExpression: Option[Expression] = None
+  ): ParenthesizedPath =
+    ParenthesizedPath(PatternPart(relChain), optionalWhereExpression)(pos)
+
+  def allPathsSelector(): PatternPart.AllPaths =
+    PatternPart.AllPaths()(pos)
+
+  def anyPathSelector(count: String): PatternPart.AnyPath =
+    PatternPart.AnyPath(UnsignedDecimalIntegerLiteral(count)(pos))(pos)
+
+  def anyShortestPathSelector(count: String): PatternPart.AnyShortestPath =
+    PatternPart.AnyShortestPath(UnsignedDecimalIntegerLiteral(count)(pos))(pos)
+
+  def allShortestPathsSelector(): PatternPart.AllShortestPaths =
+    PatternPart.AllShortestPaths()(pos)
+
+  def shortestGroups(count: String): PatternPart.ShortestGroups =
+    PatternPart.ShortestGroups(UnsignedDecimalIntegerLiteral(count)(pos))(pos)
 
   def relationshipChain(patternAtoms: PatternAtom*): RelationshipChain =
     patternAtoms.length match {
@@ -729,19 +751,19 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     SubqueryCall.InTransactionsParameters(batchParams, errorParams, reportParams)(pos)
 
   def create(pattern: PatternElement, position: InputPosition = pos): Create =
-    Create(Pattern(Seq(EveryPath(pattern)))(pattern.position))(position)
+    Create(Pattern(Seq(PatternPart(pattern)))(pattern.position))(position)
 
   def merge(pattern: PatternElement): Merge =
-    Merge(EveryPath(pattern), Seq.empty)(pos)
+    Merge(PatternPart(pattern), Seq.empty)(pos)
 
   def match_(pattern: PatternElement, where: Option[Where] = None): Match =
-    Match(optional = false, Pattern(Seq(EveryPath(pattern)))(pos), Seq(), where)(pos)
+    Match(optional = false, Pattern(Seq(PatternPart(pattern)))(pos), Seq(), where)(pos)
 
   def optionalMatch(pattern: PatternElement, where: Option[Where] = None): Match =
-    Match(optional = true, Pattern(Seq(EveryPath(pattern)))(pos), Seq(), where)(pos)
+    Match(optional = true, Pattern(Seq(PatternPart(pattern)))(pos), Seq(), where)(pos)
 
   def match_(patterns: Seq[PatternElement], where: Option[Where]): Match =
-    Match(optional = false, Pattern(patterns.map(EveryPath))(pos), Seq(), where)(pos)
+    Match(optional = false, Pattern(patterns.map(PatternPart.apply))(pos), Seq(), where)(pos)
 
   def with_(items: ReturnItem*): With =
     With(ReturnItems(includeExisting = false, items)(pos))(pos)

@@ -355,7 +355,6 @@ import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
@@ -404,6 +403,7 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.ProcedureName
@@ -423,7 +423,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedOctalIntegerLiteral
@@ -527,7 +527,8 @@ class Neo4jASTFactory(query: String)
       EntityType,
       GraphPatternQuantifier,
       PatternAtom,
-      DatabaseName
+      DatabaseName,
+      PatternPart.Selector
     ] {
 
   override def newSingleQuery(p: InputPosition, clauses: util.List[Clause]): Query = {
@@ -790,13 +791,14 @@ class Neo4jASTFactory(query: String)
     NamedPatternPart(v, pattern.asInstanceOf[AnonymousPatternPart])(v.position)
 
   override def shortestPathPattern(p: InputPosition, pattern: PatternPart): PatternPart =
-    ShortestPaths(pattern.element, single = true)(p)
+    ShortestPathsPatternPart(pattern.element, single = true)(p)
 
   override def allShortestPathsPattern(p: InputPosition, pattern: PatternPart): PatternPart =
-    ShortestPaths(pattern.element, single = false)(p)
+    ShortestPathsPatternPart(pattern.element, single = false)(p)
 
-  override def everyPathPattern(
-    atoms: util.List[PatternAtom]
+  override def pathPattern(
+    atoms: util.List[PatternAtom],
+    selector: PatternPart.Selector
   ): PatternPart = {
 
     val iterator = atoms.iterator().asScala.buffered
@@ -829,8 +831,46 @@ class Neo4jASTFactory(query: String)
         val position = factors.head.position
         PathConcatenation(factors)(position)
     }
-    EveryPath(pathElement)
+    PatternPartWithSelector(
+      pathElement,
+      if (selector != null) selector else PatternPart.AllPaths()(pathElement.position)
+    )
   }
+
+  override def anyPathSelector(
+    count: String,
+    countPosition: InputPosition,
+    position: InputPosition
+  ): PatternPart.Selector = {
+    PatternPart.AnyPath(defaultCountValue(count, countPosition, position))(position)
+  }
+
+  override def allPathSelector(position: InputPosition): PatternPart.Selector =
+    PatternPart.AllPaths()(position)
+
+  override def anyShortestPathSelector(
+    count: String,
+    countPosition: InputPosition,
+    position: InputPosition
+  ): PatternPart.Selector =
+    PatternPart.AnyShortestPath(defaultCountValue(count, countPosition, position))(position)
+
+  override def allShortestPathSelector(position: InputPosition): PatternPart.Selector =
+    PatternPart.AllShortestPaths()(position)
+
+  override def shortestGroupsSelector(
+    count: String,
+    countPosition: InputPosition,
+    position: InputPosition
+  ): PatternPart.Selector =
+    PatternPart.ShortestGroups(defaultCountValue(count, countPosition, position))(position)
+
+  private def defaultCountValue(count: String, countPosition: InputPosition, position: InputPosition) =
+    if (count != null) {
+      UnsignedDecimalIntegerLiteral(count)(countPosition)
+    } else {
+      UnsignedDecimalIntegerLiteral("1")(position)
+    }
 
   override def nodePattern(
     p: InputPosition,
@@ -933,10 +973,7 @@ class Neo4jASTFactory(query: String)
     if (length != null)
       QuantifiedPath(internalPattern, length, Option(where))(p)
     else {
-      if (where != null) {
-        throw new IllegalArgumentException("No support for WHERE in ParenthesizedPath yet.")
-      }
-      ParenthesizedPath(internalPattern)(p)
+      ParenthesizedPath(internalPattern, Option(where))(p)
     }
   }
 
@@ -946,12 +983,13 @@ class Neo4jASTFactory(query: String)
   ): PatternAtom = {
     // represent -[rel]->+ as (()-[rel]->())+
     val pos = rel.position
-    val pattern = EveryPath(
+    val pattern = PatternPartWithSelector(
       RelationshipChain(
         NodePattern(None, None, None, None)(pos),
         rel,
         NodePattern(None, None, None, None)(pos)
-      )(pos)
+      )(pos),
+      PatternPart.AllPaths()(pos)
     )
     parenthesizedPathPattern(pos, pattern, where = null, quantifier)
   }
@@ -1168,7 +1206,7 @@ class Neo4jASTFactory(query: String)
 
   override def patternExpression(p: InputPosition, pattern: PatternPart): Expression =
     pattern match {
-      case paths: ShortestPaths =>
+      case paths: ShortestPathsPatternPart =>
         ShortestPathExpression(paths)
       case _ =>
         PatternExpression(RelationshipsPattern(pattern.element.asInstanceOf[RelationshipChain])(p))(

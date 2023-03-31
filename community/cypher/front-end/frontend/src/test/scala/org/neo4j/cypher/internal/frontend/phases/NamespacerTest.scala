@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.Variable
@@ -56,7 +56,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
           pathConcatenation(
             nodePat(Some("a")),
             QuantifiedPath(
-              EveryPath(RelationshipChain(
+              PatternPart(RelationshipChain(
                 nodePat(Some("  x@0")),
                 relPat(Some("  UNNAMED1")),
                 nodePat(Some("  y@2"))
@@ -87,7 +87,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
           pathConcatenation(
             nodePat(Some("  UNNAMED0")),
             QuantifiedPath(
-              EveryPath(RelationshipChain(
+              PatternPart(RelationshipChain(
                 nodePat(Some("  a@0")),
                 relPat(Some("  UNNAMED1")),
                 nodePat(Some("  b@2"))

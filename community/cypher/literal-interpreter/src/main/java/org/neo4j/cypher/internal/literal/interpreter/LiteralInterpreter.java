@@ -102,8 +102,10 @@ public class LiteralInterpreter
                 NULL, // POS,
                 NULL, // ENTITY_TYPE,
                 NULL, // PATH_PATTERN_LENGTH,
-                NULL, // PATTERN_ATOM>
-                NULL> { // DATABASE NAME
+                NULL, // PATTERN_ATOM
+                NULL, // DATABASE NAME
+                NULL // PATTERN_SELECTOR
+        > {
 
     public static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
     public static final String LONG_MIN_VALUE_DECIMAL_STRING =
@@ -308,8 +310,33 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL everyPathPattern(List<NULL> atoms) {
-        throw new UnsupportedOperationException("everyPathPattern is not a literal");
+    public NULL pathPattern(List<NULL> atoms, NULL selector) {
+        throw new UnsupportedOperationException("pathPattern is not a literal");
+    }
+
+    @Override
+    public NULL anyPathSelector(String count, NULL pCount, NULL p) {
+        throw new UnsupportedOperationException("anyPathSelector is not a literal");
+    }
+
+    @Override
+    public NULL allPathSelector(NULL p) {
+        throw new UnsupportedOperationException("allPathSelector is not a literal");
+    }
+
+    @Override
+    public NULL anyShortestPathSelector(String count, NULL pCount, NULL p) {
+        throw new UnsupportedOperationException("anyShortestPathSelector is not a literal");
+    }
+
+    @Override
+    public NULL allShortestPathSelector(NULL p) {
+        throw new UnsupportedOperationException("allShortestPathSelector is not a literal");
+    }
+
+    @Override
+    public NULL shortestGroupsSelector(String count, NULL countPosition, NULL position) {
+        throw new UnsupportedOperationException("shortestGroupsSelector is not a literal");
     }
 
     @Override

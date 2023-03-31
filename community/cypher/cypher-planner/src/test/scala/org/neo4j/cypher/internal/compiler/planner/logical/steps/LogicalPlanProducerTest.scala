@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.ast.UsingIndexHint
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.Pattern
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.ir.CreateNode
@@ -960,7 +960,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        simpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
+        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
         ctx.context
       )
     )
@@ -971,7 +971,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        simpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
+        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
         ctx.context
       )
     )
@@ -982,7 +982,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planAntiSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        simpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
+        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
         ctx.context
       )
     )
@@ -993,7 +993,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planAntiSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        simpleExistsExpression(Pattern(Seq(EveryPath(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
+        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
         ctx.context
       )
     )

@@ -23,17 +23,17 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
@@ -48,7 +48,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
-        Pattern(Seq(EveryPath(chain(
+        Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), nodePattern),
           relationship(Some(varFor("r"))),
           node(Some(varFor("m")))
@@ -76,7 +76,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
-        Pattern(Seq(EveryPath(chain(
+        Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
           relationshipPattern,
           node(Some(varFor("m")))
@@ -105,7 +105,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
-        Pattern(Seq(EveryPath(chain(
+        Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationshipPattern, node(Some(varFor("k")))),
           relationship(Some(varFor("r"))),
           nodePattern
@@ -135,7 +135,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
-        Pattern(Seq(EveryPath(chain(
+        Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
           relationship(Some(varFor("r"))),
           node(Some(varFor("m")))
@@ -169,7 +169,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
-        Pattern(Seq(EveryPath(chain(
+        Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
           relationship(Some(varFor("r"))),
           node(Some(varFor("m")))
@@ -239,7 +239,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
 
   test("should not react to unnamed elements in shortest path expression") {
     val input = ShortestPathExpression(
-      ShortestPaths(
+      ShortestPathsPatternPart(
         RelationshipChain(
           node(None),
           relationship(None),

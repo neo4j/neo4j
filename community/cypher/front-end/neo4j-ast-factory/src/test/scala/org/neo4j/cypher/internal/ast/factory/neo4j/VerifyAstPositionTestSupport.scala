@@ -30,9 +30,9 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.ContainerIndex
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
 import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.Variable
@@ -61,7 +61,7 @@ trait VerifyAstPositionTestSupport extends Assertions with Matchers {
             _: RemovePropertyItem |
             _: LoadCSV |
             _: UseGraph |
-            _: EveryPath |
+            _: PatternPartWithSelector |
             _: RelationshipChain |
             _: Yield |
             _: ContainerIndex |

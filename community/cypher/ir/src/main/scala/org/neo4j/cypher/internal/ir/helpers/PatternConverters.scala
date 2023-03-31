@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.ir.helpers
 
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
@@ -29,11 +28,12 @@ import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SimplePattern
 import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.ir.NodeBinding
@@ -246,20 +246,20 @@ object PatternConverters {
 
     def destructed(anonymousVariableNameGenerator: AnonymousVariableNameGenerator): DestructResult = {
       pattern.patternParts.foldLeft(DestructResult.empty) {
-        case (acc, NamedPatternPart(ident, sps @ ShortestPaths(element, single))) =>
+        case (acc, NamedPatternPart(ident, sps @ ShortestPathsPatternPart(element, single))) =>
           val destructedElement: DestructResult = element.destructed
           val pathName = ident.name
           val newShortest = ShortestPathPattern(Some(pathName), destructedElement.rels.head, single)(sps)
           acc.addNodeId(destructedElement.nodeIds: _*).addShortestPaths(newShortest)
 
-        case (acc, sps @ ShortestPaths(element, single)) =>
+        case (acc, sps @ ShortestPathsPatternPart(element, single)) =>
           val destructedElement = element.destructed
           val newShortest =
             ShortestPathPattern(Some(anonymousVariableNameGenerator.nextName), destructedElement.rels.head, single)(sps)
           acc.addNodeId(destructedElement.nodeIds: _*).addShortestPaths(newShortest)
 
-        case (acc, everyPath: EveryPath) =>
-          val destructedElement = everyPath.element.destructed
+        case (acc, patternPart: PatternPartWithSelector) =>
+          val destructedElement = patternPart.element.destructed
           acc.merge(destructedElement)
 
         case p =>

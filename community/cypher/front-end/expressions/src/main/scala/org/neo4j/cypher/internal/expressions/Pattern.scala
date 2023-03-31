@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import org.neo4j.cypher.internal.expressions.PatternPart.Selector
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
@@ -26,6 +27,7 @@ object Pattern {
 
   sealed trait SemanticContext {
     def name: String = SemanticContext.name(this)
+    def description: String = SemanticContext.description(this)
   }
 
   object SemanticContext {
@@ -39,6 +41,13 @@ object Pattern {
       case Merge      => "MERGE"
       case Create     => "CREATE"
       case Expression => "expression"
+    }
+
+    def description(ctx: SemanticContext): String = ctx match {
+      case Match      => "a MATCH clause"
+      case Merge      => "a MERGE clause"
+      case Create     => "a CREATE clause"
+      case Expression => "an expression"
     }
   }
 }
@@ -79,11 +88,48 @@ sealed trait AnonymousPatternPart extends PatternPart {
   override def allVariables: Set[LogicalVariable] = element.allVariables
 }
 
-case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
+object PatternPart {
+
+  def apply(element: PatternElement): PatternPartWithSelector =
+    PatternPartWithSelector(element, AllPaths()(element.position))
+
+  sealed trait Selector extends ASTNode {
+    def prettified: String
+  }
+
+  sealed trait CountedSelector {
+    val count: UnsignedDecimalIntegerLiteral
+  }
+
+  case class AnyPath(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends Selector
+      with CountedSelector {
+    override def prettified: String = s"ANY ${count.value} PATHS"
+  }
+
+  case class AllPaths()(val position: InputPosition) extends Selector {
+    override def prettified: String = "ALL PATHS"
+  }
+
+  case class AnyShortestPath(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends Selector
+      with CountedSelector {
+    override def prettified: String = s"SHORTEST ${count.value} PATHS"
+  }
+
+  case class AllShortestPaths()(val position: InputPosition) extends Selector {
+    override def prettified: String = "ALL SHORTEST PATHS"
+  }
+
+  case class ShortestGroups(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends Selector
+      with CountedSelector {
+    override def prettified: String = s"SHORTEST ${count.value} PATH GROUPS"
+  }
+}
+
+case class PatternPartWithSelector(element: PatternElement, selector: Selector) extends AnonymousPatternPart {
   override def position: InputPosition = element.position
 }
 
-case class ShortestPaths(element: PatternElement, single: Boolean)(val position: InputPosition)
+case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(val position: InputPosition)
     extends AnonymousPatternPart {
 
   val name: String =
@@ -152,13 +198,20 @@ case class VariableGrouping(singleton: LogicalVariable, group: LogicalVariable)(
 
 // We can currently parse these but not plan them. Therefore, we represent them in the AST but disallow them in semantic checking when concatenated and unwrap them otherwise.
 case class ParenthesizedPath(
-  part: PatternPart
+  part: PatternPart,
+  optionalWhereClause: Option[Expression]
 )(val position: InputPosition)
     extends PathFactor with PatternAtom {
 
   override def allVariables: Set[LogicalVariable] = part.element.allVariables
 
   override def variable: Option[LogicalVariable] = None
+}
+
+object ParenthesizedPath {
+
+  def apply(part: PatternPart)(position: InputPosition): ParenthesizedPath =
+    ParenthesizedPath(part, None)(position)
 }
 
 sealed abstract class PatternElement extends ASTNode {

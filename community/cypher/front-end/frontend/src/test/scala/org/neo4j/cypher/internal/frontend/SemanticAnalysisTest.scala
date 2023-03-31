@@ -233,7 +233,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       query,
       Set(
         SemanticError(
-          "Node pattern predicates are not allowed in CREATE, but only in MATCH clause or inside a pattern comprehension",
+          "Node pattern predicates are not allowed in a CREATE clause, but only in a MATCH clause or inside a pattern comprehension",
           InputPosition(23, 1, 24)
         )
       )
@@ -246,7 +246,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       query,
       Set(
         SemanticError(
-          "Node pattern predicates are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension",
+          "Node pattern predicates are not allowed in a MERGE clause, but only in a MATCH clause or inside a pattern comprehension",
           InputPosition(22, 1, 23)
         )
       )
@@ -272,7 +272,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       query,
       Set(
         SemanticError(
-          "Node pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension",
+          "Node pattern predicates are not allowed in an expression, but only in a MATCH clause or inside a pattern comprehension",
           InputPosition(45, 2, 31)
         )
       )
@@ -307,7 +307,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       query,
       Set(
         SemanticError(
-          "Node pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension",
+          "Node pattern predicates are not allowed in an expression, but only in a MATCH clause or inside a pattern comprehension",
           InputPosition(50, 3, 35)
         )
       )
@@ -345,7 +345,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       query,
       Set(
         SemanticError(
-          "Relationship pattern predicates are not allowed in CREATE, but only in MATCH clause or inside a pattern comprehension",
+          "Relationship pattern predicates are not allowed in a CREATE clause, but only in a MATCH clause or inside a pattern comprehension",
           InputPosition(40, 1, 41)
         )
       )
@@ -358,7 +358,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       query,
       Set(
         SemanticError(
-          "Relationship pattern predicates are not allowed in MERGE, but only in MATCH clause or inside a pattern comprehension",
+          "Relationship pattern predicates are not allowed in a MERGE clause, but only in a MATCH clause or inside a pattern comprehension",
           InputPosition(39, 1, 40)
         )
       )
@@ -384,7 +384,7 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
       query,
       Set(
         SemanticError(
-          "Relationship pattern predicates are not allowed in expression, but only in MATCH clause or inside a pattern comprehension",
+          "Relationship pattern predicates are not allowed in an expression, but only in a MATCH clause or inside a pattern comprehension",
           InputPosition(53, 2, 35)
         )
       )

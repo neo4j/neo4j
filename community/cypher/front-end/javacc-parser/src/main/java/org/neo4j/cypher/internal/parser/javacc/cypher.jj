@@ -128,7 +128,8 @@ public class Cypher<STATEMENT,
                     ENTITY_TYPE,
                     PATTERN_QUANTIFIER,
                     PATTERN_ATOM,
-                    DATABASE_NAME> {
+                    DATABASE_NAME,
+                    PATTERN_SELECTOR> {
 
     ASTExceptionFactory exceptionFactory;
     ASTFactory<STATEMENT,
@@ -174,7 +175,8 @@ public class Cypher<STATEMENT,
                ENTITY_TYPE,
                PATTERN_QUANTIFIER,
                PATTERN_ATOM,
-               DATABASE_NAME> astFactory;
+               DATABASE_NAME,
+               PATTERN_SELECTOR> astFactory;
     // to distinguish a bar that follows a label expression from the or-operator as part of a label expression, this stack keeps track of the current context
     Stack<ExpectBar> labelExpressionStack = new Stack<>();
 
@@ -221,7 +223,8 @@ public class Cypher<STATEMENT,
                              ENTITY_TYPE,
                              PATTERN_QUANTIFIER,
                              PATTERN_ATOM,
-                             DATABASE_NAME> astFactory,
+                             DATABASE_NAME,
+                             PATTERN_SELECTOR> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
         this(stream);
@@ -458,6 +461,8 @@ TOKEN [IGNORE_CASE] :
     | < GRANT: "GRANT">
     | < GRAPH: "GRAPH" >
     | < GRAPHS: "GRAPHS" >
+    | < GROUP: "GROUP" >
+    | < GROUPS: "GROUPS" >
     | < GT: ">" >
     | < HEADERS: "HEADERS" >
     | < HOME: "HOME">
@@ -512,6 +517,8 @@ TOKEN [IGNORE_CASE] :
     | < OUTPUT: "OUTPUT" >
     | < PASSWORD: "PASSWORD" >
     | < PASSWORDS: "PASSWORDS" >
+    | < PATH: "PATH" >
+    | < PATHS: "PATHS" >
     | < PERIODIC: "PERIODIC" >
     | < PLAINTEXT: "PLAINTEXT" >
     | < PLUS: "+" >
@@ -563,6 +570,7 @@ TOKEN [IGNORE_CASE] :
     | < SETTING: "SETTING" >
     | < SETTINGS: "SETTINGS" >
     | < SHORTEST_PATH: "shortestPath" >
+    | < SHORTEST: "SHORTEST" >
     | < SHOW: "SHOW">
     | < SINGLE: "SINGLE" >
     | < SKIPROWS: "SKIP" >
@@ -2235,8 +2243,8 @@ PATTERN AnonymousPattern() throws Exception:
 }
 {
     (
-        p=ShortestPathPattern()
-        | LOOKAHEAD( 3 ) p=EveryPathPattern()
+        LOOKAHEAD( 3 ) p=ShortestPathPattern()
+        | p=PathPatternWithSelector()
     )
     {
         return p;
@@ -2249,8 +2257,8 @@ PATTERN ShortestPathPattern() throws Exception:
     PATTERN p;
 }
 {
-    t=<SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.shortestPathPattern( pos( t ), p ); }
-    | t=<ALL_SHORTEST_PATH> <LPAREN> p=EveryPathPattern() <RPAREN> { return astFactory.allShortestPathsPattern( pos( t ), p ); }
+    t=<SHORTEST_PATH> <LPAREN> p=PathPattern() <RPAREN> { return astFactory.shortestPathPattern( pos( t ), p ); }
+    | t=<ALL_SHORTEST_PATH> <LPAREN> p=PathPattern() <RPAREN> { return astFactory.allShortestPathsPattern( pos( t ), p ); }
 }
 
 PATTERN_ATOM MaybeQuantifiedRelationshipPattern() throws Exception:
@@ -2272,36 +2280,80 @@ PATTERN_ATOM MaybeQuantifiedRelationshipPattern() throws Exception:
     }
 }
 
-PATTERN EveryPathPattern() throws Exception:
+PATTERN PathPatternWithSelector() throws Exception:
 {
-    NODE_PATTERN n;
-    PATTERN_ATOM r;
-    PATTERN_ATOM parenthesizedAtom;
     List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
-    labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR);
+    PATTERN_SELECTOR selector = null;
 }
 {
-      (
-            (
-                LOOKAHEAD(3)
-                (
-                    n=NodePattern() { patternAtoms.add( n ); }
-                    (
-                        LOOKAHEAD( 2 ) r=MaybeQuantifiedRelationshipPattern() { patternAtoms.add( r ); }
-                        n=NodePattern() { patternAtoms.add( n ); }
-                    )*
-                ) |
-                (
-                    parenthesizedAtom = ParenthesizedPath() { patternAtoms.add( parenthesizedAtom ); }
-                )
-            )+
-      ) {
-        labelExpressionStack.pop();
-        return astFactory.everyPathPattern( patternAtoms );
-      }
+    ( selector = Selector() )?
+    patternAtoms = PathPatternAtoms()
+    {
+    return astFactory.pathPattern( patternAtoms, selector );
+    }
 }
 
-PATTERN EveryPathPatternNonEmpty() throws Exception:
+PATTERN PathPattern() throws Exception:
+{
+    List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
+}
+{
+    patternAtoms = PathPatternAtoms()
+    {
+    return astFactory.pathPattern( patternAtoms, null );
+    }
+}
+
+List<PATTERN_ATOM> PathPatternAtoms() throws Exception:
+{
+     NODE_PATTERN n;
+     PATTERN_ATOM r;
+     PATTERN_ATOM parenthesizedAtom;
+     List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
+     labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR);
+}
+{
+     (
+         (
+             LOOKAHEAD(3)
+             (
+                 n=NodePattern() { patternAtoms.add( n ); }
+                 (
+                     LOOKAHEAD( 2 ) r=MaybeQuantifiedRelationshipPattern() { patternAtoms.add( r ); }
+                     n=NodePattern() { patternAtoms.add( n ); }
+                 )*
+             ) |
+             (
+                 parenthesizedAtom = ParenthesizedPath() { patternAtoms.add( parenthesizedAtom ); }
+             )
+         )+
+     )
+     {
+        labelExpressionStack.pop();
+         return patternAtoms;
+     }
+}
+
+PATTERN_SELECTOR Selector() throws Exception:
+{
+    Token k = null;
+    Token s;
+    PATTERN_SELECTOR selector = null;
+}
+{
+    ( LOOKAHEAD( 2 ) s = <ANY> <SHORTEST> (<PATH>|<PATHS>)? { selector = astFactory.anyShortestPathSelector(null, null, pos(s)); }
+    | LOOKAHEAD( 2 ) s = <ALL> <SHORTEST> (<PATH>|<PATHS>)? { selector = astFactory.allShortestPathSelector(pos(s)); }
+    | LOOKAHEAD( 2 ) s = <ANY> (k = <UNSIGNED_DECIMAL_INTEGER>)? (<PATH>|<PATHS>)? { selector = astFactory.anyPathSelector(k != null ? k.image : null, pos(k), pos(s)); }
+    | LOOKAHEAD( 2 ) s = <ALL> (<PATH>|<PATHS>)? { selector = astFactory.allPathSelector(pos(s)); }
+    | LOOKAHEAD( 4 ) s = <SHORTEST> (k = <UNSIGNED_DECIMAL_INTEGER>)? (<PATH>|<PATHS>)? (<GROUP>|<GROUPS>) { selector = astFactory.shortestGroupsSelector(k != null ? k.image : null, pos(k), pos(s)); }
+    | s = <SHORTEST> k = <UNSIGNED_DECIMAL_INTEGER> (<PATH>|<PATHS>)? { selector = astFactory.anyShortestPathSelector(k.image, pos(k), pos(s)); }
+    )
+    {
+        return selector;
+    }
+}
+
+PATTERN PathPatternNonEmpty() throws Exception:
 {
     NODE_PATTERN n;
     REL_PATTERN r;
@@ -2316,7 +2368,7 @@ PATTERN EveryPathPatternNonEmpty() throws Exception:
       )+
       {
         labelExpressionStack.pop();
-        return astFactory.everyPathPattern( patternAtoms );
+        return astFactory.pathPattern( patternAtoms, null );
       }
 }
 
@@ -2443,10 +2495,10 @@ NODE_PATTERN NodePatternComplex(Token t) throws Exception:
             ( properties=Properties() )?
             ( <WHERE> predicate=Expression() )?
        | LOOKAHEAD(LabelExpression(astFactory.nodeType()) Properties())
-        labelExpression = LabelExpression(astFactory.nodeType())
+         labelExpression = LabelExpression(astFactory.nodeType())
             properties=Properties()
             ( <WHERE> predicate=Expression() )?
-        |labelExpression = LabelExpression(astFactory.nodeType())
+       | labelExpression = LabelExpression(astFactory.nodeType())
        )
     )
     <RPAREN>
@@ -3262,7 +3314,7 @@ EXPRESSION PatternComprehension() throws Exception:
     EXPRESSION projection = null;
 }
 {
-    t=<LBRACKET> ( v=Variable() <EQ> )? {relationshipPatternPosition = token;} p=EveryPathPatternNonEmpty()
+    t=<LBRACKET> ( v=Variable() <EQ> )? {relationshipPatternPosition = token;} p=PathPatternNonEmpty()
     ( <WHERE> {
         labelExpressionStack.push(ExpectBar.EXPECT_BAR);
       }
@@ -3279,7 +3331,7 @@ EXPRESSION PatternComprehension() throws Exception:
 void PatternComprehensionPrefix() throws Exception:
 {}
 {
-    <LBRACKET> ( Variable() <EQ> )? EveryPathPatternNonEmpty() ( <WHERE> | <BAR> )
+    <LBRACKET> ( Variable() <EQ> )? PathPatternNonEmpty() ( <WHERE> | <BAR> )
 }
 
 EXPRESSION ReduceExpression() throws Exception:
@@ -3366,7 +3418,7 @@ EXPRESSION PatternExpression() throws Exception:
 }
 {
     { t = token; }
-    p=EveryPathPatternNonEmpty()
+    p=PathPatternNonEmpty()
     {
         return astFactory.patternExpression( pos( t.next ), p );
     }
@@ -6527,6 +6579,8 @@ Token UnescapedSymbolicNameString() :
         | t=<GRANT>
         | t=<GRAPH>
         | t=<GRAPHS>
+        | t=<GROUP>
+        | t=<GROUPS>
         | t=<HEADERS>
         | t=<HOME>
         | t=<IF>
@@ -6568,6 +6622,8 @@ Token UnescapedSymbolicNameString() :
         | t=<OUTPUT>
         | t=<PASSWORD>
         | t=<PASSWORDS>
+        | t=<PATH>
+        | t=<PATHS>
         | t=<PERIODIC>
         | t=<PLAINTEXT>
         | t=<POINT>
@@ -6611,6 +6667,7 @@ Token UnescapedSymbolicNameString() :
         | t=<SET>
         | t=<SETTING>
         | t=<SETTINGS>
+        | t=<SHORTEST>
         | t=<SHORTEST_PATH>
         | t=<SHOW>
         | t=<SINGLE>

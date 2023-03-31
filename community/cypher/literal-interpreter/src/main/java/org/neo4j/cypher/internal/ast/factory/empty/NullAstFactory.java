@@ -41,50 +41,52 @@ import org.neo4j.cypher.internal.ast.factory.SimpleEither;
  */
 public class NullAstFactory
         implements ASTFactory<
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL,
-                NULL> {
+                NULL, // STATEMENT,
+                NULL, // QUERY extends STATEMENT,
+                NULL, // CLAUSE,
+                NULL, // RETURN_CLAUSE extends CLAUSE,
+                NULL, // RETURN_ITEM,
+                NULL, // RETURN_ITEMS,
+                NULL, // ORDER_ITEM,
+                NULL, // PATTERN,
+                NULL, // NODE_PATTERN extends PATTERN_ATOM,
+                NULL, // REL_PATTERN extends PATTERN_ATOM,
+                NULL, // PATH_LENGTH,
+                NULL, // SET_CLAUSE extends CLAUSE,
+                NULL, // SET_ITEM,
+                NULL, // REMOVE_ITEM,
+                NULL, // CALL_RESULT_ITEM,
+                NULL, // HINT,
+                NULL, // EXPRESSION,
+                NULL, // LABEL_EXPRESSION,
+                NULL, // PARAMETER extends EXPRESSION,
+                NULL, // VARIABLE extends EXPRESSION,
+                NULL, // PROPERTY extends EXPRESSION,
+                NULL, // MAP_PROJECTION_ITEM,
+                NULL, // USE_GRAPH extends CLAUSE,
+                NULL, // STATEMENT_WITH_GRAPH extends STATEMENT,
+                NULL, // ADMINISTRATION_COMMAND extends STATEMENT_WITH_GRAPH,
+                NULL, // SCHEMA_COMMAND extends STATEMENT_WITH_GRAPH,
+                NULL, // YIELD extends CLAUSE,
+                NULL, // WHERE,
+                NULL, // DATABASE_SCOPE,
+                NULL, // WAIT_CLAUSE,
+                NULL, // ADMINISTRATION_ACTION,
+                NULL, // GRAPH_SCOPE,
+                NULL, // PRIVILEGE_TYPE,
+                NULL, // PRIVILEGE_RESOURCE,
+                NULL, // PRIVILEGE_QUALIFIER,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_BATCH_PARAMETERS,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_ERROR_PARAMETERS,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_REPORT_PARAMETERS,
+                NULL, // SUBQUERY_IN_TRANSACTIONS_PARAMETERS,
+                NULL, // POS,
+                NULL, // ENTITY_TYPE,
+                NULL, // PATH_PATTERN_LENGTH,
+                NULL, // PATTERN_ATOM
+                NULL, // DATABASE NAME
+                NULL // PATTERN_SELECTOR
+        > {
 
     @Override
     public NULL newVariable(NULL p, String name) {
@@ -661,7 +663,32 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL everyPathPattern(List<NULL> atoms) {
+    public NULL pathPattern(List<NULL> atoms, NULL selector) {
+        return null;
+    }
+
+    @Override
+    public NULL anyPathSelector(String count, NULL pCount, NULL position) {
+        return null;
+    }
+
+    @Override
+    public NULL allPathSelector(NULL position) {
+        return null;
+    }
+
+    @Override
+    public NULL anyShortestPathSelector(String count, NULL pCount, NULL position) {
+        return null;
+    }
+
+    @Override
+    public NULL allShortestPathSelector(NULL position) {
+        return null;
+    }
+
+    @Override
+    public NULL shortestGroupsSelector(String count, NULL countPosition, NULL position) {
         return null;
     }
 

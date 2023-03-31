@@ -23,13 +23,13 @@ import org.neo4j.cypher.internal.compiler.ExhaustiveShortestPathForbiddenNotific
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractShortestPathPredicates
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Length
@@ -110,7 +110,7 @@ case object planShortestPaths {
 
   private def createPathExpression(pattern: PatternElement): PathExpression = {
     val pos = pattern.position
-    val path = EveryPath(pattern)
+    val path = PatternPart(pattern)
     val step: PathStep = projectNamedPaths.patternPartPathExpression(path)
     PathExpression(step)(pos)
   }

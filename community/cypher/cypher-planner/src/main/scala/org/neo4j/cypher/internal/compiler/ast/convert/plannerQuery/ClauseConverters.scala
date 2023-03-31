@@ -57,7 +57,6 @@ import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.In
@@ -69,6 +68,7 @@ import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.PatternElement
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -113,7 +113,6 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters
 import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
@@ -359,14 +358,14 @@ object ClauseConverters {
 
     clause.pattern.patternParts.foreach {
       // CREATE (n :L1:L2 {prop: 42})
-      case EveryPath(NodePattern(Some(id), labelExpression, props, None)) =>
+      case PatternPartWithSelector(NodePattern(Some(id), labelExpression, props, None), _) =>
         val labels = getLabelNameSet(labelExpression)
         nodes += CreateNode(id.name, labels, props)
         seenPatternNodes += id.name
         ()
 
       // CREATE (n)-[r: R]->(m)
-      case EveryPath(pattern: RelationshipChain) =>
+      case PatternPartWithSelector(pattern: RelationshipChain, _) =>
         val (currentNodes, currentRelationships) = allCreatePatterns(pattern)
 
         // remove duplicates from loops, (a:L)-[:ER1]->(a)
@@ -639,7 +638,7 @@ object ClauseConverters {
 
     clause.pattern match {
       // MERGE (n :L1:L2 {prop: 42})
-      case EveryPath(NodePattern(Some(id), labelExpression, props, _)) =>
+      case PatternPartWithSelector(NodePattern(Some(id), labelExpression, props, _), _) =>
         val labels = getLabelNameSet(labelExpression)
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
@@ -667,7 +666,7 @@ object ClauseConverters {
           .withTail(RegularSinglePlannerQuery())
 
       // MERGE (n)-[r: R]->(m)
-      case EveryPath(pattern: RelationshipChain) =>
+      case PatternPartWithSelector(pattern: RelationshipChain, _) =>
         val (nodes, rels) = allCreatePatterns(pattern)
         // remove duplicates from loops, (a:L)-[:ER1]->(a)
         val dedupedNodes = dedup(nodes)

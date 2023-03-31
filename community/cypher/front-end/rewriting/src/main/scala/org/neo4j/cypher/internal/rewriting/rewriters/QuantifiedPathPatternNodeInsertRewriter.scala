@@ -17,10 +17,10 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathFactor
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
@@ -62,14 +62,14 @@ case object QuantifiedPathPatternNodeInsertRewriter extends StepSequencer.Step w
     )
 
   val instance: Rewriter = topDown(Rewriter.lift {
-    // A `PatternElement` occurs only in `ShortestPaths` and `EveryPath`
+    // A `PatternElement` occurs only in `ShortestPaths` and `PatternPart`
     // However, `ShortestPaths` may only contain `RelationshipChain`s.
-    case EveryPath(p @ PathConcatenation(factors)) =>
+    case PatternPartWithSelector(p @ PathConcatenation(factors), selector) =>
       val newFactors = padQuantifiedPathPatterns(factors)
-      EveryPath(PathConcatenation(newFactors)(p.position))
+      PatternPartWithSelector(PathConcatenation(newFactors)(p.position), selector)
 
-    case EveryPath(q: QuantifiedPath) =>
-      EveryPath(PathConcatenation(Seq(filler, q, filler))(q.position))
+    case PatternPartWithSelector(q: QuantifiedPath, selector) =>
+      PatternPartWithSelector(PathConcatenation(Seq(filler, q, filler))(q.position), selector)
   })
 
   private def padQuantifiedPathPatterns(factors: Seq[PathFactor]): Seq[PathFactor] = {

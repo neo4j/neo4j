@@ -31,7 +31,7 @@ import org.neo4j.exceptions.SyntaxException
 
 object PatternConverters {
 
-  implicit class ShortestPathsConverter(val part: internal.expressions.ShortestPaths) extends AnyVal {
+  implicit class ShortestPathsConverter(val part: internal.expressions.ShortestPathsPatternPart) extends AnyVal {
 
     def asLegacyPatterns(
       id: Id,

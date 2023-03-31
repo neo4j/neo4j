@@ -17,7 +17,6 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory.SyntaxException
 import org.neo4j.cypher.internal.util.test_helpers.TestName
 
 abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: Statement)
@@ -27,10 +26,10 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
   override def defaultQuery: String = s"$statement $testName"
 
   private val labelExprErrorMessage =
-    s"Label expressions in patterns are not allowed in $statement, but only in MATCH clause and in expressions"
+    s"Label expressions in patterns are not allowed in a $statement clause, but only in a MATCH clause and in expressions"
 
   private val isErrorMessage =
-    s"The IS keyword in patterns is not allowed in $statement, but only in MATCH clause and in expressions"
+    s"The IS keyword in patterns is not allowed in a $statement clause, but only in a MATCH clause and in expressions"
 
   test("(n:A:B)") {
     runSemanticAnalysis().errors shouldBe empty
@@ -169,7 +168,7 @@ abstract class LabelExpressionSemanticAnalysisTestSuiteWithStatement(statement: 
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
       isErrorMessage,
       s"A single plain relationship type like `:Rel1` must be specified for $statement",
-      s"Relationship type expressions in patterns are not allowed in $statement, but only in MATCH clause"
+      s"Relationship type expressions in patterns are not allowed in a $statement clause, but only in a MATCH clause"
     )
   }
 
@@ -337,13 +336,13 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   test("MATCH (a), (b) WITH shortestPath((a:A|B)-[:REL*]->(b:B|C)) AS p RETURN length(p) AS result") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "Label expressions in shortestPath are not allowed in expression"
+      "Label expressions in shortestPath are not allowed in an expression"
     )
   }
 
   test("MATCH (a), (b) WITH shortestPath((a IS A)-[:REL*]->(b:B)) AS p RETURN length(p) AS result") {
     runSemanticAnalysis().errorMessages shouldEqual Seq(
-      "The IS keyword in shortestPath is not allowed in expression"
+      "The IS keyword in shortestPath is not allowed in an expression"
     )
   }
 
@@ -374,21 +373,21 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   test("MATCH (n), (m) WITH shortestPath((n)-[:!A&!B*]->(m)) AS p RETURN length(p) AS result") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
       "Variable length relationships must not use relationship type expressions.",
-      "Relationship type expressions in patterns are not allowed in expression, but only in MATCH clause",
-      "Relationship type expressions in shortestPath are not allowed in expression"
+      "Relationship type expressions in patterns are not allowed in an expression, but only in a MATCH clause",
+      "Relationship type expressions in shortestPath are not allowed in an expression"
     )
   }
 
   test("MATCH (n), (m) WITH shortestPath((n)-[IS A*]->(m)) AS p RETURN length(p) AS result") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
-      "The IS keyword in shortestPath is not allowed in expression"
+      "The IS keyword in shortestPath is not allowed in an expression"
     )
   }
 
   test("MATCH (n), (m) WITH (n)-[:!A&!B*]->(m) AS p RETURN p AS result") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
       "Variable length relationships must not use relationship type expressions.",
-      "Relationship type expressions in patterns are not allowed in expression, but only in MATCH clause"
+      "Relationship type expressions in patterns are not allowed in an expression, but only in a MATCH clause"
     )
   }
 
@@ -399,8 +398,8 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   test("MATCH (n), (m) WHERE length(shortestPath((n)-[:!A&!B*]->(m))) > 0 RETURN n, m AS result") {
     runSemanticAnalysis().errorMessages.toSet shouldEqual Set(
       "Variable length relationships must not use relationship type expressions.",
-      "Relationship type expressions in patterns are not allowed in expression, but only in MATCH clause",
-      "Relationship type expressions in shortestPath are not allowed in expression"
+      "Relationship type expressions in patterns are not allowed in an expression, but only in a MATCH clause",
+      "Relationship type expressions in shortestPath are not allowed in an expression"
     )
   }
 
@@ -797,11 +796,10 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH p = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN p") {
-    // Shortest paths by keywords are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(runSemanticAnalysis()).getMessage should include(
-      "Invalid input 'SHORTEST': expected \"allShortestPaths\" or \"shortestPath\""
-    )
-    // runSemanticAnalysis().errors shouldBe empty
+    runSemanticAnalysisWithSemanticFeatures(
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.GpmShortestPath
+    ).errors shouldBe empty
   }
 
   // GPM and non-GPM in separate statements
@@ -814,11 +812,10 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH p = shortestPath(()-[*1..5]-()) MATCH q = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN nodes(p), nodes(q)") {
-    // Shortest paths by keywords are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(runSemanticAnalysis()).getMessage should include(
-      "Invalid input 'SHORTEST': expected \"allShortestPaths\" or \"shortestPath\""
-    )
-    // runSemanticAnalysis().errors shouldBe empty
+    runSemanticAnalysisWithSemanticFeatures(
+      SemanticFeature.QuantifiedPathPatterns,
+      SemanticFeature.GpmShortestPath
+    ).errors shouldBe empty
   }
 
   test("""MATCH (m:A:B:C)-[]->()
@@ -841,11 +838,9 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH p = SHORTEST 2 PATHS (m)-[*0..5]-(n) RETURN p") {
-    // Shortest paths by keywords are not implemented yet. Once this is the case, please change to the test below
-    the[SyntaxException].thrownBy(runSemanticAnalysis()).getMessage should include(
-      "Invalid input 'SHORTEST': expected \"allShortestPaths\" or \"shortestPath\""
-    )
-    // runSemanticAnalysis().errors shouldBe empty
+    runSemanticAnalysisWithSemanticFeatures(
+      SemanticFeature.GpmShortestPath
+    ).errors shouldBe empty
   }
 
   // Mixed label expression in same statement

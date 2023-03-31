@@ -37,7 +37,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ScopeExpression
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SymbolicName
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
@@ -167,7 +167,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
             }
           )
 
-      case _: ShortestPaths =>
+      case _: ShortestPathsPatternPart =>
         acc => SkipChildren(acc)
 
       case RelationshipChain(_, RelationshipPattern(optIdent, labelExpression, None, _, _, _), _) =>

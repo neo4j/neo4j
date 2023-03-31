@@ -38,7 +38,7 @@ import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.ColonDisjunction
@@ -101,7 +101,10 @@ object Deprecations {
           Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
         )
 
-      case ShortestPaths(RelationshipChain(_: NodePattern, relPat @ RelationshipPattern(_, _, None, _, _, _), _), _) =>
+      case ShortestPathsPatternPart(
+          RelationshipChain(_: NodePattern, relPat @ RelationshipPattern(_, _, None, _, _, _), _),
+          _
+        ) =>
         Deprecation(
           None,
           Some(FixedLengthRelationshipInShortestPath(relPat.position))

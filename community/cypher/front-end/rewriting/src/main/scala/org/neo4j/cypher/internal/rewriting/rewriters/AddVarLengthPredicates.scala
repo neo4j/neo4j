@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ScopeExpression
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.VarLengthLowerBound
 import org.neo4j.cypher.internal.expressions.VarLengthUpperBound
 import org.neo4j.cypher.internal.expressions.Variable
@@ -53,7 +53,7 @@ case object AddVarLengthPredicates extends AddRelationshipPredicates {
       case _: ScopeExpression =>
         acc => SkipChildren(acc)
 
-      case _: ShortestPaths =>
+      case _: ShortestPathsPatternPart =>
         acc => SkipChildren(acc)
 
       case RelationshipChain(_, rel @ RelationshipPattern(_, _, Some(_), _, _, _), _) =>

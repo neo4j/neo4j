@@ -22,11 +22,11 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -36,7 +36,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
     val ast = SingleQuery(Seq(
       Match(
         optional = false,
-        Pattern(Seq(EveryPath(NodePattern(Some(varFor("n")), None, None, None)(pos))))(pos),
+        Pattern(Seq(PatternPart(NodePattern(Some(varFor("n")), None, None, None)(pos))))(pos),
         Seq.empty,
         None
       )(pos),
@@ -57,7 +57,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
 
   test("unhappy when we have a named path") {
     val namedPattern: NamedPatternPart =
-      NamedPatternPart(varFor("p"), EveryPath(NodePattern(Some(varFor("n")), None, None, None)(pos)))(pos)
+      NamedPatternPart(varFor("p"), PatternPart(NodePattern(Some(varFor("n")), None, None, None)(pos)))(pos)
     val ast = SingleQuery(Seq(
       Match(optional = false, Pattern(Seq(namedPattern))(pos), Seq.empty, None)(pos),
       Return(
@@ -81,7 +81,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
         optional = false,
         Pattern(Seq(NamedPatternPart(
           varFor("p"),
-          ShortestPaths(NodePattern(Some(varFor("n")), None, None, None)(pos), single = true)(pos)
+          ShortestPathsPatternPart(NodePattern(Some(varFor("n")), None, None, None)(pos), single = true)(pos)
         )(pos)))(pos),
         Seq.empty,
         None

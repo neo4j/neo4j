@@ -464,19 +464,19 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           when(x.pattern.element.folder.treeExists {
             case node: NodePattern => node.labelExpression.exists(_.containsGpmSpecificLabelExpression)
           }) {
-            error("Label expressions in shortestPath are not allowed in expression", x.position)
+            error("Label expressions in shortestPath are not allowed in an expression", x.position)
           } chain
           when(x.pattern.element.folder.treeExists {
             case relationship: RelationshipPattern =>
               relationship.labelExpression.exists(_.containsGpmSpecificRelTypeExpression)
           }) {
-            error("Relationship type expressions in shortestPath are not allowed in expression", x.position)
+            error("Relationship type expressions in shortestPath are not allowed in an expression", x.position)
           } chain
           when(x.pattern.element.folder.treeExists {
             case node: NodePattern                 => node.labelExpression.exists(_.containsIs)
             case relationship: RelationshipPattern => relationship.labelExpression.exists(_.containsIs)
           }) {
-            error("The IS keyword in shortestPath is not allowed in expression", x.position)
+            error("The IS keyword in shortestPath is not allowed in an expression", x.position)
           } chain
           specifyType(if (x.pattern.single) CTPath else CTList(CTPath), x)
 

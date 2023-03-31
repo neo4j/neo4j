@@ -343,7 +343,6 @@ import org.neo4j.cypher.internal.expressions.Divide
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Equals
-import org.neo4j.cypher.internal.expressions.EveryPath
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ExtractScope
@@ -394,6 +393,13 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
+import org.neo4j.cypher.internal.expressions.PatternPart.AllShortestPaths
+import org.neo4j.cypher.internal.expressions.PatternPart.AnyPath
+import org.neo4j.cypher.internal.expressions.PatternPart.AnyShortestPath
+import org.neo4j.cypher.internal.expressions.PatternPart.Selector
+import org.neo4j.cypher.internal.expressions.PatternPart.ShortestGroups
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.ProcedureName
@@ -416,7 +422,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
-import org.neo4j.cypher.internal.expressions.ShortestPaths
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedHexIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SignedIntegerLiteral
@@ -851,10 +857,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     pattern <- _relationshipsPattern
   } yield PatternExpression(pattern)(None, None)
 
-  def _shortestPaths: Gen[ShortestPaths] = for {
+  def _shortestPaths: Gen[ShortestPathsPatternPart] = for {
     element <- _patternElement
     single <- boolean
-  } yield ShortestPaths(element, single)(pos)
+  } yield ShortestPathsPatternPart(element, single)(pos)
 
   def _shortestPathExpr: Gen[ShortestPathExpression] = for {
     pattern <- _shortestPaths
@@ -1035,7 +1041,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     primary <- _pathFactor
     quantifier <- _quantifier
     where <- option(_expression)
-  } yield QuantifiedPath(EveryPath(primary), quantifier, where)(pos)
+  } yield QuantifiedPath(PatternPart(primary), quantifier, where)(pos)
 
   def _pathFactor: Gen[PathFactor] = oneOf(
     lzy(_quantifiedPath),
@@ -1051,12 +1057,25 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     lzy(_pathConcatenation)
   )
 
+  def _selector: Gen[Selector] = for {
+    count <- _unsignedDecIntLit
+    selector <- oneOf(
+      lzy(AnyPath(count)(pos)),
+      lzy(AllPaths()(pos)),
+      lzy(AnyShortestPath(count)(pos)),
+      lzy(AllShortestPaths()(pos)),
+      lzy(ShortestGroups(count)(pos))
+    )
+  } yield selector
+
   def _anonPatternPart: Gen[AnonymousPatternPart] = for {
     element <- _patternElement
+    selector <- _selector
     single <- boolean
     part <- oneOf(
-      EveryPath(element),
-      ShortestPaths(element, single)(pos)
+      PatternPart(element),
+      ShortestPathsPatternPart(element, single)(pos),
+      PatternPartWithSelector(element, selector)
     )
   } yield part
 
