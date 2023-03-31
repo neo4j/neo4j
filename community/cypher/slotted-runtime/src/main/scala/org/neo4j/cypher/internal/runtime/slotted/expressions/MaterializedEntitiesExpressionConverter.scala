@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.expressions.functions.Function
 import org.neo4j.cypher.internal.expressions.functions.Keys
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
+import org.neo4j.cypher.internal.physicalplanning
+import org.neo4j.cypher.internal.physicalplanning.ast.PropertyProjectionEntry
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.IsNoValue
@@ -53,6 +55,7 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.MapValue
+import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
 
@@ -70,6 +73,8 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
       case e: expressions.HasLabelsOrTypes => hasLabelsOrTypes(id, e, self)
       case e: expressions.DesugaredMapProjection =>
         Some(MaterializedDesugaredMapExpression(self.toCommandExpression(id, e.variable)))
+      case e: physicalplanning.ast.PropertyProjection =>
+        Some(MaterializedPropertyProjectionExpression(self.toCommandExpression(id, e.map), e.entries))
       case e: expressions.FunctionInvocation => toCommandExpression(id, e.function, e, self)
       case _                                 => None
     }
@@ -344,4 +349,33 @@ case class MaterializedEntityTypeFunction(relExpression: Expression) extends Nul
   override def arguments: Seq[Expression] = Seq(relExpression)
 
   override def children: Seq[AstNode[_]] = Seq(relExpression)
+}
+
+case class MaterializedPropertyProjectionExpression(mapExpression: Expression, entries: Seq[PropertyProjectionEntry])
+    extends NullInNullOutExpression(mapExpression) {
+
+  override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): MapValue = {
+    val allProps = value match {
+      case n: NodeValue         => n.properties()
+      case r: RelationshipValue => r.properties()
+      case _ =>
+        CypherFunctions.properties(
+          value,
+          state.query,
+          state.cursors.nodeCursor,
+          state.cursors.relationshipScanCursor,
+          state.cursors.propertyCursor
+        )
+    }
+    val mapBuilder = new MapValueBuilder()
+    entries.foreach(e => mapBuilder.add(e.key, allProps.get(e.propertyKeyName.name)))
+    mapBuilder.build()
+  }
+
+  override def rewrite(f: Expression => Expression): Expression =
+    f(MaterializedPropertyProjectionExpression(mapExpression.rewrite(f), entries))
+
+  override def arguments: Seq[Expression] = Seq(mapExpression)
+
+  override def children: Seq[AstNode[_]] = Seq(mapExpression)
 }

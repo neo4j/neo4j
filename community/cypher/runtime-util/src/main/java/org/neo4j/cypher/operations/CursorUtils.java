@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.newapi.Cursors;
 import org.neo4j.storageengine.api.PropertySelection;
+import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.PointValue;
@@ -562,6 +563,7 @@ public final class CursorUtils {
         }
     }
 
+    @CalledFromGeneratedCode
     public static AnyValue[] propertiesGet(
             String[] keys,
             AnyValue container,
