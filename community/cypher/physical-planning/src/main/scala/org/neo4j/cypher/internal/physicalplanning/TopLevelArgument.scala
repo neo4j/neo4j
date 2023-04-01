@@ -27,17 +27,19 @@ package org.neo4j.cypher.internal.physicalplanning
   */
 object TopLevelArgument {
 
-  class TopLevelArgumentException(argument: Long) extends RuntimeException(
+  private class TopLevelArgumentException(argument: Long) extends RuntimeException(
         "The top level argument has to be 0, but got " + argument
       )
 
   def assertTopLevelArgument(argument: Long): Unit = {
-    if (argument != VALUE) {
+    if (argument != _VALUE) {
       throw new TopLevelArgumentException(argument)
     }
   }
 
-  val VALUE: Long = 0
-  val SLOT_OFFSET: Int = -1
-  val UNDEFINED_SLOT_OFFSET: Int = -2
+  final private[this] val _VALUE: Long = 0
+
+  final val VALUE: Long = _VALUE
+  final val SLOT_OFFSET: Int = -1
+  final val UNDEFINED_SLOT_OFFSET: Int = -2
 }
