@@ -19,10 +19,11 @@
  */
 package org.neo4j.internal.id;
 
+import static org.neo4j.internal.helpers.Numbers.ceilingPowerOfTwo;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.IDS_PER_ENTRY;
+import static org.neo4j.util.Preconditions.requirePowerOfTwo;
 
 import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.util.Preconditions;
 
 /**
  * Defines which slot sizes for IDs to use, e.g. a slot size of 4 contains IDs where the ID + the 3 next IDs are available.
@@ -49,15 +50,11 @@ public interface IdSlotDistribution {
             @Override
             public Slot[] slots(int capacity) {
                 Slot[] slots = new Slot[slotSizes.length];
-                int capacityPerSlot = nearestHigherPowerOfTwo(capacity / slotSizes.length);
+                int capacityPerSlot = ceilingPowerOfTwo(capacity / slotSizes.length);
                 for (int i = 0; i < slotSizes.length; i++) {
                     slots[i] = new Slot(capacityPerSlot, slotSizes[i]);
                 }
                 return slots;
-            }
-
-            private int nearestHigherPowerOfTwo(int value) {
-                return Integer.bitCount(value) == 1 ? value : Integer.highestOneBit(value) << 1;
             }
         };
     }
@@ -79,25 +76,8 @@ public interface IdSlotDistribution {
         };
     }
 
-    static IdSlotDistribution allWithSameCapacity(int... slotSizes) {
-        return allWithSameCapacity(IDS_PER_ENTRY, slotSizes);
-    }
-
-    static IdSlotDistribution allWithSameCapacity(int idsPerEntry, int... slotSizes) {
-        return new BaseIdSlotDistribution(idsPerEntry, slotSizes) {
-            @Override
-            public Slot[] slots(int capacity) {
-                Slot[] slots = new Slot[slotSizes.length];
-                for (int i = 0; i < slotSizes.length; i++) {
-                    slots[i] = new Slot(capacity, slotSizes[i]);
-                }
-                return slots;
-            }
-        };
-    }
-
     static int[] powerTwoSlotSizesDownwards(int highSlotSize) {
-        Preconditions.checkArgument(Integer.bitCount(highSlotSize) == 1, "Requires a power of two");
+        requirePowerOfTwo(highSlotSize);
         int[] slots = new int[Integer.numberOfTrailingZeros(highSlotSize) + 1];
         for (int i = 0; i < slots.length; i++) {
             slots[i] = 1 << i;

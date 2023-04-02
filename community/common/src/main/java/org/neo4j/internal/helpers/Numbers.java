@@ -62,7 +62,7 @@ public final class Numbers {
         requirePositive(value);
         if (value > MAX_POWER_OF_TWO_INTEGER) {
             throw new IllegalArgumentException(
-                    "Provided value " + value + " is larget than the largest power of two long value.");
+                    "Provided value " + value + " is larger than the largest power of two long value.");
         }
         return 1 << -Integer.numberOfLeadingZeros(value - 1);
     }
