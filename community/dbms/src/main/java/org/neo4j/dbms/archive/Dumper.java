@@ -52,6 +52,7 @@ import org.neo4j.logging.InternalLogProvider;
 
 public class Dumper {
     public static final String DUMP_EXTENSION = ".dump";
+    public static final String TAR_EXTENSION = ".tar";
     private final List<ArchiveOperation> operations;
     private final ArchiveProgressPrinter progressPrinter;
 

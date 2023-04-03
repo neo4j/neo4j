@@ -26,6 +26,10 @@ import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.CRC32;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.ZipException;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.neo4j.cli.AbstractAdminCommand;
 import org.neo4j.cli.CommandFailedException;
 import org.neo4j.cli.Converters;
@@ -120,6 +124,34 @@ public class UploadCommand extends AbstractAdminCommand {
             throw new CommandFailedException("Unable to check size of database dump.", e);
         }
         return Long.parseLong(metaData.byteCount());
+    }
+
+    public long readSizeFromTarMetaData(ExecutionContext ctx, Path tar, String dbName) {
+        final var fileSystem = ctx.fs();
+
+        try (TarArchiveInputStream tais = new TarArchiveInputStream(maybeGzipped(tar, fileSystem))) {
+            Loader.DumpMetaData metaData;
+            TarArchiveEntry entry;
+            while ((entry = tais.getNextTarEntry()) != null) {
+                if (entry.getName().endsWith(dbName + ".dump")) {
+
+                    metaData = new Loader(fileSystem, System.out).getMetaData(() -> tais);
+                    return Long.parseLong(metaData.byteCount());
+                }
+            }
+            throw new CommandFailedException(
+                    String.format("TAR file %s does not contain dump for  database %s", tar, dbName));
+        } catch (IOException e) {
+            throw new CommandFailedException("Unable to check size of tar dump database.", e);
+        }
+    }
+
+    private InputStream maybeGzipped(Path tar, final FileSystemAbstraction fileSystem) throws IOException {
+        try {
+            return new GZIPInputStream(fileSystem.openAsInputStream(tar));
+        } catch (ZipException e) {
+            return fileSystem.openAsInputStream(tar);
+        }
     }
 
     public static String sizeText(long size) {
@@ -302,13 +334,23 @@ public class UploadCommand extends AbstractAdminCommand {
         }
         Path dumpFile = dump.resolve(database + Dumper.DUMP_EXTENSION);
         if (!ctx.fs().fileExists(dumpFile)) {
-            throw new CommandFailedException(format("Dump file '%s' does not exist", dumpFile.toAbsolutePath()));
+            Path tarFile = dump.resolve(database + Dumper.TAR_EXTENSION);
+            if (!ctx.fs().fileExists(tarFile)) {
+                throw new CommandFailedException(format(
+                        "Dump files '%s' or '%s' do not exist", dumpFile.toAbsolutePath(), tarFile.toAbsolutePath()));
+            }
+            dumpFile = tarFile;
         }
-        return new DumpUploader(new Source(ctx.fs(), dumpFile, dumpSize(dumpFile)));
+        return new DumpUploader(new Source(ctx.fs(), dumpFile, dumpSize(dumpFile, database)));
     }
 
-    private long dumpSize(Path dump) {
-        long sizeInBytes = readSizeFromDumpMetaData(ctx, dump);
+    private long dumpSize(Path dump, String database) {
+        long sizeInBytes;
+        if (dump.getFileName().toString().endsWith(".dump")) {
+            sizeInBytes = readSizeFromDumpMetaData(ctx, dump);
+        } else {
+            sizeInBytes = readSizeFromTarMetaData(ctx, dump, database);
+        }
         verbose("Determined DumpSize=%d bytes from dump at %s\n", sizeInBytes, dump);
         return sizeInBytes;
     }
