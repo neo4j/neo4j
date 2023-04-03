@@ -31,6 +31,7 @@ import static org.neo4j.index.internal.gbptree.TreeNodeUtil.keyCount;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree.Monitor;
@@ -47,6 +48,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
     private final Monitor monitor;
     private final Consumer<Throwable> exceptionMessageAppender;
     private final LongSupplier generationSupplier;
+    private final BooleanSupplier mustEagerlyFlushSupplier;
     private final StructurePropagation<K> structurePropagation;
     private final PagedFile pagedFile;
     private final TreeWriterCoordination coordination;
@@ -78,7 +80,8 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
             FreeListIdProvider freeList,
             Monitor monitor,
             Consumer<Throwable> exceptionMessageAppender,
-            LongSupplier generationSupplier) {
+            LongSupplier generationSupplier,
+            BooleanSupplier mustEagerlyFlushSupplier) {
         this.layout = layout;
         this.pagedFile = pagedFile;
         this.coordination = coordination;
@@ -93,6 +96,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         this.monitor = monitor;
         this.exceptionMessageAppender = exceptionMessageAppender;
         this.generationSupplier = generationSupplier;
+        this.mustEagerlyFlushSupplier = mustEagerlyFlushSupplier;
     }
 
     /**
@@ -125,7 +129,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
         boolean success = false;
         try {
             writerLockAcquired = true;
-            cursor = pagedFile.io(0L /*Ignored*/, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext);
+            cursor = pagedFile.io(0L /*Ignored*/, writeCursorFlags(), cursorContext);
             coordination.initialize(cursor);
             this.cursorContext = cursorContext;
             long generation = generationSupplier.getAsLong();
@@ -142,6 +146,14 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                 close();
             }
         }
+    }
+
+    private int writeCursorFlags() {
+        var flags = PagedFile.PF_SHARED_WRITE_LOCK;
+        if (mustEagerlyFlushSupplier.getAsBoolean()) {
+            flags |= PagedFile.PF_EAGER_FLUSH;
+        }
+        return flags;
     }
 
     private void acquireLockForWriter() {

@@ -58,6 +58,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.common.EmptyDependencyResolver;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.index.internal.gbptree.GBPTreeConsistencyChecker.ConsistencyCheckState;
 import org.neo4j.index.internal.gbptree.Header.Reader;
 import org.neo4j.index.internal.gbptree.RootLayer.TreeRootsVisitor;
@@ -166,52 +167,44 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
          */
         class Adaptor implements Monitor {
             @Override
-            public void checkpointCompleted() { // no-op
-            }
+            public void checkpointStarted() {}
 
             @Override
-            public void noStoreFile() { // no-op
-            }
+            public void checkpointCompleted() {}
 
             @Override
-            public void needRecreation() { // no-op
-            }
+            public void noStoreFile() {}
 
             @Override
-            public void cleanupRegistered() { // no-op
-            }
+            public void needRecreation() {}
 
             @Override
-            public void cleanupStarted() { // no-op
-            }
+            public void cleanupRegistered() {}
+
+            @Override
+            public void cleanupStarted() {}
 
             @Override
             public void cleanupFinished(
                     long numberOfPagesVisited,
                     long numberOfTreeNodes,
                     long numberOfCleanedCrashPointers,
-                    long durationMillis) { // no-op
-            }
+                    long durationMillis) {}
 
             @Override
-            public void cleanupClosed() { // no-op
-            }
+            public void cleanupClosed() {}
 
             @Override
-            public void cleanupFailed(Throwable throwable) { // no-op
-            }
+            public void cleanupFailed(Throwable throwable) {}
 
             @Override
-            public void startupState(boolean clean) { // no-op
-            }
+            public void startupState(boolean clean) {}
 
             @Override
-            public void treeGrowth() { // no-op
-            }
+            public void treeGrowth() {}
 
             @Override
-            public void treeShrink() { // no-op
-            }
+            public void treeShrink() {}
         }
 
         class Delegate implements Monitor {
@@ -219,6 +212,11 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
 
             public Delegate(Monitor delegate) {
                 this.delegate = delegate;
+            }
+
+            @Override
+            public void checkpointStarted() {
+                delegate.checkpointStarted();
             }
 
             @Override
@@ -283,8 +281,17 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         }
 
         /**
-         * Called when a {@link GBPTree#checkpoint(FileFlushEvent, CursorContext)} has been completed, but right before
-         * {@link GBPTree#writer(CursorContext)} writers} are re-enabled.
+         * Called when a {@link GBPTree#checkpoint(FileFlushEvent, CursorContext)} has started, right after
+         * current writers have been drained. Future writers after this point onwards and until the next call
+         * to {@link #checkpointCompleted()} will do eager flushing of their changes.
+         */
+        void checkpointStarted();
+
+        /**
+         * Called when a {@link GBPTree#checkpoint(FileFlushEvent, CursorContext)} has been completed and generation
+         * has been bumped, but right before {@link GBPTree#writer(CursorContext)} writers are re-enabled.
+         * Writers from this point onwards and until the next call to {@link #checkpointStarted()} will not do
+         * eager flushing of their changes.
          */
         void checkpointCompleted();
 
@@ -491,6 +498,13 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     protected final RootLayerSupport rootLayerSupport;
 
     /**
+     * Flag which is set in part of checkpoint where, on initializing a writer, the writer must make sure
+     * to use write cursors that eagerly flush changes. Basically the writer must ensure that all pages that
+     * it has touched has been flushed before writer is closed.
+     */
+    private volatile boolean writersMustEagerlyFlush;
+
+    /**
      * Opens an index {@code indexFile} in the {@code pageCache}, creating and initializing it if it doesn't exist. If the index doesn't exist it will be
      * created and the {@link Layout} and {@code pageSize} will be written in index header. If the index exists it will be opened and the {@link Layout} will be
      * matched with the information in the header. At the very least {@link Layout#identifier()} will be matched.
@@ -538,7 +552,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
      * </ul>
      *
      * @param pageCache                    {@link PageCache} to use to map index file
-     * @param fileSystem
+     * @param fileSystem                   {@link FileSystemAbstraction} which the index file is mapped in
      * @param indexFile                    {@link Path} containing the actual index
      * @param layout                       {@link Layout} to use in the tree, this must match the existing layout
      *                                     we're just opening the index
@@ -609,7 +623,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
                     writerLock,
                     changesSinceLastCheckpoint,
                     name,
-                    readOnly);
+                    readOnly,
+                    () -> writersMustEagerlyFlush);
             this.rootLayer = rootLayerConfiguration.buildRootLayer(
                     rootLayerSupport, layout, contextFactory, treeNodeSelector, dependencyResolver);
 
@@ -1133,48 +1148,121 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         }
     }
 
-    private void checkpoint(Header.Writer headerWriter, FileFlushEvent flushEvent, CursorContext cursorContext)
-            throws IOException {
+    /**
+     * Locking and interaction with writers during checkpoint:
+     *
+     * <pre>
+     * |-WW--W-WWWW│-│WFWWFFFWFWWFWWWF│-│WWW-W--WW-WWW--| time
+     *             └┬┴────────┬───────┴┬┘
+     *              │         │        └ #3 block and drain writers, bump generation, force, unblock writers
+     *              │         └ #2 flush all file pages cooperatively with writers
+     *              └ #1 block and drain writers (and block new ones), set writers-must-flush flag, unblock writers
+     * </pre>
+     *
+     * The two sections where writers are blocked are both very short:
+     * <ul>
+     *     <li>#1 flips a boolean</li>
+     *     <li>#3 writes and flushes a maximum of 3-or-so pages (one state page and potentially two freelist pages</li>
+     * </ul>
+     * During #2 (when the file is flushed) writers are unblocked and will eagerly flush their changes as they write.
+     */
+    private synchronized void checkpoint(
+            Header.Writer headerWriter, FileFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         if (readOnly) {
             return;
         }
 
-        // Flush dirty pages of the tree, do this before acquiring the lock so that writers won't be
-        // blocked while we do this
-        pagedFile.flushAndForce(flushEvent);
-
-        // Block writers, or if there's a current writer then wait for it to complete and then block
-        // From this point and till the lock is released we know that the tree won't change.
         awaitCleaner();
+        try {
+            // Drain writers and flip state so that writers after this point on will do co-operative flushing
+            // together with the file-global flush. This way writers can still progress through the flush,
+            // w/o blocking on its completion.
+            withCheckpointAndWriterLock(() -> writersMustEagerlyFlush = true);
+
+            // Do the file-global flush together with the flushing by any potential concurrent writer
+            monitor.checkpointStarted();
+            pagedFile.flushAndForce(flushEvent);
+
+            // Drain writers, bump generation and do the final forcing of the file.
+            // New writers after this section don't need to eagerly flush anymore.
+            withCheckpointAndWriterLock(() -> {
+                writersMustEagerlyFlush = false;
+                long generation = this.generation;
+                long stableGeneration = stableGeneration(generation);
+                long unstableGeneration = unstableGeneration(generation);
+                freeList.flush(
+                        stableGeneration, unstableGeneration, bind(pagedFile, PF_SHARED_WRITE_LOCK, cursorContext));
+
+                // Force any potential pages flushed from writers after completion of the above flushAndForce
+                // so that there's no chance that the state page change below can make it to disk before
+                // the state page. Only force is needed, but there's no method only doing force, although
+                // the flush part is really fast if there are no dirty pages.
+                pagedFile.flushAndForce(flushEvent);
+
+                // Increment generation, i.e. stable becomes current unstable and unstable increments by one
+                // and write the tree state (rootId, lastId, generation a.s.o.) to state page.
+                this.generation = Generation.generation(unstableGeneration, unstableGeneration + 1);
+                writeState(pagedFile, headerWriter, cursorContext);
+                pagedFile.flushAndForce(flushEvent);
+
+                monitor.checkpointCompleted();
+                changesSinceLastCheckpoint.set(false);
+            });
+        } finally {
+            // Safeguard, let's never leave this method with eager flushing for writers enabled.
+            writersMustEagerlyFlush = false;
+        }
+    }
+
+    /**
+     * Closes this tree and its associated resources.
+     * <p>
+     * NOTE: No {@link #checkpoint(FileFlushEvent flushEvent, CursorContext)} checkpoint} is performed.
+     * @throws IOException on error closing resources.
+     */
+    @Override
+    public synchronized void close() throws IOException {
+        try (var cursorContext = contextFactory.create(INDEX_INTERNAL_TAG)) {
+            if (openOptions.contains(NO_FLUSH_ON_CLOSE) || readOnly) {
+                // Close without forcing state
+                doClose();
+                return;
+            }
+            withCheckpointAndWriterLock(() -> {
+                try {
+                    if (closed) {
+                        return;
+                    }
+                    try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                        maybeForceCleanState(flushEvent, cursorContext);
+                    }
+                    doClose();
+                } catch (IOException ioe) {
+                    try {
+                        if (!pagedFile.isDeleteOnClose()) {
+                            try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                                pagedFile.flushAndForce(flushEvent);
+                            }
+                        }
+                        try (var flushEvent = pageCacheTracer.beginFileFlush()) {
+                            maybeForceCleanState(flushEvent, cursorContext);
+                        }
+                        doClose();
+                    } catch (IOException e) {
+                        ioe.addSuppressed(e);
+                        throw ioe;
+                    }
+                }
+            });
+        }
+    }
+
+    private void withCheckpointAndWriterLock(ThrowingAction<IOException> task) throws IOException {
         checkpointLock.writeLock().lock();
         writerLock.writeLock().lock();
         try {
-            long generation = this.generation;
-            long stableGeneration = stableGeneration(generation);
-            long unstableGeneration = unstableGeneration(generation);
-            freeList.flush(stableGeneration, unstableGeneration, bind(pagedFile, PF_SHARED_WRITE_LOCK, cursorContext));
-
-            // Flush dirty pages since that last flush above. This should be a very small set of pages
-            // and should be rather fast. In here writers are blocked and we want to minimize this
-            // windows of time as much as possible, that's why there's an initial flush outside this lock.
-            pagedFile.flushAndForce(flushEvent);
-
-            // Increment generation, i.e. stable becomes current unstable and unstable increments by one
-            // and write the tree state (rootId, lastId, generation a.s.o.) to state page.
-            this.generation = Generation.generation(unstableGeneration, unstableGeneration + 1);
-            writeState(pagedFile, headerWriter, cursorContext);
-
-            // Flush the state page.
-            pagedFile.flushAndForce(flushEvent);
-
-            // Expose this fact.
-            monitor.checkpointCompleted();
-
-            // Clear flag so that until next change there's no need to do another checkpoint.
-            changesSinceLastCheckpoint.set(false);
+            task.apply();
         } finally {
-            // Unblock writers, any writes after this point and up until the next checkpoint will have
-            // the new unstable generation.
             writerLock.writeLock().unlock();
             checkpointLock.writeLock().unlock();
         }
@@ -1192,52 +1280,6 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         }
         if (cleaning != null && cleaning.hasFailed()) {
             throw new IOException("Pointer cleaning during recovery failed", cleaning.getCause());
-        }
-    }
-
-    /**
-     * Closes this tree and its associated resources.
-     * <p>
-     * NOTE: No {@link #checkpoint(FileFlushEvent flushEvent, CursorContext)} checkpoint} is performed.
-     * @throws IOException on error closing resources.
-     */
-    @Override
-    public void close() throws IOException {
-        try (var cursorContext = contextFactory.create(INDEX_INTERNAL_TAG)) {
-            if (openOptions.contains(NO_FLUSH_ON_CLOSE) || readOnly) {
-                // Close without forcing state
-                doClose();
-                return;
-            }
-            checkpointLock.writeLock().lock();
-            writerLock.writeLock().lock();
-            try {
-                if (closed) {
-                    return;
-                }
-                try (var flushEvent = pageCacheTracer.beginFileFlush()) {
-                    maybeForceCleanState(flushEvent, cursorContext);
-                }
-                doClose();
-            } catch (IOException ioe) {
-                try {
-                    if (!pagedFile.isDeleteOnClose()) {
-                        try (var flushEvent = pageCacheTracer.beginFileFlush()) {
-                            pagedFile.flushAndForce(flushEvent);
-                        }
-                    }
-                    try (var flushEvent = pageCacheTracer.beginFileFlush()) {
-                        maybeForceCleanState(flushEvent, cursorContext);
-                    }
-                    doClose();
-                } catch (IOException e) {
-                    ioe.addSuppressed(e);
-                    throw ioe;
-                }
-            } finally {
-                writerLock.writeLock().unlock();
-                checkpointLock.writeLock().unlock();
-            }
         }
     }
 

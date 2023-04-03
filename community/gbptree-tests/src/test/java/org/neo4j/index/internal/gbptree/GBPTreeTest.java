@@ -96,11 +96,14 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
+import org.neo4j.io.pagecache.tracing.FlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.io.pagecache.tracing.PageReferenceTranslator;
 import org.neo4j.io.pagecache.tracing.PinEvent;
 import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.Barrier;
+import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
 import org.neo4j.test.Race.ThrowingRunnable;
 import org.neo4j.test.RandomSupport;
@@ -798,6 +801,65 @@ class GBPTreeTest {
     }
 
     /* Mutex tests */
+
+    @Test
+    void writersDuringCheckpointShouldEagerlyFlushTheirChanges() throws Exception {
+        // given
+        var barrier = new Barrier.Control();
+        var monitor = new Monitor.Adaptor() {
+            private int checkpointCount;
+
+            @Override
+            public void checkpointStarted() {
+                // Only install the barrier on the checkpoint that we're actually testing.
+                // The first checkpoint is just to force a successor of the root so that we
+                // see the freelist flushed too in the final checkpoint flush.
+                if (++checkpointCount == 2) {
+                    barrier.reached();
+                }
+            }
+        };
+        var numInitialChanges = 100;
+        // a bit smaller page size to get more affected pages on a smaller data set (faster test)
+        try (var pageCache = createPageCache(512);
+                var index = index(pageCache).with(monitor).build();
+                var t2 = new OtherThreadExecutor("T2")) {
+            index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
+            var data = new MutableLong();
+            try (var writer = index.writer(NULL_CONTEXT)) {
+                for (var i = 0; i < numInitialChanges; i++) {
+                    data.setValue(i);
+                    writer.put(data, data);
+                }
+            }
+
+            // when
+            var checkpoint = t2.executeDontWait(() -> {
+                var pageCacheTracer = new DefaultPageCacheTracer(true);
+                var flushEvent = new CheckpointSpecificFileFlushEvent(pageCacheTracer);
+                index.checkpoint(flushEvent, NULL_CONTEXT);
+                return flushEvent;
+            });
+            barrier.await();
+            barrier.release();
+            try (var writer = index.writer(NULL_CONTEXT)) {
+                for (var i = 0; i < 1_000; i++) {
+                    data.setValue(numInitialChanges + i);
+                    writer.put(data, data);
+                }
+            }
+
+            // then
+            var flushEvent = checkpoint.get();
+            assertThat(flushEvent.flushEvents.size()).isEqualTo(3);
+            var firstFlush = flushEvent.flushEvents.get(0);
+            var secondFlush = flushEvent.flushEvents.get(1);
+            var thirdFlush = flushEvent.flushEvents.get(2);
+            assertThat(firstFlush.pagesFlushed()).isGreaterThan(secondFlush.pagesFlushed());
+            assertThat(secondFlush.pagesFlushed()).isOne();
+            assertThat(thirdFlush.pagesFlushed()).isOne();
+        }
+    }
 
     @EnumSource(WriterFactory.class)
     @ParameterizedTest
@@ -2379,6 +2441,90 @@ class GBPTreeTest {
         @Override
         public void noStoreFile() {
             throw new RuntimeException("You shall not construct");
+        }
+    }
+
+    /**
+     * FileFlushEvent which is specific to the checkpoint in GBPTree. GBPTree checkpoint calls flushAndForce
+     * twice, where the first call flushes all changes since last checkpoint and the second call typically forces
+     * one or a few pages. This implementation can be passed into the checkpoint method to get data
+     * individual to the two separate flushes.
+     */
+    private static class CheckpointSpecificFileFlushEvent implements FileFlushEvent {
+        private final List<FileFlushEvent> flushEvents = new ArrayList<>();
+        private final PageCacheTracer pageCacheTracer;
+        private FileFlushEvent currentDelegate;
+
+        CheckpointSpecificFileFlushEvent(PageCacheTracer pageCacheTracer) {
+            this.pageCacheTracer = pageCacheTracer;
+        }
+
+        @Override
+        public void close() {
+            currentDelegate.close();
+        }
+
+        @Override
+        public FlushEvent beginFlush(
+                long[] pageRefs,
+                PageSwapper swapper,
+                PageReferenceTranslator pageReferenceTranslator,
+                int pagesToFlush,
+                int mergedPages) {
+            return currentDelegate.beginFlush(pageRefs, swapper, pageReferenceTranslator, pagesToFlush, mergedPages);
+        }
+
+        @Override
+        public FlushEvent beginFlush(
+                long pageRef, PageSwapper swapper, PageReferenceTranslator pageReferenceTranslator) {
+            return currentDelegate.beginFlush(pageRef, swapper, pageReferenceTranslator);
+        }
+
+        @Override
+        public void startFlush(int[][] translationTable) {
+            currentDelegate = pageCacheTracer.beginFileFlush();
+            flushEvents.add(currentDelegate);
+            currentDelegate.startFlush(translationTable);
+        }
+
+        @Override
+        public void reset() {
+            currentDelegate.reset();
+        }
+
+        @Override
+        public long ioPerformed() {
+            return currentDelegate.ioPerformed();
+        }
+
+        @Override
+        public long limitedNumberOfTimes() {
+            return currentDelegate.limitedNumberOfTimes();
+        }
+
+        @Override
+        public long limitedMillis() {
+            return currentDelegate.limitedMillis();
+        }
+
+        @Override
+        public long pagesFlushed() {
+            return currentDelegate.pagesFlushed();
+        }
+
+        @Override
+        public ChunkEvent startChunk(int[] chunk) {
+            return currentDelegate.startChunk(chunk);
+        }
+
+        @Override
+        public void throttle(long recentlyCompletedIOs, long millis) {
+            currentDelegate.throttle(recentlyCompletedIOs, millis);
+        }
+
+        @Override
+        public void reportIO(int completedIOs) {
+            currentDelegate.reportIO(completedIOs);
         }
     }
 }

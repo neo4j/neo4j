@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.apache.commons.lang3.tuple.Pair;
@@ -57,6 +58,7 @@ class RootLayerSupport {
     private final int payloadSize;
     private final String treeName;
     private final boolean readOnly;
+    private final BooleanSupplier writersMustEagerlyFlushSupplier;
 
     RootLayerSupport(
             PagedFile pagedFile,
@@ -70,7 +72,8 @@ class RootLayerSupport {
             ReadWriteLock writerLock,
             AtomicBoolean changesSinceLastCheckpoint,
             String treeName,
-            boolean readOnly) {
+            boolean readOnly,
+            BooleanSupplier writersMustEagerlyFlushSupplier) {
         this.pagedFile = pagedFile;
         this.generationSupplier = generationSupplier;
         this.exceptionDecorator = exceptionDecorator;
@@ -84,6 +87,7 @@ class RootLayerSupport {
         this.payloadSize = pagedFile.payloadSize();
         this.treeName = treeName;
         this.readOnly = readOnly;
+        this.writersMustEagerlyFlushSupplier = writersMustEagerlyFlushSupplier;
     }
 
     <K, V> SeekCursor<K, V> internalAllocateSeeker(
@@ -236,7 +240,8 @@ class RootLayerSupport {
                 freeList,
                 monitor,
                 exceptionDecorator,
-                generationSupplier);
+                generationSupplier,
+                writersMustEagerlyFlushSupplier);
     }
 
     <K, V> GBPTreeWriter<K, V> initializeWriter(
