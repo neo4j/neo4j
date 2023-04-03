@@ -1,0 +1,25 @@
+#!/usr/bin/expect -f
+
+source "common.expect"
+
+# Start long running query
+set timeout 60
+sendQuery "unwind range(0,90000) as x call apoc.util.sleep(1) return sum(x) as sum;"
+
+# Cancel query
+expect "\n"
+sleep 1
+send \x03
+expect "Stopping query..."
+expect {
+    "terminated" {}
+    ${prompt} { puts "\nError: Missing error message\n"; exit 1 }
+}
+
+set timeout 10
+
+# Make sure we can still run queries
+sendQuery "return 1 as result;"
+
+sendQuery ":exit"
+expectCleanExit

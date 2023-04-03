@@ -1,0 +1,24 @@
+Connected to Neo4j using Bolt protocol version 5.1 at neo4j://neo4j:7687 as user neo4j.
+Type :help for a list of available commands or :exit to exit the shell.
+Note that Cypher queries must end with a semicolon.
+neo4j@neo4j> unwind range(0,90000) as x call apoc.util.sleep(1) return sum(x) as sum;
+
+^CStopping query...
++-----+
+| sum |
++-----+
+The transaction has been terminated. Retry your operation in a new transaction, and you should see a successful result. Explicitly terminated by the user.
+neo4j@neo4j> return 1 as result;
+
++--------+
+| result |
++--------+
+| 1      |
++--------+
+
+1 row
+ready to start consuming query after 38 ms, results consumed after another 2 ms
+neo4j@neo4j> :exit
+
+
+Bye!

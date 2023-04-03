@@ -1,0 +1,7 @@
+#!/usr/bin/expect -f
+
+source "common.expect"
+
+sendQuery "return 1 as result;"
+sendQuery ":exit"
+expectCleanExit

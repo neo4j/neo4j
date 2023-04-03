@@ -1,28 +1,21 @@
 # Cypher Shell Integration Tests
 
-## How to run
+These are two types of integration tests in this module.
 
-1. Start Neo4j server with bolt driver on localhost.
-   
-   If authentication is required, it is assumed to be username `neo4j`
-   and password `neo`.
+1. [Expect](https://en.wikipedia.org/wiki/Expect) based tests, see package `org.neo4j.shell.expect`. 
+  Uses testcontainers to spin up neo4j and other required dependencies automatically.
+2. Java based tests, other classes. Requires running neo4j database.
 
-2. Run integration tests using maven `integration-test` goal with 
-   `-DenableCypherShellIntegrationTest` (test is disabled without this flag).
-   
-   For example, to run only cypher shell integration tests from project root: 
-   
-   ```
-   mvn integration-test --projects org.neo4j:cypher-shell-integration-test -DenableCypherShellIntegrationTest
-   ```
-      
-## How to run, the fast way
+## How to run all integration tests
 
-This clears any previously known neo4j hosts, starts a throw-away
-instance of neo4j, and runs the integration tests against it.
+1. Start Neo4j server on localhost. 
+   If authentication is required, it is assumed to be username `neo4j` and password `neo`.
+2. `mvn integration-test --projects org.neo4j:cypher-shell-integration-test -DenableCypherShellIntegrationTest`
 
-```sh
-rm -rf ~/.neo4j/known_hosts
-docker run --rm -p 7687:7687 -e NEO4J_AUTH=none neo4j:4.1
-mvn integration-test --projects org.neo4j:cypher-shell-integration-test --also-make -DenableCypherShellIntegrationTest
-```
+## Add tests
+
+It's preferred to use the expect type of tests. Add a test by:
+
+1. Create a `.expect` script in `src/test/resources/expect/tests/`.
+2. Create a text file with expected interaction with the same name and `.expected` appended.
+3. Run `org.neo4j.shell.expect.CypherShellIntegrationTest` to run your test (it automatically picks up files in that location).
