@@ -44,6 +44,7 @@ import org.neo4j.dbms.database.DatabaseLifecycles;
 import org.neo4j.dbms.database.DatabaseOperationCounts;
 import org.neo4j.dbms.database.DatabaseReferenceCacheClearingListener;
 import org.neo4j.dbms.database.DatabaseRepository;
+import org.neo4j.dbms.database.DatabaseStateMonitor;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactory;
 import org.neo4j.dbms.database.DefaultDatabaseContextFactoryComponents;
 import org.neo4j.dbms.database.DefaultDatabaseInfoService;
@@ -129,6 +130,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 SslPolicyLoader.create(globalModule.getFileSystem(), globalConfig, logService.getInternalLogProvider());
         globalDependencies.satisfyDependency(sslPolicyLoader); // for bolt and web server
         globalDependencies.satisfyDependency(new DatabaseOperationCounts.Counter()); // for global metrics
+        globalDependencies.satisfyDependency(new DatabaseStateMonitor.Counter()); // for global metrics
 
         globalDependencies.satisfyDependency(createAuthConfigProvider(globalModule));
 
