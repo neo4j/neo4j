@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.CandidateSelecto
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OptionalSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.OrLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.SelectPatternPredicates
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.SelectSubQueryPredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.allRelationshipsScanLeafPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.applyOptional
@@ -121,6 +122,7 @@ object QueryPlannerConfiguration {
       pickBestPlanUsingHintsAndCost,
       SelectPatternPredicates,
       triadicSelectionFinder,
+      SelectSubQueryPredicates,
       selectCovered,
       selectHasLabelWithJoin
     )

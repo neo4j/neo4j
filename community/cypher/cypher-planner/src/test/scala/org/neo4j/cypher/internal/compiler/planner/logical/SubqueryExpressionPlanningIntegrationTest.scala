@@ -3399,4 +3399,48 @@ class SubqueryExpressionPlanningIntegrationTest extends CypherFunSuite with Logi
         predicates.size shouldBe 7
     }
   }
+
+  test("should plan sub-query predicates independently from other predicates") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(171)
+      .setLabelCardinality("Person", 133)
+      .setLabelCardinality("Movie", 38)
+      .setRelationshipCardinality("()-[:ACTED_IN]->()", 172)
+      .setRelationshipCardinality("(:Person)-[:ACTED_IN]->()", 172)
+      .setRelationshipCardinality("()-[:ACTED_IN]->(:Movie)", 172)
+      .setRelationshipCardinality("(:Person)-[:ACTED_IN]->(:Movie)", 172)
+      .build()
+
+    val query =
+      s"""MATCH (person:Person)
+         |WHERE person.name CONTAINS 'i'
+         |AND person.born < 1970
+         |AND single(x IN [(person)-[:ACTED_IN]->(:Movie {title: 'The Matrix'}) | 1] WHERE true)
+         |AND single(x IN [(person)-[:ACTED_IN]->(:Movie {title: 'V for Vendetta', released: 2006}) | 1] WHERE true)
+         |RETURN person.name AS name""".stripMargin
+
+    // when
+    val plan = planner.plan(query)
+
+    val expected = planner.subPlanBuilder()
+      .produceResults("name")
+      .projection(project = Seq("cacheN[person.name] AS name"), discard = Set("person", "anon_7", "anon_9"))
+      .filter("single(x IN anon_9 WHERE true)")
+      .rollUpApply("anon_9", "anon_8")
+      .|.projection("1 AS anon_8")
+      .|.filter("anon_3.title = 'V for Vendetta'", "anon_3.released = 2006", "anon_3:Movie")
+      .|.expandAll("(person)-[anon_2:ACTED_IN]->(anon_3)")
+      .|.argument("person")
+      .filter("single(x IN anon_7 WHERE true)")
+      .rollUpApply("anon_7", "anon_6")
+      .|.projection("1 AS anon_6")
+      .|.filter("anon_1.title = 'The Matrix'", "anon_1:Movie")
+      .|.expandAll("(person)-[anon_0:ACTED_IN]->(anon_1)")
+      .|.argument("person")
+      .filter("person.born < 1970", "cacheNFromStore[person.name] CONTAINS 'i'")
+      .nodeByLabelScan("person", "Person", IndexOrderNone)
+      .build()
+
+    plan shouldEqual expected
+  }
 }

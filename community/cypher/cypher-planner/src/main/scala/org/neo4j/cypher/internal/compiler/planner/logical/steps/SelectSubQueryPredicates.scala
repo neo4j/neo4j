@@ -23,10 +23,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
+import org.neo4j.cypher.internal.ir.Selections.containsExistsSubquery
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 
-case object selectCovered extends SelectionCandidateGenerator {
+case object SelectSubQueryPredicates extends SelectionCandidateGenerator {
 
   override def apply(
     input: LogicalPlan,
@@ -34,18 +35,15 @@ case object selectCovered extends SelectionCandidateGenerator {
     queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
-  ): Iterator[SelectionCandidate] = {
-    val unsolvedScalarPredicates =
-      unsolvedPredicates.filterNot(_.folder(context.staticComponents.cancellationChecker).treeExists {
-        case _: IRExpression => true
-      })
-
-    if (unsolvedScalarPredicates.isEmpty) {
-      Iterator.empty
-    } else {
-      val plan =
-        context.staticComponents.logicalPlanProducer.planSelection(input, unsolvedScalarPredicates.toVector, context)
-      Iterator(SelectionCandidate(plan, unsolvedScalarPredicates))
-    }
-  }
+  ): Iterator[SelectionCandidate] =
+    for {
+      predicate <- unsolvedPredicates.iterator
+      if !containsExistsSubquery(predicate) &&
+        predicate.folder(context.staticComponents.cancellationChecker).treeExists {
+          case _: IRExpression => true
+        }
+    } yield SelectionCandidate(
+      plan = context.staticComponents.logicalPlanProducer.planSelection(input, Vector(predicate), context),
+      solvedPredicates = Set(predicate)
+    )
 }
