@@ -36,19 +36,19 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
 
-case object TransitiveClosureAppliedToWhereClauses extends StepSequencer.Condition
+case object TransitiveEqualitiesAppliedToWhereClauses extends StepSequencer.Condition
 
 /**
- * Transitive closure of where clauses.
+ * Applies Transitive Property of Equality to WHERE clauses.
  *
  * Given a where clause, `WHERE a.prop = b.prop AND b.prop = 42` we rewrite the query
  * into `WHERE a.prop = 42 AND b.prop = 42`
  */
-case object transitiveClosure extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
+case object transitiveEqualities extends StatementRewriter with StepSequencer.Step with PlanPipelineTransformerFactory {
 
-  override def instance(from: BaseState, ignored: BaseContext): Rewriter = transitiveClosureRewriter
+  override def instance(from: BaseState, ignored: BaseContext): Rewriter = transitiveEqualitiesRewriter
 
-  private case object transitiveClosureRewriter extends Rewriter {
+  private case object transitiveEqualitiesRewriter extends Rewriter {
 
     def apply(that: AnyRef): AnyRef = instance.apply(that)
 
@@ -62,7 +62,7 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
       }
 
     // Collects property equalities, e.g `a.prop = 42`
-    private def collect(e: Expression): Closures = e.folder.treeFold(Closures.empty) {
+    private def collect(e: Expression): Transitions = e.folder.treeFold(Transitions.empty) {
       case _: Or                          => acc => SkipChildren(acc)
       case _: And                         => acc => TraverseChildren(acc)
       case PropertyEquivalence(p1, p2, _) => acc => SkipChildren(acc.withEquivalence(p1 -> p2))
@@ -77,19 +77,19 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
       case and @ (And(_, _: ExistsExpression) | And(_: ExistsExpression, _)) =>
         and
       case and @ And(lhs, rhs) =>
-        val closures = collect(lhs) ++ collect(rhs)
-        val inner = andRewriter(closures)
+        val transitions = collect(lhs) ++ collect(rhs)
+        val inner = andRewriter(transitions)
         val newAnd = and.copy(lhs = lhs.endoRewrite(inner), rhs = rhs.endoRewrite(inner))(and.position)
 
         // ALSO take care of case WHERE b.prop = a.prop AND b.prop = 42
         // turns into WHERE b.prop = a.prop AND b.prop = 42 AND a.prop = 42
-        closures.emergentEqualities.foldLeft(newAnd) {
+        transitions.emergentEqualities.foldLeft(newAnd) {
           case (acc, (prop, expr)) =>
             And(acc, Equals(prop, expr)(acc.position))(acc.position)
         }
     })
 
-    private def andRewriter(closures: Closures): Rewriter = {
+    private def andRewriter(transitions: Transitions): Rewriter = {
       val stopOnNotEquals: RewriterStopper = {
         case Not(Equals(_, _)) => true
         case _                 => false
@@ -97,21 +97,21 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
 
       bottomUp(
         Rewriter.lift {
-          case PropertyEquivalence(_, p2, equals) if closures.mapping.contains(p2) =>
-            equals.copy(rhs = closures.mapping(p2))(equals.position)
+          case PropertyEquivalence(_, p2, equals) if transitions.mapping.contains(p2) =>
+            equals.copy(rhs = transitions.mapping(p2))(equals.position)
         },
         stopOnNotEquals
       )
     }
   }
 
-  case class Closures(
+  case class Transitions(
     mapping: Map[Property, Expression] = Map.empty,
     equivalence: Map[Property, Property] = Map.empty
   ) {
 
-    def withMapping(e: (Property, Expression)): Closures = copy(mapping = mapping + e)
-    def withEquivalence(e: (Property, Property)): Closures = copy(equivalence = equivalence + e)
+    def withMapping(e: (Property, Expression)): Transitions = copy(mapping = mapping + e)
+    def withEquivalence(e: (Property, Property)): Transitions = copy(equivalence = equivalence + e)
 
     def emergentEqualities: Map[Property, Expression] = {
       val sharedKeys = equivalence.keySet.intersect(mapping.keySet)
@@ -119,11 +119,11 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
       sharedKeys.map(k => equivalence(k) -> mapping(k)).toMap -- mapping.keySet
     }
 
-    def ++(other: Closures): Closures = copy(mapping ++ other.mapping, equivalence ++ other.equivalence)
+    def ++(other: Transitions): Transitions = copy(mapping ++ other.mapping, equivalence ++ other.equivalence)
   }
 
-  object Closures {
-    def empty: Closures = Closures()
+  object Transitions {
+    def empty: Transitions = Transitions()
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
@@ -133,7 +133,7 @@ case object transitiveClosure extends StatementRewriter with StepSequencer.Step 
     !AndRewrittenToAnds
   )
 
-  override def postConditions: Set[StepSequencer.Condition] = Set(TransitiveClosureAppliedToWhereClauses)
+  override def postConditions: Set[StepSequencer.Condition] = Set(TransitiveEqualitiesAppliedToWhereClauses)
 
   override def invalidatedConditions: Set[StepSequencer.Condition] = Set(
     // This Rewriter creates Equals AST nodes.

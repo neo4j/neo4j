@@ -39,7 +39,7 @@ import org.neo4j.cypher.internal.frontend.phases.PreparatoryRewriting.SemanticAn
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer.steps
-import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
+import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
 import org.neo4j.cypher.internal.rewriting.PredicateTestSupport
@@ -222,7 +222,7 @@ object CNFNormalizerTest {
     StepSequencer(ListStepAccumulator[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step]())
       .orderSteps(
         Set[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step](
-          transitiveClosure,
+          transitiveEqualities,
           SemanticWrapper
         ) ++ steps,
         initialConditions = Set(

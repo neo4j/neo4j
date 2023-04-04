@@ -65,7 +65,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.frontend.phases.isolateAggregation
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
-import org.neo4j.cypher.internal.frontend.phases.transitiveClosure
+import org.neo4j.cypher.internal.frontend.phases.transitiveEqualities
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.rewriting.Deprecations
 import org.neo4j.cypher.internal.rewriting.ListStepAccumulator
@@ -95,7 +95,7 @@ object CompilationPhases {
           Namespacer,
           ProjectNamedPathsRewriter,
           isolateAggregation,
-          transitiveClosure,
+          transitiveEqualities,
           rewriteEqualityToInPredicate,
           collapseMultipleInPredicates,
           ResolveTokens,

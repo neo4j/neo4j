@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.helpers.NameDeduplicator.removeGeneratedNamesAndParamsOnTree
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
+class TransitiveEqualitiesTest extends CypherFunSuite with AstConstructionTestSupport with RewritePhaseTest {
 
   private val removeGeneratedNames = new Transformer[BaseContext, BaseState, BaseState] {
 
@@ -49,7 +49,7 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
       .reduceLeft[Transformer[BaseContext, BaseState, BaseState]]((t1, t2) => t1 andThen t2)
 
   override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] =
-    transitiveClosure andThen cnfNormalizer andThen removeGeneratedNames
+    transitiveEqualities andThen cnfNormalizer andThen removeGeneratedNames
 
   override def rewriterPhaseForExpected: Transformer[BaseContext, BaseState, BaseState] =
     cnfNormalizer andThen removeGeneratedNames
@@ -123,7 +123,7 @@ class TransitiveClosureTest extends CypherFunSuite with AstConstructionTestSuppo
     )
   }
 
-  // Transitive closure inside EXISTS subquery
+  // Transitive equalities inside EXISTS subquery
 
   test("MATCH (a) WHERE EXISTS {MATCH (a)-->(b) WHERE a.prop = b.prop AND b.prop = 42}") {
     assertRewritten(
