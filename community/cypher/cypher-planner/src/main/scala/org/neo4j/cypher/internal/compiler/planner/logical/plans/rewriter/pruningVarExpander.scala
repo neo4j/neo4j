@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.expressions.functions.Size
-import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
@@ -39,7 +38,6 @@ import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
@@ -223,64 +221,94 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
     val bfsPruningExpands = mutable.Map[Ref[VarExpand], Option[String]]()
     val replacementAggregatingPlans = mutable.Map[Ref[AggregatingPlan], Map[String, Expression]]()
 
-    def collectDistinctSet(plan: LogicalPlan, distinctHorizon: DistinctHorizon): DistinctHorizon = {
+    /**
+     * @return new LHS & RHS horizons
+     */
+    def collectDistinctSet(plan: LogicalPlan, distinctHorizon: DistinctHorizon): (DistinctHorizon, DistinctHorizon) = {
       plan match {
         case aggPlan: AggregatingPlan
           if aggPlan.aggregationExpressions.values.forall(e =>
             DistinctHorizon.isDistinct(e) || DistinctHorizon.isMinPathLength(e)
           ) =>
           val groupingDependencies = aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)).toSet
-          DistinctHorizon(groupingDependencies, AggregatingHorizonPlan(aggPlan))
+          (DistinctHorizon(groupingDependencies, AggregatingHorizonPlan(aggPlan)), DistinctHorizon.empty)
 
         case expand: VarExpand =>
           distinctHorizon.getRewrite(expand) match {
             case RewriteToPruning =>
-              pruningExpands += expand
-              distinctHorizon
+              pruningExpands += Ref(expand)
             case RewriteToBfs =>
               bfsPruningExpands.put(Ref(expand), None)
-              distinctHorizon
             case RewriteToBfsWithDepth(distanceName, newAggregationExpressions, aggregatingPlan) =>
               bfsPruningExpands.put(Ref(expand), Some(distanceName))
               replacementAggregatingPlans.updateWith(Ref(aggregatingPlan))({
                 case Some(aggregationExpressions) => Some(aggregationExpressions ++ newAggregationExpressions)
                 case None => Some(distinctHorizon.horizonPlan.aggregationExpressions ++ newAggregationExpressions)
               })
-              distinctHorizon
             case NoRewrite =>
-              distinctHorizon
           }
+          val newHorizon = distinctHorizon
+            .withAddedDependencies(expand.nodePredicates.map(_.predicate))
+            .withAddedDependencies(expand.relationshipPredicates.map(_.predicate))
+          (newHorizon, DistinctHorizon.empty)
 
         case Projection(_, _, expressions) if distinctHorizon.isInDistinctHorizon =>
-          distinctHorizon.withAddedDependencies(expressions.values)
+          (distinctHorizon.withAddedDependencies(expressions.values), DistinctHorizon.empty)
 
         case Selection(Ands(predicates), _) if distinctHorizon.isInDistinctHorizon =>
-          distinctHorizon.withAddedDependencies(predicates)
+          (distinctHorizon.withAddedDependencies(predicates), DistinctHorizon.empty)
 
         case optionalExpand: OptionalExpand =>
-          distinctHorizon.withAddedDependencies(optionalExpand.predicate)
+          (distinctHorizon.withAddedDependencies(optionalExpand.predicate), DistinctHorizon.empty)
 
         case _: Expand |
-          _: Apply |
-          _: SemiApply |
-          _: AntiSemiApply |
-          _: CartesianProduct |
           _: Eager |
-          _: Optional |
+          _: Optional =>
+          (distinctHorizon, DistinctHorizon.empty)
+
+        /**
+         * For Apply plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
+         * For example, the RHS is traversed first and may introduce a new horizon, which means the later LHS traversal will work in the
+         * wrong (further downstream) horizon.
+         *
+         * Traverse RHS with same horizon.
+         */
+        case _: Apply =>
+          (DistinctHorizon.empty, distinctHorizon)
+
+        /**
+         * For predicate-type binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
+         *
+         * In theory, because the rows of RHS are never passed downstream, it _would_ be possible to traverse the LHS with same horizon,
+         * but with current traversal logic it is impossible to know what dependencies will be introduced in the RHS.
+         */
+        case _: SemiApply |
+          _: AntiSemiApply =>
+          (DistinctHorizon.empty, DistinctHorizon(Set.empty, SemiApplyHorizonPlan))
+
+        /**
+         * For binary plans that do not introduce an argument, it is safe to traverse both sides in the same horizon, because it is impossible that
+         * variables (e.g., relationships) introduced by a [[VarExpand]] on one side of the plan could be used on the other side.
+         */
+        case _: CartesianProduct |
           _: NodeHashJoin |
           _: LeftOuterHashJoin |
           _: RightOuterHashJoin |
-          _: Union =>
-          distinctHorizon
-
-        /**
-         * [[ValueHashJoin]] needs its own case so dependencies from its join expression can be tracked.
-         */
-        case ValueHashJoin(_, _, org.neo4j.cypher.internal.expressions.Equals(lhs, rhs)) =>
-          distinctHorizon.withAddedDependencies(Seq(lhs, rhs))
+          _: Union |
+          _: ValueHashJoin =>
+          val newHorizon = plan match {
+            /**
+             * [[ValueHashJoin]] needs its own case so dependencies from its join expression can be tracked.
+             */
+            case ValueHashJoin(_, _, org.neo4j.cypher.internal.expressions.Equals(lhs, rhs)) =>
+              distinctHorizon.withAddedDependencies(Seq(lhs, rhs))
+            case _ =>
+              distinctHorizon
+          }
+          (newHorizon, newHorizon)
 
         case _ =>
-          DistinctHorizon.empty
+          (DistinctHorizon.empty, DistinctHorizon.empty)
       }
     }
 
@@ -289,43 +317,9 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
 
     while (planStack.nonEmpty) {
       val (plan: LogicalPlan, distinctHorizon: DistinctHorizon) = planStack.pop()
-      val newDistinctHorizon = collectDistinctSet(plan, distinctHorizon)
-
-      val (lhsHorizon, rhsHorizon) = plan match {
-        case _: CartesianProduct |
-          _: Union |
-          _: NodeHashJoin |
-          _: LeftOuterHashJoin |
-          _: RightOuterHashJoin |
-          _: ValueHashJoin =>
-          /**
-           * For binary plans that do not introduce an argument, it is safe to traverse both sides in the same horizon, because it is impossible that
-           * variables (e.g., relationships) introduced by a [[VarExpand]] on one side of the plan could be used on the other side.
-           * An exception to this rule is if those variables are used in the predicate of [[ValueHashJoin]], but these dependencies are tracked elsewhere.
-           */
-          (newDistinctHorizon, newDistinctHorizon)
-        case _: AbstractSemiApply =>
-          /**
-           * For predicate-type binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
-           * Because the rows of RHS are never passed downstream, the LHS is traversed with same horizon.
-           */
-          (newDistinctHorizon, DistinctHorizon(Set.empty, SemiApplyHorizonPlan))
-        case _: Apply =>
-          /**
-           * For Apply plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
-           * For example, the RHS is traversed first and may introduce a new horizon, which means the later LHS traversal will work in the
-           * wrong (further downstream) horizon.
-           *
-           * Traverse RHS with same horizon.
-           */
-          (DistinctHorizon.empty, newDistinctHorizon)
-        case _: LogicalUnaryPlan =>
-          (newDistinctHorizon, DistinctHorizon.empty)
-        case _ =>
-          (DistinctHorizon.empty, DistinctHorizon.empty)
-      }
-      plan.lhs.foreach(p => planStack.push((p, lhsHorizon)))
-      plan.rhs.foreach(p => planStack.push((p, rhsHorizon)))
+      val (newLhsHorizon, newRhsHorizon) = collectDistinctSet(plan, distinctHorizon)
+      plan.lhs.foreach(p => planStack.push((p, newLhsHorizon)))
+      plan.rhs.foreach(p => planStack.push((p, newRhsHorizon)))
     }
 
     ReplacementPlans(pruningExpands.toSet, bfsPruningExpands.toMap, replacementAggregatingPlans.toMap)
@@ -336,59 +330,63 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
       case plan: LogicalPlan =>
         val replacementPlans = findReplacementPlans(plan)
 
-        val innerRewriter = topDown(Rewriter.lift {
-          case expand @ VarExpand(
-              lhs,
-              fromId,
-              dir,
-              _,
-              relTypes,
-              toId,
-              _,
-              length,
-              ExpandAll,
-              nodePredicate,
-              relationshipPredicate
-            ) =>
-            if (replacementPlans.bfsPruningExpands.contains(Ref(expand))) {
-              BFSPruningVarExpand(
+        val innerRewriter = topDown(
+          Rewriter.lift {
+            case expand @ VarExpand(
                 lhs,
                 fromId,
                 dir,
+                _,
                 relTypes,
                 toId,
-                length.min == 0,
-                length.max.getOrElse(Int.MaxValue),
-                depthName = replacementPlans.bfsPruningExpands(Ref(expand)),
+                _,
+                length,
+                ExpandAll,
                 nodePredicate,
                 relationshipPredicate
-              )(SameId(expand.id))
-            } else if (replacementPlans.pruningExpands(Ref(expand))) {
-              PruningVarExpand(
-                lhs,
-                fromId,
-                dir,
-                relTypes,
-                toId,
-                length.min,
-                length.max.get,
-                nodePredicate,
-                relationshipPredicate
-              )(SameId(expand.id))
-            } else {
-              expand
-            }
+              ) =>
+              if (replacementPlans.bfsPruningExpands.contains(Ref(expand))) {
+                BFSPruningVarExpand(
+                  lhs,
+                  fromId,
+                  dir,
+                  relTypes,
+                  toId,
+                  length.min == 0,
+                  length.max.getOrElse(Int.MaxValue),
+                  depthName = replacementPlans.bfsPruningExpands(Ref(expand)),
+                  nodePredicate,
+                  relationshipPredicate
+                )(SameId(expand.id))
+              } else if (replacementPlans.pruningExpands(Ref(expand))) {
+                PruningVarExpand(
+                  lhs,
+                  fromId,
+                  dir,
+                  relTypes,
+                  toId,
+                  length.min,
+                  length.max.get,
+                  nodePredicate,
+                  relationshipPredicate
+                )(SameId(expand.id))
+              } else {
+                expand
+              }
 
-          case aggregation: Aggregation if replacementPlans.aggregatingPlans.contains(Ref(aggregation)) =>
-            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)))(
-              SameId(aggregation.id)
-            )
+            case aggregation: Aggregation if replacementPlans.aggregatingPlans.contains(Ref(aggregation)) =>
+              aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)))(
+                SameId(aggregation.id)
+              )
 
-          case aggregation: OrderedAggregation if replacementPlans.aggregatingPlans.contains(Ref(aggregation)) =>
-            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)))(
-              SameId(aggregation.id)
-            )
-        })
+            case aggregation: OrderedAggregation if replacementPlans.aggregatingPlans.contains(Ref(aggregation)) =>
+              aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)))(
+                SameId(aggregation.id)
+              )
+          },
+          // We only rewrite Logical plans, like this we avoid traversing deeper into other objects
+          stopper = !_.isInstanceOf[LogicalPlan]
+        )
         plan.endoRewrite(innerRewriter)
 
       case _ => input
