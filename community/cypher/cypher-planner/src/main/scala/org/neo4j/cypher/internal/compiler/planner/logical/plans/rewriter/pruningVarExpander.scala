@@ -76,6 +76,10 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
 
   private case class DistinctHorizon(dependencies: Set[String], horizonPlan: HorizonPlan) {
 
+    def withAddedDependencies(expressions: Iterable[Expression]): DistinctHorizon = {
+      copy(dependencies = dependencies ++ expressions.flatMap(_.dependencies.map(_.name)))
+    }
+
     private lazy val (
       allDependenciesMinusMinPath: Set[String],
       allDependencies: Set[String],
@@ -248,14 +252,13 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           }
 
         case Projection(_, _, expressions) if distinctHorizon.isInDistinctHorizon =>
-          distinctHorizon.copy(dependencies =
-            distinctHorizon.dependencies ++ expressions.values.flatMap(_.dependencies.map(_.name))
-          )
+          distinctHorizon.withAddedDependencies(expressions.values)
 
         case Selection(Ands(predicates), _) if distinctHorizon.isInDistinctHorizon =>
-          distinctHorizon.copy(dependencies =
-            distinctHorizon.dependencies ++ predicates.flatMap(_.dependencies.map(_.name))
-          )
+          distinctHorizon.withAddedDependencies(predicates)
+
+        case optionalExpand: OptionalExpand =>
+          distinctHorizon.withAddedDependencies(optionalExpand.predicate)
 
         case _: Expand |
           _: Apply |
@@ -264,7 +267,6 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
           _: CartesianProduct |
           _: Eager |
           _: Optional |
-          _: OptionalExpand |
           _: NodeHashJoin |
           _: LeftOuterHashJoin |
           _: RightOuterHashJoin |
@@ -275,9 +277,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
          * [[ValueHashJoin]] needs its own case so dependencies from its join expression can be tracked.
          */
         case ValueHashJoin(_, _, org.neo4j.cypher.internal.expressions.Equals(lhs, rhs)) =>
-          distinctHorizon.copy(dependencies =
-            distinctHorizon.dependencies ++ Seq(lhs, rhs).flatMap(_.dependencies.map(_.name))
-          )
+          distinctHorizon.withAddedDependencies(Seq(lhs, rhs))
 
         case _ =>
           DistinctHorizon.empty
