@@ -44,10 +44,18 @@ object BitSetEquality {
 
   private def hashCode(a: Array[Long]): Int = {
     if (a == null) return 0
+    var j = a.length - 1
+    while (j >= 0 && a(j) == 0L) {
+      j -= 1 // skip trailing zeros
+    }
+    if (j < 0) return 31 // return 31 if the array only contains zeros
     var result = 1
-    for (element <- a) {
+    var i = 0
+    while (i <= j) {
+      val element = a(i)
       val elementHash = (element ^ (element >>> 32)).toInt
       result = 31 * result + elementHash
+      i += 1
     }
     result
   }
@@ -75,11 +83,20 @@ object BitSetEquality {
         case _ => bitSet1.equals(bitSet2)
       }
       case bs1: BitSetN => bitSet2 match {
-        case bs2: BitSet1 => bs1.elems(0) == bs2.elems && all0From(bs1.elems, 1)
-        case bs2: BitSet2 => bs1.elems(0) == bs2.elems0 && bs1.elems(1) == bs2.toBitMask(1) && all0From(bs1.elems, 2)
-        case bs2: BitSetN => util.Arrays.equals(bs1.elems, bs2.elems)
-        case _ => bitSet1.equals(bitSet2)
-      }
+          case bs2: BitSet1 => bs1.elems(0) == bs2.elems && all0From(bs1.elems, 1)
+          case bs2: BitSet2 => bs1.elems(0) == bs2.elems0 && bs1.elems(1) == bs2.toBitMask(1) && all0From(bs1.elems, 2)
+          case bs2: BitSetN =>
+            val elemsInBS1 = bs1.elems.length
+            val elemsInBS2 = bs2.elems.length
+            if (elemsInBS1 == elemsInBS2) {
+              util.Arrays.equals(bs1.elems, bs2.elems)
+            } else if (elemsInBS1 < elemsInBS2) {
+              util.Arrays.equals(bs1.elems, 0, elemsInBS1, bs2.elems, 0, elemsInBS1) && all0From(bs2.elems, elemsInBS1)
+            } else { // (elemsInBS1 > elemsInBS2)
+              util.Arrays.equals(bs1.elems, 0, elemsInBS2, bs2.elems, 0, elemsInBS2) && all0From(bs1.elems, elemsInBS2)
+            }
+          case _ => bitSet1.equals(bitSet2)
+        }
       case _ => bitSet1.equals(bitSet2)
     }
   }
