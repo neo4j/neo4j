@@ -63,7 +63,7 @@ object ResolvedCall {
       case (p: ExplicitParameter, true) =>
         new ExplicitParameter(p.name, p.parameterType, p.sizeHint)(p.position) with SensitiveParameter
       case (p: AutoExtractedParameter, true) =>
-        new AutoExtractedParameter(p.name, p.parameterType, p.writer, p.sizeHint)(p.position)
+        new AutoExtractedParameter(p.name, p.parameterType, p.sizeHint)(p.position)
           with SensitiveAutoParameter
       case (p: StringLiteral, true) => new StringLiteral(p.value)(p.position) with SensitiveLiteral {
           override def literalLength: Option[Int] = None

@@ -24,13 +24,15 @@ import org.neo4j.kernel.api.query.QueryObfuscator
 import org.neo4j.values.storable.Values.utf8Value
 import org.neo4j.values.virtual.MapValue
 
+import scala.collection.mutable
+
 class CypherQueryObfuscator(state: ObfuscationMetadata) extends QueryObfuscator {
 
   override def obfuscateText(rawQueryText: String): String =
     if (state.sensitiveLiteralOffsets.isEmpty)
       rawQueryText
     else {
-      val sb = new StringBuilder()
+      val sb = new mutable.StringBuilder()
       var i = 0
       val adjacentCharacters = rawQueryText.sliding(2).toVector
       for (literalOffset <- state.sensitiveLiteralOffsets) {

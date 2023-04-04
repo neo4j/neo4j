@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.frontend.helpers
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -35,7 +37,7 @@ case class InputDataStreamTestInitialState(
   initialFields: Map[String, CypherType] = Map.empty,
   maybeStatement: Option[ast.Statement] = None,
   maybeSemantics: Option[SemanticState] = None,
-  maybeExtractedParams: Option[Map[String, Any]] = None,
+  maybeExtractedParams: Option[Map[AutoExtractedParameter, Expression]] = None,
   maybeSemanticTable: Option[SemanticTable] = None,
   accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
   maybeReturnColumns: Option[Seq[String]] = None,
@@ -56,7 +58,8 @@ case class InputDataStreamTestInitialState(
 
   override def withSemanticState(s: SemanticState): InputDataStreamTestInitialState = copy(maybeSemantics = Some(s))
 
-  override def withParams(p: Map[String, Any]): InputDataStreamTestInitialState = copy(maybeExtractedParams = Some(p))
+  override def withParams(p: Map[AutoExtractedParameter, Expression]): InputDataStreamTestInitialState =
+    copy(maybeExtractedParams = Some(p))
 
   override def withReturnColumns(cols: Seq[String]): InputDataStreamTestInitialState =
     copy(maybeReturnColumns = Some(cols))

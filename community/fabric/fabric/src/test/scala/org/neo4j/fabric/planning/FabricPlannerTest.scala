@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
+import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
@@ -45,7 +46,6 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions
 import org.neo4j.cypher.internal.options.CypherReplanOption
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.options.CypherUpdateStrategy
-import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
 import org.neo4j.cypher.internal.tracing.TimingCompilationTracer
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -192,7 +192,7 @@ class FabricPlannerTest
       parse(remote.query).as[CreateUser].initialPassword
         .should(matchPattern { case _: SensitiveParameter => })
 
-      remote.extractedLiterals.values.toSeq.head
+      remote.extractedLiterals.values.toSeq.map(_.asInstanceOf[SensitiveStringLiteral].value).head
         .shouldEqual(UTF8.encode("secret"))
     }
 

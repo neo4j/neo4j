@@ -126,11 +126,11 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     val ast = Ors(Seq(
       Equals(
         ExplicitParameter("n", CTAny)(position),
-        AutoExtractedParameter("AUTOINT0", CTInteger, SignedDecimalIntegerLiteral("2")(position))(position)
+        AutoExtractedParameter("AUTOINT0", CTInteger)(position)
       )(position),
       Equals(
         ExplicitParameter("n", CTAny)(position),
-        AutoExtractedParameter("AUTOINT1", CTInteger, SignedDecimalIntegerLiteral("3")(position))(position)
+        AutoExtractedParameter("AUTOINT1", CTInteger)(position)
       )(position)
     ))(position)
     val rewriter = flattenBooleanOperators andThen simplifyPredicates(SemanticState.clean)

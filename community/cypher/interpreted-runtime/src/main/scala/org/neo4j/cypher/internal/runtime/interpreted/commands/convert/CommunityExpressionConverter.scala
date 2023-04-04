@@ -179,12 +179,13 @@ case class CommunityExpressionConverter(
     self: ExpressionConverters
   ): Option[commands.expressions.Expression] = {
     val result = expression match {
-      case _: internal.expressions.Null     => commands.expressions.Null()
-      case _: internal.expressions.True     => predicates.True()
-      case _: internal.expressions.False    => predicates.Not(predicates.True())
-      case e: internal.expressions.Literal  => commands.expressions.Literal(ValueUtils.of(e.value))
-      case e: internal.expressions.Variable => variable(e)
-      case e: ExpressionVariable            => commands.expressions.ExpressionVariable.of(e)
+      case _: internal.expressions.Null                   => commands.expressions.Null()
+      case _: internal.expressions.True                   => predicates.True()
+      case _: internal.expressions.False                  => predicates.Not(predicates.True())
+      case e: internal.expressions.Literal                => commands.expressions.Literal(ValueUtils.of(e.value))
+      case e: internal.expressions.SensitiveStringLiteral => commands.expressions.Literal(Values.byteArray(e.value))
+      case e: internal.expressions.Variable               => variable(e)
+      case e: ExpressionVariable                          => commands.expressions.ExpressionVariable.of(e)
       case e: internal.expressions.Or =>
         predicates.Ors(NonEmptyList(self.toCommandPredicate(id, e.lhs), self.toCommandPredicate(id, e.rhs)))
       case e: internal.expressions.Xor =>

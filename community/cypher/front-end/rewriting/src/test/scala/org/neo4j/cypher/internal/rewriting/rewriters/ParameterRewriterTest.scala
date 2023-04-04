@@ -19,7 +19,6 @@ package org.neo4j.cypher.internal.rewriting.rewriters
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
-import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.ExactSize
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.UnknownSize
@@ -38,9 +37,9 @@ class ParameterRewriterTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("Should give default values to auto extracted parameter after rewrite") {
     val temp =
-      AutoExtractedParameter("prop", CTString, StringLiteral("")(InputPosition.NONE), ExactSize(5))(InputPosition.NONE)
+      AutoExtractedParameter("prop", CTString, ExactSize(5))(InputPosition.NONE)
     temp.endoRewrite(parameterRewriter) should equal(
-      AutoExtractedParameter("prop", CTAny, StringLiteral("")(InputPosition.NONE), UnknownSize)(InputPosition.NONE)
+      AutoExtractedParameter("prop", CTAny, UnknownSize)(InputPosition.NONE)
     )
   }
 }

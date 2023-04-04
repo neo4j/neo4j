@@ -50,7 +50,6 @@ import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.IsPointProperty
 import org.neo4j.cypher.internal.expressions.IsStringProperty
 import org.neo4j.cypher.internal.expressions.LabelName
-import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
 import org.neo4j.cypher.internal.expressions.PartialPredicate
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -1219,7 +1218,6 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
     val param = AutoExtractedParameter(
       "PARAM",
       CTList(CTAny),
-      ListOfLiteralWriter(Seq(literalString("a"), literalString("b"))),
       ApproximateSize(2)
     )(pos)
     val equals = nPredicate(in(nProp, param))
@@ -1237,9 +1235,8 @@ abstract class ExpressionSelectivityCalculatorTest extends CypherFunSuite with A
   test("equality with one label, auto-extracted parameter of size 42") {
     val bucketSize = SizeBucket.computeBucket(42)
     val sizeHint = bucketSize.toOption.get
-    val literalWriters = (1 to sizeHint).map(literalInt(_))
     val param =
-      AutoExtractedParameter("PARAM", CTList(CTAny), ListOfLiteralWriter(literalWriters), bucketSize)(pos)
+      AutoExtractedParameter("PARAM", CTList(CTAny), bucketSize)(pos)
     val equals = nPredicate(in(nProp, param))
 
     val calculator = setUpCalculator(labelInfo = nIsPersonLabelInfo)

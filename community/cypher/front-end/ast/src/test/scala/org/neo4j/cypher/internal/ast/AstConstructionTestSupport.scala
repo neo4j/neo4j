@@ -69,8 +69,6 @@ import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
-import org.neo4j.cypher.internal.expressions.LiteralExtractor
-import org.neo4j.cypher.internal.expressions.LiteralWriter
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Modulo
@@ -328,6 +326,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     case l: Long            => SignedDecimalIntegerLiteral(l.toString)(pos)
     case true               => trueLiteral
     case false              => falseLiteral
+    case seq: Seq[_]        => ListLiteral(seq.map(literal))(pos)
     case other =>
       throw new RuntimeException(s"Unexpected type ${other.getClass.getName} ($other)")
   }
@@ -532,7 +531,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     AutoExtractedParameter(
       key,
       typ,
-      emptyWriter,
       sizeHint.map(i => SizeBucket.computeBucket(i)).getOrElse(UnknownSize)
     )(position)
 
@@ -1055,10 +1053,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
       val pathStep = nextStep(nodes.reverse.toList, rels.reverse.toList, NilPathStep()(pos))
       PathExpression(pathStep)(pos)
     }
-  }
-
-  private val emptyWriter = new LiteralWriter {
-    override def writeTo(extractor: LiteralExtractor): Unit = ???
   }
 }
 

@@ -61,8 +61,10 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsO
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
+import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
@@ -366,9 +368,10 @@ case class CypherPlanner(
     // Prepare query for caching
     val preparedQuery = planner.normalizeQuery(syntacticQuery, plannerContext)
 
-    val (queryParamNames, autoExtractParams) = parameterNamesAndValues(preparedQuery.statement()) match {
-      case (qpn: ArrayBuffer[String], aep: MapValue) => (qpn.toSeq, aep)
-    }
+    val (queryParamNames, autoExtractParams) =
+      parameterNamesAndValues(preparedQuery.statement(), preparedQuery.maybeExtractedParams) match {
+        case (qpn: ArrayBuffer[String], aep: MapValue) => (qpn.toSeq, aep)
+      }
 
     // Get obfuscator out ASAP to make query text available for `dbms.listQueries`, etc
     val obfuscator = CypherQueryObfuscator(preparedQuery.obfuscationMetadata())
@@ -497,15 +500,18 @@ case class CypherPlanner(
   private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
     tcw.getOrCreateFromSchemaState(schemaStateKey, caches.logicalPlanCache.clear())
 
-  private def parameterNamesAndValues(statement: Statement): (ArrayBuffer[String], MapValue) = {
+  private def parameterNamesAndValues(
+    statement: Statement,
+    extracted: Option[Map[AutoExtractedParameter, Expression]]
+  ): (ArrayBuffer[String], MapValue) = {
+    val evaluator = new SimpleInternalExpressionEvaluator
     val names = mutable.ArrayBuffer.empty[String]
     val mapBuilder = new MapValueBuilder()
-    val extractor = new ParameterLiteralExtractor
     statement.folder.findAllByClass[Parameter].foreach {
-      case AutoExtractedParameter(name, _, writer, _) =>
-        names += name
-        writer.writeTo(extractor)
-        mapBuilder.add(name, extractor.value)
+      case p: AutoExtractedParameter =>
+        val value = extracted.map(_(p)).getOrElse(throw new IllegalStateException(s"Cannot find parameter: $p"))
+        names += p.name
+        mapBuilder.add(p.name, evaluator.evaluate(value))
       case ExplicitParameter(name, _, _) =>
         names += name
     }

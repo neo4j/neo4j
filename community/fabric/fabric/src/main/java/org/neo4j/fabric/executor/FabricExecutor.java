@@ -37,6 +37,9 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.ast.GraphSelection;
 import org.neo4j.cypher.internal.evaluator.StaticEvaluation;
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter;
+import org.neo4j.cypher.internal.expressions.Expression;
+import org.neo4j.cypher.internal.runtime.CypherRow;
 import org.neo4j.exceptions.InvalidSemanticsException;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.Catalog;
@@ -68,7 +71,6 @@ import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.PathValue;
@@ -344,7 +346,15 @@ public class FabricExecutor {
                 }
             } else if (location instanceof Location.Remote remote) {
                 FabricQuery.RemoteQuery remoteQuery = plannerInstance.asRemote(fragment);
-                MapValue fullParams = addParams(parameters, asJava(remoteQuery.extractedLiterals()));
+                var extracted = asJava(remoteQuery.extractedLiterals());
+                var builder = new MapValueBuilder();
+                var evaluator = useEvaluator.evaluator();
+                for (Map.Entry<AutoExtractedParameter, Expression> entry : extracted.entrySet()) {
+                    builder.add(
+                            entry.getKey().name(),
+                            evaluator.evaluate(entry.getValue(), VirtualValues.EMPTY_MAP, CypherRow.empty()));
+                }
+                MapValue fullParams = parameters.updatedWith(builder.build());
 
                 return runRemoteQueryAt(remote, transactionMode, remoteQuery.query(), fullParams);
             } else {
@@ -474,17 +484,6 @@ public class FabricExecutor {
             MapValueBuilder builder = new MapValueBuilder(resultSize);
             params.foreach(builder::add);
             bindings.forEach((var, par) -> builder.add(par, validateValue(record.get(var))));
-            return builder.build();
-        }
-
-        private MapValue addParams(MapValue params, Map<String, Object> newValues) {
-            int resultSize = params.size() + newValues.size();
-            if (resultSize == 0 || newValues.size() == 0) {
-                return params;
-            }
-            MapValueBuilder builder = new MapValueBuilder(resultSize);
-            params.foreach(builder::add);
-            newValues.forEach((key, val) -> builder.add(key, Values.of(val)));
             return builder.build();
         }
 

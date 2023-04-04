@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.InputPosition
@@ -176,7 +178,7 @@ object Fragment {
 
   final case class RemoteQuery(
     query: String,
-    extractedLiterals: Map[String, Any]
+    extractedLiterals: Map[AutoExtractedParameter, Expression]
   )
 
   final case class SchemaCommand(

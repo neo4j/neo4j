@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.rewriting
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
@@ -31,7 +32,7 @@ import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class LiteralReplacementTest extends CypherFunSuite {
+class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("should extract starts with patterns") {
     assertRewrite(
@@ -202,14 +203,20 @@ class LiteralReplacementTest extends CypherFunSuite {
     val original = JavaCCParser.parse(originalQuery, exceptionFactory)
     val expected = JavaCCParser.parse(expectedQuery, exceptionFactory)
 
-    val (rewriter, replacedLiterals) = literalReplacement(original, extractLiterals, SemanticState.clean)
+    val (rewriter, replacedParameters) = literalReplacement(original, extractLiterals, SemanticState.clean)
+    val expectedReplacedLiterals = replacements.map {
+      case (n, v) => n -> literal(v)
+    }
+    val actuallyReplacedLiterals = replacedParameters.map {
+      case (p, e) => p.name -> e
+    }
 
     val result = original.endoRewrite(rewriter).endoRewrite(removeAutoExtracted())
     assert(result === expected)
-    assert(replacements === replacedLiterals)
+    assert(expectedReplacedLiterals === actuallyReplacedLiterals)
   }
 
   private def removeAutoExtracted() = bottomUp(Rewriter.lift {
-    case p @ AutoExtractedParameter(name, _, _, _) => ExplicitParameter(name, CTAny)(p.position)
+    case p @ AutoExtractedParameter(name, _, _) => ExplicitParameter(name, CTAny)(p.position)
   })
 }

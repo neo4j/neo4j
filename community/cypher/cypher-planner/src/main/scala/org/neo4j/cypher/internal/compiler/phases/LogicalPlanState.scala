@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -48,7 +50,7 @@ case class LogicalPlanState(
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   maybeStatement: Option[Statement] = None,
   maybeSemantics: Option[SemanticState] = None,
-  maybeExtractedParams: Option[Map[String, Any]] = None,
+  maybeExtractedParams: Option[Map[AutoExtractedParameter, Expression]] = None,
   maybeSemanticTable: Option[SemanticTable] = None,
   maybeQuery: Option[PlannerQuery] = None,
   maybeLogicalPlan: Option[LogicalPlan] = None,
@@ -80,7 +82,9 @@ case class LogicalPlanState(
   override def withReturnColumns(cols: Seq[String]): LogicalPlanState = copy(maybeReturnColumns = Some(cols))
   override def withSemanticTable(s: SemanticTable): LogicalPlanState = copy(maybeSemanticTable = Some(s))
   override def withSemanticState(s: SemanticState): LogicalPlanState = copy(maybeSemantics = Some(s))
-  override def withParams(p: Map[String, Any]): LogicalPlanState = copy(maybeExtractedParams = Some(p))
+
+  override def withParams(p: Map[AutoExtractedParameter, Expression]): LogicalPlanState =
+    copy(maybeExtractedParams = Some(p))
 
   override def withObfuscationMetadata(o: ObfuscationMetadata): LogicalPlanState =
     copy(maybeObfuscationMetadata = Some(o))

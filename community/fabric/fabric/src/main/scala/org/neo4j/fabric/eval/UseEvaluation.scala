@@ -56,7 +56,7 @@ object UseEvaluation {
   class Instance(
     query: String,
     catalog: Catalog,
-    evaluator: StaticEvaluation.StaticEvaluator,
+    val evaluator: StaticEvaluation.StaticEvaluator,
     signatureResolver: ProcedureSignatureResolver
   ) {
 

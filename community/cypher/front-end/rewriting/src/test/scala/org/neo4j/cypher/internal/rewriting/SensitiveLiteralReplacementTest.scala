@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.rewriting.rewriters.sensitiveLiteralReplacement
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.Matcher
@@ -38,14 +39,14 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
 
   test("should extract password") {
     val expectedPattern: Matcher[Any] =
-      matchPattern { case CreateUser(_, _, AutoExtractedParameter(_, _, _: SensitiveStringLiteral, _), _, _) => }
+      matchPattern { case CreateUser(_, _, AutoExtractedParameter(_, _, _), _, _) => }
 
     assertRewrite("CREATE USER foo SET PASSWORD 'password'", expectedPattern, Map("  AUTOSTRING0" -> passwordBytes))
   }
 
   test("should extract password in the presence of other vars") {
     val expectedPattern: Matcher[Any] =
-      matchPattern { case CreateUser(_, _, AutoExtractedParameter(_, _, _: SensitiveStringLiteral, _), _, _) => }
+      matchPattern { case CreateUser(_, _, AutoExtractedParameter(_, _, _), _, _) => }
 
     assertRewrite("CREATE USER $foo SET PASSWORD 'password'", expectedPattern, Map("  AUTOSTRING0" -> passwordBytes))
   }
@@ -59,8 +60,8 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
   test("should extract two passwords") {
     val expectedPattern: Matcher[Any] = matchPattern {
       case SetOwnPassword(
-          AutoExtractedParameter(_, _, _: SensitiveStringLiteral, _),
-          AutoExtractedParameter(_, _, _: SensitiveStringLiteral, _)
+          AutoExtractedParameter(_, _, _),
+          AutoExtractedParameter(_, _, _)
         ) =>
     }
 
@@ -87,14 +88,17 @@ class SensitiveLiteralReplacementTest extends CypherFunSuite {
   ): Unit = {
     val original = JavaCCParser.parse(originalQuery, exceptionFactory)
 
-    val (rewriter, replacedLiterals) = sensitiveLiteralReplacement(original)
+    val (rewriter, replacedParameters) = sensitiveLiteralReplacement(original)
+    val replacedLiterals = replacedParameters.map {
+      case (k, v) => k.name -> v
+    }
 
     val result = original.rewrite(rewriter)
     result should matchExpectedPattern
 
     replacements.foreach {
       case (k, v: Array[Byte]) =>
-        replacedLiterals(k) should equal(v)
+        replacedLiterals(k) should equal(SensitiveStringLiteral(v)(InputPosition.NONE))
       case (k, v) => throw new IllegalStateException(s"Unknown value: $v for key: $k")
     }
   }

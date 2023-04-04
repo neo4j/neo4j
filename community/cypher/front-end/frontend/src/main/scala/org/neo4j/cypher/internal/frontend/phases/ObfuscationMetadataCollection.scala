@@ -17,16 +17,21 @@
 package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveLiteral
 import org.neo4j.cypher.internal.expressions.SensitiveParameter
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.METADATA_COLLECTION
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.FoldingBehavior
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.LiteralOffset
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
+import org.neo4j.cypher.internal.util.symbols.ListType
 
 /**
  * Collect sensitive literals and parameters.
@@ -38,11 +43,12 @@ case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    val extractedParamNames = from.maybeExtractedParams.map(_.keys.toSet).getOrElse(Set.empty)
+    val extractedParamNames = from.maybeExtractedParams.map(_.keys.map(_.name).toSet).getOrElse(Set.empty)
     val preParserOffset = from.startPosition.map(_.offset).getOrElse(0)
     val parameters = from.statement().folder.findAllByClass[Parameter]
 
-    val offsets = collectSensitiveLiteralOffsets(from.statement(), extractedParamNames, preParserOffset)
+    val offsets =
+      collectSensitiveLiteralOffsets(from.statement(), from.maybeExtractedParams.getOrElse(Map.empty), preParserOffset)
     val sensitiveParams = collectSensitiveParameterNames(parameters, extractedParamNames)
 
     from.withObfuscationMetadata(ObfuscationMetadata(offsets, sensitiveParams))
@@ -50,16 +56,22 @@ case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, 
 
   private def collectSensitiveLiteralOffsets(
     statement: Statement,
-    extractedParamNames: Set[String],
+    extractedParameters: Map[AutoExtractedParameter, Expression],
     preParserOffset: Int
-  ): Vector[LiteralOffset] =
-    statement.folder.treeFold(Vector.empty[LiteralOffset]) {
-      case literal: SensitiveLiteral =>
-        acc => SkipChildren(acc :+ LiteralOffset(preParserOffset + literal.position.offset, literal.literalLength))
-      case p: SensitiveAutoParameter if extractedParamNames.contains(p.name) =>
-        acc => SkipChildren(acc :+ LiteralOffset(preParserOffset + p.position.offset, None))
+  ): Vector[LiteralOffset] = {
 
-    }.distinct.sortBy(_.start)
+    val partial: PartialFunction[Any, Vector[LiteralOffset] => FoldingBehavior[Vector[LiteralOffset]]] = {
+      case literal: SensitiveLiteral =>
+        (acc: Vector[LiteralOffset]) =>
+          SkipChildren(acc :+ LiteralOffset(preParserOffset + literal.position.offset, literal.literalLength))
+      case p: SensitiveAutoParameter =>
+        (acc: Vector[LiteralOffset]) => SkipChildren(acc :+ LiteralOffset(preParserOffset + p.position.offset, None))
+    }
+
+    val fromStatement = statement.folder.treeFold(Vector.empty[LiteralOffset])(partial)
+    val fromStatementAndExtracted = extractedParameters.folder.treeFold(fromStatement)(partial)
+    fromStatementAndExtracted.distinct.sortBy(_.start)
+  }
 
   private def collectSensitiveParameterNames(
     queryParams: Seq[Parameter],

@@ -101,7 +101,6 @@ import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.ListLiteral
-import org.neo4j.cypher.internal.expressions.ListOfLiteralWriter
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
@@ -686,7 +685,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         NodeByIdSeek(
           "node",
-          ManySeekableArgs(AutoExtractedParameter("autolist_0", CTList(CTAny), ListOfLiteralWriter(Seq.empty))(pos)),
+          ManySeekableArgs(AutoExtractedParameter("autolist_0", CTList(CTAny))(pos)),
           Set.empty
         ),
         333.0
@@ -710,7 +709,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         NodeByIdSeek(
           "node",
-          SingleSeekableArg(AutoExtractedParameter("autoint_0", CTInteger, ListOfLiteralWriter(Seq.empty))(pos)),
+          SingleSeekableArg(AutoExtractedParameter("autoint_0", CTInteger)(pos)),
           Set.empty
         ),
         333.0
@@ -750,7 +749,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        NodeByElementIdSeek("node", ManySeekableArgs(autoParameter("autolist_0", CTList(CTAny))), Set.empty),
+        NodeByElementIdSeek(
+          "node",
+          ManySeekableArgs(autoParameter("autolist_0", CTList(CTAny))),
+          Set.empty
+        ),
         333.0
       ),
       planDescription(

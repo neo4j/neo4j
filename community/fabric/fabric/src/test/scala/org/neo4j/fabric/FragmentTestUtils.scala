@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.config.CypherConfiguration
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
@@ -87,7 +89,7 @@ trait FragmentTestUtils {
   }
 
   val dummyLocalQuery: BaseState = DummyState
-  val dummyRemoteQuery: Fragment.RemoteQuery = Fragment.RemoteQuery("", Map())
+  val dummyRemoteQuery: Fragment.RemoteQuery = Fragment.RemoteQuery("", Map.empty)
 
   case object DummyState extends BaseState {
     override val queryText: String = ""
@@ -101,7 +103,7 @@ trait FragmentTestUtils {
     override val maybeStatement: Option[Statement] = Option.empty
     override val maybeReturnColumns: Option[Seq[String]] = Option.empty
     override val maybeSemantics: Option[SemanticState] = Option.empty
-    override val maybeExtractedParams: Option[Map[String, Any]] = Option.empty
+    override val maybeExtractedParams: Option[Map[AutoExtractedParameter, Expression]] = Option.empty
     override val maybeSemanticTable: Option[SemanticTable] = Option.empty
     override val maybeObfuscationMetadata: Option[ObfuscationMetadata] = Option.empty
     override val accumulatedConditions: Set[StepSequencer.Condition] = Set.empty
@@ -110,7 +112,7 @@ trait FragmentTestUtils {
     override def withReturnColumns(cols: Seq[String]): BaseState = this
     override def withSemanticTable(s: SemanticTable): BaseState = this
     override def withSemanticState(s: SemanticState): BaseState = this
-    override def withParams(p: Map[String, Any]): BaseState = this
+    override def withParams(p: Map[AutoExtractedParameter, Expression]): BaseState = this
     override def withObfuscationMetadata(o: ObfuscationMetadata): BaseState = this
   }
 

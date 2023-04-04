@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.frontend.helpers
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -58,7 +60,7 @@ case class TestState(override val maybeStatement: Option[ast.Statement]) extends
 
   override def withSemanticState(s: SemanticState) = fail("not implemented")
 
-  override def withParams(p: Map[String, Any]) = fail("not implemented")
+  override def withParams(p: Map[AutoExtractedParameter, Expression]) = fail("not implemented")
 
   override def withObfuscationMetadata(o: ObfuscationMetadata) = fail("not implemented")
 

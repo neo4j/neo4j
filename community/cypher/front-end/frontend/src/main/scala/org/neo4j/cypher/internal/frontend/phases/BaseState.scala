@@ -19,6 +19,8 @@ package org.neo4j.cypher.internal.frontend.phases
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.PlannerName
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
@@ -32,7 +34,7 @@ trait BaseState {
   def maybeStatement: Option[Statement]
   def maybeReturnColumns: Option[Seq[String]]
   def maybeSemantics: Option[SemanticState]
-  def maybeExtractedParams: Option[Map[String, Any]]
+  def maybeExtractedParams: Option[Map[AutoExtractedParameter, Expression]]
   def maybeSemanticTable: Option[SemanticTable]
   def maybeObfuscationMetadata: Option[ObfuscationMetadata]
   def anonymousVariableNameGenerator: AnonymousVariableNameGenerator
@@ -42,7 +44,6 @@ trait BaseState {
   def statement(): Statement = maybeStatement getOrElse fail("Statement")
   def returnColumns(): Seq[String] = maybeReturnColumns getOrElse fail("Return columns")
   def semantics(): SemanticState = maybeSemantics getOrElse fail("Semantics")
-  def extractedParams(): Map[String, Any] = maybeExtractedParams getOrElse fail("Extracted parameters")
   def semanticTable(): SemanticTable = maybeSemanticTable getOrElse fail("Semantic table")
   def obfuscationMetadata(): ObfuscationMetadata = maybeObfuscationMetadata getOrElse fail("Obfuscation metadata")
 
@@ -54,7 +55,7 @@ trait BaseState {
   def withReturnColumns(cols: Seq[String]): BaseState
   def withSemanticTable(s: SemanticTable): BaseState
   def withSemanticState(s: SemanticState): BaseState
-  def withParams(p: Map[String, Any]): BaseState
+  def withParams(p: Map[AutoExtractedParameter, Expression]): BaseState
   def withObfuscationMetadata(o: ObfuscationMetadata): BaseState
 }
 
@@ -65,7 +66,7 @@ case class InitialState(
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   maybeStatement: Option[Statement] = None,
   maybeSemantics: Option[SemanticState] = None,
-  maybeExtractedParams: Option[Map[String, Any]] = None,
+  maybeExtractedParams: Option[Map[AutoExtractedParameter, Expression]] = None,
   maybeSemanticTable: Option[SemanticTable] = None,
   accumulatedConditions: Set[StepSequencer.Condition] = Set.empty,
   maybeReturnColumns: Option[Seq[String]] = None,
@@ -80,7 +81,8 @@ case class InitialState(
 
   override def withSemanticState(s: SemanticState): InitialState = copy(maybeSemantics = Some(s))
 
-  override def withParams(p: Map[String, Any]): InitialState = copy(maybeExtractedParams = Some(p))
+  override def withParams(p: Map[AutoExtractedParameter, Expression]): InitialState =
+    copy(maybeExtractedParams = Some(p))
 
   override def withObfuscationMetadata(o: ObfuscationMetadata): InitialState = copy(maybeObfuscationMetadata = Some(o))
 }

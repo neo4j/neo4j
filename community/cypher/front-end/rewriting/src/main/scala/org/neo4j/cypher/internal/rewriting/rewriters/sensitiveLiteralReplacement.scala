@@ -17,10 +17,10 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
 import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement.ExtractParameterRewriter
-import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement.LiteralReplacement
 import org.neo4j.cypher.internal.rewriting.rewriters.literalReplacement.LiteralReplacements
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Foldable
@@ -39,18 +39,16 @@ object sensitiveLiteralReplacement {
           SkipChildren(acc)
         } else {
           val parameter =
-            new AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString, l)(l.position) with SensitiveAutoParameter
-          SkipChildren(acc + (l -> LiteralReplacement(parameter, l.value)))
+            new AutoExtractedParameter(s"  AUTOSTRING${acc.size}", CTString)(l.position) with SensitiveAutoParameter
+          SkipChildren(acc + (l -> parameter))
         }
   }
 
-  def apply(term: ASTNode): (Rewriter, Map[String, Any]) = {
+  def apply(term: ASTNode): (Rewriter, Map[AutoExtractedParameter, Expression]) = {
     val replaceableLiterals = term.folder.treeFold(IdentityMap.empty: LiteralReplacements)(sensitiveliteralMatcher)
-
-    val extractedParams: Map[String, AnyRef] = replaceableLiterals.map {
-      case (_, LiteralReplacement(parameter, value)) => (parameter.name, value)
+    val extractedParams = replaceableLiterals.map {
+      case (e, parameter) => parameter -> e
     }
-
     (ExtractParameterRewriter(replaceableLiterals), extractedParams)
   }
 }

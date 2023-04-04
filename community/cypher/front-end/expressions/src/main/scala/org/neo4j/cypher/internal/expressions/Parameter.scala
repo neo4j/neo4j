@@ -58,19 +58,9 @@ case class ExplicitParameter(name: String, parameterType: CypherType, sizeHint: 
   override def equals(obj: Any): Boolean = super.equals(obj)
 }
 
-case class ListOfLiteralWriter(literals: Seq[Literal]) extends LiteralWriter {
-
-  override def writeTo(literalExtractor: LiteralExtractor): Unit = {
-    literalExtractor.beginList(literals.size)
-    literals.foreach(_.writeTo(literalExtractor))
-    literalExtractor.endList()
-  }
-}
-
 case class AutoExtractedParameter(
   name: String,
   parameterType: CypherType,
-  writer: LiteralWriter,
   sizeHint: BucketSize = UnknownSize
 )(val position: InputPosition) extends Parameter {
 
@@ -82,13 +72,11 @@ case class AutoExtractedParameter(
     case that: AutoExtractedParameter => that.canEqual(this) && super.equals(that)
     case _                            => false
   }
-
-  def writeTo(literalExtractor: LiteralExtractor): Unit = writer.writeTo(literalExtractor)
 }
 
 trait SensitiveParameter {
-  val name: String
-  val position: InputPosition
+  def name: String
+  def position: InputPosition
 }
 
 trait SensitiveAutoParameter extends SensitiveParameter

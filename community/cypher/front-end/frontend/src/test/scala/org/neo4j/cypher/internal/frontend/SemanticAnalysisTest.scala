@@ -18,11 +18,14 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCParsing
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
+import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
 
@@ -133,7 +136,10 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     queries.foreach { query =>
       withClue(query) {
         val pipeline = pipelineWithSemanticFeatures()
-        val initialState = initialStateWithQuery(query).withParams(Map("p" -> 42))
+        val initialState = initialStateWithQuery(query).withParams(Map(AutoExtractedParameter(
+          "p",
+          CTAny
+        )(InputPosition.NONE) -> StringLiteral("hello")(InputPosition.NONE)))
         val result = runSemanticAnalysisWithPipelineAndState(pipeline, initialState)
 
         result.errors shouldBe empty

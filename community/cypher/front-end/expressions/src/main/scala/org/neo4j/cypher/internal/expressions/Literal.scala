@@ -23,44 +23,7 @@ import java.util
 import scala.language.postfixOps
 import scala.util.matching.Regex
 
-/**
- * Used for extracting the value from a Literal.
- *
- * Instead of using extensive instanceOf or match on every single literal
- * you can just do
- * {{{
- *   literal.writeTo(extractor)
- * }}}
- * and the method corresponding to the literal will be called on the provided extractor.
- */
-trait LiteralExtractor {
-  def writeBoolean(value: Boolean): Unit
-  def writeNull(): Unit
-  def writeString(value: String): Unit
-  def writeDouble(value: Double): Unit
-  def writeLong(value: Long): Unit
-  def writeByteArray(value: Array[Byte]): Unit
-
-  /**
-   * Beginning of a list of size `size`
-   *
-   * It is guaranteed that the following `size` calls will be for the items
-   * of the list in the order that they appear in the list.
-   * @param size the size of the list
-   */
-  def beginList(size: Int): Unit
-
-  /**
-   * Called `size` calls after `beginList`
-   */
-  def endList(): Unit
-}
-
-trait LiteralWriter {
-  def writeTo(extractor: LiteralExtractor): Unit
-}
-
-sealed trait Literal extends Expression with LiteralWriter {
+sealed trait Literal extends Expression {
   def value: AnyRef
   def asCanonicalStringVal: String
   def asSensitiveLiteral: Literal with SensitiveLiteral
@@ -74,7 +37,6 @@ sealed trait NumberLiteral extends Literal {
 
 sealed trait IntegerLiteral extends NumberLiteral {
   def value: java.lang.Long
-  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeLong(value)
 }
 
 sealed trait SignedIntegerLiteral extends IntegerLiteral
@@ -148,7 +110,6 @@ case class SignedHexIntegerLiteral(stringVal: String)(val position: InputPositio
 
 sealed trait DoubleLiteral extends NumberLiteral {
   def value: java.lang.Double
-  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeDouble(value)
 }
 
 case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) extends DoubleLiteral {
@@ -169,18 +130,16 @@ case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) 
 case class StringLiteral(value: String)(val position: InputPosition) extends Literal {
   override def asCanonicalStringVal = value
 
-  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeString(value)
-
   override def asSensitiveLiteral: Literal with SensitiveLiteral =
     new StringLiteral(value)(position) with SensitiveLiteral {
-      // we can't trust the value.lenth here because the length of the literal in
+      // we can't trust the value.length here because the length of the literal in
       // the query depends on how we quote it
       override def literalLength: Option[Int] = None
     }
 }
 
 final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputPosition) extends Expression
-    with SensitiveLiteral with LiteralWriter {
+    with SensitiveLiteral {
 
   override def equals(obj: Any): Boolean = obj match {
     case o: SensitiveStringLiteral => util.Arrays.equals(o.value, value)
@@ -189,7 +148,6 @@ final case class SensitiveStringLiteral(value: Array[Byte])(val position: InputP
 
   override def hashCode(): Int = util.Arrays.hashCode(value)
 
-  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeByteArray(value)
   // we can't trust the value.lenth here because the length of the literal in
   // the query depends on how we quote it
   override def literalLength: Option[Int] = None
@@ -209,7 +167,6 @@ trait SensitiveLiteral {
 case class Null()(val position: InputPosition) extends Literal {
   val value = null
 
-  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeNull()
   override def asCanonicalStringVal = "NULL"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new Null()(position) with SensitiveLiteral {
@@ -224,7 +181,6 @@ object Null {
 case class Infinity()(val position: InputPosition) extends Literal {
   val value: java.lang.Double = Double.PositiveInfinity
 
-  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeDouble(value)
   override def asCanonicalStringVal = "Infinity"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new Infinity()(position) with SensitiveLiteral {
@@ -234,7 +190,6 @@ case class Infinity()(val position: InputPosition) extends Literal {
 
 case class NaN()(val position: InputPosition) extends Literal {
   val value: java.lang.Double = Double.NaN
-  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeDouble(value)
   override def asCanonicalStringVal = "NaN"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new NaN()(position) with SensitiveLiteral {
@@ -247,7 +202,6 @@ sealed trait BooleanLiteral extends Literal
 case class True()(val position: InputPosition) extends BooleanLiteral {
   val value: java.lang.Boolean = true
 
-  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeBoolean(true)
   override def asCanonicalStringVal = "true"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new True()(position) with SensitiveLiteral {
@@ -257,7 +211,6 @@ case class True()(val position: InputPosition) extends BooleanLiteral {
 
 case class False()(val position: InputPosition) extends BooleanLiteral {
   val value: java.lang.Boolean = false
-  override def writeTo(extractor: LiteralExtractor): Unit = extractor.writeBoolean(false)
   override def asCanonicalStringVal = "false"
 
   override def asSensitiveLiteral: Literal with SensitiveLiteral = new False()(position) with SensitiveLiteral {

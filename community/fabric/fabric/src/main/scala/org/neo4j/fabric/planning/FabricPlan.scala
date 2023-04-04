@@ -20,6 +20,8 @@
 package org.neo4j.fabric.planning
 
 import org.neo4j.cypher.internal.FullyParsedQuery
+import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.options.CypherDebugOptions
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
@@ -72,7 +74,7 @@ object FabricQuery {
   final case class RemoteQuery(
     query: String,
     queryType: QueryType,
-    extractedLiterals: Map[String, Any]
+    extractedLiterals: Map[AutoExtractedParameter, Expression]
   ) extends FabricQuery
 
 }
