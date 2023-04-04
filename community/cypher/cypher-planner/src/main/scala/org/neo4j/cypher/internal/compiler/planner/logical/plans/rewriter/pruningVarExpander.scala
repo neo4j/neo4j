@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
@@ -200,16 +201,23 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
 
   case object NoRewrite extends VarExpandRewrite
 
+  /**
+   * @param pruningExpands set of [[VarExpand]] plans that can safely be rewritten to [[PruningVarExpand]].
+   * @param bfsPruningExpands map of [[VarExpand]] plans that can safely be rewritten to [[BFSPruningVarExpand]] along with the variable name to write
+   *                          the BFS distance to, if distance needs to be rewritten.
+   * @param aggregatingPlans map of [[AggregatingPlan]] plans that contain grouping expressions which can be simplified/replaced,
+   *                         along with the aggregation expressions to simplify.
+   */
   private case class ReplacementPlans(
-    pruningExpands: Set[VarExpand],
-    bfsPruningExpands: Map[VarExpand, Option[String]],
-    aggregatingPlans: Map[AggregatingPlan, Map[String, Expression]]
+    pruningExpands: Set[Ref[VarExpand]],
+    bfsPruningExpands: Map[Ref[VarExpand], Option[String]],
+    aggregatingPlans: Map[Ref[AggregatingPlan], Map[String, Expression]]
   )
 
   private def findReplacementPlans(plan: LogicalPlan): ReplacementPlans = {
-    val pruningExpands = mutable.Set[VarExpand]()
-    val bfsPruningExpands = mutable.Map[VarExpand, Option[String]]()
-    val replacementAggregatingPlans = mutable.Map[AggregatingPlan, Map[String, Expression]]()
+    val pruningExpands = mutable.Set[Ref[VarExpand]]()
+    val bfsPruningExpands = mutable.Map[Ref[VarExpand], Option[String]]()
+    val replacementAggregatingPlans = mutable.Map[Ref[AggregatingPlan], Map[String, Expression]]()
 
     def collectDistinctSet(plan: LogicalPlan, distinctHorizon: DistinctHorizon): DistinctHorizon = {
       plan match {
@@ -226,11 +234,11 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
               pruningExpands += expand
               distinctHorizon
             case RewriteToBfs =>
-              bfsPruningExpands.put(expand, None)
+              bfsPruningExpands.put(Ref(expand), None)
               distinctHorizon
             case RewriteToBfsWithDepth(distanceName, newAggregationExpressions, aggregatingPlan) =>
-              bfsPruningExpands.put(expand, Some(distanceName))
-              replacementAggregatingPlans.updateWith(aggregatingPlan)({
+              bfsPruningExpands.put(Ref(expand), Some(distanceName))
+              replacementAggregatingPlans.updateWith(Ref(aggregatingPlan))({
                 case Some(aggregationExpressions) => Some(aggregationExpressions ++ newAggregationExpressions)
                 case None => Some(distinctHorizon.horizonPlan.aggregationExpressions ++ newAggregationExpressions)
               })
@@ -296,7 +304,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
            * An exception to this rule is if those variables are used in the predicate of [[ValueHashJoin]], but these dependencies are tracked elsewhere.
            */
           (newDistinctHorizon, newDistinctHorizon)
-        case apply: AbstractSemiApply =>
+        case _: AbstractSemiApply =>
           /**
            * For predicate-type binary plans that _do_ introduce an argument, it is never safe to traverse both sides in the same horizon.
            * Because the rows of RHS are never passed downstream, the LHS is traversed with same horizon.
@@ -342,7 +350,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
               nodePredicate,
               relationshipPredicate
             ) =>
-            if (replacementPlans.bfsPruningExpands.contains(expand)) {
+            if (replacementPlans.bfsPruningExpands.contains(Ref(expand))) {
               BFSPruningVarExpand(
                 lhs,
                 fromId,
@@ -351,11 +359,11 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
                 toId,
                 length.min == 0,
                 length.max.getOrElse(Int.MaxValue),
-                depthName = replacementPlans.bfsPruningExpands(expand),
+                depthName = replacementPlans.bfsPruningExpands(Ref(expand)),
                 nodePredicate,
                 relationshipPredicate
               )(SameId(expand.id))
-            } else if (replacementPlans.pruningExpands(expand)) {
+            } else if (replacementPlans.pruningExpands(Ref(expand))) {
               PruningVarExpand(
                 lhs,
                 fromId,
@@ -371,13 +379,13 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
               expand
             }
 
-          case aggregation: Aggregation if replacementPlans.aggregatingPlans.contains(aggregation) =>
-            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(aggregation))(
+          case aggregation: Aggregation if replacementPlans.aggregatingPlans.contains(Ref(aggregation)) =>
+            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)))(
               SameId(aggregation.id)
             )
 
-          case aggregation: OrderedAggregation if replacementPlans.aggregatingPlans.contains(aggregation) =>
-            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(aggregation))(
+          case aggregation: OrderedAggregation if replacementPlans.aggregatingPlans.contains(Ref(aggregation)) =>
+            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)))(
               SameId(aggregation.id)
             )
         })
