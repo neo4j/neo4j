@@ -22,7 +22,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
+import org.neo4j.cypher.internal.expressions.NilPathStep
+import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Min
@@ -183,9 +187,19 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
     }
 
     def isMinPathLength(e: Expression): Boolean = e match {
-      case Min(Length(_: PathExpression)) => true
-      case Min(Size(_: Variable))         => true
-      case _                              => false
+      case Min(Length(PathExpression(step))) => isPathSafeToUse(step)
+      case Min(Size(_: Variable))            => true
+      case _                                 => false
+    }
+
+    /**
+     * NOTE: It _should_ be possible to support cases where multiple relationships variables are used in the same path expression of min(length(path)),
+     * e.g., by summing the 'distances' emitted by BFS like so: min(distance1 + distance2 + ...)
+     * When that is implemented, this check can be removed.
+     */
+    private def isPathSafeToUse(step: PathStep): Boolean = step match {
+      case NodePathStep(_, MultiRelationshipPathStep(_, _, _, _: NilPathStep)) => true
+      case _                                                                   => false
     }
   }
 
