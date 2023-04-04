@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.expressions.functions.Size
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionAreWrappedInExists
 import org.neo4j.cypher.internal.rewriting.conditions.PatternExpressionsHaveSemanticInfo
 import org.neo4j.cypher.internal.rewriting.conditions.PredicatesSimplified
+import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -65,7 +66,7 @@ import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
  *
  * [[simplifyPredicates]] takes care of rewriting the Not(Not(Exists(...))) which can be introduced by this rewriter.
  *
- * This rewriter needs to run before [[namePatternElements]], which rewrites pattern expressions. Otherwise we don't find them in the semantic table.
+ * This rewriter needs to run before [[nameAllPatternElements]], which rewrites pattern expressions. Otherwise we don't find them in the semantic table.
  */
 case class normalizeExistsPatternExpressions(
   semanticState: SemanticState
@@ -106,6 +107,7 @@ case class normalizeExistsPatternExpressions(
 case object normalizeExistsPatternExpressions extends StepSequencer.Step with ASTRewriterFactory {
 
   override def preConditions: Set[Condition] = Set(
+    !noUnnamedNodesAndRelationships,
     PatternExpressionsHaveSemanticInfo // Looks up type of pattern expressions
   )
 
