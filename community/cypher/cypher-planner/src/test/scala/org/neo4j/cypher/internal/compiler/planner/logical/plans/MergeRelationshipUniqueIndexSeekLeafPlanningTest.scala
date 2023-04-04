@@ -90,8 +90,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     )
 
   private def buildLogicalPlanningContext(
-    config: StubbedLogicalPlanningConfiguration,
-    planningMergeRelationshipUniqueIndexSeekEnabled: Boolean
+    config: StubbedLogicalPlanningConfiguration
   ): LogicalPlanningContext = {
     val metrics = config.metricsFactory.newMetrics(config.planContext, mock[ExpressionEvaluator], config.executionModel)
 
@@ -115,33 +114,16 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     val settings = Settings(
       executionModel = config.executionModel,
       debugOptions = CypherDebugOptions.default,
-      predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize(),
-      planningRelationshipUniqueIndexSeekEnabled = true,
-      planningMergeRelationshipUniqueIndexSeekEnabled = planningMergeRelationshipUniqueIndexSeekEnabled
+      predicatesAsUnionMaxSize = cypherCompilerConfig.predicatesAsUnionMaxSize()
     )
 
     LogicalPlanningContext(staticComponents, settings)
   }
 
-  test("does not plan index seek when planning relationship unique index seek for merger is disabled") {
-    // given
-    val config = new given {
-      uniqueRelationshipIndexOn(relationshipTypeName, prop)
-    }
-    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = false)
-    val queryGraph = buildQueryGraph(rPropInLit42)
-
-    // when
-    val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
-
-    // then
-    plans shouldBe empty
-  }
-
   test("does not plan index seek when no index is present") {
     // given
     val config = new given()
-    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val context = buildLogicalPlanningContext(config)
     val queryGraph = buildQueryGraph(rPropInLit42)
 
     // when
@@ -156,7 +138,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     val config = new given {
       uniqueRelationshipIndexOn(relationshipTypeName, prop)
     }
-    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val context = buildLogicalPlanningContext(config)
     val queryGraph = buildQueryGraph(rPropInLit42)
 
     // when
@@ -189,7 +171,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
       uniqueRelationshipIndexOn(relationshipTypeName, prop)
       uniqueRelationshipIndexOn(relationshipTypeName, prop2)
     }
-    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val context = buildLogicalPlanningContext(config)
     val queryGraph = buildQueryGraph(rPropInLit42, rProp2InLit6)
 
     // when
@@ -238,7 +220,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     val config = new given {
       uniqueRelationshipIndexOn(relationshipTypeName, prop, prop2)
     }
-    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val context = buildLogicalPlanningContext(config)
     val queryGraph = buildQueryGraph(rPropInLit42, rProp2InLit6)
 
     // when
@@ -276,7 +258,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
       uniqueRelationshipIndexOn(relationshipTypeName, prop, prop2)
       uniqueRelationshipIndexOn(relationshipTypeName, prop3)
     }
-    val context = buildLogicalPlanningContext(config, planningMergeRelationshipUniqueIndexSeekEnabled = true)
+    val context = buildLogicalPlanningContext(config)
     val queryGraph = buildQueryGraph(rPropInLit42, rProp2InLit6, rProp3InLitFoo)
 
     // when

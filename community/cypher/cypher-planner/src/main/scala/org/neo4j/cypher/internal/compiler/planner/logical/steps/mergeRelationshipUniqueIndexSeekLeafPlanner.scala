@@ -62,7 +62,7 @@ object mergeRelationshipUniqueIndexSeekLeafPlanner extends LeafPlanner {
     queryGraph: QueryGraph,
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
-  ): Set[LogicalPlan] = if (context.settings.planningMergeRelationshipUniqueIndexSeekEnabled) {
+  ): Set[LogicalPlan] = {
     def solvedQueryGraph(plan: LogicalPlan): QueryGraph =
       context.staticComponents.planningAttributes.solveds.get(plan.id).asSinglePlannerQuery.tailOrSelf.queryGraph
 
@@ -86,7 +86,7 @@ object mergeRelationshipUniqueIndexSeekLeafPlanner extends LeafPlanner {
             context.staticComponents.logicalPlanProducer.planAssertSameRelationship(relationship, p1, p2, context)
         }
     }.toSet
-  } else Set.empty
+  }
 }
 
 object relationshipSingleUniqueIndexSeekPlanProvider extends RelationshipIndexPlanProvider {

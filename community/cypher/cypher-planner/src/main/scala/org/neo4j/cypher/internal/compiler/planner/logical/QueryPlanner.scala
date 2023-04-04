@@ -103,9 +103,6 @@ case object QueryPlanner
       legacyCsvQuoteEscaping = context.config.legacyCsvQuoteEscaping(),
       csvBufferSize = context.config.csvBufferSize(),
       planningIntersectionScansEnabled = context.config.planningIntersectionScansEnabled(),
-      planningRelationshipUniqueIndexSeekEnabled = context.config.planningRelationshipUniqueIndexSeekEnabled(),
-      planningMergeRelationshipUniqueIndexSeekEnabled =
-        context.config.planningMergeRelationshipUniqueIndexSeekEnabled(),
       useLegacyShortestPath = context.config.useLegacyShortestPath()
     )
 

@@ -43,7 +43,6 @@ object RelationshipIndexSeekPlanProvider extends RelationshipIndexPlanProvider {
   ): Set[LogicalPlan] = for {
     indexMatch <- indexMatches
     if isAllowedByRestrictions(indexMatch.propertyPredicates, restrictions)
-    if !indexMatch.indexDescriptor.isUnique || context.settings.planningRelationshipUniqueIndexSeekEnabled
     plan <- doCreatePlans(indexMatch, hints, argumentIds, context)
   } yield plan
 

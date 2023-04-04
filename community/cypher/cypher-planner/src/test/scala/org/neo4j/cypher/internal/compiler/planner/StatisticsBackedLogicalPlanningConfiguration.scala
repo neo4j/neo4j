@@ -603,19 +603,6 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
     withSetting(GraphDatabaseInternalSettings.planning_intersection_scans_enabled, Boolean.box(enabled))
   }
 
-  def enablePlanningRelationshipUniqueIndexSeek(enabled: Boolean = true)
-    : StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    withSetting(GraphDatabaseInternalSettings.planning_relationship_unique_index_seek_enabled, Boolean.box(enabled))
-  }
-
-  def enablePlanningMergeRelationshipUniqueIndexSeek(enabled: Boolean = true)
-    : StatisticsBackedLogicalPlanningConfigurationBuilder = {
-    withSetting(
-      GraphDatabaseInternalSettings.planning_merge_relationship_unique_index_seek_enabled,
-      Boolean.box(enabled)
-    )
-  }
-
   def build(): StatisticsBackedLogicalPlanningConfiguration = {
     require(cardinalities.allNodes.isDefined, "Please specify allNodesCardinality using `setAllNodesCardinality`.")
     cardinalities.allNodes.foreach(anc =>

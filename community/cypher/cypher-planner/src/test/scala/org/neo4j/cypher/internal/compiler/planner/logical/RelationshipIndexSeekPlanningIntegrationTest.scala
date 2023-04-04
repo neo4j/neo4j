@@ -45,7 +45,6 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     : StatisticsBackedLogicalPlanningConfigurationBuilder = {
     if (isUnique) {
       plannerBuilder()
-        .enablePlanningRelationshipUniqueIndexSeek()
         .addRelationshipIndex("REL", Seq("prop"), 0.01, 0.001, isUnique = true)
     } else {
       plannerBuilder()
@@ -357,7 +356,6 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
     "should plan composite relationship unique index seek when there is an index on two properties and both are in equality predicates"
   ) {
     val planner = plannerBuilder()
-      .enablePlanningRelationshipUniqueIndexSeek()
       .addRelationshipIndex(
         "REL",
         Seq("prop1", "prop2"),
@@ -383,20 +381,6 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         .produceResults("r")
         .filter("a = anon_1")
         .relationshipIndexOperator("(a)-[r:REL(prop = 1)]-(anon_1)", indexType = IndexType.RANGE)
-        .build()
-    )
-  }
-
-  test("should not plan unique index seek when it's disabled") {
-    val planner = plannerBuilderWithIndexUniqueness(isUnique = true)
-      .enablePlanningRelationshipUniqueIndexSeek(enabled = false)
-      .build()
-
-    planner.plan("MATCH (a)-[r:REL {prop: 123}]-(b) RETURN r") should equal(
-      planner.planBuilder()
-        .produceResults("r")
-        .filter("r.prop = 123")
-        .relationshipIndexOperator("(a)-[r:REL(prop)]-(b)")
         .build()
     )
   }

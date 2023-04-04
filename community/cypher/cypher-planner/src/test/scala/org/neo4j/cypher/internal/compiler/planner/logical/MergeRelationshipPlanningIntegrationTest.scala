@@ -203,8 +203,6 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
   test("should plan relationship unique index seek under MERGE") {
     val cfg = plannerBuilder()
-      .enablePlanningRelationshipUniqueIndexSeek()
-      .enablePlanningMergeRelationshipUniqueIndexSeek()
       .setAllNodesCardinality(100)
       .setRelationshipCardinality("()-[:REL]->()", 100)
       .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 1, uniqueSelectivity = 0.01, isUnique = true)
@@ -224,8 +222,6 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
 
   test("should plan assert same relationship on top of multiple unique index seeks under MERGE") {
     val cfg = plannerBuilder()
-      .enablePlanningRelationshipUniqueIndexSeek()
-      .enablePlanningMergeRelationshipUniqueIndexSeek()
       .setAllNodesCardinality(100)
       .setRelationshipCardinality("()-[:REL]->()", 100)
       .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 1, uniqueSelectivity = 0.01, isUnique = true)
@@ -255,19 +251,6 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
       .|.relationshipIndexOperator("(a)-[r:REL(prop2 = 42, prop3 = 'welp')]->(b)", unique = true)
       .relationshipIndexOperator("(a)-[r:REL(prop = 123)]->(b)", unique = true)
       .build()
-  }
-
-  test("should not plan relationship unique index seek under MERGE if it's disabled") {
-    val cfg = plannerBuilder()
-      .enablePlanningRelationshipUniqueIndexSeek()
-      .enablePlanningMergeRelationshipUniqueIndexSeek(enabled = false)
-      .setAllNodesCardinality(100)
-      .setRelationshipCardinality("()-[:REL]->()", 100)
-      .addRelationshipIndex("REL", Seq("prop"), existsSelectivity = 1, uniqueSelectivity = 0.01, isUnique = true)
-      .build()
-
-    val plan = cfg.plan("MERGE (a)-[r:REL {prop: 123}]->(b)").stripProduceResults
-    plan should not be using[DirectedRelationshipUniqueIndexSeek]
   }
 
   test("should plan merge multiple names relationships and reused variable") {
