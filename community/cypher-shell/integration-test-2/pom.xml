@@ -10,8 +10,8 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>cypher-shell-integration-test</artifactId>
-    <name>Neo4j - Cypher Shell Integration Test</name>
+    <artifactId>cypher-shell-integration-test-2</artifactId>
+    <name>Neo4j - Cypher Shell Integration Test 2</name>
     <packaging>jar</packaging>
     <description>Project that runs Cypher Shell integration tests. Disabled by default, run with -DenableCypherShellIntegrationTest to enable.</description>
 
@@ -20,6 +20,7 @@
         <licensing.prepend.text>licensing/notice-gpl-prefix.txt</licensing.prepend.text>
         <moduleName>org.neo4j.shell.it</moduleName>
         <default.jupiter.test.mode>concurrent</default.jupiter.test.mode>
+        <testcontainers.version>1.17.6</testcontainers.version>
     </properties>
 
     <scm>
@@ -71,26 +72,49 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>cypher-shell</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-compress</artifactId>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>neo4j</artifactId>
+            <version>${testcontainers.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+            <version>1.4.6</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.4.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.7</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
     <profiles>
-        <!-- Disable integration test by default because it require a running Neo4J instance. -->
+        <!-- Disable integration test by default. -->
         <profile>
             <id>enable-cypher-shell-integration-test</id>
             <activation>

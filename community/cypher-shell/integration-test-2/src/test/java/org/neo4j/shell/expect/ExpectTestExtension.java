@@ -20,6 +20,8 @@
 package org.neo4j.shell.expect;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.regex.Pattern.compile;
+import static org.apache.commons.io.IOUtils.resourceToString;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.shell.expect.ExpectTestExtension.CYPHER_SHELL_PATH;
 import static org.neo4j.shell.expect.ExpectTestExtension.DEBUG;
@@ -28,6 +30,7 @@ import static org.neo4j.shell.expect.InteractionAssertion.assertEqualInteraction
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -80,11 +83,10 @@ public class ExpectTestExtension implements BeforeAllCallback, AfterAllCallback 
             throws IOException, InterruptedException {
         final var expectedPathString = expectedResourcePath.toString();
         final var expected =
-                IOUtils.resourceToString(expectedPathString, UTF_8, getClass().getClassLoader());
+                resourceToString(expectedPathString, UTF_8, getClass().getClassLoader());
         final var expectScriptFilename = expectResourcePath.getFileName().toString();
         final var execution = expectContainer.execInContainer("expect", expectScriptFilename);
-        final var actual = execution.getStdout();
-        assertEqualInteraction(actual, expected);
+        assertEqualInteraction(execution.getStdout(), expected);
         assertEquals(0, execution.getExitCode());
         assertEquals("", execution.getStderr());
     }
@@ -157,56 +159,65 @@ public class ExpectTestExtension implements BeforeAllCallback, AfterAllCallback 
 class InteractionAssertion {
     private static final String SPAWN_CYPHER_SHELL_START = "spawn " + CYPHER_SHELL_PATH;
     private static final String REPLACEMENT = "<removed>";
-    private static final Pattern BOLT_VERSION_PATTERN =
-            Pattern.compile("^Connected to Neo4j using Bolt protocol version ([0-9.]+) at");
-    private static final Pattern CONSUME_PATTERN = Pattern.compile(
-            "^ready to start consuming query after ([0-9]+) ms, results consumed after another ([0-9]+) ms");
+    private static final List<Pattern> REPLACEMENT_PATTERNS = List.of(
+            compile("^Connected to Neo4j using Bolt protocol version ([0-9.]+) at"),
+            compile("^ready to start consuming query after ([0-9]+) ms, results consumed after another ([0-9]+) ms"));
+    private static final Pattern ANSI_CODE_PATTERN = Pattern.compile("\u001B\\[[?]?[;\\d]*[mhlCD]");
 
     static void assertEqualInteraction(String actual, String expected) {
         final var cleanedActual = cleanActual(actual).collect(Collectors.joining(System.lineSeparator()));
         final var cleanedExpected = cleanExpected(expected).collect(Collectors.joining(System.lineSeparator()));
-        if (!cleanedActual.equals(cleanedExpected)) {
-            if (DEBUG) {
-                debugPrint(actual, "Actual Interaction");
-                debugPrint(expected, "Expected Interaction");
-                debugPrint(cleanedActual, "Actual Interaction Cleaned");
-                debugPrint(cleanedExpected, "Expected Interaction Cleaned");
-            }
-            assertEquals(cleanedExpected, cleanedActual);
+        if (DEBUG) {
+            debugPrint(actual, "Actual Interaction");
+            debugPrint(expected, "Expected Interaction");
+            debugPrint(cleanedActual, "Actual Interaction Cleaned");
+            debugPrint(cleanedExpected, "Expected Interaction Cleaned");
         }
+        assertEquals(cleanedExpected, cleanedActual);
     }
 
     private static Stream<String> cleanActual(String input) {
         return cleanExpected(input)
+                .map(InteractionAssertion::removeAnsiCodes)
                 .filter(l -> !l.startsWith(SPAWN_CYPHER_SHELL_START))
-                .map(InteractionAssertion::removeAnsiCodes);
+                .map(String::trim);
     }
 
-    private static Stream<String> cleanExpected(String input) {
-        return input.lines().map(l -> removeFirst(BOLT_VERSION_PATTERN, l)).map(l -> removeFirst(CONSUME_PATTERN, l));
+    private static Stream<StringBuilder> cleanExpected(String input) {
+        return input.lines().map(InteractionAssertion::replacementPatterns);
     }
 
-    // Removes matching groups from input.
-    private static String removeFirst(Pattern pattern, String input) {
+    private static StringBuilder replacementPatterns(String input) {
+        StringBuilder result = new StringBuilder(input);
+        for (Pattern pattern : REPLACEMENT_PATTERNS) {
+            removeFirstMatchGroups(pattern, result);
+        }
+        return result;
+    }
+
+    // Removes matching groups from first match of input.
+    private static void removeFirstMatchGroups(Pattern pattern, StringBuilder input) {
         final var matcher = pattern.matcher(input);
         if (matcher.find()) {
-            final var builder = new StringBuilder(input);
             int offset = 0;
             for (int i = 1; i <= matcher.groupCount(); ++i) {
                 final int start = matcher.start(i);
                 final int end = matcher.end(i);
-                builder.replace(start + offset, end + offset, REPLACEMENT);
+                input.replace(start + offset, end + offset, REPLACEMENT);
                 offset = offset - (end - start) + REPLACEMENT.length();
             }
-            return builder.toString();
-        } else {
-            return input;
         }
     }
 
-    private static String removeAnsiCodes(String input) {
-        // Note, there are some unexpected (to me), ansi codes in the interactions.
-        return input.replaceAll("\u001B\\[[?]?[;\\d]*[mhlCD]", "").trim();
+    /*
+     * Clean ansi codes.
+     *
+     * We could assert on ansi codes, but it's no fun building those assertions.
+     * Also, there are some ansi codes in the output that feels unnecessary,
+     * that would make it even less fun.
+     */
+    private static String removeAnsiCodes(StringBuilder input) {
+        return ANSI_CODE_PATTERN.matcher(input).replaceAll("");
     }
 
     private static void debugPrint(String content, String heading) {
