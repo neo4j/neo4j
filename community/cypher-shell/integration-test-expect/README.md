@@ -4,7 +4,7 @@ This module contains integration tests that manage their own dependencies with t
 
 ## How to run
 
-1. `mvn integration-test --projects org.neo4j:cypher-shell-integration-test-2 -DenableCypherShellIntegrationTest`
+1. `mvn integration-test --projects org.neo4j:cypher-shell-integration-test-expect -DenableCypherShellIntegrationTest`
    or directly from your IDE of choice.
 
 ## Add tests

@@ -31,6 +31,6 @@
     <modules>
         <module>cypher-shell</module>
         <module>integration-test</module>
-        <module>integration-test-2</module>
+        <module>integration-test-expect</module>
     </modules>
 </project>

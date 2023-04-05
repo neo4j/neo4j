@@ -10,7 +10,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>cypher-shell-integration-test-2</artifactId>
+    <artifactId>cypher-shell-integration-test-expect</artifactId>
     <name>Neo4j - Cypher Shell Integration Test 2</name>
     <packaging>jar</packaging>
     <description>Project that runs Cypher Shell integration tests. Disabled by default, run with -DenableCypherShellIntegrationTest to enable.</description>
