@@ -35,14 +35,18 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicReferenceArray;
+import java.util.concurrent.atomic.LongAdder;
 import org.apache.commons.lang3.mutable.MutableLong;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.index.internal.gbptree.RootMappingLayout.RootMappingValue;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.util.Preconditions;
@@ -265,6 +269,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         long unstableGeneration = unstableGeneration(generation);
         var pagedFile = support.pagedFile();
         var isRootTreeClean = new CleanTrackingConsistencyCheckVisitor(visitor);
+        var dataRootCount = new LongAdder();
         new GBPTreeConsistencyChecker<>(
                         rootTreeNode,
                         rootLayout,
@@ -277,7 +282,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                         ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
                         root,
                         contextFactory)
-                .check(isRootTreeClean, state.progress);
+                .check(isRootTreeClean, state.progress, dataRootCount::add);
 
         if (!isRootTreeClean.isConsistent()) {
             // The root tree has inconsistencies, we essentially cannot trust to read it in order to get
@@ -285,56 +290,102 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             return;
         }
 
-        // Check data trees in parallel, each using a single thread
-        List<ROOT_KEY> dataTreePartitions;
+        // Check batches of N data trees in parallel, each individual data tree is checked using a single thread
+        var futures = new LinkedList<Future<Void>>();
+        var batchSize = 100;
+        var batchSizeSwitchThreshold = dataRootCount.sum() * 0.9;
         try (var context = contextFactory.create("allRootsSeek")) {
-            var low = rootLayout.newKey();
-            var high = rootLayout.newKey();
-            rootLayout.initializeAsLowest(low);
-            rootLayout.initializeAsHighest(high);
-            dataTreePartitions =
-                    support.internalPartitionedSeek(rootLayout, rootTreeNode, low, high, numThreads, this, context);
-        }
-        var tasks = new LinkedList<Callable<Void>>();
-        for (var i = 0; i < dataTreePartitions.size() - 1; i++) {
-            var partitionLow = dataTreePartitions.get(i);
-            var partitionHigh = dataTreePartitions.get(i + 1);
-            tasks.addLast(() -> {
-                try (var context = contextFactory.create("Check data tree");
-                        var partitionSeek = support.initializeSeeker(
-                                support.internalAllocateSeeker(
-                                        rootLayout, rootTreeNode, context, SeekCursor.NO_MONITOR),
-                                this,
-                                partitionLow,
-                                partitionHigh,
-                                DEFAULT_MAX_READ_AHEAD,
-                                LEAF_LEVEL);
-                        var partitionProgress = state.progress.threadLocalReporter()) {
-                    while (partitionSeek.next()) {
-                        var dataRoot = partitionSeek.value().asRoot();
-                        new GBPTreeConsistencyChecker<>(
-                                        dataTreeNode,
-                                        dataLayout,
-                                        state,
-                                        1,
-                                        stableGeneration,
-                                        unstableGeneration,
-                                        reportDirty,
-                                        pagedFile.path(),
-                                        ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
-                                        dataRoot,
-                                        contextFactory)
-                                .check(visitor, partitionProgress);
+            var dataTreeRootBatch = new ArrayList<Root>();
+            try (var rootSeeker = allRootsSeek(context)) {
+                var numBatchesAdded = 0;
+                for (long numRootsSeen = 0; rootSeeker.next(); numRootsSeen++) {
+                    dataTreeRootBatch.add(rootSeeker.value().asRoot());
+                    if (dataTreeRootBatch.size() == batchSize) {
+                        futures.add(submitDataTreeRootBatch(
+                                dataTreeRootBatch,
+                                state,
+                                stableGeneration,
+                                unstableGeneration,
+                                reportDirty,
+                                pagedFile,
+                                visitor));
+                        if (++numBatchesAdded % 100 == 0) {
+                            // Check now and then to keep the number of futures down a bit in the list
+                            while (!futures.isEmpty() && futures.peekFirst().isDone()) {
+                                futures.removeFirst().get();
+                            }
+                        }
+                        // Try to distribute smaller batches towards the end so that we don't end up with a few
+                        // threads doing the majority of the work.
+                        if (batchSize > 1 && numRootsSeen >= batchSizeSwitchThreshold) {
+                            batchSize = 1;
+                        }
                     }
                 }
-                return null;
-            });
-        }
-        try {
-            var results = state.executor.invokeAll(tasks);
-            Futures.getAll(results);
-        } catch (Exception e) {
+                if (!dataTreeRootBatch.isEmpty()) {
+                    futures.add(submitDataTreeRootBatch(
+                            dataTreeRootBatch,
+                            state,
+                            stableGeneration,
+                            unstableGeneration,
+                            reportDirty,
+                            pagedFile,
+                            visitor));
+                }
+            }
+            Futures.getAll(futures);
+        } catch (ExecutionException | InterruptedException e) {
             throw new IOException(e);
+        }
+    }
+
+    private Future<Void> submitDataTreeRootBatch(
+            List<Root> dataTreeRootBatch,
+            GBPTreeConsistencyChecker.ConsistencyCheckState state,
+            long stableGeneration,
+            long unstableGeneration,
+            boolean reportDirty,
+            PagedFile pagedFile,
+            GBPTreeConsistencyCheckVisitor visitor) {
+        var batch = dataTreeRootBatch.toArray(new Root[0]);
+        dataTreeRootBatch.clear();
+        return state.executor.submit(() -> {
+            var monitor = new SeekDepthMonitor();
+            var low = dataLayout.newKey();
+            var high = dataLayout.newKey();
+            dataLayout.initializeAsLowest(low);
+            dataLayout.initializeAsHighest(high);
+            try (var partitionProgress = state.progress.threadLocalReporter();
+                    var seeker = support.internalAllocateSeeker(
+                            dataLayout, dataTreeNode, CursorContext.NULL_CONTEXT, monitor)) {
+                for (var root : batch) {
+                    var treeDepth = depthOf(root, seeker, low, high);
+                    new GBPTreeConsistencyChecker<>(
+                                    dataTreeNode,
+                                    dataLayout,
+                                    state,
+                                    treeDepth >= 2 ? state.numThreads : 1,
+                                    stableGeneration,
+                                    unstableGeneration,
+                                    reportDirty,
+                                    pagedFile.path(),
+                                    ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
+                                    root,
+                                    contextFactory)
+                            .check(visitor, partitionProgress, GBPTreeConsistencyChecker.NO_MONITOR);
+                }
+            }
+            return null;
+        });
+    }
+
+    private int depthOf(Root root, SeekCursor<DATA_KEY, DATA_VALUE> seeker, DATA_KEY low, DATA_KEY high) {
+        try {
+            var monitor = new SeekDepthMonitor();
+            support.initializeSeeker(seeker, () -> root, low, high, 1, LEAF_LEVEL);
+            return monitor.treeDepth;
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
     }
 

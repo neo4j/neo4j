@@ -115,7 +115,7 @@ class GBPTreeConsistencyChecker<KEY> {
      * @param visitor {@link GBPTreeConsistencyCheckVisitor} visitor to report inconsistencies to.
      * @throws IOException on {@link PageCursor} error.
      */
-    void check(GBPTreeConsistencyCheckVisitor visitor, ProgressListener progress) throws IOException {
+    void check(GBPTreeConsistencyCheckVisitor visitor, ProgressListener progress, Monitor monitor) throws IOException {
         try (var context = contextFactory.create(TAG_CHECK);
                 var cursor = cursorFactory.apply(context)) {
             long rootGeneration = root.goTo(cursor);
@@ -133,7 +133,8 @@ class GBPTreeConsistencyChecker<KEY> {
                     seenIds,
                     context,
                     rightmostPerLevel,
-                    progress);
+                    progress,
+                    monitor);
             state.addLocalSeenIds(seenIds);
             rightmostPerLevel.assertLast(visitor);
         }
@@ -162,7 +163,8 @@ class GBPTreeConsistencyChecker<KEY> {
             BitSet seenIds,
             CursorContext cursorContext,
             RightmostInChainShard rightmostPerLevel,
-            ProgressListener progress)
+            ProgressListener progress,
+            Monitor monitor)
             throws IOException {
         long pageId = cursor.getCurrentPageId();
         addToSeenList(file, seenIds, pageId, state.lastId, visitor);
@@ -279,6 +281,9 @@ class GBPTreeConsistencyChecker<KEY> {
         checkSuccessorPointerGeneration(cursor, successor, visitor);
 
         if (!isInternal || !reasonableKeyCount || !consistentNodeMeta) {
+            if (isLeaf) {
+                monitor.dataKeysSeen(keyCount);
+            }
             return;
         }
 
@@ -316,7 +321,8 @@ class GBPTreeConsistencyChecker<KEY> {
                                         shardSeenIds,
                                         cursorContext,
                                         shardRightmostPerLevel,
-                                        shardProgress);
+                                        shardProgress,
+                                        monitor);
                                 state.addLocalSeenIds(shardSeenIds);
                                 return null;
                             }
@@ -346,7 +352,8 @@ class GBPTreeConsistencyChecker<KEY> {
                                 seenIds,
                                 cursorContext,
                                 rightmostPerLevel,
-                                progress);
+                                progress,
+                                monitor);
                         goTo(cursor, "parent", pageId);
                     });
         }
@@ -688,6 +695,7 @@ class GBPTreeConsistencyChecker<KEY> {
         private final GBPTreeConsistencyCheckVisitor visitor;
         final ExecutorService executor;
         final ProgressListener progress;
+        final int numThreads;
 
         ConsistencyCheckState(
                 Path file,
@@ -699,6 +707,7 @@ class GBPTreeConsistencyChecker<KEY> {
                 throws IOException {
             this.file = file;
             this.lastId = idProvider.lastId();
+            this.numThreads = numThreads;
             // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
             this.seenIds = new BitSet(toIntExact(highId()));
             this.visitor = visitor;
@@ -793,4 +802,11 @@ class GBPTreeConsistencyChecker<KEY> {
             }
         }
     }
+
+    @FunctionalInterface
+    interface Monitor {
+        void dataKeysSeen(int keyCount);
+    }
+
+    static Monitor NO_MONITOR = keyCount -> {};
 }

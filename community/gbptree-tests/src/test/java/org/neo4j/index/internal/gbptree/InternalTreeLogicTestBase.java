@@ -1734,7 +1734,7 @@ abstract class InternalTreeLogicTestBase<KEY, VALUE> {
                     ctx -> cursor.duplicate(),
                     root,
                     NULL_CONTEXT_FACTORY);
-            consistencyChecker.check(visitor, state.progress);
+            consistencyChecker.check(visitor, state.progress, GBPTreeConsistencyChecker.NO_MONITOR);
         }
         goTo(readCursor, currentPageId);
     }

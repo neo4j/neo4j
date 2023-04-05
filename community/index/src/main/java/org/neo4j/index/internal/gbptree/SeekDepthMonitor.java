@@ -21,9 +21,11 @@ package org.neo4j.index.internal.gbptree;
 
 class SeekDepthMonitor extends SeekCursor.MonitorAdaptor {
     boolean reachedLeafLevel;
+    int treeDepth;
 
     @Override
     public void leafNode(int depth, int keyCount) {
         reachedLeafLevel = true;
+        treeDepth = depth;
     }
 }

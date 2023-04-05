@@ -119,7 +119,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
                         ctx -> pagedFile.io(0, PF_SHARED_READ_LOCK, ctx),
                         root,
                         contextFactory)
-                .check(visitor, state.progress);
+                .check(visitor, state.progress, GBPTreeConsistencyChecker.NO_MONITOR);
     }
 
     @Override
