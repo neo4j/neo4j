@@ -23,6 +23,7 @@ import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRule {
@@ -36,6 +37,29 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
     boolean enforcesUniqueness();
 
     boolean enforcesPropertyExistence();
+
+    boolean enforcesPropertyType();
+
+    /**
+     * Test if this constraint descriptor is a property type constraint.
+     * @return {@code true} if calling {@link #asPropertyTypeConstraint()} would not throw.
+     */
+    boolean isPropertyTypeConstraint();
+
+    /**
+     * Test if this constraint descriptor is a node property type constraint.
+     */
+    boolean isNodePropertyTypeConstraint();
+
+    /**
+     * Test if this constraint descriptor is a relationship property type constraint.
+     */
+    boolean isRelationshipPropertyTypeConstraint();
+
+    /**
+     * @return this constraint descriptor as a {@link TypeConstraintDescriptor} if possible, or throw an {@link IllegalStateException}.
+     */
+    TypeConstraintDescriptor asPropertyTypeConstraint();
 
     /**
      * Test if this constraint descriptor is a relationship property existence constraint.

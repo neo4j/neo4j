@@ -22,8 +22,12 @@ package org.neo4j.internal.schema.constraints;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.internal.schema.ConstraintType.EXISTS;
+import static org.neo4j.internal.schema.ConstraintType.PROPERTY_TYPE;
+import static org.neo4j.internal.schema.ConstraintType.UNIQUE;
+import static org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS;
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
+import java.util.List;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
@@ -32,6 +36,7 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.SchemaUserDescription;
+import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -43,34 +48,38 @@ public class ConstraintDescriptorImplementation
                 NodeExistenceConstraintDescriptor,
                 KeyConstraintDescriptor,
                 RelExistenceConstraintDescriptor,
-                UniquenessConstraintDescriptor {
+                UniquenessConstraintDescriptor,
+                TypeConstraintDescriptor {
     private final ConstraintType type;
     private final SchemaDescriptor schema;
     private final long id;
     private final String name;
     private final Long ownedIndex;
     private final IndexType ownedIndexType;
+    private final List<SchemaValueType> allowedPropertyTypes;
 
-    ConstraintDescriptorImplementation(ConstraintType type, SchemaDescriptor schema) {
-        Preconditions.checkState(type == EXISTS, "Index type should be supplied for index-backed constraints");
-        this.type = type;
-        this.schema = schema;
-        this.id = NO_ID;
-        this.name = null;
-        this.ownedIndex = null;
-        this.ownedIndexType = null;
+    static ConstraintDescriptorImplementation makeExistsConstraint(SchemaDescriptor schema) {
+        return new ConstraintDescriptorImplementation(EXISTS, schema, NO_ID, null, null, null, null);
     }
 
-    ConstraintDescriptorImplementation(ConstraintType type, SchemaDescriptor schema, IndexType ownedIndexType) {
-        this.type = type;
-        this.schema = schema;
-        this.id = NO_ID;
-        this.name = null;
-        this.ownedIndex = null;
+    static KeyConstraintDescriptor makeUniqueExistsConstraint(SchemaDescriptor schema, IndexType indexType) {
+        Preconditions.checkState(indexType != null, "Index type should be supplied for index-backed constraints");
+
+        return new ConstraintDescriptorImplementation(UNIQUE_EXISTS, schema, NO_ID, null, null, indexType, null);
+    }
+
+    static UniquenessConstraintDescriptor makeUniqueConstraint(SchemaDescriptor schema, IndexType indexType) {
+        Preconditions.checkState(indexType != null, "Index type should be supplied for index-backed constraints");
+
+        return new ConstraintDescriptorImplementation(UNIQUE, schema, NO_ID, null, null, indexType, null);
+    }
+
+    static TypeConstraintDescriptor makePropertyTypeConstraint(
+            SchemaDescriptor schema, List<SchemaValueType> allowedPropertyTypes) {
         Preconditions.checkState(
-                (type != EXISTS && ownedIndexType != null) || (type == EXISTS && ownedIndexType == null),
-                "Index type should be supplied for index-backed constraints");
-        this.ownedIndexType = ownedIndexType;
+                allowedPropertyTypes != null, "Property types should be supplied for property type constraints");
+        return new ConstraintDescriptorImplementation(
+                PROPERTY_TYPE, schema, NO_ID, null, null, null, allowedPropertyTypes);
     }
 
     private ConstraintDescriptorImplementation(
@@ -79,13 +88,15 @@ public class ConstraintDescriptorImplementation
             long id,
             String name,
             Long ownedIndex,
-            IndexType ownedIndexType) {
+            IndexType ownedIndexType,
+            List<SchemaValueType> allowedPropertyTypes) {
         this.type = type;
         this.schema = schema;
         this.id = id;
         this.name = name;
         this.ownedIndex = ownedIndex;
         this.ownedIndexType = ownedIndexType;
+        this.allowedPropertyTypes = allowedPropertyTypes;
     }
 
     // METHODS
@@ -110,13 +121,42 @@ public class ConstraintDescriptorImplementation
         return type.enforcesPropertyExistence();
     }
 
+    @Override
+    public boolean enforcesPropertyType() {
+        return type.enforcesPropertyType();
+    }
+
     /**
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user-friendly description of this constraint.
      */
     @Override
     public String userDescription(TokenNameLookup tokenNameLookup) {
-        return SchemaUserDescription.forConstraint(tokenNameLookup, id, name, type, schema(), ownedIndex);
+        return SchemaUserDescription.forConstraint(
+                tokenNameLookup, id, name, type, schema(), ownedIndex, allowedPropertyTypes);
+    }
+
+    @Override
+    public boolean isNodePropertyTypeConstraint() {
+        return schema.entityType() == NODE && type == PROPERTY_TYPE;
+    }
+
+    @Override
+    public boolean isRelationshipPropertyTypeConstraint() {
+        return schema.entityType() == RELATIONSHIP && type == PROPERTY_TYPE;
+    }
+
+    @Override
+    public boolean isPropertyTypeConstraint() {
+        return type == PROPERTY_TYPE;
+    }
+
+    @Override
+    public TypeConstraintDescriptor asPropertyTypeConstraint() {
+        if (!isPropertyTypeConstraint()) {
+            throw conversionException(TypeConstraintDescriptor.class);
+        }
+        return this;
     }
 
     @Override
@@ -175,10 +215,7 @@ public class ConstraintDescriptorImplementation
 
     @Override
     public boolean isIndexBackedConstraint() {
-        return isNodeUniquenessConstraint()
-                || isRelationshipUniquenessConstraint()
-                || isNodeKeyConstraint()
-                || isRelationshipKeyConstraint();
+        return type.enforcesUniqueness();
     }
 
     @Override
@@ -209,16 +246,30 @@ public class ConstraintDescriptorImplementation
 
     @Override
     public final boolean equals(Object o) {
-        if (o instanceof ConstraintDescriptor that) {
-            boolean compare = this.type() == that.type() && this.schema().equals(that.schema());
-            if (compare && that.isIndexBackedConstraint()) {
-                compare = compare
-                        && this.indexType()
-                                .equals(that.asIndexBackedConstraint().indexType());
-            }
-            return compare;
+        if (!(o instanceof ConstraintDescriptor that)) {
+            return false;
         }
-        return false;
+
+        if (this.type != that.type()) {
+            return false;
+        }
+
+        if (!this.schema().equals(that.schema())) {
+            return false;
+        }
+
+        if (that.isIndexBackedConstraint()
+                && !this.indexType().equals(that.asIndexBackedConstraint().indexType())) {
+            return false;
+        }
+
+        if (that.enforcesPropertyType()
+                && !this.allowedPropertyTypes.equals(
+                        that.asPropertyTypeConstraint().allowedPropertyTypes())) {
+            return false;
+        }
+
+        return true;
     }
 
     @Override
@@ -262,7 +313,8 @@ public class ConstraintDescriptorImplementation
 
     @Override
     public ConstraintDescriptorImplementation withId(long id) {
-        return new ConstraintDescriptorImplementation(type, schema, id, name, ownedIndex, ownedIndexType);
+        return new ConstraintDescriptorImplementation(
+                type, schema, id, name, ownedIndex, ownedIndexType, allowedPropertyTypes);
     }
 
     @Override
@@ -271,14 +323,24 @@ public class ConstraintDescriptorImplementation
             return this;
         }
         name = SchemaNameUtil.sanitiseName(name);
-        return new ConstraintDescriptorImplementation(type, schema, id, name, ownedIndex, ownedIndexType);
+        return new ConstraintDescriptorImplementation(
+                type, schema, id, name, ownedIndex, ownedIndexType, allowedPropertyTypes);
+    }
+
+    @Override
+    public List<SchemaValueType> allowedPropertyTypes() {
+        if (!enforcesPropertyType()) {
+            throw new IllegalStateException("This constraint does not enforce property types.");
+        }
+        return allowedPropertyTypes;
     }
 
     @Override
     public ConstraintDescriptorImplementation withOwnedIndexId(long ownedIndex) {
         Preconditions.checkState(
                 ownedIndexType != null, "ConstraintDescriptor missing IndexType when connected to index");
-        return new ConstraintDescriptorImplementation(type, schema, id, name, ownedIndex, ownedIndexType);
+        return new ConstraintDescriptorImplementation(
+                type, schema, id, name, ownedIndex, ownedIndexType, allowedPropertyTypes);
     }
 
     @Override

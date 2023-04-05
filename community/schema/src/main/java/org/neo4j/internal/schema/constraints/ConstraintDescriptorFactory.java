@@ -19,26 +19,26 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import static org.neo4j.internal.schema.ConstraintType.EXISTS;
-import static org.neo4j.internal.schema.ConstraintType.UNIQUE;
-import static org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS;
-
+import java.util.List;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.SchemaValueType;
 
 public class ConstraintDescriptorFactory {
     private ConstraintDescriptorFactory() {}
 
     public static NodeExistenceConstraintDescriptor existsForLabel(int labelId, int... propertyIds) {
-        return new ConstraintDescriptorImplementation(EXISTS, SchemaDescriptors.forLabel(labelId, propertyIds));
+        return ConstraintDescriptorImplementation.makeExistsConstraint(
+                SchemaDescriptors.forLabel(labelId, propertyIds));
     }
 
     public static RelExistenceConstraintDescriptor existsForRelType(int relTypeId, int... propertyIds) {
-        return new ConstraintDescriptorImplementation(EXISTS, SchemaDescriptors.forRelType(relTypeId, propertyIds));
+        return ConstraintDescriptorImplementation.makeExistsConstraint(
+                SchemaDescriptors.forRelType(relTypeId, propertyIds));
     }
 
     public static UniquenessConstraintDescriptor uniqueForLabel(int labelId, int... propertyIds) {
@@ -58,7 +58,7 @@ public class ConstraintDescriptorFactory {
     }
 
     public static ConstraintDescriptor existsForSchema(SchemaDescriptor schema) {
-        ConstraintDescriptorImplementation constraint = new ConstraintDescriptorImplementation(EXISTS, schema);
+        ConstraintDescriptorImplementation constraint = ConstraintDescriptorImplementation.makeExistsConstraint(schema);
         if (schema.isLabelSchemaDescriptor()) {
             return constraint.asNodePropertyExistenceConstraint();
         }
@@ -69,26 +69,30 @@ public class ConstraintDescriptorFactory {
     }
 
     public static NodeExistenceConstraintDescriptor existsForSchema(LabelSchemaDescriptor schema) {
-        return new ConstraintDescriptorImplementation(EXISTS, schema);
+        return ConstraintDescriptorImplementation.makeExistsConstraint(schema);
     }
 
     public static RelExistenceConstraintDescriptor existsForSchema(RelationTypeSchemaDescriptor schema) {
-        return new ConstraintDescriptorImplementation(EXISTS, schema);
+        return ConstraintDescriptorImplementation.makeExistsConstraint(schema);
     }
 
     public static UniquenessConstraintDescriptor uniqueForSchema(SchemaDescriptor schema) {
-        return new ConstraintDescriptorImplementation(UNIQUE, schema, IndexType.RANGE);
+        return ConstraintDescriptorImplementation.makeUniqueConstraint(schema, IndexType.RANGE);
     }
 
     public static UniquenessConstraintDescriptor uniqueForSchema(SchemaDescriptor schema, IndexType indexType) {
-        return new ConstraintDescriptorImplementation(UNIQUE, schema, indexType);
+        return ConstraintDescriptorImplementation.makeUniqueConstraint(schema, indexType);
     }
 
     public static KeyConstraintDescriptor keyForSchema(SchemaDescriptor schema) {
-        return new ConstraintDescriptorImplementation(UNIQUE_EXISTS, schema, IndexType.RANGE).asKeyConstraint();
+        return ConstraintDescriptorImplementation.makeUniqueExistsConstraint(schema, IndexType.RANGE);
     }
 
     public static KeyConstraintDescriptor keyForSchema(SchemaDescriptor schema, IndexType indexType) {
-        return new ConstraintDescriptorImplementation(UNIQUE_EXISTS, schema, indexType).asKeyConstraint();
+        return ConstraintDescriptorImplementation.makeUniqueExistsConstraint(schema, indexType);
+    }
+
+    public static TypeConstraintDescriptor typeForSchema(SchemaDescriptor schema, List<SchemaValueType> allowedTypes) {
+        return ConstraintDescriptorImplementation.makePropertyTypeConstraint(schema, allowedTypes);
     }
 }

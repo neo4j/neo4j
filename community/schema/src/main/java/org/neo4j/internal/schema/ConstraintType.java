@@ -26,16 +26,19 @@ package org.neo4j.internal.schema;
  * NOTE: The ordinal is used in the hash function for the auto-generated SchemaRule names, so avoid changing the ordinals when modifying this enum.
  */
 public enum ConstraintType {
-    UNIQUE(true, false),
-    EXISTS(false, true),
-    UNIQUE_EXISTS(true, true);
+    UNIQUE(true, false, false),
+    EXISTS(false, true, false),
+    UNIQUE_EXISTS(true, true, false),
+    PROPERTY_TYPE(false, false, true);
 
     private final boolean isUnique;
     private final boolean mustExist;
+    private final boolean isType;
 
-    ConstraintType(boolean isUnique, boolean mustExist) {
+    ConstraintType(boolean isUnique, boolean mustExist, boolean isType) {
         this.isUnique = isUnique;
         this.mustExist = mustExist;
+        this.isType = isType;
     }
 
     public boolean enforcesUniqueness() {
@@ -44,5 +47,9 @@ public enum ConstraintType {
 
     public boolean enforcesPropertyExistence() {
         return mustExist;
+    }
+
+    public boolean enforcesPropertyType() {
+        return isType;
     }
 }

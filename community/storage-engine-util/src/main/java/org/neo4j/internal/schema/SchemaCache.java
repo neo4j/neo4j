@@ -610,6 +610,12 @@ public class SchemaCache {
             final var propToConstraintType = IntObjectMaps.mutable.<ConstraintType>empty();
             for (ConstraintDescriptor descriptor : constraints) {
                 final var constraintType = descriptor.type();
+
+                // We can only merge constraints that enforce either UNIQUE or IS NOT NULL
+                if (!constraintType.enforcesUniqueness() && !constraintType.enforcesPropertyExistence()) {
+                    continue;
+                }
+
                 for (var property : descriptor.schema().getPropertyIds()) {
                     final var mergedType = propToConstraintType.updateValue(
                             property, descriptor::type, type -> merge(constraintType, type));
@@ -629,6 +635,7 @@ public class SchemaCache {
                 case EXISTS -> constraintType == ConstraintType.UNIQUE ? ConstraintType.UNIQUE_EXISTS : currentType;
                 case UNIQUE -> constraintType == ConstraintType.EXISTS ? ConstraintType.UNIQUE_EXISTS : currentType;
                 case UNIQUE_EXISTS -> currentType;
+                default -> throw new IllegalStateException("Can not fuse %s".formatted(currentType));
             };
         }
     }

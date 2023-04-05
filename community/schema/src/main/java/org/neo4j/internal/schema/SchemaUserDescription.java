@@ -22,6 +22,7 @@ package org.neo4j.internal.schema;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
+import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.IntFunction;
 import org.neo4j.common.EntityType;
@@ -85,7 +86,8 @@ public final class SchemaUserDescription {
             String name,
             ConstraintType type,
             SchemaDescriptor schema,
-            Long ownedIndex) {
+            Long ownedIndex,
+            List<SchemaValueType> allowedPropertyTypes) {
         StringJoiner joiner = new StringJoiner(", ", "Constraint( ", " )");
         maybeAddId(id, joiner);
         maybeAddName(name, joiner);
@@ -94,6 +96,7 @@ public final class SchemaUserDescription {
         if (ownedIndex != null) {
             joiner.add("ownedIndex=" + ownedIndex);
         }
+        maybeAddAllowedPropertyTypes(allowedPropertyTypes, joiner);
         return joiner.toString();
     }
 
@@ -102,6 +105,7 @@ public final class SchemaUserDescription {
             case EXISTS -> entityType.name() + " PROPERTY EXISTENCE";
             case UNIQUE -> entityType == NODE ? "UNIQUENESS" : entityType.name() + " UNIQUENESS";
             case UNIQUE_EXISTS -> entityType.name() + " KEY";
+            case PROPERTY_TYPE -> entityType.name() + " PROPERTY TYPE";
         };
     }
 
@@ -114,6 +118,12 @@ public final class SchemaUserDescription {
     private static void maybeAddName(String name, StringJoiner joiner) {
         if (name != null) {
             joiner.add("name='" + name + "'");
+        }
+    }
+
+    private static void maybeAddAllowedPropertyTypes(List<SchemaValueType> allowedPropertyTypes, StringJoiner joiner) {
+        if (allowedPropertyTypes != null) {
+            joiner.add("allowedPropertyTypes='" + allowedPropertyTypes + "'");
         }
     }
 
