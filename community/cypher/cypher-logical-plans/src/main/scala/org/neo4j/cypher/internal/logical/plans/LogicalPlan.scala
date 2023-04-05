@@ -3709,7 +3709,7 @@ idGen: IdGen) extends LogicalBinaryPlan(idGen) with EagerLogicalPlan {
  * Marker trait of light-weight simulations of a basic plans that can be used to test or benchmark runtime frameworks
  * in isolation from the database.
  */
-sealed trait SimulatedPlan
+sealed trait SimulatedPlan extends TestOnlyPlan
 
 /**
  * Produce the given number of nodes

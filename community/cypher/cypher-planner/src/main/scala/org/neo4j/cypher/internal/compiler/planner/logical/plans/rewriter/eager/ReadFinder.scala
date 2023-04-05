@@ -111,6 +111,7 @@ import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.TestOnlyPlan
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByIdSeek
@@ -547,7 +548,7 @@ object ReadFinder {
           case DirectedUnionRelationshipTypesScan(idName, leftNode, relTypes, rightNode, _, _) =>
             processUnionRelTypeScan(idName, leftNode, relTypes, rightNode)
 
-          case _: PhysicalPlanningPlan | _: CommandLogicalPlan | _: LogicalLeafPlanExtension =>
+          case _: PhysicalPlanningPlan | _: CommandLogicalPlan | _: LogicalLeafPlanExtension | _: TestOnlyPlan =>
             throw new IllegalStateException(s"Unsupported leaf plan in eagerness analysis: $p")
         }
 
