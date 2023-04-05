@@ -122,7 +122,9 @@ class UploadCommandTest {
                 assertThrows(CommandFailedException.class, () -> command.buildConsoleURI("hello.local", devMode));
 
         // then
-        assertEquals("Invalid Bolt URI 'hello.local'", exception.getMessage());
+        assertEquals(
+                "Invalid Bolt URI 'hello.local'. Please note push-to-cloud does not currently support private link bolt connections. Please raise a Support ticket if you need to use push-to-cloud and you have public traffic disabled.",
+                exception.getMessage());
     }
 
     @Test
@@ -141,7 +143,9 @@ class UploadCommandTest {
                 () -> command.buildConsoleURI("neo4j+s://rogue-env.databases.neo4j-abc.io", devMode));
 
         // then
-        assertEquals("Invalid Bolt URI 'neo4j+s://rogue-env.databases.neo4j-abc.io'", exception.getMessage());
+        assertEquals(
+                "Invalid Bolt URI 'neo4j+s://rogue-env.databases.neo4j-abc.io'. Please note push-to-cloud does not currently support private link bolt connections. Please raise a Support ticket if you need to use push-to-cloud and you have public traffic disabled.",
+                exception.getMessage());
     }
 
     @Test
@@ -179,7 +183,7 @@ class UploadCommandTest {
     }
 
     @Test
-    public void testBuildValidConsoleURInPrivMode() {
+    public void testThrowsErrorinPrivModeInProd() {
         // given
         boolean devMode = false;
         Copier targetCommunicator = mockedTargetCommunicator();
@@ -188,17 +192,19 @@ class UploadCommandTest {
                 .console(PushToCloudConsole.fakeConsole("username", "password", devMode))
                 .build();
 
-        // when
-        String consoleUrl = command.buildConsoleURI("neo4j+s://rogue.production-orch-0001.neo4j.io", devMode);
+        CommandFailedException exception = assertThrows(
+                CommandFailedException.class,
+                () -> command.buildConsoleURI("neo4j+s://rogue.production-orch-0001.neo4j.io", devMode));
 
-        // then
-        assertEquals("https://console.neo4j.io/v1/databases/rogue", consoleUrl);
+        assertEquals(
+                "Invalid Bolt URI 'neo4j+s://rogue.production-orch-0001.neo4j.io'. Please note push-to-cloud does not currently support private link bolt connections. Please raise a Support ticket if you need to use push-to-cloud and you have public traffic disabled.",
+                exception.getMessage());
     }
 
     @Test
     public void testBuildValidConsoleURInPrivModeInNonProd() {
         // given
-        boolean devMode = false;
+        boolean devMode = true;
         Copier targetCommunicator = mockedTargetCommunicator();
         UploadCommand command = command()
                 .copier(targetCommunicator)

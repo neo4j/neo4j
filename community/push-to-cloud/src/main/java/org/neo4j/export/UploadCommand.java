@@ -206,12 +206,15 @@ public class UploadCommand extends AbstractAdminCommand {
     String buildConsoleURI(String boltURI, boolean devMode) throws CommandFailedException {
         UrlMatcher matchers[] = devMode
                 ? new UrlMatcher[] {new DevMatcher(), new ProdMatcher(), new PrivMatcher()}
-                : new UrlMatcher[] {new ProdMatcher(), new PrivMatcher()};
+                : new UrlMatcher[] {new ProdMatcher()};
 
         return Arrays.stream(matchers)
                 .filter(m -> m.match(boltURI))
                 .findFirst()
-                .orElseThrow(() -> new CommandFailedException("Invalid Bolt URI '" + boltURI + "'"))
+                .orElseThrow(
+                        () -> new CommandFailedException(
+                                "Invalid Bolt URI '" + boltURI
+                                        + "'. Please note push-to-cloud does not currently support private link bolt connections. Please raise a Support ticket if you need to use push-to-cloud and you have public traffic disabled."))
                 .consoleUrl();
     }
 
