@@ -237,13 +237,13 @@ class FoldableTest extends CypherFunSuite {
   test("should get children in Map") {
     val list = Map(Val(1) -> Add(Val(2), Val(3)), Val(2) -> Val(10))
 
-    list.treeChildren.toList shouldEqual List(Val(1) -> Add(Val(2), Val(3)), Val(2) -> Val(10))
+    list.treeChildren.toList shouldEqual List(Val(1), Add(Val(2), Val(3)), Val(2), Val(10))
   }
 
   test("should get children in Map in reverse") {
     val list = Map(Val(1) -> Add(Val(2), Val(3)), Val(2) -> Val(10))
 
-    list.reverseTreeChildren.toList shouldEqual List(Val(2) -> Val(10), Val(1) -> Add(Val(2), Val(3)))
+    list.reverseTreeChildren.toList shouldEqual List(Val(10), Val(2), Add(Val(2), Val(3)), Val(1))
   }
 
   test("should get children in Option") {

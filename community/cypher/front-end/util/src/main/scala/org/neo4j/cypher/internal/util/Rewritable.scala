@@ -95,7 +95,12 @@ object Rewritable {
           case _: collection.Set[_] =>
             children.toSet
           case _: collection.Map[_, _] =>
-            children.asInstanceOf[Seq[(String, AnyRef)]].toMap
+            val builder = Map.newBuilder[AnyRef, AnyRef]
+            children.iterator.grouped(2).foreach {
+              case Seq(k, v) => builder.addOne((k, v))
+              case _ => throw new IllegalStateException()
+            }
+            builder.result()
           case p: Product =>
             copyConstructor(p).invoke(p, children: _*)
           case t =>

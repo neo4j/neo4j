@@ -30,7 +30,7 @@ object Foldable {
     def treeChildren: Iterator[AnyRef] = that match {
       case s: collection.Seq[_] => s.iterator.asInstanceOf[Iterator[AnyRef]]
       case s: Set[_]            => s.iterator.asInstanceOf[Iterator[AnyRef]]
-      case m: Map[_, _]         => m.iterator.asInstanceOf[Iterator[AnyRef]]
+      case m: Map[_, _]         => m.iterator.flatMap { case (k, v) => Iterator(k, v) }.asInstanceOf[Iterator[AnyRef]]
       case p: Product           => p.productIterator.asInstanceOf[Iterator[AnyRef]]
       case _                    => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
@@ -40,10 +40,11 @@ object Foldable {
       // For list sets, the order matters.
       case s: ListSet[_] => reverseListSetIterator(s).asInstanceOf[Iterator[AnyRef]]
       // For Sets and Maps, order doesn't really matter, but if the order is swapped around that often breaks expectations anyhow.
-      case s: Set[_]    => s.toVector.reverseIterator.asInstanceOf[Iterator[AnyRef]]
-      case m: Map[_, _] => m.toVector.reverseIterator.asInstanceOf[Iterator[AnyRef]]
-      case p: Product   => reverseProductIterator(p)
-      case _            => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
+      case s: Set[_] => s.toVector.reverseIterator.asInstanceOf[Iterator[AnyRef]]
+      case m: Map[_, _] =>
+        m.toVector.reverseIterator.flatMap { case (k, v) => Iterator(v, k) }.asInstanceOf[Iterator[AnyRef]]
+      case p: Product => reverseProductIterator(p)
+      case _          => Iterator.empty.asInstanceOf[Iterator[AnyRef]]
     }
 
     /**

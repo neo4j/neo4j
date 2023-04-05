@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.util.Rewritable.IteratorEq
 import org.neo4j.cypher.internal.util.RewritableTest.Add
 import org.neo4j.cypher.internal.util.RewritableTest.Exp
 import org.neo4j.cypher.internal.util.RewritableTest.ExpList
+import org.neo4j.cypher.internal.util.RewritableTest.Mappings
 import org.neo4j.cypher.internal.util.RewritableTest.Options
 import org.neo4j.cypher.internal.util.RewritableTest.Pos
 import org.neo4j.cypher.internal.util.RewritableTest.Sum
@@ -74,6 +75,12 @@ object RewritableTest {
     def dup(children: Seq[AnyRef]): this.type =
       Wrap(children.head).asInstanceOf[this.type]
   }
+
+  case class Mappings(map: Map[String, Exp]) extends Exp {
+
+    override def dup(children: Seq[AnyRef]): this.type =
+      Mappings(children.head.asInstanceOf[Map[String, Exp]]).asInstanceOf[this.type]
+  }
 }
 
 class RewritableTest extends CypherFunSuite {
@@ -106,7 +113,7 @@ class RewritableTest extends CypherFunSuite {
         }
       )
 
-      assert(result === ast)
+      result should be theSameInstanceAs ast
     }
 
     test(s"$name should be identical when using identity") {
@@ -119,7 +126,33 @@ class RewritableTest extends CypherFunSuite {
         }
       )
 
-      assert(result === ast)
+      result should be theSameInstanceAs ast
+    }
+
+    test(s"$name should be identical when no rule matches: Rewriting a Map") {
+      val ast = Add(Val(1), Mappings(Map("2" -> Val(3), "4" -> Val(5))))
+
+      val result = rewrite(
+        ast,
+        {
+          case None => ???
+        }
+      )
+
+      result should be theSameInstanceAs ast
+    }
+
+    test(s"$name should be identical when using identity: Rewriting a Map") {
+      val ast = Add(Val(1), Mappings(Map("2" -> Val(3))))
+
+      val result = rewrite(
+        ast,
+        {
+          case a => a
+        }
+      )
+
+      result should be theSameInstanceAs ast
     }
 
     test(s"$name should match and replace primitives") {
@@ -315,7 +348,7 @@ class RewritableTest extends CypherFunSuite {
         }
       )
 
-      assert(result === ast)
+      result should be theSameInstanceAs ast
     }
 
     test(s"$name should be identical when using identity") {
@@ -328,7 +361,33 @@ class RewritableTest extends CypherFunSuite {
         }
       )
 
-      assert(result === ast)
+      result should be theSameInstanceAs ast
+    }
+
+    test(s"$name should be identical when no rule matches: Rewriting a Map") {
+      val ast = Add(Val(1), Mappings(Map("2" -> Val(3))))
+
+      val result = bottomUpVariant(
+        ast,
+        {
+          case None => ???
+        }
+      )
+
+      result should be theSameInstanceAs ast
+    }
+
+    test(s"$name should be identical when using identity: Rewriting a Map") {
+      val ast = Add(Val(1), Mappings(Map("2" -> Val(3))))
+
+      val result = bottomUpVariant(
+        ast,
+        {
+          case a => a
+        }
+      )
+
+      result should be theSameInstanceAs ast
     }
 
     test(s"$name should match and replace primitives") {
