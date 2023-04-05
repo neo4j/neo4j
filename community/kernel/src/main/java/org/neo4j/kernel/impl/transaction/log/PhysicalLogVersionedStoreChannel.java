@@ -145,7 +145,7 @@ public class PhysicalLogVersionedStoreChannel extends DelegatingStoreChannel<Sto
     }
 
     @Override
-    public long getVersion() {
+    public long getLogVersion() {
         return version;
     }
 

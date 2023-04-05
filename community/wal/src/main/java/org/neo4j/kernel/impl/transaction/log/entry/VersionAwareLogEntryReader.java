@@ -63,7 +63,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
     @Override
     public LogEntry readLogEntry(ReadableLogPositionAwareChannel channel) throws IOException {
         try {
-            byte versionCode = channel.markAndGet(positionMarker);
+            byte versionCode = channel.markAndGetVersion(positionMarker);
             if (versionCode == 0) {
                 // we reached the end of available records but still have space available in pre-allocated file
                 // we reset channel position to restore last read byte in case someone would like to re-read or check it

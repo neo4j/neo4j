@@ -238,4 +238,19 @@ public final class Preconditions {
             throw new IllegalArgumentException(String.format(message, a, b));
         }
     }
+
+    /**
+     * Ensures that {@code value} is a multiple of {@code multiple} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param valueName name of the value variable.
+     * @param value to check.
+     * @param multipleName name of the multiple variable.
+     * @param multiple the {@code value} must be.
+     */
+    public static void requireMultipleOf(String valueName, long value, String multipleName, long multiple) {
+        if (value % multiple != 0) {
+            throw new IllegalArgumentException(
+                    String.format("%s(%d) must be multiple of %s(%d)", valueName, value, multipleName, multiple));
+        }
+    }
 }

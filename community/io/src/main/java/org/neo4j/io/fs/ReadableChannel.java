@@ -79,4 +79,13 @@ public interface ReadableChannel extends ReadableByteChannel, ChecksumReader {
      * @throws ReadPastEndException if not enough data was available.
      */
     void get(byte[] bytes, int length) throws IOException;
+
+    /**
+     * @return the version {@code byte} from this channel.
+     * @throws IOException I/O error from channel.
+     * @throws ReadPastEndException if not enough data was available.
+     */
+    default byte getVersion() throws IOException {
+        return get();
+    }
 }

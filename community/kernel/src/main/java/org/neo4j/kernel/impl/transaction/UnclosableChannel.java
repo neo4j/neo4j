@@ -30,8 +30,8 @@ public class UnclosableChannel extends DelegatingStoreChannel<LogVersionedStoreC
     }
 
     @Override
-    public long getVersion() {
-        return delegate.getVersion();
+    public long getLogVersion() {
+        return delegate.getLogVersion();
     }
 
     @Override

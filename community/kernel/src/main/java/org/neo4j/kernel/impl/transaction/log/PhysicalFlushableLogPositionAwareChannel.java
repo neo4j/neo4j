@@ -43,13 +43,13 @@ public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPos
 
     @Override
     public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) throws IOException {
-        positionMarker.mark(logVersionedStoreChannel.getVersion(), channel.position());
+        positionMarker.mark(logVersionedStoreChannel.getLogVersion(), channel.position());
         return positionMarker;
     }
 
     @Override
     public LogPosition getCurrentLogPosition() throws IOException {
-        return new LogPosition(logVersionedStoreChannel.getVersion(), channel.position());
+        return new LogPosition(logVersionedStoreChannel.getLogVersion(), channel.position());
     }
 
     @Override

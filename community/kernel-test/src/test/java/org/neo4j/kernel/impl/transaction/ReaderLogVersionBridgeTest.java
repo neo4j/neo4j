@@ -78,7 +78,7 @@ class ReaderLogVersionBridgeTest {
         final StoreChannel newStoreChannel = mock(StoreChannel.class);
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge(logFiles.getLogFile());
 
-        when(channel.getVersion()).thenReturn(version);
+        when(channel.getLogVersion()).thenReturn(version);
         when(channel.getLogFormatVersion()).thenReturn(CURRENT_LOG_FORMAT_VERSION);
         when(fs.fileExists(any(Path.class))).thenReturn(true);
         when(fs.read(any(Path.class))).thenReturn(newStoreChannel);
@@ -126,7 +126,7 @@ class ReaderLogVersionBridgeTest {
         // given
         final ReaderLogVersionBridge bridge = new ReaderLogVersionBridge(logFiles.getLogFile());
 
-        when(channel.getVersion()).thenReturn(version);
+        when(channel.getLogVersion()).thenReturn(version);
         when(fs.read(any(Path.class))).thenThrow(new NoSuchFileException("mock"));
 
         // when
@@ -145,7 +145,7 @@ class ReaderLogVersionBridgeTest {
         when(nextVersionWithIncompleteHeader.read(any(ByteBuffer.class)))
                 .thenReturn(CURRENT_FORMAT_LOG_HEADER_SIZE / 2);
 
-        when(channel.getVersion()).thenReturn(version);
+        when(channel.getLogVersion()).thenReturn(version);
         when(fs.fileExists(any(Path.class))).thenReturn(true);
         when(fs.read(any(Path.class))).thenReturn(nextVersionWithIncompleteHeader);
 

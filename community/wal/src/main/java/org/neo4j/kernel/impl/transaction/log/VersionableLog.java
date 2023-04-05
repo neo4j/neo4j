@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log;
 
 public interface VersionableLog {
-    long getVersion();
+    long getLogVersion();
 
     byte getLogFormatVersion();
 }

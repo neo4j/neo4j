@@ -74,8 +74,8 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     }
 
     @Override
-    public long getVersion() {
-        return channel.getVersion();
+    public long getLogVersion() {
+        return channel.getLogVersion();
     }
 
     @Override
@@ -84,25 +84,25 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     }
 
     @Override
-    public byte markAndGet(LogPositionMarker marker) throws IOException {
+    public byte markAndGetVersion(LogPositionMarker marker) throws IOException {
         final var currentMarker = getCurrentLogPosition(marker);
-        final var data = get();
-        if (!currentMarker.isMarkerInLog(channel.getVersion())) {
+        final var data = getVersion();
+        if (!currentMarker.isMarkerInLog(channel.getLogVersion())) {
             // reading the byte forced the channel to move to the next log - let's re-mark at the correct location
-            marker.mark(channel.getVersion(), position() - Byte.BYTES);
+            marker.mark(channel.getLogVersion(), position() - Byte.BYTES);
         }
         return data;
     }
 
     @Override
     public LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) throws IOException {
-        positionMarker.mark(channel.getVersion(), position());
+        positionMarker.mark(channel.getLogVersion(), position());
         return positionMarker;
     }
 
     @Override
     public LogPosition getCurrentLogPosition() throws IOException {
-        return new LogPosition(channel.getVersion(), position());
+        return new LogPosition(channel.getLogVersion(), position());
     }
 
     @Override

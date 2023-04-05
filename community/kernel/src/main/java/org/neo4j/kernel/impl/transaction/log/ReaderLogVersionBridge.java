@@ -39,7 +39,7 @@ public class ReaderLogVersionBridge implements LogVersionBridge {
     public LogVersionedStoreChannel next(LogVersionedStoreChannel channel, boolean raw) throws IOException {
         PhysicalLogVersionedStoreChannel nextChannel;
         try {
-            nextChannel = logFile.openForVersion(channel.getVersion() + 1, raw);
+            nextChannel = logFile.openForVersion(channel.getLogVersion() + 1, raw);
         } catch (NoSuchFileException | IncompleteLogHeaderException e) {
             // See PhysicalLogFile#rotate() for description as to why these exceptions are OK
             return channel;

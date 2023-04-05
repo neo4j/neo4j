@@ -111,4 +111,19 @@ public interface WritableChannel extends WritableByteChannel, ChecksumWriter {
      * @throws IOException if I/O error occurs.
      */
     WritableChannel putAll(ByteBuffer src) throws IOException;
+
+    /**
+     * Write a version represented by a {@code byte} to this channel. Implementations might do
+     * additional validation to ensure that content from different versions do not mix.
+     * <p>
+     * Implementations can also keep version information separate from the stream of data, so
+     * a call to this method will not always move the position one byte.
+     *
+     * @param version the version byte for this channel.
+     * @return this channel, for fluent usage.
+     * @throws IOException if I/O error occurs.
+     */
+    default WritableChannel putVersion(byte version) throws IOException {
+        return put(version);
+    }
 }

@@ -28,7 +28,7 @@ public class InMemoryVersionableReadableClosablePositionAwareChannel extends InM
     }
 
     @Override
-    public long getVersion() {
+    public long getLogVersion() {
         return 0;
     }
 

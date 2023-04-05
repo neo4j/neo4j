@@ -27,7 +27,7 @@ public interface ReadableLogPositionAwareChannel extends ReadableChannel, LogPos
     /**
      * Logically, this method is the same as calling
      * {@link LogPositionAwareChannel#getCurrentLogPosition(LogPositionMarker)} followed by a call to
-     * {@link ReadableChannel#get()}. However, in some circumstances the call to get can cause the channel to
+     * {@link ReadableChannel#getVersion()}. However, in some circumstances the call to get can cause the channel to
      * rollover into the next version when the marker has been positioned in the PREVIOUS channel, giving an
      * inconsistent reading. Implementations should ensure that the positioned marker is correct for the location of
      * the returned byte value.
@@ -35,8 +35,8 @@ public interface ReadableLogPositionAwareChannel extends ReadableChannel, LogPos
      * @return the next byte value in the channel
      * @throws IOException if unable to read the channel for data
      */
-    default byte markAndGet(LogPositionMarker marker) throws IOException {
+    default byte markAndGetVersion(LogPositionMarker marker) throws IOException {
         getCurrentLogPosition(marker);
-        return get();
+        return getVersion();
     }
 }

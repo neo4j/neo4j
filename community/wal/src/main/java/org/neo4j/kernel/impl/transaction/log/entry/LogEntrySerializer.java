@@ -77,6 +77,6 @@ public abstract class LogEntrySerializer<T extends LogEntry> {
 
     public static void writeLogEntryHeader(KernelVersion kernelVersion, byte type, WritableChannel channel)
             throws IOException {
-        channel.put(kernelVersion.version()).put(type);
+        channel.putVersion(kernelVersion.version()).put(type);
     }
 }

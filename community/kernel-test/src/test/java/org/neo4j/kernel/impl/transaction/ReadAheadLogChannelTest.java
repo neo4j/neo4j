@@ -178,7 +178,7 @@ class ReadAheadLogChannelTest {
             channel.getCurrentLogPosition(marker);
             assertEquals(new LogPosition(0, channelSize1), marker.newPosition());
 
-            assertEquals(byteValue, channel.markAndGet(marker));
+            assertEquals(byteValue, channel.markAndGetVersion(marker));
             assertEquals(new LogPosition(1, 0), marker.newPosition());
 
             for (var i = 10; i < 20; i++) {
