@@ -98,7 +98,7 @@ object Rewritable {
             val builder = Map.newBuilder[AnyRef, AnyRef]
             children.iterator.grouped(2).foreach {
               case Seq(k, v) => builder.addOne((k, v))
-              case _ => throw new IllegalStateException()
+              case _         => throw new IllegalStateException()
             }
             builder.result()
           case p: Product =>
@@ -111,16 +111,6 @@ object Rewritable {
       case e: IllegalArgumentException =>
         throw new IllegalStateException(s"Failed rewriting $that\nTried using children: ${children.mkString(",")}", e)
     }
-
-  def dupProduct(product: Product, children: Seq[AnyRef]): Product = product match {
-    case a: Rewritable =>
-      a.dup(children)
-    case _ =>
-      if (children.iterator eqElements product.treeChildren)
-        product
-      else
-        copyConstructor(product).invoke(product, children: _*).asInstanceOf[Product]
-  }
 
   implicit class RewritableAny[T <: AnyRef](val that: T) extends AnyVal {
 
