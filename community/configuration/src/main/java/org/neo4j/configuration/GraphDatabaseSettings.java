@@ -24,6 +24,7 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static java.util.Map.entry;
 import static org.neo4j.configuration.Config.DEFAULT_CONFIG_DIR_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.TransactionStateMemoryAllocation.ON_HEAP;
 import static org.neo4j.configuration.SettingConstraints.ABSOLUTE_PATH;
@@ -51,6 +52,7 @@ import static org.neo4j.configuration.SettingValueParsers.TIMEZONE;
 import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOf;
+import static org.neo4j.configuration.connectors.ConnectorDefaults.SERVER_CONNECTOR_DEFAULTS;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
@@ -59,13 +61,12 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.eclipse.collections.api.factory.Maps;
 import org.neo4j.annotations.api.PublicApi;
 import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.configuration.connectors.ConnectorDefaults;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.ByteUnit;
@@ -970,10 +971,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
      * Default settings for connectors. The default values are assumes to be default for embedded deployments through the code.
      * This map contains default connector settings that you can pass to the builders.
      */
-    public static final Map<Setting<?>, Object> SERVER_DEFAULTS = Maps.mutable
-            .withMap(ConnectorDefaults.SERVER_CONNECTOR_DEFAULTS)
-            .withKeyValue(auth_enabled, true)
-            .withKeyValue(cypher_render_plan_descriptions, true);
+    public static final Map<Setting<?>, Object> SERVER_DEFAULTS = buildDefaults();
+
+    private static Map<Setting<?>, Object> buildDefaults() {
+        var entries = new HashSet<>(SERVER_CONNECTOR_DEFAULTS.entrySet());
+        entries.add(entry(auth_enabled, true));
+        entries.add(entry(cypher_render_plan_descriptions, true));
+        return Map.ofEntries(entries.toArray(Map.Entry[]::new));
+    }
 
     public enum RoutingMode {
         SERVER,
