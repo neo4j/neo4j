@@ -40,6 +40,7 @@ import org.neo4j.fabric.pipeline.FabricFrontEnd
 import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.planning.FabricQuery.LocalQuery
 import org.neo4j.fabric.planning.FabricQuery.RemoteQuery
+import org.neo4j.kernel.impl.query.NotificationConfiguration
 import org.neo4j.monitoring.Monitors
 import org.neo4j.values.virtual.MapValue
 
@@ -72,7 +73,8 @@ case class FabricPlanner(
     queryParams: MapValue,
     defaultGraphName: String,
     catalog: Catalog,
-    cancellationChecker: CancellationChecker
+    cancellationChecker: CancellationChecker,
+    notificationConfig: NotificationConfiguration = NotificationConfiguration.DEFAULT_FILTER
   ): PlannerInstance = {
     val notificationLogger = new RecordingNotificationLogger()
     val query = frontend.preParsing.preParse(queryString, notificationLogger)
@@ -83,7 +85,8 @@ case class FabricPlanner(
       defaultGraphName,
       catalog,
       cancellationChecker,
-      notificationLogger
+      notificationLogger,
+      notificationConfig
     )
   }
 
@@ -94,11 +97,19 @@ case class FabricPlanner(
     defaultContextName: String,
     catalog: Catalog,
     cancellationChecker: CancellationChecker,
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    notificationConfig: NotificationConfiguration
   ) {
 
     private lazy val pipeline =
-      frontend.Pipeline(signatureResolver, query, queryParams, cancellationChecker, notificationLogger)
+      frontend.Pipeline(
+        signatureResolver,
+        query,
+        queryParams,
+        cancellationChecker,
+        notificationLogger,
+        notificationConfig
+      )
 
     private val useHelper = new UseHelper(catalog, defaultContextName)
 

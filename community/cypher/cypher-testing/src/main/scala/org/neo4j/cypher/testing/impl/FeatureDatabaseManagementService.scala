@@ -33,6 +33,7 @@ import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.embedded.EmbeddedCypherExecutorFactory
 import org.neo4j.cypher.testing.impl.http.HttpCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.driver.NotificationConfig
 import org.neo4j.graphdb.schema.IndexDefinition
 import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.kernel.api.procs.QualifiedName
@@ -106,7 +107,8 @@ object FeatureDatabaseManagementService {
 case class FeatureDatabaseManagementService(
   private val databaseManagementService: DatabaseManagementService,
   val executorFactory: CypherExecutorFactory,
-  private val databaseName: Option[String] = None
+  private val databaseName: Option[String] = None,
+  private val notificationConfig: NotificationConfig = NotificationConfig.defaultConfig()
 ) {
 
   private val droppableIndexTypes = Set(
