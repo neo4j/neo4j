@@ -28,7 +28,6 @@ import static org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS;
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
 import java.util.List;
-import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
@@ -45,9 +44,8 @@ import org.neo4j.util.Preconditions;
  */
 public class ConstraintDescriptorImplementation
         implements ConstraintDescriptor,
-                NodeExistenceConstraintDescriptor,
+                ExistenceConstraintDescriptor,
                 KeyConstraintDescriptor,
-                RelExistenceConstraintDescriptor,
                 UniquenessConstraintDescriptor,
                 TypeConstraintDescriptor {
     private final ConstraintType type;
@@ -160,16 +158,13 @@ public class ConstraintDescriptorImplementation
     }
 
     @Override
-    public boolean isRelationshipPropertyExistenceConstraint() {
-        return schema.entityType() == EntityType.RELATIONSHIP && type == EXISTS;
+    public boolean isPropertyExistenceConstraint() {
+        return type == EXISTS;
     }
 
     @Override
-    public RelExistenceConstraintDescriptor asRelationshipPropertyExistenceConstraint() {
-        if (!isRelationshipPropertyExistenceConstraint()) {
-            throw conversionException(RelExistenceConstraintDescriptor.class);
-        }
-        return this;
+    public boolean isRelationshipPropertyExistenceConstraint() {
+        return schema.entityType() == RELATIONSHIP && type == EXISTS;
     }
 
     @Override
@@ -178,26 +173,31 @@ public class ConstraintDescriptorImplementation
     }
 
     @Override
-    public NodeExistenceConstraintDescriptor asNodePropertyExistenceConstraint() {
-        if (!isNodePropertyExistenceConstraint()) {
-            throw conversionException(NodeExistenceConstraintDescriptor.class);
+    public ExistenceConstraintDescriptor asPropertyExistenceConstraint() {
+        if (!isPropertyExistenceConstraint()) {
+            throw conversionException(ExistenceConstraintDescriptor.class);
         }
         return this;
     }
 
     @Override
+    public boolean isUniquenessConstraint() {
+        return type == UNIQUE;
+    }
+
+    @Override
     public boolean isNodeUniquenessConstraint() {
-        return schema.entityType() == NODE && type == ConstraintType.UNIQUE;
+        return schema.entityType() == NODE && type == UNIQUE;
     }
 
     @Override
     public boolean isRelationshipUniquenessConstraint() {
-        return schema.entityType() == RELATIONSHIP && type == ConstraintType.UNIQUE;
+        return schema.entityType() == RELATIONSHIP && type == UNIQUE;
     }
 
     @Override
     public UniquenessConstraintDescriptor asUniquenessConstraint() {
-        if (!isNodeUniquenessConstraint() && !isRelationshipUniquenessConstraint()) {
+        if (!isUniquenessConstraint()) {
             throw conversionException(UniquenessConstraintDescriptor.class);
         }
         return this;

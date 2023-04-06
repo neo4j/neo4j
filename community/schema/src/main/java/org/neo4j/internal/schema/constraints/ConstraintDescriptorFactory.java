@@ -20,10 +20,7 @@
 package org.neo4j.internal.schema.constraints;
 
 import java.util.List;
-import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexType;
-import org.neo4j.internal.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaValueType;
@@ -31,12 +28,12 @@ import org.neo4j.internal.schema.SchemaValueType;
 public class ConstraintDescriptorFactory {
     private ConstraintDescriptorFactory() {}
 
-    public static NodeExistenceConstraintDescriptor existsForLabel(int labelId, int... propertyIds) {
+    public static ExistenceConstraintDescriptor existsForLabel(int labelId, int... propertyIds) {
         return ConstraintDescriptorImplementation.makeExistsConstraint(
                 SchemaDescriptors.forLabel(labelId, propertyIds));
     }
 
-    public static RelExistenceConstraintDescriptor existsForRelType(int relTypeId, int... propertyIds) {
+    public static ExistenceConstraintDescriptor existsForRelType(int relTypeId, int... propertyIds) {
         return ConstraintDescriptorImplementation.makeExistsConstraint(
                 SchemaDescriptors.forRelType(relTypeId, propertyIds));
     }
@@ -57,22 +54,7 @@ public class ConstraintDescriptorFactory {
         return keyForSchema(SchemaDescriptors.forLabel(labelId, propertyIds), indexType);
     }
 
-    public static ConstraintDescriptor existsForSchema(SchemaDescriptor schema) {
-        ConstraintDescriptorImplementation constraint = ConstraintDescriptorImplementation.makeExistsConstraint(schema);
-        if (schema.isLabelSchemaDescriptor()) {
-            return constraint.asNodePropertyExistenceConstraint();
-        }
-        if (schema.isRelationshipTypeSchemaDescriptor()) {
-            return constraint.asRelationshipPropertyExistenceConstraint();
-        }
-        throw new UnsupportedOperationException("Cannot create existence constraint for the given schema.");
-    }
-
-    public static NodeExistenceConstraintDescriptor existsForSchema(LabelSchemaDescriptor schema) {
-        return ConstraintDescriptorImplementation.makeExistsConstraint(schema);
-    }
-
-    public static RelExistenceConstraintDescriptor existsForSchema(RelationTypeSchemaDescriptor schema) {
+    public static ExistenceConstraintDescriptor existsForSchema(SchemaDescriptor schema) {
         return ConstraintDescriptorImplementation.makeExistsConstraint(schema);
     }
 

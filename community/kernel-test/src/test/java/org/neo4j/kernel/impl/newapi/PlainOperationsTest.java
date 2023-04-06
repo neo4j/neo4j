@@ -81,10 +81,9 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.txstate.TransactionState;
@@ -484,7 +483,7 @@ public class PlainOperationsTest extends OperationsTest {
         int labelId = 1;
         int relTypeId = 2;
         UniquenessConstraintDescriptor uniquenessConstraint = uniqueForLabel(labelId, 2, 3, 3);
-        RelExistenceConstraintDescriptor existenceConstraint = existsForRelType(relTypeId, 3, 4, 5);
+        ExistenceConstraintDescriptor existenceConstraint = existsForRelType(relTypeId, 3, 4, 5);
         when(storageReader.constraintsGetAll())
                 .thenReturn(Iterators.iterator(uniquenessConstraint, existenceConstraint));
         when(storageReader.constraintExists(uniquenessConstraint)).thenReturn(true);
@@ -507,7 +506,7 @@ public class PlainOperationsTest extends OperationsTest {
         int labelId = 1;
         int relTypeId = 2;
         UniquenessConstraintDescriptor uniquenessConstraint = uniqueForLabel(labelId, 2, 3, 3);
-        RelExistenceConstraintDescriptor existenceConstraint = existsForRelType(relTypeId, 3, 4, 5);
+        ExistenceConstraintDescriptor existenceConstraint = existsForRelType(relTypeId, 3, 4, 5);
         when(storageReaderSnapshot.constraintsGetAll())
                 .thenReturn(Iterators.iterator(uniquenessConstraint, existenceConstraint));
 
@@ -638,7 +637,7 @@ public class PlainOperationsTest extends OperationsTest {
     @Test
     void shouldReleaseAcquiredSchemaWriteLockIfNodePropertyExistenceConstraintCreationFails() throws Exception {
         // given
-        NodeExistenceConstraintDescriptor constraint = existsForSchema(schema);
+        ExistenceConstraintDescriptor constraint = existsForSchema(schema);
         storageReaderWithConstraints(constraint);
         int labelId = schema.getLabelId();
         int propertyId = schema.getPropertyId();
@@ -686,7 +685,7 @@ public class PlainOperationsTest extends OperationsTest {
     void shouldReleaseAcquiredSchemaWriteLockIfRelationshipPropertyExistenceConstraintCreationFails() throws Exception {
         // given
         RelationTypeSchemaDescriptor descriptor = forRelType(11, 13);
-        RelExistenceConstraintDescriptor constraint = existsForSchema(descriptor);
+        ExistenceConstraintDescriptor constraint = existsForSchema(descriptor);
         storageReaderWithConstraints(constraint);
         int relTypeId = descriptor.getRelTypeId();
         int propertyId = descriptor.getPropertyId();

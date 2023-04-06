@@ -50,8 +50,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -436,19 +435,18 @@ class SchemaCheckerTest extends CheckerTestBase {
         // given
         try (AutoCloseable ignored = tx()) {
             var cursorContext = CursorContext.NULL_CONTEXT;
-            NodeExistenceConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForLabel(
-                            label1, propertyKey1)
+            ExistenceConstraintDescriptor constraint1 = ConstraintDescriptorFactory.existsForLabel(label1, propertyKey1)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME);
-            NodeExistenceConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForLabel(
+            ExistenceConstraintDescriptor constraint2 = ConstraintDescriptorFactory.existsForLabel(
                             label2, propertyKey1, propertyKey2)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2);
-            RelExistenceConstraintDescriptor constraint3 = ConstraintDescriptorFactory.existsForRelType(
+            ExistenceConstraintDescriptor constraint3 = ConstraintDescriptorFactory.existsForRelType(
                             relationshipType1, propertyKey2)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME);
-            RelExistenceConstraintDescriptor constraint4 = ConstraintDescriptorFactory.existsForRelType(
+            ExistenceConstraintDescriptor constraint4 = ConstraintDescriptorFactory.existsForRelType(
                             relationshipType2, propertyKey1, propertyKey2)
                     .withId(schemaIdGenerator.nextId(cursorContext))
                     .withName(NAME2);

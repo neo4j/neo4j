@@ -19,10 +19,9 @@
  */
 package org.neo4j.internal.schema;
 
+import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
@@ -62,26 +61,31 @@ public interface ConstraintDescriptor extends SchemaDescriptorSupplier, SchemaRu
     TypeConstraintDescriptor asPropertyTypeConstraint();
 
     /**
+     * Test if this constraint descriptor is a property existence constraint.
+     * @return {@code true} if calling {@link #asPropertyExistenceConstraint()} would not throw.
+     */
+    boolean isPropertyExistenceConstraint();
+
+    /**
      * Test if this constraint descriptor is a relationship property existence constraint.
-     * @return {@code true} if calling {@link #asRelationshipPropertyExistenceConstraint()} would not throw.
      */
     boolean isRelationshipPropertyExistenceConstraint();
 
     /**
-     * @return this constraint descriptor as a {@link RelExistenceConstraintDescriptor} if possible, or throw an {@link IllegalStateException}.
-     */
-    RelExistenceConstraintDescriptor asRelationshipPropertyExistenceConstraint();
-
-    /**
      * Test if this constraint descriptor is a node property existence constraint.
-     * @return {@code true} if calling {@link #asNodePropertyExistenceConstraint()} would not throw.
      */
     boolean isNodePropertyExistenceConstraint();
 
     /**
-     * @return this constraint descriptor as a {@link NodeExistenceConstraintDescriptor} if possible, or throw an {@link IllegalStateException}.
+     * @return this constraint descriptor as a {@link ExistenceConstraintDescriptor} if possible, or throw an {@link IllegalStateException}.
      */
-    NodeExistenceConstraintDescriptor asNodePropertyExistenceConstraint();
+    ExistenceConstraintDescriptor asPropertyExistenceConstraint();
+
+    /**
+     * Test if this constraint descriptor is a uniqueness constraint.
+     * @return {@code true} if calling {@link #asUniquenessConstraint()} would not throw.
+     */
+    boolean isUniquenessConstraint();
 
     /**
      * Test if this constraint descriptor is a node uniqueness constraint.

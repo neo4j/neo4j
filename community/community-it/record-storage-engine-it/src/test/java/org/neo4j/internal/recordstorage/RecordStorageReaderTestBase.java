@@ -39,9 +39,8 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.NodeExistenceConstraintDescriptor;
-import org.neo4j.internal.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -273,7 +272,7 @@ public abstract class RecordStorageReaderTestBase {
 
     protected void createNodePropertyExistenceConstraint(Label label, String propertyKey) throws Exception {
         TxState txState = new TxState();
-        NodeExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForLabel(
+        ExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForLabel(
                 getOrCreateLabelId(label), getOrCreatePropertyKeyId(propertyKey));
         long id = commitContext.reserveSchema();
         txState.constraintDoAdd(constraint.withId(id).withName("constraint_" + id));
@@ -283,7 +282,7 @@ public abstract class RecordStorageReaderTestBase {
     protected void createRelPropertyExistenceConstraint(RelationshipType relationshipType, String propertyKey)
             throws Exception {
         TxState txState = new TxState();
-        RelExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType(
+        ExistenceConstraintDescriptor constraint = ConstraintDescriptorFactory.existsForRelType(
                 getOrCreateRelationshipTypeId(relationshipType), getOrCreatePropertyKeyId(propertyKey));
         long id = commitContext.reserveSchema();
         txState.constraintDoAdd(constraint.withId(id).withName("constraint_" + id));
