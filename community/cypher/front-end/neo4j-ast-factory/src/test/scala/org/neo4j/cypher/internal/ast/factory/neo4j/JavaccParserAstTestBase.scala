@@ -36,12 +36,14 @@ trait JavaccParserAstTestBase[AST <: ASTNode] extends JavaccParserTestBase[AST, 
 
   final def gives(ast: AST)(implicit parser: JavaccRule[AST]): Unit = parsing(testName) shouldGive ast
 
-  final def givesIncludingPositions(expected: AST)(implicit parser: JavaccRule[AST]): Unit = {
-    parsing(testName) shouldVerify { actual =>
+  final def givesIncludingPositions(expected: AST, query: String = testName)(implicit parser: JavaccRule[AST]): Unit = {
+    parsing(query) shouldVerify { actual =>
       actual shouldBe expected
       verifyPositions(actual, expected)
     }
   }
+
+  final def failsToParse(query: String)(implicit parser: JavaccRule[AST]): Unit = assertFails(query)
 
   final def failsToParse(implicit parser: JavaccRule[AST]): Unit = assertFails(testName)
 
