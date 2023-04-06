@@ -33,6 +33,7 @@ import org.neo4j.io.ByteUnit;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.memory.ScopedBuffer;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
 
 /**
@@ -40,6 +41,9 @@ import org.neo4j.util.VisibleForTesting;
  * and, as a side effect, allows control of the flushing of that buffer to disk.
  */
 public class PhysicalFlushableChannel implements FlushableChannel {
+    static final boolean DISABLE_WAL_CHECKSUM =
+            FeatureToggles.flag(PhysicalFlushableChannel.class, "disableChecksum", false);
+
     public static final int DEFAULT_BUFFER_SIZE = toIntExact(ByteUnit.kibiBytes(4));
 
     protected StoreChannel channel;
@@ -71,9 +75,11 @@ public class PhysicalFlushableChannel implements FlushableChannel {
     @Override
     public Flushable prepareForFlush() throws IOException {
         // Update checksum with what we got
-        checksumView.limit(buffer.position());
-        checksum.update(checksumView);
-        checksumView.clear();
+        if (!DISABLE_WAL_CHECKSUM) {
+            checksumView.limit(buffer.position());
+            checksum.update(checksumView);
+            checksumView.clear();
+        }
 
         buffer.flip();
         Flushable flushable = flushToChannel(channel, buffer);
@@ -231,6 +237,10 @@ public class PhysicalFlushableChannel implements FlushableChannel {
 
     @Override
     public void beginChecksum() {
+        if (DISABLE_WAL_CHECKSUM) {
+            return;
+        }
+
         checksum.reset();
         checksumView.limit(checksumView.capacity());
         checksumView.position(buffer.position());
@@ -238,6 +248,11 @@ public class PhysicalFlushableChannel implements FlushableChannel {
 
     @Override
     public int putChecksum() throws IOException {
+        if (DISABLE_WAL_CHECKSUM) {
+            buffer.putInt(0xDEAD5EED);
+            return 0xDEAD5EED;
+        }
+
         // Make sure we can append checksum
         bufferWithGuaranteedSpace(Integer.BYTES);
 
