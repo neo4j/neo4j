@@ -23,6 +23,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.regex.Pattern.compile;
 import static org.apache.commons.io.IOUtils.resourceToString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.neo4j.shell.expect.ExpectTestExtension.CYPHER_SHELL_PATH;
 import static org.neo4j.shell.expect.ExpectTestExtension.DEBUG;
 import static org.neo4j.shell.expect.InteractionAssertion.assertEqualInteraction;
@@ -48,7 +49,7 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  * Extension to run tests using expect. Will start docker containers with neo4j and expect. Use runTestCase to run expect scenarios.
  */
 public class ExpectTestExtension implements BeforeAllCallback, AfterAllCallback {
-    static final boolean DEBUG = false;
+    static final boolean DEBUG = false; // Hello, expect also has debug options that you might want to consider
     static String CYPHER_SHELL_PATH = "/cypher-shell/bin/cypher-shell";
     private final String neo4jDockerTag;
     private NeoContainer neo4jContainer;
@@ -86,9 +87,19 @@ public class ExpectTestExtension implements BeforeAllCallback, AfterAllCallback 
                 resourceToString(expectedPathString, UTF_8, getClass().getClassLoader());
         final var expectScriptFilename = expectResourcePath.getFileName().toString();
         final var execution = expectContainer.execInContainer("expect", expectScriptFilename);
+        if (execution.getExitCode() != 0 || !execution.getStderr().isEmpty()) {
+            final var message =
+                    """
+                    Exit Code: %d
+                    ==================================== stderr ====================================
+                    %s
+                    ==================================== stdout ====================================
+                    %s
+                    """
+                            .formatted(execution.getExitCode(), execution.getStderr(), execution.getStdout());
+            fail(message);
+        }
         assertEqualInteraction(execution.getStdout(), expected);
-        assertEquals(0, execution.getExitCode());
-        assertEquals("", execution.getStderr());
     }
 
     public static Stream<Path> findAllExpectResources() throws IOException {
@@ -172,8 +183,10 @@ class InteractionAssertion {
             debugPrint(expected, "Expected Interaction");
             debugPrint(cleanedActual, "Actual Interaction Cleaned");
             debugPrint(cleanedExpected, "Expected Interaction Cleaned");
+            // Can be helpful in debugging if there are ansi codes
+            // assertEquals(expected, actual);
         }
-        assertEquals(cleanedExpected, cleanedActual);
+        assertEquals("\nHint, set debug flag for raw outputs\n", cleanedExpected, cleanedActual);
     }
 
     private static Stream<String> cleanActual(String input) {

@@ -1,0 +1,19 @@
+#!/usr/bin/expect -f
+
+source "common.expect"
+
+sendQuery "return 1 as result;"
+sendQuery "return 2 as result;"
+sendQuery "return 3 as result;"
+
+# Press up-arrow key three times and return
+# Note, this will look weird in the expected interaction because we scrub ansi codes.
+# Expected: neo4j@neo4j> return 3 as result;21
+# The extra 21 is Cypher Shell replacing the 3 in the output to change the query as we press up.
+sendQuery "\033\[A\033\[A\033\[A"
+
+# Press up-arrow key once and return
+sendQuery "\033\[A"
+
+sendQuery ":exit"
+expectCleanExit
