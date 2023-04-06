@@ -33,6 +33,7 @@ import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForSchema;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.keyForSchema;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,9 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.SchemaListValueType;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaScalarValueType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -109,8 +112,23 @@ class SchemaStoreMapificationTest {
             .withId(1);
     private final ConstraintDescriptor uniqueRelTypeConstraintWithType = ConstraintDescriptorFactory.uniqueForSchema(
                     relTypeSchema, RANGE)
-            .withName("uniqueRelTypelConstraintWithType")
+            .withName("uniqueRelTypeConstraintWithType")
             .withOwnedIndexId(7)
+            .withId(1);
+    private final ConstraintDescriptor nodeTypeConstraintSingleScalarType = ConstraintDescriptorFactory.typeForSchema(
+                    labelSchema, List.of(SchemaScalarValueType.BOOL))
+            .withName("nodeTypeConstrainSingleScalarType")
+            .withId(1);
+    private final ConstraintDescriptor relTypeConstraintSeveralTypes = ConstraintDescriptorFactory.typeForSchema(
+                    relTypeSchema,
+                    List.of(
+                            SchemaScalarValueType.BOOLEAN,
+                            new SchemaListValueType(
+                                    SchemaListValueType.UserFacingType.LIST, SchemaScalarValueType.INTEGER64),
+                            SchemaScalarValueType.INT,
+                            new SchemaListValueType(
+                                    SchemaListValueType.UserFacingType.ARRAY, SchemaScalarValueType.BOOL)))
+            .withName("relTypeConstrainSeveralTypes")
             .withId(1);
 
     @RepeatedTest(500)
@@ -371,5 +389,34 @@ class SchemaStoreMapificationTest {
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("EXISTS"),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}));
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(existsRelTypeConstraint);
+    }
+
+    @Test
+    void propTypeLabelConstraintDeterministicUnmapification() throws Exception {
+        Map<String, Value> mapified = Map.of(
+                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("NODE"),
+                "__org.neo4j.SchemaRule.name", Values.stringValue("nodeTypeConstraintSingleScalarType"),
+                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
+                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
+                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
+                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("PROPERTY_TYPE"),
+                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
+                "__org.neo4j.SchemaRule.allowedPropertyTypes", Values.stringArray("BOOL"));
+        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(nodeTypeConstraintSingleScalarType);
+    }
+
+    @Test
+    void propTypeRelTypeConstraintDeterministicUnmapification() throws Exception {
+        Map<String, Value> mapified = Map.of(
+                "__org.neo4j.SchemaRule.schemaEntityType", Values.stringValue("RELATIONSHIP"),
+                "__org.neo4j.SchemaRule.name", Values.stringValue("relTypeConstrainSeveralTypes"),
+                "__org.neo4j.SchemaRule.schemaPropertySchemaType", Values.stringValue("COMPLETE_ALL_TOKENS"),
+                "__org.neo4j.SchemaRule.schemaPropertyIds", Values.intArray(new int[] {2, 3}),
+                "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
+                "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("PROPERTY_TYPE"),
+                "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
+                "__org.neo4j.SchemaRule.allowedPropertyTypes",
+                        Values.stringArray("BOOLEAN", "LIST-INTEGER64", "INT", "ARRAY-BOOL"));
+        assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relTypeConstraintSeveralTypes);
     }
 }

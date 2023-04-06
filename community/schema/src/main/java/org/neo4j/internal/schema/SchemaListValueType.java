@@ -46,7 +46,12 @@ public record SchemaListValueType(UserFacingType userFacingType, SchemaScalarVal
         return false;
     }
 
-    enum UserFacingType {
+    @Override
+    public String stringRepresentation() {
+        return userFacingType + SchemaValueTypes.DELIMITER + contentType.stringRepresentation();
+    }
+
+    public enum UserFacingType {
         LIST,
         ARRAY
     }

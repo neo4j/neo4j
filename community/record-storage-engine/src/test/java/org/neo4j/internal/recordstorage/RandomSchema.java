@@ -19,7 +19,9 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.SplittableRandom;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -33,7 +35,10 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.SchemaListValueType;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.SchemaScalarValueType;
+import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
@@ -167,7 +172,7 @@ public class RandomSchema implements Supplier<SchemaRule> {
 
     public ConstraintDescriptor nextConstraint() {
         long ruleId = nextRuleIdForConstraint();
-        int choice = rng.nextInt(10);
+        int choice = rng.nextInt(12);
         return switch (choice) {
             case 0 -> ConstraintDescriptorFactory.existsForSchema(nextRelationshipSchema())
                     .withId(ruleId)
@@ -203,8 +208,34 @@ public class RandomSchema implements Supplier<SchemaRule> {
                     .withId(ruleId)
                     .withOwnedIndexId(existingIndexId())
                     .withName(nextName());
+            case 10 -> ConstraintDescriptorFactory.typeForSchema(nextRelationshipSchema(), randomAllowedTypes())
+                    .withId(ruleId)
+                    .withName(nextName());
+            case 11 -> ConstraintDescriptorFactory.typeForSchema(nextNodeSchema(), randomAllowedTypes())
+                    .withId(ruleId)
+                    .withName(nextName());
             default -> throw new RuntimeException("Bad constraint choice: " + choice);
         };
+    }
+
+    private List<SchemaValueType> randomAllowedTypes() {
+        var types = rng.nextInt(1, 5);
+        var schemaValueTypes = new ArrayList<SchemaValueType>(types);
+        for (int i = 0; i < types; i++) {
+            schemaValueTypes.add(randomAllowedType(rng));
+        }
+        return schemaValueTypes;
+    }
+
+    private SchemaValueType randomAllowedType(SplittableRandom rng) {
+        var randomValues = RandomValues.create(rng);
+        var scalarType = randomValues.among(SchemaScalarValueType.values());
+        if (rng.nextBoolean()) {
+            return scalarType;
+        } else {
+            var userFacingType = randomValues.among(SchemaListValueType.UserFacingType.values());
+            return new SchemaListValueType(userFacingType, scalarType);
+        }
     }
 
     public long nextRuleIdForConstraint() {

@@ -19,7 +19,10 @@
  */
 package org.neo4j.internal.schema;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import org.eclipse.collections.api.RichIterable;
@@ -28,8 +31,10 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.values.storable.IntArray;
 import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.StringArray;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -53,6 +58,7 @@ public class SchemaRuleMapifier {
             PROP_SCHEMA_RULE_PREFIX + "schemaPropertySchemaType";
 
     private static final String PROP_INDEX_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexType";
+    private static final String PROP_CONSTRAINT_ALLOWED_TYPES = PROP_SCHEMA_RULE_PREFIX + "allowedPropertyTypes";
     private static final String PROP_INDEX_CONFIG_PREFIX = PROP_SCHEMA_RULE_PREFIX + "IndexConfig.";
 
     /**
@@ -162,6 +168,15 @@ public class SchemaRuleMapifier {
                     putLongProperty(map, PROP_OWNED_INDEX, indexBackedConstraint.ownedIndexId());
                 }
             }
+            case PROPERTY_TYPE -> {
+                TypeConstraintDescriptor typeConstraintDescriptor = rule.asPropertyTypeConstraint();
+                List<SchemaValueType> schemaValueTypes = typeConstraintDescriptor.allowedPropertyTypes();
+                String[] typeArray = new String[schemaValueTypes.size()];
+                for (int i = 0; i < typeArray.length; i++) {
+                    typeArray[i] = schemaValueTypes.get(i).stringRepresentation();
+                }
+                putStringArrayProperty(map, PROP_CONSTRAINT_ALLOWED_TYPES, typeArray);
+            }
 
             default -> {}
         }
@@ -199,6 +214,16 @@ public class SchemaRuleMapifier {
         throw new MalformedSchemaRuleException("Expected property " + property + " to be a TextValue but was " + value);
     }
 
+    private static String[] getStringArray(String property, Map<String, Value> props)
+            throws MalformedSchemaRuleException {
+        Value value = props.get(property);
+        if (value instanceof StringArray stringArray) {
+            return stringArray.asObject();
+        }
+        throw new MalformedSchemaRuleException(
+                "Expected property " + property + " to be a StringArray but was " + value);
+    }
+
     private static void putLongProperty(Map<String, Value> map, String property, long value) {
         map.put(property, Values.longValue(value));
     }
@@ -209,6 +234,10 @@ public class SchemaRuleMapifier {
 
     private static void putStringProperty(Map<String, Value> map, String property, String value) {
         map.put(property, Values.stringValue(value));
+    }
+
+    private static void putStringArrayProperty(Map<String, Value> map, String property, String[] value) {
+        map.put(property, Values.stringArray(value));
     }
 
     private static void putIndexConfigProperty(Map<String, Value> map, String key, Value value) {
@@ -266,13 +295,9 @@ public class SchemaRuleMapifier {
                 if (ownedIndex.isPresent()) {
                     constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());
                 }
-                return constraint.withId(id).withName(name);
             }
 
-            case "EXISTS" -> {
-                constraint = ConstraintDescriptorFactory.existsForSchema(schema);
-                return constraint.withId(id).withName(name);
-            }
+            case "EXISTS" -> constraint = ConstraintDescriptorFactory.existsForSchema(schema);
 
             case "UNIQUE_EXISTS" -> {
                 constraint = ConstraintDescriptorFactory.keyForSchema(
@@ -281,12 +306,15 @@ public class SchemaRuleMapifier {
                 if (ownedIndex.isPresent()) {
                     constraint = constraint.withOwnedIndexId(ownedIndex.getAsLong());
                 }
-                return constraint.withId(id).withName(name);
             }
+
+            case "PROPERTY_TYPE" -> constraint = ConstraintDescriptorFactory.typeForSchema(
+                    schema, getAllowedTypes(getStringArray(PROP_CONSTRAINT_ALLOWED_TYPES, props)));
 
             default -> throw new MalformedSchemaRuleException(
                     "Did not recognize constraint rule type: " + constraintRuleType);
         }
+        return constraint.withId(id).withName(name);
     }
 
     private static SchemaDescriptor buildSchemaDescriptor(Map<String, Value> props)
@@ -333,5 +361,20 @@ public class SchemaRuleMapifier {
         } catch (Exception e) {
             throw new MalformedSchemaRuleException("Did not recognize entity type: " + entityType, e);
         }
+    }
+
+    private static List<SchemaValueType> getAllowedTypes(String[] allowedTypes) throws MalformedSchemaRuleException {
+        ArrayList<SchemaValueType> schemaValueTypes = new ArrayList<>();
+        for (String allowedType : allowedTypes) {
+            try {
+                schemaValueTypes.add(SchemaValueTypes.convertToSchemaValueType(allowedType));
+            } catch (Exception e) {
+                throw new MalformedSchemaRuleException(
+                        "Did not recognize schema value type '%s' in: %s"
+                                .formatted(allowedType, Arrays.toString(allowedTypes)),
+                        e);
+            }
+        }
+        return schemaValueTypes;
     }
 }

@@ -57,6 +57,11 @@ public enum SchemaScalarValueType implements SchemaValueType {
         return isAssignable(value.valueRepresentation());
     }
 
+    @Override
+    public String stringRepresentation() {
+        return this.name();
+    }
+
     boolean isAssignable(ValueRepresentation valueRepresentation) {
         for (ValueRepresentation vr : valueRepresentations) {
             if (vr == valueRepresentation) {

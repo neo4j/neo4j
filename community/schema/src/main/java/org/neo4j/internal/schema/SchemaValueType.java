@@ -24,4 +24,6 @@ import org.neo4j.values.storable.Value;
 public interface SchemaValueType {
 
     boolean isAssignable(Value value);
+
+    String stringRepresentation();
 }
