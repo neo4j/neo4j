@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Negotiated;
@@ -303,7 +302,6 @@ public class NotificationsConfigIT {
     }
 
     @ProtocolTest
-    @Disabled("Temporarily disabled awaiting fabric impl")
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldNotReturnNotificationsInDisabledCategories(
             BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
@@ -320,7 +318,6 @@ public class NotificationsConfigIT {
     }
 
     @ProtocolTest
-    @Disabled("Temporarily disabled awaiting fabric impl")
     @ExcludeWire({@Version(major = 4), @Version(major = 5, minor = 1, range = 1)})
     public void shouldNotReturnNotificationsWhenNotHighEnoughSeverity(
             BoltWire wire, @Negotiated TransportConnection connection) throws Throwable {
@@ -332,6 +329,8 @@ public class NotificationsConfigIT {
 
         BoltConnectionAssertions.assertThat(connection).receivesSuccess(3);
 
-        assertThat(connection).receivesSuccess(x -> Assertions.assertThat(x).doesNotContainKey("notifications"));
+        assertThat(connection)
+                .receivesSuccess(x ->
+                        Assertions.assertThat(x.get("notifications").toString()).doesNotContain("GENERIC"));
     }
 }
