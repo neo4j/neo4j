@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NameToken
 import org.neo4j.cypher.internal.expressions.Namespace
-import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.PropertyKeyToken
@@ -234,6 +233,7 @@ import org.neo4j.cypher.internal.logical.plans.SimulatedExpand
 import org.neo4j.cypher.internal.logical.plans.SimulatedNodeScan
 import org.neo4j.cypher.internal.logical.plans.SimulatedSelection
 import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
+import org.neo4j.cypher.internal.logical.plans.SingleSeekableArg
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
@@ -278,7 +278,6 @@ import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound.Limited
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.attribution.Id
-import org.neo4j.cypher.internal.util.symbols.ListType
 import org.neo4j.exceptions.InternalException
 import org.neo4j.graphdb.schema.IndexType
 
@@ -2662,14 +2661,12 @@ case class LogicalPlan2PlanDescription(
   }
 
   private def seekableArgsInfo(seekableArgs: SeekableArgs): PrettyString = seekableArgs match {
-    case ManySeekableArgs(ListLiteral(exprs)) if exprs.size > 1 =>
-      pretty"IN ${exprs.map(asPrettyString(_)).mkPrettyString("[", ",", "]")}"
-    case ManySeekableArgs(ListLiteral(exprs)) =>
+    case ManySeekableArgs(ListLiteral(exprs)) if exprs.size == 1 =>
       pretty"= ${asPrettyString(exprs.head)}"
-    case ManySeekableArgs(param: Parameter) if param.parameterType.isInstanceOf[ListType] =>
-      pretty"IN ${asPrettyString(param)}"
-    case _ =>
-      pretty"= ${asPrettyString(seekableArgs.expr)}"
+    case ManySeekableArgs(expr) =>
+      pretty"IN ${asPrettyString(expr)}"
+    case SingleSeekableArg(expr) =>
+      pretty"= ${asPrettyString(expr)}"
   }
 
   private def signatureInfo(call: ResolvedCall): PrettyString = {

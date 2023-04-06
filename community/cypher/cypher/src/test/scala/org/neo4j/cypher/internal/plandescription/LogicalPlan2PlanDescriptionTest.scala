@@ -679,7 +679,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         NodeByIdSeek("node", ManySeekableArgs(ListLiteral(Seq(number("1"), number("32")))(pos)), Set.empty),
         333.0
       ),
-      planDescription(id, "NodeByIdSeek", NoChildren, Seq(details("node WHERE id(node) IN [1,32]")), Set("node"))
+      planDescription(id, "NodeByIdSeek", NoChildren, Seq(details("node WHERE id(node) IN [1, 32]")), Set("node"))
     )
 
     assertGood(
@@ -710,7 +710,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         NodeByIdSeek(
           "node",
-          ManySeekableArgs(AutoExtractedParameter("autoint_0", CTInteger, ListOfLiteralWriter(Seq.empty))(pos)),
+          SingleSeekableArg(AutoExtractedParameter("autoint_0", CTInteger, ListOfLiteralWriter(Seq.empty))(pos)),
           Set.empty
         ),
         333.0
@@ -727,7 +727,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "NodeByIdSeek",
         NoChildren,
-        Seq(details(s"${anonVar("11")} WHERE id(${anonVar("11")}) IN [1,32]")),
+        Seq(details(s"${anonVar("11")} WHERE id(${anonVar("11")}) IN [1, 32]")),
         Set(anonVar("11"))
       )
     )
@@ -743,7 +743,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "NodeByElementIdSeek",
         NoChildren,
-        Seq(details("node WHERE elementId(node) IN [\"some-id\",\"other-id\"]")),
+        Seq(details("node WHERE elementId(node) IN [\"some-id\", \"other-id\"]")),
         Set("node")
       )
     )
@@ -1418,24 +1418,13 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "DirectedRelationshipByIdSeek",
         NoChildren,
-        Seq(details("(a)-[r]->(b) WHERE id(r) IN [1,2]")),
+        Seq(details("(a)-[r]->(b) WHERE id(r) IN [1, 2]")),
         Set("r", "a", "b", "x")
       )
     )
 
     assertGood(
-      attach(DirectedRelationshipByIdSeek("r", ManySeekableArgs(number("1")), "a", "b", Set("x")), 70.0),
-      planDescription(
-        id,
-        "DirectedRelationshipByIdSeek",
-        NoChildren,
-        Seq(details("(a)-[r]->(b) WHERE id(r) = 1")),
-        Set("r", "a", "b", "x")
-      )
-    )
-
-    assertGood(
-      attach(UndirectedRelationshipByIdSeek("r", ManySeekableArgs(number("1")), "a", "b", Set("x")), 70.0),
+      attach(UndirectedRelationshipByIdSeek("r", SingleSeekableArg(number("1")), "a", "b", Set("x")), 70.0),
       planDescription(
         id,
         "UndirectedRelationshipByIdSeek",
@@ -1447,7 +1436,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        UndirectedRelationshipByIdSeek("  UNNAMED2", ManySeekableArgs(number("1")), "a", "  UNNAMED32", Set("x")),
+        UndirectedRelationshipByIdSeek("  UNNAMED2", SingleSeekableArg(number("1")), "a", "  UNNAMED32", Set("x")),
         70.0
       ),
       planDescription(
@@ -1518,14 +1507,14 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         id,
         "DirectedRelationshipByElementIdSeek",
         NoChildren,
-        Seq(details("(a)-[r]->(b) WHERE elementId(r) IN [\"some-id\",\"other-id\"]")),
+        Seq(details("(a)-[r]->(b) WHERE elementId(r) IN [\"some-id\", \"other-id\"]")),
         Set("r", "a", "b", "x")
       )
     )
 
     assertGood(
       attach(
-        UndirectedRelationshipByElementIdSeek("r", ManySeekableArgs(stringLiteral("some-id")), "a", "b", Set("x")),
+        UndirectedRelationshipByElementIdSeek("r", SingleSeekableArg(stringLiteral("some-id")), "a", "b", Set("x")),
         70.0
       ),
       planDescription(
@@ -1541,7 +1530,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         UndirectedRelationshipByElementIdSeek(
           "  UNNAMED2",
-          ManySeekableArgs(stringLiteral("some-id")),
+          SingleSeekableArg(stringLiteral("some-id")),
           "a",
           "  UNNAMED32",
           Set("x")
