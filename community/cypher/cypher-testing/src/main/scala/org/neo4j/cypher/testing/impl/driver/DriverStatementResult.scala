@@ -22,6 +22,7 @@ package org.neo4j.cypher.testing.impl.driver
 import org.neo4j.cypher.testing.api.StatementResult
 import org.neo4j.cypher.testing.impl.shared.NotificationImpl
 import org.neo4j.driver
+import org.neo4j.driver.NotificationSeverity
 import org.neo4j.driver.Result
 import org.neo4j.graphdb.InputPosition
 import org.neo4j.graphdb.Notification
@@ -49,11 +50,11 @@ case class DriverStatementResult(private val driverResult: Result) extends State
           n.code,
           n.title,
           n.description,
-          n.severity,
+          n.rawSeverityLevel().orElseGet(() => NotificationSeverity.INFORMATION.toString),
           Option(n.position())
             .map(pos => new InputPosition(pos.offset(), pos.line(), pos.column()))
             .getOrElse(InputPosition.empty),
-          NotificationCategory.UNKNOWN.name()
+          n.rawCategory().orElseGet(() => NotificationCategory.UNKNOWN.name())
         )
       )
 

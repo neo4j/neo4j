@@ -30,6 +30,7 @@ import org.neo4j.dbms.api.DatabaseManagementService
 import org.neo4j.driver.AuthToken
 import org.neo4j.driver.Driver
 import org.neo4j.driver.GraphDatabase
+import org.neo4j.driver.NotificationConfig
 import org.neo4j.driver.SessionConfig
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 
@@ -41,6 +42,8 @@ case class DriverCypherExecutorFactory(
   token: Option[AuthToken] = None
 ) extends CypherExecutorFactory {
 
+  private var notificationConfig = NotificationConfig.defaultConfig()
+
   val driver: Driver = {
     val connectorPortRegister =
       databaseManagementService.database(config.get(GraphDatabaseSettings.initial_default_database)).asInstanceOf[
@@ -50,16 +53,23 @@ case class DriverCypherExecutorFactory(
 
     val boltURI =
       if (config.get(BoltConnector.enabled))
-        URI.create(s"bolt://${connectorPortRegister.getLocalAddress(ConnectorType.BOLT)}/")
+        URI.create(s"neo4j://${connectorPortRegister.getLocalAddress(ConnectorType.BOLT)}/")
       else throw new IllegalStateException("Bolt connector is not configured")
 
     token.map(t => GraphDatabase.driver(boltURI, t)).getOrElse(GraphDatabase.driver(boltURI))
   }
 
-  override def executor(): CypherExecutor = DriverCypherExecutor(driver.session())
+  def setNotificationConfig(config: NotificationConfig): Unit =
+    notificationConfig = config
+
+  override def executor(): CypherExecutor = {
+    DriverCypherExecutor(driver.session(SessionConfig.builder().withNotificationConfig(notificationConfig).build()))
+  }
 
   override def executor(databaseName: String): CypherExecutor =
-    DriverCypherExecutor(driver.session(SessionConfig.forDatabase(databaseName)))
+    DriverCypherExecutor(driver.session(
+      SessionConfig.builder().withDatabase(databaseName).withNotificationConfig(notificationConfig).build()
+    ))
 
   override def close(): Unit = driver.close()
 }

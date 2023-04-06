@@ -128,7 +128,11 @@ public class FabricExecutor {
                     parameters,
                     defaultGraphName,
                     catalog,
-                    fabricTransaction.cancellationChecker());
+                    fabricTransaction.cancellationChecker(),
+                    fabricTransaction
+                            .getTransactionInfo()
+                            .getQueryExecutionConfiguration()
+                            .notificationFilters());
             var plan = plannerInstance.plan();
             var query = plan.query();
 

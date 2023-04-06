@@ -55,6 +55,7 @@ import org.neo4j.cypher.rendering.QueryRenderer
 import org.neo4j.fabric.planning.FabricPlan
 import org.neo4j.fabric.util.Errors
 import org.neo4j.graphdb.Notification
+import org.neo4j.kernel.impl.query.NotificationConfiguration
 import org.neo4j.monitoring
 import org.neo4j.values.virtual.MapValue
 
@@ -99,7 +100,8 @@ case class FabricFrontEnd(
     query: PreParsedQuery,
     params: MapValue,
     cancellationChecker: CancellationChecker,
-    notificationLogger: InternalNotificationLogger
+    notificationLogger: InternalNotificationLogger,
+    notificationConfig: NotificationConfiguration
   ) {
 
     def traceStart(): CompilationTracer.QueryCompilationEvent =
@@ -173,6 +175,7 @@ case class FabricFrontEnd(
     def notifications: Seq[Notification] =
       context.notificationLogger.notifications
         .toSeq.map(NotificationWrapping.asKernelNotification(Some(query.options.offset)))
+        .filter(notificationConfig.includes(_))
   }
 }
 
