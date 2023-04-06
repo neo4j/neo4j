@@ -128,7 +128,7 @@ public class Loader {
             DatabaseLayout databaseLayout,
             CursorContextFactory contextFactory) {
         try (StoreVersionLoader stl = new StoreVersionLoader(fs, config, contextFactory)) {
-            return stl.loadStoreVersion(databaseLayout);
+            return stl.loadStoreVersionAndCheckDowngrade(databaseLayout);
         }
     }
 

@@ -40,4 +40,9 @@ public final class BinarySupportedKernelVersions {
     public boolean latestSupportedIsLessThan(byte version) {
         return latestKernelVersionSupportedByBinaries.isLessThan(version);
     }
+
+    @Override
+    public String toString() {
+        return latestKernelVersionSupportedByBinaries.toString();
+    }
 }

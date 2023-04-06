@@ -19,8 +19,11 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -29,10 +32,15 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.transaction.log.entry.UnsupportedLogVersionException;
+import org.neo4j.kernel.recovery.LogTailExtractor;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.NullLogService;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryPools;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngineFactory;
@@ -72,11 +80,10 @@ public class StoreVersionLoader implements AutoCloseable {
     }
 
     /**
-     * Reads store version from the store files
-     * @param layout The la
-     * @return the {@link Result} of the store version if the format can not be read.
+     * Reads store version from the store files and also performs downgrade check.
+     * @return the {@link Result} of the store version if the format can be read.
      */
-    public Result loadStoreVersion(DatabaseLayout layout) {
+    public Result loadStoreVersionAndCheckDowngrade(DatabaseLayout layout) {
         StorageEngineFactory sef = StorageEngineFactory.selectStorageEngine(fs, layout)
                 .orElseGet(() -> StorageEngineFactory.selectStorageEngine(config));
         StoreVersionCheck versionCheck =
@@ -85,13 +92,53 @@ public class StoreVersionLoader implements AutoCloseable {
             StoreVersionCheck.UpgradeCheckResult checkResult =
                     versionCheck.getAndCheckUpgradeTargetVersion(cursorContext);
             if (checkResult.outcome() == StoreVersionCheck.UpgradeOutcome.STORE_VERSION_RETRIEVAL_FAILURE) {
-                throw new IllegalStateException("Can not read store version of database " + layout.getDatabaseName());
+                throw new IllegalStateException(
+                        "Can not read store version of database " + layout.getDatabaseName(), checkResult.cause());
             }
+
+            checkDowngrade(sef, layout);
+
             return new Result(
                     checkResult.outcome() == StoreVersionCheck.UpgradeOutcome.UNSUPPORTED_TARGET_VERSION,
                     checkResult.versionToUpgradeFrom(),
                     checkResult.versionToUpgradeTo(),
                     versionCheck.getIntroductionVersionFromVersion(checkResult.versionToUpgradeFrom()));
+        }
+    }
+
+    private void checkDowngrade(StorageEngineFactory engineFactory, DatabaseLayout layout) {
+        // Let's check if we can read TX logs metadata tail.
+        // We are not interested in the metadata, just check if it blows up or not.
+        try {
+            new LogTailExtractor(fs, pageCache, config, engineFactory, DatabaseTracers.EMPTY)
+                    // We don't really care about the situation when there are no TX logs,
+                    // so the latest kernel version as a fallback is fine. We just don't want this check to blow up when
+                    // there are no TX logs.
+                    .getTailMetadata(layout, EmptyMemoryTracker.INSTANCE, () -> KernelVersion.getLatestVersion(config));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        } catch (RuntimeException e) {
+            if (Exceptions.contains(e, ex -> ex instanceof UnsupportedLogVersionException)) {
+                // Why is it safe to assume that unknown TX log format version is a downgrade attempt?
+                // We were able to read and understand the current store format (We did not get
+                // STORE_VERSION_RETRIEVAL_FAILURE), which means that the store is not an old version
+                // beyond the currently supported range, so if we cannot read TX tail metadata it must be a newer
+                // version.
+
+                // The messages in UnsupportedLogVersionException  are quite informative, so let's fish it out as
+                // a cause.
+                Throwable cause = e;
+                while (!(cause instanceof UnsupportedLogVersionException)) {
+                    cause = cause.getCause();
+                }
+
+                throw new IllegalStateException(
+                        "The loaded database '" + layout.getDatabaseName()
+                                + "' is of a newer version than the current binaries. " + "Downgrade is not supported.",
+                        cause);
+            }
+
+            throw e;
         }
     }
 

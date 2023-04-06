@@ -95,13 +95,13 @@ public class VersionAwareLogEntryReader implements LogEntryReader {
             String msg;
             if (binarySupportedKernelVersions.latestSupportedIsLessThan(versionCode)) {
                 msg = String.format(
-                        "Log file contains entries with prefix %d, and the highest supported prefix is %s. This "
+                        "Log file contains entries with prefix %d, and the highest supported Kernel Version is %s. This "
                                 + "indicates that the log files originates from an newer version of neo4j, which we don't support "
                                 + "downgrading from.",
                         versionCode, binarySupportedKernelVersions);
             } else {
                 msg = String.format(
-                        "Log file contains entries with prefix %d, and the lowest supported prefix is %s. This "
+                        "Log file contains entries with prefix %d, and the lowest supported Kernel Version is %s. This "
                                 + "indicates that the log files originates from an older version of neo4j, which we don't support "
                                 + "migrations from.",
                         versionCode, KernelVersion.EARLIEST);
