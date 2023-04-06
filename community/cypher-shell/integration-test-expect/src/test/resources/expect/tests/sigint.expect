@@ -1,0 +1,13 @@
+#!/usr/bin/expect -f
+
+source "common.expect"
+
+sendQuery "return 1 as result;"
+
+expectPrompt
+send "\x03"
+
+sendQuery "return 2 as result;"
+
+sendQuery ":exit"
+expectCleanExit
