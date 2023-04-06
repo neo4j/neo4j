@@ -325,7 +325,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
-    @Description("TODO")
+    @Description(
+            "Configures the timeout before queries that have ended (finished successfully, been cancelled or failed), "
+                    + "but where the client is still waiting for cleanup to complete, are forcefully removed.")
     public static final Setting<Duration> cypher_query_pending_release_timeout = newBuilder(
                     "internal.cypher.query_pending_release_timeout", DURATION, ofSeconds(30))
             .dynamic()
