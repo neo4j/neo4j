@@ -26,7 +26,6 @@ import java.io.PrintStream;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import org.neo4j.common.EntityType;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
@@ -83,7 +82,7 @@ public final class BadCollector implements Collector {
     private final AtomicLong badEntries = new AtomicLong();
     private final AsyncEvents<ProblemReporter> logger;
     private final Thread eventProcessor;
-    private final LongAdder queueSize = new LongAdder();
+    private final AtomicLong queueSize = new AtomicLong();
 
     public BadCollector(OutputStream out, long tolerance, int collect) {
         this(out, tolerance, collect, DEFAULT_BACK_PRESSURE_THRESHOLD, false, NO_MONITOR);
@@ -110,7 +109,7 @@ public final class BadCollector implements Collector {
     private void processEvent(ProblemReporter report) {
         monitor.beforeProcessEvent();
         out.println(report.message());
-        queueSize.add(-1);
+        queueSize.addAndGet(-1);
     }
 
     @Override
@@ -166,11 +165,11 @@ public final class BadCollector implements Collector {
                 // We're within the threshold
                 if (logBadEntries) {
                     // Send this to the logger... but first apply some back pressure if queue is growing big
-                    while (queueSize.sum() >= backPressureThreshold) {
+                    while (queueSize.get() >= backPressureThreshold) {
                         LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(10));
                     }
                     logger.send(report);
-                    queueSize.add(1);
+                    queueSize.addAndGet(1);
                 }
                 return; // i.e. don't treat this as an exception
             }
