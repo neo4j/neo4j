@@ -1,0 +1,125 @@
+Neo4j
+Copyright © 2002-2018 Neo4j Sweden AB (referred to in this notice as "Neo4j")
+[http://neo4j.com]
+
+This product includes software ("Software") developed and owned by Neo4j.
+
+The Software is subject to the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+Version 3 (http://www.fsf.org/licensing/licenses/agpl-3.0.html),
+included in the LICENSE.txt file, with the Commons Clause.
+
+Neo4j Enterprise object code can be licensed independently from the source
+under separate commercial terms. Email inquiries can be directed
+to: licensing@neo4j.com. More information is also available
+at: https://neo4j.com/licensing/
+
+Full license texts are found in LICENSES.txt.
+
+
+Third-party licenses
+--------------------
+
+Apache Software License, Version 2.0
+  Apache Commons BeanUtils
+  Apache Commons Collections
+  Apache Commons Compress
+  Apache Commons Configuration
+  Apache Commons IO
+  Apache Commons Lang
+  Apache Commons Logging
+  Apache Commons Math
+  Apache Commons Text
+  Apache Log4j API
+  Apache Log4j Core
+  Apache Log4j Layout for JSON template
+  Apache Lucene (module: backward-codecs)
+  Apache Lucene (module: common)
+  Apache Lucene (module: core)
+  Apache Lucene (module: queryparser)
+  Apache Shiro :: Cache
+  Apache Shiro :: Configuration :: Core
+  Apache Shiro :: Configuration :: OGDL
+  Apache Shiro :: Core
+  Apache Shiro :: Cryptography :: Ciphers
+  Apache Shiro :: Cryptography :: Core
+  Apache Shiro :: Cryptography :: Hashing
+  Apache Shiro :: Event
+  Apache Shiro :: Lang
+  Caffeine cache
+  IPAddress
+  Java Concurrency Tools Core Library
+  Java Native Access
+  Jettison
+  jPowerShell
+  jProcesses
+  LZ4 and xxHash
+  magnolia
+  mercator
+  Netty/Buffer
+  Netty/Codec
+  Netty/Codec/HTTP
+  Netty/Common
+  Netty/Handler
+  Netty/Resolver
+  Netty/Transport
+  Netty/Transport/Classes/Epoll
+  Netty/Transport/Classes/KQueue
+  Netty/Transport/Native/Epoll
+  Netty/Transport/Native/KQueue
+  Netty/Transport/Native/Unix/Common
+  Non-Blocking Reactive Foundation for the JVM
+  picocli
+  Scala Reflect
+  WMI4Java
+
+BSD - Scala License
+  Scala Library
+
+BSD License
+  asm
+  asm-analysis
+  asm-tree
+  asm-util
+  Zstandard
+
+BSD License 2-clause
+  zstd-jni
+
+Eclipse Distribution License - v 1.0
+  Eclipse Collections API
+  Eclipse Collections Main Library
+
+Eclipse Public License - v 1.0
+  Eclipse Collections API
+  Eclipse Collections Main Library
+
+Eclipse Public License v2.0
+  jakarta.ws.rs-api
+
+GNU General Public License, version 2 with the Classpath Exception
+  jakarta.ws.rs-api
+
+MIT License
+  SLF4J API Module
+
+MIT No Attribution License
+  reactive-streams
+
+Mozilla Public License, Version 2.0
+  kiama
+
+Dependencies with multiple licenses
+-----------------------------------
+
+Eclipse Collections API
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License - v 1.0
+
+Eclipse Collections Main Library
+  Eclipse Distribution License - v 1.0
+  Eclipse Public License - v 1.0
+
+jakarta.ws.rs-api
+  Eclipse Public License v2.0
+  GNU General Public License, version 2 with the Classpath Exception
+

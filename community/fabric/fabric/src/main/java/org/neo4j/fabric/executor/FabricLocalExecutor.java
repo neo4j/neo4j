@@ -261,7 +261,7 @@ public class FabricLocalExecutor {
         }
 
         @Override
-        public Location getLocation() {
+        public Location location() {
             return location;
         }
     }

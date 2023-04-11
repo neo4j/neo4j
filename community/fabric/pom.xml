@@ -20,6 +20,7 @@
 
     <modules>
         <module>fabric</module>
+        <module>query-router</module>
     </modules>
 
 </project>

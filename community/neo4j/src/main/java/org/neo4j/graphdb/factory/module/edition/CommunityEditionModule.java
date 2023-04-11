@@ -69,6 +69,7 @@ import org.neo4j.dbms.routing.RoutingOption;
 import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.dbms.routing.SingleAddressRoutingTableProvider;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
+import org.neo4j.fabric.FabricFeatureToggles;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -95,6 +96,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
+import org.neo4j.router.QueryRouterBootstrap;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
@@ -180,12 +182,21 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 new CommunityKernelPanicListener(globalModule.getDatabaseEventListeners(), databaseRepository);
         globalModule.getGlobalLife().add(kernelPanicListener);
 
-        fabricServicesBootstrap = new FabricServicesBootstrap.Community(
-                globalModule.getGlobalLife(),
-                globalModule.getGlobalDependencies(),
-                globalModule.getLogService(),
-                databaseRepository,
-                databaseReferenceRepo);
+        if (FabricFeatureToggles.NEW_COMPOSITE_STACK.get()) {
+            fabricServicesBootstrap = new QueryRouterBootstrap.Community(
+                    globalModule.getGlobalLife(),
+                    globalModule.getGlobalDependencies(),
+                    globalModule.getLogService(),
+                    databaseRepository,
+                    databaseReferenceRepo);
+        } else {
+            fabricServicesBootstrap = new FabricServicesBootstrap.Community(
+                    globalModule.getGlobalLife(),
+                    globalModule.getGlobalDependencies(),
+                    globalModule.getLogService(),
+                    databaseRepository,
+                    databaseReferenceRepo);
+        }
         var databaseLifecycles = new DatabaseLifecycles(
                 databaseRepository,
                 globalModule.getGlobalConfig().get(initial_default_database),

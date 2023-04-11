@@ -17,20 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.fabric.executor;
+package org.neo4j.fabric.transaction.parent;
 
-import org.neo4j.fabric.transaction.parent.ChildTransaction;
-import org.neo4j.kernel.api.exceptions.Status;
-import reactor.core.publisher.Mono;
+import org.neo4j.fabric.executor.Location;
 
-/**
- * A transaction executing against a single database.
- * Fabric transactions are composite transactions consisting of transactions of this type.
- */
-public interface SingleDbTransaction extends ChildTransaction {
-    Mono<Void> commit();
-
-    Mono<Void> rollback();
-
-    Mono<Void> terminate(Status reason);
+public interface ChildTransaction {
+    Location location();
 }

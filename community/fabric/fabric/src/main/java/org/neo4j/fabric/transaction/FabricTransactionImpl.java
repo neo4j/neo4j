@@ -505,7 +505,7 @@ public class FabricTransactionImpl
             }
 
             if (this.writingTransaction != null) {
-                throw multipleWriteError(writingTransaction.getLocation());
+                throw multipleWriteError(writingTransaction.location());
             }
 
             ReadingTransaction readingTransaction = readingTransactions.stream()
@@ -544,7 +544,7 @@ public class FabricTransactionImpl
                 Status.Statement.AccessMode,
                 "Writing to more than one database per transaction is not allowed. Attempted write to %s, currently writing to %s",
                 attempt.databaseReference().toPrettyString(),
-                writingTransaction.getLocation().databaseReference().toPrettyString());
+                writingTransaction.location().databaseReference().toPrettyString());
     }
 
     private FabricException commitFailedError() {
