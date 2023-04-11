@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal
 
+import java.util.Locale
+
 sealed abstract class RuntimeName {
   def name: String
   def toTextOutput: String = name
@@ -50,7 +52,7 @@ case object SystemCommandRuntimeName extends RuntimeName {
 
 object RuntimeName {
 
-  def apply(name: String): RuntimeName = name.toUpperCase match {
+  def apply(name: String): RuntimeName = name.toUpperCase(Locale.ROOT) match {
     case InterpretedRuntimeName.name   => InterpretedRuntimeName
     case SlottedRuntimeName.name       => SlottedRuntimeName
     case PipelinedRuntimeName.name     => PipelinedRuntimeName

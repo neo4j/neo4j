@@ -61,6 +61,7 @@ import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
 import java.util.Collections
+import java.util.Locale
 import java.util.UUID
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -79,7 +80,7 @@ trait OptionsConverter[T] {
     case NoOptions => None
     case OptionsMap(map) => Some(convert(
         VirtualValues.map(
-          map.keys.map(_.toLowerCase).toArray,
+          map.keys.map(_.toLowerCase(Locale.ROOT)).toArray,
           map.view.mapValues(evaluate(_, params)).values.toArray
         ),
         config
@@ -89,7 +90,7 @@ trait OptionsConverter[T] {
       opsMap match {
         case mv: MapValue =>
           val builder = new MapValueBuilder()
-          mv.foreach((k, v) => builder.add(k.toLowerCase(), v))
+          mv.foreach((k, v) => builder.add(k.toLowerCase(Locale.ROOT), v))
           Some(convert(builder.build(), config))
         case _ =>
           throw new InvalidArgumentsException(s"Could not $operation with options '$opsMap'. Expected a map value.")
@@ -153,7 +154,7 @@ case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
             case t: TextValue =>
               val mode =
                 try {
-                  InstanceModeConstraint.valueOf(t.stringValue().toUpperCase)
+                  InstanceModeConstraint.valueOf(t.stringValue().toUpperCase(Locale.ROOT))
                 } catch {
                   case _: Exception =>
                     throw new InvalidArgumentsException(
@@ -232,7 +233,7 @@ object ExistingDataOption extends StringOptionValidator {
 
   // override to keep legacy behaviour. ExistingDataOption is parsed to lowercase, other options keep input casing.
   override protected def validate(value: AnyValue)(implicit operation: String): String =
-    super.validate(value).toLowerCase
+    super.validate(value).toLowerCase(Locale.ROOT)
 
   override protected def validateContent(value: String)(implicit operation: String): Unit = {
     if (!value.equalsIgnoreCase(VALID_VALUE)) {
@@ -311,7 +312,7 @@ object LogEnrichmentOption extends StringOptionValidator {
 
   // override to normalize to uppercase.
   override protected def validate(value: AnyValue)(implicit operation: String): String =
-    super.validate(value).toUpperCase
+    super.validate(value).toUpperCase(Locale.ROOT)
 
   override protected def validateContent(value: String)(implicit operation: String): Unit = {
     if (!validValues.exists(value.equalsIgnoreCase)) {
@@ -336,10 +337,11 @@ case object AlterDatabaseOptionsConverter extends OptionsConverter[AlterDatabase
       throw new UnsupportedOperationException("Removing options is not supported yet")
     }
     val invalidKeys = keys
-      .map(_.toLowerCase)
-      .diff(expectedKeys.map(_.toLowerCase))
+      .map(_.toLowerCase(Locale.ROOT))
+      .diff(expectedKeys.map(_.toLowerCase(Locale.ROOT)))
     if (invalidKeys.nonEmpty) {
-      val validForCreateDatabase = invalidKeys.filter(CreateDatabaseOptionsConverter.expectedKeys.map(_.toLowerCase))
+      val validForCreateDatabase =
+        invalidKeys.filter(CreateDatabaseOptionsConverter.expectedKeys.map(_.toLowerCase(Locale.ROOT)))
       if (validForCreateDatabase.isEmpty) {
         // keys are not even valid for CREATE DATABASE OPTIONS
         throw new InvalidArgumentsException(
@@ -362,7 +364,8 @@ case object AlterDatabaseOptionsConverter extends OptionsConverter[AlterDatabase
       expectedKeys.exists(expected => found.equalsIgnoreCase(expected))
     )
     if (invalidKeys.nonEmpty) {
-      val validForCreateDatabase = invalidKeys.filter(CreateDatabaseOptionsConverter.expectedKeys.map(_.toLowerCase))
+      val validForCreateDatabase =
+        invalidKeys.filter(CreateDatabaseOptionsConverter.expectedKeys.map(_.toLowerCase(Locale.ROOT)))
 
       if (validForCreateDatabase.isEmpty) {
         // keys are not even valid for CREATE DATABASE OPTIONS
@@ -404,7 +407,9 @@ case object CreateDatabaseOptionsConverter extends OptionsConverter[CreateDataba
 
   override def convert(optionsMap: MapValue, config: Option[Config]): CreateDatabaseOptions = {
     if (
-      optionsMap.keySet().asScala.map(_.toLowerCase).toSeq.contains(LogEnrichmentOption.KEY.toLowerCase) &&
+      optionsMap.keySet().asScala.map(_.toLowerCase(Locale.ROOT)).toSeq.contains(
+        LogEnrichmentOption.KEY.toLowerCase(Locale.ROOT)
+      ) &&
       !config.exists(_.get(GraphDatabaseInternalSettings.change_data_capture))
     ) {
       throw new UnsupportedOperationException(s"${LogEnrichmentOption.KEY} is not supported yet")

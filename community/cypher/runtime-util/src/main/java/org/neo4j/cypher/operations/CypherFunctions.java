@@ -39,6 +39,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
@@ -1131,7 +1132,7 @@ public final class CypherFunctions {
         } else if (in instanceof BooleanValue) {
             return (BooleanValue) in;
         } else if (in instanceof TextValue) {
-            return switch (((TextValue) in).trim().stringValue().toLowerCase()) {
+            return switch (((TextValue) in).trim().stringValue().toLowerCase(Locale.ROOT)) {
                 case "true" -> TRUE;
                 case "false" -> FALSE;
                 default -> NO_VALUE;

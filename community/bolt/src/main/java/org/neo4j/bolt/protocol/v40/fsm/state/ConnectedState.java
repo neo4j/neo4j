@@ -21,6 +21,7 @@ package org.neo4j.bolt.protocol.v40.fsm.state;
 
 import static org.neo4j.util.Preconditions.checkState;
 
+import java.util.Locale;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
@@ -94,7 +95,7 @@ public class ConnectedState implements State {
 
             var flags = context.connection().logon(authToken);
             if (flags != null) {
-                connectionState.onMetadata(flags.name().toLowerCase(), Values.TRUE);
+                connectionState.onMetadata(flags.name().toLowerCase(Locale.ROOT), Values.TRUE);
             }
 
             return true;

@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import static org.neo4j.values.utils.TemporalUtil.NANOS_PER_SECOND;
 
+import java.util.Locale;
 import org.neo4j.exceptions.UnsupportedTemporalUnitException;
 
 /**
@@ -157,7 +158,7 @@ public enum DurationFields {
     public abstract long asTimeStamp(long months, long days, long seconds, long nanos);
 
     public static DurationFields fromName(String fieldName) {
-        switch (fieldName.toLowerCase()) {
+        switch (fieldName.toLowerCase(Locale.ROOT)) {
             case "years":
                 return YEARS;
             case "months":

@@ -48,6 +48,7 @@ import java.time.temporal.UnsupportedTemporalTypeException;
 import java.time.temporal.ValueRange;
 import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -256,7 +257,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
     }
 
     public final AnyValue get(String fieldName) {
-        TemporalFields field = TemporalFields.fields.get(fieldName.toLowerCase());
+        TemporalFields field = TemporalFields.fields.get(fieldName.toLowerCase(Locale.ROOT));
         if (field == TemporalFields.epochSeconds || field == TemporalFields.epochMillis) {
             T temp = temporal();
             if (temp instanceof ChronoZonedDateTime zdt) {
@@ -457,7 +458,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
         @Override
         public final StructureBuilder<AnyValue, Result> add(String fieldName, AnyValue value) {
-            TemporalFields field = TemporalFields.fields.get(fieldName.toLowerCase());
+            TemporalFields field = TemporalFields.fields.get(fieldName.toLowerCase(Locale.ROOT));
             if (field == null) {
                 throw new InvalidArgumentException("No such field: " + fieldName);
             }
@@ -675,7 +676,7 @@ public abstract class TemporalValue<T extends Temporal, V extends TemporalValue<
 
         static {
             for (TemporalFields field : values()) {
-                fields.put(field.name().toLowerCase(), field);
+                fields.put(field.name().toLowerCase(Locale.ROOT), field);
             }
             // aliases
             fields.put("weekday", dayOfWeek);

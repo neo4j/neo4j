@@ -26,6 +26,8 @@ import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 
+import java.util.Locale
+
 import scala.annotation.tailrec
 
 object AggregationHelper {
@@ -50,7 +52,7 @@ object AggregationHelper {
   ): T = {
     aggregation match {
       case f: FunctionInvocation =>
-        f.name.toLowerCase match {
+        f.name.toLowerCase(Locale.ROOT) match {
           case "min" =>
             check(f, minResult, otherResult)
           case "max" =>

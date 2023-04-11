@@ -57,6 +57,8 @@ import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
 
+import java.util.Locale
+
 object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
   def check(
@@ -183,7 +185,7 @@ object SemanticFunctionCheck extends SemanticAnalysisTooling {
 
       // distance has been replaced with point.distance, make sure we provide a nice error message
       case UnresolvedFunction
-        if invocation.namespace.parts.isEmpty && invocation.functionName.name.toLowerCase == "distance" =>
+        if invocation.namespace.parts.isEmpty && invocation.functionName.name.toLowerCase(Locale.ROOT) == "distance" =>
         SemanticError(s"'distance' has been replaced by 'point.distance'", invocation.position)
 
       case Distance =>

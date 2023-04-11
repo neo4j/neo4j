@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.check_point_policy;
 
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -79,7 +80,7 @@ public interface CheckPointThreshold {
      */
     static CheckPointThreshold createThreshold(
             Config config, SystemNanoClock clock, LogPruning logPruning, InternalLogProvider logProvider) {
-        String policyName = config.get(check_point_policy).name().toLowerCase();
+        String policyName = config.get(check_point_policy).name().toLowerCase(Locale.ROOT);
         CheckPointThresholdPolicy policy;
         try {
             policy = CheckPointThresholdPolicy.loadPolicy(policyName);

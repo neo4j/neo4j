@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -150,9 +151,9 @@ class ProcedureHolder<T> {
         String[] oldNs = name.namespace();
         String[] lowerCaseNamespace = new String[oldNs.length];
         for (int i = 0; i < oldNs.length; i++) {
-            lowerCaseNamespace[i] = oldNs[i].toLowerCase();
+            lowerCaseNamespace[i] = oldNs[i].toLowerCase(Locale.ROOT);
         }
-        String lowercaseName = name.name().toLowerCase();
+        String lowercaseName = name.name().toLowerCase(Locale.ROOT);
         return new QualifiedName(lowerCaseNamespace, lowercaseName);
     }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.Locale;
+
 public enum CRSTable {
     CUSTOM("custom", 0),
     EPSG("epsg", 1),
@@ -51,7 +53,7 @@ public enum CRSTable {
     }
 
     private static boolean lowerCase(String string) {
-        return string.toLowerCase().equals(string);
+        return string.toLowerCase(Locale.ROOT).equals(string);
     }
 
     public String getName() {

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler
 
+import java.util.Locale
+
 sealed abstract class UpdateStrategy {
   def name: String
   def toTextOutput: String = name
@@ -39,7 +41,7 @@ case object defaultUpdateStrategy extends UpdateStrategy {
 
 object UpdateStrategy {
 
-  def apply(name: String): UpdateStrategy = name.toUpperCase match {
+  def apply(name: String): UpdateStrategy = name.toUpperCase(Locale.ROOT) match {
     case eagerUpdateStrategy.name   => eagerUpdateStrategy
     case defaultUpdateStrategy.name => defaultUpdateStrategy
 

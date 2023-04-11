@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.expressions.TypeSignatures
 import org.neo4j.cypher.internal.expressions.functions
 import org.neo4j.cypher.internal.util.InputPosition
 
+import java.util.Locale
+
 object Category extends Enumeration {
   val NUMERIC = "Numeric"
   val TRIGONOMETRIC = "Trigonometric"
@@ -127,7 +129,7 @@ object Function {
     WithinBBox
   )
 
-  lazy val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap
+  lazy val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase(Locale.ROOT), f) }.toMap
 
   lazy val functionInfo: List[FunctionTypeSignature] = {
     lookup.values.flatMap {

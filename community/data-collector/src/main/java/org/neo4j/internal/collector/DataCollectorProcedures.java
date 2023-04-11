@@ -22,6 +22,7 @@ package org.neo4j.internal.collector;
 import static java.lang.String.format;
 
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Stream;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -65,7 +66,7 @@ public class DataCollectorProcedures {
             return Stream.empty();
         }
 
-        String upperSection = section.toUpperCase();
+        String upperSection = section.toUpperCase(Locale.ROOT);
         return switch (upperSection) {
             case Sections.GRAPH_COUNTS -> GraphCountsSection.retrieve(dataCollector.getKernel(), Anonymizer.PLAIN_TEXT);
             case Sections.TOKENS -> TokensSection.retrieve(dataCollector.getKernel());

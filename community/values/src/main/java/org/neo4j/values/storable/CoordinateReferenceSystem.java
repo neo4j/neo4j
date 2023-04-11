@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.Locale;
 import java.util.Objects;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.graphdb.spatial.CRS;
@@ -53,7 +54,7 @@ public enum CoordinateReferenceSystem implements CRS {
 
     public static CoordinateReferenceSystem byName(String name) {
         for (final var crs : COORDINATE_REFERENCE_SYSTEMS) {
-            if (crs.name.equals(name.toLowerCase())) {
+            if (crs.name.equals(name.toLowerCase(Locale.ROOT))) {
                 return crs;
             }
         }
@@ -91,7 +92,7 @@ public enum CoordinateReferenceSystem implements CRS {
     private final CRSCalculator calculator;
 
     CoordinateReferenceSystem(CRSTable table, int code, int dimension, boolean geographic) {
-        this.name = name().toLowerCase().replace('_', '-');
+        this.name = name().toLowerCase(Locale.ROOT).replace('_', '-');
         this.table = table;
         this.code = code;
         this.href = table.href(code);

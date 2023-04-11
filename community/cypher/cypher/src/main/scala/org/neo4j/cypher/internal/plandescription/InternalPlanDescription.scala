@@ -44,6 +44,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 
 import java.util
+import java.util.Locale
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
@@ -251,15 +252,15 @@ final case class PlanDescriptionImpl(
       case Version(v) => s"Compiler $v$NL"
     }
     val planner = arguments.collectFirst {
-      case Planner(n) => s"Planner ${n.toUpperCase}$NL"
+      case Planner(n) => s"Planner ${n.toUpperCase(Locale.ROOT)}$NL"
     }
 
     val runtime = arguments.collectFirst {
-      case Runtime(n) => s"Runtime ${n.toUpperCase}$NL"
+      case Runtime(n) => s"Runtime ${n.toUpperCase(Locale.ROOT)}$NL"
     }
 
     val runtimeVersion = arguments.collectFirst {
-      case RuntimeVersion(n) => s"Runtime version ${n.toUpperCase}$NL"
+      case RuntimeVersion(n) => s"Runtime version ${n.toUpperCase(Locale.ROOT)}$NL"
     }
 
     val batchSize = arguments.collectFirst {

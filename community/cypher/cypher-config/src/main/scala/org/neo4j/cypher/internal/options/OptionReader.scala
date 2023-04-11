@@ -23,6 +23,8 @@ import magnolia.CaseClass
 import magnolia.Magnolia
 import org.neo4j.cypher.internal.config.CypherConfiguration
 
+import java.util.Locale
+
 import scala.language.experimental.macros
 
 /**
@@ -73,7 +75,7 @@ object OptionReader {
       copy(result = transform(result))
   }
 
-  def canonical(str: String): String = str.toLowerCase
+  def canonical(str: String): String = str.toLowerCase(Locale.ROOT)
 
   // Magnolia generic derivation
   // Check out the tutorial at https://propensive.com/opensource/magnolia/tutorial

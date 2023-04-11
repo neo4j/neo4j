@@ -41,6 +41,8 @@ import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 
+import java.util.Locale
+
 class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunSuite
     with LogicalPlanningIntegrationTestSupport {
 
@@ -71,7 +73,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
       if !unsupportedIndexTypes.contains(indexType)
       indexProvider <- indexProviders(indexType)
     } {
-      withClue(s"with ${indexType.name.toLowerCase} index and ${indexProvider.name()} provider:") {
+      withClue(s"with ${indexType.name.toLowerCase(Locale.ROOT)} index and ${indexProvider.name()} provider:") {
         val personCount = 20
         val json =
           s"""
@@ -298,7 +300,7 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunS
       if !unsupportedIndexTypes.contains(indexType)
       indexProvider <- indexProviders(indexType)
     } {
-      withClue(s"with ${indexType.name.toLowerCase} index and ${indexProvider.name()} provider:") {
+      withClue(s"with ${indexType.name.toLowerCase(Locale.ROOT)} index and ${indexProvider.name()} provider:") {
         val friendCount = 20
         val json =
           s"""

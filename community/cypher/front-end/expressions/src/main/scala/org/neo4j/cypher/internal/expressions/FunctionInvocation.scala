@@ -20,6 +20,8 @@ import org.neo4j.cypher.internal.expressions.functions.DeterministicFunction
 import org.neo4j.cypher.internal.expressions.functions.UnresolvedFunction
 import org.neo4j.cypher.internal.util.InputPosition
 
+import java.util.Locale
+
 object FunctionInvocation {
 
   def apply(name: FunctionName, argument: Expression)(position: InputPosition): FunctionInvocation =
@@ -62,7 +64,9 @@ case class FunctionInvocation(
   args: IndexedSeq[Expression]
 )(val position: InputPosition) extends Expression {
   val name: String = (namespace.parts :+ functionName.name).mkString(".")
-  val function: functions.Function = functions.Function.lookup.getOrElse(name.toLowerCase, UnresolvedFunction)
+
+  val function: functions.Function =
+    functions.Function.lookup.getOrElse(name.toLowerCase(Locale.ROOT), UnresolvedFunction)
 
   def needsToBeResolved: Boolean = function match {
     case UnresolvedFunction => true
@@ -82,8 +86,8 @@ case class FunctionInvocation(
 case class FunctionName(name: String)(val position: InputPosition) extends SymbolicName {
 
   override def equals(x: Any): Boolean = x match {
-    case FunctionName(other) => other.toLowerCase == name.toLowerCase
+    case FunctionName(other) => other.toLowerCase(Locale.ROOT) == name.toLowerCase(Locale.ROOT)
     case _                   => false
   }
-  override def hashCode = name.toLowerCase.hashCode
+  override def hashCode = name.toLowerCase(Locale.ROOT).hashCode
 }

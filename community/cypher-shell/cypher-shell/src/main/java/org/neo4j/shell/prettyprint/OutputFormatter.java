@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -112,7 +113,8 @@ public interface OutputFormatter {
         Value questionMark = Values.value("?");
 
         for (String key : INFO_SUMMARY) {
-            Value value = arguments.getOrDefault(key, arguments.getOrDefault(key.toLowerCase(), emptyString));
+            Value value =
+                    arguments.getOrDefault(key, arguments.getOrDefault(key.toLowerCase(Locale.ROOT), emptyString));
             result.put(key, value);
         }
         result.put(

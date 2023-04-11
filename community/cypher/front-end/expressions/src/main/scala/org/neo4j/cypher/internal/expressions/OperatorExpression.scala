@@ -16,6 +16,8 @@
  */
 package org.neo4j.cypher.internal.expressions
 
+import java.util.Locale
+
 import scala.collection.immutable.ListSet
 
 trait OperatorExpression {
@@ -23,7 +25,7 @@ trait OperatorExpression {
 
   def signatures: Seq[ExpressionTypeSignature] = Seq.empty
 
-  def canonicalOperatorSymbol: String = self.productPrefix.toUpperCase
+  def canonicalOperatorSymbol: String = self.productPrefix.toUpperCase(Locale.ROOT)
 }
 
 /**

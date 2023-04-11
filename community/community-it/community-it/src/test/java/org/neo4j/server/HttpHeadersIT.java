@@ -36,6 +36,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.SSLContext;
@@ -125,8 +126,8 @@ class HttpHeadersIT extends ExclusiveWebContainerTestBase {
         assertNull(headers.get(SERVER.asString())); // no 'Server' header
 
         for (var values : headers.values()) {
-            assertFalse(values.stream()
-                    .anyMatch(value -> value.toLowerCase().contains("jetty"))); // no 'jetty' in other header values
+            assertFalse(values.stream().anyMatch(value -> value.toLowerCase(Locale.ROOT)
+                    .contains("jetty"))); // no 'jetty' in other header values
         }
     }
 

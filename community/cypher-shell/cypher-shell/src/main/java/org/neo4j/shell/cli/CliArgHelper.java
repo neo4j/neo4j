@@ -33,6 +33,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.logging.ConsoleHandler;
 import java.util.logging.FileHandler;
@@ -263,14 +264,14 @@ public class CliArgHelper {
                 .addArgument("--encryption")
                 .help("whether the connection to Neo4j should be encrypted. This must be consistent with Neo4j's "
                         + "configuration. If choosing '"
-                        + Encryption.DEFAULT.name().toLowerCase()
+                        + Encryption.DEFAULT.name().toLowerCase(Locale.ROOT)
                         + "' the encryption setting is deduced from the specified address. "
                         + "For example the 'neo4j+ssc' protocol would use encryption.")
                 .choices(new CollectionArgumentChoice<>(
-                        Encryption.TRUE.name().toLowerCase(),
-                        Encryption.FALSE.name().toLowerCase(),
-                        Encryption.DEFAULT.name().toLowerCase()))
-                .setDefault(Encryption.DEFAULT.name().toLowerCase());
+                        Encryption.TRUE.name().toLowerCase(Locale.ROOT),
+                        Encryption.FALSE.name().toLowerCase(Locale.ROOT),
+                        Encryption.DEFAULT.name().toLowerCase(Locale.ROOT)))
+                .setDefault(Encryption.DEFAULT.name().toLowerCase(Locale.ROOT));
         connGroup
                 .addArgument("-d", "--database")
                 .help("database to connect to. Can also be specified using environment variable " + DATABASE_ENV_VAR);
@@ -294,10 +295,10 @@ public class CliArgHelper {
                 .help("desired output format, verbose displays results in tabular format and prints statistics, "
                         + "plain displays data with minimal formatting")
                 .choices(new CollectionArgumentChoice<>(
-                        Format.AUTO.name().toLowerCase(),
-                        Format.VERBOSE.name().toLowerCase(),
-                        Format.PLAIN.name().toLowerCase()))
-                .setDefault(Format.AUTO.name().toLowerCase());
+                        Format.AUTO.name().toLowerCase(Locale.ROOT),
+                        Format.VERBOSE.name().toLowerCase(Locale.ROOT),
+                        Format.PLAIN.name().toLowerCase(Locale.ROOT)))
+                .setDefault(Format.AUTO.name().toLowerCase(Locale.ROOT));
 
         parser.addArgument("-P", "--param")
                 .help("Add a parameter to this session."

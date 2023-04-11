@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.log;
 
+import java.util.Locale;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.SimpleFormatter;
@@ -99,7 +100,7 @@ public interface Logger {
         }
 
         public static Level from(String value) {
-            return Level.valueOf(value.toUpperCase());
+            return Level.valueOf(value.toUpperCase(Locale.ROOT));
         }
 
         public static Level defaultActiveLevel() {

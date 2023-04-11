@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_PARALLEL_RUNTIME_COMBINATIONS
 
+import java.util.Locale
+
 /**
  * Collects all cypher options that can be set on query basis (pre-parser options)
  */
@@ -133,8 +135,8 @@ object CypherQueryOptions {
 
 sealed abstract class CypherExecutionMode(val modeName: String) extends CypherOption(modeName) {
   override def companion: CypherExecutionMode.type = CypherExecutionMode
-  override def render: String = super.render.toUpperCase
-  override def cacheKey: String = super.cacheKey.toUpperCase
+  override def render: String = super.render.toUpperCase(Locale.ROOT)
+  override def cacheKey: String = super.cacheKey.toUpperCase(Locale.ROOT)
 }
 
 case object CypherExecutionMode extends CypherOptionCompanion[CypherExecutionMode](

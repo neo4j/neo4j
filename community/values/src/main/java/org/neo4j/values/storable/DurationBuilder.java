@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.Locale;
 import org.neo4j.values.StructureBuilder;
 
 abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input, Result> {
@@ -35,7 +36,7 @@ abstract class DurationBuilder<Input, Result> implements StructureBuilder<Input,
 
     @Override
     public final StructureBuilder<Input, Result> add(String field, Input value) {
-        switch (field.toLowerCase()) {
+        switch (field.toLowerCase(Locale.ROOT)) {
             case "years":
                 this.years = value;
                 break;

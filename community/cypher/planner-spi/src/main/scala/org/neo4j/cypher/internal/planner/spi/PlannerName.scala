@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.planner.spi
 
 import org.neo4j.cypher.internal.frontend.PlannerName
 
+import java.util.Locale
+
 sealed abstract class CostBasedPlannerName extends PlannerName {
   val toTextOutput = "COST"
   val version = "5.0"
@@ -59,7 +61,7 @@ case object AdministrationPlannerName extends PlannerName {
 
 object PlannerNameFor {
 
-  def apply(name: String): PlannerName = name.toUpperCase match {
+  def apply(name: String): PlannerName = name.toUpperCase(Locale.ROOT) match {
     case IDPPlannerName.name => IDPPlannerName
     case DPPlannerName.name  => DPPlannerName
     case "COST"              => CostBasedPlannerName.default

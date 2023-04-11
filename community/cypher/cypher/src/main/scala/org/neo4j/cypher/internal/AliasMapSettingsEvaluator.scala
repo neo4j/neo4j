@@ -38,6 +38,8 @@ import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util.Locale
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 
 class AliasMapSettingsEvaluator(procedures: Procedures) {
@@ -89,14 +91,14 @@ class AliasMapSettingsEvaluator(procedures: Procedures) {
   private val evaluateMap: MapValue => PartialFunction[ExpressionMapOrParamValue, MapValue] = params => {
     case Left(map) =>
       VirtualValues.map(
-        map.keys.map(_.toLowerCase).toArray,
+        map.keys.map(_.toLowerCase(Locale.ROOT)).toArray,
         map.view.mapValues(v =>
           evaluate(v, params)
         ).values.toArray
       )
     case Right(mv: MapValue) =>
       val builder = new MapValueBuilder()
-      mv.foreach((k, v) => builder.add(k.toLowerCase(), v))
+      mv.foreach((k, v) => builder.add(k.toLowerCase(Locale.ROOT), v))
       builder.build()
   }
 }
@@ -152,7 +154,7 @@ object AliasMapSettingsEvaluator {
           (
             logging_level,
             try {
-              Level.valueOf(loggingLevel.stringValue().toUpperCase)
+              Level.valueOf(loggingLevel.stringValue().toUpperCase(Locale.ROOT))
               loggingLevel.toUpper
             } catch {
               case _: IllegalArgumentException =>

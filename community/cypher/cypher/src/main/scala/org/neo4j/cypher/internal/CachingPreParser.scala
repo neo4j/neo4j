@@ -34,6 +34,8 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.exceptions.SyntaxException
 
+import java.util.Locale
+
 import scala.jdk.CollectionConverters.ListHasAsScala
 
 /**
@@ -122,7 +124,7 @@ class PreParser(
     )
 
     preParsedStatement.options.collect {
-      case PreParserOption(key, _, pos) if key.toLowerCase == CypherConnectComponentsPlannerOption.key =>
+      case PreParserOption(key, _, pos) if key.toLowerCase(Locale.ROOT) == CypherConnectComponentsPlannerOption.key =>
         DeprecatedConnectComponentsPlannerPreParserOption(pos)
     }.foreach(notificationLogger.log)
 

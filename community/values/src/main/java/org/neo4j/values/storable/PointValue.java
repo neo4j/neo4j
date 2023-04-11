@@ -27,6 +27,7 @@ import static org.neo4j.values.utils.ValueMath.HASH_CONSTANT;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
@@ -291,7 +292,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
 
     public static PointValue fromMap(MapValue map) {
         PointBuilder fields = new PointBuilder();
-        map.foreach((key, value) -> fields.assign(key.toLowerCase(), value));
+        map.foreach((key, value) -> fields.assign(key.toLowerCase(Locale.ROOT), value));
         return fromInputFields(fields);
     }
 
@@ -430,7 +431,7 @@ public class PointValue extends HashMemoizingScalarValue implements Point, Compa
 
         @Override
         public void assign(String key, Object value) {
-            switch (key.toLowerCase()) {
+            switch (key.toLowerCase(Locale.ROOT)) {
                 case "crs" -> {
                     checkUnassigned(crs, key);
                     assignTextValue(

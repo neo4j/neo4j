@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
@@ -96,7 +97,8 @@ public class HttpHeaderUtils {
             return Optional.empty();
         } else {
             try {
-                return Optional.of(AccessMode.valueOf(headerValue.toUpperCase()).equals(AccessMode.READ));
+                return Optional.of(
+                        AccessMode.valueOf(headerValue.toUpperCase(Locale.ROOT)).equals(AccessMode.READ));
             } catch (IllegalArgumentException ex) {
                 throw new IllegalArgumentException(
                         String.format(

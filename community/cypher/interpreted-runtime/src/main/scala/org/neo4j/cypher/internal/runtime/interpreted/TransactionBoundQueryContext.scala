@@ -146,6 +146,7 @@ import org.neo4j.values.virtual.VirtualRelationshipValue
 import org.neo4j.values.virtual.VirtualValues
 
 import java.net.URL
+import java.util.Locale
 
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -218,7 +219,8 @@ sealed class TransactionBoundQueryContext(
       if (!providerIndexType.equals(indexType)) {
         val indexProviders =
           schemaWrite.indexProvidersByType(indexType).asScala.toList.map(_.name()).sorted.mkString("['", "', '", "']")
-        val indexDescription = if (providerIndexType.isLookup) "token lookup" else providerIndexType.name().toLowerCase
+        val indexDescription =
+          if (providerIndexType.isLookup) "token lookup" else providerIndexType.name().toLowerCase(Locale.ROOT)
         throw new InvalidArgumentsException(
           s"""Could not create $schemaDescription with specified index provider '$providerString'.
              |To create $indexDescription index, please use 'CREATE $providerIndexType INDEX ...'.
@@ -834,7 +836,7 @@ private[internal] class TransactionBoundReadQueryContext(
     }
 
     // No such index existed, throw same exception type that Iterators.single gives if no index exists
-    throw new NoSuchElementException(s"No such ${indexType.toString.toLowerCase} index exists.")
+    throw new NoSuchElementException(s"No such ${indexType.toString.toLowerCase(Locale.ROOT)} index exists.")
   }
 
   private def innerNodeIndexSeek(

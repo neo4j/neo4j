@@ -22,6 +22,7 @@ package org.neo4j.test.arguments;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Stream;
@@ -96,7 +97,7 @@ public class KernelVersionArgumentsProvider implements ArgumentsProvider, Annota
      */
     static Version fromString(String versionString) {
         // Trim the 'v' prefix
-        if (versionString.toLowerCase().startsWith("v")) {
+        if (versionString.toLowerCase(Locale.ROOT).startsWith("v")) {
             versionString = versionString.substring(1);
         }
         if (versionString.equals(KernelVersion.GLORIOUS_FUTURE.name())) {

@@ -39,6 +39,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -92,7 +93,7 @@ public class ImportCommand {
         static class OnOffAutoConverter implements ITypeConverter<OnOffAuto> {
             @Override
             public OnOffAuto convert(String value) throws Exception {
-                return OnOffAuto.valueOf(value.toUpperCase());
+                return OnOffAuto.valueOf(value.toUpperCase(Locale.ROOT));
             }
         }
 
@@ -480,7 +481,7 @@ public class ImportCommand {
             @Override
             public IdType convert(String in) {
                 try {
-                    return IdType.valueOf(in.toUpperCase());
+                    return IdType.valueOf(in.toUpperCase(Locale.ROOT));
                 } catch (Exception e) {
                     throw new CommandLine.TypeConversionException(format("Invalid id type: %s (%s)", in, e));
                 }

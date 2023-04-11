@@ -39,6 +39,7 @@ import java.time.OffsetTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -186,11 +187,11 @@ public class Extractors {
     }
 
     public void add(Extractor<?> extractor) {
-        instances.put(extractor.name().toUpperCase(), extractor);
+        instances.put(extractor.name().toUpperCase(Locale.ROOT), extractor);
     }
 
     public Extractor<?> valueOf(String name) {
-        Extractor<?> instance = instances.get(name.toUpperCase());
+        Extractor<?> instance = instances.get(name.toUpperCase(Locale.ROOT));
         if (instance == null) {
             throw new IllegalArgumentException("'" + name + "'");
         }

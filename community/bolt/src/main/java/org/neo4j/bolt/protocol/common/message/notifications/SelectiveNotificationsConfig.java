@@ -22,6 +22,7 @@ package org.neo4j.bolt.protocol.common.message.notifications;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import org.neo4j.kernel.impl.query.NotificationConfiguration;
@@ -53,7 +54,7 @@ public final class SelectiveNotificationsConfig implements NotificationsConfig {
         if (minimumSeverity == null) return null;
 
         try {
-            return Enum.valueOf(NotificationConfiguration.Severity.class, minimumSeverity.toUpperCase());
+            return Enum.valueOf(NotificationConfiguration.Severity.class, minimumSeverity.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException err) {
             throw new IllegalStructArgumentException("Could not parse a NotificationConfig's minimum severity.", err);
         }
@@ -66,7 +67,7 @@ public final class SelectiveNotificationsConfig implements NotificationsConfig {
         var set = new HashSet<NotificationConfiguration.Category>();
         try {
             for (var x : cats) {
-                set.add(Enum.valueOf(NotificationConfiguration.Category.class, x.toUpperCase()));
+                set.add(Enum.valueOf(NotificationConfiguration.Category.class, x.toUpperCase(Locale.ROOT)));
             }
         } catch (IllegalArgumentException err) {
             throw new IllegalStructArgumentException("Could not parse a NotificationConfig category to ignore.", err);

@@ -19,6 +19,7 @@
  */
 package org.neo4j.values.storable;
 
+import java.util.Locale;
 import org.neo4j.exceptions.InvalidArgumentException;
 
 /**
@@ -81,7 +82,7 @@ public enum PointFields {
     }
 
     public static PointFields fromName(String fieldName) {
-        switch (fieldName.toLowerCase()) {
+        switch (fieldName.toLowerCase(Locale.ROOT)) {
             case "x":
                 return X;
             case "y":

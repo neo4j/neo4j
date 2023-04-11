@@ -74,6 +74,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util.Locale
 import java.util.UUID
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -434,26 +435,26 @@ object AdministrationCommandRuntime {
       QueryHandler
         .handleNoResult(p =>
           Some(new InvalidArgumentException(
-            s"Failed to rename the specified ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}' to " +
-              s"'${runtimeStringValue(toName, p)}': The ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}' does not exist."
+            s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to " +
+              s"'${runtimeStringValue(toName, p)}': The ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' does not exist."
           ))
         )
         .handleError((error, p) =>
           (error, error.getCause) match {
             case (_, _: UniquePropertyValueValidationException) =>
               new InvalidArgumentException(
-                s"Failed to rename the specified ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}' to " +
+                s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to " +
                   s"'${runtimeStringValue(toName, p)}': " + s"$entity '${runtimeStringValue(toName, p)}' already exists.",
                 error
               )
             case (e: HasStatus, _) if e.status() == Status.Cluster.NotALeader =>
               new DatabaseAdministrationOnFollowerException(
-                s"Failed to rename the specified ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}': $followerError",
+                s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}': $followerError",
                 error
               )
             case _ =>
               new IllegalStateException(
-                s"Failed to rename the specified ${entity.toLowerCase} '${runtimeStringValue(fromName, p)}' to '${runtimeStringValue(toName, p)}'.",
+                s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to '${runtimeStringValue(toName, p)}'.",
                 error
               )
           }

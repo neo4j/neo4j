@@ -22,6 +22,7 @@ package org.neo4j.bolt.protocol.v51.fsm.state;
 
 import static org.neo4j.util.Preconditions.checkState;
 
+import java.util.Locale;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.fsm.state.AbstractState;
@@ -56,7 +57,7 @@ public class AuthenticationState extends AbstractState {
         var authToken = message.authToken();
         var flags = context.connection().logon(authToken);
         if (flags != null) {
-            context.connectionState().onMetadata(flags.name().toLowerCase(), Values.TRUE);
+            context.connectionState().onMetadata(flags.name().toLowerCase(Locale.ROOT), Values.TRUE);
         }
 
         return readyState;

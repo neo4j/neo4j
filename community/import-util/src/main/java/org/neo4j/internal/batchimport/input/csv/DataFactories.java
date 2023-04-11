@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.neo4j.collection.RawIterator;
@@ -440,7 +441,7 @@ public class DataFactories {
             } else {
                 if (spec.type().equalsIgnoreCase(Type.START_ID.name())
                         || spec.type().equalsIgnoreCase(Type.END_ID.name())) {
-                    type = Type.valueOf(spec.type().toUpperCase());
+                    type = Type.valueOf(spec.type().toUpperCase(Locale.ROOT));
                     group = groups.get(spec.group());
                     extractor = group.specificIdType() != null
                             ? parsePropertyType(group.specificIdType(), extractors)

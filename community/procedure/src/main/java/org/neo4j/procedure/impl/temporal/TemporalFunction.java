@@ -33,6 +33,7 @@ import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Supplier;
 import org.neo4j.cypher.internal.expressions.functions.Category;
 import org.neo4j.function.ThrowingFunction;
@@ -100,7 +101,7 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
         assert result.getClass().getSimpleName().equals(basename + "Type") : "result type should match function name";
         Description description = getClass().getAnnotation(Description.class);
         this.signature = new UserFunctionSignature(
-                new QualifiedName(new String[0], basename.toLowerCase()),
+                new QualifiedName(new String[0], basename.toLowerCase(Locale.ROOT)),
                 INPUT_SIGNATURE,
                 result,
                 null,
