@@ -23,9 +23,10 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.lock_manager
 
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.collections.api.set.primitive.LongSet;
-import org.jctools.maps.NonBlockingHashMapLong;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingChangeListener;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -155,7 +156,7 @@ public class ForsetiLockManager implements Locks {
     private final SettingChangeListener<Boolean> verboseDeadlocksSettingListener;
 
     /** Pointers to lock maps, one array per resource type. */
-    private final NonBlockingHashMapLong<ForsetiLockManager.Lock>[] lockMaps;
+    private final ConcurrentMap<Long, ForsetiLockManager.Lock>[] lockMaps;
 
     /** Reverse lookup resource types by id, used for introspection */
     private final ResourceType[] resourceTypes;
@@ -171,11 +172,11 @@ public class ForsetiLockManager implements Locks {
     public ForsetiLockManager(Config config, SystemNanoClock clock, ResourceType... resourceTypes) {
         this.config = config;
         int maxResourceId = findMaxResourceId(resourceTypes);
-        this.lockMaps = new NonBlockingHashMapLong[maxResourceId];
+        this.lockMaps = new ConcurrentMap[maxResourceId];
         this.resourceTypes = new ResourceType[maxResourceId];
 
         for (ResourceType type : resourceTypes) {
-            this.lockMaps[type.typeId()] = new NonBlockingHashMapLong<>(16, false);
+            this.lockMaps[type.typeId()] = new ConcurrentHashMap<>(16, 0.6f, 512);
             this.resourceTypes[type.typeId()] = type;
         }
         this.clock = clock;
