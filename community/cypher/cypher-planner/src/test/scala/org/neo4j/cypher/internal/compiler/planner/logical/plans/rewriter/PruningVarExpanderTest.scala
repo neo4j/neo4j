@@ -327,6 +327,19 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(input)
   }
 
+  test("should not rewrite when expand is on LHS of Apply") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .apply()
+      .|.limit(1)
+      .|.argument()
+      .expandAll("(a)-[*1..3]->(b)")
+      .allNodeScan("a")
+      .build()
+
+    assertNotRewritten(before)
+  }
+
   test("should handle insanely long logical plans without running out of stack") {
     val leafPlan: LogicalPlan = Argument(Set("x"))
     var plan = leafPlan

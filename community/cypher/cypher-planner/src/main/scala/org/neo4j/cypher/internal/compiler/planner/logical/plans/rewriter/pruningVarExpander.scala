@@ -44,34 +44,36 @@ case object pruningVarExpander extends Rewriter {
     val distinctSet = mutable.Set[VarExpand]()
 
     def collectDistinctSet(plan: LogicalPlan,
-                           dependencies: Option[Set[String]]): Option[Set[String]] = {
+                           dependencies: Option[Set[String]]): (Option[Set[String]], Option[Set[String]]) = {
 
-      val lowerDistinctLand: Option[Set[String]] = plan match {
+      val lowerDistinctLand = plan match {
 
         case aggPlan: AggregatingPlan if aggPlan.aggregationExpressions.values.forall(isDistinct) =>
           val variablesInTheDistinctSet = (aggPlan.groupingExpressions.values.flatMap(_.dependencies.map(_.name)) ++
             aggPlan.aggregationExpressions.values.flatMap(_.dependencies.map(_.name))).toSet
-          Some(variablesInTheDistinctSet)
+          (Some(variablesInTheDistinctSet), None)
 
         case expand: VarExpand
           if dependencies.nonEmpty && !distinctNeedsRelsFromExpand(dependencies, expand) && expand.length.max.nonEmpty =>
           distinctSet += expand
-          dependencies
+          (dependencies, None)
 
         case Projection(_, expressions) =>
-          dependencies.map(_ ++ expressions.values.flatMap(_.dependencies.map(_.name)))
+          (dependencies.map(_ ++ expressions.values.flatMap(_.dependencies.map(_.name))), None)
 
         case Selection(Ands(predicates), _) =>
-          dependencies.map(_ ++ predicates.flatMap(_.dependencies.map(_.name)))
+          (dependencies.map(_ ++ predicates.flatMap(_.dependencies.map(_.name))), None)
 
         case _: Expand |
              _: VarExpand |
-             _: Apply |
              _: Optional =>
-          dependencies
+          (dependencies, None)
+
+        case _: Apply =>
+          (None, dependencies)
 
         case _ =>
-          None
+          (None, None)
       }
 
       lowerDistinctLand
@@ -82,10 +84,10 @@ case object pruningVarExpander extends Rewriter {
 
     while(planStack.nonEmpty) {
       val (plan: LogicalPlan, deps: Option[Set[String]]) = planStack.pop()
-      val newDeps = collectDistinctSet(plan, deps)
+      val (newLhsDeps, newRLhsDeps) = collectDistinctSet(plan, deps)
 
-      plan.lhs.foreach(p => planStack.push((p, newDeps)))
-      plan.rhs.foreach(p => planStack.push((p, newDeps)))
+      plan.lhs.foreach(p => planStack.push((p, newLhsDeps)))
+      plan.rhs.foreach(p => planStack.push((p, newRLhsDeps)))
     }
 
     distinctSet.toSet
