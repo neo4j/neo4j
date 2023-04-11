@@ -23,9 +23,11 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-import org.eclipse.collections.api.iterator.LongIterator;
-import org.neo4j.internal.batchimport.staging.LonelyProcessingStep;
+import java.util.concurrent.atomic.LongAdder;
+import org.neo4j.internal.batchimport.staging.BatchSender;
+import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -36,43 +38,42 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 
-public class DeleteDuplicateNodesStep extends LonelyProcessingStep {
-    private static final String DELETE_DUPLICATE_IMPORT_STEP_TAG = "deleteDuplicateImportStep";
+public class DeleteDuplicateNodesStep extends ProcessorStep<long[]> {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
-    private final LongIterator nodeIds;
     private final DataImporter.Monitor storeMonitor;
     private final CursorContextFactory contextFactory;
+    private final IdGeneratorUpdatesWorkSync idUpdatesWorkSync;
     private final NeoStores neoStores;
-
-    private long nodesRemoved;
-    private long propertiesRemoved;
+    private final LongAdder nodesRemoved = new LongAdder();
+    private final LongAdder propertiesRemoved = new LongAdder();
 
     public DeleteDuplicateNodesStep(
             StageControl control,
             Configuration config,
-            LongIterator nodeIds,
             NeoStores neoStores,
             DataImporter.Monitor storeMonitor,
-            CursorContextFactory contextFactory) {
-        super(control, "DEDUP", config);
+            CursorContextFactory contextFactory,
+            IdGeneratorUpdatesWorkSync idUpdatesWorkSync) {
+        super(control, "DEDUP", config, 0, contextFactory);
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
         this.propertyStore = neoStores.getPropertyStore();
-        this.nodeIds = nodeIds;
         this.storeMonitor = storeMonitor;
         this.contextFactory = contextFactory;
+        this.idUpdatesWorkSync = idUpdatesWorkSync;
     }
 
     @Override
-    protected void process() {
+    protected void process(long[] batch, BatchSender sender, CursorContext cursorContext) throws Throwable {
         NodeRecord nodeRecord = nodeStore.newRecord();
         PropertyRecord propertyRecord = propertyStore.newRecord();
-        try (var cursorContext = contextFactory.create(DELETE_DUPLICATE_IMPORT_STEP_TAG);
-                var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
-            while (nodeIds.hasNext()) {
-                long duplicateNodeId = nodeIds.next();
+        try (var storeCursors = new CachedStoreCursors(neoStores, cursorContext);
+                var idUpdates = idUpdatesWorkSync.newBatch(contextFactory)) {
+            long batchPropertiesRemoved = 0;
+            for (long duplicateNodeId : batch) {
                 nodeStore.getRecordByCursor(duplicateNodeId, nodeRecord, NORMAL, storeCursors.readCursor(NODE_CURSOR));
                 assert nodeRecord.inUse() : nodeRecord;
                 // Ensure heavy so that the dynamic label records gets loaded (and then deleted) too
@@ -85,11 +86,12 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep {
                             nextProp, propertyRecord, NORMAL, storeCursors.readCursor(PROPERTY_CURSOR));
                     assert propertyRecord.inUse() : propertyRecord + " for " + nodeRecord;
                     propertyStore.ensureHeavy(propertyRecord, storeCursors);
-                    propertiesRemoved += propertyRecord.numberOfProperties();
+                    batchPropertiesRemoved += propertyRecord.numberOfProperties();
                     nextProp = propertyRecord.getNextProp();
                     deletePropertyRecordIncludingValueRecords(propertyRecord);
                     try (var propertyWriteCursor = storeCursors.writeCursor(PROPERTY_CURSOR)) {
-                        propertyStore.updateRecord(propertyRecord, propertyWriteCursor, cursorContext, storeCursors);
+                        propertyStore.updateRecord(
+                                propertyRecord, idUpdates, propertyWriteCursor, cursorContext, storeCursors);
                     }
                 }
 
@@ -99,10 +101,11 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep {
                     labelRecord.setInUse(false);
                 }
                 try (var nodeWriteCursor = storeCursors.writeCursor(NODE_CURSOR)) {
-                    nodeStore.updateRecord(nodeRecord, nodeWriteCursor, cursorContext, storeCursors);
+                    nodeStore.updateRecord(nodeRecord, idUpdates, nodeWriteCursor, cursorContext, storeCursors);
                 }
-                nodesRemoved++;
             }
+            propertiesRemoved.add(batchPropertiesRemoved);
+            nodesRemoved.add(batch.length);
         }
     }
 
@@ -121,7 +124,7 @@ public class DeleteDuplicateNodesStep extends LonelyProcessingStep {
     @Override
     public void close() throws Exception {
         super.close();
-        storeMonitor.nodesRemoved(nodesRemoved);
-        storeMonitor.propertiesRemoved(propertiesRemoved);
+        storeMonitor.nodesRemoved(nodesRemoved.sum());
+        storeMonitor.propertiesRemoved(propertiesRemoved.sum());
     }
 }

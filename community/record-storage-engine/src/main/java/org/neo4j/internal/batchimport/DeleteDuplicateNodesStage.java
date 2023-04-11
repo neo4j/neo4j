@@ -26,6 +26,7 @@ import org.neo4j.internal.batchimport.staging.Stage;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 
 /**
  * After {@link IdMapper#prepare(PropertyValueLookup, Collector, ProgressListener)} any duplicate input ids have been
@@ -40,6 +41,15 @@ public class DeleteDuplicateNodesStage extends Stage {
             DataImporter.Monitor storeMonitor,
             CursorContextFactory contextFactory) {
         super("DEDUP", null, config, 0);
-        add(new DeleteDuplicateNodesStep(control(), config, duplicateNodeIds, neoStore, storeMonitor, contextFactory));
+
+        add(new BatchIdsStep(control(), config, duplicateNodeIds));
+
+        var idUpdatesWorkSync = new IdGeneratorUpdatesWorkSync(false);
+        idUpdatesWorkSync.add(neoStore.getNodeStore().getIdGenerator());
+        idUpdatesWorkSync.add(neoStore.getNodeStore().getDynamicLabelStore().getIdGenerator());
+        idUpdatesWorkSync.add(neoStore.getPropertyStore().getIdGenerator());
+        idUpdatesWorkSync.add(neoStore.getPropertyStore().getStringStore().getIdGenerator());
+        idUpdatesWorkSync.add(neoStore.getPropertyStore().getArrayStore().getIdGenerator());
+        add(new DeleteDuplicateNodesStep(control(), config, neoStore, storeMonitor, contextFactory, idUpdatesWorkSync));
     }
 }

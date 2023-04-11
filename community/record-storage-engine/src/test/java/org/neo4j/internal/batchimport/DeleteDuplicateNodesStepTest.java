@@ -38,6 +38,7 @@ import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,6 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -137,14 +137,11 @@ class DeleteDuplicateNodesStepTest {
 
         // when
         long[] duplicateNodeIds = randomNodes(ids);
-        SimpleStageControl control = new SimpleStageControl();
         NodeStore nodeStore = neoStores.getNodeStore();
-        try (DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep(
-                control, Configuration.DEFAULT, iterator(duplicateNodeIds), neoStores, monitor, contextFactory)) {
-            control.steps(step);
-            startAndAwaitCompletionOf(step);
+        try (var stage = new DeleteDuplicateNodesStage(
+                Configuration.DEFAULT, iterator(duplicateNodeIds), neoStores, monitor, contextFactory)) {
+            stage.execute().awaitCompletion(10, TimeUnit.MINUTES);
         }
-        control.assertHealthy();
 
         // then
         int expectedNodes = 0;
@@ -211,19 +208,15 @@ class DeleteDuplicateNodesStepTest {
         }
 
         long[] duplicateNodeIds = randomNodes(ids);
-        SimpleStageControl control = new SimpleStageControl();
         var cacheTracer = new DefaultPageCacheTracer();
-        try (DeleteDuplicateNodesStep step = new DeleteDuplicateNodesStep(
-                control,
+        try (var stage = new DeleteDuplicateNodesStage(
                 Configuration.DEFAULT,
                 iterator(duplicateNodeIds),
                 neoStores,
                 monitor,
                 new CursorContextFactory(cacheTracer, EMPTY))) {
-            control.steps(step);
-            startAndAwaitCompletionOf(step);
+            stage.execute().awaitCompletion(10, TimeUnit.MINUTES);
         }
-        control.assertHealthy();
 
         int expectedEventNumber = duplicateNodeIds.length
                 * 2; // at least 2 events per node is expected since property size is dynamic random thingy
