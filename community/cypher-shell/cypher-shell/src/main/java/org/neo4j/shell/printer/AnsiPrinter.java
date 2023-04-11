@@ -47,12 +47,16 @@ public class AnsiPrinter implements Printer {
     }
 
     public AnsiPrinter(Format format, PrintStream out, PrintStream err) {
+        this(format, out, err, isOutputInteractive());
+    }
+
+    public AnsiPrinter(Format format, PrintStream out, PrintStream err, boolean ansiEnabled) {
         this.format = format;
         this.out = out;
         this.err = err;
 
         try {
-            if (isOutputInteractive()) {
+            if (ansiEnabled) {
                 Ansi.setEnabled(true);
                 AnsiConsole.systemInstall();
             } else {
@@ -93,23 +97,28 @@ public class AnsiPrinter implements Printer {
 
     @Override
     public void printError(Throwable throwable) {
-        printError(getFormattedMessage(throwable));
+        err.println(getFormattedMessage(throwable).renderedString());
     }
 
     @Override
     public void printError(String s) {
-        err.println(Ansi.ansi().render(s).toString());
+        err.println(AnsiFormattedText.s().colorRed().append(s).renderedString());
+    }
+
+    @Override
+    public void printError(AnsiFormattedText text) {
+        err.println(text.renderedString());
     }
 
     @Override
     public void printOut(final String msg) {
-        out.println(Ansi.ansi().render(msg).toString());
+        out.println(msg);
     }
 
     /**
      * Formatting for Bolt exceptions.
      */
-    public String getFormattedMessage(final Throwable e) {
+    private AnsiFormattedText getFormattedMessage(final Throwable e) {
         AnsiFormattedText msg = AnsiFormattedText.s().colorRed();
 
         if (e instanceof AnsiFormattedException) {
@@ -143,6 +152,6 @@ public class AnsiPrinter implements Printer {
             }
         }
 
-        return msg.formattedString();
+        return msg;
     }
 }

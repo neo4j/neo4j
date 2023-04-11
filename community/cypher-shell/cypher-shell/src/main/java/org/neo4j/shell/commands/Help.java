@@ -68,8 +68,7 @@ public class Help implements Command {
                 .append(cmd.metadata().usage())
                 .append("\n\n")
                 .append(cmd.metadata().help())
-                .append("\n")
-                .formattedString());
+                .append("\n"));
     }
 
     private void printGeneralHelp() {
@@ -84,15 +83,13 @@ public class Help implements Command {
 
         allCommands.forEach(cmd -> printer.printOut(AnsiFormattedText.from("  ")
                 .bold(String.format("%-" + leftColWidth + "s", cmd.name()))
-                .append(" " + cmd.description())
-                .formattedString()));
+                .append(" " + cmd.description())));
 
         printer.printOut("\nFor help on a specific command type:");
         printer.printOut(AnsiFormattedText.from("    ")
                 .append(metadata().name())
                 .bold(" command")
-                .append("\n")
-                .formattedString());
+                .append("\n"));
 
         printer.printOut("Keyboard shortcuts:");
         printer.printOut("    Up and down arrows to access statement history.");
@@ -100,10 +97,8 @@ public class Help implements Command {
                 "    Tab for autocompletion of commands, hit twice to select suggestion from list using arrow keys.");
 
         printer.printOut("\nFor help on cypher please visit:");
-        printer.printOut(AnsiFormattedText.from("    ")
-                .append(CYPHER_MANUAL_LINK)
-                .append("\n")
-                .formattedString());
+        printer.printOut(
+                AnsiFormattedText.from("    ").append(CYPHER_MANUAL_LINK).append("\n"));
     }
 
     private static int longestCmdLength(List<Command.Metadata> allCommands) {

@@ -21,24 +21,34 @@ package org.neo4j.shell.commands;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.commands.CommandHelper.CommandFactoryHelper;
 import org.neo4j.shell.exception.CommandException;
+import org.neo4j.shell.printer.AnsiPrinter;
 import org.neo4j.shell.printer.Printer;
 
 class HelpTest {
-    private final Printer printer = mock(Printer.class);
+    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    private final ByteArrayOutputStream err = new ByteArrayOutputStream();
+    private Printer printer;
     private CommandFactoryHelper cmdHelper;
     private Command cmd;
 
     @BeforeEach
     public void setup() {
+        out.reset();
+        err.reset();
+        printer = new AnsiPrinter(Format.VERBOSE, new PrintStream(out), new PrintStream(err), true);
         cmdHelper = mock(CommandFactoryHelper.class);
         cmd = new Help(printer, cmdHelper);
     }
@@ -65,13 +75,26 @@ class HelpTest {
         cmd.execute(List.of());
 
         // then
-        verify(printer).printOut("\nAvailable commands:");
-        verify(printer).printOut("  @|BOLD bob  |@ description for bob");
-        verify(printer).printOut("  @|BOLD bobby|@ description for bobby");
-        verify(printer).printOut("\nFor help on a specific command type:");
-        verify(printer).printOut("    :help@|BOLD  command|@\n");
-        verify(printer).printOut("\nFor help on cypher please visit:");
-        verify(printer).printOut("    " + Help.CYPHER_MANUAL_LINK + "\n");
+        assertEquals(
+                """
+
+                        Available commands:
+                          [1mbob  [m description for bob
+                          [1mbobby[m description for bobby
+
+                        For help on a specific command type:
+                            :help[1m command[m
+
+                        Keyboard shortcuts:
+                            Up and down arrows to access statement history.
+                            Tab for autocompletion of commands, hit twice to select suggestion from list using arrow keys.
+
+                        For help on cypher please visit:
+                            https://neo4j.com/docs/cypher-manual/current/
+
+                        """,
+                out.toString(StandardCharsets.UTF_8));
+        assertEquals(0, err.size());
     }
 
     @Test
@@ -84,7 +107,16 @@ class HelpTest {
         cmd.execute(List.of("bob"));
 
         // then
-        verify(printer).printOut("\nusage: @|BOLD bob|@ usage for bob\n" + "\nhelp for bob\n");
+        assertEquals(
+                """
+
+                        usage: [1mbob[m usage for bob
+
+                        help for bob
+
+                        """,
+                out.toString(StandardCharsets.UTF_8));
+        assertEquals(0, err.size());
     }
 
     @Test
@@ -104,7 +136,16 @@ class HelpTest {
         cmd.execute(List.of("bob"));
 
         // then
-        verify(printer).printOut("\nusage: @|BOLD :bob|@ usage for :bob\n" + "\nhelp for :bob\n");
+        assertEquals(
+                """
+
+                        usage: [1m:bob[m usage for :bob
+
+                        help for :bob
+
+                        """,
+                out.toString(StandardCharsets.UTF_8));
+        assertEquals(0, err.size());
     }
 
     private static Command.Factory mockFactory(String name) {

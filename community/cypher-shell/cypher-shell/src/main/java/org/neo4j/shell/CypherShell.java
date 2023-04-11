@@ -311,21 +311,18 @@ public class CypherShell implements StatementExecuter, Connector, TransactionHan
         final var newUri = connectionConfig().uri();
         if (!newUri.equals(originalUri)) {
             var fallbackWarning = format("Failed to connect to %s, fallback to %s", originalUri, newUri);
-            printer.printIfVerbose(AnsiFormattedText.s().orange(fallbackWarning).formattedString());
+            printer.printIfVerbose(AnsiFormattedText.s().orange(fallbackWarning));
         }
     }
 
     public void printLicenseWarnings() {
         final var license = boltStateHandler.licenseDetails();
         if (license.status() == LicenseDetails.Status.NO) {
-            printer.printOut(AnsiFormattedText.s()
-                    .orange(format(LICENSE_NOT_ACCEPTED_WARNING))
-                    .formattedString());
+            printer.printOut(AnsiFormattedText.s().orange(format(LICENSE_NOT_ACCEPTED_WARNING)));
         } else if (license.status() == LicenseDetails.Status.EXPIRED
                 && license.trialDays().isPresent()) {
             printer.printOut(AnsiFormattedText.s()
-                    .orange(format(LICENSE_EXPIRED_WARNING, license.trialDays().get()))
-                    .formattedString());
+                    .orange(format(LICENSE_EXPIRED_WARNING, license.trialDays().get())));
         } else if (license.status() == LicenseDetails.Status.EVAL
                 && license.daysLeft().isPresent()
                 && license.trialDays().isPresent()) {

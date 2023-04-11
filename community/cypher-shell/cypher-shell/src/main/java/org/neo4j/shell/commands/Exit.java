@@ -41,8 +41,7 @@ public class Exit implements Command {
         public Metadata metadata() {
             var help = AnsiFormattedText.from("Exit the logger. Corresponds to entering ")
                     .bold("CTRL-D")
-                    .append(".")
-                    .formattedString();
+                    .append(".");
             return new Metadata(":exit", "Exit the logger", "", help, List.of(":quit"));
         }
 

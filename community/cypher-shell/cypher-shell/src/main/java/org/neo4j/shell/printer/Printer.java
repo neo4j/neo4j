@@ -37,6 +37,8 @@ public interface Printer extends LinePrinter {
      */
     void printError(String text);
 
+    void printError(AnsiFormattedText text);
+
     /**
      * @return the current format of the printer
      */
@@ -55,6 +57,12 @@ public interface Printer extends LinePrinter {
      * @param text to print to the output stream
      */
     default void printIfVerbose(String text) {
+        if (Format.VERBOSE.equals(getFormat())) {
+            printOut(text);
+        }
+    }
+
+    default void printIfVerbose(AnsiFormattedText text) {
         if (Format.VERBOSE.equals(getFormat())) {
             printOut(text);
         }

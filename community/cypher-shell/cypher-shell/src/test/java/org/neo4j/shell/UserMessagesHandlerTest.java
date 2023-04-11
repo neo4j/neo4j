@@ -19,7 +19,6 @@
  */
 package org.neo4j.shell;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,24 +45,21 @@ class UserMessagesHandlerTest {
         UserMessagesHandler userMessagesHandler = new UserMessagesHandler(connector);
         assertEquals(
                 """
-                              Connected to Neo4j using Bolt protocol version 3.0 at @|BOLD bolt://some.place.com:99|@ as user @|BOLD bob|@.
-                              Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
-                              Note that Cypher queries must end with a @|BOLD semicolon.|@""",
-                userMessagesHandler.getWelcomeMessage());
+                        Connected to Neo4j using Bolt protocol version 3.0 at [1mbolt://some.place.com:99[m as user [1mbob[m.
+                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
+                        Note that Cypher queries must end with a [1msemicolon.[m""",
+                userMessagesHandler.getWelcomeMessage().renderedString());
     }
 
     @Test
     void welcomeWithImpersonation() {
         when(connector.impersonatedUser()).thenReturn(Optional.of("impersonated_user"));
         UserMessagesHandler userMessagesHandler = new UserMessagesHandler(connector);
-        assertThat(userMessagesHandler.getWelcomeMessage())
-                .startsWith("Connected to Neo4j using Bolt protocol version 3.0 at @|BOLD bolt://some.place.com:99|@ "
-                        + "as user @|BOLD bob|@@|YELLOW  impersonating |@@|BOLD impersonated_user|@.");
-    }
-
-    @Test
-    void exitMessageTest() {
-        UserMessagesHandler userMessagesHandler = new UserMessagesHandler(connector);
-        assertEquals("\nBye!", UserMessagesHandler.getExitMessage());
+        assertEquals(
+                """
+                        Connected to Neo4j using Bolt protocol version 3.0 at [1mbolt://some.place.com:99[m as user [1mbob[m[33m impersonating [m[1mimpersonated_user[m.
+                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
+                        Note that Cypher queries must end with a [1msemicolon.[m""",
+                userMessagesHandler.getWelcomeMessage().renderedString());
     }
 }

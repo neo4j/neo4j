@@ -248,8 +248,7 @@ public class InteractiveShellRunner implements ShellRunner, UserInterruptHandler
                     .bold("semicolon")
                     .append(". Type ")
                     .bold(":exit")
-                    .append(" to exit the shell.)")
-                    .formattedString());
+                    .append(" to exit the shell.)"));
         }
     }
 }

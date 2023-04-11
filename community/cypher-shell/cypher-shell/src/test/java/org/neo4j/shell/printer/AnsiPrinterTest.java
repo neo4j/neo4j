@@ -19,117 +19,147 @@
  */
 package org.neo4j.shell.printer;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.exceptions.ClientException;
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.exception.CommandException;
 
 class AnsiPrinterTest {
-    private final PrintStream out = mock(PrintStream.class);
-    private final PrintStream err = mock(PrintStream.class);
-    private AnsiPrinter logger = new AnsiPrinter(Format.VERBOSE, out, err);
+    private final ByteArrayOutputStream out = new ByteArrayOutputStream();
+    private final ByteArrayOutputStream err = new ByteArrayOutputStream();
+    private AnsiPrinter printer;
+
+    @BeforeEach
+    void setup() {
+        out.reset();
+        err.reset();
+        this.printer = new AnsiPrinter(Format.VERBOSE, new PrintStream(out), new PrintStream(err), true);
+    }
 
     @Test
     void printError() {
-        logger.printError("bob");
-        verify(err).println("bob");
+        printer.printError("bob");
+        assertOutput("", """
+                        [31mbob[m
+                        """);
     }
 
     @Test
     void printException() {
-        logger.printError(new Throwable("bam"));
-        verify(err).println("bam");
+        printer.printError(new Throwable("bam"));
+        assertOutput("", """
+                        [31mbam[m
+                        """);
     }
 
     @Test
     void printOut() {
-        logger.printOut("sob");
-        verify(out).println("sob");
+        printer.printOut("sob");
+        assertOutput("""
+                        sob
+                        """);
     }
 
     @Test
     void printOutManyShouldNotBuildState() {
-        logger.printOut("bob");
-        logger.printOut("nob");
-        logger.printOut("cod");
+        printer.printOut("bob");
+        printer.printOut("nob");
+        printer.printOut("cod");
 
-        verify(out).println("bob");
-        verify(out).println("nob");
-        verify(out).println("cod");
+        assertOutput(
+                """
+                        bob
+                        nob
+                        cod
+                        """);
     }
 
     @Test
     void printErrManyShouldNotBuildState() {
-        logger.printError("bob");
-        logger.printError("nob");
-        logger.printError("cod");
+        printer.printError("bob");
+        printer.printError("nob");
+        printer.printError("cod");
 
-        verify(err).println("bob");
-        verify(err).println("nob");
-        verify(err).println("cod");
+        assertOutput(
+                "",
+                """
+                        [31mbob[m
+                        [31mnob[m
+                        [31mcod[m
+                        """);
     }
 
     @Test
     void printIfVerbose() {
-        logger = new AnsiPrinter(Format.VERBOSE, out, err);
+        printer.printIfVerbose("foo");
+        printer.printIfPlain("bar");
 
-        logger.printIfVerbose("foo");
-        logger.printIfPlain("bar");
-
-        verify(out).println("foo");
-        verifyNoMoreInteractions(out);
+        assertOutput("""
+                        foo
+                        """);
     }
 
     @Test
     void printIfPlain() {
-        logger = new AnsiPrinter(Format.PLAIN, out, err);
+        printer = new AnsiPrinter(Format.PLAIN, new PrintStream(out), new PrintStream(err));
 
-        logger.printIfVerbose("foo");
-        logger.printIfPlain("bar");
+        printer.printIfVerbose("foo");
+        printer.printIfPlain("bar");
 
-        verify(out).println("bar");
-        verifyNoMoreInteractions(out);
+        assertOutput("""
+                        bar
+                        """);
     }
 
     @Test
     void testSimple() {
-        assertEquals("@|RED yahoo|@", logger.getFormattedMessage(new NullPointerException("yahoo")));
+        printer.printError(new NullPointerException("yahoo"));
+        assertOutput("", """
+                        [31myahoo[m
+                        """);
     }
 
     @Test
     void testNested() {
-        assertEquals(
-                "@|RED outer|@",
-                logger.getFormattedMessage(new ClientException("outer", new CommandException("nested"))));
+        printer.printError(new ClientException("outer", new CommandException("nested")));
+        assertOutput("", """
+                        [31mouter[m
+                        """);
     }
 
     @Test
     void testNestedDeep() {
-        assertEquals(
-                "@|RED outer|@",
-                logger.getFormattedMessage(new ClientException(
-                        "outer", new ClientException("nested", new ClientException("nested deep")))));
+        var e = new ClientException("outer", new ClientException("nested", new ClientException("nested deep")));
+        printer.printError(e);
+        assertOutput("", """
+                        [31mouter[m
+                        """);
     }
 
     @Test
     void testNullMessage() {
-        assertEquals("@|RED ClientException|@", logger.getFormattedMessage(new ClientException(null)));
-        assertEquals(
-                "@|RED outer|@",
-                logger.getFormattedMessage(new ClientException("outer", new NullPointerException(null))));
+        printer.printError(new ClientException(null));
+        printer.printError(new ClientException("outer", new NullPointerException(null)));
+        assertOutput(
+                "",
+                """
+                        [31mClientException[m
+                        [31mouter[m
+                        """);
     }
 
-    @Test
-    void testExceptionGetsFormattedMessage() {
-        AnsiPrinter logger = spy(this.logger);
-        logger.printError(new NullPointerException("yahoo"));
-        verify(logger).printError("@|RED yahoo|@");
+    private void assertOutput(String expected) {
+        assertOutput(expected, "");
+    }
+
+    private void assertOutput(String expectedOut, String expectedErr) {
+        assertEquals(expectedOut, out.toString(UTF_8).replace("\r", ""));
+        assertEquals(expectedErr, err.toString());
     }
 }

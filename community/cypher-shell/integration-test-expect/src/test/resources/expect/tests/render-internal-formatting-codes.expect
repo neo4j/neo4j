@@ -1,0 +1,8 @@
+#!/usr/bin/expect -f
+
+source "common.expect"
+
+sendQuery "return '@|BOLD bob|@' as result;"
+
+sendQuery ":exit"
+expectCleanExit

@@ -63,7 +63,11 @@ public interface Command {
                 .append(metadata().usage());
     }
 
-    record Metadata(String name, String description, String usage, String help, List<String> aliases) {}
+    record Metadata(String name, String description, String usage, AnsiFormattedText help, List<String> aliases) {
+        public Metadata(String name, String description, String usage, String help, List<String> aliases) {
+            this(name, description, usage, AnsiFormattedText.from(help), aliases);
+        }
+    }
 
     interface Factory {
         record Arguments(

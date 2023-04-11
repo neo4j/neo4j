@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.prettyprint;
 
+import org.neo4j.shell.printer.AnsiFormattedText;
+
 /**
  * Prints lines.
  */
@@ -31,4 +33,8 @@ public interface LinePrinter {
      * @param line to print to the output stream
      */
     void printOut(String line);
+
+    default void printOut(AnsiFormattedText line) {
+        printOut(line.renderedString());
+    }
 }
