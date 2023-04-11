@@ -23,12 +23,19 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
+import static org.eclipse.collections.impl.tuple.primitive.PrimitiveTuples.pair;
 import static org.neo4j.internal.batchimport.cache.idmapping.string.ParallelSort.DEFAULT;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.function.LongFunction;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.tuple.primitive.LongLongPair;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.function.Factory;
@@ -47,8 +54,11 @@ import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Group;
 import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.internal.batchimport.input.ReadableGroups;
+import org.neo4j.internal.helpers.Exceptions;
+import org.neo4j.internal.helpers.MathUtil;
 import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.concurrent.Futures;
 
 /**
  * Maps arbitrary values to long ids. The values can be {@link #put(Object, long, Group) added} in any order,
@@ -614,35 +624,73 @@ public class EncodingIdMapper implements IdMapper {
 
         // Here we have a populated C
         // We want to detect duplicate input ids within it
-        long previousEid = 0;
-        int previousGroupId = -1;
-        SameInputIdDetector detector = new SameInputIdDetector();
-        for (int i = 0; i < numberOfCollisions; i++) {
-            long collisionIndex = collisionTrackerCache.get(i);
-            long nodeId = collisionNodeIdCache.get5ByteLong(collisionIndex, 0);
-            long offset = collisionNodeIdCache.get6ByteLong(collisionIndex, 5);
-            long eid = dataCache.get(nodeId);
-            int groupId = groupOf(nodeId);
-            // collisions of same eId AND groupId are always together
-            boolean same = eid == previousEid && previousGroupId == groupId;
-            if (!same) {
-                detector.clear();
-            }
+        var detectionTasks = partitionDuplicateCheck().stream()
+                .map(partition -> (Callable<Void>) () -> {
+                    try (var localProgress = progress.threadLocalReporter()) {
+                        long previousEid = 0;
+                        int previousGroupId = -1;
+                        SameInputIdDetector detector = new SameInputIdDetector();
+                        for (long i = partition.getOne(); i < partition.getTwo(); i++) {
+                            long collisionIndex = collisionTrackerCache.get(i);
+                            long nodeId = collisionNodeIdCache.get5ByteLong(collisionIndex, 0);
+                            long offset = collisionNodeIdCache.get6ByteLong(collisionIndex, 5);
+                            long eid = dataCache.get(nodeId);
+                            int groupId = groupOf(nodeId);
+                            // collisions of same eId AND groupId are always together
+                            boolean same = eid == previousEid && previousGroupId == groupId;
+                            if (!same) {
+                                detector.clear();
+                            }
 
-            // Potential duplicate
-            Object inputId = collisionValues.get(offset);
-            long nonDuplicateNodeId = detector.add(nodeId, inputId);
-            if (nonDuplicateNodeId != -1) { // Duplicate
-                collector.collectDuplicateNode(inputId, nodeId, groups.get(groupId));
-                trackerCache.markAsDuplicate(nodeId);
-                unmarkAsCollision(nonDuplicateNodeId);
-            }
+                            // Potential duplicate
+                            Object inputId = collisionValues.get(offset);
+                            long nonDuplicateNodeId = detector.add(nodeId, inputId);
+                            if (nonDuplicateNodeId != -1) { // Duplicate
+                                collector.collectDuplicateNode(inputId, nodeId, groups.get(groupId));
+                                trackerCache.markAsDuplicate(nodeId);
+                                unmarkAsCollision(nonDuplicateNodeId);
+                            }
 
-            previousEid = eid;
-            previousGroupId = groupId;
-            progress.add(1);
+                            previousEid = eid;
+                            previousGroupId = groupId;
+                            localProgress.add(1);
+                        }
+                    }
+                    return null;
+                })
+                .toList();
+        var executor = Executors.newFixedThreadPool(detectionTasks.size());
+        try (progress) {
+            Futures.getAll(executor.invokeAll(detectionTasks));
+        } catch (ExecutionException e) {
+            Exceptions.throwIfUnchecked(e.getCause());
+            throw new RuntimeException(e.getCause());
+        } finally {
+            executor.shutdown();
         }
-        progress.close();
+    }
+
+    private Collection<LongLongPair> partitionDuplicateCheck() {
+        var roughNumPerPartition = Math.max(100, MathUtil.ceil(numberOfCollisions, processorsForParallelWork));
+        var partitions = new ArrayList<LongLongPair>();
+        for (var fromInclusive = 0L; fromInclusive < numberOfCollisions; ) {
+            var toExclusive = Math.min(fromInclusive + roughNumPerPartition, numberOfCollisions);
+
+            // Avoid partition right in a seam
+            var firstNodeId = collisionNodeIdCache.get5ByteLong(collisionTrackerCache.get(toExclusive - 1), 0);
+            while (toExclusive + 1 < numberOfCollisions) {
+                var nextNodeId = collisionNodeIdCache.get5ByteLong(collisionTrackerCache.get(toExclusive), 0);
+                if (dataCache.get(firstNodeId) != dataCache.get(nextNodeId)
+                        || groupOf(firstNodeId) != groupOf(nextNodeId)) {
+                    break;
+                }
+                toExclusive++;
+            }
+
+            partitions.add(pair(fromInclusive, toExclusive));
+            fromInclusive = toExclusive;
+        }
+        return partitions;
     }
 
     private static LongArray as5ByteLongArray(ByteArray byteArray) {

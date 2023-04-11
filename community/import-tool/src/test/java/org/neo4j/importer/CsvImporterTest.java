@@ -165,7 +165,7 @@ class CsvImporterTest {
 
         // when
         assertThatThrownBy(importer::doImport)
-                .isInstanceOf(InputException.class)
+                .hasRootCauseInstanceOf(InputException.class)
                 .hasMessageContaining("Too many bad entries");
     }
 

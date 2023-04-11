@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -310,6 +311,8 @@ public class EncodingIdMapperTest {
 
         // WHEN
         ProgressListener progress = mock(ProgressListener.class);
+        ProgressListener threadLocalProgress = mock(ProgressListener.class);
+        when(progress.threadLocalReporter()).thenReturn(threadLocalProgress);
         Collector collector = mock(Collector.class);
         mapper.prepare(ids, collector, progress);
 
@@ -322,6 +325,7 @@ public class EncodingIdMapperTest {
         }
         // 7 times since SPLIT+SORT+DETECT+RESOLVE+SPLIT+SORT,DEDUPLICATE
         verify(progress, times(7)).close();
+        verify(threadLocalProgress, atLeast(1)).close();
     }
 
     @ParameterizedTest(name = "processors:{0}")
@@ -363,7 +367,7 @@ public class EncodingIdMapperTest {
             }
         }
         Collector collector = mock(Collector.class);
-        mapper.prepare(ids, collector, mock(ProgressListener.class));
+        mapper.prepare(ids, collector, NONE);
 
         // THEN
         verify(monitor).numberOfCollisions(4);
@@ -611,7 +615,7 @@ public class EncodingIdMapperTest {
         mapper.prepare(values(ids.toArray()), collector, NONE);
 
         // THEN
-        assertEquals(count, collector.count);
+        assertEquals(count, collector.count.get());
     }
 
     @ParameterizedTest(name = "processors:{0}")
@@ -966,7 +970,7 @@ public class EncodingIdMapperTest {
     }
 
     private static class CountingCollector implements Collector {
-        private int count;
+        private final AtomicInteger count = new AtomicInteger();
 
         @Override
         public void collectBadRelationship(
@@ -976,7 +980,7 @@ public class EncodingIdMapperTest {
 
         @Override
         public void collectDuplicateNode(Object id, long actualId, Group group) {
-            count++;
+            count.incrementAndGet();
         }
 
         @Override
