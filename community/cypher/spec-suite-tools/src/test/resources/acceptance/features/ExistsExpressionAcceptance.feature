@@ -196,6 +196,38 @@ Feature: ExistsExpressionAcceptance
       | 'Chris' |
     And no side effects
 
+  Scenario: Exists should allow shadowing of variables not yet introduced in outer scope
+    Given any graph
+    When executing query:
+    """
+    WITH EXISTS {
+      WITH 1 AS dog
+    } AS bool
+    MATCH (dog:Dog)
+    RETURN dog.name AS name, bool
+    """
+    Then the result should be, in any order:
+    | name    | bool |
+    | 'Fido'  | true |
+    | 'Bosse' | true |
+    | 'Ozzy'  | true |
+    And no side effects
+
+  Scenario: Exists should allow non-shadowing variable reuse in complex query
+    Given any graph
+    When executing query:
+    """
+    MATCH (dog)<--({canAffordDog:
+      EXISTS {
+        WITH toBoolean(sum(0)) AS n1, dog AS n2 RETURN 0
+      }
+     }) RETURN dog.name AS name
+    """
+    Then the result should be, in any order:
+    | name    |
+    | 'Bosse' |
+    And no side effects
+
   Scenario: Exists should allow omission of RETURN in more complex queries
     Given any graph
     When executing query:

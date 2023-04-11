@@ -943,6 +943,25 @@ Feature: CountExpressionAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
 
+  Scenario: Count should allow shadowing of variables not yet introduced in outer scope
+    Given any graph
+    When executing query:
+    """
+    WITH COUNT {
+      WITH 1 AS person
+    } AS count
+    MATCH (person:Person)
+    RETURN person.name AS name, count
+    """
+    Then the result should be, in any order:
+    | name    | count |
+    | 'Ada'   | 1     |
+    | 'Bob'   | 1     |
+    | 'Cat'   | 1     |
+    | 'Deb'   | 1     |
+    | 'Erika' | 1     |
+    And no side effects
+
   Scenario: Full count subquery with aggregation inside
     Given an empty graph
     And having executed:

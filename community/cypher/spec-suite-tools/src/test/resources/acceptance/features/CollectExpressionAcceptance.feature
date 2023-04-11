@@ -777,6 +777,26 @@ Feature: CollectExpressionAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
 
+  Scenario: Collect should allow shadowing of variables not yet introduced in outer scope
+    Given any graph
+    When executing query:
+    """
+    WITH COLLECT {
+      WITH 1 AS person
+      RETURN person
+    } AS list
+    MATCH (person:Person)
+    RETURN person.name AS name, list
+    """
+    Then the result should be, in any order:
+    | name       | list |
+    | 'Ada'      | [1]  |
+    | 'Bob'      | [1]  |
+    | 'Carl'     | [1]  |
+    | 'Danielle' | [1]  |
+    | 'Eve'      | [1]  |
+    And no side effects
+
   Scenario: COLLECT with aggregation inside should work
     Given an empty graph
     And having executed:

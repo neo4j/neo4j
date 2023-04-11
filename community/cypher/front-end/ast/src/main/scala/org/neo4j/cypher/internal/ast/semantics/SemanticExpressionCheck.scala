@@ -1054,10 +1054,15 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         (name, symbols.filterNot(symbol => symbol.unionSymbol).map(_.definition))
     }
 
-    // If a variable of the same name exists, and there is a reference to that name that isn't the original
-    def isShadowed(s: Symbol): Boolean =
-      innerDefinitions.contains(s.name) &&
-        innerDefinitions(s.name).diff(Set(s.definition)).nonEmpty
+    // If a variable of the same name exists in the inner scope and it is not a reference to the outer scope variable.
+    // Also the outer variable must come before the inner variable (i.e. have a lower position) for it to be a case of shadowing.
+    def isShadowed(s: Symbol): Boolean = {
+      val outerName = s.name
+      val outerPos = s.definition.positionsAndUniqueIdString._1
+
+      innerDefinitions.contains(outerName) &&
+      innerDefinitions(outerName).exists(inner => inner.positionsAndUniqueIdString._1 > outerPos)
+    }
 
     val shadowedSymbols = outerScopeSymbols.collect {
       case (name, symbol) if isShadowed(symbol) =>
