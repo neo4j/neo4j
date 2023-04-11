@@ -23,11 +23,7 @@ final class GBPPointerType {
     static final String RIGHT_SIBLING = "RIGHT_SIBLING";
     static final String LEFT_SIBLING = "LEFT_SIBLING";
     static final String SUCCESSOR = "SUCCESSOR";
-    private static final String CHILD = "CHILD_";
+    static final String CHILD = "CHILD";
 
     private GBPPointerType() {}
-
-    static String child(int childPos) {
-        return CHILD + childPos;
-    }
 }

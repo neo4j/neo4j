@@ -1709,7 +1709,7 @@ class InternalTreeLogic<KEY, VALUE> {
                 childPointer,
                 false,
                 cursor.getCurrentPageId(),
-                GBPPointerType.child(childPos),
+                GBPPointerType.CHILD,
                 stableGeneration,
                 unstableGeneration,
                 cursor,

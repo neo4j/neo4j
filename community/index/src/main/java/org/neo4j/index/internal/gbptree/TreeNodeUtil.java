@@ -277,7 +277,7 @@ final class TreeNodeUtil {
         GenerationSafePointerPair.assertSuccess(
                 write,
                 cursor.getCurrentPageId(),
-                GBPPointerType.child(childPos),
+                GBPPointerType.CHILD,
                 stableGeneration,
                 unstableGeneration,
                 cursor,

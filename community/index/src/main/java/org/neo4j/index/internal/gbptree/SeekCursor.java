@@ -599,7 +599,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             completedReadLevel = currentReadLevel;
             if (lookingForChild) {
                 monitor.internalNode(completedReadLevel, keyCount);
-                goTo(pointerId, pointerGeneration, GBPPointerType.child(pos), false);
+                goTo(pointerId, pointerGeneration, GBPPointerType.CHILD, false);
                 currentReadLevel++;
             }
         } while (completedReadLevel < currentReadLevel /* There is still another level to read */
