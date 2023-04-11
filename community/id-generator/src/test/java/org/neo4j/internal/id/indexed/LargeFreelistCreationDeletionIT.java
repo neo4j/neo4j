@@ -36,7 +36,6 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
-import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -125,7 +124,7 @@ class LargeFreelistCreationDeletionIT {
                 assertAllUnique(allocatedIds);
 
                 // Delete
-                try (Marker marker = freelist.marker(NULL_CONTEXT)) {
+                try (var marker = freelist.transactionalMarker(NULL_CONTEXT)) {
                     for (long[] perThread : allocatedIds) {
                         for (long id : perThread) {
                             marker.markDeleted(id);
@@ -164,7 +163,7 @@ class LargeFreelistCreationDeletionIT {
 
         @Override
         public void apply(IndexedIdGenerator freelist) {
-            try (Marker commitMarker = freelist.marker(NULL_CONTEXT)) {
+            try (var commitMarker = freelist.transactionalMarker(NULL_CONTEXT)) {
                 for (long[] ids : idLists) {
                     for (long id : ids) {
                         commitMarker.markUsed(id);

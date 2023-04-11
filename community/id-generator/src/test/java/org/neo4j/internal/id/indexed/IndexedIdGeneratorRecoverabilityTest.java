@@ -38,7 +38,6 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.TestIdType;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -267,7 +266,7 @@ class IndexedIdGeneratorRecoverabilityTest {
     }
 
     private static void markUsed(IdGenerator freelist, long... ids) {
-        try (Marker commitMarker = freelist.marker(NULL_CONTEXT)) {
+        try (var commitMarker = freelist.transactionalMarker(NULL_CONTEXT)) {
             for (long id : ids) {
                 commitMarker.markUsed(id);
             }
@@ -275,7 +274,7 @@ class IndexedIdGeneratorRecoverabilityTest {
     }
 
     private static void markDeleted(IdGenerator freelist, long... ids) {
-        try (Marker commitMarker = freelist.marker(NULL_CONTEXT)) {
+        try (var commitMarker = freelist.transactionalMarker(NULL_CONTEXT)) {
             for (long id : ids) {
                 commitMarker.markDeleted(id);
             }
@@ -283,7 +282,7 @@ class IndexedIdGeneratorRecoverabilityTest {
     }
 
     private static void markFree(IdGenerator freelist, long... ids) {
-        try (Marker reuseMarker = freelist.marker(NULL_CONTEXT)) {
+        try (var reuseMarker = freelist.contextualMarker(NULL_CONTEXT)) {
             for (long id : ids) {
                 reuseMarker.markFree(id);
             }

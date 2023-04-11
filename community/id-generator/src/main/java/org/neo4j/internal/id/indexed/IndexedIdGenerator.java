@@ -21,7 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrder;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
-import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -69,7 +68,7 @@ import org.neo4j.util.Preconditions;
 /**
  * At the heart of this free-list sits a {@link GBPTree}, containing all deleted and freed ids. The tree is used as a bit-set and since it's
  * sorted then it can be later extended to allocate multiple consecutive ids. Another design feature of this free-list is that it's crash-safe,
- * that is if the {@link #marker(CursorContext)} is only used for applying committed data.
+ * that is if the {@link #transactionalMarker(CursorContext)} is only used for applying committed data.
  */
 public class IndexedIdGenerator implements IdGenerator {
     public interface Monitor extends AutoCloseable {
@@ -229,7 +228,7 @@ public class IndexedIdGenerator implements IdGenerator {
      * Note about contention: Calls to commitMarker() should be worksync'ed externally and will therefore not contend.
      * This lock is about guarding for calls to reuseMarker(), which comes in at arbitrary times outside transactions.
      */
-    private final Lock commitAndReuseLock = new ReentrantLock();
+    private final Lock transactionalMarkerLock = new ReentrantLock();
 
     /**
      * {@link GBPTree} {@link Layout} for this id generator.
@@ -383,7 +382,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 layout,
                 cache,
                 atLeastOneIdOnFreelist,
-                context -> lockAndInstantiateMarker(true, context),
+                context -> instantiateMarker(null, true, context),
                 generation,
                 strictlyPrioritizeFreelist,
                 monitor);
@@ -507,7 +506,7 @@ public class IndexedIdGenerator implements IdGenerator {
     }
 
     @Override
-    public Marker marker(CursorContext cursorContext) {
+    public TransactionalMarker transactionalMarker(CursorContext cursorContext) {
         if (!started && needsRebuild) {
             // If we're in recovery and know that we're building the id generator from scratch after recovery has
             // completed then don't make any updates
@@ -517,14 +516,34 @@ public class IndexedIdGenerator implements IdGenerator {
         return lockAndInstantiateMarker(true, cursorContext);
     }
 
+    @Override
+    public ContextualMarker contextualMarker(CursorContext cursorContext) {
+        if (!started && needsRebuild) {
+            // If we're in recovery and know that we're building the id generator from scratch after recovery has
+            // completed then don't make any updates
+            return NOOP_MARKER;
+        }
+
+        return instantiateMarker(null, true, cursorContext);
+    }
+
     IdRangeMarker lockAndInstantiateMarker(boolean bridgeIdGaps, CursorContext cursorContext) {
-        commitAndReuseLock.lock();
+        transactionalMarkerLock.lock();
+        try {
+            return instantiateMarker(transactionalMarkerLock, bridgeIdGaps, cursorContext);
+        } catch (Exception e) {
+            transactionalMarkerLock.unlock();
+            throw e;
+        }
+    }
+
+    private IdRangeMarker instantiateMarker(Lock lock, boolean bridgeIdGaps, CursorContext cursorContext) {
         try {
             return new IdRangeMarker(
                     idsPerEntry,
                     layout,
-                    tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext),
-                    commitAndReuseLock,
+                    tree.writer(cursorContext),
+                    lock,
                     started ? defaultMerger : recoveryMerger,
                     started,
                     atLeastOneIdOnFreelist,
@@ -533,7 +552,6 @@ public class IndexedIdGenerator implements IdGenerator {
                     bridgeIdGaps,
                     monitor);
         } catch (Exception e) {
-            commitAndReuseLock.unlock();
             throw new RuntimeException(e);
         }
     }
@@ -834,15 +852,5 @@ public class IndexedIdGenerator implements IdGenerator {
 
     private void assertNotReadOnly() {
         Preconditions.checkState(!readOnly, "ID generator '%s' is read-only", path);
-    }
-
-    interface InternalMarker extends Marker {
-        default void markReserved(long id) {
-            markReserved(id, 1);
-        }
-
-        void markReserved(long id, int numberOfIds);
-
-        void markUnreserved(long id, int numberOfIds);
     }
 }

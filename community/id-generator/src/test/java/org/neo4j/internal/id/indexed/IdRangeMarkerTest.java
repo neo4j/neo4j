@@ -20,6 +20,7 @@
 package org.neo4j.internal.id.indexed;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -187,7 +188,7 @@ class IdRangeMarkerTest {
     }
 
     @Test
-    void shouldUnlockOnClose() throws IOException {
+    void shouldUnlockOnCloseIfLockPresent() throws IOException {
         // given
         Lock lock = mock(Lock.class);
 
@@ -198,6 +199,15 @@ class IdRangeMarkerTest {
 
         // then
         verify(lock).unlock();
+    }
+
+    @Test
+    void shouldHandleCloseIfLockAbsent() throws IOException {
+        // when
+        var idRangeMarker = instantiateMarker(null, mock(ValueMerger.class));
+
+        // then
+        assertDoesNotThrow(idRangeMarker::close);
     }
 
     @Test

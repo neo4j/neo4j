@@ -126,7 +126,7 @@ class PropertyStoreTraceIT {
     }
 
     private static void prepareIdGenerator(IdGenerator idGenerator) {
-        try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.contextualMarker(NULL_CONTEXT)) {
             marker.markFree(1L);
         }
         idGenerator.clearCache(NULL_CONTEXT);

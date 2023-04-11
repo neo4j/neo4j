@@ -192,8 +192,9 @@ class AbstractDynamicStoreTest {
 
     private static void prepareDirtyGenerator(AbstractDynamicStore store) {
         var idGenerator = store.getIdGenerator();
-        var marker = idGenerator.marker(NULL_CONTEXT);
-        marker.markDeleted(1L);
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
+            marker.markDeleted(1L);
+        }
         idGenerator.clearCache(NULL_CONTEXT);
     }
 

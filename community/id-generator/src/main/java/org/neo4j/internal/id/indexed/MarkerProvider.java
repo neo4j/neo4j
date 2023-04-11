@@ -19,9 +19,10 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 @FunctionalInterface
 interface MarkerProvider {
-    IndexedIdGenerator.InternalMarker getMarker(CursorContext cursorContext);
+    IdGenerator.ContextualMarker getMarker(CursorContext cursorContext);
 }

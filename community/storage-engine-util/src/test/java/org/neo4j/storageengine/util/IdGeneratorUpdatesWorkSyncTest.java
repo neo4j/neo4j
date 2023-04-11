@@ -42,7 +42,7 @@ class IdGeneratorUpdatesWorkSyncTest {
         IdGeneratorUpdatesWorkSync workSync = new IdGeneratorUpdatesWorkSync();
         IdGenerator idGenerator = mock(IdGenerator.class);
         RecordingMarker marker = new RecordingMarker();
-        when(idGenerator.marker(any())).thenReturn(marker);
+        when(idGenerator.transactionalMarker(any())).thenReturn(marker);
         workSync.add(idGenerator);
 
         // when
@@ -61,7 +61,7 @@ class IdGeneratorUpdatesWorkSyncTest {
         assertThat(marker.deleted(513, 7)).isTrue();
     }
 
-    private static class RecordingMarker implements IdGenerator.Marker {
+    private static class RecordingMarker implements IdGenerator.TransactionalMarker {
         private final Set<Pair<Long, Integer>> used = new HashSet<>();
         private final Set<Pair<Long, Integer>> deleted = new HashSet<>();
 
@@ -74,9 +74,6 @@ class IdGeneratorUpdatesWorkSyncTest {
         public void markDeleted(long id, int numberOfIds) {
             deleted.add(Pair.of(id, numberOfIds));
         }
-
-        @Override
-        public void markFree(long id, int numberOfIds) {}
 
         @Override
         public void markDeletedAndFree(long id, int numberOfIds) {}

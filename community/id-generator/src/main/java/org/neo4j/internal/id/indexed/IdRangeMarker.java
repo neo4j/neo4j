@@ -34,12 +34,13 @@ import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.internal.id.IdGenerator;
 
 /**
  * Contains logic for merging ID state changes into the tree backing an {@link IndexedIdGenerator}.
  * Basically manipulates {@link IdRangeKey} and {@link IdRange} instances and sends to {@link Writer#merge(Object, Object, ValueMerger)}.
  */
-class IdRangeMarker implements IndexedIdGenerator.InternalMarker {
+class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.ContextualMarker {
     /**
      * Number of ids that is contained in one {@link IdRange}
      */
@@ -137,7 +138,9 @@ class IdRangeMarker implements IndexedIdGenerator.InternalMarker {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         } finally {
-            lock.unlock();
+            if (lock != null) {
+                lock.unlock();
+            }
             monitor.markSessionDone();
         }
     }

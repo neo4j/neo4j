@@ -182,7 +182,7 @@ class IdContextFactoryBuilderTest {
         try (IdGenerator idGenerator = idGeneratorFactory.create(
                 pageCache, file, idType, 1, false, 100, false, config, contextFactory, immutable.empty(), SINGLE_IDS)) {
             idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
-            try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+            try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
                 marker.markDeleted(1);
             }
             idGeneratorFactory.clearCache(NULL_CONTEXT);

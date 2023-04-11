@@ -499,13 +499,13 @@ class CheckerTestBase {
     }
 
     void markAsDeletedId(CommonAbstractStore store, long id) {
-        try (var marker = store.getIdGenerator().marker(NULL_CONTEXT)) {
+        try (var marker = store.getIdGenerator().transactionalMarker(NULL_CONTEXT)) {
             marker.markDeleted(id);
         }
     }
 
     void markAsUsedId(CommonAbstractStore store, long id) {
-        try (var marker = store.getIdGenerator().marker(NULL_CONTEXT)) {
+        try (var marker = store.getIdGenerator().transactionalMarker(NULL_CONTEXT)) {
             marker.markUsed(id);
         }
     }

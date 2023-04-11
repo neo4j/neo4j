@@ -63,7 +63,12 @@ class ReadOnlyHighIdGenerator implements IdGenerator {
     }
 
     @Override
-    public Marker marker(CursorContext cursorContext) {
+    public TransactionalMarker transactionalMarker(CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Should not be required");
+    }
+
+    @Override
+    public ContextualMarker contextualMarker(CursorContext cursorContext) {
         throw new UnsupportedOperationException("Should not be required");
     }
 

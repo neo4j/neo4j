@@ -185,7 +185,7 @@ public class CommandCreationContextIT {
     }
 
     private static void prepareIdGenerator(IdGenerator idGenerator) {
-        try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markDeleted(1L);
         }
         idGenerator.clearCache(NULL_CONTEXT);

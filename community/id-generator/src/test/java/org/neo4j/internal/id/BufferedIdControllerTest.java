@@ -117,7 +117,7 @@ class BufferedIdControllerTest {
                 immutable.empty(),
                 SINGLE_IDS)) {
             idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
-            try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+            try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
                 marker.markDeleted(1L);
             }
             idGenerator.clearCache(NULL_CONTEXT);
@@ -128,9 +128,9 @@ class BufferedIdControllerTest {
 
             controller.maintenance();
 
-            assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(3);
-            assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(3);
-            assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(3);
+            assertThat(pageCacheTracer.pins() - initialPins).isEqualTo(5);
+            assertThat(pageCacheTracer.unpins() - initialUnpins).isEqualTo(5);
+            assertThat(pageCacheTracer.hits() - initialHits).isEqualTo(5);
         }
     }
 
@@ -155,7 +155,7 @@ class BufferedIdControllerTest {
                 SINGLE_IDS)) {
 
             idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
-            try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+            try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
                 for (int i = 0; i < 1000; i++) {
                     marker.markUsed(i);
                     marker.markDeleted(i);
@@ -194,7 +194,7 @@ class BufferedIdControllerTest {
                 SINGLE_IDS)) {
 
             idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
-            try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+            try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
                 for (int i = 0; i < 1000; i++) {
                     marker.markUsed(i);
                     marker.markDeleted(i);
@@ -231,7 +231,7 @@ class BufferedIdControllerTest {
                 SINGLE_IDS)) {
 
             idGenerator.start(FreeIds.NO_FREE_IDS, NULL_CONTEXT);
-            try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+            try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
                 for (int i = 0; i < 1000; i++) {
                     marker.markUsed(i);
                     marker.markDeleted(i);

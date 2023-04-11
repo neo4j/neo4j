@@ -41,7 +41,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.LongConsumer;
@@ -52,8 +51,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.GBPTreeBuilder;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution.Slot;
-import org.neo4j.internal.id.indexed.IndexedIdGenerator.InternalMarker;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageSwapper;
@@ -784,14 +783,14 @@ class FreeIdScannerTest {
         }
 
         @Override
-        public InternalMarker getMarker(CursorContext cursorContext) {
-            InternalMarker actual = instantiateRealMarker();
+        public IdGenerator.ContextualMarker getMarker(CursorContext cursorContext) {
+            var actual = instantiateRealMarker();
             var swapper = mock(PageSwapper.class, RETURNS_MOCKS);
             try (var pinEvent = cursorContext.getCursorTracer().beginPin(false, 1, swapper)) {
                 pinEvent.hit();
             }
             cursorContext.getCursorTracer().unpin(1, swapper);
-            return new InternalMarker() {
+            return new IdGenerator.ContextualMarker() {
                 @Override
                 public void markReserved(long id, int numberOfIds) {
                     actual.markReserved(id, numberOfIds);
@@ -809,29 +808,9 @@ class FreeIdScannerTest {
                 }
 
                 @Override
-                public void markUsed(long id, int numberOfIds) {
-                    actual.markUsed(id, numberOfIds);
-                }
-
-                @Override
-                public void markDeleted(long id, int numberOfIds) {
-                    actual.markDeleted(id, numberOfIds);
-                }
-
-                @Override
                 public void markFree(long id, int numberOfIds) {
                     // TODO implement tracking of these too
                     actual.markFree(id, numberOfIds);
-                }
-
-                @Override
-                public void markDeletedAndFree(long id, int numberOfIds) {
-                    actual.markDeletedAndFree(id, numberOfIds);
-                }
-
-                @Override
-                public void markUnallocated(long id, int numberOfIds) {
-                    actual.markUnallocated(id, numberOfIds);
                 }
 
                 @Override
@@ -841,15 +820,13 @@ class FreeIdScannerTest {
             };
         }
 
-        private InternalMarker instantiateRealMarker() {
+        private IdRangeMarker instantiateRealMarker() {
             try {
-                Lock lock = new ReentrantLock();
-                lock.lock();
                 return new IdRangeMarker(
                         IDS_PER_ENTRY,
                         layout,
                         tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT),
-                        lock,
+                        null,
                         new IdRangeMerger(false, NO_MONITOR),
                         true,
                         atLeastOneFreeId,

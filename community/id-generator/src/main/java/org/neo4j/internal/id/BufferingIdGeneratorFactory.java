@@ -253,7 +253,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
 
     private class IdFreer implements BufferedIds.BufferedIdVisitor {
         private final CursorContext cursorContext;
-        private IdGenerator.Marker marker;
+        private IdGenerator.ContextualMarker marker;
 
         IdFreer(CursorContext cursorContext) {
             this.cursorContext = cursorContext;
@@ -269,7 +269,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
             marker = overriddenIdGenerators
                     .get(idTypeMapping.get(idTypeOrdinal))
                     .delegate
-                    .marker(cursorContext);
+                    .contextualMarker(cursorContext);
         }
 
         @Override

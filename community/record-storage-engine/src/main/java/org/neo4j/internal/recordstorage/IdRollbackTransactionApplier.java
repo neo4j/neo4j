@@ -126,7 +126,7 @@ public class IdRollbackTransactionApplier extends TransactionApplier.Adapter {
     public void close() throws Exception {
         idMaps.forEach((type, longDiffSets) -> {
             IdGenerator idGenerator = idGeneratorFactory.get(type);
-            try (var marker = idGenerator.marker(cursorContext)) {
+            try (var marker = idGenerator.transactionalMarker(cursorContext)) {
                 longDiffSets.getAdded().forEach(marker::markUsed);
                 longDiffSets.getRemoved().forEach(marker::markDeletedAndFree);
             }

@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.eclipse.collections.api.factory.Sets.immutable;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
@@ -53,7 +54,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
-import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -122,7 +122,7 @@ class BufferingIdGeneratorFactoryTest {
         setup(offHeap);
 
         // WHEN
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markDeleted(7, 2);
         }
         actual.markers.get(TestIdType.TEST).verifyDeleted(7, 2);
@@ -151,7 +151,7 @@ class BufferingIdGeneratorFactoryTest {
         Race race = new Race().withEndCondition(() -> numMaintenanceCalls.get() >= 10 || nextId.get() >= 1_000);
         race.addContestants(4, () -> {
             int numIds = ThreadLocalRandom.current().nextInt(1, 5);
-            try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+            try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
                 for (int i = 0; i < numIds; i++) {
                     marker.markDeleted(nextId.getAndIncrement(), 1);
                 }
@@ -206,7 +206,7 @@ class BufferingIdGeneratorFactoryTest {
         long heapSizeBeforeDeleting = dbMemoryPool.usedHeap();
 
         // when deleting some IDs
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             for (int i = 0; i < 100; i++) {
                 marker.markDeleted(i, 1);
             }
@@ -277,7 +277,8 @@ class BufferingIdGeneratorFactoryTest {
             MockedMarker marker = new MockedMarker();
             generators.put(idType, idGenerator);
             markers.put(idType, marker);
-            when(idGenerator.marker(NULL_CONTEXT)).thenReturn(marker);
+            when(idGenerator.contextualMarker(any())).thenReturn(marker);
+            when(idGenerator.transactionalMarker(any())).thenReturn(marker);
             return idGenerator;
         }
 
@@ -328,7 +329,7 @@ class BufferingIdGeneratorFactoryTest {
         }
     }
 
-    private static class MockedMarker implements Marker {
+    private static class MockedMarker implements IdGenerator.TransactionalMarker, IdGenerator.ContextualMarker {
         private final Set<Pair<Long, Integer>> used = ConcurrentHashMap.newKeySet();
         private final Set<Pair<Long, Integer>> deleted = ConcurrentHashMap.newKeySet();
         private final Set<Pair<Long, Integer>> freed = ConcurrentHashMap.newKeySet();
@@ -357,6 +358,12 @@ class BufferingIdGeneratorFactoryTest {
 
         @Override
         public void markUnallocated(long id, int numberOfIds) {}
+
+        @Override
+        public void markReserved(long id, int numberOfIds) {}
+
+        @Override
+        public void markUnreserved(long id, int numberOfIds) {}
 
         void verifyDeleted(long id, int numberOfIds) {
             assertThat(deleted.remove(Pair.of(id, numberOfIds))).isTrue();

@@ -112,7 +112,7 @@ class DynamicArrayStoreTest {
 
     private static void prepareDirtyGenerator(DynamicArrayStore store) {
         var idGenerator = store.getIdGenerator();
-        try (var marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markDeleted(1L);
         }
         idGenerator.clearCache(NULL_CONTEXT);

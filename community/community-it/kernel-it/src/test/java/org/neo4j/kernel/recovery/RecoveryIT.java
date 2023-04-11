@@ -1200,7 +1200,7 @@ class RecoveryIT {
                 openOptions,
                 IdSlotDistribution.SINGLE_IDS)) {
             // Merely opening a marker will make the backing GBPTree dirty
-            idGenerator.marker(NULL_CONTEXT).close();
+            idGenerator.transactionalMarker(NULL_CONTEXT).close();
         }
         assertFalse(isRecoveryRequired(layout));
         assertTrue(idGeneratorIsDirty(idFile, openOptions));

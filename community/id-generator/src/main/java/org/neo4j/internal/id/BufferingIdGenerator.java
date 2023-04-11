@@ -45,8 +45,8 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
     }
 
     @Override
-    public Marker marker(CursorContext cursorContext) {
-        return new Marker.Delegate(super.marker(cursorContext)) {
+    public TransactionalMarker transactionalMarker(CursorContext cursorContext) {
+        return new TransactionalMarker.Delegate(super.transactionalMarker(cursorContext)) {
             @Override
             public void markDeleted(long id, int numberOfIds) {
                 // Run these by the buffering too

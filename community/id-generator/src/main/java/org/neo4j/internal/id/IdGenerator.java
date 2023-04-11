@@ -74,7 +74,9 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
     long getHighestPossibleIdInUse();
 
-    Marker marker(CursorContext cursorContext);
+    TransactionalMarker transactionalMarker(CursorContext cursorContext);
+
+    ContextualMarker contextualMarker(CursorContext cursorContext);
 
     @Override
     void close();
@@ -150,7 +152,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      *     <li>X can now be allocated again, but from the freelist instead of from high ID</li>
      * </ul>
      */
-    interface Marker extends AutoCloseable {
+    interface TransactionalMarker extends AutoCloseable {
         default void markUsed(long id) {
             markUsed(id, 1);
         }
@@ -162,12 +164,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         void markDeleted(long id, int numberOfIds);
-
-        default void markFree(long id) {
-            markFree(id, 1);
-        }
-
-        void markFree(long id, int numberOfIds);
 
         default void markDeletedAndFree(long id) {
             markDeletedAndFree(id, 1);
@@ -187,10 +183,10 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         @Override
         void close();
 
-        class Delegate implements Marker {
-            protected final Marker actual;
+        class Delegate implements TransactionalMarker {
+            protected final TransactionalMarker actual;
 
-            Delegate(Marker actual) {
+            Delegate(TransactionalMarker actual) {
                 this.actual = actual;
             }
 
@@ -205,11 +201,6 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
             }
 
             @Override
-            public void markFree(long id, int numberOfIds) {
-                actual.markFree(id, numberOfIds);
-            }
-
-            @Override
             public void markDeletedAndFree(long id, int numberOfIds) {
                 actual.markDeletedAndFree(id, numberOfIds);
             }
@@ -217,6 +208,53 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
             @Override
             public void markUnallocated(long id, int numberOfIds) {
                 actual.markUnallocated(id, numberOfIds);
+            }
+
+            @Override
+            public void close() {
+                actual.close();
+            }
+        }
+    }
+
+    interface ContextualMarker extends AutoCloseable {
+        default void markFree(long id) {
+            markFree(id, 1);
+        }
+
+        void markFree(long id, int numberOfIds);
+
+        default void markReserved(long id) {
+            markReserved(id, 1);
+        }
+
+        void markReserved(long id, int numberOfIds);
+
+        void markUnreserved(long id, int numberOfIds);
+
+        @Override
+        void close();
+
+        class Delegate implements ContextualMarker {
+            private final ContextualMarker actual;
+
+            Delegate(ContextualMarker actual) {
+                this.actual = actual;
+            }
+
+            @Override
+            public void markFree(long id, int numberOfIds) {
+                actual.markFree(id, numberOfIds);
+            }
+
+            @Override
+            public void markReserved(long id, int numberOfIds) {
+                actual.markReserved(id, numberOfIds);
+            }
+
+            @Override
+            public void markUnreserved(long id, int numberOfIds) {
+                actual.markUnreserved(id, numberOfIds);
             }
 
             @Override
@@ -269,8 +307,13 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
 
         @Override
-        public Marker marker(CursorContext cursorContext) {
-            return delegate.marker(cursorContext);
+        public TransactionalMarker transactionalMarker(CursorContext cursorContext) {
+            return delegate.transactionalMarker(cursorContext);
+        }
+
+        @Override
+        public ContextualMarker contextualMarker(CursorContext cursorContext) {
+            return delegate.contextualMarker(cursorContext);
         }
 
         @Override
@@ -329,29 +372,31 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         }
     }
 
-    Marker NOOP_MARKER = new Marker() {
+    class NoOpMarker implements TransactionalMarker, ContextualMarker {
         @Override
-        public void markFree(long id, int numberOfIds) { // no-op
-        }
+        public void markFree(long id, int numberOfIds) {}
 
         @Override
-        public void markUsed(long id, int numberOfIds) { // no-op
-        }
+        public void markUsed(long id, int numberOfIds) {}
 
         @Override
-        public void markDeleted(long id, int numberOfIds) { // no-op
-        }
+        public void markDeleted(long id, int numberOfIds) {}
 
         @Override
-        public void markDeletedAndFree(long id, int numberOfIds) { // no-op
-        }
+        public void markDeletedAndFree(long id, int numberOfIds) {}
 
         @Override
-        public void markUnallocated(long id, int numberOfIds) { // no-op
-        }
+        public void markUnallocated(long id, int numberOfIds) {}
 
         @Override
-        public void close() { // no-op
-        }
-    };
+        public void markReserved(long id, int numberOfIds) {}
+
+        @Override
+        public void markUnreserved(long id, int numberOfIds) {}
+
+        @Override
+        public void close() {}
+    }
+
+    NoOpMarker NOOP_MARKER = new NoOpMarker() {};
 }

@@ -29,7 +29,6 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.DataImporter.Monitor;
 import org.neo4j.internal.batchimport.input.InputEntityVisitor;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
-import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -235,13 +234,13 @@ abstract class EntityImporter extends InputEntityVisitor.Adapter {
 
     static void freeUnusedIds(CommonAbstractStore<?, ?> store, BatchingIdGetter idBatch, CursorContext cursorContext) {
         // Free unused property ids still in the last pre-allocated batch
-        try (Marker marker = store.getIdGenerator().marker(cursorContext)) {
+        try (var marker = store.getIdGenerator().transactionalMarker(cursorContext)) {
             idBatch.visitUnused(marker::markDeleted);
         }
     }
 
     static void freeUnusedId(CommonAbstractStore<?, ?> store, long id, CursorContext cursorContext) {
-        try (var marker = store.getIdGenerator().marker(cursorContext)) {
+        try (var marker = store.getIdGenerator().transactionalMarker(cursorContext)) {
             marker.markDeleted(id);
         }
     }

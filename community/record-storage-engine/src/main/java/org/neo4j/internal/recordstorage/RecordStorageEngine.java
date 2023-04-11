@@ -552,7 +552,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
     private void unallocateIds(LongSet ids, IdType idType, CursorContext cursorContext) {
         if (!ids.isEmpty()) {
-            try (var marker = idGeneratorFactory.get(idType).marker(cursorContext)) {
+            try (var marker = idGeneratorFactory.get(idType).transactionalMarker(cursorContext)) {
                 ids.forEach(marker::markUnallocated);
             }
         }

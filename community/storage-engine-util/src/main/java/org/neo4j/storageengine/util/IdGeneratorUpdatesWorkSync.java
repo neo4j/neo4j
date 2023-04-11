@@ -144,7 +144,7 @@ public class IdGeneratorUpdatesWorkSync {
             ids.add(combinedIdAndNumberOfIds(id, numberOfIds, false));
         }
 
-        void accept(IdGenerator.Marker visitor) {
+        void accept(IdGenerator.TransactionalMarker visitor) {
             ids.forEach(combined -> {
                 long id = idFromCombinedId(combined);
                 int slots = numberOfIdsFromCombinedId(combined);
@@ -187,7 +187,7 @@ public class IdGeneratorUpdatesWorkSync {
         @Override
         public void apply(IdGenerator idGenerator) {
             try (var cursorContext = contextFactory.create(ID_GENERATOR_BATCH_APPLIER_TAG);
-                    IdGenerator.Marker marker = idGenerator.marker(cursorContext)) {
+                    var marker = idGenerator.transactionalMarker(cursorContext)) {
                 for (ChangedIds changes : this.changeList) {
                     changes.accept(marker);
                 }

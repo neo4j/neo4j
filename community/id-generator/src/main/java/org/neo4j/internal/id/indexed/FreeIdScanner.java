@@ -33,7 +33,6 @@ import org.apache.commons.lang3.mutable.MutableInt;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Seeker;
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.indexed.IndexedIdGenerator.InternalMarker;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 /**
@@ -184,7 +183,7 @@ class FreeIdScanner implements Closeable {
             // they will be picked
             // up on the next restart. It should be rare. And to introduce locking or synchronization to prevent it may
             // not be worth it.
-            try (InternalMarker marker = markerProvider.getMarker(cursorContext)) {
+            try (var marker = markerProvider.getMarker(cursorContext)) {
                 Long idAndSize;
                 int numConsumedIds = 0;
                 while ((idAndSize = queue.poll()) != null) {
@@ -199,11 +198,11 @@ class FreeIdScanner implements Closeable {
     }
 
     private void markQueuedSkippedHighIdsAsFree(CursorContext cursorContext) {
-        consumeQueuedIds(queuedSkippedHighIds, IdGenerator.Marker::markFree, cursorContext);
+        consumeQueuedIds(queuedSkippedHighIds, IdGenerator.ContextualMarker::markFree, cursorContext);
     }
 
     private void markWastedIdsAsUnreserved(CursorContext cursorContext) {
-        consumeQueuedIds(queuedWastedCachedIds, IndexedIdGenerator.InternalMarker::markUnreserved, cursorContext);
+        consumeQueuedIds(queuedWastedCachedIds, IdGenerator.ContextualMarker::markUnreserved, cursorContext);
     }
 
     boolean hasMoreFreeIds(boolean blocking) {
@@ -232,7 +231,7 @@ class FreeIdScanner implements Closeable {
 
             // Since placing an id into the cache marks it as reserved, here when taking the ids out from the cache
             // revert that by marking them as unreserved
-            try (InternalMarker marker = markerProvider.getMarker(cursorContext)) {
+            try (var marker = markerProvider.getMarker(cursorContext)) {
                 cache.drain(marker::markUnreserved);
             }
             atLeastOneIdOnFreelist.set(true);
@@ -252,7 +251,7 @@ class FreeIdScanner implements Closeable {
     }
 
     private void markIdsAsReserved(PendingIdQueue pendingIdQueue, CursorContext cursorContext) {
-        try (InternalMarker marker = markerProvider.getMarker(cursorContext)) {
+        try (var marker = markerProvider.getMarker(cursorContext)) {
             pendingIdQueue.accept((slotIndex, slotSize, ids) -> ids.forEach(id -> marker.markReserved(id, slotSize)));
         }
     }
@@ -308,6 +307,6 @@ class FreeIdScanner implements Closeable {
     }
 
     private interface QueueConsumer {
-        void accept(InternalMarker marker, long id, int size);
+        void accept(IdGenerator.ContextualMarker marker, long id, int size);
     }
 }

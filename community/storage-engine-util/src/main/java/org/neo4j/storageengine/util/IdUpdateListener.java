@@ -20,7 +20,6 @@
 package org.neo4j.storageengine.util;
 
 import org.neo4j.internal.id.IdGenerator;
-import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.io.pagecache.context.CursorContext;
 
 public interface IdUpdateListener extends AutoCloseable {
@@ -44,14 +43,14 @@ public interface IdUpdateListener extends AutoCloseable {
 
         @Override
         public void markIdAsUsed(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
-            try (Marker marker = idGenerator.marker(cursorContext)) {
+            try (var marker = idGenerator.transactionalMarker(cursorContext)) {
                 marker.markUsed(id, size);
             }
         }
 
         @Override
         public void markIdAsUnused(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
-            try (Marker marker = idGenerator.marker(cursorContext)) {
+            try (var marker = idGenerator.transactionalMarker(cursorContext)) {
                 marker.markDeleted(id, size);
             }
         }
@@ -65,14 +64,14 @@ public interface IdUpdateListener extends AutoCloseable {
 
         @Override
         public void markIdAsUsed(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
-            try (Marker marker = idGenerator.marker(cursorContext)) {
+            try (var marker = idGenerator.transactionalMarker(cursorContext)) {
                 marker.markUsed(id, size);
             }
         }
 
         @Override
         public void markIdAsUnused(IdGenerator idGenerator, long id, int size, CursorContext cursorContext) {
-            try (Marker marker = idGenerator.marker(cursorContext)) {
+            try (var marker = idGenerator.transactionalMarker(cursorContext)) {
                 marker.markDeletedAndFree(id, size);
             }
         }

@@ -126,7 +126,12 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         }
 
         @Override
-        public Marker marker(CursorContext cursorContext) {
+        public TransactionalMarker transactionalMarker(CursorContext cursorContext) {
+            return NOOP_MARKER;
+        }
+
+        @Override
+        public ContextualMarker contextualMarker(CursorContext cursorContext) {
             return NOOP_MARKER;
         }
 

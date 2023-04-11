@@ -89,7 +89,6 @@ import org.neo4j.index.internal.gbptree.TreeFileNotFoundException;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.internal.id.FreeIds;
 import org.neo4j.internal.id.IdCapacityExceededException;
-import org.neo4j.internal.id.IdGenerator.Marker;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdValidator;
 import org.neo4j.internal.id.TestIdType;
@@ -583,7 +582,7 @@ class IndexedIdGeneratorTest {
         long id2 = idGenerator.nextId(NULL_CONTEXT);
 
         // when
-        try (Marker commitMarker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var commitMarker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             commitMarker.markUsed(id);
             commitMarker.markUsed(id2);
         }
@@ -778,7 +777,7 @@ class IndexedIdGeneratorTest {
 
     @Test
     void shouldNotMarkerIfReadOnly() throws IOException {
-        assertOperationPermittedInReadOnlyMode(idGenerator -> () -> idGenerator.marker(NULL_CONTEXT));
+        assertOperationPermittedInReadOnlyMode(idGenerator -> () -> idGenerator.transactionalMarker(NULL_CONTEXT));
     }
 
     @Test
@@ -801,11 +800,13 @@ class IndexedIdGeneratorTest {
         long allocatedHighId = idGenerator.nextId(NULL_CONTEXT);
         verify(monitor).allocatedFromHigh(allocatedHighId, 1);
 
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markUsed(allocatedHighId);
             verify(monitor).markedAsUsed(allocatedHighId, 1);
             marker.markDeleted(allocatedHighId);
             verify(monitor).markedAsDeleted(allocatedHighId, 1);
+        }
+        try (var marker = idGenerator.contextualMarker(NULL_CONTEXT)) {
             marker.markFree(allocatedHighId);
             verify(monitor).markedAsFree(allocatedHighId, 1);
         }
@@ -820,7 +821,7 @@ class IndexedIdGeneratorTest {
         verify(monitor).clearingCache();
         verify(monitor).clearedCache();
 
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markUsed(allocatedHighId + 3);
             verify(monitor).bridged(allocatedHighId + 1);
             verify(monitor).bridged(allocatedHighId + 2);
@@ -832,7 +833,7 @@ class IndexedIdGeneratorTest {
         // Also test normalization (which requires a restart)
         open(Config.defaults(), monitor, false, SINGLE_IDS);
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markUsed(allocatedHighId + 1);
         }
         verify(monitor).normalized(0);
@@ -898,7 +899,7 @@ class IndexedIdGeneratorTest {
             assertThat(cursorTracer.unpins()).isZero();
             assertThat(cursorTracer.hits()).isZero();
 
-            try (var marker = idGenerator.marker(cursorContext)) {
+            try (var marker = idGenerator.transactionalMarker(cursorContext)) {
                 marker.markDeleted(1);
             }
             assertThat(cursorTracer.pins()).isGreaterThanOrEqualTo(1);
@@ -924,9 +925,9 @@ class IndexedIdGeneratorTest {
             idGenerator.maintenance(NULL_CONTEXT);
             idGenerator.clearCache(cursorContext);
 
-            assertThat(cursorTracer.pins()).isOne();
-            assertThat(cursorTracer.unpins()).isOne();
-            assertThat(cursorTracer.hits()).isOne();
+            assertThat(cursorTracer.pins()).isEqualTo(2);
+            assertThat(cursorTracer.unpins()).isEqualTo(2);
+            assertThat(cursorTracer.hits()).isEqualTo(2);
         }
     }
 
@@ -993,8 +994,8 @@ class IndexedIdGeneratorTest {
 
             // 2 state pages involved into checkpoint (twice) + one more pin/hit/unpin on maintenance + range marker
             // writer
-            assertThat(cursorTracer.pins()).isEqualTo(3);
-            assertThat(cursorTracer.unpins()).isEqualTo(3);
+            assertThat(cursorTracer.pins()).isEqualTo(5);
+            assertThat(cursorTracer.unpins()).isEqualTo(5);
         }
     }
 
@@ -1113,10 +1114,9 @@ class IndexedIdGeneratorTest {
         };
         open(Config.defaults(), monitor, false, SINGLE_IDS);
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             for (int i = 0; i < 5; i++) {
-                marker.markDeleted(i);
-                marker.markFree(i);
+                marker.markDeletedAndFree(i);
             }
         }
 
@@ -1172,10 +1172,9 @@ class IndexedIdGeneratorTest {
         idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
 
         // delete and free more than cache-size IDs
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             for (int i = 0; i < IndexedIdGenerator.SMALL_CACHE_CAPACITY + 10; i++) {
-                marker.markDeleted(i);
-                marker.markFree(i);
+                marker.markDeletedAndFree(i);
             }
         }
 
@@ -1564,7 +1563,7 @@ class IndexedIdGeneratorTest {
     }
 
     private void markUsed(long id, int size) {
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markUsed(id, size);
         }
     }
@@ -1574,7 +1573,7 @@ class IndexedIdGeneratorTest {
     }
 
     private void markDeleted(long id, int size) {
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markDeleted(id, size);
         }
     }
@@ -1584,7 +1583,7 @@ class IndexedIdGeneratorTest {
     }
 
     private void markFree(long id, int size) {
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.contextualMarker(NULL_CONTEXT)) {
             marker.markFree(id, size);
         }
     }
@@ -1594,7 +1593,7 @@ class IndexedIdGeneratorTest {
     }
 
     private void markUnallocated(long id, int size) {
-        try (Marker marker = idGenerator.marker(NULL_CONTEXT)) {
+        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
             marker.markUnallocated(id, size);
         }
     }

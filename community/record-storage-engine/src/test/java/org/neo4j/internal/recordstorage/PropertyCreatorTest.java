@@ -372,7 +372,7 @@ class PropertyCreatorTest {
 
     private static void prepareDirtyGenerator(PropertyStore store) {
         var idGenerator = store.getIdGenerator();
-        var marker = idGenerator.marker(NULL_CONTEXT);
+        var marker = idGenerator.transactionalMarker(NULL_CONTEXT);
         marker.markDeleted(1L);
         idGenerator.clearCache(NULL_CONTEXT);
     }
