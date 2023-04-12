@@ -380,13 +380,13 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
 
     @Override
     public void createDefaultDatabaseResolver(GlobalModule globalModule) {
-        Supplier<GraphDatabaseService> systemDbSupplier = systemSupplier(globalModule.getGlobalDependencies());
-        CommunityDefaultDatabaseResolver defaultDatabaseResolver =
+        var systemDbSupplier = systemSupplier(globalModule.getGlobalDependencies());
+        var defaultDatabaseResolver =
                 new CommunityDefaultDatabaseResolver(globalModule.getGlobalConfig(), systemDbSupplier);
         globalModule
                 .getTransactionEventListeners()
                 .registerTransactionEventListener(SYSTEM_DATABASE_NAME, defaultDatabaseResolver);
-        setDefaultDatabaseResolver(defaultDatabaseResolver);
+        this.defaultDatabaseResolver = defaultDatabaseResolver;
     }
 
     @Override

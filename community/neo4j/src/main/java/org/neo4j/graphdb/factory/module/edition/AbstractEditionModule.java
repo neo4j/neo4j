@@ -154,10 +154,6 @@ public abstract class AbstractEditionModule {
 
     public abstract void createDefaultDatabaseResolver(GlobalModule globalModule);
 
-    public void setDefaultDatabaseResolver(DefaultDatabaseResolver defaultDatabaseResolver) {
-        this.defaultDatabaseResolver = defaultDatabaseResolver;
-    }
-
     public DefaultDatabaseResolver getDefaultDatabaseResolver() {
         return defaultDatabaseResolver;
     }
