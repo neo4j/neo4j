@@ -43,6 +43,7 @@ import java.io.InputStream
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
+import java.net.HttpURLConnection
 import java.net.URL
 import java.nio.charset.StandardCharsets
 import java.nio.file.Paths
@@ -183,6 +184,30 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
         )
         newCon
       }
+
+    con match {
+      case urlConn: HttpURLConnection if WebURLAccessRule.isRedirect(urlConn.getResponseCode) =>
+        /*
+         * Note, HttpURLConnection will stop following a redirect if protocol changes or if Location header is missing
+         * (in the current implementation of my java version).
+         * WebURLAccessRule.checkUrlIncludingHops will currently also stop if protocol changes,
+         * but throws an exception if Location is missing.
+         * The http spec recommends to always have a Location header for redirects, but do not strictly forbid it.
+         *
+         * To be consistent with checkUrlIncludingHops we throw an exception here if we end up at a redirect
+         * that can't be followed.
+         * This is in line with the recommendations of the spec.
+         * If it turns out there is some wretched http server out there that we need to support,
+         * that don't respect the spec recommendations, please don't forget to align checkUrlIncludingHops.
+         */
+        throw new LoadExternalResourceException(
+          s"""LOAD CSV failed to access resource. The request to $url was at some point redirected to
+             | ${urlConn.getURL} from which it could not proceed. This may happen if ${urlConn.getURL} redirects to
+             | a resource which uses a different protocol than the original request.
+             |""".stripMargin
+        )
+      case _ =>
+    }
 
     con.setConnectTimeout(connectionTimeout)
     con.setReadTimeout(readTimeout)

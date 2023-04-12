@@ -149,7 +149,7 @@ public class WebURLAccessRule implements URLAccessRule {
         return urlCon;
     }
 
-    private static boolean isRedirect(int responseCode) {
+    public static boolean isRedirect(int responseCode) {
         return responseCode >= 300 && responseCode <= 307 && responseCode != 306 && responseCode != HTTP_NOT_MODIFIED;
     }
 

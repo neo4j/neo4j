@@ -56,6 +56,13 @@ class HttpServerTestSupportBuilder {
     mapping(path) = HttpReplyer.sendRedirect(redirectTo)
   }
 
+  def onPathPermanentRedirectTo(path: String, redirectTo: String): Unit = {
+    assert(path != null && !path.isEmpty)
+    assert(redirectTo != null && !redirectTo.isEmpty)
+    allowedMethods = allowedMethods + HttpReplyer.GET
+    mapping(path) = HttpReplyer.sendPermanentRedirect(redirectTo)
+  }
+
   def onPathReplyOnlyWhen(path: String, predicate: HttpExchange => Boolean): Unit = {
     assert(path != null && !path.isEmpty)
     assert(mapping.contains(path))
@@ -137,6 +144,11 @@ class HttpServerTestSupportBuilder {
 
     def sendResponse(data: Array[Byte])(exchange: HttpExchange): Unit = {
       sendResponse(200, data)(exchange)
+    }
+
+    def sendPermanentRedirect(location: String)(exchange: HttpExchange): Unit = {
+      exchange.getResponseHeaders.set("Location", location)
+      sendResponse(301, NO_DATA)(exchange)
     }
 
     def sendRedirect(location: String)(exchange: HttpExchange): Unit = {
