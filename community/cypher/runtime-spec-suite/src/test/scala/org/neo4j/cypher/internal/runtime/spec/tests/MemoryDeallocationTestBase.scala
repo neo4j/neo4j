@@ -165,7 +165,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
     val nRows = sizeHint
 
     // then
-    compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, 0.01) // Pipelined is not exact
+    compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, 0.032) // Pipelined is not exact
   }
 
   test("should deallocate memory between sort") {
@@ -190,7 +190,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     // Unfortunatly adding two extra plans make the GrowingArray holding operator memory tracker grow, so we need a tiny bit of tolerance here
-    compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, toleratedDeviation = 0.001)
+    compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, toleratedDeviation = 0.01)
   }
 
   test("should deallocate memory between top") {

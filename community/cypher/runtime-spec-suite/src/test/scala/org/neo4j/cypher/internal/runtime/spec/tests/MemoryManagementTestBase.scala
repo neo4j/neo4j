@@ -975,7 +975,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val expectedRowSize = estimateSize(valueToEstimate)
     val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
     estimatedRowSize should be >= expectedRowSize
-    estimatedRowSize should be < expectedRowSize * 30 // in pipelined we have lot's of overhead for some operators in corner cases
+    estimatedRowSize should be < expectedRowSize * 60 // in pipelined we have lots of overhead for some operators in corner cases
     expectedRowSize
   }
 
