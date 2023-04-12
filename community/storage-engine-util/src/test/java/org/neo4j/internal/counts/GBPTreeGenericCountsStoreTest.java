@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
@@ -77,6 +78,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.counts.InvalidCountException;
+import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.counts.GBPTreeGenericCountsStore.Rebuilder;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -99,6 +101,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.concurrent.ArrayQueueOutOfOrderSequence;
+import org.neo4j.util.concurrent.BinaryLatch;
 import org.neo4j.util.concurrent.OutOfOrderSequence;
 
 @PageCacheExtension
@@ -522,7 +525,8 @@ class GBPTreeGenericCountsStoreTest {
             updaterBeforeCheckpoint.close();
             checkpoint.get();
 
-            // and then also the applier after the checkpoint should be able to continue
+            // and then also the applier after the checkpoint has released the critical section should be able to
+            // continue
             applierAfterCheckpoint.get();
             applier.execute(() -> {
                 updater.get().close();
@@ -800,6 +804,43 @@ class GBPTreeGenericCountsStoreTest {
         // then
         assertThat(rebuildTriggered.booleanValue()).isFalse();
         assertThat(countsStore.read(key, NULL_CONTEXT)).isEqualTo(11);
+    }
+
+    @Test
+    void checkpointShouldAllowCacheSwitchesWhileFlushingTheTree() throws Exception {
+        AtomicLong txId = new AtomicLong(BASE_TX_ID);
+        // One update so there is something for checkpoint to flush
+        try (CountUpdater updaterBeforeCheckpoint = countsStore.updater(txId.incrementAndGet(), true, NULL_CONTEXT)) {
+            updaterBeforeCheckpoint.increment(nodeKey(251), 1);
+        }
+
+        try (OtherThreadExecutor checkpointer = new OtherThreadExecutor("Checkpointer", 1, MINUTES);
+                OtherThreadExecutor applier = new OtherThreadExecutor("Applier", 1, MINUTES)) {
+
+            // Do countstore checkpoint all the way until the actual tree checkpoint
+            FileFlushEvent fileFlushEvent = spy(FileFlushEvent.NULL);
+            BinaryLatch latch = new BinaryLatch();
+            doAnswer((invocationOnMock) -> {
+                        latch.await();
+                        return 0;
+                    })
+                    .when(fileFlushEvent)
+                    .startFlush(any());
+            Future<Object> checkpoint =
+                    checkpointer.executeDontWait(command(() -> countsStore.checkpoint(fileFlushEvent, NULL_CONTEXT)));
+            checkpointer.waitUntilWaiting(location -> location.isAt(MultiRootGBPTree.class, "checkpoint"));
+
+            // While checkpoint is in checkpoint we should still be able to fill up the cache and do the switching
+            for (int i = 0; i < 250; i++) {
+                final long id = txId.incrementAndGet();
+                try (CountUpdater countUpdater = countsStore.updater(id, true, NULL_CONTEXT)) {
+                    countUpdater.increment(nodeKey(id), 1);
+                }
+            }
+
+            latch.release();
+            checkpoint.get();
+        }
     }
 
     private CountsKey randomKey() {

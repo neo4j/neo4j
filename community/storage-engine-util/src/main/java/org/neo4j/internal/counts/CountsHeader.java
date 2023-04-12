@@ -21,6 +21,7 @@ package org.neo4j.internal.counts;
 
 import java.nio.ByteBuffer;
 import java.util.function.Consumer;
+import java.util.function.LongSupplier;
 import org.neo4j.index.internal.gbptree.Header;
 import org.neo4j.io.pagecache.PageCursor;
 
@@ -32,20 +33,20 @@ class CountsHeader {
         return new Reader();
     }
 
-    static Writer writer(long highestGapFreeTxId) {
-        return new Writer(highestGapFreeTxId);
+    static Writer writer(LongSupplier highestGapFreeTxIdSupplier) {
+        return new Writer(highestGapFreeTxIdSupplier);
     }
 
     static class Writer implements Consumer<PageCursor> {
-        private final long highestGapFreeTxId;
+        private final LongSupplier highestGapFreeTxIdSupplier;
 
-        Writer(long highestGapFreeTxId) {
-            this.highestGapFreeTxId = highestGapFreeTxId;
+        Writer(LongSupplier highestGapFreeTxIdSupplier) {
+            this.highestGapFreeTxIdSupplier = highestGapFreeTxIdSupplier;
         }
 
         @Override
         public void accept(PageCursor cursor) {
-            cursor.putLong(highestGapFreeTxId);
+            cursor.putLong(highestGapFreeTxIdSupplier.getAsLong());
         }
     }
 

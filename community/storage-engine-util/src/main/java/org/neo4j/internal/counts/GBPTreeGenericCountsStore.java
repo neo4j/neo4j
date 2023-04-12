@@ -94,6 +94,8 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
 
     protected final GBPTree<CountsKey, CountsValue> tree;
     private final OutOfOrderSequence idSequence;
+    private volatile long lastWrittenHighestGapFreeId;
+    private volatile boolean writeIdSnapshotWithChanges;
     /**
      * Guards interaction between checkpoint (write-lock) and transactions (read-lock).
      */
@@ -333,15 +335,22 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
 
         try (CriticalSection criticalSection = new CriticalSection(lock)) {
             criticalSection.acquireExclusive();
-            // Take a snapshot of applied transactions while in the exclusive critical section (but write it later, no
-            // need to write it under the lock)
-            OutOfOrderSequence.Snapshot txIdSnapshot = idSequence.snapshot();
+            // Switch the changes cache to isolate what will be written down and to allow updates when we have
+            // downgraded to shared lock.
+            // Also indicate that any other cache switches happening because of the cache becoming full during this
+            // time should persist the id sequence (highest gap-free id and stray ids). The id sequence is
+            // needed in the tree to know which transactions have actually been written down (i.e whose
+            // deltas should not be applied again).
+            writeIdSnapshotWithChanges = true;
             writeChangesToTreeAndSwitchToSharedCriticalSection(criticalSection, cursorContext);
-
-            // Write transaction information to the tree and checkpoint while still in the shared critical section
-            updateTxIdInformationInTree(txIdSnapshot, cursorContext);
-            tree.checkpoint(CountsHeader.writer(txIdSnapshot.highestGapFree()[0]), flushEvent, cursorContext);
         }
+        // We can checkpoint without any lock because we only write changes and stray ids together
+        // in the same generation (using the same tree writer). Any writer will either write before
+        // checkpoint does the final flushing or after since the checkpoint drains all writers.
+        // The header is written after the writers have been drained which means the highest gap free
+        // tx id is guaranteed to be the one belonging to the last written changes.
+        tree.checkpoint(CountsHeader.writer(this::getLastWrittenHighestGapFreeId), flushEvent, cursorContext);
+        writeIdSnapshotWithChanges = false;
     }
 
     private void checkCacheSizeAndPotentiallyFlush(CursorContext cursorContext) {
@@ -374,9 +383,12 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
             CriticalSection criticalSection, CursorContext cursorContext) throws IOException {
         criticalSection.acquireShared();
         CountsChanges changesToWrite;
+        OutOfOrderSequence.Snapshot snapshot;
         try {
             // Take the changes and instantiate a new map for other updates to apply to after we release this lock
+            // Also take a snapshot of the tx ids under lock (if checkpointing) that matches the changes
             changesToWrite = changes;
+            snapshot = writeIdSnapshotWithChanges ? idSequence.snapshot() : null;
             changes = changes.freezeAndFork();
         } finally {
             // The exclusive part of the critical section is completed, release that lock so that updaters can commence
@@ -385,41 +397,58 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
         }
 
         // Now write all the things to the tree in the shared critical section
-        writeCountsChanges(changesToWrite, cursorContext);
+        writeCountsChanges(changesToWrite, snapshot, cursorContext);
         changes.clearPreviousChanges();
     }
 
-    private void writeCountsChanges(CountsChanges changes, CursorContext cursorContext) throws IOException {
-        try (TreeWriter writer =
-                new TreeWriter(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext), userLogProvider)) {
+    private void writeCountsChanges(
+            CountsChanges changes, OutOfOrderSequence.Snapshot snapshot, CursorContext cursorContext)
+            throws IOException {
+        try (Writer<CountsKey, CountsValue> writer = tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext)) {
+            TreeWriter treeWriter = new TreeWriter(writer, userLogProvider);
+            if (snapshot != null) {
+                // We write changes and id sequence using the same writer to guarantee them to always be in the same
+                // generation
+                // In GBPTree the bump in generation always drains & blocks writers
+                updateTxIdInformationInTree(writer, snapshot, cursorContext);
+            }
             // Sort the entries in the natural tree order to get more performance in the writer
             changes.sortedChanges(layout)
                     .forEach(entry ->
-                            writer.write(entry.getKey(), entry.getValue().get()));
+                            treeWriter.write(entry.getKey(), entry.getValue().get()));
         }
     }
 
-    private void updateTxIdInformationInTree(OutOfOrderSequence.Snapshot txIdSnapshot, CursorContext cursorContext)
+    private void updateTxIdInformationInTree(
+            Writer<CountsKey, CountsValue> writer,
+            OutOfOrderSequence.Snapshot txIdSnapshot,
+            CursorContext cursorContext)
             throws IOException {
         PrimitiveLongArrayQueue strayIds = new PrimitiveLongArrayQueue();
         visitStrayTxIdsInTree(strayIds::enqueue, cursorContext);
 
-        try (Writer<CountsKey, CountsValue> writer = tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext)) {
-            // First clear all the stray ids from the previous checkpoint
-            CountsValue value = new CountsValue();
-            while (!strayIds.isEmpty()) {
-                long strayTxId = strayIds.dequeue();
-                writer.remove(strayTxId(strayTxId));
-            }
-
-            // And write all stray txIds into the tree
-            value.initialize(0);
-            long[][] strayTxIds = txIdSnapshot.idsOutOfOrder();
-            for (long[] strayTxId : strayTxIds) {
-                long txId = strayTxId[0];
-                writer.put(strayTxId(txId), value);
-            }
+        // First clear all the stray ids from the previous checkpoint
+        CountsValue value = new CountsValue();
+        while (!strayIds.isEmpty()) {
+            long strayTxId = strayIds.dequeue();
+            writer.remove(strayTxId(strayTxId));
         }
+
+        // And write all stray txIds into the tree
+        value.initialize(0);
+        long[][] strayTxIds = txIdSnapshot.idsOutOfOrder();
+        for (long[] strayTxId : strayTxIds) {
+            long txId = strayTxId[0];
+            writer.put(strayTxId(txId), value);
+        }
+
+        // Keep the information about the highest gap free tx id belonging to these written stray ids to be
+        // able to write it to the tree header on a checkpoint
+        this.lastWrittenHighestGapFreeId = txIdSnapshot.highestGapFree()[0];
+    }
+
+    private long getLastWrittenHighestGapFreeId() {
+        return lastWrittenHighestGapFreeId;
     }
 
     // === Reads ===
