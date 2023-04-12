@@ -62,8 +62,6 @@ public class NeoStores implements AutoCloseable {
     private static final String STORE_NOT_INITIALIZED_TEMPLATE = "Specified store was not initialized. Please specify"
             + " %s as one of the stores types that should be open" + " to be able to use it.";
 
-    private static final StoreType[] STORE_TYPES = StoreType.values();
-
     private final FileSystemAbstraction fileSystem;
     private final RecordDatabaseLayout layout;
     private final Config config;
@@ -106,7 +104,7 @@ public class NeoStores implements AutoCloseable {
         this.logTailMetadata = logTailMetadata;
         this.openOptions = openOptions;
 
-        stores = new CommonAbstractStore[StoreType.values().length];
+        stores = new CommonAbstractStore[StoreType.STORE_TYPES.length];
         // First open the meta data store so that we can verify the record format. We know that this store is of the
         // type MetaDataStore
         try {
@@ -130,7 +128,7 @@ public class NeoStores implements AutoCloseable {
     @Override
     public void close() {
         RuntimeException ex = null;
-        for (StoreType type : STORE_TYPES) {
+        for (StoreType type : StoreType.STORE_TYPES) {
             try {
                 closeStore(type);
             } catch (RuntimeException t) {

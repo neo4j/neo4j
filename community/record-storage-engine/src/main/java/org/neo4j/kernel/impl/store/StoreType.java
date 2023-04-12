@@ -139,7 +139,7 @@ public enum StoreType {
         return idType;
     }
 
-    static final StoreType[] STORE_TYPES = values();
+    public static final StoreType[] STORE_TYPES = values();
 
     /**
      * Determine the type of store base on provided database file.

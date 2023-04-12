@@ -126,7 +126,7 @@ public class StoreFactory {
      * @return container with all opened stores
      */
     public NeoStores openAllNeoStores() {
-        return openNeoStores(StoreType.values());
+        return openNeoStores(StoreType.STORE_TYPES);
     }
 
     /**

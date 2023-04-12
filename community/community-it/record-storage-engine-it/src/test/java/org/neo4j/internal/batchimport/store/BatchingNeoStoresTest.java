@@ -523,7 +523,7 @@ class BatchingNeoStoresTest {
     }
 
     private static StoreType[] relevantRecordStores() {
-        return Stream.of(StoreType.values())
+        return Stream.of(StoreType.STORE_TYPES)
                 .filter(type -> type != StoreType.META_DATA)
                 .toArray(StoreType[]::new);
     }

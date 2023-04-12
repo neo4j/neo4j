@@ -632,7 +632,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     public void listStorageFiles(Collection<StoreFileMetadata> atomic, Collection<StoreFileMetadata> replayable) {
         atomic.add(new StoreFileMetadata(databaseLayout.countStore(), RecordFormat.NO_RECORD_SIZE));
         atomic.add(new StoreFileMetadata(databaseLayout.relationshipGroupDegreesStore(), RecordFormat.NO_RECORD_SIZE));
-        for (StoreType type : StoreType.values()) {
+        for (StoreType type : StoreType.STORE_TYPES) {
             final RecordStore<AbstractBaseRecord> recordStore = neoStores.getRecordStore(type);
             StoreFileMetadata metadata =
                     new StoreFileMetadata(recordStore.getStorageFile(), recordStore.getRecordSize());

@@ -107,7 +107,7 @@ class KernelDiagnosticsIT {
 
     private static void manuallyCountTotalMappedFileSize(
             Path dir, MutableLong result, NativeIndexFileFilter nativeIndexFilter) {
-        Set<String> storeFiles = Stream.of(StoreType.values())
+        Set<String> storeFiles = Stream.of(StoreType.STORE_TYPES)
                 .map(type -> type.getDatabaseFile().getName())
                 .collect(Collectors.toSet());
         try (DirectoryStream<Path> paths = Files.newDirectoryStream(dir)) {

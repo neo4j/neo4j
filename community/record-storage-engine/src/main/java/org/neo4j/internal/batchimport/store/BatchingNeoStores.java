@@ -281,7 +281,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     }
 
     private void deleteStoreFiles(DatabaseLayout databaseLayout, Predicate<StoreType> storesToKeep) {
-        for (StoreType type : StoreType.values()) {
+        for (StoreType type : StoreType.STORE_TYPES) {
             if (!storesToKeep.test(type)) {
                 DatabaseFile databaseFile = type.getDatabaseFile();
                 databaseLayout.allFiles(databaseFile).forEach(uncheckedConsumer(fileSystem::deleteFile));

@@ -411,7 +411,7 @@ public class RecordStorageMigrator extends AbstractStoreMigrationParticipant {
     }
 
     private NeoStores instantiateLegacyStore(RecordFormats format, RecordDatabaseLayout directoryStructure) {
-        var storesToOpen = Arrays.stream(StoreType.values())
+        var storesToOpen = Arrays.stream(StoreType.STORE_TYPES)
                 .filter(storeType -> storeType != StoreType.META_DATA)
                 .toArray(StoreType[]::new);
         return new StoreFactory(

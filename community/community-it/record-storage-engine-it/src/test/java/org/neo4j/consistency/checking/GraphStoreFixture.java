@@ -107,7 +107,7 @@ import org.neo4j.values.storable.Value;
 
 public abstract class GraphStoreFixture implements AutoCloseable {
     private DirectStoreAccess directStoreAccess;
-    private final long[] highIds = new long[StoreType.values().length];
+    private final long[] highIds = new long[StoreType.STORE_TYPES.length];
 
     private final TestDirectory testDirectory;
 

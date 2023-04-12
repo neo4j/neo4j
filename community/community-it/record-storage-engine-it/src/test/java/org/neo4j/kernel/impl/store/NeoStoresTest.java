@@ -473,7 +473,7 @@ class NeoStoresTest {
                 CONTEXT_FACTORY,
                 false,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
-        StoreType[] allStoreTypes = StoreType.values();
+        StoreType[] allStoreTypes = StoreType.STORE_TYPES;
         StoreType[] allButLastStoreTypes = Arrays.copyOf(allStoreTypes, allStoreTypes.length - 1);
 
         // when

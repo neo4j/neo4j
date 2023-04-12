@@ -145,7 +145,7 @@ class StoreFactoryTest {
 
         // WHEN
         neoStores = storeFactory.openAllNeoStores();
-        assertTrue(fileSystem.listFiles(databaseLayout.databaseDirectory()).length >= StoreType.values().length);
+        assertTrue(fileSystem.listFiles(databaseLayout.databaseDirectory()).length >= StoreType.STORE_TYPES.length);
 
         // THEN
         neoStores.close();

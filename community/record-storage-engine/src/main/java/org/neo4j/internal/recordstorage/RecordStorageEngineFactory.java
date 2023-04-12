@@ -282,7 +282,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             throw new IOException("No storage present at " + databaseLayout + " on " + fileSystem);
         }
 
-        return Arrays.stream(StoreType.values())
+        return Arrays.stream(StoreType.STORE_TYPES)
                 .map(t -> databaseLayout.file(t.getDatabaseFile()))
                 .filter(fileSystem::fileExists)
                 .collect(toList());
@@ -662,7 +662,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
             boolean compactNodeIdSpace,
             CursorContextFactory contextFactory,
             LogTailMetadata logTailMetadata) {
-        var storesToOpen = Arrays.stream(StoreType.values())
+        var storesToOpen = Arrays.stream(StoreType.STORE_TYPES)
                 .filter(storeType -> storeType != META_DATA)
                 .toArray(StoreType[]::new);
         NeoStores neoStores = new StoreFactory(
