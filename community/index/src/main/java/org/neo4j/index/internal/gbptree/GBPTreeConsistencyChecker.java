@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -121,7 +122,6 @@ class GBPTreeConsistencyChecker<KEY> {
             long rootGeneration = root.goTo(cursor);
             KeyRange<KEY> openRange = new KeyRange<>(-1, -1, comparator, null, null, layout, null);
             var rightmostPerLevel = new RightmostInChainShard(file, true);
-            var seenIds = state.newLocalSeenIds();
             checkSubtree(
                     cursor,
                     openRange,
@@ -130,12 +130,11 @@ class GBPTreeConsistencyChecker<KEY> {
                     GBPTreePointerType.noPointer(),
                     0,
                     visitor,
-                    seenIds,
+                    state.threadLocalSeenIds(),
                     context,
                     rightmostPerLevel,
                     progress,
                     monitor);
-            state.addLocalSeenIds(seenIds);
             rightmostPerLevel.assertLast(visitor);
         }
     }
@@ -309,7 +308,6 @@ class GBPTreeConsistencyChecker<KEY> {
                                     var shardCursor = cursorFactory.apply(shardContext);
                                     var shardProgress = progress.threadLocalReporter()) {
                                 goTo(shardCursor, "child at pos " + pos, treeNodeId);
-                                var shardSeenIds = state.newLocalSeenIds();
                                 checkSubtree(
                                         shardCursor,
                                         childRange,
@@ -318,12 +316,11 @@ class GBPTreeConsistencyChecker<KEY> {
                                         GBPTreePointerType.child(pos),
                                         level + 1,
                                         visitor,
-                                        shardSeenIds,
+                                        state.threadLocalSeenIds(),
                                         cursorContext,
                                         shardRightmostPerLevel,
                                         shardProgress,
                                         monitor);
-                                state.addLocalSeenIds(shardSeenIds);
                                 return null;
                             }
                         }));
@@ -691,8 +688,10 @@ class GBPTreeConsistencyChecker<KEY> {
     static class ConsistencyCheckState implements AutoCloseable {
         private final Path file;
         private final long lastId;
-        private final BitSet seenIds;
         private final GBPTreeConsistencyCheckVisitor visitor;
+        private final List<BitSet> allThreadLocalSeenIds = Collections.synchronizedList(new ArrayList<>());
+        private final ThreadLocal<BitSet> threadLocalSeenIds;
+        private final BitSet mainSeenIds;
         final ExecutorService executor;
         final ProgressListener progress;
         final int numThreads;
@@ -708,8 +707,13 @@ class GBPTreeConsistencyChecker<KEY> {
             this.file = file;
             this.lastId = idProvider.lastId();
             this.numThreads = numThreads;
-            // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
-            this.seenIds = new BitSet(toIntExact(highId()));
+            this.threadLocalSeenIds = ThreadLocal.withInitial(() -> {
+                // TODO: limitation, can't run on an index larger than Integer.MAX_VALUE pages (which is fairly large)
+                var seenIds = new BitSet(toIntExact(highId()));
+                allThreadLocalSeenIds.add(seenIds);
+                return seenIds;
+            });
+            this.mainSeenIds = threadLocalSeenIds.get();
             this.visitor = visitor;
 
             int numSpawnedThreads = Integer.max(1, numThreads - 1);
@@ -718,22 +722,18 @@ class GBPTreeConsistencyChecker<KEY> {
                     numSpawnedThreads,
                     30,
                     TimeUnit.SECONDS,
-                    new ArrayBlockingQueue<>(numSpawnedThreads),
+                    new ArrayBlockingQueue<>(numSpawnedThreads * 2),
                     new NamedThreadFactory("GBPTreeConsistencyChecker"),
                     new ThreadPoolExecutor.CallerRunsPolicy());
             this.progress = progressMonitorFactory.singlePart("Check GBPTree consistency", lastId);
 
             IdProvider.IdProviderVisitor freelistSeenIdsVisitor =
-                    new FreelistSeenIdsVisitor(file, seenIds, lastId, visitor, progress);
+                    new FreelistSeenIdsVisitor(file, mainSeenIds, lastId, visitor, progress);
             idProvider.visitFreelist(freelistSeenIdsVisitor, cursorCreator);
         }
 
-        synchronized void addLocalSeenIds(BitSet seenIds) {
-            seenIds.stream().forEach(id -> addToSeenList(file, this.seenIds, id, lastId, visitor));
-        }
-
-        BitSet newLocalSeenIds() {
-            return new BitSet(toIntExact(highId()));
+        BitSet threadLocalSeenIds() {
+            return threadLocalSeenIds.get();
         }
 
         private long highId() {
@@ -741,20 +741,29 @@ class GBPTreeConsistencyChecker<KEY> {
         }
 
         @Override
-        public void close() {
+        public void close() throws IOException {
+            this.executor.shutdown();
             long highId = highId();
             long expectedNumberOfPages = highId - MIN_TREE_NODE_ID;
-            if (seenIds.cardinality() != expectedNumberOfPages) {
+            var totalNumSeenIds = allThreadLocalSeenIds.stream()
+                    .mapToLong(BitSet::cardinality)
+                    .sum();
+            if (totalNumSeenIds != expectedNumberOfPages) {
+                for (var threadLocalSeenIds : allThreadLocalSeenIds) {
+                    if (threadLocalSeenIds != mainSeenIds) {
+                        threadLocalSeenIds.stream()
+                                .forEach(id -> addToSeenList(file, mainSeenIds, id, lastId, visitor));
+                    }
+                }
                 int index = (int) MIN_TREE_NODE_ID;
                 while (index >= 0 && index < highId) {
-                    index = seenIds.nextClearBit(index);
+                    index = mainSeenIds.nextClearBit(index);
                     if (index != -1 && index < highId) {
                         visitor.unusedPage(index, file);
                     }
                     index++;
                 }
             }
-            this.executor.shutdown();
             progress.close();
         }
     }
