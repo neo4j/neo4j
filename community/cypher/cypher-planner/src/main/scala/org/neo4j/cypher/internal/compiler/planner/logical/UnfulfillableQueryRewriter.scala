@@ -54,7 +54,13 @@ case object UnfulfillableQueryRewriter extends PlannerQueryRewriter with StepSeq
           tail,
           queryInput
         ) if isUnfulfillable(queryGraph) =>
-        val second = RegularSinglePlannerQuery(QueryGraph.empty, interestingOrder, horizon, tail, queryInput)
+        val second = RegularSinglePlannerQuery(
+          QueryGraph.apply(argumentIds = queryGraph.argumentIds),
+          interestingOrder,
+          horizon,
+          tail,
+          queryInput
+        )
         val projectionMap = queryGraph.allCoveredIds
           .filter(!queryGraph.argumentIds(_))
           .map(id => id -> Null()(InputPosition.NONE)).toMap
@@ -63,7 +69,7 @@ case object UnfulfillableQueryRewriter extends PlannerQueryRewriter with StepSeq
           queryPagination = QueryPagination(limit = Some(SignedDecimalIntegerLiteral("0")(InputPosition.NONE)))
         )
         RegularSinglePlannerQuery(
-          QueryGraph.empty,
+          QueryGraph.apply(argumentIds = queryGraph.argumentIds),
           interestingOrder.asInteresting,
           projection,
           Some(second),
