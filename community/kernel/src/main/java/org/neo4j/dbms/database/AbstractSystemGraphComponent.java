@@ -23,7 +23,6 @@ import java.util.List;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -115,6 +114,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
         // Makes the creation of constraints for security idempotent
         if ( !hasUniqueConstraint( tx, label, property ) )
         {
+            checkForClashingIndexes( tx, label, property );
             tx.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
         }
     }
@@ -126,5 +126,18 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
                                            Iterables.asList( constraintDefinition.getPropertyKeys() ).equals( List.of( property ) ) &&
                                            constraintDefinition.isConstraintType( ConstraintType.UNIQUENESS )
                         );
+    }
+
+    private static void checkForClashingIndexes( Transaction tx, Label label, String property )
+    {
+        tx.schema().getIndexes( label )
+          .forEach( index ->
+                    {
+                        List<String> propertyKeys = Iterables.asList( index.getPropertyKeys() );
+                        if ( propertyKeys.size() == 1 && propertyKeys.get( 0 ).equals( property ) )
+                        {
+                            index.drop();
+                        }
+                    } );
     }
 }
