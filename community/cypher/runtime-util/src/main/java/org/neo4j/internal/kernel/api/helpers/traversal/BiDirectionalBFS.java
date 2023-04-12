@@ -698,6 +698,14 @@ public class BiDirectionalBFS implements AutoCloseable {
         }
 
         @Override
+        public void resetWithStartNode(
+                long startNodeId, LongPredicate nodeFilter, Predicate<RelationshipTraversalCursor> relFilter) {
+            super.resetWithStartNode(startNodeId, nodeFilter, relFilter);
+            this.availableArrayListsCurrentIndex = 0;
+            this.availableArrayListsEnd = this.availableArrayLists.size();
+        }
+
+        @Override
         public void close() {
             availableArrayLists.forEach(HeapTrackingArrayList::close);
             availableArrayLists.close();
