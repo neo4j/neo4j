@@ -96,8 +96,18 @@ final class StringWrappingStringValue extends StringValue {
 
     @Override
     public TextValue substring(int start, int length) {
+        if (start < 0 || length < 0) {
+            throw new IndexOutOfBoundsException("Cannot handle negative start index nor negative length");
+        }
+
         int s = Math.min(start, length());
-        int e = Math.min(s + length, length());
+        int e;
+        try {
+            e = Math.min(Math.addExact(s, length), length());
+        } catch (ArithmeticException integerOverflow) {
+            e = length();
+        }
+
         int codePointStart = value.offsetByCodePoints(0, s);
         int codePointEnd = value.offsetByCodePoints(0, e);
 

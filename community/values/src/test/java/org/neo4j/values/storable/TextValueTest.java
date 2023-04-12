@@ -54,6 +54,11 @@ class TextValueTest {
         assertThat(value.apply("hello").substring(4, 5)).isEqualTo(value.apply("o"));
         assertThat(value.apply("hello").substring(1, 3)).isEqualTo(value.apply("ell"));
         assertThat(value.apply("hello").substring(8, 5)).isEqualTo(StringValue.EMPTY);
+        assertThat(value.apply("hello").substring(0, Integer.MAX_VALUE)).isEqualTo(value.apply("hello"));
+        assertThat(value.apply("hello").substring(2, Integer.MAX_VALUE)).isEqualTo(value.apply("llo"));
+        assertThat(value.apply("hello").substring(8, Integer.MAX_VALUE)).isEqualTo(StringValue.EMPTY);
+        assertThat(value.apply("hello").substring(Integer.MAX_VALUE, Integer.MAX_VALUE))
+                .isEqualTo(StringValue.EMPTY);
         assertThat(value.apply("0123456789").substring(1)).isEqualTo(value.apply("123456789"));
         assertThat(value.apply("0123456789").substring(5)).isEqualTo(value.apply("56789"));
         assertThat(value.apply("0123456789").substring(15)).isEqualTo(StringValue.EMPTY);
@@ -63,6 +68,7 @@ class TextValueTest {
                 .isEqualTo(value.apply("\uD83D\uDCA9\uD83D\uDC7B"));
 
         assertThrows(IndexOutOfBoundsException.class, () -> value.apply("hello").substring(-4, 2));
+        assertThrows(IndexOutOfBoundsException.class, () -> value.apply("hello").substring(4, -2));
     }
 
     @ParameterizedTest

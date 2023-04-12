@@ -82,6 +82,7 @@ class StringFunctionsTest extends CypherFunSuite {
       function.apply(CypherRow.empty, QueryStateHelper.empty)
     }
 
+    substring("a", 2, Int.MaxValue) should equal(EMPTY_STRING)
     substring("hello", 2, 5) should equal(stringValue("llo"))
     substring("hello", 4, 5) should equal(stringValue("o"))
     substring("hello", 1, 3) should equal(stringValue("ell"))
