@@ -703,6 +703,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def userTransactionId: String
 
   def config: Config
+
+  def kernelExecutingQuery: org.neo4j.kernel.api.query.ExecutingQuery
 }
 
 trait KernelPredicate[T] {

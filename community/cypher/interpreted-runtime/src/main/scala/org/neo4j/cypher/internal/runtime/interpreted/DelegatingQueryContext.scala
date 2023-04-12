@@ -757,4 +757,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def userTransactionId: String = inner.userTransactionId
 
   override def config: Config = inner.config
+
+  override def kernelExecutingQuery: org.neo4j.kernel.api.query.ExecutingQuery = inner.kernelExecutingQuery
 }

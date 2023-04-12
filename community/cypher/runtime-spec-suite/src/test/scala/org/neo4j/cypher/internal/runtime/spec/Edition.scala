@@ -55,9 +55,9 @@ class Edition[CONTEXT <: RuntimeContext](
   val configs: (Setting[_], Object)*
 ) {
 
-  def newGraphManagementService(additionalConfigs: (Setting[_], Object)*): Dbms = {
+  def newGraphManagementService(logProvider: InternalLogProvider, additionalConfigs: (Setting[_], Object)*): Dbms = {
     val fileSystem = new EphemeralFileSystemAbstraction
-    val graphBuilder = graphBuilderFactory().setFileSystem(fileSystem)
+    val graphBuilder = graphBuilderFactory().setFileSystem(fileSystem).setInternalLogProvider(logProvider)
     configs.foreach {
       case (setting, value) => graphBuilder.setConfig(setting.asInstanceOf[Setting[Object]], value.asInstanceOf[Object])
     }

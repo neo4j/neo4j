@@ -19,24 +19,37 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.LogicalQuery
 import org.neo4j.cypher.internal.RuntimeContext
+import org.neo4j.cypher.internal.logical.plans.Prober.Probe
 import org.neo4j.cypher.internal.runtime.spec.Edition
+import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
 import org.neo4j.cypher.internal.runtime.spec.SideEffectingInputStream
+import org.neo4j.graphdb
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.logging.InternalLogProvider
+import org.neo4j.logging.LogAssert
 import org.scalatest.LoneElement
+
+import java.time.Duration.ofSeconds
+
+import scala.util.Random
 
 abstract class ErrorHandlingStressTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
-) extends RuntimeTestSuite[CONTEXT](edition, runtime)
+) extends RuntimeTestSuite[CONTEXT](
+      edition.copyWith(
+        GraphDatabaseInternalSettings.cypher_query_monitor_check_interval -> ofSeconds(3)
+      ),
+      runtime
+    )
     with SideEffectingInputStream[CONTEXT]
     with RandomValuesTestSupport
     with LoneElement {
@@ -59,9 +72,46 @@ abstract class ErrorHandlingStressTestBase[CONTEXT <: RuntimeContext](
     )
   }
 
-  private def executeAndConsume(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]) = {
-    val result = execute(logicalQuery, runtime)
-    consume(result)
-    result
+  class SuperFatalError(msg: String) extends VirtualMachineError(msg)
+
+  test("should log accumulated crash reports") {
+    // given
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    val nQueries = 300
+    val errorMessage = "Simulated fatal error of type "
+    val nRandomMessages = 10
+    val orderedMessages = (1 to nRandomMessages).map(errorMessage + _)
+    val errorMessages = Random.shuffle(orderedMessages)
+    var errorCount = 0
+
+    val fatalProbe = new Probe {
+      override def onRow(row: AnyRef, queryStatistics: graphdb.QueryStatistics, transactionsCommitted: Int): Unit = {
+        errorCount = (errorCount + 1) % nRandomMessages
+        throw new SuperFatalError(errorMessages(errorCount))
+      }
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .prober(fatalProbe)
+      .allNodeScan("x")
+      .build()
+
+    val executablePlan = buildPlan(logicalQuery, runtime)
+    (0 until nQueries).foreach { _ =>
+      val result = execute(executablePlan)
+      a[SuperFatalError] shouldBe thrownBy(consume(result))
+    }
+
+    val logAssert = new LogAssert(logProvider)
+    logAssert.containsMessagesEventually(
+      10000,
+      (s"Cypher query monitor received $nRandomMessages different crash reports" +: orderedMessages): _*
+    )
+    // logProvider.print(System.out)
   }
 }

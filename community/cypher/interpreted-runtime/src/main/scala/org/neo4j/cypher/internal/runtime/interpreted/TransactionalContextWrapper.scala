@@ -180,6 +180,10 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
   override def config: Config = {
     tc.graph().getDependencyResolver.resolveDependency(classOf[Config])
   }
+
+  override def kernelExecutingQuery: org.neo4j.kernel.api.query.ExecutingQuery = {
+    tc.executingQuery()
+  }
 }
 
 object TransactionalContextWrapper {

@@ -147,7 +147,7 @@ abstract class BaseRuntimeTestSuite[CONTEXT <: RuntimeContext](
   }
 
   protected def restartDB(): Unit = {
-    val dbms = edition.newGraphManagementService()
+    val dbms = edition.newGraphManagementService(logProvider)
     managementService = dbms.dbms
     dbmsFileSystem = dbms.filesystem
     graphDb = managementService.database(DEFAULT_DATABASE_NAME)

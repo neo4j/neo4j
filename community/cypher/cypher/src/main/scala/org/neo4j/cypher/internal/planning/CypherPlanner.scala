@@ -419,7 +419,7 @@ case class CypherPlanner(
           transactionalContextWrapper.kernelTransactionalContext,
           compilerWithExpressionCodeGenOption,
           options.queryOptions.replan,
-          transactionalContextWrapper.kernelTransactionalContext.executingQuery().id()
+          transactionalContextWrapper.kernelExecutingQuery.id()
         )
       } else if (!enoughParametersSupplied) {
         createPlan(
