@@ -20,12 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
 import org.apache.commons.lang3.StringUtils.EMPTY
-import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.internal.kernel.api.helpers.TransactionDependenciesResolver
@@ -43,8 +41,6 @@ import org.neo4j.values.virtual.VirtualValues
 
 import java.lang
 import java.time.Duration
-import java.time.Instant
-import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME
 import java.util
@@ -121,7 +117,7 @@ case class ShowTransactionsCommand(
 
         val txId = TransactionId(dbName, transaction.getTransactionSequenceNumber).toString
         val username = transaction.subject.executingUser()
-        val startTime = formatTime(transaction.startTime(), zoneId)
+        val startTime = formatTimeString(transaction.startTime(), zoneId)
         val elapsedTime = getDurationOrNullFromMillis(statistic.getElapsedTimeMillis)
         val (currentQueryId, currentQuery) =
           if (querySnapshot.isPresent) {
@@ -197,7 +193,7 @@ case class ShowTransactionsCommand(
                 VirtualValues.map(keys, vals)
               }): _*)
 
-              val queryStartTime = formatTime(query.startTimestampMillis, zoneId)
+              val queryStartTime = formatTimeString(query.startTimestampMillis, zoneId)
               val queryStatus = query.status
               val queryActiveLockCount = Values.longValue(query.activeLockCount)
               val queryElapsedTime = getDurationOrNullFromMicro(query.elapsedTimeMicros)
@@ -338,13 +334,8 @@ case class ShowTransactionsCommand(
     ClosingIterator.apply(updatedRows.iterator)
   }
 
-  private def getConfiguredTimeZone(ctx: QueryContext): ZoneId =
-    ctx.getConfig.get(GraphDatabaseSettings.db_timezone).getZoneId
-
-  private def formatTime(startTime: Long, zoneId: ZoneId) =
-    OffsetDateTime
-      .ofInstant(Instant.ofEpochMilli(startTime), zoneId)
-      .format(ISO_OFFSET_DATE_TIME)
+  private def formatTimeString(startTime: Long, zoneId: ZoneId) =
+    formatTime(startTime, zoneId).format(ISO_OFFSET_DATE_TIME)
 
   private def getStatus(
     handle: KernelTransactionHandle,

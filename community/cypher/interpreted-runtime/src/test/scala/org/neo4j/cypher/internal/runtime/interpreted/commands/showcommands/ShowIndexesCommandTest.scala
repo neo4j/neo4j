@@ -19,9 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.common.EntityType
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.AllIndexes
 import org.neo4j.cypher.internal.ast.FulltextIndexes
 import org.neo4j.cypher.internal.ast.LookupIndexes
@@ -52,6 +54,7 @@ import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.StandardNoStopWords
 import org.neo4j.kernel.api.impl.fulltext.analyzer.providers.UrlOrEmail
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
+import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
@@ -59,6 +62,9 @@ import org.neo4j.kernel.impl.index.schema.TokenIndexProvider
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
+
+import java.time.Instant
+import java.time.OffsetDateTime
 
 class ShowIndexesCommandTest extends ShowCommandTestBase {
 
@@ -252,13 +258,28 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       )
       .materialise(9)
 
+  private val config = Config.defaults()
+
   override def beforeEach(): Unit = {
     super.beforeEach()
 
     // Defaults:
-    when(ctx.getConfig).thenReturn(Config.defaults())
+    when(ctx.getConfig).thenReturn(config)
     when(ctx.getAllConstraints()).thenReturn(Map.empty)
+
+    // No statistics, most tests won't care about them but don't want null-pointers
+    val statistics = mock[IndexUsageStats]
+    when(statistics.trackedSince()).thenReturn(0)
+    when(statistics.lastRead()).thenReturn(0)
+    when(statistics.readCount()).thenReturn(0)
+    when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
   }
+
+  private def getTemporalValueFromMs(time: Long) =
+    Values.temporalValue(OffsetDateTime.ofInstant(
+      Instant.ofEpochMilli(time),
+      config.get(GraphDatabaseSettings.db_timezone).getZoneId
+    ).toZonedDateTime)
 
   // Only checks the given parameters
   private def checkResult(
@@ -273,6 +294,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     properties: Option[List[String]] = None,
     provider: Option[String] = None,
     constraint: Option[String] = None,
+    lastRead: Option[AnyValue] = None,
+    readCount: Option[AnyValue] = None,
+    trackedSince: Option[AnyValue] = None,
     options: Option[Map[String, AnyValue]] = None,
     failureMessage: Option[String] = None,
     createStatement: Option[String] = None
@@ -299,6 +323,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     })
     provider.foreach(expected => resultMap("indexProvider") should be(Values.stringValue(expected)))
     constraint.foreach(expected => resultMap("owningConstraint") should be(Values.stringOrNoValue(expected)))
+    lastRead.foreach(expected => resultMap("lastRead") should be(expected))
+    readCount.foreach(expected => resultMap("readCount") should be(expected))
+    trackedSince.foreach(expected => resultMap("trackedSince") should be(expected))
     options.foreach(expected =>
       resultMap("options") should be(VirtualValues.map(expected.view.keys.toArray, expected.view.values.toArray))
     )
@@ -332,7 +359,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       labelsOrTypes = List(label),
       properties = List(prop),
       provider = rangeProvider,
-      constraint = Some(null)
+      constraint = Some(null),
+      lastRead = Values.NO_VALUE,
+      readCount = Values.NO_VALUE
     )
     checkResult(
       result.last,
@@ -345,7 +374,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       labelsOrTypes = List(relType),
       properties = List(prop),
       provider = rangeProvider,
-      constraint = Some(null)
+      constraint = Some(null),
+      lastRead = Values.NO_VALUE,
+      readCount = Values.NO_VALUE
     )
     // confirm no verbose columns:
     result.foreach(res => {
@@ -378,6 +409,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       properties = List(prop),
       provider = rangeProvider,
       constraint = Some(null),
+      lastRead = Values.NO_VALUE,
+      readCount = Values.NO_VALUE,
+      trackedSince = Values.NO_VALUE,
       options = Map("indexProvider" -> Values.stringValue(rangeProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
       failureMessage = "",
       createStatement = s"CREATE RANGE INDEX `index0` FOR (n:`$label`) ON (n.`$prop`)"
@@ -394,6 +428,9 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
       properties = List(prop),
       provider = rangeProvider,
       constraint = Some(null),
+      lastRead = Values.NO_VALUE,
+      readCount = Values.NO_VALUE,
+      trackedSince = Values.NO_VALUE,
       options = Map("indexProvider" -> Values.stringValue(rangeProvider), "indexConfig" -> VirtualValues.EMPTY_MAP),
       failureMessage = "",
       createStatement = s"CREATE RANGE INDEX `index1` FOR ()-[r:`$relType`]-() ON (r.`$prop`)"
@@ -520,6 +557,108 @@ class ShowIndexesCommandTest extends ShowCommandTestBase {
     result should have size 2
     checkResult(result.head, name = "index0")
     checkResult(result.last, name = "index1")
+  }
+
+  test("show indexes should give back nulls when no statistics available") {
+    // Set-up which indexes to return:
+    when(ctx.getAllIndexes()).thenReturn(Map(rangeNodeIndexDescriptor -> nodeIndexInfo))
+
+    // override statistics to be explicit about what we test (even if it's the default values XD)
+    val statistics = mock[IndexUsageStats]
+    when(statistics.trackedSince()).thenReturn(0)
+    when(statistics.lastRead()).thenReturn(0)
+    when(statistics.readCount()).thenReturn(0)
+    when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
+
+    // When
+    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns)
+    val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(result.head, trackedSince = Values.NO_VALUE, lastRead = Values.NO_VALUE, readCount = Values.NO_VALUE)
+  }
+
+  test("show indexes should give back correct statistic values for unused indexes") {
+    // Set-up which indexes to return:
+    when(ctx.getAllIndexes()).thenReturn(Map(rangeNodeIndexDescriptor -> nodeIndexInfo))
+
+    // override as we want other statistics
+    val trackedSinceMs = 1
+    val statistics = mock[IndexUsageStats]
+    when(statistics.trackedSince()).thenReturn(trackedSinceMs)
+    when(statistics.lastRead()).thenReturn(0)
+    when(statistics.readCount()).thenReturn(0)
+    when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
+
+    // When
+    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns)
+    val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      trackedSince = getTemporalValueFromMs(trackedSinceMs),
+      lastRead = Values.NO_VALUE,
+      readCount = Values.longValue(0)
+    )
+  }
+
+  test("show indexes should give back correct statistic values for used indexes") {
+    // Set-up which indexes to return:
+    when(ctx.getAllIndexes()).thenReturn(Map(rangeNodeIndexDescriptor -> nodeIndexInfo))
+
+    // override as we want other statistics
+    val trackedSinceMs = 1
+    val lastReadMs = 5
+    val readCount = 3
+    val statistics = mock[IndexUsageStats]
+    when(statistics.trackedSince()).thenReturn(trackedSinceMs)
+    when(statistics.lastRead()).thenReturn(lastReadMs)
+    when(statistics.readCount()).thenReturn(readCount)
+    when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
+
+    // When
+    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = true, allColumns)
+    val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    checkResult(
+      result.head,
+      trackedSince = getTemporalValueFromMs(trackedSinceMs),
+      lastRead = getTemporalValueFromMs(lastReadMs),
+      readCount = Values.longValue(readCount)
+    )
+  }
+
+  test("show indexes should give back correct default statistic values for used indexes without yield") {
+    // Set-up which indexes to return:
+    when(ctx.getAllIndexes()).thenReturn(Map(rangeNodeIndexDescriptor -> nodeIndexInfo))
+
+    // override as we want other statistics
+    val trackedSinceMs = 1
+    val lastReadMs = 5
+    val readCount = 3
+    val statistics = mock[IndexUsageStats]
+    when(statistics.trackedSince()).thenReturn(trackedSinceMs)
+    when(statistics.lastRead()).thenReturn(lastReadMs)
+    when(statistics.readCount()).thenReturn(readCount)
+    when(ctx.getIndexUsageStatistics(any())).thenReturn(statistics)
+
+    // When
+    val showIndexes = ShowIndexesCommand(AllIndexes, verbose = false, defaultColumns)
+    val result = showIndexes.originalNameRows(queryState, initialCypherRow).toList
+
+    // Then
+    result should have size 1
+    result.head.get("trackedSince") should be(None) // not a default column
+    checkResult(
+      result.head,
+      lastRead = getTemporalValueFromMs(lastReadMs),
+      readCount = Values.longValue(readCount)
+    )
   }
 
   test("show indexes should show all index types") {

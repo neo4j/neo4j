@@ -69,6 +69,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
@@ -123,6 +124,9 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] =
     translateException(tokenNameLookup, inner.getAllIndexes())
+
+  override def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats =
+    translateException(tokenNameLookup, inner.getIndexUsageStatistics(index))
 
   override def indexExists(name: String): Boolean =
     translateException(tokenNameLookup, inner.indexExists(name))

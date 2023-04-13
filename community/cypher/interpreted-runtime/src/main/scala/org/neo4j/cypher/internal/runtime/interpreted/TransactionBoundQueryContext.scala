@@ -117,6 +117,7 @@ import org.neo4j.internal.schema.SchemaDescriptors
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
+import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException
 import org.neo4j.kernel.impl.core.TransactionalEntityFactory
 import org.neo4j.kernel.impl.query.FunctionInformation
@@ -1357,6 +1358,9 @@ private[internal] class TransactionBoundReadQueryContext(
       }
     IndexStatus(state, failureMessage, populationProgress, maybeConstraint)
   }
+
+  override def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats =
+    transactionalContext.schemaRead.indexUsageStats(index)
 
   override def indexExists(name: String): Boolean =
     transactionalContext.schemaRead.indexGetForName(name) != IndexDescriptor.NO_INDEX

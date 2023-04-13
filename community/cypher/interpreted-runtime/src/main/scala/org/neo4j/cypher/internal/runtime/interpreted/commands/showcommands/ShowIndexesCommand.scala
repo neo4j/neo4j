@@ -93,6 +93,11 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
 
     val sortedRelevantIndexes: ListMap[IndexDescriptor, IndexInfo] =
       ListMap(relevantIndexes.toSeq.sortBy(_._1.getName): _*)
+
+    val zoneId = getConfiguredTimeZone(ctx)
+    def getAsTime(timeInMs: Long) =
+      Values.temporalValue(formatTime(timeInMs, zoneId).toZonedDateTime)
+
     val rows = sortedRelevantIndexes.map {
       case (indexDescriptor: IndexDescriptor, indexInfo: IndexInfo) =>
         val indexStatus = indexInfo.indexStatus
@@ -121,6 +126,25 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           if (isLookupIndex) Values.NO_VALUE
           else VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava)
 
+        val indexStatistics = ctx.getIndexUsageStatistics(indexDescriptor)
+        val trackedSinceKernelValue = indexStatistics.trackedSince()
+        val lastReadKernelValue = indexStatistics.lastRead()
+        val readCountKernelValue = indexStatistics.readCount()
+
+        // Interpreting the kernel values into what SHOW INDEXES should return
+        val (lastRead, readCount, trackedSince) =
+          if (trackedSinceKernelValue == 0) {
+            // not tracked at all: all columns null
+            (Values.NO_VALUE, Values.NO_VALUE, Values.NO_VALUE)
+          } else if (lastReadKernelValue == 0) {
+            // tracked but not yet read:
+            // trackedSince should have real value, others default for when tracked but not seen
+            (Values.NO_VALUE, Values.longValue(0L), getAsTime(trackedSinceKernelValue))
+          } else {
+            // all columns have available values
+            (getAsTime(lastReadKernelValue), Values.longValue(readCountKernelValue), getAsTime(trackedSinceKernelValue))
+          }
+
         val briefResult = Map(
           // The id of the index
           "id" -> Values.longValue(indexDescriptor.getId),
@@ -141,12 +165,18 @@ case class ShowIndexesCommand(indexType: ShowIndexType, verbose: Boolean, column
           // The index provider for this index, one of "fulltext-1.0", "range-1.0", "point-1.0", "text-1.0", "token-lookup-1.0"
           "indexProvider" -> Values.stringValue(providerName),
           // The name of the constraint associated to the index
-          "owningConstraint" -> owningConstraint
+          "owningConstraint" -> owningConstraint,
+          // Last time the index was used for reading
+          "lastRead" -> lastRead,
+          // The number of read queries that have been issued to this index
+          "readCount" -> readCount
         )
         if (verbose) {
           val indexConfig = indexDescriptor.getIndexConfig
           val optionsValue = extractOptionsMap(providerName, indexConfig)
           briefResult ++ Map(
+            // The time when usage statistics tracking started for this index
+            "trackedSince" -> trackedSince,
             "options" -> optionsValue,
             "failureMessage" -> Values.stringValue(indexStatus.failureMessage),
             "createStatement" -> Values.stringValue(

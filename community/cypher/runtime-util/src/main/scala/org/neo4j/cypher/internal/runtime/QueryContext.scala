@@ -67,6 +67,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
+import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.FunctionInformation
@@ -143,6 +144,8 @@ trait ReadQueryContext extends ReadTokenContext with DbAccess with AutoCloseable
   def lookupIndexReference(entityType: EntityType): IndexDescriptor
 
   def fulltextIndexReference(entityIds: List[Int], entityType: EntityType, properties: Int*): IndexDescriptor
+
+  def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats
 
   def indexExists(name: String): Boolean
 

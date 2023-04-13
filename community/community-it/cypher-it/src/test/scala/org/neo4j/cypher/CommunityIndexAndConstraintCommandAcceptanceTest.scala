@@ -26,6 +26,7 @@ import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.kernel.impl.api.index.IndexingService
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
 
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -49,7 +50,9 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
   })
 
   override def databaseConfig(): Map[Setting[_], Object] =
-    super.databaseConfig() ++ Map(GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE)
+    super.databaseConfig() ++ Map(
+      GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE
+    )
 
   // Index commands
 
@@ -189,6 +192,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
   test("Show index") {
     // GIVEN
     graph.createRelationshipIndexWithName(indexName, relType, prop)
+    graph.getDependencyResolver.resolveDependency(classOf[IndexingService]).reportUsageStatistics()
 
     // WHEN
     val result = execute("SHOW RANGE INDEXES")
@@ -203,7 +207,9 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
       "labelsOrTypes" -> List(relType),
       "properties" -> List(prop),
       "indexProvider" -> RangeIndexProvider.DESCRIPTOR.name(),
-      "owningConstraint" -> null
+      "owningConstraint" -> null,
+      "lastRead" -> null,
+      "readCount" -> 0L.asInstanceOf[AnyRef]
     )))
   }
 

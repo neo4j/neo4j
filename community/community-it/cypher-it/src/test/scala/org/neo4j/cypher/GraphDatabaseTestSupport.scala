@@ -93,11 +93,14 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   protected def startGraphDatabase(
     config: Map[Setting[_], Object] = databaseConfig(),
     maybeExternalDatabase: Option[(String, String)] = externalDatabase,
-    maybeProvider: Option[(AbstractIndexProviderFactory[_ <: IndexProvider], IndexProviderDescriptor)] = None
+    maybeProvider: Option[(AbstractIndexProviderFactory[_ <: IndexProvider], IndexProviderDescriptor)] = None,
+    maybeExternalPath: Option[Path] = None
   ): Unit = {
-    val (databaseFactory, dbName) = maybeExternalDatabase match {
-      case Some((url, databaseName)) =>
+    val (databaseFactory, dbName) = (maybeExternalDatabase, maybeExternalPath) match {
+      case (Some((url, databaseName)), _) =>
         (graphDatabaseFactory(Path.of(url)), databaseName)
+      case (_, Some(path)) =>
+        (graphDatabaseFactory(path), DEFAULT_DATABASE_NAME)
       case _ =>
         (graphDatabaseFactory(Files.createTempDirectory("test").getParent).impermanent(), DEFAULT_DATABASE_NAME)
     }
@@ -166,9 +169,12 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   protected def createDatabaseFactory(databaseRootDir: Path): TestDatabaseManagementServiceBuilder =
     new TestDatabaseManagementServiceBuilder(databaseRootDir)
 
-  protected def restartWithConfig(config: Map[Setting[_], Object] = databaseConfig()): Unit = {
+  protected def restartWithConfig(
+    config: Map[Setting[_], Object] = databaseConfig(),
+    maybeExternalPath: Option[Path] = None
+  ): Unit = {
     managementService.shutdown()
-    startGraphDatabase(config)
+    startGraphDatabase(config, maybeExternalPath = maybeExternalPath)
   }
 
   protected def restartWithIndexProvider(

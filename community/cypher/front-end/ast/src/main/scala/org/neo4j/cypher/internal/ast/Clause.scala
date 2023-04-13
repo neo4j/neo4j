@@ -97,6 +97,7 @@ import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.helpers.StringHelper.RichString
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CTBoolean
+import org.neo4j.cypher.internal.util.symbols.CTDateTime
 import org.neo4j.cypher.internal.util.symbols.CTDuration
 import org.neo4j.cypher.internal.util.symbols.CTFloat
 import org.neo4j.cypher.internal.util.symbols.CTInteger
@@ -1454,9 +1455,12 @@ object ShowIndexesClause {
       ShowColumn("labelsOrTypes", CTList(CTString))(position),
       ShowColumn("properties", CTList(CTString))(position),
       ShowColumn("indexProvider")(position),
-      ShowColumn("owningConstraint")(position)
+      ShowColumn("owningConstraint")(position),
+      ShowColumn("lastRead", CTDateTime)(position),
+      ShowColumn("readCount", CTInteger)(position)
     )
     val verboseCols = List(
+      ShowColumn("trackedSince", CTDateTime)(position),
       ShowColumn("options", CTMap)(position),
       ShowColumn("failureMessage")(position),
       ShowColumn("createStatement")(position)

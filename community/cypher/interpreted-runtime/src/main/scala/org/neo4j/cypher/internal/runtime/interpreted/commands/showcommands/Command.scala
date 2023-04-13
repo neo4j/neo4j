@@ -19,16 +19,22 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
+import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.exceptions.ParameterWrongTypeException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.virtual.ListValue
+
+import java.time.Instant
+import java.time.OffsetDateTime
+import java.time.ZoneId
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -43,6 +49,12 @@ abstract class Command(columns: List[ShowColumn]) {
       }.toMap
     }
   }
+
+  protected def getConfiguredTimeZone(ctx: QueryContext): ZoneId =
+    ctx.getConfig.get(GraphDatabaseSettings.db_timezone).getZoneId
+
+  protected def formatTime(startTime: Long, zoneId: ZoneId): OffsetDateTime =
+    OffsetDateTime.ofInstant(Instant.ofEpochMilli(startTime), zoneId)
 }
 
 object Command {

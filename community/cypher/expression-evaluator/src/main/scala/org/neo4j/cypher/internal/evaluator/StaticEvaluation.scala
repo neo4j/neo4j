@@ -68,6 +68,7 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
+import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.logging.InternalLogProvider
@@ -248,6 +249,8 @@ object StaticEvaluation {
     override def dropIndexRule(name: String): Unit = notAvailable()
 
     override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] = notAvailable()
+
+    override def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats = notAvailable()
 
     override def indexExists(name: String): Boolean = notAvailable()
 

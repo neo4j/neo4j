@@ -82,6 +82,7 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.io.pagecache.context.CursorContext
+import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.FunctionInformation
@@ -266,6 +267,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def dropIndexRule(name: String): Unit = singleDbHit(inner.dropIndexRule(name))
 
   override def getAllIndexes(): Map[IndexDescriptor, IndexInfo] = singleDbHit(inner.getAllIndexes())
+
+  override def getIndexUsageStatistics(index: IndexDescriptor): IndexUsageStats =
+    singleDbHit(inner.getIndexUsageStatistics(index))
 
   override def indexExists(name: String): Boolean = singleDbHit(inner.indexExists(name))
 
