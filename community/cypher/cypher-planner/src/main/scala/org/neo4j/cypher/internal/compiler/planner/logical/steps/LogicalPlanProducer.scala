@@ -996,7 +996,11 @@ case class LogicalPlanProducer(
           leftBinding = qpp.leftBinding,
           rightBinding = qpp.rightBinding,
           repetition = qpp.repetition,
-          pattern = QueryGraph(patternNodes = innerNodes, patternRelationships = Set(innerPatternRelationship)),
+          pattern = QueryGraph(
+            patternNodes = innerNodes,
+            patternRelationships = Set(innerPatternRelationship),
+            argumentIds = qpp.pattern.argumentIds
+          ),
           nodeVariableGroupings = Set.empty,
           relationshipVariableGroupings = qpp.relationshipVariableGroupings
         )

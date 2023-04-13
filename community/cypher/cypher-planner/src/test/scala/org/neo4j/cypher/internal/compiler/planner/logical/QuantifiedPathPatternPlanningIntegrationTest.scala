@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
-import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
@@ -1551,21 +1550,20 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     plan shouldEqual planner.subPlanBuilder()
       .filter("none(anon_12 IN r1 WHERE anon_12 IN r2)")
-      .expand(
-        "(b)<-[r1*1..]-(a)",
-        expandMode = ExpandAll,
-        projectedDir = OUTGOING,
-        nodePredicates = Seq(),
-        relationshipPredicates = Seq()
-      )
-      .expand(
-        "(b)<-[r2*1..]-(c)",
-        expandMode = ExpandAll,
-        projectedDir = INCOMING,
-        nodePredicates = Seq(),
-        relationshipPredicates = Seq()
-      )
+      .expand("(b)<-[r1*1..]-(a)")
+      .expand("(b)<-[r2*1..]-(c)", projectedDir = INCOMING)
       .allNodeScan("b")
+      .build()
+  }
+
+  test("Should plan VarExpand if there are argumentIds") {
+    val query = "MATCH (a) WITH a SKIP 1 MATCH (a) (()-[r1]->())+ (b) RETURN *"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .expand("(a)-[r1*1..]->(b)")
+      .skip(1)
+      .allNodeScan("a")
       .build()
   }
 
