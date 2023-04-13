@@ -31,6 +31,7 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STORE_R
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DELETED_DATABASE_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DISPLAY_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
@@ -222,6 +223,7 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
         Node nameNode = tx.createNode(DATABASE_NAME_LABEL);
         nameNode.setProperty(NAME_PROPERTY, databaseName);
         nameNode.setProperty(NAMESPACE_PROPERTY, DEFAULT_NAMESPACE);
+        nameNode.setProperty(DISPLAY_NAME_PROPERTY, databaseName);
         nameNode.setProperty(PRIMARY_PROPERTY, true);
         nameNode.createRelationshipTo(databaseNode, TARGETS_RELATIONSHIP);
         return databaseNode;
