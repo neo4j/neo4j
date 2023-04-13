@@ -126,6 +126,7 @@ import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.MakeTraversable
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
+import org.neo4j.cypher.internal.runtime.ast.QueryConstant
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
@@ -424,8 +425,13 @@ case class CommunityExpressionConverter(
       case e: internal.expressions.CollectAll =>
         commands.expressions.CollectAll(self.toCommandExpression(id, e.arguments.head))
       case e: DefaultValueLiteral => commands.expressions.Literal(e.value)
-      case AssertIsNode(expr)     => commands.expressions.AssertIsNodeFunction(self.toCommandExpression(id, expr))
-      case MakeTraversable(e)     => commands.expressions.MakeTraversable(self.toCommandExpression(id, e))
+      case e: QueryConstant =>
+        commands.expressions.QueryConstant(
+          ExpressionVariable.cast(e.variable).offset,
+          self.toCommandExpression(id, e.inner)
+        )
+      case AssertIsNode(expr) => commands.expressions.AssertIsNodeFunction(self.toCommandExpression(id, expr))
+      case MakeTraversable(e) => commands.expressions.MakeTraversable(self.toCommandExpression(id, e))
       case ElementIdToLongId(NODE_TYPE, ElementIdToLongId.Mode.Single, rhs) =>
         commands.expressions.ElementIdToNodeIdFunction(self.toCommandExpression(id, rhs))
       case ElementIdToLongId(NODE_TYPE, ElementIdToLongId.Mode.Many, rhs) =>

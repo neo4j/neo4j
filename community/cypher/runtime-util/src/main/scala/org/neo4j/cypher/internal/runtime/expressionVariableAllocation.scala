@@ -31,7 +31,9 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
+import org.neo4j.cypher.internal.runtime.ast.QueryConstant
 import org.neo4j.cypher.internal.util.Foldable
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
 import org.neo4j.cypher.internal.util.Rewritable
 import org.neo4j.cypher.internal.util.Rewriter
@@ -109,6 +111,12 @@ object expressionVariableAllocation {
         outerVars => {
           availableExpressionVars.set(x.plan.id, outerVars)
           TraverseChildrenNewAccForSiblings(outerVars, _ => outerVars)
+        }
+
+      case x: QueryConstant =>
+        outerVars => {
+          val innerVars = allocateVariables(outerVars, Seq(x.variable))
+          TraverseChildren(innerVars)
         }
     }
 
