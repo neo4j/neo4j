@@ -143,7 +143,7 @@ public class DatabaseManagementServiceFactory {
         var systemGraphComponentsBuilder = tryResolveOrCreate(
                 SystemGraphComponents.Builder.class,
                 globalModule.getExternalDependencyResolver(),
-                SystemGraphComponents.Builder::new);
+                SystemGraphComponents.DefaultBuilder::new);
         systemGraphComponentsBuilder.register(dbmsRuntimeSystemGraphComponent);
         edition.registerSystemGraphComponents(systemGraphComponentsBuilder, globalModule);
         globalDependencies.satisfyDependency(edition.getSystemGraphComponents());

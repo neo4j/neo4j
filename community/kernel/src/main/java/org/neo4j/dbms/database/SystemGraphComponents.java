@@ -20,7 +20,6 @@
 package org.neo4j.dbms.database;
 
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
-import static org.neo4j.dbms.database.ComponentVersion.SYSTEM_GRAPH_COMPONENT;
 import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
 
 import java.util.ArrayList;
@@ -59,10 +58,6 @@ public class SystemGraphComponents {
 
     public void forEach(Consumer<SystemGraphComponent> process) {
         componentMap.values().forEach(process);
-    }
-
-    public static SystemGraphComponent.Name component() {
-        return SYSTEM_GRAPH_COMPONENT;
     }
 
     public SystemGraphComponent.Status detect(Transaction tx) {
@@ -139,15 +134,25 @@ public class SystemGraphComponents {
         return componentsToUpgrade;
     }
 
-    public static class Builder {
-        private final Map<SystemGraphComponent.Name, SystemGraphComponent> componentMap = new LinkedHashMap<>();
+    public abstract static class Builder {
+        protected final Map<SystemGraphComponent.Name, SystemGraphComponent> componentMap = new LinkedHashMap<>();
 
-        public void register(SystemGraphComponent component) {
-            componentMap.putIfAbsent(component.componentName(), component);
-        }
+        public abstract void register(SystemGraphComponent component);
 
         public SystemGraphComponents build() {
             return new SystemGraphComponents(componentMap);
+        }
+    }
+
+    public static class DefaultBuilder extends Builder {
+
+        @Override
+        public void register(SystemGraphComponent component) {
+            if (componentMap.containsKey(component.componentName())) {
+                throw new IllegalStateException("Duplicate component registration: "
+                        + component.componentName().name());
+            }
+            componentMap.put(component.componentName(), component);
         }
     }
 }

@@ -88,7 +88,7 @@ public class SystemDbUpgrader {
         var globalLife = globalModule.getGlobalLife();
         globalModule.getGlobalDependencies().satisfyDependency(new GlobalProceduresRegistry());
 
-        var systemGraphComponentsBuilder = new SystemGraphComponents.Builder();
+        var systemGraphComponentsBuilder = new SystemGraphComponents.DefaultBuilder();
         var dbmsRuntimeSystemGraphComponent = new DbmsRuntimeSystemGraphComponent(globalModule.getGlobalConfig());
         systemGraphComponentsBuilder.register(dbmsRuntimeSystemGraphComponent);
         edition.registerSystemGraphComponents(systemGraphComponentsBuilder, globalModule);

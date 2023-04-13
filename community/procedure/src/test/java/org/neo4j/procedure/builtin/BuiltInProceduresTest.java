@@ -106,7 +106,7 @@ class BuiltInProceduresTest {
     private final IndexingService indexingService = mock(IndexingService.class);
     private final Log log = mock(InternalLog.class);
     private final GlobalProceduresRegistry procs = new GlobalProceduresRegistry();
-    private SystemGraphComponents systemGraphComponents = new SystemGraphComponents.Builder().build();
+    private SystemGraphComponents systemGraphComponents = new SystemGraphComponents.DefaultBuilder().build();
 
     @BeforeEach
     void setup() throws Exception {
@@ -529,7 +529,7 @@ class BuiltInProceduresTest {
     }
 
     private void setupFakeSystemComponents() {
-        var systemGraphComponentsBuilder = new SystemGraphComponents.Builder();
+        var systemGraphComponentsBuilder = new SystemGraphComponents.DefaultBuilder();
         systemGraphComponentsBuilder.register(makeSystemComponentCurrent("component_A"));
         systemGraphComponentsBuilder.register(makeSystemComponentCurrent("component_B"));
         systemGraphComponentsBuilder.register(makeSystemComponentUpgradeSucceeds("component_C"));

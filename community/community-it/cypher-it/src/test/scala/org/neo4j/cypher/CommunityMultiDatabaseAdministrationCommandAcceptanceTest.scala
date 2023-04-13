@@ -816,7 +816,7 @@ class CommunityMultiDatabaseAdministrationCommandAcceptanceTest extends Communit
   }
 
   private def initSystemGraph(config: Config): Unit = {
-    val systemGraphComponentsBuilder = new SystemGraphComponents.Builder()
+    val systemGraphComponentsBuilder = new SystemGraphComponents.DefaultBuilder()
     systemGraphComponentsBuilder.register(new DefaultSystemGraphComponent(config, Clock.systemUTC))
     systemGraphComponentsBuilder.register(new CommunityTopologyGraphComponent(config, NullLogProvider.getInstance()))
     systemGraphComponentsBuilder.register(new UserSecurityGraphComponent(

@@ -55,7 +55,7 @@ class DbmsRuntimeSystemGraphComponentTest {
 
     @BeforeEach
     void beforeEach() {
-        var systemGraphComponentsBuilder = new SystemGraphComponents.Builder();
+        var systemGraphComponentsBuilder = new SystemGraphComponents.DefaultBuilder();
         fakeSystemDb = new FakeSystemDb(userDatabase);
         initDbmsComponent(systemGraphComponentsBuilder, false);
         systemGraphComponents = systemGraphComponentsBuilder.build();
@@ -82,7 +82,7 @@ class DbmsRuntimeSystemGraphComponentTest {
 
     @Test
     void testInitialisationOnExistingDatabaseWithAutomaticUpgrade() {
-        var systemGraphComponentsBuilder = new SystemGraphComponents.Builder();
+        var systemGraphComponentsBuilder = new SystemGraphComponents.DefaultBuilder();
         initDbmsComponent(systemGraphComponentsBuilder, true);
         var systemGraphComponents = systemGraphComponentsBuilder.build();
 

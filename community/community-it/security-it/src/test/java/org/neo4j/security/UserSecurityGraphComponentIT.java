@@ -58,6 +58,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.KeepFirstDuplicateBuilder;
 import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.function.ThrowingConsumer;
@@ -109,7 +110,7 @@ class UserSecurityGraphComponentIT {
                 .build();
 
         var injectedDependencies = new Dependencies();
-        var internalSystemGraphComponentsBuilder = new SystemGraphComponents.Builder();
+        var internalSystemGraphComponentsBuilder = new KeepFirstDuplicateBuilder();
 
         // register a dummy DBMS runtime component as it is not a subject of this test
         internalSystemGraphComponentsBuilder.register(new StubComponent(DBMS_RUNTIME_COMPONENT.name()));
@@ -268,7 +269,7 @@ class UserSecurityGraphComponentIT {
 
     private static SystemGraphComponents systemGraphComponentsPlus(
             SystemGraphComponents existing, SystemGraphComponent... components) {
-        var builder = new SystemGraphComponents.Builder();
+        var builder = new KeepFirstDuplicateBuilder();
         for (var component : components) {
             builder.register(component);
         }
