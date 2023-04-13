@@ -523,8 +523,10 @@ case class StatisticsBackedLogicalPlanningConfigurationBuilder private (
           builder.addRelationshipExistenceConstraint(relType, property)
         case (builder, Constraint(_, _, _, ConstraintType.UNIQUE)) =>
           builder // Will get found by matchingUniquenessConstraintExists
-        case (builder, Constraint(_, _, _, ConstraintType.UNIQUE_EXISTS)) =>
-          builder // Will get found by matchingUniquenessConstraintExists
+        case (builder, Constraint(Some(label), None, properties, ConstraintType.UNIQUE_EXISTS)) =>
+          properties.foldLeft(builder)(_.addNodeExistenceConstraint(label, _))
+        case (builder, Constraint(None, Some(relType), properties, ConstraintType.UNIQUE_EXISTS)) =>
+          properties.foldLeft(builder)(_.addRelationshipExistenceConstraint(relType, _))
         case (_, constraint) => throw new IllegalArgumentException(s"Unsupported constraint: $constraint")
       }
 

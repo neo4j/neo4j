@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.planner
 
 import org.neo4j.cypher.graphcounts.GraphCountsJson
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
+import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.ExistenceConstraintDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexCapabilities
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.IndexDefinition
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder.getProvidesOrder
@@ -28,7 +29,10 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolver
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
+import org.neo4j.cypher.internal.logical.plans.DoNotGetValue
+import org.neo4j.cypher.internal.logical.plans.GetValue
 import org.neo4j.cypher.internal.options.CypherDebugOption
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.schema.IndexCapability
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
@@ -36,12 +40,9 @@ import org.neo4j.kernel.api.impl.schema.TextIndexProvider
 import org.neo4j.kernel.api.impl.schema.trigram.TrigramIndexProvider
 import org.neo4j.kernel.impl.index.schema.PointIndexProvider
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers.contain
-import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 
-class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends AnyFunSuite
-    with StatisticsBackedLogicalPlanningSupport {
+class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends CypherFunSuite
+    with LogicalPlanningIntegrationTestSupport {
 
   /**
    * These index types are currently handled differently from all the other property indexes.
@@ -109,6 +110,186 @@ class StatisticsBackedLogicalPlanningConfigurationBuilderTest extends AnyFunSuit
         )
       }
     }
+  }
+
+  test("processGraphCount for node key constraints") {
+    val personCount = 20
+    val json =
+      s"""
+         |{
+         |  "relationships":[],
+         |  "nodes":[
+         |    {"count":150},
+         |    {"count":$personCount,"label":"Person"}
+         |  ],
+         |  "indexes":[
+         |    {
+         |      "estimatedUniqueSize": 0,
+         |      "labels": [],
+         |      "totalSize": 0,
+         |      "updatesSinceEstimation": 0,
+         |      "indexType": "LOOKUP",
+         |      "indexProvider": "token-lookup-1.0"
+         |    },
+         |    {
+         |      "updatesSinceEstimation":0,
+         |      "totalSize":1,
+         |      "properties":["name"],
+         |      "labels":["Person"],
+         |      "indexType":"${IndexType.RANGE.name}",
+         |      "indexProvider":"${RangeIndexProvider.DESCRIPTOR.name()}",
+         |      "estimatedUniqueSize": 1
+         |    }
+         |  ],
+         |  "constraints":[
+         |  {
+         |    "label": "Person",
+         |    "properties": ["name"],
+         |    "type": "Node Key"
+         |   }
+         |  ]
+         |}
+         |""".stripMargin
+
+    val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
+    val builder = plannerBuilder().processGraphCounts(graphCountData)
+    builder.constraints should contain only ExistenceConstraintDefinition(
+      entityType = IndexDefinition.EntityType.Node("Person"),
+      propertyKey = "name"
+    )
+    val planner = builder.build()
+    val plan = planner
+      .plan("MATCH (p:Person) RETURN p.name AS name")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection(Seq("cache[p.name] AS name"), discard = Set("p"))
+      .nodeIndexOperator("p:Person(name)", getValue = _ => GetValue)
+      .build())
+  }
+
+  test("processGraphCount for composite node key constraints") {
+    val personCount = 20
+    val json =
+      s"""
+         |{
+         |  "relationships":[],
+         |  "nodes":[
+         |    {"count":150},
+         |    {"count":$personCount,"label":"Person"}
+         |  ],
+         |  "indexes":[
+         |    {
+         |      "estimatedUniqueSize": 0,
+         |      "labels": [],
+         |      "totalSize": 0,
+         |      "updatesSinceEstimation": 0,
+         |      "indexType": "LOOKUP",
+         |      "indexProvider": "token-lookup-1.0"
+         |    },
+         |    {
+         |      "updatesSinceEstimation":0,
+         |      "totalSize":1,
+         |      "properties":["name", "surname"],
+         |      "labels":["Person"],
+         |      "indexType":"${IndexType.RANGE.name}",
+         |      "indexProvider":"${RangeIndexProvider.DESCRIPTOR.name()}",
+         |      "estimatedUniqueSize": 1
+         |    }
+         |  ],
+         |  "constraints":[
+         |  {
+         |    "label": "Person",
+         |    "properties": ["name", "surname"],
+         |    "type": "Node Key"
+         |   }
+         |  ]
+         |}
+         |""".stripMargin
+
+    val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
+    val builder = plannerBuilder().processGraphCounts(graphCountData)
+    builder.constraints should contain.only(
+      ExistenceConstraintDefinition(
+        entityType = IndexDefinition.EntityType.Node("Person"),
+        propertyKey = "name"
+      ),
+      ExistenceConstraintDefinition(
+        entityType = IndexDefinition.EntityType.Node("Person"),
+        propertyKey = "surname"
+      )
+    )
+    val planner = builder.build()
+    val plan = planner
+      .plan("MATCH (p:Person) RETURN p.name AS name")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection(Seq("cache[p.name] AS name"), discard = Set("p"))
+      .nodeIndexOperator("p:Person(name, surname)", getValue = Map("name" -> GetValue, "surname" -> DoNotGetValue))
+      .build())
+  }
+
+  test("processGraphCount for relationship key constraints") {
+    // Relationship key constraints are not yet supported in the kernel
+    val friendCount = 20
+    val json =
+      s"""
+         |{
+         |  "relationships":[
+         |    {"count":500},
+         |    {"count":$friendCount,"relationshipType":"KNOWS"}
+         |  ],
+         |  "nodes":[
+         |    {"count":150},
+         |    {"count":80,"label":"Person"}
+         |  ],
+         |  "indexes":[
+         |    {
+         |      "estimatedUniqueSize": 0,
+         |      "relationshipTypes": [],
+         |      "totalSize": 0,
+         |      "updatesSinceEstimation": 0,
+         |      "indexType": "LOOKUP",
+         |      "indexProvider": "token-lookup-1.0"
+         |    },
+         |    {
+         |      "updatesSinceEstimation":0,
+         |      "totalSize":1,
+         |      "properties":["since"],
+         |      "relationshipTypes":["KNOWS"],
+         |      "indexType":"${IndexType.RANGE.name}",
+         |      "indexProvider":"${RangeIndexProvider.DESCRIPTOR.name()}",
+         |      "estimatedUniqueSize": 1
+         |    }
+         |  ],
+         |  "constraints":[
+         |  {
+         |    "relationshipType": "KNOWS",
+         |    "properties": [
+         |      "since"
+         |    ],
+         |    "type": "Node Key" 
+         |   }
+         |  ]
+         |}
+         |""".stripMargin
+
+    val graphCountData = GraphCountsJson.parseAsGraphCountDataFromString(json)
+    val builder = plannerBuilder().processGraphCounts(graphCountData)
+    builder.constraints should contain only ExistenceConstraintDefinition(
+      entityType = IndexDefinition.EntityType.Relationship("KNOWS"),
+      propertyKey = "since"
+    )
+    val planner = builder.build()
+    val plan = planner
+      .plan("MATCH ()-[r:KNOWS]->() RETURN r.since AS since")
+      .stripProduceResults
+
+    plan should equal(planner.subPlanBuilder()
+      .projection(project = Seq("cacheR[r.since] AS since"), discard = Set("r", "anon_0", "anon_1"))
+      .relationshipIndexOperator("(anon_0)-[r:KNOWS(since)]->(anon_1)", getValue = _ => GetValue)
+      .build())
   }
 
   test("processGraphCount for relationship indexes") {
