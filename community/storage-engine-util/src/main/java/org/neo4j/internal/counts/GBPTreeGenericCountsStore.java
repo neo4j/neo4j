@@ -36,6 +36,7 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -96,6 +97,7 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
     private final OutOfOrderSequence idSequence;
     private volatile long lastWrittenHighestGapFreeId;
     private volatile boolean writeIdSnapshotWithChanges;
+    private final AtomicBoolean responsibleForSwitch = new AtomicBoolean();
     /**
      * Guards interaction between checkpoint (write-lock) and transactions (read-lock).
      */
@@ -333,7 +335,11 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
             return;
         }
 
-        try (CriticalSection criticalSection = new CriticalSection(lock)) {
+        try (CriticalSection criticalSection = new CriticalSection(lock, responsibleForSwitch)) {
+            // Checkpoint should switch regardless of any other writer doing switch on cache full.
+            // But we try to mark it no matter what because if there is no writer doing it now we don't want any
+            // to wait for the exclusive lock unnecessarily.
+            criticalSection.tryMakeResponsibleForSwitch();
             criticalSection.acquireExclusive();
             // Switch the changes cache to isolate what will be written down and to allow updates when we have
             // downgraded to shared lock.
@@ -356,23 +362,29 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
     private void checkCacheSizeAndPotentiallyFlush(CursorContext cursorContext) {
         int cacheSize = changes.size();
         if (cacheSize > highMarkCacheSize) {
-            try (CriticalSection criticalSection = new CriticalSection(lock)) {
+            try (CriticalSection criticalSection = new CriticalSection(lock, responsibleForSwitch)) {
                 // The cache is getting big, try to get a write lock to flush the changes. If we can't get it then give
                 // up and let someone else try later.
                 // Reasons for waiting for this lock could be:
                 // - Another thread is flushing changes (in which case this updater would need to wait anyway)
                 // - Other threads are making updates as we speak (more likely)
-                if (!criticalSection.tryAcquireExclusive() && cacheSize > maxCacheSize) {
+                if (criticalSection.tryAcquireExclusive() || cacheSize > maxCacheSize) {
                     // Although if the write pressure is really high then flushing may be starved so if the cache is
                     // much bigger then acquire the lock blocking
-                    criticalSection.acquireExclusive();
-                }
-
-                if (criticalSection.hasExclusive() && changes.size() > maxCacheSize) {
-                    try {
-                        writeChangesToTreeAndSwitchToSharedCriticalSection(criticalSection, cursorContext);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
+                    // Only one writer needs to be blocked on the exclusive locks, let the others pass through
+                    // to wait on the shared lock instead so they can continue directly after the critical section.
+                    if (criticalSection.tryMakeResponsibleForSwitch()) {
+                        try {
+                            if (!criticalSection.hasExclusive()) {
+                                criticalSection.acquireExclusive();
+                            }
+                            // A checkpoint could have emptied it before we got the lock
+                            if (changes.size() > highMarkCacheSize) {
+                                writeChangesToTreeAndSwitchToSharedCriticalSection(criticalSection, cursorContext);
+                            }
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
                     }
                 }
             }
@@ -660,11 +672,19 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
      */
     private static class CriticalSection implements AutoCloseable {
         private final ReadWriteLock lock;
+        private final AtomicBoolean responsibleForSwitch;
         private boolean exclusive;
         private boolean shared;
+        private boolean isResponsible;
 
-        private CriticalSection(ReadWriteLock lock) {
+        private CriticalSection(ReadWriteLock lock, AtomicBoolean responsibleForSwitch) {
             this.lock = lock;
+            this.responsibleForSwitch = responsibleForSwitch;
+        }
+
+        boolean tryMakeResponsibleForSwitch() {
+            isResponsible = responsibleForSwitch.compareAndSet(false, true);
+            return isResponsible;
         }
 
         boolean tryAcquireExclusive() {
@@ -688,6 +708,7 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
             assert exclusive;
             lock.writeLock().unlock();
             exclusive = false;
+            leaveResponsibilityForSwitch();
         }
 
         @Override
@@ -699,6 +720,14 @@ public abstract class GBPTreeGenericCountsStore<T> implements CountsStorage<T> {
             if (exclusive) {
                 lock.writeLock().unlock();
                 exclusive = false;
+            }
+            leaveResponsibilityForSwitch();
+        }
+
+        private void leaveResponsibilityForSwitch() {
+            if (isResponsible) {
+                responsibleForSwitch.set(false);
+                isResponsible = false;
             }
         }
 
