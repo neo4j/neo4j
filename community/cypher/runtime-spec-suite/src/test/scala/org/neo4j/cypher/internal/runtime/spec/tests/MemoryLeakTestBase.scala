@@ -43,7 +43,7 @@ abstract class MemoryLeakTestBase[CONTEXT <: RuntimeContext](
     consume(execute(logicalQuery, runtime, inputValues(Array(nodes.head))))
 
     // then
-    tx.kernelTransaction().memoryTracker().estimatedHeapMemory() shouldBe 0
+    tx.kernelTransaction().memoryTracker().estimatedHeapMemory() should be <= 384L /*pipelined morsel buffers have a constant memory footprint*/
   }
 
   test("pruning-var-expand should not leak memory") {
@@ -60,7 +60,7 @@ abstract class MemoryLeakTestBase[CONTEXT <: RuntimeContext](
     consume(execute(logicalQuery, runtime, inputValues(Array(nodes.head))))
 
     // then
-    tx.kernelTransaction().memoryTracker().estimatedHeapMemory() shouldBe 0
+    tx.kernelTransaction().memoryTracker().estimatedHeapMemory() should be <= 384L /*pipelined morsel buffers have a constant memory footprint*/
   }
 
   test("bfs-pruning-var-expand should not leak memory") {
@@ -77,6 +77,6 @@ abstract class MemoryLeakTestBase[CONTEXT <: RuntimeContext](
     consume(execute(logicalQuery, runtime, inputValues(Array(nodes.head))))
 
     // then
-    tx.kernelTransaction().memoryTracker().estimatedHeapMemory() shouldBe 0
+    tx.kernelTransaction().memoryTracker().estimatedHeapMemory() should be <= 384L /*pipelined morsel buffers have a constant memory footprint*/
   }
 }
