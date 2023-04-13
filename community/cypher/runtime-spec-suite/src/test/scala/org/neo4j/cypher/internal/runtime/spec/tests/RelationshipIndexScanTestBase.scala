@@ -183,7 +183,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = rels.zipWithIndex.collect {
-      case (r, i) if r.hasProperty("prop") => Array(r, i)
+      case (r, i) if r.hasProperty("prop") => Array[Any](r, i)
     }
     runtimeResult should beColumns("r", "foo").withRows(expected)
   }
@@ -212,7 +212,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = rels.zipWithIndex.flatMap {
-      case (r, i) if r.hasProperty("prop") => Seq.fill(2)(Array(r, i))
+      case (r, i) if r.hasProperty("prop") => Seq.fill(2)(Array[Any](r, i))
       case _                               => Seq.empty
     }
     runtimeResult should beColumns("r", "foo").withRows(expected)

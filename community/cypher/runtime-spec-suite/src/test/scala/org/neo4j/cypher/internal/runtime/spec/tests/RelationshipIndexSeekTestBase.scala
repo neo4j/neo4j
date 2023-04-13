@@ -33,7 +33,6 @@ import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.tests.index.PropertyIndexTestSupport
 import org.neo4j.graphdb.Entity
-import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.Relationship
 import org.neo4j.graphdb.RelationshipType
 import org.neo4j.graphdb.schema.IndexType
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.util.ValueUtils.asValue
 import org.neo4j.lock.LockType.EXCLUSIVE
 import org.neo4j.lock.LockType.SHARED
 import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
-import org.neo4j.lock.ResourceTypes.LABEL
 import org.neo4j.lock.ResourceTypes.RELATIONSHIP_TYPE
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
@@ -993,7 +991,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support null in directed seek on composite index"
   ) { index =>
-    val relationships = given {
+    given {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
@@ -1014,7 +1012,6 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodesAndRelationship(relationships(10 / 10))
     runtimeResult should beColumns("x", "r", "y").withNoRows()
   }
 
@@ -1022,7 +1019,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     _.supportsComposite(EXACT, ValueCategory.NUMBER, ValueCategory.TEXT),
     "should support null in undirected seek on composite index"
   ) { index =>
-    val relationships = given {
+    given {
       indexedCircleGraph(index.indexType, "R", "prop", "prop2") {
         case (r, i) if i % 10 == 0 =>
           r.setProperty("prop", i)
@@ -1066,7 +1063,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = relationships.filter(propFilter(equalTo(lookFor))).map(r => Array(r, lookFor))
+    val expected = relationships.filter(propFilter(equalTo(lookFor))).map(r => Array[Object](r, lookFor))
     runtimeResult should beColumns("r", "prop").withRows(inAnyOrder(expected))
   }
 
@@ -1207,8 +1204,8 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("r", "prop", "prop2").withRows(Seq(
-      Array(relationships(10 / 10), 10, "10"),
-      Array(relationships(10 / 10), 10, "10")
+      Array[Any](relationships(10 / 10), 10, "10"),
+      Array[Any](relationships(10 / 10), 10, "10")
     ))
   }
 
@@ -1627,10 +1624,6 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
   private def greaterThan(rhs: Value)(lhs: Value): Boolean =
     ValueBooleanLogic.greaterThan(lhs, rhs) == BooleanValue.TRUE
   private def lessThan(rhs: Value)(lhs: Value): Boolean = ValueBooleanLogic.lessThan(lhs, rhs) == BooleanValue.TRUE
-
-  private def collectProp[T](predicate: T => Boolean): PartialFunction[Node, T] = {
-    case n if predicate(n.getProperty("prop").asInstanceOf[T]) => n.getProperty("prop").asInstanceOf[T]
-  }
 
   def propOrdering: Ordering[Entity] =
     Ordering.by[Entity, AnyValue](e => Values.of(e.getProperty("prop")).asInstanceOf[AnyValue])(ANY_VALUE_ORDERING)
@@ -2321,7 +2314,7 @@ trait RelationshipLockingUniqueIndexSeekTestBase[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    runtimeResult should beColumns("r", "prop").withRows(Seq.fill(2)(Array(relationships(10), 10))).withLocks(
+    runtimeResult should beColumns("r", "prop").withRows(Seq.fill(2)(Array[Any](relationships(10), 10))).withLocks(
       (SHARED, INDEX_ENTRY),
       (SHARED, RELATIONSHIP_TYPE)
     )

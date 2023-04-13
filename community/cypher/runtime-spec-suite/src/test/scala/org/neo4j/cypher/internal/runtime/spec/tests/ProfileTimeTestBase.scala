@@ -33,7 +33,6 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
 import org.neo4j.kernel.api.ResourceMonitor
-import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.procedure.Mode

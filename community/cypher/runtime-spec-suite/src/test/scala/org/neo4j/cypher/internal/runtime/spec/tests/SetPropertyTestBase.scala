@@ -102,7 +102,7 @@ abstract class SetPropertyTestBase[CONTEXT <: RuntimeContext](
     consume(runtimeResult)
     val property = Iterables.single(tx.getAllPropertyKeys)
     runtimeResult should beColumns("r", "p")
-      .withRows(relationships.map(r => Array(r, r.getId)))
+      .withRows(relationships.map(r => Array[Any](r, r.getId)))
       .withStatistics(propertiesSet = sizeHint)
     property shouldBe "prop"
   }

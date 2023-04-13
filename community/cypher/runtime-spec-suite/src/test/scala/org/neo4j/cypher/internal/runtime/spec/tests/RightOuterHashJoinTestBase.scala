@@ -381,7 +381,7 @@ abstract class RightOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       (_, _) <- matchingRowsOuter(lhsRows, n)
       l = n.getProperty("leftProp").asInstanceOf[Int]
       r = n.getProperty("rightProp").asInstanceOf[Int]
-    } yield Array(n, l, r)
+    } yield Array[Any](n, l, r)
 
     runtimeResult should beColumns("n", "l", "r").withRows(expectedRows)
 

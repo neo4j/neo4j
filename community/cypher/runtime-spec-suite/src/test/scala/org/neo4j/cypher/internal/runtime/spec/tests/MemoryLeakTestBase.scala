@@ -21,25 +21,14 @@ package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
-import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
-import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.runtime.spec.tests.PruningVarLengthExpandFuzzTestBase.REL
-import org.neo4j.graphdb.Node
-
-import scala.util.Random
 
 abstract class MemoryLeakTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT]
 ) extends RuntimeTestSuite[CONTEXT](edition, runtime) {
-  private val population: Int = 1000
-  private val seed = 1669216213333L // System.currentTimeMillis()
-  private val random = new Random(seed)
 
   test("var-expand should not leak memory") {
     // given

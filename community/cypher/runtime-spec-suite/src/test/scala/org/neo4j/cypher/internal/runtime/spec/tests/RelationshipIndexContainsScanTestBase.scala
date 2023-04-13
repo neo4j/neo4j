@@ -199,7 +199,7 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.zipWithIndex.collect { case (r, i) if i.toString.contains("1") => Array(r, i.toString) }
+    val expected = rels.zipWithIndex.collect { case (r, i) if i.toString.contains("1") => Array[Object](r, i.toString) }
     runtimeResult should beColumns("r", "text").withRows(expected)
   }
 
@@ -227,8 +227,8 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
     val expected = rels.zipWithIndex.flatMap {
       case (r, i) if i.toString.contains("1") =>
         Seq(
-          Array(r.getStartNode, r.getEndNode, i.toString),
-          Array(r.getEndNode, r.getStartNode, i.toString)
+          Array[Object](r.getStartNode, r.getEndNode, i.toString),
+          Array[Object](r.getEndNode, r.getStartNode, i.toString)
         )
       case _ => Seq.empty
     }
@@ -296,7 +296,6 @@ abstract class RelationshipIndexContainsScanTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should handle directed scan and cartesian product") {
-    val size = Math.sqrt(sizeHint).intValue()
     val rels = given {
       relationshipIndex(IndexType.TEXT, "R", "text")
       val (_, rels) = circleGraph(sizeHint)

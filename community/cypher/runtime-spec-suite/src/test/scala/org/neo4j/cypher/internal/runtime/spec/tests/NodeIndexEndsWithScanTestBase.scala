@@ -161,7 +161,8 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect { case (n, i) if i.toString.endsWith("1") => Array(n, i.toString) }
+    val expected =
+      nodes.zipWithIndex.collect { case (n, i) if i.toString.endsWith("1") => Array[Object](n, i.toString) }
     runtimeResult should beColumns("x", "text").withRows(expected)
   }
 
@@ -188,7 +189,8 @@ abstract class NodeIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.collect { case (n, i) if i.toString.endsWith("1") => Array(n, i.toString) }
+    val expected =
+      nodes.zipWithIndex.collect { case (n, i) if i.toString.endsWith("1") => Array[Object](n, i.toString) }
     runtimeResult should beColumns("x", "text").withRows(expected)
   }
 }

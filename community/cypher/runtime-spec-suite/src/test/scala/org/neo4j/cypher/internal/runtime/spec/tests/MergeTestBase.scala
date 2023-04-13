@@ -933,7 +933,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("merge on the RHS of an apply") {
-    val nodes = given(nodePropertyGraph(
+    given(nodePropertyGraph(
       sizeHint,
       {
         case i if i % 2 == 0 => Map("prop" -> i)
@@ -1451,7 +1451,7 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = Range(0, sizeHint)
-      .map(i => Array(i, if (i % 2 == 0) "old" else "new"))
+      .map(i => Array[Any](i, if (i % 2 == 0) "old" else "new"))
     runtimeResult should beColumns("prop", "age")
       .withRows(expected, listInAnyOrder = true)
 
@@ -1499,7 +1499,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val node = Iterables.single(tx.getAllNodes)
     runtimeResult should beColumns("i").withRows(singleColumn((1 to 5))).withStatistics(
       nodesCreated = 1,
       propertiesSet = 2
@@ -1523,7 +1522,6 @@ abstract class MergeTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     consume(runtimeResult)
-    val node = Iterables.single(tx.getAllNodes)
     runtimeResult should beColumns("i").withRows(singleColumn((1 to 5))).withStatistics(
       nodesCreated = 1,
       propertiesSet = 1

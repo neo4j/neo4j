@@ -197,7 +197,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = rels.zipWithIndex.collect { case (r, i) if i.toString.endsWith("1") => Array(r, i.toString) }
+    val expected = rels.zipWithIndex.collect { case (r, i) if i.toString.endsWith("1") => Array[Object](r, i.toString) }
     runtimeResult should beColumns("r", "text").withRows(expected)
   }
 
@@ -225,8 +225,8 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
     val expected = rels.zipWithIndex.flatMap {
       case (r, i) if i.toString.endsWith("1") =>
         Seq(
-          Array(r.getStartNode, r.getEndNode, i.toString),
-          Array(r.getEndNode, r.getStartNode, i.toString)
+          Array[Object](r.getStartNode, r.getEndNode, i.toString),
+          Array[Object](r.getEndNode, r.getStartNode, i.toString)
         )
       case _ => Seq.empty
     }

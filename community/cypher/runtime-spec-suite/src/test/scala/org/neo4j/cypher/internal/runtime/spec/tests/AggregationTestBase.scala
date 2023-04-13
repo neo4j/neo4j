@@ -172,7 +172,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("name", "c").withRows(for (i <- 0 until 10) yield {
-      Array(s"bob$i", sizeHint / 10)
+      Array[Any](s"bob$i", sizeHint / 10)
     })
   }
 
@@ -195,7 +195,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("key", "count").withRows(for (i <- 0 until groupCount) yield {
-      Array(s"bob$i", groupSize)
+      Array[Any](s"bob$i", groupSize)
     })
   }
 
@@ -260,7 +260,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "c").withRows(nodes.map { node =>
-      Array(node, 2)
+      Array[Any](node, 2)
     })
   }
 
@@ -287,8 +287,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("name", "c").withRows((for (i <- 0 until 10 by 2) yield {
-      Array(s"bob$i", sizeHint / 10)
-    }) :+ Array(null, sizeHint / 2))
+      Array[Any](s"bob$i", sizeHint / 10)
+    }) :+ Array[Any](null, sizeHint / 2))
   }
 
   test("should count(*) on single primitive grouping column with nulls") {
@@ -308,7 +308,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for (node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array[Any](node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 
@@ -335,7 +335,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("name", "surname", "c").withRows(for (i <- 0 until 10; j <- 0 until sizeHint / 100)
       yield {
-        Array(s"bob$i", s"bobbins$j", 10)
+        Array[Any](s"bob$i", s"bobbins$j", 10)
       })
   }
 
@@ -357,7 +357,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for (node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array[Any](node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 
@@ -385,7 +385,7 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("name", "surname", "dead", "c").withRows(for (
       i <- 0 until 10; j <- 0 until sizeHint / 100
     ) yield {
-      Array(s"bob$i", s"bobbins$j", i % 2, 10)
+      Array[Any](s"bob$i", s"bobbins$j", i % 2, 10)
     })
   }
 
@@ -1143,8 +1143,8 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("name", "c").withRows((for (i <- 0 until 10 by 2) yield {
-      Array(s"bob$i", sizeHint / 10)
-    }) :+ Array(null, sizeHint / 2))
+      Array[Any](s"bob$i", sizeHint / 10)
+    }) :+ Array[Any](null, sizeHint / 2))
   }
 
   test("should count(*) on cache[n.prop] grouping column under apply") {
@@ -1589,7 +1589,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = (0 to 9).map(i => Array(s"name$i", sizeHint))
+    val expected = (0 to 9).map(i => Array[Any](s"name$i", sizeHint))
     runtimeResult should beColumns("name", "p").withRows(expected)
   }
 
@@ -1689,7 +1689,7 @@ trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = (0 to 9).map(i => Array(s"name$i", 10 * sizeHint))
+    val expected = (0 to 9).map(i => Array[Any](s"name$i", 10 * sizeHint))
     runtimeResult should beColumns("name", "p").withRows(expected)
   }
 

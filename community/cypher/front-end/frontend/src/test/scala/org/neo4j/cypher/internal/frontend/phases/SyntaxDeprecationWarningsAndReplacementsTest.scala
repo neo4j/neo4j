@@ -28,6 +28,8 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.RecordingNotificationLogger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
+import scala.annotation.nowarn
+
 class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
 
   // Add specific tests for syntax deprecation warning and replacements here.
@@ -42,6 +44,8 @@ class SyntaxDeprecationWarningsAndReplacementsTest extends CypherFunSuite {
     override def version: String = "fake"
   }
 
+  // This will either be used or removed in https://trello.com/c/sm52Y2yU/588-investigate-if-syntaxdeprecationwarningsandreplacementstest-can-be-removed
+  @nowarn("msg=is never used")
   private def check(query: String) = {
     val logger = new RecordingNotificationLogger()
     val statement = parse(query)

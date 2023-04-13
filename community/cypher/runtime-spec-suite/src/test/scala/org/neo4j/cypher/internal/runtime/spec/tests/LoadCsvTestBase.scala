@@ -327,7 +327,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = testRange.map { i => Array(s"${testValueOffset + i}", i.toLong + 1) }.toArray
+    val expected = testRange.map { i => Array[Any](s"${testValueOffset + i}", i.toLong + 1) }.toArray
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
@@ -346,7 +346,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = testRange.map { i => Array(s"${testValueOffset + i}", i.toLong + 2) }.toArray
+    val expected = testRange.map { i => Array[Any](s"${testValueOffset + i}", i.toLong + 2) }.toArray
     runtimeResult should beColumns("x", "y").withRows(expected)
   }
 
@@ -366,7 +366,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = testRange.map { i => Array(s"${testValueOffset + i}", i.toLong + 1, filename) }.toArray
+    val expected = testRange.map { i => Array[Any](s"${testValueOffset + i}", i.toLong + 1, filename) }.toArray
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
 
@@ -386,7 +386,7 @@ abstract class LoadCsvTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = testRange.map { i => Array(s"${testValueOffset + i}", i.toLong + 2, filename) }.toArray
+    val expected = testRange.map { i => Array[Any](s"${testValueOffset + i}", i.toLong + 2, filename) }.toArray
     runtimeResult should beColumns("x", "y", "z").withRows(expected)
   }
 }

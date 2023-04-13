@@ -137,7 +137,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(1), Array(2), Array(3)))
-    val expected = for (i <- 1 to 3; r <- relationships) yield Array(i, r)
+    val expected = for (i <- 1 to 3; r <- relationships) yield Array[Any](i, r)
     runtimeResult should beColumns("b", "r").withRows(expected)
   }
 
@@ -238,7 +238,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(1), Array(2), Array(3)))
-    val expected = (for (i <- 1 to 3; r <- relationships) yield Seq(Array(i, r), Array(i, r))).flatten
+    val expected = (for (i <- 1 to 3; r <- relationships) yield Seq(Array[Any](i, r), Array[Any](i, r))).flatten
     runtimeResult should beColumns("b", "r").withRows(expected)
   }
 

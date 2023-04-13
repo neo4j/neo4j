@@ -180,7 +180,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
         length <- 1 to 4
       } yield {
         val pathPrefix = path.take(length)
-        Array(pathPrefix.endNode(), length)
+        Array[Any](pathPrefix.endNode(), length)
       }
 
     runtimeResult should beColumns("y", "depth").withRows(expected)
@@ -207,7 +207,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
         length <- 1 to 4
       } yield {
         val pathPrefix = path.take(length)
-        Array(pathPrefix.endNode(), length)
+        Array[Any](pathPrefix.endNode(), length)
       }
 
     runtimeResult should beColumns("y", "depth").withRows(expected)
@@ -1188,7 +1188,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1218,7 +1218,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1248,7 +1248,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1278,7 +1278,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1309,7 +1309,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1340,7 +1340,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1371,7 +1371,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1402,7 +1402,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1433,7 +1433,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1464,7 +1464,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 1 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1495,7 +1495,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1526,7 +1526,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       for {
         path <- paths
         length <- 0 to 5
-      } yield Array(path.take(length).endNode(), length)
+      } yield Array[Any](path.take(length).endNode(), length)
     runtimeResult should beColumns("y", "depth").withRows(expected)
   }
 
@@ -1649,7 +1649,7 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)): _*))
 
-    val expected = (for (i <- 1 to 10) yield Seq(Array(i, g.sb1), Array(i, g.sb2))).flatten
+    val expected = (for (i <- 1 to 10) yield Seq(Array[Any](i, g.sb1), Array[Any](i, g.sb2))).flatten
 
     // then
     runtimeResult should beColumns("i", "y").withRows(expected)
@@ -1677,7 +1677,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)): _*))
 
     val expected =
-      (for (i <- 1 to 10) yield Seq(Array(i, g.sb1), Array(i, g.sc1), Array(i, g.sb2), Array(i, g.sc2))).flatten
+      (for (i <- 1 to 10)
+        yield Seq(Array[Any](i, g.sb1), Array[Any](i, g.sc1), Array[Any](i, g.sb2), Array[Any](i, g.sc2))).flatten
 
     // then
     runtimeResult should beColumns("i", "y").withRows(expected)
@@ -1704,7 +1705,8 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)): _*))
 
-    val expected = (for (i <- 1 to 10) yield Seq(Array(i, g.start), Array(i, g.sb1), Array(i, g.sb2))).flatten
+    val expected =
+      (for (i <- 1 to 10) yield Seq(Array[Any](i, g.start), Array[Any](i, g.sb1), Array[Any](i, g.sb2))).flatten
 
     // then
     runtimeResult should beColumns("i", "y").withRows(expected)
@@ -1732,7 +1734,13 @@ abstract class BFSPruningVarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(i => Array[Any](i)): _*))
 
     val expected = (for (i <- 1 to 10)
-      yield Seq(Array(i, g.start), Array(i, g.sb1), Array(i, g.sc1), Array(i, g.sb2), Array(i, g.sc2))).flatten
+      yield Seq(
+        Array[Any](i, g.start),
+        Array[Any](i, g.sb1),
+        Array[Any](i, g.sc1),
+        Array[Any](i, g.sb2),
+        Array[Any](i, g.sc2)
+      )).flatten
 
     // then
     runtimeResult should beColumns("i", "y").withRows(expected)

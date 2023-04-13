@@ -920,7 +920,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
     val runtimeResult = execute(logicalQuery, runtime, iteratorInput(input.iterator.map(v => Array[Any](v))))
 
-    val expected = input.map(x => Array(x, if (x < 0.5) Array(x) else Array()))
+    val expected = input.map(x => Array[Any](x, if (x < 0.5) Array(x) else Array()))
     runtimeResult should beColumns("x", "rollup").withRows(inOrder(expected))
   }
 
@@ -944,7 +944,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
     val expected = input
       .filter(_ < 0.5)
-      .map(x => Array(x, if (x < 0.25) Array(x) else Array()))
+      .map(x => Array[Any](x, if (x < 0.25) Array(x) else Array()))
     runtimeResult should beColumns("x", "rollup").withRows(inOrder(expected))
   }
 

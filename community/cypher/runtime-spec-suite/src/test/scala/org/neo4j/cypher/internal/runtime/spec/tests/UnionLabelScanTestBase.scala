@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.graphdb.Label
 
 abstract class UnionLabelScanTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],

@@ -73,7 +73,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "c").withRows(nodes.map { node =>
-      Array(node, 2)
+      Array[Any](node, 2)
     })
   }
 
@@ -102,8 +102,8 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("name", "c").withRows((for (i <- 0 until 10 by 2) yield {
-      Array(s"bob$i", sizeHint / 10)
-    }) :+ Array(null, sizeHint / 2))
+      Array[Any](s"bob$i", sizeHint / 10)
+    }) :+ Array[Any](null, sizeHint / 2))
   }
 
   test("should count(*) on single primitive ordered grouping column with nulls") {
@@ -124,7 +124,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for (node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array[Any](node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 
@@ -195,7 +195,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for (node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array[Any](node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 
@@ -218,7 +218,7 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = for (node <- nodes if node != null) yield Array(node, 2)
+    val expected = for (node <- nodes if node != null) yield Array[Any](node, 2)
     runtimeResult should beColumns("x", "c").withRows(expected)
   }
 

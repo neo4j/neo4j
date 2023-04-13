@@ -122,7 +122,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       for {
         path: TestPath <- paths
       } yield {
-        Array(path.startNode, Collections.singletonList(path.nodeAt(1)), path.endNode())
+        Array[Object](path.startNode, Collections.singletonList(path.nodeAt(1)), path.endNode())
       }
 
     runtimeResult should beColumns("a", "bs", "d").withRows(expected)
@@ -149,7 +149,7 @@ abstract class MiscTestBase[CONTEXT <: RuntimeContext](edition: Edition[CONTEXT]
       for {
         path: TestPath <- paths
       } yield {
-        Array(path.startNode, Collections.singletonList(path.nodeAt(1)), path.endNode())
+        Array[Object](path.startNode, Collections.singletonList(path.nodeAt(1)), path.endNode())
       }
 
     runtimeResult should beColumns("a", "bs", "d").withRows(expected)

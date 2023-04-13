@@ -440,7 +440,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = (0 until 10).map(i => Array(s"bar$i", 1))
+    val expected = (0 until 10).map(i => Array[Any](s"bar$i", 1))
 
     // then
     runtimeResult should beColumns("group", "c").withRows(expected)
@@ -507,7 +507,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     val expectedGroupSize = nodeCount * nodeCount / 10
-    val expected = (0 until 10).map(i => Array(s"bar$i", expectedGroupSize))
+    val expected = (0 until 10).map(i => Array[Any](s"bar$i", expectedGroupSize))
 
     // then
     runtimeResult should beColumns("group", "c").withRows(expected)
@@ -564,7 +564,7 @@ abstract class DistinctTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       _ <- 1 to 10
       i <- 0 until 10
-    } yield Array(s"bar$i", 1)
+    } yield Array[Any](s"bar$i", 1)
 
     // then
     runtimeResult should beColumns("group", "c").withRows(expected)

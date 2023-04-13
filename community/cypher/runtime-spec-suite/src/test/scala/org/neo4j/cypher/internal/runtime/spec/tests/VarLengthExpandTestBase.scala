@@ -116,7 +116,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
         length <- 1 to 5
       } yield {
         val pathPrefix = path.take(length)
-        Array(pathPrefix.startNode, pathPrefix.relationships(), pathPrefix.endNode())
+        Array[Object](pathPrefix.startNode, pathPrefix.relationships(), pathPrefix.endNode())
       }
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
@@ -142,7 +142,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
         length <- 0 to 5
       } yield {
         val pathPrefix = path.take(length)
-        Array(pathPrefix.startNode, pathPrefix.relationships(), pathPrefix.endNode())
+        Array[Object](pathPrefix.startNode, pathPrefix.relationships(), pathPrefix.endNode())
       }
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
@@ -266,7 +266,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
         length <- 2 to 4
       } yield {
         val pathPrefix = path.take(length)
-        Array(pathPrefix.startNode, pathPrefix.relationships(), pathPrefix.endNode())
+        Array[Object](pathPrefix.startNode, pathPrefix.relationships(), pathPrefix.endNode())
       }
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
@@ -478,7 +478,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
+    val expected = paths.map(p => Array[Object](p.startNode, p.relationships(), p.endNode()))
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
@@ -497,7 +497,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
+    val expected = paths.map(p => Array[Object](p.startNode, p.relationships(), p.endNode()))
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
@@ -516,7 +516,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = paths.map(p => Array(p.startNode, p.reverseRelationships(), p.endNode()))
+    val expected = paths.map(p => Array[Object](p.startNode, p.reverseRelationships(), p.endNode()))
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
@@ -535,7 +535,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = paths.map(p => Array(p.startNode, p.reverseRelationships(), p.endNode()))
+    val expected = paths.map(p => Array[Object](p.startNode, p.reverseRelationships(), p.endNode()))
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
@@ -554,7 +554,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
+    val expected = paths.map(p => Array[Object](p.startNode, p.relationships(), p.endNode()))
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
@@ -573,7 +573,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, input)
 
     // then
-    val expected = paths.map(p => Array(p.startNode, p.relationships(), p.endNode()))
+    val expected = paths.map(p => Array[Object](p.startNode, p.relationships(), p.endNode()))
     runtimeResult should beColumns("x", "r", "y").withRows(expected)
   }
 
@@ -1269,7 +1269,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       (startNode, rels, endNode) <- paths
     } yield {
-      Array(startNode, rels.asJava, endNode)
+      Array[Object](startNode, rels.asJava, endNode)
     }
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected, listInAnyOrder = true)
@@ -1320,7 +1320,7 @@ abstract class VarLengthExpandTestBase[CONTEXT <: RuntimeContext](
       val backRels = backwardsRelationships.slice(toNodeIndex, turnPointNodeIndex).map(_.get).reverse
       val rels = forwardRelationships.take(turnPointNodeIndex) ++ backRels
       val toNode = nodes(toNodeIndex)
-      Array(fromNode, rels.asJava, toNode)
+      Array[Object](fromNode, rels.asJava, toNode)
     }
 
     runtimeResult should beColumns("x", "r", "y").withRows(expected, listInAnyOrder = true)

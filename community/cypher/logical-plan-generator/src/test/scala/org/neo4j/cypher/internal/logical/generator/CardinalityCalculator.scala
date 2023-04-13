@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.StatisticsBackedCardin
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.IndependenceCombiner
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.AssumeIndependenceQueryGraphCardinalityModel
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -61,6 +62,7 @@ import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.Multiplier
+import org.scalatest.Assertions.fail
 
 trait CardinalityCalculator[-T <: LogicalPlan] {
 
@@ -142,23 +144,23 @@ object CardinalityCalculator {
 
   implicit val skipCardinality: CardinalityCalculator[Skip] = {
     (plan, state, _, _) =>
-      val Skip(source, count: IntegerLiteral) = plan
+      val Skip(source, count: Expression) = plan
       val sourceCardinality = state.cardinalities.get(source.id)
-      Cardinality.max(Cardinality.EMPTY, sourceCardinality + Cardinality(-count.value))
+      Cardinality.max(Cardinality.EMPTY, sourceCardinality + Cardinality(-toIntegerLiteral(count).value))
   }
 
   implicit val limitCardinality: CardinalityCalculator[Limit] = {
     (plan, state, _, _) =>
-      val Limit(source, count: IntegerLiteral) = plan
+      val Limit(source, count: Expression) = plan
       val sourceCardinality = state.cardinalities.get(source.id)
-      Cardinality.min(sourceCardinality, Cardinality(count.value.toDouble))
+      Cardinality.min(sourceCardinality, Cardinality(toIntegerLiteral(count).value.toDouble))
   }
 
   implicit val exhaustiveLimitCardinality: CardinalityCalculator[ExhaustiveLimit] = {
     (plan, state, _, _) =>
-      val ExhaustiveLimit(source, count: IntegerLiteral) = plan
+      val ExhaustiveLimit(source, count: Expression) = plan
       val sourceCardinality = state.cardinalities.get(source.id)
-      Cardinality.min(sourceCardinality, Cardinality(count.value.toDouble))
+      Cardinality.min(sourceCardinality, Cardinality(toIntegerLiteral(count).value.toDouble))
   }
 
   implicit val projectionCardinality: CardinalityCalculator[Projection] =
@@ -201,10 +203,10 @@ object CardinalityCalculator {
 
   implicit val topCardinality: CardinalityCalculator[Top] = {
     (plan, state, _, _) =>
-      val Top(source, _, count: IntegerLiteral) = plan
+      val Top(source, _, count: Expression) = plan
       val sourceCardinality = state.cardinalities.get(source.id)
       val applyLHSCardinality = state.leafCardinalityMultiplier
-      val limit = Multiplier(count.value.toDouble)
+      val limit = Multiplier(toIntegerLiteral(count).value.toDouble)
       Cardinality.min(sourceCardinality, applyLHSCardinality * limit)
   }
 
@@ -228,4 +230,11 @@ object CardinalityCalculator {
 
   implicit val unionCardinality: CardinalityCalculator[Union] =
     (plan, state, _, _) => state.cardinalities.get(plan.left.id) + state.cardinalities.get(plan.right.id)
+
+  private def toIntegerLiteral(count: Expression): IntegerLiteral = {
+    count match {
+      case x: IntegerLiteral => x
+      case x                 => fail(s"Expected IntegerLiteral but got ${x.getClass}")
+    }
+  }
 }

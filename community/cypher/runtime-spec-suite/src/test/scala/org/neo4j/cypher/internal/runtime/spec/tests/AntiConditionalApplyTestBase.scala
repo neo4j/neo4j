@@ -218,7 +218,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(Array(null), Array(42)))
 
-    runtimeResult should beColumns("x", "z").withRows(Seq.fill(10)(Array(null, bNodes.head)) :+ Array(42, null))
+    runtimeResult should beColumns("x", "z").withRows(Seq.fill(10)(Array(null, bNodes.head)) :+ Array[Any](42, null))
   }
 
   test("should aggregate on top of anti conditional apply with expand and limit and aggregation on rhs of apply") {

@@ -1246,12 +1246,12 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val expected = Seq(
-      Array(
+      Array[Object](
         nodes.head,
         Seq(rs(0), loops(0), loops(1), rs(1), loops(2), rs(2), rs(3)).asJava,
         nodes.last
       ),
-      Array(
+      Array[Object](
         nodes.head,
         Seq(rs(0), loops(1), loops(0), rs(1), loops(2), rs(2), rs(3)).asJava,
         nodes.last
@@ -1299,12 +1299,12 @@ abstract class ProjectEndpointsTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val expected = Seq(
-      Array(
+      Array[Object](
         nodes.head,
         Seq(rs(0), loops(0), loops(1), rs(1), loops(2), rs(2), rs(3)).asJava,
         nodes.last
       ),
-      Array(
+      Array[Object](
         nodes.head,
         Seq(rs(0), loops(1), loops(0), rs(1), loops(2), rs(2), rs(3)).asJava,
         nodes.last

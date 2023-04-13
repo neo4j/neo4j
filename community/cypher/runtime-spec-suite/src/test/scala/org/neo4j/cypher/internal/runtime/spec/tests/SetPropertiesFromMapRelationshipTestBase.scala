@@ -306,7 +306,7 @@ abstract class SetPropertiesFromMapRelationshipTestBase[CONTEXT <: RuntimeContex
     consume(runtimeResult)
     val properties = tx.getAllPropertyKeys.asScala.toList
     runtimeResult should beColumns("p1", "p2")
-      .withRows(relationships.map(_ => Array(null, 2)))
+      .withRows(relationships.map(_ => Array[Any](null, 2)))
       .withStatistics(propertiesSet = relationships.size * 3)
     properties shouldBe Seq("prop1", "prop2")
   }

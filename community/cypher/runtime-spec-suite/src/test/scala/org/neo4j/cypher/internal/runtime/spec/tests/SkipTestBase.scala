@@ -394,7 +394,7 @@ abstract class SkipTestBase[CONTEXT <: RuntimeContext](
 
     val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to 10).map(Array[Any](_)): _*))
 
-    val expected = for { _ <- 1 to 10 } yield Array(s"bar", 10)
+    val expected = for { _ <- 1 to 10 } yield Array[Any](s"bar", 10)
 
     // then
     runtimeResult should beColumns("group", "c").withRows(expected)

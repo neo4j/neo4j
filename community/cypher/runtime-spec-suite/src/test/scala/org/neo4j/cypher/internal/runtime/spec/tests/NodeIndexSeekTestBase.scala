@@ -476,7 +476,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
 
   testWithIndex(_.supports(RANGE), "should seek nodes of an index with a property that cannot be indexed") { index =>
     val propertyType = randomAmong(index.querySupport(RANGE))
-    val nodes = given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
+    given(defaultRandomIndexedNodePropertyGraph(index.indexType, propertyType))
 
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -1157,7 +1157,7 @@ abstract class NodeIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.filter(propFilter(_ == lookFor)).map(n => Array(n, lookFor))
+    val expected = nodes.filter(propFilter(_ == lookFor)).map(n => Array[Object](n, lookFor))
     runtimeResult should beColumns("x", "prop").withRows(expected)
   }
 

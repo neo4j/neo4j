@@ -184,8 +184,8 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "y").withRows(
-      nodes.map(n => Array(n, "left")) ++
-        nodes.map(n => Array(n, "right"))
+      nodes.map(n => Array[Object](n, "left")) ++
+        nodes.map(n => Array[Object](n, "right"))
     )
   }
 
@@ -664,7 +664,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.map(n => Array(n, 1)) ++ nodes.map(n => Array(n, 2))
+    val expected = nodes.map(n => Array[Any](n, 1)) ++ nodes.map(n => Array[Any](n, 2))
     runtimeResult should beColumns("a", "x").withRows(expected)
   }
 
@@ -692,7 +692,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.map(n => Array(n, 1)) ++ nodes.map(n => Array(n, 2))
+    val expected = nodes.map(n => Array[Any](n, 1)) ++ nodes.map(n => Array[Any](n, 2))
     runtimeResult should beColumns("a", "x").withRows(expected)
   }
 

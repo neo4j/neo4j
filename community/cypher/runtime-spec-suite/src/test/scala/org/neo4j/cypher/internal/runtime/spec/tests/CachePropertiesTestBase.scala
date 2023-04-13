@@ -456,7 +456,7 @@ abstract class CachePropertiesTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = Array(null, 1, null, 3, null, 5, null, 7, null, 9)
+    val expected = Array[Any](null, 1, null, 3, null, 5, null, 7, null, 9)
     runtimeResult should beColumns("x").withRows(singleColumn(expected))
   }
 

@@ -49,7 +49,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, i % 3 != 1))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, i % 3 != 1))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -70,7 +70,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, true))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, true))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -91,7 +91,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -147,7 +147,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, i < 11L))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, i < 11L))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -168,7 +168,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, i >= 20L || i == 12L))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, i >= 20L || i == 12L))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -221,7 +221,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, true))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, true))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -242,7 +242,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -262,7 +262,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -285,7 +285,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -305,7 +305,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, true))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, true))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -325,7 +325,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -346,7 +346,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -367,7 +367,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, false))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -426,7 +426,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, i % 2 != 0))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, i % 2 != 0))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -447,7 +447,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, i % 2 != 0))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, i % 2 != 0))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 
@@ -489,7 +489,7 @@ abstract class LetSelectOrAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
-    val expectedValues = (0 until sizeHint).map(i => Array(i, i % 2 != 0))
+    val expectedValues = (0 until sizeHint).map(i => Array[AnyVal](i, i % 2 != 0))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
 }

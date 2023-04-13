@@ -198,7 +198,7 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
 
     // then
     val expected =
-      relationships.zipWithIndex.collect { case (r, i) if i.toString.startsWith("1") => Array(r, i.toString) }
+      relationships.zipWithIndex.collect { case (r, i) if i.toString.startsWith("1") => Array[Object](r, i.toString) }
     runtimeResult should beColumns("r", "text").withRows(expected)
   }
 
@@ -226,8 +226,8 @@ abstract class RelationshipIndexStartsWithSeekTestBase[CONTEXT <: RuntimeContext
     val expected = relationships.zipWithIndex.flatMap {
       case (r, i) if i.toString.startsWith("1") =>
         Seq(
-          Array(r, i.toString),
-          Array(r, i.toString)
+          Array[Object](r, i.toString),
+          Array[Object](r, i.toString)
         )
       case _ => Seq.empty
     }

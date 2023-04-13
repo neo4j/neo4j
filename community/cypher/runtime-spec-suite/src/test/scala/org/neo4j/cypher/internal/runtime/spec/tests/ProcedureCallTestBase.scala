@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature.VOID
 import org.neo4j.kernel.api.ResourceMonitor
-import org.neo4j.kernel.api.ResourceTracker
 import org.neo4j.kernel.api.procedure.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.procedure.Context
 import org.neo4j.procedure.Mode
@@ -190,7 +189,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.zipWithIndex.flatMap { case (n, i) => Seq(Array(n, i + 1), Array(n, i + 1)) }
+    val expected = nodes.zipWithIndex.flatMap { case (n, i) => Seq(Array[Any](n, i + 1), Array[Any](n, i + 1)) }
     runtimeResult should beColumns("x", "i").withRows(expected)
     testVar should be(sizeHint)
   }
@@ -247,7 +246,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime)
 
     // then
-    val expected = nodes.map(n => Array(n, "default"))
+    val expected = nodes.map(n => Array[Object](n, "default"))
     runtimeResult should beColumns("x", "i").withRows(expected)
   }
 
@@ -270,7 +269,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       n <- nodes
       i <- 1 to 5
-    } yield Array(n, i)
+    } yield Array[Any](n, i)
 
     runtimeResult should beColumns("x", "i").withRows(expected)
   }
@@ -295,7 +294,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       n <- nodes
       i <- 1 until 10
-    } yield Array(n, i)
+    } yield Array[Any](n, i)
     runtimeResult should beColumns("n", "i").withRows(expected)
   }
 
@@ -320,7 +319,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
       n <- nodes
       i1 <- 1 to 7
       i2 <- 1 to 3
-    } yield Array(n, i1, i2)
+    } yield Array[Any](n, i1, i2)
 
     runtimeResult should beColumns("x", "i1", "i2").withRows(expected)
   }
@@ -423,7 +422,7 @@ abstract class ProcedureCallTestBase[CONTEXT <: RuntimeContext](
 
   test("should call write non-void procedure") {
     // given
-    val nodes = given {
+    given {
       nodeGraph(sizeHint, "OUTPROC")
     }
 

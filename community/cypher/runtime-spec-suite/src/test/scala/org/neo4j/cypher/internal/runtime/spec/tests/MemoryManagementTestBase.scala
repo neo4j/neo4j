@@ -960,8 +960,6 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
       .build()
 
     val result = profile(logicalQuery, runtime)
-
-    val row = Array[Any](aaa)
     val expected = Range.inclusive(1, sizeHint).reverse.map(i => Array[Any](i, aaa))
     result should beColumns("i", "aaa").withRows(inOrder(expected))
 

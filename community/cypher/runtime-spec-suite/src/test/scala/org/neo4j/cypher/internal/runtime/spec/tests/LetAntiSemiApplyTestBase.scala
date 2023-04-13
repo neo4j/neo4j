@@ -50,8 +50,8 @@ abstract class LetAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
 
     // then
     runtimeResult should beColumns("x", "let").withRows((0 until sizeHint).map(i =>
-      if (i >= 3) Array(i, true)
-      else Array(i, false)
+      if (i >= 3) Array[AnyVal](i, true)
+      else Array[AnyVal](i, false)
     ))
   }
 
@@ -73,7 +73,7 @@ abstract class LetAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
 
     // then
-    runtimeResult should beColumns("x", "let").withRows((0 until sizeHint).map(i => Array(i, false)))
+    runtimeResult should beColumns("x", "let").withRows((0 until sizeHint).map(i => Array[AnyVal](i, false)))
   }
 
   test("should write let = true for everything if rhs always is empty") {
@@ -94,7 +94,7 @@ abstract class LetAntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
 
     // then
-    runtimeResult should beColumns("x", "let").withRows((0 until sizeHint).map(i => Array(i, true)))
+    runtimeResult should beColumns("x", "let").withRows((0 until sizeHint).map(i => Array[AnyVal](i, true)))
   }
 
   test("should not run rhs if lhs is empty") {

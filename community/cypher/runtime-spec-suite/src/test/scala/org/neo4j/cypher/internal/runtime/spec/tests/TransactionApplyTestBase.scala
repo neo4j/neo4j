@@ -1299,9 +1299,9 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
       .flatMap { batch =>
         val batchSuccessful = batch.forall(_.containsKey("tail"))
         if (batchSuccessful)
-          batch.map(r => Array(r, true, true, null, r.get("id")))
+          batch.map(r => Array[Any](r, true, true, null, r.get("id")))
         else
-          batch.map(r => Array(r, false, true, "with label `Dog` must have the property `tail`", null))
+          batch.map(r => Array[Any](r, false, true, "with label `Dog` must have the property `tail`", null))
       }
 
     result should beColumns("props", "committed", "started", "error", "idFromRhs")
@@ -1325,9 +1325,10 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
         val batchLastId = batch.last.get("id").asInstanceOf[IntValue].intValue()
         val shouldFail = firstFailure.exists(first => first >= batchFirstId && first <= batchLastId)
         val hasFailedPreviousBatch = firstFailure.exists(first => batchFirstId > first)
-        if (shouldFail) batch.map(r => Array(r, false, true, "with label `Dog` must have the property `tail`", null))
-        else if (hasFailedPreviousBatch) batch.map(r => Array(r, false, false, null, null))
-        else batch.map(r => Array(r, true, true, null, r.get("id")))
+        if (shouldFail)
+          batch.map(r => Array[Any](r, false, true, "with label `Dog` must have the property `tail`", null))
+        else if (hasFailedPreviousBatch) batch.map(r => Array[Any](r, false, false, null, null))
+        else batch.map(r => Array[Any](r, true, true, null, r.get("id")))
       }
 
     result should beColumns("props", "committed", "started", "error", "idFromRhs")
@@ -1531,7 +1532,7 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
         val runtimeResult = execute(query, runtime, input)
 
         val expected = setup.input
-          .flatMap(row => row.rhsUnwind.map(rhs => Array(row.i, row.i + 1, true, true, null)))
+          .flatMap(row => row.rhsUnwind.map(rhs => Array[Any](row.i, row.i + 1, true, true, null)))
 
         val expectedNodes = setup.input.iterator
           .map(row => row.rhsUnwind.size)
@@ -1662,12 +1663,12 @@ trait RandomisedTransactionApplyTests[CONTEXT <: RuntimeContext]
         var hasFailed = false
         batch => {
           if (hasFailed) {
-            batch.map(row => Array(row.i, null, false, false))
+            batch.map(row => Array[Any](row.i, null, false, false))
           } else if (batch.exists(_.shouldFail)) {
             hasFailed = true
-            batch.map(row => Array(row.i, null, true, false))
+            batch.map(row => Array[Any](row.i, null, true, false))
           } else {
-            batch.flatMap(row => row.rhsUnwind.map(_ => Array(row.i, row.i + 1, true, true)))
+            batch.flatMap(row => row.rhsUnwind.map(_ => Array[AnyVal](row.i, row.i + 1, true, true)))
           }
         }
       }

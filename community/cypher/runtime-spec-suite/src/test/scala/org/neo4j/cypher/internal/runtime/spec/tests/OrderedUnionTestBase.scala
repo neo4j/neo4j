@@ -130,11 +130,11 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val left = for {
       x <- as ++ bs
       y <- yLeftNums
-    } yield Array(x, y)
+    } yield Array[Any](x, y)
     val right = for {
       x <- bs
       y <- yRightNums
-    } yield Array(x, y)
+    } yield Array[Any](x, y)
     val expected = (left ++ right).sortBy(row => (row(0).asInstanceOf[Node].getId, row(1).asInstanceOf[Int]))
 
     // then
@@ -251,7 +251,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- inputVals
       res2 <- nodes
-    } yield Array(x, res2)
+    } yield Array[Object](x, res2)
 
     runtimeResult should beColumns("x", "res2").withRows(inOrder(expected))
   }
@@ -459,7 +459,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
       n <- nodes
       m <- 1 to 10
       x <- nodes.flatMap(n => Seq(n, n, n))
-    } yield Array(n, m, x)
+    } yield Array[Any](n, m, x)
 
     runtimeResult should beColumns("n", "m", "x").withRows(inOrder(expected))
   }
@@ -527,7 +527,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- nodes.flatMap(n => Seq(n, n))
       n <- Seq(1, 2, 3, 4, 5)
-    } yield Array(x, n)
+    } yield Array[Any](x, n)
 
     runtimeResult should beColumns("x", "n").withRows(inOrder(expected))
   }
@@ -711,7 +711,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
     val expected = for {
       x <- nodes
       res <- x +: Seq(1, 2, 3, 4, 5, 6, 7)
-    } yield Array(res)
+    } yield Array[Any](res)
 
     runtimeResult should beColumns("res").withRows(inOrder(expected))
   }
@@ -773,7 +773,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
 
     // then
     val expected = nodes.zipWithIndex.map {
-      case (n, i) => Array(n, i % 2)
+      case (n, i) => Array[Any](n, i % 2)
     }
     runtimeResult should beColumns("a", "x").withRows(inOrder(expected))
   }

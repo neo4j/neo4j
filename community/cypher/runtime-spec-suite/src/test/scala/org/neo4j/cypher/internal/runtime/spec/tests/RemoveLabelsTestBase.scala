@@ -120,7 +120,7 @@ abstract class RemoveLabelsTestBase[CONTEXT <: RuntimeContext](
     // then
     val runtimeResult = execute(logicalQuery, runtime)
 
-    val expected = nodes.map(node => Array(node, util.Arrays.asList("KeepMe")))
+    val expected = nodes.map(node => Array[Object](node, util.Arrays.asList("KeepMe")))
 
     runtimeResult should beColumns("n", "labels")
       .withRows(expected)

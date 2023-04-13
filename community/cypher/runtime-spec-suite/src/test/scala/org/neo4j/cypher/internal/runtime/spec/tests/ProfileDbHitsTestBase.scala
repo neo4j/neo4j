@@ -42,7 +42,6 @@ import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.cypher.internal.runtime.spec.interpreted.LegacyDbHitsTestBase
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.result.OperatorProfile
 import org.neo4j.cypher.result.QueryProfile
@@ -291,7 +290,7 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should profile dbHits of node index seek with IN predicate on composite index") {
-    val nodes = given {
+    given {
       nodeIndex("Language", "difficulty", "usefulness")
       nodePropertyGraph(
         sizeHint,
@@ -679,7 +678,6 @@ abstract class ProfileDbHitsTestBase[CONTEXT <: RuntimeContext](
     val expectedExpandIntoDbHits = runtimeUsed match {
       case Interpreted | Slotted | Pipelined =>
         be(sizeHint * (expandConstantCost + (costOfExpandGetRelCursor + costOfExpandOneRel)))
-      case Pipelined => be(sizeHint * (expandConstantCost + (costOfExpandGetRelCursor + costOfExpandOneRel)) - 1L)
       // caching results vary for parallel execution
       case Parallel => be <= sizeHint * (expandConstantCost + (costOfExpandGetRelCursor + costOfExpandOneRel))
     }
@@ -1267,7 +1265,7 @@ trait UniqueIndexDbHitsTestBase[CONTEXT <: RuntimeContext] {
   }
 
   test("should profile dbHits of node index seek with node key") {
-    val nodes = given {
+    given {
       nodeKey("Language", "difficulty", "usefulness")
       nodePropertyGraph(
         sizeHint,

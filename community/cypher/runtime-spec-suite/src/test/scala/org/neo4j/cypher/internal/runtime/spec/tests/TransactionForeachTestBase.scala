@@ -1317,9 +1317,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .flatMap { batch =>
         val batchSuccessful = batch.forall(_.containsKey("tail"))
         if (batchSuccessful)
-          batch.map(r => Array(r, true, true, null))
+          batch.map(r => Array[Any](r, true, true, null))
         else
-          batch.map(r => Array(r, false, true, "with label `Dog` must have the property `tail`"))
+          batch.map(r => Array[Any](r, false, true, "with label `Dog` must have the property `tail`"))
       }
 
     result should beColumns("props", "committed", "started", "error")
@@ -1343,9 +1343,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
         val batchLastId = batch.last.get("id").asInstanceOf[IntValue].intValue()
         val shouldFail = firstFailure.exists(first => first >= batchFirstId && first <= batchLastId)
         val hasFailedPreviousBatch = firstFailure.exists(first => batchFirstId > first)
-        if (shouldFail) batch.map(r => Array(r, false, true, "with label `Dog` must have the property `tail`"))
-        else if (hasFailedPreviousBatch) batch.map(r => Array(r, false, false, null))
-        else batch.map(r => Array(r, true, true, null))
+        if (shouldFail) batch.map(r => Array[Any](r, false, true, "with label `Dog` must have the property `tail`"))
+        else if (hasFailedPreviousBatch) batch.map(r => Array[Any](r, false, false, null))
+        else batch.map(r => Array[Any](r, true, true, null))
       }
 
     result should beColumns("props", "committed", "started", "error")
@@ -1555,12 +1555,12 @@ trait RandomisedTransactionForEachTests[CONTEXT <: RuntimeContext]
         var hasFailed = false
         batch => {
           if (hasFailed) {
-            batch.map(row => Array(row.i, false, false))
+            batch.map(row => Array[AnyVal](row.i, false, false))
           } else if (batch.exists(_.shouldFail)) {
             hasFailed = true
-            batch.map(row => Array(row.i, true, false))
+            batch.map(row => Array[AnyVal](row.i, true, false))
           } else {
-            batch.map(row => Array(row.i, true, true))
+            batch.map(row => Array[AnyVal](row.i, true, true))
           }
         }
       }
