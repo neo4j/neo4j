@@ -428,6 +428,8 @@ TOKEN [IGNORE_CASE] :
     | < CASE: "CASE" >
     | < CHANGE: "CHANGE">
     | < COLLECT: "COLLECT">
+    | < COLON: ":" >
+    | < COMMA: "," >
     | < COMMAND: "COMMAND">
     | < COMMANDS: "COMMANDS">
     | < COMMIT: "COMMIT" >
@@ -551,6 +553,7 @@ TOKEN [IGNORE_CASE] :
     | < PERIODIC: "PERIODIC" >
     | < PLAINTEXT: "PLAINTEXT" >
     | < PLUS: "+" >
+    | < PLUSEQUAL: "+=" >
     | < POINT: "POINT">
     | < POPULATED: "POPULATED">
     | < POW: "^" >
@@ -593,6 +596,7 @@ TOKEN [IGNORE_CASE] :
     | < SECONDARIES: "SECONDARIES" >
     | < SECONDS: "SECONDS">
     | < SEEK: "SEEK" >
+    | < SEMICOLON: ";" >
     | < SERVER: "SERVER" >
     | < SERVERS: "SERVERS" >
     | < SET: "SET" >
@@ -1502,7 +1506,7 @@ TOKEN :
 
 <*> TOKEN :
 {
-    < UNKNOWN: ~[",", ":", ";"] >
+    < UNKNOWN: ~[] >
 }
 
 /** Root production. */
@@ -1514,7 +1518,7 @@ List<STATEMENT> Statements() throws Exception:
 {
     try {
         x=Statement() { stmts.add( x ); }
-        ( LOOKAHEAD(2) ";" x=Statement() { stmts.add( x ); } )* ( LOOKAHEAD(2) ";" )? <EOF>
+        ( LOOKAHEAD(2) <SEMICOLON> x=Statement() { stmts.add( x ); } )* ( LOOKAHEAD(2) <SEMICOLON> )? <EOF>
         {
             return stmts;
         }
@@ -1730,7 +1734,7 @@ RETURN_CLAUSE ReturnBody( Token t ) throws Exception:
 {
     ( LOOKAHEAD( 2 ) <DISTINCT> { distinct = true; } )?
     ( returnItems=ReturnItems() )
-    ( orderPos=<ORDER> <BY> o=OrderItem() { order.add( o ); } ( "," o=OrderItem() {order.add( o ); } )* )? ( { skipPosition=token.next; } skip=Skip() )? ( { limitPosition=token.next; } limit=Limit() )?
+    ( orderPos=<ORDER> <BY> o=OrderItem() { order.add( o ); } ( <COMMA> o=OrderItem() {order.add( o ); } )* )? ( { skipPosition=token.next; } skip=Skip() )? ( { limitPosition=token.next; } limit=Limit() )?
     {
         return astFactory.newReturnClause(  pos( t ), distinct, returnItems, order, pos( orderPos ), skip, pos( skipPosition ), limit, pos( limitPosition ) );
     }
@@ -1768,8 +1772,8 @@ RETURN_ITEMS ReturnItems() throws Exception:
 {
     { returnItemsPosition = token; }
     (
-        <TIMES> { returnAll = true; } ( "," x=ReturnItem() { returnItems.add( x ); } )*
-        | x=ReturnItem() { returnItems.add( x ); } ( "," x=ReturnItem() { returnItems.add( x ); } )*
+        <TIMES> { returnAll = true; } ( <COMMA> x=ReturnItem() { returnItems.add( x ); } )*
+        | x=ReturnItem() { returnItems.add( x ); } ( <COMMA> x=ReturnItem() { returnItems.add( x ); } )*
     ) {
         return astFactory.newReturnItems( pos( returnItemsPosition.next ), returnAll, returnItems );
     }
@@ -1862,7 +1866,7 @@ SET_CLAUSE SetClause() throws Exception:
     List<SET_ITEM> items = new ArrayList<>();
 }
 {
-    t=<SET> item=SetItem() { items.add( item ); } ( "," item=SetItem() { items.add( item ); } )*
+    t=<SET> item=SetItem() { items.add( item ); } ( <COMMA> item=SetItem() { items.add( item ); } )*
     {
         return astFactory.setClause( pos( t ), items );
     }
@@ -1878,7 +1882,7 @@ SET_ITEM SetItem() throws Exception:
 {
     LOOKAHEAD( 2 ) p=PropertyExpression() <EQ> e=Expression() { return astFactory.setProperty( p, e ); }
     | LOOKAHEAD( 2 ) v=Variable() <EQ> e=Expression() { return astFactory.setVariable( v, e ); }
-    | LOOKAHEAD( 2 ) v = Variable() "+=" e=Expression() { return astFactory.addAndSetVariable( v, e ); }
+    | LOOKAHEAD( 2 ) v = Variable() <PLUSEQUAL> e=Expression() { return astFactory.addAndSetVariable( v, e ); }
     | v = Variable() labels = NodeLabels() { return astFactory.setLabels( v, labels ); }
 }
 
@@ -1891,7 +1895,7 @@ CLAUSE RemoveClause() throws Exception:
     List<REMOVE_ITEM> items = new ArrayList<>();
 }
 {
-    t=<REMOVE> item=RemoveItem() { items.add( item ); } ( "," item=RemoveItem() { items.add( item ); })*
+    t=<REMOVE> item=RemoveItem() { items.add( item ); } ( <COMMA> item=RemoveItem() { items.add( item ); })*
     {
         return astFactory.removeClause( pos( t ), items );
     }
@@ -1920,7 +1924,7 @@ CLAUSE DeleteClause() throws Exception:
     List<EXPRESSION> list = new ArrayList<>();
 }
 {
-    ( detachT=<DETACH> { detach = true; } )? t=<DELETE> e=Expression() {list.add( e );} ( "," e=Expression() { list.add( e ); } )*
+    ( detachT=<DETACH> { detach = true; } )? t=<DELETE> e=Expression() {list.add( e );} ( <COMMA> e=Expression() { list.add( e ); } )*
     {
         return astFactory.deleteClause( pos( detachT != null ? detachT : t ), detach, list );
     }
@@ -2051,14 +2055,14 @@ CLAUSE CallClause() throws Exception:
 {
     t=<CALL> namespace=Namespace() {procedureNamePosition = token;} name=ProcedureName()
     ( <LPAREN> { arguments = new ArrayList<>(); }
-        ( LOOKAHEAD( 2 ) e=Expression() { arguments.add( e ); })? ( "," e=Expression() { arguments.add( e ); })*
+        ( LOOKAHEAD( 2 ) e=Expression() { arguments.add( e ); })? ( <COMMA> e=Expression() { arguments.add( e ); })*
         <RPAREN>
     )?
     ( procedureResultPosition=<YIELD> (
         <TIMES> { yieldAll = true; }
         | { items = new ArrayList<>(); }
             x=ProcedureResultItem() { items.add( x ); }
-            ( "," x=ProcedureResultItem() { items.add( x ); })*
+            ( <COMMA> x=ProcedureResultItem() { items.add( x ); })*
             ( where=WhereClause() )?
         )
     )?
@@ -2232,7 +2236,7 @@ List<PATTERN> PatternList() throws Exception:
     List<PATTERN> patterns = new ArrayList<>();
 }
 {
-    p=Pattern() { patterns.add( p ); } ( "," p=Pattern() { patterns.add( p ); } )*
+    p=Pattern() { patterns.add( p ); } ( <COMMA> p=Pattern() { patterns.add( p ); } )*
     {
         return patterns;
     }
@@ -2259,7 +2263,7 @@ PATTERN_QUANTIFIER Quantifier() :
     range = <LCURLY> l=<UNSIGNED_DECIMAL_INTEGER> <RCURLY> {
         return astFactory.fixedPathQuantifier(pos(range), pos(l), l.image);
     }
-    | range = <LCURLY> ( l=<UNSIGNED_DECIMAL_INTEGER> )? "," ( u=<UNSIGNED_DECIMAL_INTEGER> )? <RCURLY> {
+    | range = <LCURLY> ( l=<UNSIGNED_DECIMAL_INTEGER> )? <COMMA> ( u=<UNSIGNED_DECIMAL_INTEGER> )? <RCURLY> {
         return astFactory.intervalPathQuantifier(pos(range), pos(l), pos(u), l == null ? null : l.image, u == null ? null : u.image);
     }
     | range = <PLUS> { return astFactory.plusPathQuantifier(pos(range)); }
@@ -2412,8 +2416,8 @@ NODE_PATTERN NodePattern() throws Exception:
         // Shortcuts for node patterns not containing IS keyword or ambigious inlined WHERE
         LOOKAHEAD(<RPAREN>) n=NodePatternEmpty(t)
         | LOOKAHEAD(Variable() <RPAREN>) n=NodePatternOnlyVariable(t)
-        | LOOKAHEAD(":") n=NodePatternColon(t)
-        | LOOKAHEAD(Variable() ":") n=NodePatternVariableColon(t)
+        | LOOKAHEAD(<COLON>) n=NodePatternColon(t)
+        | LOOKAHEAD(Variable() <COLON>) n=NodePatternVariableColon(t)
         | LOOKAHEAD(<LCURLY>|<DOLLAR>) n=NodePatternProperties(t)
         | n=NodePatternComplex(t)
     )
@@ -2579,7 +2583,7 @@ Token LabelOrRelType() :
     Token t;
 }
 {
-    ":" t=SymbolicNameString()
+    <COLON> t=SymbolicNameString()
     {
         return t;
     }
@@ -2591,7 +2595,7 @@ List<StringPos<POS>> LabelOrRelTypes() :
     StringPos<POS> label;
 }
 {
-    ":" SymbolicNameString() { labels.add( new StringPos( token.image, pos(token) ) ); }
+    <COLON> SymbolicNameString() { labels.add( new StringPos( token.image, pos(token) ) ); }
     ( <BAR> SymbolicNameString() { labels.add( new StringPos( token.image, pos(token) ) ); } )*
     {
         return labels;
@@ -2627,8 +2631,8 @@ REL_PATTERN RelationshipPattern() throws Exception:
         (
             LOOKAHEAD(<RBRACKET>) r=RelationshipPatternEmpty(firstToken, left)
             | LOOKAHEAD(Variable() <RBRACKET>) r=RelationshipPatternOnlyVariable(firstToken, left)
-            | LOOKAHEAD(":") r=RelationshipPatternColon(firstToken, left)
-            | LOOKAHEAD(Variable() ":") r=RelationshipPatternVariableColon(firstToken, left)
+            | LOOKAHEAD(<COLON>) r=RelationshipPatternColon(firstToken, left)
+            | LOOKAHEAD(Variable() <COLON>) r=RelationshipPatternVariableColon(firstToken, left)
             | LOOKAHEAD(<LCURLY>|<DOLLAR>) r=RelationshipPatternProperties(firstToken, left)
             | LOOKAHEAD(PathLength()) r=RelationshipPatternPathLength(firstToken, left)
             | LOOKAHEAD(Variable() PathLength() <RBRACKET>)
@@ -2882,7 +2886,7 @@ LABEL_EXPRESSION LabelExpression( ENTITY_TYPE type ) :
     boolean containsIs;
 }
 {
-    (":" {containsIs = false;} | <IS> {containsIs = true;})  (
+    (<COLON> {containsIs = false;} | <IS> {containsIs = true;})  (
             LOOKAHEAD({ !labelExpressionStack.isEmpty() && labelExpressionStack.peek() == ExpectBar.EXPECT_BAR})
             e = LabelExpression4ExpectingBar(type, containsIs)
             |
@@ -2905,7 +2909,7 @@ LABEL_EXPRESSION LabelExpression4( ENTITY_TYPE type, boolean containsIs ) :
         LOOKAHEAD(2)
         t=<BAR>
         (
-            ":" temp=LabelExpression3(type, containsIs) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, containsIs ); }
+            <COLON> temp=LabelExpression3(type, containsIs) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, containsIs ); }
         |
             temp=LabelExpression3(type, containsIs) { e = astFactory.labelDisjunction( pos( t ), e, temp, containsIs ); }
         )
@@ -2924,11 +2928,11 @@ LABEL_EXPRESSION LabelExpression4ExpectingBar( ENTITY_TYPE type, boolean contain
 {
     e=LabelExpression3(type, containsIs) (
         LOOKAHEAD(
-            <BAR> (":")? LabelExpression3() <BAR>
+            <BAR> (<COLON>)? LabelExpression3() <BAR>
         )
         t=<BAR>
         (
-            ":" temp=LabelExpression3(type, containsIs) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, containsIs ); }
+            <COLON> temp=LabelExpression3(type, containsIs) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, containsIs ); }
         |
             temp=LabelExpression3(type, containsIs) { e = astFactory.labelDisjunction( pos( t ), e, temp, containsIs ); }
         )
@@ -2951,7 +2955,7 @@ LABEL_EXPRESSION LabelExpression3( ENTITY_TYPE type, boolean containsIs ) :
         (
             t=<AMPERSAND> temp=LabelExpression2(type, containsIs) { e = astFactory.labelConjunction( pos( t ), e, temp, containsIs ); }
         |
-            t=":" temp=LabelExpression2(type, containsIs) { e = astFactory.labelColonConjunction( pos( t ), e, temp, containsIs ); }
+            t=<COLON> temp=LabelExpression2(type, containsIs) { e = astFactory.labelColonConjunction( pos( t ), e, temp, containsIs ); }
         )
     )*
     {
@@ -3376,7 +3380,7 @@ EXPRESSION ReduceExpression() throws Exception:
     t=<REDUCE>
     <LPAREN>
         acc=Variable() <EQ> accExpr=Expression()
-        "," v=Variable() <IN> vExpr=Expression()
+        <COMMA> v=Variable() <IN> vExpr=Expression()
         <BAR> innerExpr=Expression()
     <RPAREN>
     {
@@ -3474,7 +3478,7 @@ EXPRESSION MapProjection() throws Exception:
     List<MAP_PROJECTION_ITEM> items = new ArrayList<>();
 }
 {
-    v=Variable() t=<LCURLY> ( x=MapProjectionItem() { items.add( x ); } )? ( "," x=MapProjectionItem() { items.add( x ); } )* <RCURLY>
+    v=Variable() t=<LCURLY> ( x=MapProjectionItem() { items.add( x ); } )? ( <COMMA> x=MapProjectionItem() { items.add( x ); } )* <RCURLY>
     {
         return astFactory.mapProjection( pos( t ), v, items );
     }
@@ -3488,7 +3492,7 @@ MAP_PROJECTION_ITEM MapProjectionItem() throws Exception:
     VARIABLE v;
 }
 {
-    LOOKAHEAD( 2 ) p=PropertyKeyName() ":" e=Expression() { return astFactory.mapProjectionLiteralEntry( p, e ); }
+    LOOKAHEAD( 2 ) p=PropertyKeyName() <COLON> e=Expression() { return astFactory.mapProjectionLiteralEntry( p, e ); }
     | LOOKAHEAD( 2 ) <DOT> p=PropertyKeyName() { return astFactory.mapProjectionProperty( p ); }
     | v=Variable() { return astFactory.mapProjectionVariable( v ); }
     | <DOT> t=<TIMES> { return astFactory.mapProjectionAll( pos( t ) ); }
@@ -3588,7 +3592,7 @@ EXPRESSION ListLiteral() throws Exception:
     List<EXPRESSION> list = new ArrayList<>();
 }
 {
-    t=<LBRACKET> ( e=Expression() { list.add( e ); } )? ( "," e=Expression() { list.add( e ); } )* <RBRACKET>
+    t=<LBRACKET> ( e=Expression() { list.add( e ); } )? ( <COMMA> e=Expression() { list.add( e ); } )* <RBRACKET>
     {
         return astFactory.listLiteral( pos( t ), list );
     }
@@ -3603,8 +3607,8 @@ EXPRESSION MapLiteral() throws Exception:
     List<EXPRESSION> values = new ArrayList<>();
 }
 {
-    t=<LCURLY> ( key=PropertyKeyName() ":" value=Expression() { keys.add( key ); values.add( value ); } )?
-           ( "," key=PropertyKeyName() ":" value=Expression() { keys.add( key ); values.add( value ); } )* <RCURLY>
+    t=<LCURLY> ( key=PropertyKeyName() <COLON> value=Expression() { keys.add( key ); values.add( value ); } )?
+           ( <COMMA> key=PropertyKeyName() <COLON> value=Expression() { keys.add( key ); values.add( value ); } )* <RCURLY>
     {
         return astFactory.mapLiteral( pos( t ), keys, values);
     }
@@ -3647,7 +3651,7 @@ EXPRESSION FunctionInvocation()  throws Exception:
     namespace=Namespace() nameToken=SymbolicNameString()
     <LPAREN>
         ( LOOKAHEAD( 2 ) <DISTINCT> { distinct=true; })?
-        ( e=Expression() { arguments.add( e ); } )? ( "," e=Expression() { arguments.add( e ); } )*
+        ( e=Expression() { arguments.add( e ); } )? ( <COMMA> e=Expression() { arguments.add( e ); } )*
     <RPAREN>
     {
         return astFactory.functionInvocation( pos( before.next ), pos( nameToken ), namespace, nameToken.image, distinct, arguments );
@@ -3673,7 +3677,7 @@ List<VARIABLE> VariableList1() :
 }
 {
     t=SymbolicNameString() { list.add( astFactory.newVariable( pos( t ), t.image ) ); }
-    ( "," t=SymbolicNameString() { list.add( astFactory.newVariable( pos( t ), t.image) ); })*
+    ( <COMMA> t=SymbolicNameString() { list.add( astFactory.newVariable( pos( t ), t.image) ); })*
     {
         return list;
     }
@@ -3696,7 +3700,7 @@ List<String> SymbolicNameList1() :
     List<String> list = new ArrayList<>();
 }
 {
-    n=SymbolicNameString() { list.add(n.image); } ( "," n=SymbolicNameString() { list.add( n.image ); } )*
+    n=SymbolicNameString() { list.add(n.image); } ( <COMMA> n=SymbolicNameString() { list.add( n.image ); } )*
     {
         return list;
     }
@@ -3848,7 +3852,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
         | (<ROLES> | <ROLE>)
             (
                 // Need these lookaheads to distinguish e.g. 'SHOW ROLE[S] YIELD ...' from 'SHOW ROLE[S] yield[, ...] PRIVILEGE[S]'
-                LOOKAHEAD(( <YIELD> | <WHERE> | <WITH> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowRolePrivileges( start, useClause )
+                LOOKAHEAD(( <YIELD> | <WHERE> | <WITH> ) ( <PRIVILEGE> | <PRIVILEGES> | <COMMA> )) statement=ShowRolePrivileges( start, useClause )
                 | LOOKAHEAD(<YIELD> | <WHERE> | <WITH> | <EOF>) statement=ShowRoles( start, useClause, true )
                 | statement=ShowRolePrivileges( start, useClause )
             )
@@ -3857,7 +3861,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
         | (<USERS> | <USER>)
             (
                 // Need these lookaheads to distinguish e.g. 'SHOW USER[S] YIELD ...' from 'SHOW USER[S] yield[, ...] PRIVILEGE[S]'
-                LOOKAHEAD(( <YIELD> | <WHERE> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) statement=ShowUserPrivileges( start, useClause )
+                LOOKAHEAD(( <YIELD> | <WHERE> ) ( <PRIVILEGE> | <PRIVILEGES> | <COMMA> )) statement=ShowUserPrivileges( start, useClause )
                 | LOOKAHEAD(<YIELD> | <WHERE> | <EOF>) statement=ShowUsers( start, useClause )
                 | statement=ShowUserPrivileges( start, useClause )
             )
@@ -4013,8 +4017,8 @@ YIELD YieldClause() throws Exception:
 {
     start=<YIELD>
     ( <TIMES> { returnAll = true; }  |
-    ( item=YieldItem() { returnItems.add( item ); } ("," item=YieldItem() { returnItems.add( item ); } )*))
-    ( orderToken=<ORDER> <BY> o=OrderItem() { orders.add( o ); } ( "," o=OrderItem() {orders.add( o ); } )*)?
+    ( item=YieldItem() { returnItems.add( item ); } (<COMMA> item=YieldItem() { returnItems.add( item ); } )*))
+    ( orderToken=<ORDER> <BY> o=OrderItem() { orders.add( o ); } ( <COMMA> o=OrderItem() {orders.add( o ); } )*)?
     ( skipPosition=<SKIPROWS> skip=SignedIntegerLiteral() )?
     ( limitPosition=<LIMITROWS> limit=SignedIntegerLiteral() )?
     ( where=WhereClause() ) ?
@@ -4393,7 +4397,7 @@ SimpleEither<List<String>, EXPRESSION> stringsOrExpression() throws Exception:
     SimpleEither<List<String>, EXPRESSION> idEither = SimpleEither.left(ids);
 }
 {
-    ( LOOKAHEAD(StringImage() ",") (ids=StringList() { idEither=SimpleEither.left(ids); })
+    ( LOOKAHEAD(StringImage() <COMMA>) (ids=StringList() { idEither=SimpleEither.left(ids); })
     | (expr=Expression() { idEither=SimpleEither.right(expr); }) )
     {
         return idEither;
@@ -4653,7 +4657,7 @@ SCHEMA_COMMAND CreateIndex( Token start, boolean replace ) throws Exception:
         | <POINT> <INDEX> command=createIndex( start, replace, CreateIndexTypes.POINT )
         | <LOOKUP> <INDEX> command=createLookupIndex( start, replace )
         | <INDEX> (
-            LOOKAHEAD(<ON> ":") <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
+            LOOKAHEAD(<ON> <COLON>) <ON> command=oldCreateIndex( start, replace ) // old syntax: CREATE INDEX ON :nodeLabel(prop1, prop2)
             | command=createIndex( start, replace, CreateIndexTypes.DEFAULT )
         )
     )
@@ -4744,7 +4748,7 @@ SCHEMA_COMMAND createFulltextIndex( Token start, boolean replace) throws Excepti
         <ON> <EACH>
         <LBRACKET>
             propName=Variable() p=Property( propName ) { properties.add( p ); }
-            ( "," propName=Variable() p=Property( propName ) { properties.add( p ); } )*
+            ( <COMMA> propName=Variable() p=Property( propName ) { properties.add( p ); } )*
         <RBRACKET>
         ( <OPTIONS> options=MapOrParameter() )?
         {
@@ -4812,7 +4816,7 @@ List<PROPERTY> PropertyList():
             variable=Variable() p=Property( variable ) { properties.add( p ); }
             | <LPAREN>
                 variable=Variable() p=Property( variable ) { properties.add( p ); }
-                ( "," variable=Variable() p=Property( variable ) { properties.add( p ); } )*
+                ( <COMMA> variable=Variable() p=Property( variable ) { properties.add( p ); } )*
             <RPAREN>
         )
         {
@@ -4985,7 +4989,7 @@ ADMINISTRATION_COMMAND DeallocateDatabaseFromServers(boolean dryRun):
 }
 {
     start=<DEALLOCATE> ( <DATABASE> | <DATABASES> ) <FROM> ( <SERVER> | <SERVERS> )
-    entry=StringOrParameter() { serverNames.add( entry ); } ( "," entry=StringOrParameter() { serverNames.add( entry ); } )*
+    entry=StringOrParameter() { serverNames.add( entry ); } ( <COMMA> entry=StringOrParameter() { serverNames.add( entry ); } )*
     {
         return astFactory.deallocateServers( pos( start ), dryRun, serverNames );
     }
@@ -5387,7 +5391,7 @@ STATEMENT_WITH_GRAPH ShowUserPrivileges( Token start, USE_CLAUSE useClause ) thr
 {
     (
         // The lookahead is needed to distinguish 'SHOW USER[S] privilege[, ..] PRIVILEGE[S] ...' and 'SHOW USER[S] PRIVILEGE[S] ...'
-        LOOKAHEAD(( <PRIVILEGE> | <PRIVILEGES> ) ( <PRIVILEGE> | <PRIVILEGES> | "," )) (users=SymbolicNameOrStringParameterList() ( <PRIVILEGE> | <PRIVILEGES> ))
+        LOOKAHEAD(( <PRIVILEGE> | <PRIVILEGES> ) ( <PRIVILEGE> | <PRIVILEGES> | <COMMA> )) (users=SymbolicNameOrStringParameterList() ( <PRIVILEGE> | <PRIVILEGES> ))
         | ( <PRIVILEGE> | <PRIVILEGES> )
         | (users=SymbolicNameOrStringParameterList() ( <PRIVILEGE> | <PRIVILEGES> ))
     )
@@ -5808,7 +5812,7 @@ List<String> globs():
         executableList.add(executableName);
     }
     (
-        "," executableName=Glob()
+        <COMMA> executableName=Glob()
         {
             executableList.add(executableName);
         }
@@ -5891,15 +5895,15 @@ List<PRIVILEGE_QUALIFIER> graphQualifier():
     (
         (<RELATIONSHIP> | <RELATIONSHIPS>) (
             <TIMES> { qualifier.add( astFactory.allRelationshipsQualifier( pos(token) ) ); }
-            | ( n=SymbolicNameString() { qualifier.add( astFactory.relationshipQualifier( pos(n), n.image ) ); } ( "," n=SymbolicNameString() { qualifier.add( astFactory.relationshipQualifier( pos(n), n.image ) ); } )* )
+            | ( n=SymbolicNameString() { qualifier.add( astFactory.relationshipQualifier( pos(n), n.image ) ); } ( <COMMA> n=SymbolicNameString() { qualifier.add( astFactory.relationshipQualifier( pos(n), n.image ) ); } )* )
         )
         | (<NODE> | <NODES>) (
             <TIMES> { qualifier.add( astFactory.allLabelsQualifier( pos(token) ) ); }
-            | ( n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } ( "," n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } )* )
+            | ( n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } ( <COMMA> n=SymbolicNameString() { qualifier.add( astFactory.labelQualifier( pos(n), n.image ) ); } )* )
         )
         | (<ELEMENT> | <ELEMENTS>) (
             <TIMES> { qualifier.add( astFactory.allElementsQualifier( pos(token) ) ); }
-            | ( n=SymbolicNameString() { qualifier.add( astFactory.elementQualifier( pos(n), n.image ) ); } ( "," n=SymbolicNameString() { qualifier.add( astFactory.elementQualifier( pos(n), n.image ) ); } )* )
+            | ( n=SymbolicNameString() { qualifier.add( astFactory.elementQualifier( pos(n), n.image ) ); } ( <COMMA> n=SymbolicNameString() { qualifier.add( astFactory.elementQualifier( pos(n), n.image ) ); } )* )
         )
     )?
     {
@@ -6296,7 +6300,7 @@ List<DATABASE_NAME> SymbolicAliasNameList():
 }
 {
     dbSymbol=SymbolicAliasName() { databases.add(dbSymbol.getLocalAliasName(astFactory)); }
-    ("," dbSymbol=SymbolicAliasName() { databases.add(dbSymbol.getLocalAliasName(astFactory)); } )*
+    (<COMMA> dbSymbol=SymbolicAliasName() { databases.add(dbSymbol.getLocalAliasName(astFactory)); } )*
     {
         return databases;
     }
@@ -6324,7 +6328,7 @@ List<SimpleEither<String, PARAMETER>> SymbolicNameOrStringParameterList() :
 }
 {
     entry=SymbolicNameOrStringParameter() { list.add( entry ); }
-    ( "," entry=SymbolicNameOrStringParameter() { list.add( entry ); } )*
+    ( <COMMA> entry=SymbolicNameOrStringParameter() { list.add( entry ); } )*
     {
         return list;
     }
@@ -6349,7 +6353,7 @@ String Glob() :
 {
     (
        // The whole glob is escaped
-        LOOKAHEAD(EscapedSymbolicNameString() ("," | (<ON> <DBMS> (<TO> | <FROM>) SymbolicNameOrStringParameterList() <EOF>)))
+        LOOKAHEAD(EscapedSymbolicNameString() (<COMMA> | (<ON> <DBMS> (<TO> | <FROM>) SymbolicNameOrStringParameterList() <EOF>)))
             t=EscapedSymbolicNameString() { globString = t.image; }
 
         // The first part of the glob is escaped. The escaped part must be followed by a dot.
@@ -6373,7 +6377,7 @@ String GlobRecursive() :
 {
     (
         // The last part of the glob => stop recursion
-        LOOKAHEAD(GlobPart() ("," | (<ON> <DBMS> (<TO> | <FROM>) SymbolicNameOrStringParameterList() <EOF>))) globString=GlobPart()
+        LOOKAHEAD(GlobPart() (<COMMA> | (<ON> <DBMS> (<TO> | <FROM>) SymbolicNameOrStringParameterList() <EOF>))) globString=GlobPart()
 
         // The glob consist of multiple parts => continue recursion
         | globString=GlobPart() nextGlob=GlobRecursive() { globString += nextGlob; }
@@ -6392,7 +6396,7 @@ String GlobPart() :
     (
         // Unless the escaped part is the whole glob or the first part of the glob (both which are covered in Glob()),
         // it must be preceded by a dot and either be followed by a dot or be the last part of the glob.
-        LOOKAHEAD(<DOT> EscapedSymbolicNameString() (<DOT> | "," | (<ON> <DBMS> (<TO> | <FROM>) SymbolicNameOrStringParameterList() <EOF>)))
+        LOOKAHEAD(<DOT> EscapedSymbolicNameString() (<DOT> | <COMMA> | (<ON> <DBMS> (<TO> | <FROM>) SymbolicNameOrStringParameterList() <EOF>)))
             <DOT> globPart=EscapedSymbolicNameString() { globPartString = "." + globPart.image; }
 
         | <QUESTION> { globPartString = "?"; }
@@ -6420,7 +6424,7 @@ List<String> StringList():
 }
 {
     entry=StringImage() { list.add( entry ); }
-    ( "," entry=StringImage() { list.add( entry ); } )*
+    ( <COMMA> entry=StringImage() { list.add( entry ); } )*
     {
         return list;
     }
@@ -6469,8 +6473,8 @@ Map<String, EXPRESSION> Map()  throws Exception:
 {
     <LCURLY>
     (
-        key=SymbolicNameString()  ":" expr=Expression() { map.put( key.image, expr ); }
-        ( "," key=SymbolicNameString()  ":" expr=Expression() { map.put( key.image, expr ); } )*
+        key=SymbolicNameString()  <COLON> expr=Expression() { map.put( key.image, expr ); }
+        ( <COMMA> key=SymbolicNameString()  <COLON> expr=Expression() { map.put( key.image, expr ); } )*
     )?
     <RCURLY>
     {
@@ -6484,7 +6488,7 @@ List<StringPos<POS>> SymbolicNamePositions():
 }
 {
     SymbolicNameString() { names.add( new StringPos<>( token.image, pos( token ) ) ); }
-    ( "," SymbolicNameString() { names.add( new StringPos<>( token.image, pos( token ) ) ); } )*
+    ( <COMMA> SymbolicNameString() { names.add( new StringPos<>( token.image, pos( token ) ) ); } )*
     {
         return names;
     }
