@@ -24,9 +24,9 @@ import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
 import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
 import static org.neo4j.index.internal.gbptree.PointerChecking.assertNoSuccessor;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
-import static org.neo4j.index.internal.gbptree.TreeNode.generation;
-import static org.neo4j.index.internal.gbptree.TreeNode.isInternal;
-import static org.neo4j.index.internal.gbptree.TreeNode.keyCount;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.generation;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.isInternal;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.keyCount;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -248,7 +248,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                 coordination.reset();
                 root = rootAfterLock;
             } else {
-                TreeNode.goTo(cursor, "Root", root.id());
+                TreeNodeUtil.goTo(cursor, "Root", root.id());
                 break;
             }
         }
@@ -347,7 +347,7 @@ class GBPTreeWriter<K, V> implements Writer<K, V> {
                     stableGeneration,
                     unstableGeneration,
                     cursorContext);
-            TreeNode.setKeyCount(cursor, 1);
+            TreeNodeUtil.setKeyCount(cursor, 1);
             setRoot(newRootId);
             monitor.treeGrowth();
             didRootStructureChange = true;

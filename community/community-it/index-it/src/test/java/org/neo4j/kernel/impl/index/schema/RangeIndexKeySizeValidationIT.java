@@ -60,7 +60,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexType;
-import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
+import org.neo4j.index.internal.gbptree.DynamicSizeUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -246,7 +246,7 @@ public class RangeIndexKeySizeValidationIT {
             String[] propKeys = generatePropertyKeys(numberOfSlots);
 
             createIndex(propKeys);
-            int keySizeLimit = TreeNodeDynamicSize.keyValueSizeCapFromPageSize(pageSize - calculateReservedBytes());
+            int keySizeLimit = DynamicSizeUtil.keyValueSizeCapFromPageSize(pageSize - calculateReservedBytes());
             int keySizeLimitPerSlot = keySizeLimit / propKeys.length - ESTIMATED_OVERHEAD_PER_SLOT;
             int wiggleRoomPerSlot = WIGGLE_ROOM / propKeys.length;
             SuccessAndFail successAndFail = new SuccessAndFail();

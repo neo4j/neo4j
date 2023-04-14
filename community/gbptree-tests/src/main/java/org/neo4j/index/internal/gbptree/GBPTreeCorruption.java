@@ -22,11 +22,11 @@ package org.neo4j.index.internal.gbptree;
 import static org.neo4j.index.internal.gbptree.CursorCreator.bind;
 import static org.neo4j.index.internal.gbptree.GBPTreeGenerationTarget.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
-import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_KEYCOUNT;
-import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
-import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
-import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
-import static org.neo4j.index.internal.gbptree.TreeNode.goTo;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_KEYCOUNT;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_LEFTSIBLING;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_RIGHTSIBLING;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_SUCCESSOR;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.goTo;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
@@ -69,15 +69,15 @@ public final class GBPTreeCorruption {
     }
 
     public static <KEY, VALUE> PageCorruption<KEY, VALUE> notATreeNode() {
-        return (cursor, layout, node, treeState) -> cursor.putByte(TreeNode.BYTE_POS_NODE_TYPE, Byte.MAX_VALUE);
+        return (cursor, layout, node, treeState) -> cursor.putByte(TreeNodeUtil.BYTE_POS_NODE_TYPE, Byte.MAX_VALUE);
     }
 
     public static <KEY, VALUE> PageCorruption<KEY, VALUE> notAnOffloadNode() {
-        return (cursor, layout, node, treeState) -> cursor.putByte(TreeNode.BYTE_POS_NODE_TYPE, Byte.MAX_VALUE);
+        return (cursor, layout, node, treeState) -> cursor.putByte(TreeNodeUtil.BYTE_POS_NODE_TYPE, Byte.MAX_VALUE);
     }
 
     public static <KEY, VALUE> PageCorruption<KEY, VALUE> unknownTreeNodeType() {
-        return (cursor, layout, node, treeState) -> cursor.putByte(TreeNode.BYTE_POS_TYPE, Byte.MAX_VALUE);
+        return (cursor, layout, node, treeState) -> cursor.putByte(TreeNodeUtil.BYTE_POS_TYPE, Byte.MAX_VALUE);
     }
 
     public static <KEY, VALUE> PageCorruption<KEY, VALUE> rightSiblingPointToNonExisting() {
@@ -99,15 +99,15 @@ public final class GBPTreeCorruption {
     public static <KEY, VALUE> PageCorruption<KEY, VALUE> rightSiblingPointerHasTooLowGeneration() {
         return (cursor, layout, node, treeState) -> {
             long rightSibling = pointer(
-                    TreeNode.rightSibling(cursor, treeState.stableGeneration(), treeState.unstableGeneration()));
+                    TreeNodeUtil.rightSibling(cursor, treeState.stableGeneration(), treeState.unstableGeneration()));
             overwriteGSPP(cursor, BYTE_POS_RIGHTSIBLING, GenerationSafePointer.MIN_GENERATION, rightSibling);
         };
     }
 
     public static <KEY, VALUE> PageCorruption<KEY, VALUE> leftSiblingPointerHasTooLowGeneration() {
         return (cursor, layout, node, treeState) -> {
-            long leftSibling =
-                    pointer(TreeNode.leftSibling(cursor, treeState.stableGeneration(), treeState.unstableGeneration()));
+            long leftSibling = pointer(
+                    TreeNodeUtil.leftSibling(cursor, treeState.stableGeneration(), treeState.unstableGeneration()));
             overwriteGSPP(cursor, BYTE_POS_LEFTSIBLING, GenerationSafePointer.MIN_GENERATION, leftSibling);
         };
     }
@@ -156,7 +156,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
-            TreeNode.setKeyCount(cursor, newCount);
+            TreeNodeUtil.setKeyCount(cursor, newCount);
             node.defragmentLeaf(cursor);
 
             // Insert key and value in lower position
@@ -169,7 +169,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
-            TreeNode.setKeyCount(cursor, keyCount);
+            TreeNodeUtil.setKeyCount(cursor, keyCount);
         };
     }
 
@@ -199,7 +199,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
-            TreeNode.setKeyCount(cursor, keyCount - 1);
+            TreeNodeUtil.setKeyCount(cursor, keyCount - 1);
             node.defragmentInternal(cursor);
 
             // Insert key and right child in lower position
@@ -212,7 +212,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
-            TreeNode.setKeyCount(cursor, keyCount);
+            TreeNodeUtil.setKeyCount(cursor, keyCount);
 
             // Overwrite the newly inserted child to reset the generation
             final int childOffset = node.childOffset(lowerKeyPos + 1);
@@ -267,7 +267,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
-            TreeNode.setKeyCount(cursor, keyCount - 1);
+            TreeNodeUtil.setKeyCount(cursor, keyCount - 1);
             node.defragmentLeaf(cursor);
 
             // Insert new key and value
@@ -280,7 +280,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
-            TreeNode.setKeyCount(cursor, keyCount);
+            TreeNodeUtil.setKeyCount(cursor, keyCount);
         };
     }
 
@@ -298,7 +298,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
-            TreeNode.setKeyCount(cursor, keyCount - 1);
+            TreeNodeUtil.setKeyCount(cursor, keyCount - 1);
             node.defragmentInternal(cursor);
 
             // Insert key and right child
@@ -311,7 +311,7 @@ public final class GBPTreeCorruption {
                     treeState.stableGeneration(),
                     treeState.unstableGeneration(),
                     NULL_CONTEXT);
-            TreeNode.setKeyCount(cursor, keyCount);
+            TreeNodeUtil.setKeyCount(cursor, keyCount);
         };
     }
 

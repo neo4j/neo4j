@@ -293,20 +293,20 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     private boolean concurrentWriteHappened;
 
     /**
-     * {@link TreeNode#generation(PageCursor) generation} of the current leaf node, read every call to {@link #next()}.
+     * {@link TreeNodeUtil#generation(PageCursor) generation} of the current leaf node, read every call to {@link #next()}.
      */
     private long currentNodeGeneration;
 
     /**
      * Generation of the pointer which was last followed, either a
-     * {@link TreeNode#rightSibling(PageCursor, long, long) sibling} during scan or otherwise following
-     * {@link TreeNode#successor(PageCursor, long, long) successor} or
+     * {@link TreeNodeUtil#rightSibling(PageCursor, long, long) sibling} during scan or otherwise following
+     * {@link TreeNodeUtil#successor(PageCursor, long, long) successor} or
      * {@link TreeNode#childAt(PageCursor, int, long, long) child}.
      */
     private long lastFollowedPointerGeneration;
 
     /**
-     * Cached {@link TreeNode#generation(PageCursor) generation} of the current leaf node, read every time a pointer
+     * Cached {@link TreeNodeUtil#generation(PageCursor) generation} of the current leaf node, read every time a pointer
      * is followed to a new node. Used to ensure that a node hasn't been reused between two calls to {@link #next()}.
      */
     private long expectedCurrentNodeGeneration;
@@ -326,7 +326,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     /**
      * Set within should retry loop.
      * <p>
-     * Is node a {@link TreeNode#NODE_TYPE_TREE_NODE} or something else?
+     * Is node a {@link TreeNodeUtil#NODE_TYPE_TREE_NODE} or something else?
      */
     private byte nodeType;
     /**
@@ -364,11 +364,6 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
      * Generation of {@link #pointerId}.
      */
     private long pointerGeneration;
-
-    /**
-     * Result from {@link KeySearch#search(PageCursor, TreeNode, TreeNode.Type, Object, Object, int, CursorContext)}.
-     */
-    private int searchResult;
 
     // ┌── Special variables for backwards seek ──┐
     // v                                          v
@@ -507,7 +502,6 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         this.isInternal = false;
         this.pointerId = 0;
         this.pointerGeneration = 0;
-        this.searchResult = 0;
         this.prevSiblingId = 0;
         this.prevSiblingGeneration = 0;
 
@@ -540,6 +534,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         int completedReadLevel = -1;
         do {
             // Read
+            int searchResult = Integer.MIN_VALUE;
             boolean lookingForChild = true;
             do {
                 try {
@@ -548,9 +543,12 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
                         continue;
                     }
 
-                    searchResult = searchKey(fromInclusive, isInternal ? INTERNAL : LEAF);
-                    if (!KeySearch.isSuccess(searchResult)) {
-                        continue;
+                    if (isInternal) {
+                        searchResult = KeySearch.searchInternal(
+                                cursor, bTreeNode, fromInclusive, mutableKeys[0], keyCount, cursorContext);
+                    } else {
+                        searchResult = KeySearch.searchLeaf(
+                                cursor, bTreeNode, fromInclusive, mutableKeys[0], keyCount, cursorContext);
                     }
                     lookingForChild = isInternal && currentReadLevel < searchLevel;
                     pos = positionOf(searchResult, lookingForChild);
@@ -690,6 +688,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     }
 
     private boolean readAndValidateNextKeyValueBatch() throws IOException {
+        int searchResult = Integer.MIN_VALUE;
         //noinspection AssignmentUsedAsCondition
         do {
             try {
@@ -712,10 +711,16 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
                 if (concurrentWriteHappened) {
                     // Keys could have been moved so we need to make sure we are not missing any keys by
                     // moving position back until we find previously returned key
-                    searchResult = searchKey(first ? fromInclusive : prevKey, isInternal ? INTERNAL : LEAF);
-                    if (!KeySearch.isSuccess(searchResult)) {
-                        continue;
+                    KEY key = first ? fromInclusive : prevKey;
+
+                    if (isInternal) {
+                        searchResult = KeySearch.searchInternal(
+                                cursor, bTreeNode, key, mutableKeys[0], keyCount, cursorContext);
+                    } else {
+                        searchResult =
+                                KeySearch.searchLeaf(cursor, bTreeNode, key, mutableKeys[0], keyCount, cursorContext);
                     }
+
                     pos = positionOf(searchResult, false);
 
                     if (!seekForward && pos >= keyCount) {
@@ -744,7 +749,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
                         bTreeNode.keyValueAt(
                                 cursor, mutableKeys[cachedLength], mutableValues[cachedLength], readPos, cursorContext);
                     } else {
-                        bTreeNode.keyAt(cursor, mutableKeys[cachedLength], readPos, INTERNAL, cursorContext);
+                        bTreeNode.keyAtInternal(cursor, mutableKeys[cachedLength], readPos, cursorContext);
                     }
 
                     if (insideEndRange(exactMatch, cachedLength)) {
@@ -873,8 +878,8 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         if (pointerCheckingWithGenerationCatchup(pointerId, allowNoNode, type)) {
             concurrentWriteHappened = true;
             return true;
-        } else if (!allowNoNode || TreeNode.isNode(pointerId)) {
-            TreeNode.goTo(cursor, type, pointerId);
+        } else if (!allowNoNode || TreeNodeUtil.isNode(pointerId)) {
+            TreeNodeUtil.goTo(cursor, type, pointerId);
             lastFollowedPointerGeneration = pointerGeneration;
             concurrentWriteHappened = true;
             return true;
@@ -908,8 +913,8 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
      */
     private long readPrevSibling() {
         return seekForward
-                ? TreeNode.leftSibling(cursor, stableGeneration, unstableGeneration, generationKeeper)
-                : TreeNode.rightSibling(cursor, stableGeneration, unstableGeneration, generationKeeper);
+                ? TreeNodeUtil.leftSibling(cursor, stableGeneration, unstableGeneration, generationKeeper)
+                : TreeNodeUtil.rightSibling(cursor, stableGeneration, unstableGeneration, generationKeeper);
     }
 
     /**
@@ -917,17 +922,8 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
      */
     private long readNextSibling() {
         return seekForward
-                ? TreeNode.rightSibling(cursor, stableGeneration, unstableGeneration, generationKeeper)
-                : TreeNode.leftSibling(cursor, stableGeneration, unstableGeneration, generationKeeper);
-    }
-
-    /**
-     * Does a binary search for the given {@code key} in the current tree node and returns its position.
-     *
-     * @return position of the {@code key} in the current tree node, or position of the closest key.
-     */
-    private int searchKey(KEY key, TreeNode.Type type) {
-        return KeySearch.search(cursor, bTreeNode, type, key, mutableKeys[0], keyCount, cursorContext);
+                ? TreeNodeUtil.rightSibling(cursor, stableGeneration, unstableGeneration, generationKeeper)
+                : TreeNodeUtil.leftSibling(cursor, stableGeneration, unstableGeneration, generationKeeper);
     }
 
     private static int positionOf(int searchResult, boolean lookingForChildPosition) {
@@ -942,17 +938,17 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
      * like a tree node or we can expect a shouldRetry to take place.
      */
     private boolean readHeader() {
-        nodeType = TreeNode.nodeType(cursor);
-        if (nodeType != TreeNode.NODE_TYPE_TREE_NODE) {
+        nodeType = TreeNodeUtil.nodeType(cursor);
+        if (nodeType != TreeNodeUtil.NODE_TYPE_TREE_NODE) {
             // If this node doesn't even look like a tree node then anything we read from it
             // will be just random data when looking at it as if it were a tree node.
             return false;
         }
 
-        isInternal = TreeNode.isInternal(cursor);
-        keyCount = TreeNode.keyCount(cursor);
-        currentNodeGeneration = TreeNode.generation(cursor);
-        successor = TreeNode.successor(cursor, stableGeneration, unstableGeneration, generationKeeper);
+        isInternal = TreeNodeUtil.isInternal(cursor);
+        keyCount = TreeNodeUtil.keyCount(cursor);
+        currentNodeGeneration = TreeNodeUtil.generation(cursor);
+        successor = TreeNodeUtil.successor(cursor, stableGeneration, unstableGeneration, generationKeeper);
         successorGeneration = generationKeeper.generation;
 
         forceReadHeader = false;
@@ -960,7 +956,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     }
 
     private boolean endedUpOnExpectedNode() {
-        return nodeType == TreeNode.NODE_TYPE_TREE_NODE && verifyNodeGenerationInvariants();
+        return nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE && verifyNodeGenerationInvariants();
     }
 
     /**
@@ -982,11 +978,11 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             // cursor are now updated with the latest, so let's try that read again.
             concurrentWriteHappened = true;
             return true;
-        } else if (TreeNode.isNode(pointerId)) {
+        } else if (TreeNodeUtil.isNode(pointerId)) {
             if (seekForward) {
                 // TODO: Check if rightSibling is within expected range before calling next.
                 // TODO: Possibly by getting highest expected from IdProvider
-                TreeNode.goTo(cursor, "sibling", pointerId);
+                TreeNodeUtil.goTo(cursor, "sibling", pointerId);
                 lastFollowedPointerGeneration = pointerGeneration;
                 if (first) {
                     // Have not yet found first hit among leaves.
@@ -1003,7 +999,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             } else {
                 // Need to scout next sibling because we are seeking backwards
                 if (scoutNextSibling()) {
-                    TreeNode.goTo(cursor, "sibling", pointerId);
+                    TreeNodeUtil.goTo(cursor, "sibling", pointerId);
                     verifyExpectedFirstAfterGoToNext = true;
                     lastFollowedPointerGeneration = pointerGeneration;
                 } else {
@@ -1038,13 +1034,13 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         int keyCount = -1;
         try (PageCursor scout = this.cursor.openLinkedCursor(GenerationSafePointerPair.pointer(pointerId))) {
             scout.next();
-            nodeType = TreeNode.nodeType(scout);
-            if (nodeType == TreeNode.NODE_TYPE_TREE_NODE) {
-                keyCount = TreeNode.keyCount(scout);
+            nodeType = TreeNodeUtil.nodeType(scout);
+            if (nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE) {
+                keyCount = TreeNodeUtil.keyCount(scout);
                 // if keyCount is 0 we observed intermediate state and caller will retry
                 if (keyCountIsSane(keyCount) && keyCount > 0) {
                     int firstPos = keyCount - 1;
-                    bTreeNode.keyAt(scout, expectedFirstAfterGoToNext, firstPos, LEAF, cursorContext);
+                    bTreeNode.keyAtLeaf(scout, expectedFirstAfterGoToNext, firstPos, cursorContext);
                 }
             }
 
@@ -1058,7 +1054,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             }
             checkOutOfBounds(this.cursor);
         }
-        return nodeType == TreeNode.NODE_TYPE_TREE_NODE && keyCountIsSane(keyCount) && keyCount > 0;
+        return nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE && keyCountIsSane(keyCount) && keyCount > 0;
     }
 
     /**
@@ -1101,7 +1097,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     }
 
     /**
-     * {@link TreeNode#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
+     * {@link TreeNodeUtil#keyCount(PageCursor) keyCount} is the only value read inside a do-shouldRetry loop
      * which is used as data fed into another read. Because of that extra assertions are made around
      * keyCount, both inside do-shouldRetry (requesting one more round in the loop) and outside
      * (calling this method, which may throw exception).
@@ -1116,7 +1112,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     }
 
     private boolean saneRead() {
-        return keyCountIsSane(keyCount) && KeySearch.isSuccess(searchResult);
+        return keyCountIsSane(keyCount);
     }
 
     /**
@@ -1152,7 +1148,6 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         isInternal = false;
         pointerId = 0;
         pointerGeneration = 0;
-        searchResult = 0;
         prevSiblingId = 0;
         prevSiblingGeneration = 0;
         forceReadHeader = false;

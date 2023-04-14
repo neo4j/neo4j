@@ -19,7 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.TreeNode.NO_NODE_FLAG;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.NO_NODE_FLAG;
 
 import java.nio.file.Path;
 import org.neo4j.io.pagecache.PageCursor;

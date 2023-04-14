@@ -20,7 +20,7 @@
 package org.neo4j.index.internal.gbptree;
 
 import static java.lang.String.format;
-import static org.neo4j.index.internal.gbptree.TreeNode.NO_OFFLOAD_ID;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.NO_OFFLOAD_ID;
 
 import java.io.PrintStream;
 import org.apache.commons.lang3.tuple.Pair;

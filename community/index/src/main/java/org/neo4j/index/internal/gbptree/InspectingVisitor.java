@@ -131,7 +131,7 @@ public class InspectingVisitor<ROOT_KEY, KEY, VALUE> extends GBPTreeVisitor.Adap
 
     @Override
     public void key(KEY key, boolean isLeaf, long offloadId) {
-        if (offloadId != TreeNode.NO_OFFLOAD_ID) {
+        if (offloadId != TreeNodeUtil.NO_OFFLOAD_ID) {
             offloadNodes.add(offloadId);
         }
     }

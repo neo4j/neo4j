@@ -23,11 +23,11 @@ import static java.lang.Math.toIntExact;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.pointer;
 import static org.neo4j.index.internal.gbptree.IdSpace.MIN_TREE_NODE_ID;
 import static org.neo4j.index.internal.gbptree.PointerChecking.checkOutOfBounds;
-import static org.neo4j.index.internal.gbptree.TreeNode.NO_OFFLOAD_ID;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
-import static org.neo4j.index.internal.gbptree.TreeNode.goTo;
-import static org.neo4j.index.internal.gbptree.TreeNode.isNode;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.NO_OFFLOAD_ID;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.goTo;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.isNode;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -185,29 +185,31 @@ class GBPTreeConsistencyChecker<KEY> {
 
         do {
             // for assertSiblings
-            leftSiblingPointer = TreeNode.leftSibling(cursor, stableGeneration, unstableGeneration, generationTarget);
+            leftSiblingPointer =
+                    TreeNodeUtil.leftSibling(cursor, stableGeneration, unstableGeneration, generationTarget);
             leftSiblingPointerGeneration = generationTarget.generation;
-            rightSiblingPointer = TreeNode.rightSibling(cursor, stableGeneration, unstableGeneration, generationTarget);
+            rightSiblingPointer =
+                    TreeNodeUtil.rightSibling(cursor, stableGeneration, unstableGeneration, generationTarget);
             rightSiblingPointerGeneration = generationTarget.generation;
             leftSiblingPointer = pointer(leftSiblingPointer);
             rightSiblingPointer = pointer(rightSiblingPointer);
-            currentNodeGeneration = TreeNode.generation(cursor);
+            currentNodeGeneration = TreeNodeUtil.generation(cursor);
 
-            successor = TreeNode.successor(cursor, stableGeneration, unstableGeneration, generationTarget);
+            successor = TreeNodeUtil.successor(cursor, stableGeneration, unstableGeneration, generationTarget);
 
-            keyCount = TreeNode.keyCount(cursor);
-            nodeType = TreeNode.nodeType(cursor);
-            treeNodeType = TreeNode.treeNodeType(cursor);
+            keyCount = TreeNodeUtil.keyCount(cursor);
+            nodeType = TreeNodeUtil.nodeType(cursor);
+            treeNodeType = TreeNodeUtil.treeNodeType(cursor);
         } while (cursor.shouldRetry());
         checkAfterShouldRetry(cursor);
 
-        if (nodeType != TreeNode.NODE_TYPE_TREE_NODE) {
+        if (nodeType != TreeNodeUtil.NODE_TYPE_TREE_NODE) {
             visitor.notATreeNode(pageId, file);
             return;
         }
 
-        boolean isLeaf = treeNodeType == TreeNode.LEAF_FLAG;
-        boolean isInternal = treeNodeType == TreeNode.INTERNAL_FLAG;
+        boolean isLeaf = treeNodeType == TreeNodeUtil.LEAF_FLAG;
+        boolean isInternal = treeNodeType == TreeNodeUtil.INTERNAL_FLAG;
         if (!isInternal && !isLeaf) {
             visitor.unknownTreeNodeType(pageId, treeNodeType, file);
             return;
@@ -220,7 +222,7 @@ class GBPTreeConsistencyChecker<KEY> {
                 stableGeneration,
                 unstableGeneration,
                 GBPTreePointerType.leftSibling(),
-                TreeNode.BYTE_POS_LEFTSIBLING,
+                TreeNodeUtil.BYTE_POS_LEFTSIBLING,
                 visitor,
                 reportDirty);
         assertNoCrashOrBrokenPointerInGSPP(
@@ -229,7 +231,7 @@ class GBPTreeConsistencyChecker<KEY> {
                 stableGeneration,
                 unstableGeneration,
                 GBPTreePointerType.rightSibling(),
-                TreeNode.BYTE_POS_RIGHTSIBLING,
+                TreeNodeUtil.BYTE_POS_RIGHTSIBLING,
                 visitor,
                 reportDirty);
         assertNoCrashOrBrokenPointerInGSPP(
@@ -238,7 +240,7 @@ class GBPTreeConsistencyChecker<KEY> {
                 stableGeneration,
                 unstableGeneration,
                 GBPTreePointerType.successor(),
-                TreeNode.BYTE_POS_SUCCESSOR,
+                TreeNodeUtil.BYTE_POS_SUCCESSOR,
                 visitor,
                 reportDirty);
 

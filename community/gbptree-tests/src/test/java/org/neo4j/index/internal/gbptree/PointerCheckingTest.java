@@ -38,7 +38,7 @@ class PointerCheckingTest {
     @Test
     void checkChildShouldThrowOnNoNode() {
         assertThrows(
-                TreeInconsistencyException.class, () -> PointerChecking.checkPointer(TreeNode.NO_NODE_FLAG, false));
+                TreeInconsistencyException.class, () -> PointerChecking.checkPointer(TreeNodeUtil.NO_NODE_FLAG, false));
     }
 
     @Test
@@ -87,7 +87,7 @@ class PointerCheckingTest {
     @Test
     void checkSiblingShouldPassOnReadSuccessForNoNodePointer() {
         // GIVEN
-        write(cursor, TreeNode.NO_NODE_FLAG, firstGeneration, secondGeneration);
+        write(cursor, TreeNodeUtil.NO_NODE_FLAG, firstGeneration, secondGeneration);
         cursor.setOffset(0);
 
         // WHEN

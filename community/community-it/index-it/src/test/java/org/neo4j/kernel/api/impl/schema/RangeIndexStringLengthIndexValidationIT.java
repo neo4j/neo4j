@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.impl.schema;
 import static org.neo4j.internal.schema.IndexType.RANGE;
 import static org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil.generateStringResultingInIndexEntrySize;
 
-import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
+import org.neo4j.index.internal.gbptree.DynamicSizeUtil;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
@@ -31,7 +31,7 @@ import org.neo4j.test.RandomSupport;
 public class RangeIndexStringLengthIndexValidationIT extends StringLengthIndexValidationIT {
     @Override
     protected int getSingleKeySizeLimit(int payloadSize) {
-        return TreeNodeDynamicSize.keyValueSizeCapFromPageSize(payloadSize);
+        return DynamicSizeUtil.keyValueSizeCapFromPageSize(payloadSize);
     }
 
     @Override

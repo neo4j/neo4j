@@ -26,10 +26,10 @@ import static org.eclipse.collections.impl.factory.Sets.immutable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
-import static org.neo4j.index.internal.gbptree.TreeNode.DATA_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
-import static org.neo4j.index.internal.gbptree.TreeNode.ROOT_LAYER_FLAG;
-import static org.neo4j.index.internal.gbptree.TreeNode.setKeyCount;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.DATA_LAYER_FLAG;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.ROOT_LAYER_FLAG;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.setKeyCount;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.test.utils.PageCacheConfig.config;
 

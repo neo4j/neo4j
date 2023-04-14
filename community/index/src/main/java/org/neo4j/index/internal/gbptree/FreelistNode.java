@@ -39,10 +39,10 @@ import org.neo4j.io.pagecache.PageCursor;
  */
 class FreelistNode {
     private static final int PAGE_ID_SIZE = GenerationSafePointer.POINTER_SIZE;
-    private static final int BYTE_POS_NEXT = TreeNode.BYTE_POS_NODE_TYPE + Byte.BYTES;
+    private static final int BYTE_POS_NEXT = TreeNodeUtil.BYTE_POS_NODE_TYPE + Byte.BYTES;
     private static final int HEADER_LENGTH = BYTE_POS_NEXT + PAGE_ID_SIZE;
     private static final int ENTRY_SIZE = GenerationSafePointer.GENERATION_SIZE + PAGE_ID_SIZE;
-    static final long NO_PAGE_ID = TreeNode.NO_NODE_FLAG;
+    static final long NO_PAGE_ID = TreeNodeUtil.NO_NODE_FLAG;
 
     private final int maxEntries;
 
@@ -51,7 +51,7 @@ class FreelistNode {
     }
 
     static void initialize(PageCursor cursor) {
-        cursor.putByte(TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_FREE_LIST_NODE);
+        cursor.putByte(TreeNodeUtil.BYTE_POS_NODE_TYPE, TreeNodeUtil.NODE_TYPE_FREE_LIST_NODE);
     }
 
     void write(PageCursor cursor, long unstableGeneration, long pageId, int pos) {

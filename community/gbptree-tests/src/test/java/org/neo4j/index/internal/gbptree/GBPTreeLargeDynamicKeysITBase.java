@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.calculatePayloadSize;
 import static org.neo4j.index.internal.gbptree.GBPTreeTestUtil.consistencyCheckStrict;
-import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
@@ -173,7 +172,8 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     @Test
     void shouldWriteAndReadSmallToSemiLargeEntries() throws IOException {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize(calculatePayloadSize(getPageCache(), getOpenOptions()));
+        int pageSize = calculatePayloadSize(getPageCache(), getOpenOptions());
+        int keyValueSizeCap = DynamicSizeUtil.keyValueSizeCapFromPageSize(pageSize);
         int minValueSize = 0;
         int maxValueSize = random.nextInt(200);
         int minKeySize = 4;
@@ -183,7 +183,8 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     @Test
     void shouldWriteAndReadSmallToLargeEntries() throws IOException {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize(calculatePayloadSize(getPageCache(), getOpenOptions()));
+        int pageSize = calculatePayloadSize(getPageCache(), getOpenOptions());
+        int keyValueSizeCap = DynamicSizeUtil.keyValueSizeCapFromPageSize(pageSize);
         int minValueSize = 0;
         int maxValueSize = random.nextInt(200);
         int minKeySize = 4;
@@ -193,7 +194,8 @@ abstract class GBPTreeLargeDynamicKeysITBase {
 
     @Test
     void shouldWriteAndReadSemiLargeToLargeEntries() throws IOException {
-        int keyValueSizeCap = keyValueSizeCapFromPageSize(calculatePayloadSize(getPageCache(), getOpenOptions()));
+        int pageSize = calculatePayloadSize(getPageCache(), getOpenOptions());
+        int keyValueSizeCap = DynamicSizeUtil.keyValueSizeCapFromPageSize(pageSize);
         int minValueSize = 0;
         int maxValueSize = random.nextInt(200);
         int minKeySize = keyValueSizeCap / 5;

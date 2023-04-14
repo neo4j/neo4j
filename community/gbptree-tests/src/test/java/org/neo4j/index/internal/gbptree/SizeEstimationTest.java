@@ -23,7 +23,6 @@ import static java.lang.Math.abs;
 import static java.lang.Math.toIntExact;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
-import static org.neo4j.index.internal.gbptree.TreeNodeDynamicSize.keyValueSizeCapFromPageSize;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.io.IOException;
@@ -69,8 +68,8 @@ class SizeEstimationTest {
 
     @Test
     void shouldEstimateSizeOnDynamicSizeKeys() throws IOException {
-        int largeEntriesSize =
-                keyValueSizeCapFromPageSize(GBPTreeTestUtil.calculatePayloadSize(pageCache, getOpenOptions())) / 2;
+        int pageSize = GBPTreeTestUtil.calculatePayloadSize(pageCache, getOpenOptions());
+        int largeEntriesSize = DynamicSizeUtil.keyValueSizeCapFromPageSize(pageSize) / 2;
         int largeEntryModulo = random.nextInt(0, 10); // 0 = no large keys
         SimpleByteArrayLayout layout = new SimpleByteArrayLayout(largeEntriesSize, largeEntryModulo);
         assertEstimateSizeCorrectly(layout);

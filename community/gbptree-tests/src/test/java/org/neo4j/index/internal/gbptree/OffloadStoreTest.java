@@ -169,7 +169,7 @@ class OffloadStoreTest {
         long offloadId = offloadStore.writeKey(key, STABLE_GENERATION, UNSTABLE_GENERATION, NULL_CONTEXT);
 
         cursor.next(offloadId);
-        assertEquals(TreeNode.NODE_TYPE_OFFLOAD, TreeNode.nodeType(cursor));
+        assertEquals(TreeNodeUtil.NODE_TYPE_OFFLOAD, TreeNodeUtil.nodeType(cursor));
     }
 
     @Test

@@ -47,7 +47,7 @@ class PointerChecking {
      *
      * @param result result from {@link GenerationSafePointerPair#FLAG_READ} or
      * {@link GenerationSafePointerPair#write(PageCursor, long, long, long)}.
-     * @param allowNoNode If {@link TreeNode#NO_NODE_FLAG} is allowed as pointer value.
+     * @param allowNoNode If {@link TreeNodeUtil#NO_NODE_FLAG} is allowed as pointer value.
      * @param nodeId id of node from which result was read.
      * @param pointerType a string describing the type of pointer that was read.
      * @param stableGeneration current stable generation.
@@ -85,7 +85,7 @@ class PointerChecking {
     }
 
     private static void assertIdSpace(boolean allowNoNode, long result) {
-        if (allowNoNode && !TreeNode.isNode(result)) {
+        if (allowNoNode && !TreeNodeUtil.isNode(result)) {
             return;
         }
         if (result < IdSpace.MIN_TREE_NODE_ID) {
@@ -102,8 +102,8 @@ class PointerChecking {
      * @param unstableGeneration Current unstable generation of tree.
      */
     static boolean assertNoSuccessor(PageCursor cursor, long stableGeneration, long unstableGeneration) {
-        long successor = TreeNode.successor(cursor, stableGeneration, unstableGeneration);
-        if (TreeNode.isNode(successor)) {
+        long successor = TreeNodeUtil.successor(cursor, stableGeneration, unstableGeneration);
+        if (TreeNodeUtil.isNode(successor)) {
             throw new TreeInconsistencyException(WRITER_TRAVERSE_OLD_STATE_MESSAGE);
         }
         return true;

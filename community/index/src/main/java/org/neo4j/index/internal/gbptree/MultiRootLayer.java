@@ -27,8 +27,8 @@ import static org.neo4j.index.internal.gbptree.Generation.unstableGeneration;
 import static org.neo4j.index.internal.gbptree.InternalTreeLogic.DEFAULT_SPLIT_RATIO;
 import static org.neo4j.index.internal.gbptree.SeekCursor.DEFAULT_MAX_READ_AHEAD;
 import static org.neo4j.index.internal.gbptree.SeekCursor.LEAF_LEVEL;
-import static org.neo4j.index.internal.gbptree.TreeNode.DATA_LAYER_FLAG;
-import static org.neo4j.index.internal.gbptree.TreeNode.ROOT_LAYER_FLAG;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.DATA_LAYER_FLAG;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.ROOT_LAYER_FLAG;
 import static org.neo4j.index.internal.gbptree.ValueMergers.overwrite;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -172,7 +172,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
                                 }
                                 try (PageCursor cursor = support.openRootCursor(
                                         existingValue.asRoot(), PF_SHARED_WRITE_LOCK, cursorContext)) {
-                                    if (TreeNode.keyCount(cursor) != 0) {
+                                    if (TreeNodeUtil.keyCount(cursor) != 0) {
                                         throw new DataTreeNotEmptyException(dataRootKey);
                                     }
                                     rootIdToRelease.setValue(existingValue.rootId);
@@ -378,7 +378,7 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
     @Override
     void printNode(PageCursor cursor, CursorContext cursorContext) {
-        byte layerType = TreeNode.layerType(cursor);
+        byte layerType = TreeNodeUtil.layerType(cursor);
         var treeNode = layerType == DATA_LAYER_FLAG ? dataTreeNode : rootTreeNode;
         long generation = support.generation();
         treeNode.printNode(

@@ -19,9 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
-import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
-import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_LEFTSIBLING;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_RIGHTSIBLING;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BYTE_POS_SUCCESSOR;
 
 import java.util.Objects;
 

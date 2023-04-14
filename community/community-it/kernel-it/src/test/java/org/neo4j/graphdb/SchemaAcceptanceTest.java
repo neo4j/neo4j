@@ -67,7 +67,7 @@ import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
+import org.neo4j.index.internal.gbptree.DynamicSizeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
@@ -2461,7 +2461,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
     }
 
     private static String tooLargeString() {
-        int violatingSize = TreeNodeDynamicSize.keyValueSizeCapFromPageSize(PageCache.PAGE_SIZE) + 1;
+        int violatingSize = DynamicSizeUtil.keyValueSizeCapFromPageSize(PageCache.PAGE_SIZE) + 1;
         return IndexEntryTestUtil.generateStringResultingInIndexEntrySize(violatingSize);
     }
 

@@ -36,7 +36,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
+import org.neo4j.index.internal.gbptree.DynamicSizeUtil;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -74,8 +74,8 @@ class CompositeStringLengthValidationIT {
     @BeforeEach
     void calculateSlotSizes() {
         // TODO mvcc: this test should verify smaller limit for mvcc record format when we can start db with that format
-        int totalSpace =
-                TreeNodeDynamicSize.keyValueSizeCapFromPageSize(pageCache.pageSize()) - NativeIndexKey.ENTITY_ID_SIZE;
+        int pageSize = pageCache.pageSize();
+        int totalSpace = DynamicSizeUtil.keyValueSizeCapFromPageSize(pageSize) - NativeIndexKey.ENTITY_ID_SIZE;
         int perSlotOverhead = GenericKey.TYPE_ID_SIZE + Types.SIZE_STRING_LENGTH;
         int firstSlotSpace = totalSpace / 2;
         int secondSlotSpace = totalSpace - firstSlotSpace;

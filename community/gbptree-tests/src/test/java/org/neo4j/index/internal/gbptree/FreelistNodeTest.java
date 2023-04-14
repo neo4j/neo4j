@@ -40,26 +40,26 @@ class FreelistNodeTest {
         FreelistNode.initialize(cursor);
 
         // WHEN
-        byte nodeType = TreeNode.nodeType(cursor);
+        byte nodeType = TreeNodeUtil.nodeType(cursor);
 
         // THEN
-        assertEquals(TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType);
+        assertEquals(TreeNodeUtil.NODE_TYPE_FREE_LIST_NODE, nodeType);
     }
 
     @Test
     void shouldNodeOverwriteNodeType() {
         // GIVEN
         FreelistNode.initialize(cursor);
-        byte nodeType = TreeNode.nodeType(cursor);
-        assertEquals(TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType);
+        byte nodeType = TreeNodeUtil.nodeType(cursor);
+        assertEquals(TreeNodeUtil.NODE_TYPE_FREE_LIST_NODE, nodeType);
 
         // WHEN
         long someId = 1234;
         FreelistNode.setNext(cursor, someId);
 
         // THEN
-        nodeType = TreeNode.nodeType(cursor);
-        assertEquals(TreeNode.NODE_TYPE_FREE_LIST_NODE, nodeType);
+        nodeType = TreeNodeUtil.nodeType(cursor);
+        assertEquals(TreeNodeUtil.NODE_TYPE_FREE_LIST_NODE, nodeType);
     }
 
     @Test

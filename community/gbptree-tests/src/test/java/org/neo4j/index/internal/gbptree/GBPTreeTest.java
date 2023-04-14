@@ -1538,8 +1538,8 @@ class GBPTreeTest {
                 long stableGeneration = newestState.stableGeneration();
                 long unstableGeneration = newestState.unstableGeneration();
 
-                TreeNode.goTo(cursor, "root", rootId);
-                TreeNode.setSuccessor(cursor, 42, stableGeneration + 1, unstableGeneration + 1);
+                TreeNodeUtil.goTo(cursor, "root", rootId);
+                TreeNodeUtil.setSuccessor(cursor, 42, stableGeneration + 1, unstableGeneration + 1);
             }
 
             // WHEN
@@ -1913,10 +1913,10 @@ class GBPTreeTest {
         try (PagedFile pagedFile = pageCache.map(indexFile, defaultPageSize, DEFAULT_DATABASE_NAME, getOpenOptions());
                 PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, NULL_CONTEXT)) {
             assertTrue(cursor.next(corruptChild));
-            assertTrue(TreeNode.isLeaf(cursor));
+            assertTrue(TreeNodeUtil.isLeaf(cursor));
 
             // Make child look like freelist node
-            cursor.putByte(TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_FREE_LIST_NODE);
+            cursor.putByte(TreeNodeUtil.BYTE_POS_NODE_TYPE, TreeNodeUtil.NODE_TYPE_FREE_LIST_NODE);
         }
     }
 

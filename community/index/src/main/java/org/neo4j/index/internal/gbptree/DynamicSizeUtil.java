@@ -20,8 +20,16 @@
 package org.neo4j.index.internal.gbptree;
 
 import static java.lang.String.format;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.BASE_HEADER_LENGTH;
+import static org.neo4j.index.internal.gbptree.TreeNodeUtil.SIZE_PAGE_REFERENCE;
+import static org.neo4j.io.ByteUnit.kibiBytes;
+import static org.neo4j.io.pagecache.PageCursorUtil.getUnsignedShort;
+import static org.neo4j.io.pagecache.PageCursorUtil.putUnsignedShort;
 
+import org.eclipse.collections.api.block.function.primitive.IntToIntFunction;
+import org.eclipse.collections.impl.map.mutable.primitive.IntIntHashMap;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Gather utility methods for reading and writing individual dynamic sized
@@ -92,9 +100,20 @@ import org.neo4j.io.pagecache.PageCursor;
  * First bit in keyValueSize is used as a tombstone, set to 1 if key is dead.
  */
 public class DynamicSizeUtil {
+    public static final int OFFSET_SIZE = 2;
+    public static final int KEY_OFFSET_AND_CHILD_SIZE = OFFSET_SIZE + SIZE_PAGE_REFERENCE;
+    public static final int BYTE_POS_ALLOC_OFFSET = BASE_HEADER_LENGTH;
+    public static final int BYTE_POS_DEAD_SPACE = BYTE_POS_ALLOC_OFFSET + OFFSET_SIZE;
+    public static final int HEADER_LENGTH_DYNAMIC = BYTE_POS_DEAD_SPACE + OFFSET_SIZE;
+
     static final int MIN_SIZE_KEY_VALUE_SIZE = 1 /*key*/ /*0B value*/;
     static final int MAX_SIZE_KEY_VALUE_SIZE = 2 /*key*/ + 2 /*value*/;
     static final int SIZE_OFFLOAD_ID = Long.BYTES;
+    /**
+     * Offsets less than this can be encoded with 2 bytes
+     */
+    @VisibleForTesting
+    static final int SUPPORTED_PAGE_SIZE_LIMIT = (int) kibiBytes(64);
 
     private static final int FLAG_FIRST_BYTE_TOMBSTONE = 0x80;
     private static final int FLAG_SECOND_BYTE_OFFLOAD = 0x80;
@@ -113,6 +132,16 @@ public class DynamicSizeUtil {
     private static final int FLAG_ADDITIONAL_VALUE_SIZE = 0x80;
     private static final int SHIFT_LSB_KEY_SIZE = 5;
     private static final int SHIFT_LSB_VALUE_SIZE = 7;
+    /**
+     * This is the fixed key value size cap in 4.0 and it is based on
+     * {@link OffloadStoreImpl#keyValueSizeCapFromPageSize(int)} with pageSize=8192.
+     * In 4.2 the possibility to have larger page cache pages was introduced,
+     * but we still want to keep the same key value size cap for simplicity.
+     */
+    private static final int FIXED_MAX_KEY_VALUE_SIZE_CAP = 8175;
+
+    static final int LEAST_NUMBER_OF_ENTRIES_PER_PAGE = 2;
+    private static final int MINIMUM_ENTRY_SIZE_CAP = Long.BYTES;
 
     /**
      * Put key value size for inlined entries only, supports key size up to 4095
@@ -269,5 +298,196 @@ public class DynamicSizeUtil {
 
     static void putOffloadId(PageCursor cursor, long offloadId) {
         cursor.putLong(offloadId);
+    }
+
+    static long offloadIdAt(PageCursor cursor) {
+        long keyValueSize = readKeyValueSize(cursor);
+        boolean offload = extractOffload(keyValueSize);
+        if (offload) {
+            return DynamicSizeUtil.readOffloadId(cursor);
+        }
+        return TreeNodeUtil.NO_OFFLOAD_ID;
+    }
+
+    /**
+     * Redirects cursor by reading new offset from at the location specified by offset parameter
+     *
+     * @param cursor       - cursor
+     * @param offset       - offset where to look for the target offset
+     * @param headerLength - header length for the range check
+     * @param payloadSize  - payload size for the range check
+     */
+    static void redirectCursor(PageCursor cursor, int offset, int headerLength, int payloadSize) {
+        cursor.setOffset(offset);
+
+        // Read actual offset to key
+        int targetOffset = getUnsignedShort(cursor);
+
+        // Verify offset is reasonable
+        if (targetOffset >= payloadSize || targetOffset < headerLength) {
+            cursor.setCursorException(format(
+                    "Tried to read key on offset=%d, headerLength=%d, payloadSize=%d, offset=%d",
+                    targetOffset, headerLength, payloadSize, offset));
+            return;
+        }
+
+        // Set cursor to actual offset
+        cursor.setOffset(targetOffset);
+    }
+
+    static int getDeadSpace(PageCursor cursor) {
+        return getUnsignedShort(cursor, BYTE_POS_DEAD_SPACE);
+    }
+
+    static void setAllocOffset(PageCursor cursor, int allocOffset) {
+        putUnsignedShort(cursor, BYTE_POS_ALLOC_OFFSET, allocOffset);
+    }
+
+    static int getAllocOffset(PageCursor cursor) {
+        return getUnsignedShort(cursor, BYTE_POS_ALLOC_OFFSET);
+    }
+
+    @VisibleForTesting
+    static void setDeadSpace(PageCursor cursor, int deadSpace) {
+        putUnsignedShort(cursor, BYTE_POS_DEAD_SPACE, deadSpace);
+    }
+
+    static int getAllocSpace(PageCursor cursor, int endOfOffsetArray) {
+        int allocOffset = getAllocOffset(cursor);
+        return allocOffset - endOfOffsetArray;
+    }
+
+    static TreeNode.Overflow calculateOverflow(int neededSpace, int deadSpace, int allocSpace) {
+        return neededSpace <= allocSpace
+                ? TreeNode.Overflow.NO
+                : neededSpace <= allocSpace + deadSpace ? TreeNode.Overflow.NO_NEED_DEFRAG : TreeNode.Overflow.YES;
+    }
+
+    /**
+     * Given the offsets and sizes, moves bytes located at those offsets to the right boundary and updates offset array using posToOffsetFunction.
+     *
+     * This function does second and third steps of node defragmetation:
+     * The goal is to compact all alive keys in the node by reusing the space occupied by dead keys.
+     *
+     * BEFORE
+     * [8][X][1][3][X][2][X][7][5]
+     *
+     * AFTER
+     * .........[8][1][3][2][7][5]
+     * ^ Reclaimed space
+     *
+     * It works in 3 simple steps:
+     * 1. collect all alive blocks with their sizes
+     * 2. move all alive blocks to the rightmost position
+     * 3. update offsets in offsets array
+     *
+     * See {@link DynamicSizeUtil#recordAliveBlocks} for the first step
+     *
+     * @param cursor - cursor pointing to the node
+     * @param count - number of elements in offsets and sizes arrays
+     * @param offsets - offsets to move
+     * @param sizes - corresponding numbers of bytes at offsets
+     * @param rightBoundary - right boundary
+     * @param posToOffsetFunction - function to map position in offset array to offset
+     */
+    static void compactToRight(
+            PageCursor cursor,
+            int count,
+            int[] offsets,
+            int[] sizes,
+            int rightBoundary,
+            IntToIntFunction posToOffsetFunction) {
+        var remappedOffsets = compactRight(cursor, count, offsets, sizes, rightBoundary);
+        remapOffsets(cursor, count, remappedOffsets, posToOffsetFunction);
+    }
+
+    private static void remapOffsets(
+            PageCursor cursor, int keyCount, IntIntHashMap remappedOffsets, IntToIntFunction posToOffsetFunction) {
+        for (int pos = 0; pos < keyCount; pos++) {
+            int keyPosOffset = posToOffsetFunction.valueOf(pos);
+            cursor.setOffset(keyPosOffset);
+            int keyOffset = getUnsignedShort(cursor);
+            cursor.setOffset(keyPosOffset);
+            assert remappedOffsets.containsKey(keyOffset)
+                    : "missing mapping for offset " + keyOffset + " at pos " + pos + " key count " + keyCount
+                            + " all mappings " + remappedOffsets;
+            putUnsignedShort(cursor, remappedOffsets.get(keyOffset));
+        }
+    }
+
+    private static IntIntHashMap compactRight(
+            PageCursor cursor, int keyCount, int[] offsets, int[] sizes, int rightBoundary) {
+        int targetOffset = rightBoundary;
+        var remappedOffsets = new IntIntHashMap();
+        for (int index = keyCount - 1; index >= 0; index--) {
+            // move sizes[index] bytes from offsets[index] to the right so the end of the entry is at the targetOffset
+            var entrySize = sizes[index];
+            var sourceOffset = offsets[index];
+            targetOffset -= entrySize;
+            if (sourceOffset != targetOffset) {
+                cursor.copyTo(sourceOffset, cursor, targetOffset, entrySize);
+            }
+            remappedOffsets.put(sourceOffset, targetOffset);
+        }
+
+        // Update allocOffset¸
+        int prevAllocOffset = getAllocOffset(cursor);
+        setAllocOffset(cursor, targetOffset);
+
+        // Zero pad reclaimed area
+        zeroPad(cursor, prevAllocOffset, targetOffset - prevAllocOffset);
+        return remappedOffsets;
+    }
+
+    private static void zeroPad(PageCursor fromCursor, int fromOffset, int lengthInBytes) {
+        fromCursor.setOffset(fromOffset);
+        fromCursor.putBytes(lengthInBytes, (byte) 0);
+    }
+
+    static void recordAliveBlocks(PageCursor cursor, int keyCount, int[] offsets, int[] sizes, int payloadSize) {
+        int index = 0;
+        int currentOffset = getAllocOffset(cursor);
+        while (currentOffset < payloadSize && index < keyCount) {
+            cursor.setOffset(currentOffset);
+            long keyValueSize = readKeyValueSize(cursor);
+            int keySize = extractKeySize(keyValueSize);
+            int valueSize = extractValueSize(keyValueSize);
+            boolean offload = extractOffload(keyValueSize);
+            boolean dead = extractTombstone(keyValueSize);
+
+            var entrySize = keySize + valueSize + getOverhead(keySize, valueSize, offload);
+            if (!dead) {
+                offsets[index] = currentOffset;
+                sizes[index] = entrySize;
+                index++;
+            }
+            currentOffset += entrySize;
+        }
+        assert index == keyCount : "expected " + keyCount + " alive blocks, found only " + index;
+    }
+
+    @VisibleForTesting
+    public static int keyValueSizeCapFromPageSize(int pageSize) {
+        return Math.min(FIXED_MAX_KEY_VALUE_SIZE_CAP, OffloadStoreImpl.keyValueSizeCapFromPageSize(pageSize));
+    }
+
+    /**
+     * Inline key value size cap is calculated based of payload size and capped with max supported size of key for
+     * inlined encoding.
+     */
+    static int inlineKeyValueSizeCap(int payloadSize) {
+        int totalOverhead = OFFSET_SIZE + MAX_SIZE_KEY_VALUE_SIZE;
+        int capToFitNumberOfEntriesPerPage =
+                (payloadSize - HEADER_LENGTH_DYNAMIC) / LEAST_NUMBER_OF_ENTRIES_PER_PAGE - totalOverhead;
+        return Math.min(MAX_TWO_BYTE_KEY_SIZE, capToFitNumberOfEntriesPerPage);
+    }
+
+    static void validateInlineCap(int inlineKeyValueSizeCap, int payloadSize) {
+        if (inlineKeyValueSizeCap < MINIMUM_ENTRY_SIZE_CAP) {
+            throw new MetadataMismatchException(format(
+                    "We need to fit at least %d key-value entries per page in leaves. To do that a key-value entry can be at most %dB "
+                            + "with current page size of %dB. We require this cap to be at least %dB.",
+                    LEAST_NUMBER_OF_ENTRIES_PER_PAGE, inlineKeyValueSizeCap, payloadSize, MINIMUM_ENTRY_SIZE_CAP));
+        }
     }
 }

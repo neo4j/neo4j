@@ -47,7 +47,7 @@ public class TripCountingRootCatchup implements RootCatchup {
     static final int MAX_TRIP_COUNT =
             FeatureToggles.getInteger(TripCountingRootCatchup.class, MAX_TRIP_COUNT_NAME, MAX_TRIP_COUNT_DEFAULT);
     private final RootSupplier rootSupplier;
-    private long lastFromId = TreeNode.NO_NODE_FLAG;
+    private long lastFromId = TreeNodeUtil.NO_NODE_FLAG;
     private int tripCount;
 
     TripCountingRootCatchup(RootSupplier rootSupplier) {

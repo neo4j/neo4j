@@ -163,7 +163,7 @@ class CrashGenerationCleaner {
     private static boolean isTreeNode(PageCursor cursor) throws IOException {
         boolean isTreeNode;
         do {
-            isTreeNode = TreeNode.nodeType(cursor) == TreeNode.NODE_TYPE_TREE_NODE;
+            isTreeNode = TreeNodeUtil.nodeType(cursor) == TreeNodeUtil.NODE_TYPE_TREE_NODE;
         } while (cursor.shouldRetry());
         PointerChecking.checkOutOfBounds(cursor);
         return isTreeNode;
@@ -173,19 +173,19 @@ class CrashGenerationCleaner {
         int keyCount;
         byte layerType;
         do {
-            keyCount = TreeNode.keyCount(cursor);
-            layerType = TreeNode.layerType(cursor);
+            keyCount = TreeNodeUtil.keyCount(cursor);
+            layerType = TreeNodeUtil.layerType(cursor);
         } while (cursor.shouldRetry());
         PointerChecking.checkOutOfBounds(cursor);
 
         TreeNode<?, ?> treeNode = selectTreeNode(layerType);
         boolean hasCrashed;
         do {
-            hasCrashed = hasCrashedGSPP(cursor, TreeNode.BYTE_POS_SUCCESSOR)
-                    || hasCrashedGSPP(cursor, TreeNode.BYTE_POS_LEFTSIBLING)
-                    || hasCrashedGSPP(cursor, TreeNode.BYTE_POS_RIGHTSIBLING);
+            hasCrashed = hasCrashedGSPP(cursor, TreeNodeUtil.BYTE_POS_SUCCESSOR)
+                    || hasCrashedGSPP(cursor, TreeNodeUtil.BYTE_POS_LEFTSIBLING)
+                    || hasCrashedGSPP(cursor, TreeNodeUtil.BYTE_POS_RIGHTSIBLING);
 
-            if (!hasCrashed && TreeNode.isInternal(cursor)) {
+            if (!hasCrashed && TreeNodeUtil.isInternal(cursor)) {
                 for (int i = 0; i <= keyCount && treeNode.reasonableChildCount(i) && !hasCrashed; i++) {
                     hasCrashed = hasCrashedGSPP(cursor, treeNode.childOffset(i));
                 }
@@ -196,7 +196,7 @@ class CrashGenerationCleaner {
     }
 
     private TreeNode<?, ?> selectTreeNode(byte layerType) {
-        return layerType == TreeNode.DATA_LAYER_FLAG ? dataTreeNode : rootTreeNode;
+        return layerType == TreeNodeUtil.DATA_LAYER_FLAG ? dataTreeNode : rootTreeNode;
     }
 
     private boolean hasCrashedGSPP(PageCursor cursor, int gsppOffset) {
@@ -212,13 +212,13 @@ class CrashGenerationCleaner {
     // === Methods about actually cleaning a discovered crashed tree node ===
 
     private void cleanTreeNode(PageCursor cursor, LongAdder cleanedPointers) {
-        cleanCrashedGSPP(cursor, TreeNode.BYTE_POS_SUCCESSOR, cleanedPointers);
-        cleanCrashedGSPP(cursor, TreeNode.BYTE_POS_LEFTSIBLING, cleanedPointers);
-        cleanCrashedGSPP(cursor, TreeNode.BYTE_POS_RIGHTSIBLING, cleanedPointers);
+        cleanCrashedGSPP(cursor, TreeNodeUtil.BYTE_POS_SUCCESSOR, cleanedPointers);
+        cleanCrashedGSPP(cursor, TreeNodeUtil.BYTE_POS_LEFTSIBLING, cleanedPointers);
+        cleanCrashedGSPP(cursor, TreeNodeUtil.BYTE_POS_RIGHTSIBLING, cleanedPointers);
 
-        if (TreeNode.isInternal(cursor)) {
-            int keyCount = TreeNode.keyCount(cursor);
-            byte layerType = TreeNode.layerType(cursor);
+        if (TreeNodeUtil.isInternal(cursor)) {
+            int keyCount = TreeNodeUtil.keyCount(cursor);
+            byte layerType = TreeNodeUtil.layerType(cursor);
             TreeNode<?, ?> treeNode = selectTreeNode(layerType);
             for (int i = 0; i <= keyCount && treeNode.reasonableChildCount(i); i++) {
                 cleanCrashedGSPP(cursor, treeNode.childOffset(i), cleanedPointers);

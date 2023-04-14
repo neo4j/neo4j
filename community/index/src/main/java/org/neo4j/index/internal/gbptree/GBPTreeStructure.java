@@ -148,13 +148,13 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         // TreeState
         long currentPage = cursor.getCurrentPageId();
         visitTreeState(cursor, visitor);
-        TreeNode.goTo(cursor, "back to tree node from reading state", currentPage);
+        TreeNodeUtil.goTo(cursor, "back to tree node from reading state", currentPage);
 
         assertOnTreeNode(cursor);
 
         boolean isDataTree;
         do {
-            isDataTree = TreeNode.layerType(cursor) == TreeNode.DATA_LAYER_FLAG;
+            isDataTree = TreeNodeUtil.layerType(cursor) == TreeNodeUtil.DATA_LAYER_FLAG;
         } while (cursor.shouldRetry());
         visitor.beginTree(isDataTree);
 
@@ -172,7 +172,7 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
             level++;
 
             // Then go back to the left-most node on this level
-            TreeNode.goTo(cursor, "back", leftmostSibling);
+            TreeNodeUtil.goTo(cursor, "back", leftmostSibling);
         }
         // And continue down to next level if this level was an internal level
         while (goToLeftmostChild(cursor));
@@ -185,12 +185,12 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         boolean isInternal;
         boolean isLeaf;
         do {
-            nodeType = TreeNode.nodeType(cursor);
-            isInternal = TreeNode.isInternal(cursor);
-            isLeaf = TreeNode.isLeaf(cursor);
+            nodeType = TreeNodeUtil.nodeType(cursor);
+            isInternal = TreeNodeUtil.isInternal(cursor);
+            isLeaf = TreeNodeUtil.isLeaf(cursor);
         } while (cursor.shouldRetry());
 
-        if (nodeType != TreeNode.NODE_TYPE_TREE_NODE) {
+        if (nodeType != TreeNodeUtil.NODE_TYPE_TREE_NODE) {
             throw new IllegalArgumentException(
                     "Cursor is not pinned to a tree node page. pageId:" + cursor.getCurrentPageId());
         }
@@ -209,10 +209,10 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         long generation = -1;
         boolean isDataNode;
         do {
-            isLeaf = TreeNode.isLeaf(cursor);
-            keyCount = TreeNode.keyCount(cursor);
-            isDataNode = TreeNode.layerType(cursor) == TreeNode.DATA_LAYER_FLAG;
-            generation = TreeNode.generation(cursor);
+            isLeaf = TreeNodeUtil.isLeaf(cursor);
+            keyCount = TreeNodeUtil.keyCount(cursor);
+            isDataNode = TreeNodeUtil.layerType(cursor) == TreeNodeUtil.DATA_LAYER_FLAG;
+            generation = TreeNodeUtil.generation(cursor);
         } while (cursor.shouldRetry());
         Preconditions.checkState(treeNode(isDataNode).reasonableKeyCount(keyCount), "Unexpected keyCount %d", keyCount);
         visitor.beginNode(cursor.getCurrentPageId(), isLeaf, generation, keyCount);
@@ -309,15 +309,15 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
         long leftmostSibling = -1;
         boolean isDataNode;
         do {
-            isInternal = TreeNode.isInternal(cursor);
-            isDataNode = TreeNode.layerType(cursor) == TreeNode.DATA_LAYER_FLAG;
+            isInternal = TreeNodeUtil.isInternal(cursor);
+            isDataNode = TreeNodeUtil.layerType(cursor) == TreeNodeUtil.DATA_LAYER_FLAG;
         } while (cursor.shouldRetry());
 
         if (isInternal) {
             do {
                 leftmostSibling = treeNode(isDataNode).childAt(cursor, 0, stableGeneration, unstableGeneration);
             } while (cursor.shouldRetry());
-            TreeNode.goTo(cursor, "child", leftmostSibling);
+            TreeNodeUtil.goTo(cursor, "child", leftmostSibling);
         }
         return isInternal;
     }
@@ -330,12 +330,12 @@ public class GBPTreeStructure<ROOT_KEY, DATA_KEY, DATA_VALUE> {
             visitTreeNode(cursor, visitor, cursorContext);
 
             do {
-                rightSibling = TreeNode.rightSibling(cursor, stableGeneration, unstableGeneration);
+                rightSibling = TreeNodeUtil.rightSibling(cursor, stableGeneration, unstableGeneration);
             } while (cursor.shouldRetry());
 
-            if (TreeNode.isNode(rightSibling)) {
-                TreeNode.goTo(cursor, "right sibling", rightSibling);
+            if (TreeNodeUtil.isNode(rightSibling)) {
+                TreeNodeUtil.goTo(cursor, "right sibling", rightSibling);
             }
-        } while (TreeNode.isNode(rightSibling));
+        } while (TreeNodeUtil.isNode(rightSibling));
     }
 }

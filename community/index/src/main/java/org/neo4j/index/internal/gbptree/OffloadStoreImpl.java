@@ -194,15 +194,15 @@ public class OffloadStoreImpl<KEY, VALUE> implements OffloadStore<KEY, VALUE> {
     }
 
     static void writeHeader(PageCursor cursor) {
-        cursor.putByte(TreeNode.BYTE_POS_NODE_TYPE, TreeNode.NODE_TYPE_OFFLOAD);
+        cursor.putByte(TreeNodeUtil.BYTE_POS_NODE_TYPE, TreeNodeUtil.NODE_TYPE_OFFLOAD);
     }
 
     private static boolean readHeader(PageCursor cursor) {
-        byte type = TreeNode.nodeType(cursor);
-        if (type != TreeNode.NODE_TYPE_OFFLOAD) {
+        byte type = TreeNodeUtil.nodeType(cursor);
+        if (type != TreeNodeUtil.NODE_TYPE_OFFLOAD) {
             cursor.setCursorException(format(
                     "Tried to read from offload store but page is not an offload page. Expected %d but was %d",
-                    TreeNode.NODE_TYPE_OFFLOAD, type));
+                    TreeNodeUtil.NODE_TYPE_OFFLOAD, type));
             return false;
         }
         return true;

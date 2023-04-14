@@ -1368,12 +1368,13 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
     /**
      * Total size limit for key and value.
      * This limit includes storage overhead that is specific to key implementation for example entity id or meta data about type.
-     * @return Total size limit for key and value or {@link TreeNode#NO_KEY_VALUE_SIZE_CAP} if no such value exists.
+     * @return Total size limit for key and value or {@link TreeNodeUtil#NO_KEY_VALUE_SIZE_CAP} if no such value exists.
      */
     public int keyValueSizeCap() {
         return rootLayer.keyValueSizeCap();
     }
 
+    @VisibleForTesting
     int inlineKeyValueSizeCap() {
         return rootLayer.inlineKeyValueSizeCap();
     }
@@ -1434,8 +1435,8 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
         if (id <= freeList.lastId()) {
             try (PageCursor cursor = pagedFile.io(id, PagedFile.PF_SHARED_WRITE_LOCK, cursorContext)) {
                 cursor.next();
-                byte nodeType = TreeNode.nodeType(cursor);
-                if (nodeType == TreeNode.NODE_TYPE_TREE_NODE) {
+                byte nodeType = TreeNodeUtil.nodeType(cursor);
+                if (nodeType == TreeNodeUtil.NODE_TYPE_TREE_NODE) {
                     rootLayer.printNode(cursor, cursorContext);
                 }
             }
