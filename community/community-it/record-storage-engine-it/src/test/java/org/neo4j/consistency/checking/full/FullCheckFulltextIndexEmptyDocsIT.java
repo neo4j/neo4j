@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.memory_tracking;
 import static org.neo4j.configuration.GraphDatabaseSettings.neo4j_home;
+import static org.neo4j.configuration.GraphDatabaseSettings.pagecache_direct_io;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 
 import java.io.IOException;
@@ -62,8 +63,10 @@ public class FullCheckFulltextIndexEmptyDocsIT {
      */
     @Test
     void shouldNotReportEmptyDocsInFulltextIndexAsInconsistencies() throws Throwable {
-        Config config =
-                Config.newBuilder().set(neo4j_home, testDirectory.homePath()).build();
+        Config config = Config.newBuilder()
+                .set(neo4j_home, testDirectory.homePath())
+                .set(pagecache_direct_io, false)
+                .build();
 
         DatabaseManagementService managementService = startUpOldDb(config);
         GraphDatabaseAPI db =
