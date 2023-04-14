@@ -128,6 +128,7 @@ object CompilationPhases {
 
   case class ParsingConfig(
     extractLiterals: ExtractLiteral = ExtractLiteral.ALWAYS,
+    /* TODO: This is not part of configuration - Move to BaseState */
     parameterTypeMapping: Map[String, ParameterTypeInfo] = Map.empty,
     semanticFeatures: Seq[SemanticFeature] = defaultSemanticFeatures,
     obfuscateLiterals: Boolean = false

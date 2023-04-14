@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class InputQueryTest extends CypherFunSuite {
 
   private val preParser =
-    new PreParser(
+    new CachingPreParser(
       CypherConfiguration.fromConfig(Config.defaults()),
       new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 0)
     )

@@ -66,7 +66,7 @@ abstract class ExecutionEngine(
   // HELPER OBJECTS
   private val defaultQueryExecutionMonitor = kernelMonitors.newMonitor(classOf[QueryExecutionMonitor])
 
-  private val preParser = new PreParser(config, queryCaches.preParserCache)
+  private val preParser = new CachingPreParser(config, queryCaches.preParserCache)
 
   private val queryCache: QueryCache[CacheKey[InputQuery.CacheKey], ExecutableQuery] = queryCaches.executableQueryCache
 

@@ -24,10 +24,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseInternalSettings.ExtractLiteral
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.compiler.helpers.ParameterValueTypeHelper
-import org.neo4j.cypher.internal.compiler.phases.BaseContextImpl
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases
-import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.ParsingConfig
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.planPipeLine
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.prepareForCaching
 import org.neo4j.cypher.internal.compiler.phases.CompilationPhases.systemPipeLine
@@ -38,12 +35,9 @@ import org.neo4j.cypher.internal.compiler.planner.logical.debug.DebugPrinter
 import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.spi.PlannerNameFor
-import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
@@ -61,6 +55,10 @@ case class CypherPlanner[Context <: PlannerContext](
   updateStrategy: UpdateStrategy,
   clock: Clock
 ) {
+
+  private val parsingConfig = CypherParsingConfig.fromCypherPlannerConfiguration(config)
+
+  private val parsing = new CypherParsing(monitors, parsingConfig)
 
   def normalizeQuery(state: BaseState, context: Context): BaseState = prepareForCaching.transform(state, context)
 
@@ -86,16 +84,16 @@ case class CypherPlanner[Context <: PlannerContext](
     params: MapValue,
     cancellationChecker: CancellationChecker
   ): BaseState = {
-
-    val plannerName = PlannerNameFor(plannerNameText)
-    val startState = InitialState(queryText, offset, plannerName, new AnonymousVariableNameGenerator)
-    val context = BaseContextImpl(tracer, notificationLogger, rawQueryText, offset, monitors, cancellationChecker)
-    CompilationPhases.parsing(ParsingConfig(
-      extractLiterals = config.extractLiterals(),
-      semanticFeatures = config.enabledSemanticFeatures(),
-      parameterTypeMapping = ParameterValueTypeHelper.asCypherTypeMap(params, config.useParameterSizeHint()),
-      obfuscateLiterals = config.obfuscateLiterals()
-    )).transform(startState, context)
+    parsing.parseQuery(
+      queryText,
+      rawQueryText,
+      notificationLogger,
+      plannerNameText,
+      offset,
+      tracer,
+      params,
+      cancellationChecker
+    )
   }
 
 }

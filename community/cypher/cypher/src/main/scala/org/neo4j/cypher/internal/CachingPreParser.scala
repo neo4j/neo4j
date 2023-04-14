@@ -53,10 +53,10 @@ import scala.jdk.CollectionConverters.ListHasAsScala
  *   )
  * )
  */
-class PreParser(
+class CachingPreParser(
   configuration: CypherConfiguration,
   preParserCache: LFUCache[String, PreParsedQuery]
-) {
+) extends PreParser(configuration) {
 
   /**
    * Clear the pre-parser query cache.
@@ -85,9 +85,9 @@ class PreParser(
   ): PreParsedQuery = {
     val preParsedQuery =
       if (couldContainSensitiveFields) { // This is potentially any outer query running on the system database
-        actuallyPreParse(queryText, notificationLogger)
+        preParse(queryText, notificationLogger)
       } else {
-        preParserCache.computeIfAbsent(queryText, actuallyPreParse(queryText, notificationLogger))
+        preParserCache.computeIfAbsent(queryText, preParse(queryText, notificationLogger))
       }
     if (profile) {
       preParsedQuery.copy(options = preParsedQuery.options.withExecutionMode(CypherExecutionMode.profile))
@@ -95,8 +95,13 @@ class PreParser(
       preParsedQuery
     }
   }
+}
 
-  private def actuallyPreParse(
+class PreParser(
+  configuration: CypherConfiguration
+) {
+
+  def preParse(
     queryText: String,
     notificationLogger: InternalNotificationLogger
   ): PreParsedQuery = {
@@ -129,6 +134,7 @@ class PreParser(
 
     PreParsedQuery(preParsedStatement.statement, queryText, options)
   }
+
 }
 
 object PreParser {

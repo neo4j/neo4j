@@ -75,7 +75,7 @@ object Catalog {
     def eval(args: Seq[AnyValue], catalog: Catalog): Graph
 
     def checkArity(args: Seq[AnyValue]): Unit =
-      if (args.size != arity) Errors.wrongArity(arity, args.size, InputPosition.NONE)
+      if (args.size != arity) Errors.wrongArity(arity, args.size)
 
     def cast[T <: AnyValue](a: Arg[T], v: AnyValue, args: Seq[AnyValue]): T =
       try a.tpe.cast(v)

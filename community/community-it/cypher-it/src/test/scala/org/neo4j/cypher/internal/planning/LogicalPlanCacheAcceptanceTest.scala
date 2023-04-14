@@ -25,6 +25,7 @@ import org.neo4j.cypher.CacheCounts
 import org.neo4j.cypher.CountingCacheTracer
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
 import org.neo4j.cypher.GraphDatabaseTestSupport
+import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.CommunityCompilerFactory
 import org.neo4j.cypher.internal.CommunityRuntimeContextManager
 import org.neo4j.cypher.internal.CommunityRuntimeFactory
@@ -34,7 +35,6 @@ import org.neo4j.cypher.internal.CypherCurrentCompiler
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.MasterCompiler
 import org.neo4j.cypher.internal.PreParsedQuery
-import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.QueryCache.CacheKey
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.cache.CypherQueryCaches
@@ -138,7 +138,7 @@ class LogicalPlanCacheAcceptanceTest extends CypherFunSuite with GraphDatabaseTe
     cypherCompiler: Compiler = compiler
   ): String = {
 
-    val preParser = new PreParser(
+    val preParser = new CachingPreParser(
       CypherConfiguration.fromConfig(Config.defaults()),
       new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 1)
     )

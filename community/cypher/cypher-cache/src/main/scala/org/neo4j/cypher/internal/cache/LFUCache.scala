@@ -31,8 +31,11 @@ import java.util.concurrent.ConcurrentMap
 class LFUCache[K <: AnyRef, V <: AnyRef](
   cacheFactory: CaffeineCacheFactory,
   val size: Int,
-  tracer: CacheTracer[K] = new CacheTracer[K] {}
+  tracer: CacheTracer[K]
 ) {
+
+  def this(cacheFactory: CaffeineCacheFactory, size: Int) =
+    this(cacheFactory, size, new CacheTracer[K] {})
 
   val removalListener: RemovalListener[K, V] = (key: K, value: V, cause: RemovalCause) => tracer.discard(key, "")
 

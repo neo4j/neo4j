@@ -44,7 +44,7 @@ object Use {
   }
 
   @scala.annotation.tailrec
-  def show(use: Use): Any = use match {
+  def show(use: Use): String = use match {
     case s: Default   => show(s.graphSelection) + " (transaction default)"
     case d: Declared  => show(d.graphSelection)
     case i: Inherited => show(root(i))

@@ -20,9 +20,9 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.CypherQueryObfuscator
 import org.neo4j.cypher.internal.PreParsedQuery
-import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory
 import org.neo4j.cypher.internal.cache.LFUCache
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
@@ -66,7 +66,7 @@ class CypherQueryObfuscatorFactory {
 
   private val procedures = new GlobalProceduresRegistry()
 
-  private val preParser = new PreParser(
+  private val preParser = new CachingPreParser(
     CypherConfiguration.fromConfig(Config.defaults()),
     new LFUCache[String, PreParsedQuery](new ExecutorBasedCaffeineCacheFactory((r: Runnable) => r.run()), 1)
   )

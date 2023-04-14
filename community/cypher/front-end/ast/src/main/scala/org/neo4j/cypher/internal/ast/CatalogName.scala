@@ -30,6 +30,9 @@ object CatalogName {
     CatalogName(parts.head, parts.tail.toList)
   }
 
+  /** Java helper */
+  def of(part: String): CatalogName = CatalogName(part)
+
   val separatorChar: Char = '.'
   val separatorString: String = separatorChar.toString
   val quoteChar = "`"

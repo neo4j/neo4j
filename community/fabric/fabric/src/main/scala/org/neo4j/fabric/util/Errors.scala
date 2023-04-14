@@ -19,19 +19,19 @@
  */
 package org.neo4j.fabric.util
 
-import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.CatalogName
+import org.neo4j.cypher.internal.ast.GraphSelection
 import org.neo4j.cypher.internal.ast.semantics.FeatureError
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.exceptions.CypherTypeException
-import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.exceptions.InvalidSemanticsException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.fabric.eval.Catalog
+import org.neo4j.fabric.planning.Use
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 
@@ -50,7 +50,7 @@ object Errors {
     def update(upd: SemanticErrorDef => SemanticErrorDef): HasErrors
   }
 
-  case class InvalidQueryException(errors: Seq[SemanticErrorDef]) extends RuntimeException(
+  private case class InvalidQueryException(errors: Seq[SemanticErrorDef]) extends RuntimeException(
         s"Invalid query\n${errors.map(e => s"- ${e.msg} [at ${e.position}]").mkString("\n")}"
       ) with HasErrors {
     override def update(upd: SemanticErrorDef => SemanticErrorDef): InvalidQueryException = copy(errors.map(upd))
@@ -63,11 +63,9 @@ object Errors {
   }
   def openCypherSemantic(msg: String, node: ASTNode): SemanticError = SemanticError(msg, node.position)
 
-  def openCypherInvalidOnError(errors: Seq[SemanticErrorDef]): Unit = if (errors.nonEmpty) openCypherInvalid(errors)
+  private def openCypherInvalid(errors: Seq[SemanticErrorDef]): Nothing = throw InvalidQueryException(errors)
 
-  def openCypherInvalid(errors: Seq[SemanticErrorDef]): Nothing = throw InvalidQueryException(errors)
-
-  def openCypherInvalid(error: SemanticErrorDef): Nothing = openCypherInvalid(Seq(error))
+  private def openCypherInvalid(error: SemanticErrorDef): Nothing = openCypherInvalid(Seq(error))
 
   def openCypherFailure(errors: Seq[SemanticErrorDef]): Nothing = throw EvaluationFailedException(errors)
 
@@ -84,13 +82,10 @@ object Errors {
 
   def openCypherUnexpected(exp: String, got: ASTNode): Nothing = openCypherUnexpected(exp, got.position)
 
-  def openCypherUnknownFunction(qualifiedName: String, pos: InputPosition): Nothing =
-    openCypherFailure(SemanticError(s"Unknown function '$qualifiedName'", pos))
-
   def wrongType(exp: String, got: String): Nothing =
     throw new CypherTypeException(s"Wrong type. Expected $exp, got $got")
 
-  def wrongArity(exp: Int, got: Int, pos: InputPosition): Nothing =
+  def wrongArity(exp: Int, got: Int): Nothing =
     syntax(s"Wrong arity. Expected $exp argument(s), got $got argument(s)")
 
   def syntax(msg: String): Nothing = throw new SyntaxException(msg)
@@ -100,9 +95,15 @@ object Errors {
 
   def semantic(message: String) = throw new InvalidSemanticsException(message)
 
-  def ddlNotSupported(ddl: AdministrationCommand) = throw new DatabaseAdministrationException(
-    s"This is an administration command and it should be executed against the system database: ${ddl.name}"
-  )
+  private def dynamicGraphNotAllowedMessage(use: String) =
+    s"""Dynamic graph lookup not allowed here. This feature is only available on composite databases.
+       |Attempted to access graph $use""".stripMargin
+
+  def dynamicGraphNotAllowed(use: Use, queryString: String): Nothing =
+    syntax(dynamicGraphNotAllowedMessage(Use.show(use)), queryString, use.position)
+
+  def dynamicGraphNotAllowed(use: GraphSelection): Nothing =
+    syntax(dynamicGraphNotAllowedMessage(Use.show(use)))
 
   def entityNotFound(kind: String, needle: String): Nothing =
     throw new EntityNotFoundException(s"$kind not found: $needle")

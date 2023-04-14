@@ -20,8 +20,8 @@
 package org.neo4j.internal.collector
 
 import org.neo4j.configuration.Config
+import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.PreParsedQuery
-import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
@@ -51,7 +51,7 @@ case class PlainText(valueMapper: ValueMapper.JavaMapper) extends QueryAnonymize
 
 object IdAnonymizer {
 
-  private val preParser = new PreParser(
+  private val preParser = new CachingPreParser(
     CypherConfiguration.fromConfig(Config.defaults()),
     new LFUCache[String, PreParsedQuery](
       cacheFactory = new ExecutorBasedCaffeineCacheFactory((_: Runnable).run()),

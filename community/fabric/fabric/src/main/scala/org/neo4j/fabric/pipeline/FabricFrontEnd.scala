@@ -20,9 +20,9 @@
 package org.neo4j.fabric.pipeline
 
 import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.cypher.internal.CachingPreParser
 import org.neo4j.cypher.internal.NotificationWrapping
 import org.neo4j.cypher.internal.PreParsedQuery
-import org.neo4j.cypher.internal.PreParser
 import org.neo4j.cypher.internal.QueryOptions
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
@@ -71,7 +71,7 @@ case class FabricFrontEnd(
 
   object preParsing {
 
-    private val preParser = new PreParser(
+    private val preParser = new CachingPreParser(
       cypherConfig,
       new PreParserCache.Cache(
         cacheFactory,

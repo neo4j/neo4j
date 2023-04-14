@@ -32,4 +32,6 @@ object CancellationChecker {
     override def throwIfCancelled(): Unit = ()
   }
 
+  def neverCancelled(): CancellationChecker = NeverCancelled
+
 }

@@ -45,7 +45,7 @@ import scala.jdk.CollectionConverters.MapHasAsJava
 
 class PreParserTest extends CypherFunSuite {
 
-  private def preParserWith(settings: (Setting[_], AnyRef)*) = new PreParser(
+  private def preParserWith(settings: (Setting[_], AnyRef)*) = new CachingPreParser(
     CypherConfiguration.fromConfig(Config.defaults(settings.toMap.asJava)),
     new LFUCache[String, PreParsedQuery](TestExecutorCaffeineCacheFactory, 0)
   )
