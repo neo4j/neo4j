@@ -25,6 +25,7 @@ import static org.neo4j.internal.helpers.MathUtil.ceil;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.stream.LongStream;
@@ -44,6 +45,8 @@ import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -76,6 +79,7 @@ class RecordNodeCursorIT {
     private NeoStores neoStores;
     private NodeStore nodeStore;
     private CachedStoreCursors storeCursors;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void startNeoStores() {
@@ -92,6 +96,8 @@ class RecordNodeCursorIT {
                         false,
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
                 .openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
         nodeStore = neoStores.getNodeStore();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
@@ -217,7 +223,7 @@ class RecordNodeCursorIT {
         final var nodeRecord = createNodeRecord();
         final var labels = randomLabels(labelsSet, numberOfLabelsBound);
         NodeLabelsField.parseLabelsField(nodeRecord)
-                .put(labels, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, storeCursors, INSTANCE);
+                .put(labels, nodeStore, allocatorProvider.allocator(NODE_LABEL), NULL_CONTEXT, storeCursors, INSTANCE);
         return write(nodeRecord);
     }
 

@@ -41,6 +41,7 @@ import org.neo4j.internal.batchimport.staging.SimpleStageControl;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.staging.Step;
 import org.neo4j.internal.id.IdGenerator;
+import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageSwapper;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -72,7 +73,7 @@ class EncodeGroupsStepTest {
                     return null;
                 })
                 .when(store)
-                .prepareForCommit(any(RelationshipGroupRecord.class), any(CursorContext.class));
+                .prepareForCommit(any(RelationshipGroupRecord.class), any(IdSequence.class), any(CursorContext.class));
         Configuration config = Configuration.withBatchSize(Configuration.DEFAULT, 10);
         EncodeGroupsStep encoder = new EncodeGroupsStep(control, config, store, CONTEXT_FACTORY);
 

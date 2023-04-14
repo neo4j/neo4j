@@ -37,9 +37,12 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
@@ -77,6 +80,7 @@ class PropertyPhysicalToLogicalConverterTest {
             Values.of("my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd");
     private PropertyPhysicalToLogicalConverter converter;
     private final long[] none = new long[0];
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void before() {
@@ -93,6 +97,8 @@ class PropertyPhysicalToLogicalConverterTest {
                 false,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         neoStores = storeFactory.openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter(store, StoreCursors.NULL);
     }
@@ -243,7 +249,14 @@ class PropertyPhysicalToLogicalConverterTest {
 
     private PropertyBlock property(long key, Value value) {
         PropertyBlock block = new PropertyBlock();
-        store.encodeValue(block, (int) key, value, NULL_CONTEXT, INSTANCE);
+        PropertyStore.encodeValue(
+                block,
+                (int) key,
+                value,
+                allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                NULL_CONTEXT,
+                INSTANCE);
         return block;
     }
 

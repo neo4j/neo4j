@@ -110,6 +110,7 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -554,6 +555,7 @@ class FulltextIndexProviderTest {
                 try (NeoStores neoStores = factory.openAllNeoStores();
                         var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
                     TokenHolders tokens = StoreTokens.readOnlyTokenHolders(neoStores, storeCursors);
+                    var allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
                     SchemaStore schemaStore = neoStores.getSchemaStore();
                     SchemaStorage storage = new SchemaStorage(schemaStore, tokens);
                     IndexDescriptor index = (IndexDescriptor) storage.loadSingleSchemaRule(indexId, storeCursors);
@@ -565,7 +567,8 @@ class FulltextIndexProviderTest {
                         }
                     }
                     index = index.withIndexConfig(IndexConfig.with(indexConfigMap));
-                    storage.writeSchemaRule(index, IdUpdateListener.DIRECT, cursorContext, INSTANCE, storeCursors);
+                    storage.writeSchemaRule(
+                            index, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
                     schemaStore.flush(FileFlushEvent.NULL, cursorContext);
                 }
             } catch (Exception e) {

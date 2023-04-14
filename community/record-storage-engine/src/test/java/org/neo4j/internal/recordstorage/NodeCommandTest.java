@@ -28,6 +28,7 @@ import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.ShortArray.LONG;
+import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -47,6 +48,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -79,6 +82,7 @@ class NodeCommandTest {
     private final LogCommandSerialization commandSerialization =
             RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION);
     private NeoStores neoStores;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void before() {
@@ -95,6 +99,7 @@ class NodeCommandTest {
                 false,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         neoStores = storeFactory.openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         nodeStore = neoStores.getNodeStore();
     }
 
@@ -153,7 +158,8 @@ class NodeCommandTest {
         NodeRecord after = new NodeRecord(12).initialize(false, 1, false, 2, 0);
         after.setInUse(true);
         NodeLabels nodeLabels = parseLabelsField(after);
-        nodeLabels.add(1337, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+        nodeLabels.add(
+                1337, nodeStore, allocatorProvider.allocator(NODE_LABEL), NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
         // When
         assertSerializationWorksFor(new Command.NodeCommand(commandSerialization, before, after));
     }
@@ -185,7 +191,8 @@ class NodeCommandTest {
         after.setInUse(true);
         NodeLabels nodeLabels = parseLabelsField(after);
         for (int i = 10; i < 100; i++) {
-            nodeLabels.add(i, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+            nodeLabels.add(
+                    i, nodeStore, allocatorProvider.allocator(NODE_LABEL), NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
         }
         // When
         assertSerializationWorksFor(new Command.NodeCommand(commandSerialization, before, after));

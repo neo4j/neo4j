@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.allocator;
 
-import java.util.Collection;
 import java.util.Iterator;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -38,11 +37,6 @@ public class ReusableRecordsAllocator implements DynamicRecordAllocator {
     public ReusableRecordsAllocator(int recordSize, DynamicRecord... records) {
         this.recordSize = recordSize;
         this.recordIterator = Iterators.iterator(records);
-    }
-
-    public ReusableRecordsAllocator(int recordSize, Collection<DynamicRecord> records) {
-        this.recordSize = recordSize;
-        this.recordIterator = records.iterator();
     }
 
     public ReusableRecordsAllocator(int recordSize, Iterator<DynamicRecord> recordsIterator) {

@@ -17,31 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store;
+package org.neo4j.internal.recordstorage;
 
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.io.pagecache.context.CursorContext;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.StoreType;
 
-public class StandardDynamicRecordAllocator implements DynamicRecordAllocator {
-    protected final IdSequence idSequence;
-    private final int dataSize;
+public class TransactionIdSequenceProvider {
+    private final NeoStores neoStores;
 
-    public StandardDynamicRecordAllocator(IdSequence idSequence, int dataSize) {
-        this.idSequence = idSequence;
-        this.dataSize = dataSize;
+    public TransactionIdSequenceProvider(NeoStores neoStores) {
+        this.neoStores = neoStores;
     }
 
-    @Override
-    public int getRecordDataSize() {
-        return dataSize;
-    }
-
-    @Override
-    public DynamicRecord nextRecord(CursorContext cursorContext) {
-        DynamicRecord record = new DynamicRecord(idSequence.nextId(cursorContext));
-        record.setCreated();
-        record.setInUse(true);
-        return record;
+    public IdSequence getIdSequence(StoreType storeType) {
+        return neoStores.getRecordStore(storeType).getIdGenerator();
     }
 }

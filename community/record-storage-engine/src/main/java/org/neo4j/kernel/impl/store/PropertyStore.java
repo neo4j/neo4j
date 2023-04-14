@@ -331,11 +331,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord, NoStoreHe
         DynamicArrayStore.allocateRecords(target, array, allocator, cursorContext, memoryTracker);
     }
 
-    public void encodeValue(
-            PropertyBlock block, int keyId, Value value, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        encodeValue(block, keyId, value, stringStore, arrayStore, cursorContext, memoryTracker);
-    }
-
     public static void encodeValue(
             PropertyBlock block,
             int keyId,

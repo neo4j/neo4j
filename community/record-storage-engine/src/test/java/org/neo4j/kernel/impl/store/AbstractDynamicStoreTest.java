@@ -90,35 +90,6 @@ class AbstractDynamicStoreTest {
     }
 
     @Test
-    void tracePageCacheAccessOnNextRecord() {
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
-        try (var cursorContext = contextFactory.create("tracePageCacheAccessOnNextRecord");
-                var store = newTestableDynamicStore()) {
-            assertZeroCursor(cursorContext);
-            prepareDirtyGenerator(store);
-
-            store.getIdGenerator().maintenance(cursorContext);
-            store.nextRecord(cursorContext);
-
-            assertOneCursor(cursorContext);
-        }
-    }
-
-    @Test
-    void noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext() {
-        var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
-        try (var cursorContext =
-                        contextFactory.create("noPageCacheAccessWhenIdAllocationDoesNotAccessUnderlyingTreeOnNext");
-                var store = newTestableDynamicStore()) {
-            assertZeroCursor(cursorContext);
-
-            store.nextRecord(cursorContext);
-
-            assertZeroCursor(cursorContext);
-        }
-    }
-
-    @Test
     void tracePageCacheAccessOnRecordsAllocation() {
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         try (var cursorContext = contextFactory.create("tracePageCacheAccessOnRecordsAllocation");
@@ -127,7 +98,12 @@ class AbstractDynamicStoreTest {
             prepareDirtyGenerator(store);
 
             store.getIdGenerator().maintenance(cursorContext);
-            store.allocateRecordsFromBytes(new ArrayList<>(), new byte[] {0, 1, 2, 3, 4}, cursorContext, INSTANCE);
+            store.allocateRecordsFromBytes(
+                    new ArrayList<>(),
+                    new byte[] {0, 1, 2, 3, 4},
+                    new StandardDynamicRecordAllocator(store.getIdGenerator(), store.getRecordDataSize()),
+                    cursorContext,
+                    INSTANCE);
 
             assertOneCursor(cursorContext);
         }
@@ -140,7 +116,12 @@ class AbstractDynamicStoreTest {
                 var store = newTestableDynamicStore()) {
             assertZeroCursor(cursorContext);
 
-            store.allocateRecordsFromBytes(new ArrayList<>(), new byte[] {0, 1, 2, 3, 4}, cursorContext, INSTANCE);
+            store.allocateRecordsFromBytes(
+                    new ArrayList<>(),
+                    new byte[] {0, 1, 2, 3, 4},
+                    new StandardDynamicRecordAllocator(store.getIdGenerator(), store.getRecordDataSize()),
+                    cursorContext,
+                    INSTANCE);
 
             assertZeroCursor(cursorContext);
         }

@@ -76,6 +76,8 @@ import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -85,7 +87,6 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.PageCacheOptionsSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -292,7 +293,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
     private void instantiateStores() throws IOException {
         neoStores = newStoreFactory(databaseLayout, idGeneratorFactory, contextFactory, immutable.empty())
                 .openAllNeoStores();
-        tokenHolders = StoreTokens.directTokenHolders(neoStores, contextFactory, memoryTracker);
+        DynamicAllocatorProvider allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+        tokenHolders = StoreTokens.directTokenHolders(neoStores, allocatorProvider, contextFactory, memoryTracker);
 
         temporaryNeoStores = instantiateTempStores();
 
@@ -549,9 +551,8 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
             stopFlushingPageCache();
         }
 
-        try (var cursorContext = contextFactory.create(BATCHING_STORE_SHUTDOWN_TAG);
-                var storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {
-            flushAndForce(cursorContext, storeCursors);
+        try (var cursorContext = contextFactory.create(BATCHING_STORE_SHUTDOWN_TAG)) {
+            flushAndForce(cursorContext);
         }
 
         // Close the neo store
@@ -626,7 +627,7 @@ public class BatchingNeoStores implements AutoCloseable, MemoryStatsVisitor.Visi
         return pageCache;
     }
 
-    public void flushAndForce(CursorContext cursorContext, StoreCursors storeCursors) throws IOException {
+    public void flushAndForce(CursorContext cursorContext) throws IOException {
         if (neoStores != null) {
             neoStores.flush(DatabaseFlushEvent.NULL, cursorContext);
         }

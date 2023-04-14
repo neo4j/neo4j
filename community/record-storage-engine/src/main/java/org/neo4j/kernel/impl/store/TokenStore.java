@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.neo4j.kernel.impl.store.AbstractDynamicStore.allocateRecordsFromBytes;
 import static org.neo4j.kernel.impl.store.NoStoreHeaderFormat.NO_STORE_HEADER_FORMAT;
 import static org.neo4j.kernel.impl.store.PropertyStore.decodeString;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -144,9 +145,12 @@ public abstract class TokenStore<RECORD extends TokenRecord> extends CommonAbstr
     }
 
     public Collection<DynamicRecord> allocateNameRecords(
-            byte[] chars, CursorContext cursorContext, MemoryTracker memoryTracker) {
+            byte[] chars,
+            DynamicRecordAllocator nameStoreRecordAllocator,
+            CursorContext cursorContext,
+            MemoryTracker memoryTracker) {
         Collection<DynamicRecord> records = HeapTrackingCollections.newArrayList(memoryTracker);
-        nameStore.allocateRecordsFromBytes(records, chars, cursorContext, memoryTracker);
+        allocateRecordsFromBytes(records, chars, nameStoreRecordAllocator, cursorContext, memoryTracker);
         return records;
     }
 

@@ -38,6 +38,7 @@ import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
 import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
@@ -45,11 +46,14 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -105,6 +109,8 @@ public class TransactionRecordState implements RecordState {
     private final StoreCursors storeCursors;
     private final MemoryTracker memoryTracker;
     private final LogCommandSerialization commandSerialization;
+    private final DynamicAllocatorProvider dynamicAllocators;
+    private final TransactionIdSequenceProvider transactionIdSequenceProvider;
     private final DegreesUpdater groupDegreesUpdater = new DegreesUpdater();
 
     private boolean prepared;
@@ -122,7 +128,9 @@ public class TransactionRecordState implements RecordState {
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker,
-            LogCommandSerialization commandSerialization) {
+            LogCommandSerialization commandSerialization,
+            DynamicAllocatorProvider dynamicAllocators,
+            TransactionIdSequenceProvider transactionIdSequenceProvider) {
         this.kernelVersionProvider = kernelVersionProvider;
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
@@ -139,6 +147,8 @@ public class TransactionRecordState implements RecordState {
         this.storeCursors = storeCursors;
         this.memoryTracker = memoryTracker;
         this.commandSerialization = commandSerialization;
+        this.dynamicAllocators = dynamicAllocators;
+        this.transactionIdSequenceProvider = transactionIdSequenceProvider;
         this.directGroupLookup = new RelationshipGroupGetter.DirectGroupLookup(recordChangeSet, cursorContext);
     }
 
@@ -181,8 +191,9 @@ public class TransactionRecordState implements RecordState {
             memoryTracker.allocateHeap(nodeChanges.size() * Command.NodeCommand.HEAP_SIZE);
             nodeCommands = new Command[nodeChanges.size()];
             int i = 0;
+            IdSequence nodeIdSequence = transactionIdSequenceProvider.getIdSequence(StoreType.NODE);
             for (RecordProxy<NodeRecord, Void> change : nodeChanges) {
-                NodeRecord record = prepared(change, nodeStore);
+                NodeRecord record = prepared(change, nodeIdSequence, nodeStore);
                 IntegrityValidator.validateNodeRecord(record);
                 nodeCommands[i++] = new Command.NodeCommand(commandSerialization, change.getBefore(), record);
             }
@@ -195,9 +206,10 @@ public class TransactionRecordState implements RecordState {
             memoryTracker.allocateHeap(relationshipChanges.size() * Command.RelationshipCommand.HEAP_SIZE);
             relCommands = new Command[relationshipChanges.size()];
             int i = 0;
+            IdSequence relIdSequence = transactionIdSequenceProvider.getIdSequence(StoreType.RELATIONSHIP);
             for (RecordProxy<RelationshipRecord, Void> change : relationshipChanges) {
                 relCommands[i++] = new Command.RelationshipCommand(
-                        commandSerialization, change.getBefore(), prepared(change, relationshipStore));
+                        commandSerialization, change.getBefore(), prepared(change, relIdSequence, relationshipStore));
             }
             Arrays.sort(relCommands, COMMAND_COMPARATOR);
         }
@@ -208,9 +220,10 @@ public class TransactionRecordState implements RecordState {
             memoryTracker.allocateHeap(propertyChanges.size() * Command.PropertyCommand.HEAP_SIZE);
             propCommands = new Command[propertyChanges.size()];
             int i = 0;
+            IdSequence propertyIdSequence = transactionIdSequenceProvider.getIdSequence(StoreType.PROPERTY);
             for (RecordProxy<PropertyRecord, PrimitiveRecord> change : propertyChanges) {
                 propCommands[i++] = new Command.PropertyCommand(
-                        commandSerialization, change.getBefore(), prepared(change, propertyStore));
+                        commandSerialization, change.getBefore(), prepared(change, propertyIdSequence, propertyStore));
             }
             Arrays.sort(propCommands, COMMAND_COMPARATOR);
         }
@@ -221,6 +234,7 @@ public class TransactionRecordState implements RecordState {
             memoryTracker.allocateHeap(relationshipGroupChanges.size() * Command.RelationshipGroupCommand.HEAP_SIZE);
             relGroupCommands = new Command[relationshipGroupChanges.size()];
             int i = 0;
+            IdSequence relGroupSequence = transactionIdSequenceProvider.getIdSequence(StoreType.RELATIONSHIP_GROUP);
             for (RecordProxy<RelationshipGroupRecord, Integer> change : relationshipGroupChanges) {
                 if (change.isCreated() && !change.forReadingLinkage().inUse()) {
                     /*
@@ -248,7 +262,9 @@ public class TransactionRecordState implements RecordState {
                     continue;
                 }
                 relGroupCommands[i++] = new Command.RelationshipGroupCommand(
-                        commandSerialization, change.getBefore(), prepared(change, relationshipGroupStore));
+                        commandSerialization,
+                        change.getBefore(),
+                        prepared(change, relGroupSequence, relationshipGroupStore));
             }
             relGroupCommands = i < relGroupCommands.length ? Arrays.copyOf(relGroupCommands, i) : relGroupCommands;
             Arrays.sort(relGroupCommands, COMMAND_COMPARATOR);
@@ -303,9 +319,9 @@ public class TransactionRecordState implements RecordState {
     }
 
     private <RECORD extends AbstractBaseRecord> RECORD prepared(
-            RecordProxy<RECORD, ?> proxy, RecordStore<RECORD> store) {
+            RecordProxy<RECORD, ?> proxy, IdSequence idSequence, RecordStore<RECORD> store) {
         RECORD after = proxy.forReadingLinkage();
-        store.prepareForCommit(after, cursorContext);
+        store.prepareForCommit(after, idSequence, cursorContext);
         return after;
     }
 
@@ -448,13 +464,26 @@ public class TransactionRecordState implements RecordState {
         NodeRecord nodeRecord =
                 recordChangeSet.getNodeRecords().getOrLoad(nodeId, null).forChangingData();
         parseLabelsField(nodeRecord)
-                .add(labelId, nodeStore, nodeStore.getDynamicLabelStore(), cursorContext, storeCursors, memoryTracker);
+                .add(
+                        labelId,
+                        nodeStore,
+                        dynamicAllocators.allocator(StoreType.NODE_LABEL),
+                        cursorContext,
+                        storeCursors,
+                        memoryTracker);
     }
 
     void removeLabelFromNode(long labelId, long nodeId) {
         NodeRecord nodeRecord =
                 recordChangeSet.getNodeRecords().getOrLoad(nodeId, null).forChangingData();
-        parseLabelsField(nodeRecord).remove(labelId, nodeStore, cursorContext, storeCursors, memoryTracker);
+        parseLabelsField(nodeRecord)
+                .remove(
+                        labelId,
+                        nodeStore,
+                        dynamicAllocators.allocator(StoreType.NODE_LABEL),
+                        cursorContext,
+                        storeCursors,
+                        memoryTracker);
     }
 
     /**
@@ -484,6 +513,7 @@ public class TransactionRecordState implements RecordState {
                 id,
                 internal,
                 recordChangeSet.getPropertyKeyTokenChanges(),
+                dynamicAllocators.allocator(StoreType.PROPERTY_KEY_TOKEN_NAME),
                 cursorContext,
                 memoryTracker);
     }
@@ -501,6 +531,7 @@ public class TransactionRecordState implements RecordState {
                 id,
                 internal,
                 recordChangeSet.getLabelTokenChanges(),
+                dynamicAllocators.allocator(StoreType.LABEL_TOKEN_NAME),
                 cursorContext,
                 memoryTracker);
     }
@@ -519,6 +550,7 @@ public class TransactionRecordState implements RecordState {
                 id,
                 internal,
                 recordChangeSet.getRelationshipTypeTokenChanges(),
+                dynamicAllocators.allocator(StoreType.RELATIONSHIP_TYPE_TOKEN_NAME),
                 cursorContext,
                 memoryTracker);
     }
@@ -529,6 +561,7 @@ public class TransactionRecordState implements RecordState {
             long id,
             boolean internal,
             RecordAccess<R, Void> recordAccess,
+            DynamicRecordAllocator nameStoreRecordAllocator,
             CursorContext cursorContext,
             MemoryTracker memoryTracker) {
         R record = recordAccess.create(id, null, cursorContext).forChangingData();
@@ -536,7 +569,7 @@ public class TransactionRecordState implements RecordState {
         record.setInternal(internal);
         record.setCreated();
         Collection<DynamicRecord> nameRecords =
-                store.allocateNameRecords(encodeString(name), cursorContext, memoryTracker);
+                store.allocateNameRecords(encodeString(name), nameStoreRecordAllocator, cursorContext, memoryTracker);
         record.setNameId((int) Iterables.first(nameRecords).getId());
         record.addNameRecords(nameRecords);
     }

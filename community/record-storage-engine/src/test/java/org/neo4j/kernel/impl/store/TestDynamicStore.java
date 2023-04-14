@@ -75,6 +75,7 @@ class TestDynamicStore {
     private StoreFactory storeFactory;
     private NeoStores neoStores;
     private CachedStoreCursors storeCursors;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void setUp() {
@@ -105,6 +106,7 @@ class TestDynamicStore {
     private DynamicArrayStore createDynamicArrayStore() throws IOException {
         neoStores = storeFactory.openAllNeoStores();
         neoStores.start(NULL_CONTEXT);
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         return neoStores.getPropertyStore().getArrayStore();
     }
@@ -113,7 +115,8 @@ class TestDynamicStore {
     void testClose() throws IOException {
         DynamicArrayStore store = createDynamicArrayStore();
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecordsFromBytes(records, new byte[10], NULL_CONTEXT, INSTANCE);
+        store.allocateRecordsFromBytes(
+                records, new byte[10], allocatorProvider.allocator(StoreType.PROPERTY_ARRAY), NULL_CONTEXT, INSTANCE);
         long blockId = Iterables.first(records).getId();
         try (var storeCursor = storeCursors.writeCursor(DYNAMIC_ARRAY_STORE_CURSOR)) {
             for (DynamicRecord record : records) {
@@ -136,7 +139,8 @@ class TestDynamicStore {
         char[] chars = new char[STR.length()];
         STR.getChars(0, STR.length(), chars, 0);
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords(records, chars, NULL_CONTEXT, INSTANCE);
+        store.allocateRecords(
+                records, chars, allocatorProvider.allocator(StoreType.PROPERTY_ARRAY), NULL_CONTEXT, INSTANCE);
         try (var storeCursor = storeCursors.writeCursor(DYNAMIC_ARRAY_STORE_CURSOR)) {
             for (DynamicRecord record : records) {
                 store.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
@@ -180,7 +184,8 @@ class TestDynamicStore {
             } else {
                 byte[] bytes = createRandomBytes(random);
                 Collection<DynamicRecord> records = new ArrayList<>();
-                store.allocateRecords(records, bytes, NULL_CONTEXT, INSTANCE);
+                store.allocateRecords(
+                        records, bytes, allocatorProvider.allocator(StoreType.PROPERTY_ARRAY), NULL_CONTEXT, INSTANCE);
                 try (var storeCursor = storeCursors.writeCursor(DYNAMIC_ARRAY_STORE_CURSOR)) {
                     for (DynamicRecord record : records) {
                         assertFalse(set.contains(record.getId()));
@@ -216,9 +221,10 @@ class TestDynamicStore {
         }
     }
 
-    private static long create(DynamicArrayStore store, Object arrayToStore, StoreCursors storeCursors) {
+    private long create(DynamicArrayStore store, Object arrayToStore, StoreCursors storeCursors) {
         Collection<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords(records, arrayToStore, NULL_CONTEXT, INSTANCE);
+        store.allocateRecords(
+                records, arrayToStore, allocatorProvider.allocator(StoreType.PROPERTY_ARRAY), NULL_CONTEXT, INSTANCE);
         try (var storeCursor = storeCursors.writeCursor(DYNAMIC_ARRAY_STORE_CURSOR)) {
             for (DynamicRecord record : records) {
                 store.updateRecord(record, storeCursor, NULL_CONTEXT, storeCursors);
@@ -274,7 +280,12 @@ class TestDynamicStore {
     void mustThrowOnRecordChainCycle() throws IOException {
         DynamicArrayStore store = createDynamicArrayStore();
         List<DynamicRecord> records = new ArrayList<>();
-        store.allocateRecords(records, createBytes(500), NULL_CONTEXT, INSTANCE);
+        store.allocateRecords(
+                records,
+                createBytes(500),
+                allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                NULL_CONTEXT,
+                INSTANCE);
         long firstId = records.get(0).getId();
         // Avoid creating this inconsistency at the last record, since that would trip up a data-size check instead.
         DynamicRecord secondLastRecord = records.get(records.size() - 2);

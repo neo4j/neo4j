@@ -21,6 +21,9 @@ package org.neo4j.internal.batchimport;
 
 import static java.lang.Long.max;
 import static org.neo4j.collection.PrimitiveArrays.intsToLongs;
+import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.storageengine.util.IdUpdateListener.IGNORE;
 
@@ -39,6 +42,8 @@ import org.neo4j.internal.batchimport.store.BatchingNeoStores;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -66,6 +71,7 @@ public class NodeImporter extends EntityImporter {
     private final PageCursor nodeUpdateCursor;
     private final PageCursor idPropertyUpdateCursor;
     private final Set<String> labels = new HashSet<>();
+    private final DynamicAllocatorProvider allocatorProvider;
 
     private long nodeCount;
     private long highestId = -1;
@@ -92,6 +98,7 @@ public class NodeImporter extends EntityImporter {
         this.idPropertyRecord = idPropertyStore.newRecord();
         this.nodeUpdateCursor = nodeStore.openPageCursorForWriting(0, cursorContext);
         this.idPropertyUpdateCursor = idPropertyStore.openPageCursorForWriting(0, cursorContext);
+        this.allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(stores.getNeoStores());
         nodeRecord.setInUse(true);
     }
 
@@ -117,7 +124,14 @@ public class NodeImporter extends EntityImporter {
 
         // also store this id as property in temp property store
         if (id != null) {
-            idPropertyStore.encodeValue(idPropertyBlock, 0, Values.of(id), cursorContext, memoryTracker);
+            PropertyStore.encodeValue(
+                    idPropertyBlock,
+                    0,
+                    Values.of(id),
+                    allocatorProvider.allocator(PROPERTY_STRING),
+                    allocatorProvider.allocator(PROPERTY_ARRAY),
+                    cursorContext,
+                    memoryTracker);
             idPropertyRecord.addPropertyBlock(idPropertyBlock);
             idPropertyRecord.setId(nodeId); // yes nodeId
             idPropertyRecord.setInUse(true);
@@ -165,7 +179,7 @@ public class NodeImporter extends EntityImporter {
                         nodeRecord,
                         intsToLongs(labelIdsInts),
                         null,
-                        nodeStore.getDynamicLabelStore(),
+                        allocatorProvider.allocator(NODE_LABEL),
                         cursorContext,
                         storeCursors,
                         memoryTracker);

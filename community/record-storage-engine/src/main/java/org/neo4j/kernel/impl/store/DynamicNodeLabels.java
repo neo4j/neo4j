@@ -164,6 +164,7 @@ public class DynamicNodeLabels implements NodeLabels {
     public Collection<DynamicRecord> remove(
             long labelId,
             NodeStore nodeStore,
+            DynamicRecordAllocator allocator,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker) {
@@ -178,7 +179,7 @@ public class DynamicNodeLabels implements NodeLabels {
             Collection<DynamicRecord> newRecords = allocateRecordsForDynamicLabels(
                     node.getId(),
                     newLabelIds,
-                    new ReusableRecordsCompositeAllocator(existingRecords, nodeStore.getDynamicLabelStore()),
+                    new ReusableRecordsCompositeAllocator(existingRecords, allocator),
                     cursorContext,
                     memoryTracker);
             node.setLabelField(dynamicPointer(newRecords), existingRecords);
@@ -221,16 +222,6 @@ public class DynamicNodeLabels implements NodeLabels {
                 "Dynamic(id:%d,[%s])",
                 firstDynamicLabelRecordId(node.getLabelField()),
                 Arrays.toString(parseHeavyRecords(node.getUsedDynamicLabelRecords())));
-    }
-
-    public static List<DynamicRecord> allocateRecordsForDynamicLabels(
-            long nodeId,
-            long[] labels,
-            AbstractDynamicStore dynamicLabelStore,
-            CursorContext cursorContext,
-            MemoryTracker memoryTracker) {
-        return allocateRecordsForDynamicLabels(
-                nodeId, labels, (DynamicRecordAllocator) dynamicLabelStore, cursorContext, memoryTracker);
     }
 
     public static List<DynamicRecord> allocateRecordsForDynamicLabels(

@@ -30,6 +30,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.internal.id.DefaultIdGeneratorFactory;
+import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.ScanOnOpenReadOnlyIdGeneratorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -130,12 +131,13 @@ class DirectRecordStoreMigrator {
             RecordStore<RECORD> to,
             CursorContext cursorContext,
             StoreCursors toStoreCursors) {
-        to.getIdGenerator().setHighestPossibleIdInUse(from.getHighestPossibleIdInUse(cursorContext));
+        IdGenerator toIdGenerator = to.getIdGenerator();
+        toIdGenerator.setHighestPossibleIdInUse(from.getHighestPossibleIdInUse(cursorContext));
         try (var toCursor = to.openPageCursorForWriting(0, cursorContext);
                 var fromCursor = from.openPageCursorForReading(0, cursorContext)) {
             from.scanAllRecords(
                     record -> {
-                        to.prepareForCommit(record, cursorContext);
+                        to.prepareForCommit(record, toIdGenerator, cursorContext);
                         to.updateRecord(record, toCursor, cursorContext, toStoreCursors);
                         return false;
                     },

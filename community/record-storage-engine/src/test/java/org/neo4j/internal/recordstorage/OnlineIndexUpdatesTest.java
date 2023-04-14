@@ -34,6 +34,8 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -59,6 +61,8 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.CountsComputer;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -114,6 +118,7 @@ class OnlineIndexUpdatesTest {
     private LifeSupport life;
     private DirectRecordAccess<PropertyRecord, PrimitiveRecord> recordAccess;
     private StoreCursors storeCursors;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -136,6 +141,8 @@ class OnlineIndexUpdatesTest {
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
 
         neoStores = storeFactory.openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
         var counts = new GBPTreeCountsStore(
                 pageCache,
                 databaseLayout.countStore(),
@@ -423,8 +430,8 @@ class OnlineIndexUpdatesTest {
                 propertyBlock,
                 propertyKey,
                 value,
-                propertyStore.getStringStore(),
-                propertyStore.getArrayStore(),
+                allocatorProvider.allocator(PROPERTY_STRING),
+                allocatorProvider.allocator(PROPERTY_ARRAY),
                 NULL_CONTEXT,
                 INSTANCE);
         propertyRecord.addPropertyBlock(propertyBlock);

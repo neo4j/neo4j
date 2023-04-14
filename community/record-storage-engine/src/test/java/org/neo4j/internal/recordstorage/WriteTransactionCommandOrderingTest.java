@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
@@ -35,10 +36,12 @@ import org.neo4j.internal.recordstorage.Command.NodeCommand;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -143,12 +146,21 @@ class WriteTransactionCommandOrderingTest {
         when(schemaRuleChanges.changes()).thenReturn(Collections.emptyList());
 
         NeoStores neoStores = mock(NeoStores.class);
-        NodeStore store = mock(NodeStore.class);
-        when(neoStores.getNodeStore()).thenReturn(store);
+        NodeStore nodeStore = mock(NodeStore.class);
+        when(neoStores.getNodeStore()).thenReturn(nodeStore);
         RelationshipGroupStore relationshipGroupStore = mock(RelationshipGroupStore.class);
         when(neoStores.getRelationshipGroupStore()).thenReturn(relationshipGroupStore);
         RelationshipStore relationshipStore = mock(RelationshipStore.class);
         when(neoStores.getRelationshipStore()).thenReturn(relationshipStore);
+        when(neoStores.getRecordStore(any(StoreType.class))).then(invocation -> {
+            StoreType type = invocation.getArgument(0);
+            return switch (type) {
+                case NODE -> nodeStore;
+                case RELATIONSHIP_GROUP -> relationshipGroupStore;
+                case RELATIONSHIP -> relationshipStore;
+                default -> throw new IllegalArgumentException("Not supported test type:" + type);
+            };
+        });
 
         KernelVersion latestVersion = LatestVersions.LATEST_KERNEL_VERSION;
         return new TransactionRecordState(
@@ -163,7 +175,9 @@ class WriteTransactionCommandOrderingTest {
                 NULL_CONTEXT,
                 StoreCursors.NULL,
                 INSTANCE,
-                RecordStorageCommandReaderFactory.INSTANCE.get(latestVersion));
+                RecordStorageCommandReaderFactory.INSTANCE.get(latestVersion),
+                DynamicAllocatorProviders.nonTransactionalAllocator(neoStores),
+                new TransactionIdSequenceProvider(neoStores));
     }
 
     private static class OrderVerifyingCommandHandler extends CommandVisitor.Adapter {

@@ -25,6 +25,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
+import static org.neo4j.kernel.impl.store.DynamicAllocatorProviders.nonTransactionalAllocator;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -43,6 +44,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
@@ -130,7 +132,8 @@ class DropBrokenUniquenessConstraintIT {
         // when intentionally breaking the schema by setting the backing index rule to unused
         SchemaRuleAccess schemaRules = storageEngine.testAccessSchemaRules();
         try (var storeCursors = storageEngine.createStorageCursors(NULL_CONTEXT)) {
-            writeSchemaRulesWithoutConstraint(schemaRules, storeCursors);
+            writeSchemaRulesWithoutConstraint(
+                    schemaRules, nonTransactionalAllocator(storageEngine.testAccessNeoStores()), storeCursors);
         }
         // At this point the SchemaCache doesn't know about this change so we have to reload it
         storageEngine.loadSchemaCache();
@@ -183,7 +186,8 @@ class DropBrokenUniquenessConstraintIT {
             schemaRules
                     .constraintsGetAllIgnoreMalformed(storeCursors)
                     .forEachRemaining(rule -> deleteSchemaRule(rule, NULL_CONTEXT, storeCursors));
-            writeSchemaRulesWithoutConstraint(schemaRules, storeCursors);
+            writeSchemaRulesWithoutConstraint(
+                    schemaRules, nonTransactionalAllocator(storageEngine.testAccessNeoStores()), storeCursors);
         }
 
         // At this point the SchemaCache doesn't know about this change so we have to reload it
@@ -221,10 +225,12 @@ class DropBrokenUniquenessConstraintIT {
         }
     }
 
-    private static void writeSchemaRulesWithoutConstraint(SchemaRuleAccess schemaRules, StoreCursors storeCursors)
+    private static void writeSchemaRulesWithoutConstraint(
+            SchemaRuleAccess schemaRules, DynamicAllocatorProvider allocatorProvider, StoreCursors storeCursors)
             throws KernelException {
         for (IndexDescriptor rule : loop(schemaRules.indexesGetAll(storeCursors))) {
-            schemaRules.writeSchemaRule(rule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, storeCursors);
+            schemaRules.writeSchemaRule(
+                    rule, IdUpdateListener.DIRECT, allocatorProvider, NULL_CONTEXT, INSTANCE, storeCursors);
         }
     }
 }

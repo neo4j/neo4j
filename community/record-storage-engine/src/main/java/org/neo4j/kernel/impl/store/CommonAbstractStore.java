@@ -835,11 +835,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     @Override
-    public void prepareForCommit(RECORD record, CursorContext cursorContext) {
-        prepareForCommit(record, idGenerator, cursorContext);
-    }
-
-    @Override
     public void prepareForCommit(RECORD record, IdSequence idSequence, CursorContext cursorContext) {
         if (record.inUse()) {
             recordFormat.prepare(record, recordSize, idSequence, cursorContext);

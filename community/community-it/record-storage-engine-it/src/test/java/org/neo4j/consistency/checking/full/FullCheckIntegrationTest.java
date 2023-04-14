@@ -52,6 +52,7 @@ import static org.neo4j.io.memory.ByteBufferFactory.heapBufferFactory;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
+import static org.neo4j.kernel.impl.store.DynamicAllocatorProviders.nonTransactionalAllocator;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.dynamicPointer;
 import static org.neo4j.kernel.impl.store.LabelIdArray.prependNodeId;
@@ -1377,17 +1378,7 @@ public class FullCheckIntegrationTest {
                 DynamicArrayStore.allocateRecords(
                         allocatedRecords,
                         arrayValue,
-                        new DynamicRecordAllocator() {
-                            @Override
-                            public int getRecordDataSize() {
-                                return recordDataSize;
-                            }
-
-                            @Override
-                            public DynamicRecord nextRecord(CursorContext cursorContext) {
-                                return StandardDynamicRecordAllocator.allocateRecord(next.arrayProperty());
-                            }
-                        },
+                        new StandardDynamicRecordAllocator(cursorContext -> next.arrayProperty(), recordDataSize),
                         NULL_CONTEXT,
                         INSTANCE);
                 assertThat(allocatedRecords.size()).isGreaterThan(1);
@@ -3379,7 +3370,12 @@ public class FullCheckIntegrationTest {
         SchemaRuleAccess schemaRuleAccess =
                 SchemaRuleAccess.getSchemaRuleAccess(schemaStore, fixture.writableTokenHolders());
         schemaRuleAccess.writeSchemaRule(
-                rule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, fixture.getStoreCursors());
+                rule,
+                IdUpdateListener.DIRECT,
+                nonTransactionalAllocator(fixture.neoStores()),
+                NULL_CONTEXT,
+                INSTANCE,
+                fixture.getStoreCursors());
     }
 
     protected Iterable<IndexDescriptor> getValueIndexDescriptors() {

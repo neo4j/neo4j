@@ -100,6 +100,8 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -108,6 +110,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -159,6 +162,7 @@ class CheckerTestBase {
     private TokenHolders tokenHolders;
     private PageCache pageCache;
     protected CachedStoreCursors storeCursors;
+    protected DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void setUpDb() throws Exception {
@@ -178,6 +182,7 @@ class CheckerTestBase {
 
         DependencyResolver dependencies = db.getDependencyResolver();
         neoStores = dependencies.resolveDependency(RecordStorageEngine.class).testAccessNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         nodeStore = neoStores.getNodeStore();
         relationshipGroupStore = neoStores.getRelationshipGroupStore();
         propertyStore = neoStores.getPropertyStore();
@@ -407,7 +412,14 @@ class CheckerTestBase {
         PropertyBlock propertyBlock = new PropertyBlock();
         neoStores
                 .getPropertyStore()
-                .encodeValue(propertyBlock, propertyKey, value, CursorContext.NULL_CONTEXT, INSTANCE);
+                .encodeValue(
+                        propertyBlock,
+                        propertyKey,
+                        value,
+                        allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                        allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                        CursorContext.NULL_CONTEXT,
+                        INSTANCE);
         return propertyBlock;
     }
 

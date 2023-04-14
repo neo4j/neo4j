@@ -55,9 +55,12 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -96,6 +99,7 @@ public class RecordPropertyCursorTest {
     protected NodeRecord owner;
     protected DefaultIdGeneratorFactory idGeneratorFactory;
     private CachedStoreCursors storeCursors;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void setup() {
@@ -116,6 +120,8 @@ public class RecordPropertyCursorTest {
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL,
                         Sets.immutable.empty())
                 .openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
         owner = neoStores.getNodeStore().newRecord();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
@@ -293,8 +299,8 @@ public class RecordPropertyCursorTest {
 
     protected long storeValuesAsPropertyChain(NodeRecord owner, Value[] values) {
         DirectRecordAccessSet access = new DirectRecordAccessSet(neoStores, idGeneratorFactory, NULL_CONTEXT);
-        long firstPropertyId =
-                createPropertyChain(owner, blocksOf(neoStores.getPropertyStore(), values), access.getPropertyRecords());
+        long firstPropertyId = createPropertyChain(
+                owner, blocksOf(neoStores.getPropertyStore(), values, allocatorProvider), access.getPropertyRecords());
         access.commit();
         return firstPropertyId;
     }
@@ -314,11 +320,19 @@ public class RecordPropertyCursorTest {
         return map;
     }
 
-    protected static List<PropertyBlock> blocksOf(PropertyStore propertyStore, Value[] values) {
+    protected static List<PropertyBlock> blocksOf(
+            PropertyStore propertyStore, Value[] values, DynamicAllocatorProvider allocatorProvider) {
         var list = new ArrayList<PropertyBlock>();
         for (int i = 0; i < values.length; i++) {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue(block, i, values[i], NULL_CONTEXT, INSTANCE);
+            PropertyStore.encodeValue(
+                    block,
+                    i,
+                    values[i],
+                    allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                    allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                    NULL_CONTEXT,
+                    INSTANCE);
             list.add(block);
         }
         return list;

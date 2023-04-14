@@ -29,6 +29,7 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERT
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.kernel.impl.store.StoreType.META_DATA;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_KEY_TOKEN_NAME;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStore;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfigForNewDbs;
 
@@ -99,6 +100,7 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiLockManager;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
 import org.neo4j.kernel.impl.store.LegacyMetadataHandler;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -842,6 +844,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     public static SchemaRuleMigrationAccess createMigrationTargetSchemaRuleAccess(
             NeoStores stores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
         SchemaStore dstSchema = stores.getSchemaStore();
+        var allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(stores);
         TokenCreator propertyKeyTokenCreator = (name, internal) -> {
             try (var cursorContext = contextFactory.create("createMigrationTargetSchemaRuleAccess");
                     var storeCursors = new CachedStoreCursors(stores, cursorContext)) {
@@ -850,8 +853,13 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 byte[] bytes = PropertyStore.encodeString(name);
                 List<DynamicRecord> nameRecords = new ArrayList<>();
                 AbstractDynamicStore.allocateRecordsFromBytes(
-                        nameRecords, bytes, nameStore, cursorContext, memoryTracker);
-                nameRecords.forEach(record -> nameStore.prepareForCommit(record, cursorContext));
+                        nameRecords,
+                        bytes,
+                        allocatorProvider.allocator(PROPERTY_KEY_TOKEN_NAME),
+                        cursorContext,
+                        memoryTracker);
+                nameRecords.forEach(
+                        record -> nameStore.prepareForCommit(record, nameStore.getIdGenerator(), cursorContext));
                 try (PageCursor cursor = storeCursors.writeCursor(DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR)) {
                     nameRecords.forEach(record -> nameStore.updateRecord(record, cursor, cursorContext, storeCursors));
                 }
@@ -866,7 +874,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
                 keyTokenRecord.initialize(true, nameId);
                 keyTokenRecord.setInternal(internal);
                 keyTokenRecord.setCreated();
-                keyTokenStore.prepareForCommit(keyTokenRecord, cursorContext);
+                keyTokenStore.prepareForCommit(keyTokenRecord, keyTokenStore.getIdGenerator(), cursorContext);
                 try (PageCursor pageCursor = storeCursors.writeCursor(PROPERTY_KEY_TOKEN_CURSOR)) {
                     keyTokenStore.updateRecord(keyTokenRecord, pageCursor, cursorContext, storeCursors);
                 }
@@ -879,7 +887,12 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         var storeCursors = new CachedStoreCursors(stores, cursorContext);
         TokenHolders dstTokenHolders = loadTokenHolders(stores, propertyKeyTokenCreator, storeCursors);
         return new SchemaRuleMigrationAccessImpl(
-                stores, new SchemaStorage(dstSchema, dstTokenHolders), cursorContext, memoryTracker, storeCursors);
+                stores,
+                new SchemaStorage(dstSchema, dstTokenHolders),
+                allocatorProvider,
+                cursorContext,
+                memoryTracker,
+                storeCursors);
     }
 
     private static TokenHolders loadTokenHolders(

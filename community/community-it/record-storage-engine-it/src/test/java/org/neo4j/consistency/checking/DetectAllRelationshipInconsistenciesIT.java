@@ -194,7 +194,7 @@ public class DetectAllRelationshipInconsistenciesIT {
             }
         }
 
-        store.prepareForCommit(after, NULL_CONTEXT);
+        store.prepareForCommit(after, store.getIdGenerator(), NULL_CONTEXT);
         try (var storeCursor = storeCursors.writeCursor(RELATIONSHIP_CURSOR)) {
             store.updateRecord(after, storeCursor, NULL_CONTEXT, storeCursors);
         }

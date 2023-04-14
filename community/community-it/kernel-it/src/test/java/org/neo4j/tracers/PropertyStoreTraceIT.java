@@ -25,6 +25,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -37,6 +39,10 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracer;
 import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
+import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -91,7 +97,8 @@ class PropertyStoreTraceIT {
 
     @Test
     void tracePageCacheAccessOnPropertyBlockIdGeneration() {
-        var propertyStore = storageEngine.testAccessNeoStores().getPropertyStore();
+        NeoStores neoStores = storageEngine.testAccessNeoStores();
+        var propertyStore = neoStores.getPropertyStore();
         prepareIdGenerator(propertyStore.getStringStore().getIdGenerator());
         var pageCacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
@@ -100,8 +107,16 @@ class PropertyStoreTraceIT {
             var dynamicRecord = new DynamicRecord(2);
             dynamicRecord.setData(new byte[] {0, 1, 2, 3, 4, 5, 6, 7});
             propertyBlock.addValueRecord(dynamicRecord);
-            propertyStore.encodeValue(
-                    propertyBlock, 1, stringValue(randomAlphabetic((int) kibiBytes(4))), cursorContext, INSTANCE);
+            DynamicAllocatorProvider allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
+            PropertyStore.encodeValue(
+                    propertyBlock,
+                    1,
+                    stringValue(randomAlphabetic((int) kibiBytes(4))),
+                    allocatorProvider.allocator(PROPERTY_STRING),
+                    allocatorProvider.allocator(PROPERTY_ARRAY),
+                    cursorContext,
+                    INSTANCE);
 
             PageCursorTracer cursorTracer = cursorContext.getCursorTracer();
             assertThat(cursorTracer.pins()).isOne();

@@ -76,6 +76,7 @@ public class TestArrayStore {
 
     private DynamicArrayStore arrayStore;
     private NeoStores neoStores;
+    private DynamicAllocatorProvider allocatorProvider;
 
     public static Stream<Arguments> recordFormats() {
         return Stream.of(Arguments.of(PageAligned.LATEST_RECORD_FORMATS));
@@ -99,6 +100,7 @@ public class TestArrayStore {
                 Sets.immutable.empty());
 
         neoStores = factory.openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         arrayStore = neoStores.getPropertyStore().getArrayStore();
     }
 
@@ -167,7 +169,12 @@ public class TestArrayStore {
         setup(recordFormats);
         String[] array = new String[] {"first", "second"};
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords(records, array, CursorContext.NULL_CONTEXT, INSTANCE);
+        arrayStore.allocateRecords(
+                records,
+                array,
+                allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                CursorContext.NULL_CONTEXT,
+                INSTANCE);
         var loaded = loadArray(records);
         assertStringHeader(loaded.header(), array.length);
         ByteBuffer buffer = ByteBuffer.wrap(loaded.data());
@@ -217,7 +224,12 @@ public class TestArrayStore {
             };
 
             Collection<DynamicRecord> records = new ArrayList<>();
-            arrayStore.allocateRecords(records, array, CursorContext.NULL_CONTEXT, INSTANCE);
+            arrayStore.allocateRecords(
+                    records,
+                    array,
+                    allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                    CursorContext.NULL_CONTEXT,
+                    INSTANCE);
         });
     }
 
@@ -236,13 +248,23 @@ public class TestArrayStore {
             };
 
             Collection<DynamicRecord> records = new ArrayList<>();
-            arrayStore.allocateRecords(records, array, CursorContext.NULL_CONTEXT, INSTANCE);
+            arrayStore.allocateRecords(
+                    records,
+                    array,
+                    allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                    CursorContext.NULL_CONTEXT,
+                    INSTANCE);
         });
     }
 
     private void assertPointArrayHasCorrectFormat(PointValue[] array, int numberOfBitsUsedForDoubles) {
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords(records, array, CursorContext.NULL_CONTEXT, INSTANCE);
+        arrayStore.allocateRecords(
+                records,
+                array,
+                allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                CursorContext.NULL_CONTEXT,
+                INSTANCE);
         var recordData = loadArray(records);
         assertGeometryHeader(
                 recordData.header(),
@@ -309,7 +331,12 @@ public class TestArrayStore {
 
     private Collection<DynamicRecord> storeArray(Object array) {
         Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords(records, array, CursorContext.NULL_CONTEXT, INSTANCE);
+        arrayStore.allocateRecords(
+                records,
+                array,
+                allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                CursorContext.NULL_CONTEXT,
+                INSTANCE);
         try (var storeCursor = arrayStore.openPageCursorForWriting(0, NULL_CONTEXT)) {
             for (DynamicRecord record : records) {
                 arrayStore.updateRecord(record, storeCursor, NULL_CONTEXT, StoreCursors.NULL);

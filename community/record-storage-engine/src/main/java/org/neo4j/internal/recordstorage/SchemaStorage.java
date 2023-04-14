@@ -21,6 +21,8 @@ package org.neo4j.internal.recordstorage;
 
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 
 import java.util.ArrayList;
@@ -41,6 +43,7 @@ import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
 import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
@@ -155,6 +158,7 @@ public class SchemaStorage implements SchemaRuleAccess {
     public void writeSchemaRule(
             SchemaRule rule,
             IdUpdateListener idUpdateListener,
+            DynamicAllocatorProvider allocationProvider,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
             StoreCursors storeCursors)
@@ -164,7 +168,14 @@ public class SchemaStorage implements SchemaRuleAccess {
         Collection<PropertyBlock> blocks = new ArrayList<>();
         protoProperties.forEachKeyValue((keyId, value) -> {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue(block, keyId, value, cursorContext, memoryTracker);
+            PropertyStore.encodeValue(
+                    block,
+                    keyId,
+                    value,
+                    allocationProvider.allocator(PROPERTY_STRING),
+                    allocationProvider.allocator(PROPERTY_ARRAY),
+                    cursorContext,
+                    memoryTracker);
             blocks.add(block);
         });
 

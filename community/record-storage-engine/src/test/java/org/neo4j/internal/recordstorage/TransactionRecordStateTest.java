@@ -112,6 +112,8 @@ import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.database.MetadataCache;
 import org.neo4j.kernel.impl.api.FlatRelationshipModifications;
 import org.neo4j.kernel.impl.api.FlatRelationshipModifications.RelationshipData;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -119,6 +121,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -187,6 +190,7 @@ class TransactionRecordStateTest {
     private IdGeneratorFactory idGeneratorFactory;
     private IdGenerator nodeIdGenerator;
     private IdGenerator relationshipIdGenerator;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @AfterEach
     void after() {
@@ -221,6 +225,8 @@ class TransactionRecordStateTest {
                 logTailMetadata,
                 immutable.empty());
         neoStores = storeFactory.openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
         nodeIdGenerator = neoStores.getNodeStore().getIdGenerator();
         relationshipIdGenerator = neoStores.getRelationshipStore().getIdGenerator();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
@@ -621,13 +627,13 @@ class TransactionRecordStateTest {
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
         apply(applier, transaction(storeCursors, nodeWithDynamicLabelRecord(neoStores, nodeId, dynamicLabelRecordId)));
-        assertDynamicLabelRecordInUse(neoStores, dynamicLabelRecordId.get(), true, storeCursors);
+        assertDynamicLabelRecordInUse(neoStores, dynamicLabelRecordId.get(), true, storeCursors, allocatorProvider);
 
         // WHEN applying a transaction where the node is deleted
         apply(applier, transaction(storeCursors, deleteNode(nodeId.get())));
 
         // THEN the dynamic label record should also be deleted
-        assertDynamicLabelRecordInUse(neoStores, dynamicLabelRecordId.get(), false, storeCursors);
+        assertDynamicLabelRecordInUse(neoStores, dynamicLabelRecordId.get(), false, storeCursors, allocatorProvider);
     }
 
     @Test
@@ -638,7 +644,7 @@ class TransactionRecordStateTest {
         AtomicLong nodeId = new AtomicLong();
         AtomicLong dynamicLabelRecordId = new AtomicLong();
         apply(applier, transaction(storeCursors, nodeWithDynamicLabelRecord(neoStores, nodeId, dynamicLabelRecordId)));
-        assertDynamicLabelRecordInUse(neoStores, dynamicLabelRecordId.get(), true, storeCursors);
+        assertDynamicLabelRecordInUse(neoStores, dynamicLabelRecordId.get(), true, storeCursors, allocatorProvider);
 
         // WHEN applying a transaction, which has first round-tripped through a log (written then read)
         CommandBatchToApply transaction = transaction(storeCursors, deleteNode(nodeId.get()));
@@ -650,7 +656,7 @@ class TransactionRecordStateTest {
         apply(applier, recoveredTransaction);
 
         // THEN should have the dynamic label record should be deleted as well
-        assertDynamicLabelRecordInUse(neoStores, dynamicLabelRecordId.get(), false, storeCursors);
+        assertDynamicLabelRecordInUse(neoStores, dynamicLabelRecordId.get(), false, storeCursors, allocatorProvider);
     }
 
     @Test
@@ -1857,14 +1863,10 @@ class TransactionRecordStateTest {
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         RelationshipGroupGetter relationshipGroupGetter = new RelationshipGroupGetter(
                 neoStores.getRelationshipGroupStore().getIdGenerator(), NULL_CONTEXT);
+        NullLogProvider logProvider = NullLogProvider.getInstance();
         PropertyDeleter propertyDeleter = new PropertyDeleter(
-                propertyTraverser,
-                neoStores,
-                null,
-                NullLogProvider.getInstance(),
-                Config.defaults(),
-                NULL_CONTEXT,
-                storeCursors);
+                propertyTraverser, neoStores, null, logProvider, Config.defaults(), NULL_CONTEXT, storeCursors);
+        var allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         return new TransactionRecordState(
                 kernelVersionProvider,
                 recordChangeSet,
@@ -1877,12 +1879,19 @@ class TransactionRecordStateTest {
                         neoStores.getRelationshipGroupStore().getStoreHeaderInt(),
                         NULL_CONTEXT,
                         EmptyMemoryTracker.INSTANCE),
-                new PropertyCreator(neoStores.getPropertyStore(), propertyTraverser, NULL_CONTEXT),
+                new PropertyCreator(
+                        allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                        allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                        propertyTraverser,
+                        new TransactionIdSequenceProvider(neoStores),
+                        NULL_CONTEXT),
                 propertyDeleter,
                 NULL_CONTEXT,
                 storeCursors,
                 INSTANCE,
-                RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION));
+                RecordStorageCommandReaderFactory.INSTANCE.get(LatestVersions.LATEST_KERNEL_VERSION),
+                allocatorProvider,
+                new TransactionIdSequenceProvider(neoStores));
     }
 
     private static CommandBatchToApply transaction(StoreCursors storeCursors, TransactionRecordState recordState)
@@ -1893,11 +1902,15 @@ class TransactionRecordStateTest {
     }
 
     private static void assertDynamicLabelRecordInUse(
-            NeoStores store, long id, boolean inUse, StoreCursors storeCursors) {
+            NeoStores store,
+            long id,
+            boolean inUse,
+            StoreCursors storeCursors,
+            DynamicAllocatorProvider allocatorProvider) {
         DynamicArrayStore dynamicLabelStore = store.getNodeStore().getDynamicLabelStore();
         DynamicRecord record = dynamicLabelStore.getRecordByCursor(
                 id,
-                dynamicLabelStore.nextRecord(NULL_CONTEXT),
+                allocatorProvider.allocator(StoreType.NODE_LABEL).nextRecord(NULL_CONTEXT),
                 FORCE,
                 storeCursors.readCursor(DYNAMIC_LABEL_STORE_CURSOR));
         assertEquals(inUse, record.inUse());

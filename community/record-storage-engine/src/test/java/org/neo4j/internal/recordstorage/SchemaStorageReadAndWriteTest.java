@@ -39,6 +39,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -81,6 +83,7 @@ class SchemaStorageReadAndWriteTest {
     private SchemaStorage storage;
     private NeoStores neoStores;
     private CachedStoreCursors storeCursors;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeAll
     void before() throws Exception {
@@ -102,6 +105,8 @@ class SchemaStorageReadAndWriteTest {
                 StoreType.PROPERTY_KEY_TOKEN,
                 StoreType.LABEL_TOKEN,
                 StoreType.RELATIONSHIP_TYPE_TOKEN);
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
         AtomicInteger tokenIdCounter = new AtomicInteger();
         TokenCreator tokenCreator = (name, internal) -> tokenIdCounter.incrementAndGet();
         TokenHolders tokens = new TokenHolders(
@@ -126,7 +131,8 @@ class SchemaStorageReadAndWriteTest {
     @RepeatedTest(2000)
     void shouldPerfectlyPreserveSchemaRules() throws Exception {
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
-        storage.writeSchemaRule(schemaRule, IdUpdateListener.DIRECT, NULL_CONTEXT, INSTANCE, storeCursors);
+        storage.writeSchemaRule(
+                schemaRule, IdUpdateListener.DIRECT, allocatorProvider, NULL_CONTEXT, INSTANCE, storeCursors);
         SchemaRule returnedRule = storage.loadSingleSchemaRule(schemaRule.getId(), storeCursors);
         assertTrue(
                 RandomSchema.schemaDeepEquals(returnedRule, schemaRule),

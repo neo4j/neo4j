@@ -99,7 +99,12 @@ class DynamicArrayStoreTest {
             assertZeroCursor(cursorContext);
             prepareDirtyGenerator(store);
 
-            store.allocateRecords(new ArrayList<>(), array, cursorContext, INSTANCE);
+            store.allocateRecords(
+                    new ArrayList<>(),
+                    array,
+                    new StandardDynamicRecordAllocator(store.getIdGenerator(), store.getRecordDataSize()),
+                    cursorContext,
+                    INSTANCE);
 
             assertThat(cursorContext.getCursorTracer().pins()).isEqualTo(1);
         }

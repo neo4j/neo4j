@@ -99,6 +99,8 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.OnlineIndexProxy;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
@@ -109,6 +111,7 @@ import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -153,6 +156,7 @@ public class DetectRandomSabotageIT {
     private NeoStores neoStores;
     private DependencyResolver resolver;
     private StoreCursors storageCursors;
+    private DynamicAllocatorProvider allocatorProvider;
 
     private DatabaseManagementService getDbms(Path home) {
         return addConfig(createBuilder(home)).build();
@@ -199,6 +203,7 @@ public class DetectRandomSabotageIT {
         RecordStorageEngine recordStorageEngine =
                 db.getDependencyResolver().resolveDependency(RecordStorageEngine.class);
         neoStores = recordStorageEngine.testAccessNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         storageCursors = recordStorageEngine.createStorageCursors(NULL_CONTEXT);
         resolver = db.getDependencyResolver();
     }
@@ -215,7 +220,7 @@ public class DetectRandomSabotageIT {
         SabotageType type = random.among(SabotageType.values());
 
         // when
-        Sabotage sabotage = type.run(random, neoStores, resolver, db, storageCursors);
+        Sabotage sabotage = type.run(random, neoStores, resolver, db, storageCursors, allocatorProvider);
 
         // then
         ConsistencyCheckService.Result result = shutDownAndRunConsistencyChecker();
@@ -258,7 +263,7 @@ public class DetectRandomSabotageIT {
         PropertyBlock block = indexConfigPropertyRecord.iterator().next();
         indexConfigPropertyRecord.removePropertyBlock(block.getKeyIndexId());
         PropertyBlock newBlock = new PropertyBlock();
-        propertyStore.encodeValue(newBlock, tokenId[0], intValue(11), NULL_CONTEXT, INSTANCE);
+        PropertyStore.encodeValue(newBlock, tokenId[0], intValue(11), null, null, NULL_CONTEXT, INSTANCE);
         indexConfigPropertyRecord.addPropertyBlock(newBlock);
         try (var storeCursor = storageCursors.writeCursor(PROPERTY_CURSOR)) {
             propertyStore.updateRecord(indexConfigPropertyRecord, storeCursor, NULL_CONTEXT, storageCursors);
@@ -461,7 +466,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return loadChangeUpdate(
                         random,
                         stores.getNodeStore(),
@@ -480,7 +486,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return loadChangeUpdate(
                         random,
                         stores.getNodeStore(),
@@ -498,7 +505,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 NodeStore store = stores.getNodeStore();
                 PageCursor nodeCursor = storageCursors.readCursor(NODE_CURSOR);
                 NodeRecord node = randomRecord(random, store, usedRecord(), nodeCursor);
@@ -535,7 +543,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return setRandomRecordNotInUse(random, stores.getNodeStore(), storageCursors, NODE_CURSOR);
             }
         },
@@ -546,7 +555,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 RelationshipStore store = stores.getRelationshipStore();
                 PageCursor relCursor = storageCursors.readCursor(RELATIONSHIP_CURSOR);
                 RelationshipRecord relationship = randomRecord(random, store, usedRecord(), relCursor);
@@ -586,7 +596,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 boolean startNode = random.nextBoolean();
                 ToLongFunction<RelationshipRecord> getter =
                         startNode ? RelationshipRecord::getFirstNode : RelationshipRecord::getSecondNode;
@@ -609,7 +620,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return loadChangeUpdate(
                         random,
                         stores.getRelationshipStore(),
@@ -647,7 +659,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return loadChangeUpdate(
                         random,
                         stores.getRelationshipStore(),
@@ -666,7 +679,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return setRandomRecordNotInUse(
                         random, stores.getRelationshipStore(), storageCursors, RELATIONSHIP_CURSOR);
             }
@@ -678,7 +692,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 boolean prev = random.nextBoolean();
                 if (prev) {
                     return loadChangeUpdate(
@@ -711,7 +726,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return setRandomRecordNotInUse(random, stores.getPropertyStore(), storageCursors, PROPERTY_CURSOR);
             }
         },
@@ -723,7 +739,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return loadChangeUpdateDynamicChain(
                         random,
                         stores.getPropertyStore(),
@@ -743,7 +760,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return setRandomRecordNotInUse(
                         random,
                         stores.getPropertyStore().getStringStore(),
@@ -758,7 +776,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return loadChangeUpdateDynamicChain(
                         random,
                         stores.getPropertyStore(),
@@ -777,7 +796,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return loadChangeUpdateDynamicChain(
                         random,
                         stores.getPropertyStore(),
@@ -797,7 +817,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return setRandomRecordNotInUse(
                         random, stores.getPropertyStore().getArrayStore(), storageCursors, DYNAMIC_ARRAY_STORE_CURSOR);
             }
@@ -809,7 +830,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 // prev isn't stored in the record format
                 return loadChangeUpdate(
                         random,
@@ -829,7 +851,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return loadChangeUpdate(
                         random,
                         stores.getRelationshipGroupStore(),
@@ -848,7 +871,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 ToLongFunction<RelationshipGroupRecord> getter;
                 BiConsumer<RelationshipGroupRecord, Long> setter;
                 switch (random.nextInt(3)) {
@@ -883,7 +907,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors) {
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider) {
                 return setRandomRecordNotInUse(
                         random, stores.getRelationshipGroupStore(), storageCursors, GROUP_CURSOR);
             }
@@ -895,7 +920,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors)
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider)
                     throws Exception {
                 IndexingService indexing = otherDependencies.resolveDependency(IndexingService.class);
                 var indexes = Iterables.asList(indexing.getIndexProxies());
@@ -974,7 +1000,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors)
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider)
                     throws Exception {
                 IndexDescriptor nliDescriptor = null;
                 try (Transaction tx = db.beginTx()) {
@@ -1051,7 +1078,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors)
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider)
                     throws Exception {
                 IndexDescriptor rtiDescriptor = null;
                 try (Transaction tx = db.beginTx()) {
@@ -1126,7 +1154,8 @@ public class DetectRandomSabotageIT {
                     NeoStores stores,
                     DependencyResolver otherDependencies,
                     GraphDatabaseAPI db,
-                    StoreCursors storageCursors)
+                    StoreCursors storageCursors,
+                    DynamicAllocatorProvider allocatorProvider)
                     throws Exception {
                 TokenHolders tokenHolders = otherDependencies.resolveDependency(TokenHolders.class);
                 String tokenName = "Token-" + currentTimeMillis();
@@ -1142,7 +1171,7 @@ public class DetectRandomSabotageIT {
                                 .add(
                                         tokenId[0],
                                         nodeStore,
-                                        nodeStore.getDynamicLabelStore(),
+                                        allocatorProvider.allocator(StoreType.NODE_LABEL),
                                         NULL_CONTEXT,
                                         storageCursors,
                                         INSTANCE);
@@ -1173,7 +1202,14 @@ public class DetectRandomSabotageIT {
 
                         property.removePropertyBlock(block.getKeyIndexId());
                         PropertyBlock newBlock = new PropertyBlock();
-                        propertyStore.encodeValue(newBlock, tokenId[0], intValue(11), NULL_CONTEXT, INSTANCE);
+                        propertyStore.encodeValue(
+                                newBlock,
+                                tokenId[0],
+                                intValue(11),
+                                allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                                allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                                NULL_CONTEXT,
+                                INSTANCE);
                         property.addPropertyBlock(newBlock);
                         try (var storeCursor = storageCursors.writeCursor(PROPERTY_CURSOR)) {
                             propertyStore.updateRecord(property, storeCursor, NULL_CONTEXT, storageCursors);
@@ -1345,7 +1381,8 @@ public class DetectRandomSabotageIT {
                 NeoStores stores,
                 DependencyResolver otherDependencies,
                 GraphDatabaseAPI db,
-                StoreCursors storageCursors)
+                StoreCursors storageCursors,
+                DynamicAllocatorProvider allocatorProvider)
                 throws Exception;
     }
 

@@ -39,6 +39,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.DynamicArrayStore.allocateFromNumbers;
 import static org.neo4j.kernel.impl.store.NodeStore.readOwnerFromDynamicLabelsRecord;
+import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
@@ -106,6 +107,7 @@ class NodeStoreTest {
     private NeoStores neoStores;
     private PageCache pageCache;
     private CachedStoreCursors storeCursors;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @AfterEach
     void tearDown() {
@@ -435,7 +437,7 @@ class NodeStoreTest {
         labels.put(
                 new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
                 nodeStore,
-                dynamicLabelStore,
+                allocatorProvider.allocator(NODE_LABEL),
                 NULL_CONTEXT,
                 storeCursors,
                 INSTANCE);
@@ -544,6 +546,7 @@ class NodeStoreTest {
                 false,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         neoStores = factory.openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         nodeStore = neoStores.getNodeStore();
         return nodeStore;

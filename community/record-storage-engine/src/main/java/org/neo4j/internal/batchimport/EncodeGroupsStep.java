@@ -68,7 +68,7 @@ public class EncodeGroupsStep extends ProcessorStep<RelationshipGroupRecord[]> {
                 // are now fully populated. We can now prepare these groups so that their potential
                 // secondary units ends up very close by.
                 for (int j = groupStartIndex; j <= i; j++) {
-                    store.prepareForCommit(batch[j], cursorContext);
+                    store.prepareForCommit(batch[j], idGenerator, cursorContext);
                 }
 
                 groupStartIndex = i + 1;

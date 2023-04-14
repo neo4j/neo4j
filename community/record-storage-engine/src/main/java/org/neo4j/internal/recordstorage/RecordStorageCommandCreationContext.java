@@ -28,10 +28,9 @@ import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.impl.store.DynamicArrayStore;
-import org.neo4j.kernel.impl.store.DynamicStringStore;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StandardDynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.lock.LockTracer;
@@ -47,7 +46,6 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 class RecordStorageCommandCreationContext implements CommandCreationContext {
     private final NeoStores neoStores;
     private final Config config;
-    private final PropertyStore propertyStore;
     private final TokenNameLookup tokenNameLookup;
     private final InternalLogProvider logProvider;
     private final int denseNodeThreshold;
@@ -60,6 +58,8 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     private CursorContext cursorContext;
     private StoreCursors storeCursors;
     private ResourceLocker locks;
+    private final DynamicAllocatorProvider dynamicAllocatorProvider = new TransactionDynamicAllocatorProvider();
+    private final TransactionIdSequenceProvider transactionSequenceProvider;
 
     RecordStorageCommandCreationContext(
             NeoStores neoStores,
@@ -72,7 +72,7 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
         this.denseNodeThreshold = denseNodeThreshold;
         this.neoStores = neoStores;
         this.config = config;
-        this.propertyStore = neoStores.getPropertyStore();
+        this.transactionSequenceProvider = new TransactionIdSequenceProvider(neoStores);
     }
 
     @Override
@@ -88,23 +88,21 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
         this.loaders = new Loaders(neoStores, storeCursors);
         this.storeCursors = storeCursors;
         this.locks = locks;
-        this.relationshipGroupGetter = new RelationshipGroupGetter(
-                neoStores.getRelationshipGroupStore().getIdGenerator(), cursorContext);
+        this.relationshipGroupGetter =
+                new RelationshipGroupGetter(ignored -> nextId(StoreType.RELATIONSHIP_GROUP), cursorContext);
         PropertyTraverser propertyTraverser = new PropertyTraverser();
         this.propertyDeleter = new PropertyDeleter(
                 propertyTraverser, neoStores, tokenNameLookup, logProvider, config, cursorContext, storeCursors);
-        DynamicStringStore stringStore = propertyStore.getStringStore();
-        DynamicArrayStore arrayStore = propertyStore.getArrayStore();
         this.propertyCreator = new PropertyCreator(
-                new StandardDynamicRecordAllocator(stringStore.getIdGenerator(), stringStore.getRecordDataSize()),
-                new StandardDynamicRecordAllocator(arrayStore.getIdGenerator(), arrayStore.getRecordDataSize()),
-                propertyStore,
+                dynamicAllocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                dynamicAllocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
                 propertyTraverser,
+                transactionSequenceProvider,
                 cursorContext);
     }
 
     private long nextId(StoreType storeType) {
-        return neoStores.getRecordStore(storeType).getIdGenerator().nextId(cursorContext);
+        return transactionSequenceProvider.getIdSequence(storeType).nextId(cursorContext);
     }
 
     ResourceLocker getLocks() {
@@ -133,18 +131,17 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
 
     @Override
     public int reserveRelationshipTypeTokenId() {
-        return toIntExact(
-                neoStores.getRelationshipTypeTokenStore().getIdGenerator().nextId(cursorContext));
+        return toIntExact(nextId(StoreType.RELATIONSHIP_TYPE_TOKEN));
     }
 
     @Override
     public int reservePropertyKeyTokenId() {
-        return toIntExact(neoStores.getPropertyKeyTokenStore().getIdGenerator().nextId(cursorContext));
+        return toIntExact(nextId(StoreType.PROPERTY_KEY_TOKEN));
     }
 
     @Override
     public int reserveLabelTokenId() {
-        return toIntExact(neoStores.getLabelTokenStore().getIdGenerator().nextId(cursorContext));
+        return toIntExact(nextId(StoreType.LABEL_TOKEN));
     }
 
     @Override
@@ -171,11 +168,32 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
                 cursorContext,
                 storeCursors,
                 memoryTracker,
-                commandSerialization);
+                commandSerialization,
+                dynamicAllocatorProvider,
+                transactionSequenceProvider);
     }
 
     @Override
     public KernelVersion kernelVersion() {
         return kernelVersionProvider.kernelVersion();
+    }
+
+    private class TransactionDynamicAllocatorProvider implements DynamicAllocatorProvider {
+        private final StandardDynamicRecordAllocator[] dynamicAllocators =
+                new StandardDynamicRecordAllocator[StoreType.values().length];
+
+        @Override
+        public DynamicRecordAllocator allocator(StoreType type) {
+            StandardDynamicRecordAllocator allocator = dynamicAllocators[type.ordinal()];
+            if (allocator != null) {
+                return allocator;
+            }
+
+            var newAllocator = new StandardDynamicRecordAllocator(
+                    cursorContext -> RecordStorageCommandCreationContext.this.nextId(type),
+                    neoStores.getRecordStore(type).getRecordDataSize());
+            dynamicAllocators[type.ordinal()] = newAllocator;
+            return newAllocator;
+        }
     }
 }

@@ -29,6 +29,7 @@ import static org.neo4j.token.api.TokenHolder.TYPE_RELATIONSHIP_TYPE;
 import java.util.List;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
@@ -130,14 +131,19 @@ public class StoreTokens {
     }
 
     public static TokenHolders directTokenHolders(
-            NeoStores neoStores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
+            NeoStores neoStores,
+            DynamicAllocatorProvider allocatorProvider,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         TokenHolders tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder(
-                        directPropertyKeyTokenCreator(neoStores, contextFactory, memoryTracker), TYPE_PROPERTY_KEY),
+                        directPropertyKeyTokenCreator(neoStores, allocatorProvider, contextFactory, memoryTracker),
+                        TYPE_PROPERTY_KEY),
                 new DelegatingTokenHolder(
-                        directLabelTokenCreator(neoStores, contextFactory, memoryTracker), TYPE_LABEL),
+                        directLabelTokenCreator(neoStores, allocatorProvider, contextFactory, memoryTracker),
+                        TYPE_LABEL),
                 new DelegatingTokenHolder(
-                        directRelationshipTypeTokenCreator(neoStores, contextFactory, memoryTracker),
+                        directRelationshipTypeTokenCreator(neoStores, allocatorProvider, contextFactory, memoryTracker),
                         TYPE_RELATIONSHIP_TYPE));
         try (CursorContext cursorContext = contextFactory.create("load tokens");
                 StoreCursors storeCursors = new CachedStoreCursors(neoStores, cursorContext)) {

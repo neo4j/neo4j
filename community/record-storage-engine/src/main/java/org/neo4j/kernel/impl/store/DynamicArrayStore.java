@@ -255,11 +255,6 @@ public class DynamicArrayStore extends AbstractDynamicStore {
         }
     }
 
-    public void allocateRecords(
-            Collection<DynamicRecord> target, Object array, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        allocateRecords(target, array, this, cursorContext, memoryTracker);
-    }
-
     public static void allocateRecords(
             Collection<DynamicRecord> target,
             Object array,

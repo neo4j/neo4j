@@ -50,11 +50,14 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -93,6 +96,7 @@ class PropertyDeleterTest {
     private PropertyStore propertyStore;
     private DefaultIdGeneratorFactory idGeneratorFactory;
     private CachedStoreCursors storeCursors;
+    private DynamicAllocatorProvider allocatorProvider;
 
     private void startStore(boolean log) {
         Config config = Config.defaults(GraphDatabaseInternalSettings.log_inconsistent_data_deletion, log);
@@ -111,6 +115,7 @@ class PropertyDeleterTest {
                         false,
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
                 .openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         propertyStore = neoStores.getPropertyStore();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         deleter = new PropertyDeleter(
@@ -417,7 +422,14 @@ class PropertyDeleterTest {
 
     private PropertyBlock encodedValue(int key, Value value) {
         PropertyBlock block = new PropertyBlock();
-        propertyStore.encodeValue(block, key, value, NULL_CONTEXT, INSTANCE);
+        PropertyStore.encodeValue(
+                block,
+                key,
+                value,
+                allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                NULL_CONTEXT,
+                INSTANCE);
         return block;
     }
 

@@ -20,6 +20,9 @@
 package org.neo4j.internal.recordstorage;
 
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
+import static org.neo4j.kernel.impl.store.StoreType.LABEL_TOKEN_NAME;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_KEY_TOKEN_NAME;
+import static org.neo4j.kernel.impl.store.StoreType.RELATIONSHIP_TYPE_TOKEN_NAME;
 
 import java.util.Collection;
 import org.neo4j.exceptions.KernelException;
@@ -28,6 +31,8 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.TokenStore;
 import org.neo4j.kernel.impl.store.cursor.CachedStoreCursors;
@@ -47,10 +52,12 @@ public class DirectTokenCreator<R extends TokenRecord> implements TokenCreator {
     private final CursorContextFactory contextFactory;
     private final MemoryTracker memoryTracker;
     private final IdGenerator storeIdGenerator;
+    private final DynamicRecordAllocator dynamicRecordAllocator;
 
     public DirectTokenCreator(
             NeoStores neoStores,
             TokenStore<R> store,
+            DynamicRecordAllocator dynamicRecordAllocator,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
         this.neoStores = neoStores;
@@ -58,6 +65,7 @@ public class DirectTokenCreator<R extends TokenRecord> implements TokenCreator {
         this.storeIdGenerator = store.getIdGenerator();
         this.contextFactory = contextFactory;
         this.memoryTracker = memoryTracker;
+        this.dynamicRecordAllocator = dynamicRecordAllocator;
     }
 
     @Override
@@ -73,7 +81,7 @@ public class DirectTokenCreator<R extends TokenRecord> implements TokenCreator {
             record.setInternal(internal);
             record.setCreated();
             Collection<DynamicRecord> keyRecords =
-                    store.allocateNameRecords(encodeString(name), cursorContext, memoryTracker);
+                    store.allocateNameRecords(encodeString(name), dynamicRecordAllocator, cursorContext, memoryTracker);
             record.setNameId((int) Iterables.first(keyRecords).getId());
             record.addNameRecords(keyRecords);
             store.updateRecord(record, cursor, cursorContext, storeCursors);
@@ -82,18 +90,41 @@ public class DirectTokenCreator<R extends TokenRecord> implements TokenCreator {
     }
 
     public static TokenCreator directLabelTokenCreator(
-            NeoStores neoStores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
-        return new DirectTokenCreator<>(neoStores, neoStores.getLabelTokenStore(), contextFactory, memoryTracker);
+            NeoStores neoStores,
+            DynamicAllocatorProvider allocatorProvider,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        return new DirectTokenCreator<>(
+                neoStores,
+                neoStores.getLabelTokenStore(),
+                allocatorProvider.allocator(LABEL_TOKEN_NAME),
+                contextFactory,
+                memoryTracker);
     }
 
     public static TokenCreator directPropertyKeyTokenCreator(
-            NeoStores neoStores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
-        return new DirectTokenCreator<>(neoStores, neoStores.getPropertyKeyTokenStore(), contextFactory, memoryTracker);
+            NeoStores neoStores,
+            DynamicAllocatorProvider allocatorProvider,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
+        return new DirectTokenCreator<>(
+                neoStores,
+                neoStores.getPropertyKeyTokenStore(),
+                allocatorProvider.allocator(PROPERTY_KEY_TOKEN_NAME),
+                contextFactory,
+                memoryTracker);
     }
 
     public static TokenCreator directRelationshipTypeTokenCreator(
-            NeoStores neoStores, CursorContextFactory contextFactory, MemoryTracker memoryTracker) {
+            NeoStores neoStores,
+            DynamicAllocatorProvider allocatorProvider,
+            CursorContextFactory contextFactory,
+            MemoryTracker memoryTracker) {
         return new DirectTokenCreator<>(
-                neoStores, neoStores.getRelationshipTypeTokenStore(), contextFactory, memoryTracker);
+                neoStores,
+                neoStores.getRelationshipTypeTokenStore(),
+                allocatorProvider.allocator(RELATIONSHIP_TYPE_TOKEN_NAME),
+                contextFactory,
+                memoryTracker);
     }
 }

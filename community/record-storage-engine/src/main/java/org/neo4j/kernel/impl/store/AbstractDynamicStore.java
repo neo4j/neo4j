@@ -69,8 +69,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
  * The record size is what's stored in the header (first record). {@link #getRecordDataSize()} returns
  * the size which was configured at the store creation, {@link #getRecordSize()} returns what the store header says.
  */
-public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord, IntStoreHeader>
-        implements DynamicRecordAllocator {
+public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRecord, IntStoreHeader> {
     public AbstractDynamicStore(
             FileSystemAbstraction fileSystem,
             Path path,
@@ -181,16 +180,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore<DynamicRe
             sourceOffset = 0;
         }
         return new HeavyRecordData(header, bArray);
-    }
-
-    @Override
-    public DynamicRecord nextRecord(CursorContext cursorContext) {
-        return StandardDynamicRecordAllocator.allocateRecord(getIdGenerator().nextId(cursorContext));
-    }
-
-    void allocateRecordsFromBytes(
-            Collection<DynamicRecord> target, byte[] src, CursorContext cursorContext, MemoryTracker memoryTracker) {
-        allocateRecordsFromBytes(target, src, this, cursorContext, memoryTracker);
     }
 
     @Override

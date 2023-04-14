@@ -25,6 +25,7 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_KEY_TOKEN_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_KEY_TOKEN_NAME;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.io.IOException;
@@ -48,6 +49,8 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.Kernel;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -149,14 +152,18 @@ class ManyPropertyKeysIT {
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         NeoStores neoStores = storeFactory.openAllNeoStores();
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
+        DynamicAllocatorProvider allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         try (var storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
                 var cursor = storeCursors.writeCursor(PROPERTY_KEY_TOKEN_CURSOR)) {
             for (int i = 0; i < propertyKeyCount; i++) {
                 PropertyKeyTokenRecord record =
                         new PropertyKeyTokenRecord((int) store.getIdGenerator().nextId(cursorContext));
                 record.setInUse(true);
-                Collection<DynamicRecord> nameRecords =
-                        store.allocateNameRecords(PropertyStore.encodeString(key(i)), cursorContext, INSTANCE);
+                Collection<DynamicRecord> nameRecords = store.allocateNameRecords(
+                        PropertyStore.encodeString(key(i)),
+                        allocatorProvider.allocator(PROPERTY_KEY_TOKEN_NAME),
+                        cursorContext,
+                        INSTANCE);
                 record.addNameRecords(nameRecords);
                 record.setNameId((int) Iterables.first(nameRecords).getId());
                 store.updateRecord(record, cursor, NULL_CONTEXT, storeCursors);

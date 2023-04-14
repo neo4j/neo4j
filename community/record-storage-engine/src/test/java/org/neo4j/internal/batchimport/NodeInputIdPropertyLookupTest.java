@@ -25,6 +25,8 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.kernel.impl.transaction.log.LogTailMetadata.EMPTY_LOG_TAIL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -38,6 +40,8 @@ import org.neo4j.internal.id.DefaultIdGeneratorFactory;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -77,7 +81,7 @@ class NodeInputIdPropertyLookupTest {
                         NULL_CONTEXT_FACTORY,
                         false,
                         EMPTY_LOG_TAIL)
-                .openNeoStores(StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING, StoreType.PROPERTY);
+                .openNeoStores(PROPERTY_ARRAY, PROPERTY_STRING, StoreType.PROPERTY);
     }
 
     @AfterEach
@@ -92,7 +96,8 @@ class NodeInputIdPropertyLookupTest {
         var lookup = new NodeInputIdPropertyLookup(propertyStore, () -> new CachedStoreCursors(store, NULL_CONTEXT));
         var numNodes = 1_000;
         LongFunction<String> valueFunction = String::valueOf;
-        createValues(propertyStore, numNodes, valueFunction);
+        DynamicAllocatorProvider allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(store);
+        createValues(propertyStore, numNodes, valueFunction, allocatorProvider);
 
         // when
         var race = new Race().withEndCondition(() -> false);
@@ -113,14 +118,25 @@ class NodeInputIdPropertyLookupTest {
         race.goUnchecked();
     }
 
-    private void createValues(PropertyStore propertyStore, int numNodes, LongFunction<String> valueFunction) {
+    private void createValues(
+            PropertyStore propertyStore,
+            int numNodes,
+            LongFunction<String> valueFunction,
+            DynamicAllocatorProvider allocatorProvider) {
         try (var cursor = propertyStore.openPageCursorForWriting(0, NULL_CONTEXT);
                 var cursors = new CachedStoreCursors(store, NULL_CONTEXT)) {
             IdGenerator idGenerator = propertyStore.getIdGenerator();
             for (var nodeId = 0; nodeId < numNodes; nodeId++) {
                 var block = new PropertyBlock();
                 var record = propertyStore.newRecord();
-                propertyStore.encodeValue(block, 0, Values.of(valueFunction.apply(nodeId)), NULL_CONTEXT, INSTANCE);
+                PropertyStore.encodeValue(
+                        block,
+                        0,
+                        Values.of(valueFunction.apply(nodeId)),
+                        allocatorProvider.allocator(PROPERTY_STRING),
+                        allocatorProvider.allocator(PROPERTY_ARRAY),
+                        NULL_CONTEXT,
+                        INSTANCE);
                 record.addPropertyBlock(block);
                 record.setId(idGenerator.nextId(NULL_CONTEXT));
                 record.setInUse(true);

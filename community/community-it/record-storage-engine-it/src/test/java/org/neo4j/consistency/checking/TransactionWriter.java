@@ -294,14 +294,20 @@ public class TransactionWriter {
     }
 
     private void prepareForCommit() {
+        var nodeStore = neoStores.getNodeStore();
         for (Command.NodeCommand command : nodeCommands) {
-            neoStores.getNodeStore().prepareForCommit(command.getAfter(), NULL_CONTEXT);
+            nodeStore.prepareForCommit(command.getAfter(), nodeStore.getIdGenerator(), NULL_CONTEXT);
         }
+
+        var relationshipStore = neoStores.getRelationshipStore();
         for (Command.RelationshipCommand command : relationshipCommands) {
-            neoStores.getRelationshipStore().prepareForCommit(command.getAfter(), NULL_CONTEXT);
+            relationshipStore.prepareForCommit(command.getAfter(), relationshipStore.getIdGenerator(), NULL_CONTEXT);
         }
+
+        var relationshipGroupStore = neoStores.getRelationshipGroupStore();
         for (Command.RelationshipGroupCommand command : relationshipGroupCommands) {
-            neoStores.getRelationshipGroupStore().prepareForCommit(command.getAfter(), NULL_CONTEXT);
+            relationshipGroupStore.prepareForCommit(
+                    command.getAfter(), relationshipGroupStore.getIdGenerator(), NULL_CONTEXT);
         }
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.batchimport;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_STRING_ARRAY;
 import static org.apache.commons.lang3.StringUtils.defaultIfEmpty;
 import static org.neo4j.internal.helpers.collection.Iterators.stream;
 import static org.neo4j.internal.recordstorage.SchemaRuleAccess.getSchemaRuleAccess;
@@ -42,6 +43,8 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -70,6 +73,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
             Function<CursorContext, StoreCursors> storeCursorsFactory) {
         var schemaStore = neoStores.getNeoStores().getSchemaStore();
         var tokenHolders = neoStores.getTokenHolders();
+        var allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores.getNeoStores());
         var schemaRuleAccess = getSchemaRuleAccess(schemaStore, tokenHolders);
         try (var cursorContext = contextFactory.create(INDEX_IMPORTER_CREATION_TAG);
                 var storeCursors = storeCursorsFactory.apply(cursorContext)) {
@@ -79,6 +83,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
                             indexConfig,
                             schemaRuleAccess,
                             schemaStore,
+                            allocatorProvider,
                             memoryTracker,
                             cursorContext,
                             storeCursors));
@@ -98,6 +103,7 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
             IndexConfig config,
             SchemaRuleAccess schemaRule,
             SchemaStore schemaStore,
+            DynamicAllocatorProvider allocationProvider,
             MemoryTracker memoryTracker,
             CursorContext cursorContext,
             StoreCursors storeCursors) {
@@ -107,11 +113,17 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
                     .withIndexType(LOOKUP)
                     .withIndexProvider(providerDescriptor);
             String name = defaultIfEmpty(
-                    config.indexName(entityType), generateName(prototype, new String[] {}, new String[] {}));
+                    config.indexName(entityType), generateName(prototype, EMPTY_STRING_ARRAY, EMPTY_STRING_ARRAY));
             IndexDescriptor descriptor = prototype
                     .withName(name)
                     .materialise(schemaStore.getIdGenerator().nextId(cursorContext));
-            schemaRule.writeSchemaRule(descriptor, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors);
+            schemaRule.writeSchemaRule(
+                    descriptor,
+                    IdUpdateListener.DIRECT,
+                    allocationProvider,
+                    cursorContext,
+                    memoryTracker,
+                    storeCursors);
             return descriptor;
         } catch (KernelException e) {
             throw new RuntimeException("Error preparing indexes", e);

@@ -58,6 +58,8 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -105,6 +107,7 @@ class SchemaStorageTest {
             return (int) storage.newRuleId(NULL_CONTEXT);
         }
     };
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void before() {
@@ -125,6 +128,8 @@ class SchemaStorageTest {
                 StoreType.PROPERTY_KEY_TOKEN,
                 StoreType.LABEL_TOKEN,
                 StoreType.RELATIONSHIP_TYPE_TOKEN);
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
         var tokenHolders = new TokenHolders(
                 new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY),
                 new DelegatingTokenHolder(new SimpleTokenCreator(), TokenHolder.TYPE_LABEL),
@@ -210,7 +215,8 @@ class SchemaStorageTest {
 
         // When
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
-        storage.writeSchemaRule(schemaRule, tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors);
+        storage.writeSchemaRule(
+                schemaRule, tracker, allocatorProvider, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors);
 
         // Then
         assertThat(tracker.usedIdsPerType).isNotEmpty();
@@ -230,7 +236,8 @@ class SchemaStorageTest {
         // Given
         SchemaRule schemaRule = randomSchema.nextSchemaRule();
         var tracker = new TrackingIdUpdaterListener();
-        storage.writeSchemaRule(schemaRule, tracker, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors);
+        storage.writeSchemaRule(
+                schemaRule, tracker, allocatorProvider, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE, storeCursors);
 
         // Then
         verifyExpectedInUse(tracker.usedIdsPerType, true);

@@ -47,6 +47,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
+import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -224,7 +225,7 @@ class NodeCheckerTest extends CheckerTestBase {
                     .put(
                             toLongs(otherLabels),
                             nodeStore,
-                            nodeStore.getDynamicLabelStore(),
+                            allocatorProvider.allocator(StoreType.NODE_LABEL),
                             NULL_CONTEXT,
                             StoreCursors.NULL,
                             INSTANCE);

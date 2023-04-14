@@ -256,7 +256,13 @@ abstract class TokenStoreTestTemplate<R extends TokenRecord> {
     private List<DynamicRecord> allocateNameRecords(String tokenName) {
         List<DynamicRecord> nameRecords = new ArrayList<>();
         nameStore.allocateRecordsFromBytes(
-                nameRecords, tokenName.getBytes(StandardCharsets.UTF_8), NULL_CONTEXT, INSTANCE);
+                nameRecords,
+                tokenName.getBytes(StandardCharsets.UTF_8),
+                new StandardDynamicRecordAllocator(
+                        store.getNameStore().getIdGenerator(),
+                        store.getNameStore().getRecordDataSize()),
+                NULL_CONTEXT,
+                INSTANCE);
         return nameRecords;
     }
 

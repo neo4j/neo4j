@@ -82,6 +82,8 @@ import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
@@ -262,8 +264,10 @@ class BatchingNeoStoresTest {
                     Config.defaults(),
                     INSTANCE)) {
                 stores.createNew();
+                NeoStores neoStores = stores.getNeoStores();
+                var allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
                 for (StoreType type : relevantRecordStores()) {
-                    createRecordIn(stores.getNeoStores().getRecordStore(type));
+                    createRecordIn(neoStores.getRecordStore(type), allocatorProvider);
                 }
             }
 
@@ -528,14 +532,22 @@ class BatchingNeoStoresTest {
                 .toArray(StoreType[]::new);
     }
 
-    private static <RECORD extends AbstractBaseRecord> void createRecordIn(RecordStore<RECORD> store) {
+    private static <RECORD extends AbstractBaseRecord> void createRecordIn(
+            RecordStore<RECORD> store, DynamicAllocatorProvider allocatorProvider) {
         RECORD record = store.newRecord();
         record.setId(store.getIdGenerator().nextId(NULL_CONTEXT));
         record.setInUse(true);
         if (record instanceof PropertyRecord) {
             // Special hack for property store, since it's not enough to simply set a record as in use there
             PropertyBlock block = new PropertyBlock();
-            ((PropertyStore) store).encodeValue(block, 0, Values.of(10), NULL_CONTEXT, INSTANCE);
+            PropertyStore.encodeValue(
+                    block,
+                    0,
+                    Values.of(10),
+                    allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                    allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                    NULL_CONTEXT,
+                    INSTANCE);
             ((PropertyRecord) record).addPropertyBlock(block);
         }
         try (var storeCursor = store.openPageCursorForWriting(0, NULL_CONTEXT)) {
@@ -687,10 +699,10 @@ class BatchingNeoStoresTest {
     }
 
     private abstract static class DeferredInitializedTokenCreator implements TokenCreator {
-        TokenStore store;
+        TokenStore<?> store;
         TransactionState txState;
 
-        void initialize(TokenStore store, TransactionState txState) {
+        void initialize(TokenStore<?> store, TransactionState txState) {
             this.store = store;
             this.txState = txState;
         }

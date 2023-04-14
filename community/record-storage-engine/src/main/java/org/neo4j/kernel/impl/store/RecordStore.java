@@ -236,13 +236,10 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
     int getRecordSize();
 
     /**
-     * @deprecated since it's exposed through the generic {@link RecordStore} interface although only
-     * applicable to one particular type of of implementation of it.
      * @return record "data" size, only applicable to dynamic record stores where record size may be specified
      * at creation time and later used every time the store is opened. Data size refers to number of bytes
      * of a record without header information, such as "inUse" and "next".
      */
-    @Deprecated
     int getRecordDataSize();
 
     /**
@@ -265,15 +262,6 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
 
     /**
      * Called once all changes to a record is ready to be converted into a command.
-     *
-     * @param record record to prepare, potentially updating it with more information before converting into a command.
-     * @param cursorContext underlying page cursor context
-     */
-    void prepareForCommit(RECORD record, CursorContext cursorContext);
-
-    /**
-     * Called once all changes to a record is ready to be converted into a command.
-     * WARNING this is for advanced use, please consider using {@link #prepareForCommit(AbstractBaseRecord, CursorContext)} instead.
      *
      * @param record record to prepare, potentially updating it with more information before converting into a command.
      * @param idSequence {@link IdSequence} to use for potentially generating additional ids required by this record.

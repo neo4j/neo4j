@@ -30,6 +30,9 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.NODE_CURSOR;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_ARRAY;
+import static org.neo4j.kernel.impl.store.StoreType.PROPERTY_STRING;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.ArrayList;
@@ -52,6 +55,8 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -249,15 +254,17 @@ class DeleteDuplicateNodesStepTest {
         NodeRecord nodeRecord = nodeStore.newRecord();
         nodeRecord.setId(nodeStore.getIdGenerator().nextId(NULL_CONTEXT));
         nodeRecord.setInUse(true);
+        DynamicAllocatorProvider allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         NodeLabelsField.parseLabelsField(nodeRecord)
                 .put(
                         labelIds(labelCount),
                         nodeStore,
-                        nodeStore.getDynamicLabelStore(),
+                        allocatorProvider.allocator(NODE_LABEL),
                         NULL_CONTEXT,
                         storeCursors,
                         INSTANCE);
-        PropertyRecord[] propertyRecords = createPropertyChain(nodeRecord, propertyCount, propertyStore);
+        PropertyRecord[] propertyRecords =
+                createPropertyChain(nodeRecord, propertyCount, propertyStore, allocatorProvider);
         if (propertyRecords.length > 0) {
             nodeRecord.setNextProp(propertyRecords[0].getId());
         }
@@ -271,13 +278,23 @@ class DeleteDuplicateNodesStepTest {
 
     // A slight duplication of PropertyCreator logic, please try and remove in favor of that utility later on
     private PropertyRecord[] createPropertyChain(
-            NodeRecord nodeRecord, int numberOfProperties, PropertyStore propertyStore) {
+            NodeRecord nodeRecord,
+            int numberOfProperties,
+            PropertyStore propertyStore,
+            DynamicAllocatorProvider allocatorProvider) {
         List<PropertyRecord> records = new ArrayList<>();
         PropertyRecord current = null;
         int space = PropertyType.getPayloadSizeLongs();
         for (int i = 0; i < numberOfProperties; i++) {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue(block, i, random.nextValue(), NULL_CONTEXT, INSTANCE);
+            PropertyStore.encodeValue(
+                    block,
+                    i,
+                    random.nextValue(),
+                    allocatorProvider.allocator(PROPERTY_STRING),
+                    allocatorProvider.allocator(PROPERTY_ARRAY),
+                    NULL_CONTEXT,
+                    INSTANCE);
             if (current == null || block.getValueBlocks().length > space) {
                 PropertyRecord next = propertyStore.newRecord();
                 nodeRecord.setIdTo(next);

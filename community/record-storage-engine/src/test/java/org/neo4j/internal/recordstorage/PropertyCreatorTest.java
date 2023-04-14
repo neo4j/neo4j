@@ -23,10 +23,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.configuration.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.PROPERTY_CURSOR;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
+import static org.neo4j.kernel.api.schema.SchemaTestUtil.SIMPLE_NAME_LOOKUP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.AfterEach;
@@ -42,6 +44,9 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
@@ -54,6 +59,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.extension.Inject;
@@ -80,10 +87,12 @@ class PropertyCreatorTest {
     private PropertyCreator creator;
     private DirectRecordAccess<PropertyRecord, PrimitiveRecord> records;
     private CursorContext cursorContext;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void startStore() {
         var pageCacheTracer = PageCacheTracer.NULL;
+        NullLogProvider logProvider = NullLogProvider.getInstance();
         neoStores = new StoreFactory(
                         databaseLayout,
                         Config.defaults(),
@@ -92,11 +101,13 @@ class PropertyCreatorTest {
                         pageCache,
                         pageCacheTracer,
                         fileSystem,
-                        NullLogProvider.getInstance(),
+                        logProvider,
                         new CursorContextFactory(pageCacheTracer, EMPTY),
                         false,
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
-                .openNeoStores(StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY);
+                .openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
         propertyStore = neoStores.getPropertyStore();
         StoreCursors storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
@@ -107,7 +118,22 @@ class PropertyCreatorTest {
                 cursorContext,
                 PROPERTY_CURSOR,
                 storeCursors);
-        creator = new PropertyCreator(propertyStore, new PropertyTraverser(), cursorContext);
+        var context = new RecordStorageCommandCreationContext(
+                neoStores, SIMPLE_NAME_LOOKUP, logProvider, dense_node_threshold.defaultValue(), Config.defaults());
+        context.initialize(
+                KernelVersionProvider.THROWING_PROVIDER,
+                cursorContext,
+                storeCursors,
+                () -> (long) -1,
+                ResourceLocker.IGNORE,
+                () -> LockTracer.NONE);
+
+        creator = new PropertyCreator(
+                allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                new PropertyTraverser(),
+                new TransactionIdSequenceProvider(neoStores),
+                cursorContext);
     }
 
     @AfterEach
@@ -390,7 +416,14 @@ class PropertyCreatorTest {
     private void existingRecord(PropertyRecord record, ExpectedRecord initialRecord) {
         for (ExpectedProperty initialProperty : initialRecord.properties) {
             PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue(block, initialProperty.key, initialProperty.value, cursorContext, INSTANCE);
+            PropertyStore.encodeValue(
+                    block,
+                    initialProperty.key,
+                    initialProperty.value,
+                    allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                    allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                    cursorContext,
+                    INSTANCE);
             record.addPropertyBlock(block);
         }
         assertTrue(record.size() <= PropertyType.getPayloadSize());

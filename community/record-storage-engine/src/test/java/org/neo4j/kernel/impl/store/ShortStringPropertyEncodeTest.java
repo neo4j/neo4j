@@ -62,6 +62,7 @@ class ShortStringPropertyEncodeTest {
 
     private NeoStores neoStores;
     private PropertyStore propertyStore;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void setupStore() {
@@ -79,6 +80,7 @@ class ShortStringPropertyEncodeTest {
                         false,
                         LogTailLogVersionsMetadata.EMPTY_LOG_TAIL)
                 .openNeoStores(StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING);
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
         propertyStore = neoStores.getPropertyStore();
     }
 
@@ -195,7 +197,14 @@ class ShortStringPropertyEncodeTest {
     private void encode(String string) {
         PropertyBlock block = new PropertyBlock();
         TextValue expectedValue = Values.stringValue(string);
-        propertyStore.encodeValue(block, KEY_ID, expectedValue, CursorContext.NULL_CONTEXT, INSTANCE);
+        PropertyStore.encodeValue(
+                block,
+                KEY_ID,
+                expectedValue,
+                allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
+                CursorContext.NULL_CONTEXT,
+                INSTANCE);
         assertEquals(0, block.getValueRecords().size());
         Value readValue = block.getType().value(block, propertyStore, StoreCursors.NULL);
         assertEquals(expectedValue, readValue);

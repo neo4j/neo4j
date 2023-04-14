@@ -47,6 +47,7 @@ public interface NodeLabels {
     Collection<DynamicRecord> remove(
             long labelId,
             NodeStore nodeStore,
+            DynamicRecordAllocator allocator,
             CursorContext cursorContext,
             StoreCursors storeCursors,
             MemoryTracker memoryTracker);

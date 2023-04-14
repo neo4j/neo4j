@@ -64,6 +64,8 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.txid.IdStoreTransactionIdGenerator;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -426,6 +428,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
         private final AtomicInteger relTypeDynIds;
         private final NeoStores neoStores;
         private final DirectRecordAccess<PropertyRecord, PrimitiveRecord> recordAccess;
+        private final DynamicAllocatorProvider allocatorProvider;
 
         TransactionDataBuilder(
                 TransactionWriter writer,
@@ -434,6 +437,7 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                 IndexingService indexingService,
                 DirectRecordAccess<PropertyRecord, PrimitiveRecord> recordAccess) {
             this.neoStores = neoStores;
+            this.allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
             this.recordAccess = recordAccess;
             var propertyKeyNameStore = neoStores.getPropertyKeyTokenStore().getNameStore();
             this.propKeyDynIds = new AtomicInteger(
@@ -596,8 +600,8 @@ public abstract class GraphStoreFixture implements AutoCloseable {
                     propertyBlock,
                     propertyKey,
                     value,
-                    propertyStore.getStringStore(),
-                    propertyStore.getArrayStore(),
+                    allocatorProvider.allocator(StoreType.PROPERTY_STRING),
+                    allocatorProvider.allocator(StoreType.PROPERTY_ARRAY),
                     NULL_CONTEXT,
                     INSTANCE);
             propertyRecord.addPropertyBlock(propertyBlock);

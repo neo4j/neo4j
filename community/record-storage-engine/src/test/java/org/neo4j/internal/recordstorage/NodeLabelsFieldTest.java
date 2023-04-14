@@ -19,10 +19,10 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.helpers.collection.Iterables.addAll;
@@ -30,6 +30,7 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.store.DynamicNodeLabels.allocateRecordsForDynamicLabels;
+import static org.neo4j.kernel.impl.store.StoreType.NODE_LABEL;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.util.Bits.bits;
 
@@ -57,7 +58,10 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
 import org.neo4j.kernel.impl.store.DynamicNodeLabels;
+import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -98,6 +102,7 @@ class NodeLabelsFieldTest {
     private NeoStores neoStores;
     private NodeStore nodeStore;
     private CachedStoreCursors storeCursors;
+    private DynamicAllocatorProvider allocatorProvider;
 
     @BeforeEach
     void startUp() {
@@ -115,6 +120,8 @@ class NodeLabelsFieldTest {
                 false,
                 LogTailLogVersionsMetadata.EMPTY_LOG_TAIL);
         neoStores = storeFactory.openAllNeoStores();
+        allocatorProvider = DynamicAllocatorProviders.nonTransactionalAllocator(neoStores);
+
         nodeStore = neoStores.getNodeStore();
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
     }
@@ -231,7 +238,12 @@ class NodeLabelsFieldTest {
 
         // WHEN
         Collection<DynamicRecord> changedDynamicRecords = nodeLabels.add(
-                labelId3, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+                labelId3,
+                nodeStore,
+                allocatorProvider.allocator(NODE_LABEL),
+                NULL_CONTEXT,
+                StoreCursors.NULL,
+                INSTANCE);
 
         // THEN
         assertEquals(1, Iterables.count(changedDynamicRecords));
@@ -252,7 +264,7 @@ class NodeLabelsFieldTest {
 
         // WHEN
         Set<DynamicRecord> changedDynamicRecords = Iterables.asSet(nodeLabels.add(
-                1, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, StoreCursors.NULL, INSTANCE));
+                1, nodeStore, allocatorProvider.allocator(NODE_LABEL), NULL_CONTEXT, StoreCursors.NULL, INSTANCE));
 
         // THEN
         assertTrue(changedDynamicRecords.containsAll(initialRecords));
@@ -289,6 +301,7 @@ class NodeLabelsFieldTest {
                 nodeLabels.remove(
                         255 /*Initial labels go from 255 and down to 255-58*/,
                         nodeStore,
+                        allocatorProvider.allocator(NODE_LABEL),
                         NULL_CONTEXT,
                         StoreCursors.NULL,
                         INSTANCE));
@@ -312,6 +325,7 @@ class NodeLabelsFieldTest {
                 nodeLabels.remove(
                         255 /*Initial labels go from 255 and down to 255-58*/,
                         nodeStore,
+                        allocatorProvider.allocator(NODE_LABEL),
                         NULL_CONTEXT,
                         StoreCursors.NULL,
                         INSTANCE));
@@ -332,8 +346,8 @@ class NodeLabelsFieldTest {
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
         // WHEN
-        Collection<DynamicRecord> changedDynamicRecords =
-                Iterables.asCollection(nodeLabels.remove(255, nodeStore, NULL_CONTEXT, StoreCursors.NULL, INSTANCE));
+        Collection<DynamicRecord> changedDynamicRecords = Iterables.asCollection(nodeLabels.remove(
+                255, nodeStore, allocatorProvider.allocator(NODE_LABEL), NULL_CONTEXT, StoreCursors.NULL, INSTANCE));
 
         // THEN
         assertEquals(initialRecords, changedDynamicRecords);
@@ -375,7 +389,7 @@ class NodeLabelsFieldTest {
 
         // WHEN
         Iterable<DynamicRecord> changedDynamicRecords = nodeLabels.add(
-                23, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+                23, nodeStore, allocatorProvider.allocator(NODE_LABEL), NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
 
         // THEN
         assertEquals(dynamicLabelsLongRepresentation(changedDynamicRecords), node.getLabelField());
@@ -389,14 +403,14 @@ class NodeLabelsFieldTest {
         NodeRecord node = nodeRecordWithInlinedLabels(labelId);
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
-        // WHEN
-        try {
-            nodeLabels.add(
-                    labelId, nodeStore, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
-            fail("Should have thrown exception");
-        } catch (IllegalStateException e) {
-            // THEN
-        }
+        assertThatThrownBy(() -> nodeLabels.add(
+                        labelId,
+                        nodeStore,
+                        allocatorProvider.allocator(NODE_LABEL),
+                        NULL_CONTEXT,
+                        StoreCursors.NULL,
+                        INSTANCE))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -406,19 +420,14 @@ class NodeLabelsFieldTest {
         NodeRecord node = nodeRecordWithDynamicLabels(nodeStore, storeCursors, labels);
         NodeLabels nodeLabels = NodeLabelsField.parseLabelsField(node);
 
-        // WHEN
-        try {
-            nodeLabels.add(
-                    safeCastLongToInt(labels[0]),
-                    nodeStore,
-                    nodeStore.getDynamicLabelStore(),
-                    NULL_CONTEXT,
-                    StoreCursors.NULL,
-                    INSTANCE);
-            fail("Should have thrown exception");
-        } catch (IllegalStateException e) {
-            // THEN
-        }
+        assertThatThrownBy(() -> nodeLabels.add(
+                        safeCastLongToInt(labels[0]),
+                        nodeStore,
+                        allocatorProvider.allocator(NODE_LABEL),
+                        NULL_CONTEXT,
+                        StoreCursors.NULL,
+                        INSTANCE))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -431,7 +440,13 @@ class NodeLabelsFieldTest {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> nodeLabels.remove(labelId2, nodeStore, NULL_CONTEXT, StoreCursors.NULL, INSTANCE));
+                () -> nodeLabels.remove(
+                        labelId2,
+                        nodeStore,
+                        allocatorProvider.allocator(NODE_LABEL),
+                        NULL_CONTEXT,
+                        StoreCursors.NULL,
+                        INSTANCE));
     }
 
     @Test
@@ -443,7 +458,13 @@ class NodeLabelsFieldTest {
 
         assertThrows(
                 IllegalStateException.class,
-                () -> nodeLabels.remove(123456, nodeStore, NULL_CONTEXT, StoreCursors.NULL, INSTANCE));
+                () -> nodeLabels.remove(
+                        123456,
+                        nodeStore,
+                        allocatorProvider.allocator(NODE_LABEL),
+                        NULL_CONTEXT,
+                        StoreCursors.NULL,
+                        INSTANCE));
     }
 
     @Test
@@ -457,7 +478,7 @@ class NodeLabelsFieldTest {
         Set<DynamicRecord> reallocatedRecords = Iterables.asUniqueSet(nodeLabels.put(
                 fourByteLongs(100),
                 nodeStore,
-                nodeStore.getDynamicLabelStore(),
+                allocatorProvider.allocator(NODE_LABEL),
                 NULL_CONTEXT,
                 StoreCursors.NULL,
                 INSTANCE));
@@ -478,7 +499,7 @@ class NodeLabelsFieldTest {
         Set<DynamicRecord> reallocatedRecords = Iterables.asUniqueSet(nodeLabels.put(
                 fourByteLongs(5),
                 nodeStore,
-                nodeStore.getDynamicLabelStore(),
+                allocatorProvider.allocator(NODE_LABEL),
                 NULL_CONTEXT,
                 StoreCursors.NULL,
                 INSTANCE));
@@ -506,23 +527,18 @@ class NodeLabelsFieldTest {
         node.setInUse(true);
 
         // WHEN
+        DynamicRecordAllocator allocator = allocatorProvider.allocator(NODE_LABEL);
         for (int i = 0; i < 100_000; i++) {
             NodeLabels labels = NodeLabelsField.parseLabelsField(node);
             int labelId = random.nextInt(200);
             if (random.nextBoolean()) {
                 if (!key.contains(labelId)) {
-                    labels.add(
-                            labelId,
-                            nodeStore,
-                            nodeStore.getDynamicLabelStore(),
-                            NULL_CONTEXT,
-                            StoreCursors.NULL,
-                            INSTANCE);
+                    labels.add(labelId, nodeStore, allocator, NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
                     key.add(labelId);
                 }
             } else {
                 if (key.remove(labelId)) {
-                    labels.remove(labelId, nodeStore, NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
+                    labels.remove(labelId, nodeStore, allocator, NULL_CONTEXT, StoreCursors.NULL, INSTANCE);
                 }
             }
         }
@@ -558,12 +574,11 @@ class NodeLabelsFieldTest {
         return node;
     }
 
-    private static NodeRecord nodeRecordWithDynamicLabels(
-            NodeStore nodeStore, StoreCursors storeCursors, long... labels) {
+    private NodeRecord nodeRecordWithDynamicLabels(NodeStore nodeStore, StoreCursors storeCursors, long... labels) {
         return nodeRecordWithDynamicLabels(0, nodeStore, storeCursors, labels);
     }
 
-    private static NodeRecord nodeRecordWithDynamicLabels(
+    private NodeRecord nodeRecordWithDynamicLabels(
             long nodeId, NodeStore nodeStore, StoreCursors storeCursors, long... labels) {
         NodeRecord node = new NodeRecord(nodeId).initialize(false, 0, false, 0, 0);
         List<DynamicRecord> initialRecords = allocateAndApply(nodeStore, storeCursors, node.getId(), labels);
@@ -571,10 +586,10 @@ class NodeLabelsFieldTest {
         return node;
     }
 
-    private static List<DynamicRecord> allocateAndApply(
+    private List<DynamicRecord> allocateAndApply(
             NodeStore nodeStore, StoreCursors storeCursors, long nodeId, long[] longs) {
         List<DynamicRecord> records = allocateRecordsForDynamicLabels(
-                nodeId, longs, nodeStore.getDynamicLabelStore(), NULL_CONTEXT, INSTANCE);
+                nodeId, longs, allocatorProvider.allocator(NODE_LABEL), NULL_CONTEXT, INSTANCE);
         nodeStore.updateDynamicLabelRecords(records, IdUpdateListener.DIRECT, NULL_CONTEXT, storeCursors);
         return records;
     }

@@ -26,6 +26,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.DatabaseFlushEvent;
+import org.neo4j.kernel.impl.store.DynamicAllocatorProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -35,6 +36,7 @@ import org.neo4j.storageengine.util.IdUpdateListener;
 public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess {
     private final NeoStores neoStores;
     private final SchemaStorage schemaStorage;
+    private final DynamicAllocatorProvider allocationProvider;
     private final CursorContext cursorContext;
     private final MemoryTracker memoryTracker;
     private final StoreCursors storeCursors;
@@ -42,11 +44,13 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess 
     SchemaRuleMigrationAccessImpl(
             NeoStores neoStores,
             SchemaStorage schemaStorage,
+            DynamicAllocatorProvider allocationProvider,
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
             StoreCursors storeCursors) {
         this.neoStores = neoStores;
         this.schemaStorage = schemaStorage;
+        this.allocationProvider = allocationProvider;
         this.cursorContext = cursorContext;
         this.memoryTracker = memoryTracker;
         this.storeCursors = storeCursors;
@@ -59,7 +63,8 @@ public class SchemaRuleMigrationAccessImpl implements SchemaRuleMigrationAccess 
 
     @Override
     public void writeSchemaRule(SchemaRule rule) throws KernelException {
-        schemaStorage.writeSchemaRule(rule, IdUpdateListener.DIRECT, cursorContext, memoryTracker, storeCursors);
+        schemaStorage.writeSchemaRule(
+                rule, IdUpdateListener.DIRECT, allocationProvider, cursorContext, memoryTracker, storeCursors);
     }
 
     @Override
