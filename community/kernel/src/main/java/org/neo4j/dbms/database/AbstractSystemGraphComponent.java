@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -92,6 +93,7 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
     protected static void initializeSystemGraphConstraint(Transaction tx, Label label, String... properties) {
         // Makes the creation of constraints for security idempotent
         if (!hasUniqueConstraint(tx, label, properties)) {
+            checkForClashingIndexes(tx, label, properties);
             ConstraintCreator cb = tx.schema().constraintFor(label);
             for (String prop : properties) {
                 cb = cb.assertPropertyIsUnique(prop);
@@ -112,5 +114,14 @@ public abstract class AbstractSystemGraphComponent implements SystemGraphCompone
                 return Optional.of(constraintDefinition);
         }
         return Optional.empty();
+    }
+
+    private static void checkForClashingIndexes(Transaction tx, Label label, String... properties) {
+        tx.schema().getIndexes(label).forEach(index -> {
+            String[] propertyKeys = Iterables.asArray(String.class, index.getPropertyKeys());
+            if (Arrays.equals(propertyKeys, properties)) {
+                index.drop();
+            }
+        });
     }
 }
