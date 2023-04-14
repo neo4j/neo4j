@@ -21,14 +21,12 @@ package org.neo4j.collection.trackable;
 
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfInstance;
 import static org.neo4j.memory.HeapEstimator.shallowSizeOfObjectArray;
-import static org.neo4j.memory.HeapEstimator.sizeOfIntArray;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.atomic.LongAdder;
 import org.eclipse.collections.impl.list.mutable.FastList;
 import org.neo4j.memory.MemoryTracker;
 
@@ -65,29 +63,23 @@ public abstract class AbstractHeapTrackingConcurrentHash {
                     (Class<AtomicReferenceArray<Object>>) (Class<?>) AtomicReferenceArray.class,
                     "table");
 
-    private static final AtomicIntegerFieldUpdater<AbstractHeapTrackingConcurrentHash> SIZE_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(AbstractHeapTrackingConcurrentHash.class, "size");
     static final Object RESIZED = new Object();
     static final Object RESIZING = new Object();
 
     static final Object RESERVED = new Object();
 
-    static final int PARTITIONED_SIZE_THRESHOLD = 4096; // chosen to keep size below 1% of the total size of the map
-    static final int SIZE_BUCKETS = 7;
-    static final int PARTITIONED_SIZE = SIZE_BUCKETS * 16;
     static final long SHALLOW_SIZE_ATOMIC_REFERENCE_ARRAY = shallowSizeOfInstance(AtomicReferenceArray.class);
-    static final long SIZE_INTEGER_REFERENCE_ARRAY =
-            shallowSizeOfInstance(AtomicIntegerArray.class) + sizeOfIntArray(PARTITIONED_SIZE);
-
+    private static final long SHALLOW_SIZE_LONG_ADDER = shallowSizeOfInstance(LongAdder.class);
     /**
      * The table, resized as necessary. Length MUST Always be a power of two.
      */
     volatile AtomicReferenceArray<Object> table;
 
-    private AtomicIntegerArray partitionedSize;
-
-    @SuppressWarnings("UnusedDeclaration")
-    private volatile int size; // updated via atomic field updater
+    // The original implementation uses an inlined variant of what LongAdder does,
+    // that seems to scale worse with many cores and makes the code more complicated.
+    // BEGIN MODIFICATION
+    private final LongAdder size;
+    // END MODIFICATION
 
     final MemoryTracker memoryTracker;
     private volatile int trackedCapacity;
@@ -107,13 +99,11 @@ public abstract class AbstractHeapTrackingConcurrentHash {
         while (capacity < threshold) {
             capacity <<= 1;
         }
-        // NOTE: adds memory tracking of internal structures
-        // BEGIN MODIFICATION
-        if (capacity >= PARTITIONED_SIZE_THRESHOLD) {
-            this.partitionedSize = allocateAtomicIntegerArray();
-        }
+
         this.memoryTracker = memoryTracker;
         this.table = allocateAtomicReferenceArray(capacity + 1);
+        memoryTracker.allocateHeap(SHALLOW_SIZE_LONG_ADDER);
+        this.size = new LongAdder();
         // END MODIFICATION
     }
 
@@ -128,14 +118,6 @@ public abstract class AbstractHeapTrackingConcurrentHash {
         memoryTracker.releaseHeap(shallowSizeOfAtomicReferenceArray(trackedCapacity));
         trackedCapacity = newSize;
         return new AtomicReferenceArray<>(newSize);
-    }
-
-    /**
-     * NOTE: this method is only (potentially) called from constructor and from within a synchronized block
-     */
-    private AtomicIntegerArray allocateAtomicIntegerArray() {
-        memoryTracker.allocateHeap(SIZE_INTEGER_REFERENCE_ARRAY);
-        return new AtomicIntegerArray(PARTITIONED_SIZE);
     }
 
     private static long shallowSizeOfAtomicReferenceArray(int size) {
@@ -216,11 +198,6 @@ public abstract class AbstractHeapTrackingConcurrentHash {
             {
                 if (oldTable.get(end) == null) {
                     oldTable.set(end, RESIZE_SENTINEL);
-                    if (this.partitionedSize == null && newSize >= PARTITIONED_SIZE_THRESHOLD) {
-                        // BEGIN MODIFICATION
-                        this.partitionedSize = allocateAtomicIntegerArray();
-                        // END MODIFICATION
-                    }
                     // BEGIN MODIFICATION
                     resizeContainer = new ResizeContainer(allocateAtomicReferenceArray(newSize), oldTable.length() - 1);
                     // END MODIFICATION
@@ -252,62 +229,23 @@ public abstract class AbstractHeapTrackingConcurrentHash {
     abstract void reverseTransfer(AtomicReferenceArray<Object> src, ResizeContainer resizeContainer);
 
     public int size() {
-        int localSize = this.size;
-        if (this.partitionedSize != null) {
-            for (int i = 0; i < SIZE_BUCKETS; i++) {
-                localSize += this.partitionedSize.get(i << 4);
-            }
-        }
-        return localSize;
+        return size.intValue();
     }
 
     public boolean isEmpty() {
-        return this.size == 0;
+        return size.intValue() == 0;
     }
 
     public boolean notEmpty() {
-        return this.size > 0;
+        return size.intValue() > 0;
     }
 
     final void addToSize(int value) {
-        if (this.partitionedSize != null) {
-            if (this.incrementPartitionedSize(value)) {
-                return;
-            }
-        }
-        this.incrementLocalSize(value);
-    }
-
-    private boolean incrementPartitionedSize(int value) {
-        int h = (int) Thread.currentThread().getId();
-        h ^= (h >>> 18) ^ (h >>> 12);
-        h = (h ^ (h >>> 10)) & SIZE_BUCKETS;
-        if (h != 0) {
-            h = (h - 1) << 4;
-            while (true) {
-                int localSize = this.partitionedSize.get(h);
-                if (this.partitionedSize.compareAndSet(h, localSize, localSize + value)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private void incrementLocalSize(int value) {
-        while (true) {
-            int localSize = this.size;
-            if (SIZE_UPDATER.compareAndSet(this, localSize, localSize + value)) {
-                break;
-            }
-        }
+        size.add(value);
     }
 
     public void releaseHeap() {
-        memoryTracker.releaseHeap(shallowSizeOfAtomicReferenceArray(trackedCapacity));
-        if (partitionedSize != null) {
-            memoryTracker.releaseHeap(SIZE_INTEGER_REFERENCE_ARRAY);
-        }
+        memoryTracker.releaseHeap(shallowSizeOfAtomicReferenceArray(trackedCapacity) + SHALLOW_SIZE_LONG_ADDER);
     }
 
     static final class ResizeContainer {
