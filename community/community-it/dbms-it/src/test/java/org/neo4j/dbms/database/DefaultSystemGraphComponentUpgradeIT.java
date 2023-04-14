@@ -25,6 +25,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAM
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -58,6 +59,11 @@ public class DefaultSystemGraphComponentUpgradeIT {
         GraphDatabaseService database = managementService.database(DEFAULT_DATABASE_NAME);
         systemGraphComponents =
                 ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency(SystemGraphComponents.class);
+    }
+
+    @AfterEach
+    void tearDown() {
+        managementService.shutdown();
     }
 
     @Test
