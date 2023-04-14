@@ -19,18 +19,6 @@
  */
 package org.neo4j.cypher.operations;
 
-import static java.lang.Double.parseDouble;
-import static java.lang.Long.parseLong;
-import static java.lang.String.format;
-import static org.neo4j.values.storable.Values.EMPTY_STRING;
-import static org.neo4j.values.storable.Values.FALSE;
-import static org.neo4j.values.storable.Values.NO_VALUE;
-import static org.neo4j.values.storable.Values.TRUE;
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -38,6 +26,7 @@ import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.exceptions.CypherTypeException;
@@ -77,6 +66,18 @@ import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 import org.neo4j.values.virtual.VirtualValues;
+
+import static java.lang.Double.parseDouble;
+import static java.lang.Long.parseLong;
+import static java.lang.String.format;
+import static org.neo4j.values.storable.Values.EMPTY_STRING;
+import static org.neo4j.values.storable.Values.FALSE;
+import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.TRUE;
+import static org.neo4j.values.storable.Values.doubleValue;
+import static org.neo4j.values.storable.Values.longValue;
+import static org.neo4j.values.storable.Values.stringValue;
+import static org.neo4j.values.virtual.VirtualValues.EMPTY_LIST;
 
 /**
  * This class contains static helper methods for the set of Cypher functions
@@ -294,7 +295,9 @@ public final class CypherFunctions
             }
             else
             {
-                return doubleValue( BigDecimal.valueOf( ((NumberValue) in).doubleValue() ).setScale( precision, mode ).doubleValue() );
+                BigDecimal bigDecimal = BigDecimal.valueOf( ((NumberValue) in).doubleValue() );
+                int newScale = Math.min( bigDecimal.scale(), precision );
+                return doubleValue( bigDecimal.setScale( newScale, mode ).doubleValue() );
             }
         }
         else
