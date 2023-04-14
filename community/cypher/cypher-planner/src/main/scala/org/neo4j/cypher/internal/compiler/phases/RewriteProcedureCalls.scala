@@ -32,11 +32,11 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 import org.neo4j.cypher.internal.frontend.phases.Phase
-import org.neo4j.cypher.internal.frontend.phases.StatementCondition
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
 import org.neo4j.cypher.internal.planner.spi.ProcedureSignatureResolver
-import org.neo4j.cypher.internal.rewriting.conditions.containsNoNodesOfType
+import org.neo4j.cypher.internal.rewriting.conditions.CallInvocationsResolved
+import org.neo4j.cypher.internal.rewriting.conditions.FunctionInvocationsResolved
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
@@ -137,7 +137,7 @@ case object RewriteProcedureCalls extends Phase[PlannerContext, BaseState, BaseS
   override def process(from: BaseState, context: PlannerContext): BaseState = process(from, context.planContext)
 
   override def postConditions: Set[StepSequencer.Condition] =
-    Set(StatementCondition(containsNoNodesOfType[UnresolvedCall]))
+    Set(CallInvocationsResolved, FunctionInvocationsResolved)
 
 }
 

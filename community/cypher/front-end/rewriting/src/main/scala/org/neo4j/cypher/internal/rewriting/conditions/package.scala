@@ -21,6 +21,8 @@ import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 
 package object conditions {
+  case object CallInvocationsResolved extends Condition
+  case object FunctionInvocationsResolved extends Condition
   case object PatternExpressionsHaveSemanticInfo extends Condition
   case object PatternExpressionAreWrappedInExists extends Condition
   case object SubqueryExpressionsHaveDependenciesInWithClauses extends Condition
