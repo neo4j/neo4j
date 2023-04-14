@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.frontend.phases
 
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
-import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.SensitiveAutoParameter
@@ -31,7 +30,6 @@ import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.LiteralOffset
 import org.neo4j.cypher.internal.util.ObfuscationMetadata
 import org.neo4j.cypher.internal.util.StepSequencer
-import org.neo4j.cypher.internal.util.symbols.ListType
 
 /**
  * Collect sensitive literals and parameters.
@@ -43,7 +41,7 @@ case object ObfuscationMetadataCollection extends Phase[BaseContext, BaseState, 
   override def postConditions: Set[StepSequencer.Condition] = Set.empty
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
-    val extractedParamNames = from.maybeExtractedParams.map(_.keys.map(_.name).toSet).getOrElse(Set.empty)
+    val extractedParamNames = from.maybeExtractedParams.map(_.keySet.map(_.name)).getOrElse(Set.empty)
     val preParserOffset = from.startPosition.map(_.offset).getOrElse(0)
     val parameters = from.statement().folder.findAllByClass[Parameter]
 

@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate

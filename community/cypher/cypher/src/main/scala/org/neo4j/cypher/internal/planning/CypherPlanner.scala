@@ -509,7 +509,8 @@ case class CypherPlanner(
     val mapBuilder = new MapValueBuilder()
     statement.folder.findAllByClass[Parameter].foreach {
       case p: AutoExtractedParameter =>
-        val value = extracted.map(_(p)).getOrElse(throw new IllegalStateException(s"Cannot find parameter: $p"))
+        val value =
+          extracted.map(_(p)).getOrElse(throw new IllegalStateException(s"Parameter $p hasn't been extracted"))
         names += p.name
         mapBuilder.add(p.name, evaluator.evaluate(value))
       case ExplicitParameter(name, _, _) =>
