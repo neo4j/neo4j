@@ -248,8 +248,9 @@ public final class CypherFunctions {
                 else if (precision == 0 && !explicitMode) {
                     return doubleValue(Math.round(value));
                 } else {
-                    return doubleValue(
-                            BigDecimal.valueOf(value).setScale(precision, mode).doubleValue());
+                    BigDecimal bigDecimal = BigDecimal.valueOf(value);
+                    int newScale = Math.min(bigDecimal.scale(), precision);
+                    return doubleValue(bigDecimal.setScale(newScale, mode).doubleValue());
                 }
             }
         } else {
