@@ -45,3 +45,14 @@ Feature: Create
       | +relationships | 2 |
       | +properties    | 2 |
 
+  Scenario: Create with reverse of toStringOrNull
+    Given an empty graph
+    When executing query:
+      """
+      CREATE (n) RETURN reverse(toStringOrNull(n)) AS result
+      """
+    Then the result should be, in order:
+      | result |
+      | NULL   |
+    And the side effects should be:
+      | +nodes         | 1 |
