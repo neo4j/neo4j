@@ -100,7 +100,7 @@ object CodeOptimization {
 
     def unapply(arg: IntermediateRepresentation): Option[IntermediateRepresentation] = arg match {
       case InvokeStatic(Method(owner, returnType, "not", Seq(inType)), Seq(in))
-        if owner == VALUE_BOOLEAN_LOGIC_TYPE && returnType == BOOLEAN_VALUE_TYPE && inType == BOOLEAN_VALUE_TYPE =>
+        if owner == VALUE_BOOLEAN_LOGIC_TYPE && returnType == VALUE_TYPE && inType == ANY_VALUE_TYPE =>
         Some(in)
       case _ => None
     }

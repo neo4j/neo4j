@@ -70,8 +70,9 @@ public final class ValueBooleanLogic {
     }
 
     @CalledFromGeneratedCode
-    public static BooleanValue not(BooleanValue in) {
-        return in != TRUE ? TRUE : FALSE;
+    public static Value not(AnyValue in) {
+        assert in == NO_VALUE || in == TRUE || in == FALSE;
+        return in == NO_VALUE ? NO_VALUE : (in != TRUE ? TRUE : FALSE);
     }
 
     @CalledFromGeneratedCode
