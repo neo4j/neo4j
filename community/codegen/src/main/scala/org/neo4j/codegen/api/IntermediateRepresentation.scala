@@ -22,7 +22,9 @@ package org.neo4j.codegen.api
 import org.neo4j.codegen
 import org.neo4j.codegen.TypeReference
 import org.neo4j.codegen.api.CodeOptimization.BooleanValueFcn
+import org.neo4j.codegen.api.CodeOptimization.InFcn
 import org.neo4j.codegen.api.CodeOptimization.LongValueFcn
+import org.neo4j.codegen.api.CodeOptimization.NotFcn
 import org.neo4j.codegen.api.CodeOptimization.simplifyPredicates
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.values.storable.BooleanValue
@@ -1588,8 +1590,9 @@ object IntermediateRepresentation {
     // This is by no means a complete list of "safe operations" but it removes some common expressions
     def cannotFail(in: IntermediateRepresentation): Boolean = {
       in.folder.treeForall {
-        case _: Eq | _: NotEq | BooleanValueFcn(_) | LongValueFcn(_) |
-          _: Constant | _: Block | _: Load | _: AssignToLocalVariable | _: GetStatic | _: GetField =>
+        case _: Eq | _: NotEq | BooleanValueFcn(_) | LongValueFcn(_) | NotFcn(_) | InFcn() |
+          _: Constant | _: Block | _: Load | _: ArrayLoad | _: ArraySet | _: ArrayLength | _: ArrayLiteral | _: AssignToLocalVariable | _: GetStatic | _: GetField |
+          _: DeclareLocalVariable =>
           true
         case _: IntermediateRepresentation => false
         case _                             => true

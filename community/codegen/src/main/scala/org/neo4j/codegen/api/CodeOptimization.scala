@@ -106,6 +106,15 @@ object CodeOptimization {
     }
   }
 
+  object InFcn {
+
+    def unapply(arg: IntermediateRepresentation): Boolean = arg match {
+      case InvokeStatic(Method(owner, returnType, "in", _), _)
+        if owner == VALUE_BOOLEAN_LOGIC_TYPE && returnType == VALUE_TYPE => true
+      case _ => false
+    }
+  }
+
   object CoerceToBooleanFcn {
 
     def unapply(arg: IntermediateRepresentation): Option[IntermediateRepresentation] = arg match {
