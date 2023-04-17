@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -57,6 +58,12 @@ public class DefaultSystemGraphComponentUpgradeIT
                 .build();
         GraphDatabaseService database = managementService.database( DEFAULT_DATABASE_NAME );
         systemGraphComponents = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( SystemGraphComponents.class );
+    }
+
+    @AfterEach
+    void tearDown()
+    {
+        managementService.shutdown();
     }
 
     @Test
