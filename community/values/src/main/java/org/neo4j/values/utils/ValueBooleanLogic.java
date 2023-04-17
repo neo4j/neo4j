@@ -22,11 +22,13 @@ package org.neo4j.values.utils;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
+import static org.neo4j.values.virtual.VirtualValues.asList;
 
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InvalidSemanticsException;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;
@@ -46,12 +48,10 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualPathValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
-import org.neo4j.values.virtual.VirtualValues;
 
 /**
  * This class contains static helper boolean methods for performing boolean logic on values
@@ -188,26 +188,43 @@ public final class ValueBooleanLogic {
     }
 
     @CalledFromGeneratedCode
-    public static Value in(AnyValue lhs, AnyValue rhs) {
-        assert rhs != NO_VALUE;
+    public static Value in(AnyValue findMe, AnyValue lookIn) {
+        if (lookIn == NO_VALUE) {
+            return NO_VALUE;
+        }
 
-        ListValue anyValues = VirtualValues.asList(rhs);
+        var iterator = asList(lookIn).iterator();
 
-        boolean seenUndefined = false;
-        for (AnyValue value : anyValues) {
-            switch (lhs.ternaryEquals(value)) {
-                case TRUE:
-                    return Values.TRUE;
-                case UNDEFINED:
-                    seenUndefined = true;
-                case FALSE:
-                    break;
-                default:
-                    throw new IllegalStateException("Unknown state");
+        if (!iterator.hasNext()) {
+            return BooleanValue.FALSE;
+        }
+
+        if (findMe == NO_VALUE) {
+            return NO_VALUE;
+        }
+
+        var undefinedEquality = false;
+        while (iterator.hasNext()) {
+            var nextValue = iterator.next();
+            var equality = nextValue.ternaryEquals(findMe);
+
+            if (equality == Equality.TRUE) {
+                return BooleanValue.TRUE;
+            } else if (equality == Equality.UNDEFINED && !undefinedEquality) {
+                undefinedEquality = true;
             }
         }
 
-        return seenUndefined ? NO_VALUE : Values.FALSE;
+        return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
+    }
+
+    @CalledFromGeneratedCode
+    public static Value in(AnyValue findMe, AnyValue lookIn, InCache cache, MemoryTracker memoryTracker) {
+        if (lookIn == NO_VALUE) {
+            return NO_VALUE;
+        }
+
+        return cache.check(findMe, asList(lookIn), memoryTracker);
     }
 
     private static final class BooleanMapper implements ValueMapper<Value> {

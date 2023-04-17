@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.operations;
+package org.neo4j.values.utils;
 
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -35,7 +35,7 @@ import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 public class InCache implements AutoCloseable {
-    private final SimpleIdentityCache<ListValue, DelayedInCacheChecker> seen;
+    private final SimpleIdentityCache<ListValue, InCache.DelayedInCacheChecker> seen;
 
     public InCache() {
         this(16);
@@ -47,13 +47,13 @@ public class InCache implements AutoCloseable {
 
     public Value check(AnyValue value, ListValue list, MemoryTracker memoryTracker) {
         if (list.size() < 128 || value == NO_VALUE) {
-            return CypherFunctions.in(value, list);
+            return ValueBooleanLogic.in(value, list);
         } else {
             return seen.getOrCache(list, (oldValue) -> {
                         if (oldValue != null) {
                             oldValue.close();
                         }
-                        return new DelayedInCacheChecker();
+                        return new InCache.DelayedInCacheChecker();
                     })
                     .check(value, list, memoryTracker);
         }
@@ -84,7 +84,7 @@ public class InCache implements AutoCloseable {
         private Value check(AnyValue value, ListValue list, MemoryTracker memoryTracker) {
             assert value != NO_VALUE;
             if (cacheHits++ < delay) {
-                return CypherFunctions.in(value, list);
+                return ValueBooleanLogic.in(value, list);
             }
             if (iterator == null) {
                 iterator = list.iterator();
@@ -124,27 +124,5 @@ public class InCache implements AutoCloseable {
                 seen.close();
             }
         }
-    }
-}
-
-class CacheKey {
-    private final ListValue list;
-
-    CacheKey(ListValue list) {
-        this.list = list;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof CacheKey otherKey) {
-            return list == otherKey.list;
-        }
-
-        return false;
-    }
-
-    @Override
-    public int hashCode() {
-        return System.identityHashCode(list);
     }
 }

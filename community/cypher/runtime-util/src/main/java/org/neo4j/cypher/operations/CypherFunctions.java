@@ -51,11 +51,9 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ElementIdMapper;
-import org.neo4j.values.Equality;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -1342,46 +1340,6 @@ public final class CypherFunctions {
         } else {
             return list.slice(size + from, size + to);
         }
-    }
-
-    @CalledFromGeneratedCode
-    public static Value in(AnyValue findMe, AnyValue lookIn) {
-        if (lookIn == NO_VALUE) {
-            return NO_VALUE;
-        }
-
-        var iterator = asList(lookIn).iterator();
-
-        if (!iterator.hasNext()) {
-            return BooleanValue.FALSE;
-        }
-
-        if (findMe == NO_VALUE) {
-            return NO_VALUE;
-        }
-
-        var undefinedEquality = false;
-        while (iterator.hasNext()) {
-            var nextValue = iterator.next();
-            var equality = nextValue.ternaryEquals(findMe);
-
-            if (equality == Equality.TRUE) {
-                return BooleanValue.TRUE;
-            } else if (equality == Equality.UNDEFINED && !undefinedEquality) {
-                undefinedEquality = true;
-            }
-        }
-
-        return undefinedEquality ? NO_VALUE : BooleanValue.FALSE;
-    }
-
-    @CalledFromGeneratedCode
-    public static Value in(AnyValue findMe, AnyValue lookIn, InCache cache, MemoryTracker memoryTracker) {
-        if (lookIn == NO_VALUE) {
-            return NO_VALUE;
-        }
-
-        return cache.check(findMe, asList(lookIn), memoryTracker);
     }
 
     @CalledFromGeneratedCode

@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.operations;
+package org.neo4j.values.utils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
@@ -37,8 +35,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.values.AnyValue;
@@ -113,14 +113,14 @@ class InCacheTest {
         ListValue list = range(1L, 256L, 1L);
 
         // when
-        MemoryTracker memoryTracker = mock(MemoryTracker.class);
+        MemoryTracker memoryTracker = Mockito.mock(MemoryTracker.class);
         cache.check(longValue(1L), list, memoryTracker);
         cache.check(longValue(2L), list, memoryTracker);
 
         // then
         ArgumentCaptor<Long> arg = ArgumentCaptor.forClass(Long.class);
-        verify(memoryTracker).allocateHeap(arg.capture());
-        assertThat(arg.getValue()).isGreaterThan(0);
+        Mockito.verify(memoryTracker).allocateHeap(arg.capture());
+        Assertions.assertThat(arg.getValue()).isGreaterThan(0);
     }
 
     @Test

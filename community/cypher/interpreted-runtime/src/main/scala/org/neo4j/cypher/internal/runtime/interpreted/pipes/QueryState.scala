@@ -34,12 +34,12 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathVa
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState.createDefaultInCache
 import org.neo4j.cypher.internal.runtime.memory.MemoryTrackerForOperatorProvider
 import org.neo4j.cypher.internal.runtime.memory.QueryMemoryTracker
-import org.neo4j.cypher.operations.InCache
 import org.neo4j.internal.kernel
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.internal.kernel.api.TokenReadSession
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.values.AnyValue
+import org.neo4j.values.utils.InCache
 
 class QueryState(
   val query: QueryContext,
