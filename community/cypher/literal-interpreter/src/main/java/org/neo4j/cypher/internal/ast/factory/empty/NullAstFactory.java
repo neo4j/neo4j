@@ -85,7 +85,8 @@ public class NullAstFactory
                 NULL, // PATH_PATTERN_LENGTH,
                 NULL, // PATTERN_ATOM
                 NULL, // DATABASE NAME
-                NULL // PATTERN_SELECTOR
+                NULL, // PATTERN_SELECTOR
+                NULL // MATCH MODE
         > {
 
     @Override
@@ -426,12 +427,12 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL existsExpression(NULL p, List<NULL> nulls, NULL q, NULL where) {
+    public NULL existsExpression(NULL p, NULL matchMode, List<NULL> nulls, NULL q, NULL where) {
         return null;
     }
 
     @Override
-    public NULL countExpression(NULL p, List<NULL> nulls, NULL q, NULL where) {
+    public NULL countExpression(NULL p, NULL matchMode, List<NULL> nulls, NULL q, NULL where) {
         return null;
     }
 
@@ -546,7 +547,13 @@ public class NullAstFactory
 
     @Override
     public NULL matchClause(
-            NULL p, boolean optional, List<NULL> nulls, NULL patternPos, List<NULL> nulls2, NULL aNull) {
+            NULL p,
+            boolean optional,
+            NULL matchMode,
+            List<NULL> nulls,
+            NULL patternPos,
+            List<NULL> nulls2,
+            NULL aNull) {
         return null;
     }
 
@@ -733,6 +740,16 @@ public class NullAstFactory
 
     @Override
     public NULL starPathQuantifier(NULL p) {
+        return null;
+    }
+
+    @Override
+    public NULL repeatableElements(NULL p) {
+        return null;
+    }
+
+    @Override
+    public NULL differentRelationships(NULL p) {
         return null;
     }
 

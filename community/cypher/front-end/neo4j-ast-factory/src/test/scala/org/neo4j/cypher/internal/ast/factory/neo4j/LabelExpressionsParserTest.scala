@@ -473,7 +473,7 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite with JavaccPars
     givesIncludingPositions {
       match_(
         nodePat(name = Some("n")),
-        Some(where(
+        where = Some(where(
           labelExpressionPredicate(
             "n",
             labelConjunction(
@@ -501,7 +501,7 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite with JavaccPars
           ),
           namePos = (1, 8, 7)
         ),
-        Some(where(
+        where = Some(where(
           labelExpressionPredicate(
             "n",
             labelConjunction(
@@ -519,7 +519,7 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite with JavaccPars
     givesIncludingPositions {
       match_(
         nodePat(name = Some("n")),
-        Some(
+        where = Some(
           where(
             labelExpressionPredicate("n", labelOrRelTypeLeaf("A"))
           )
@@ -536,7 +536,7 @@ class MatchNodeLabelExpressionsParserTest extends CypherFunSuite with JavaccPars
           RelationshipPattern(Some(varFor("r")), None, None, None, None, BOTH)(pos),
           NodePattern(None, None, None, None)(pos)
         )(pos),
-        Some(
+        where = Some(
           where(
             labelExpressionPredicate("r", labelDisjunction(labelOrRelTypeLeaf("A"), labelOrRelTypeLeaf("B")))
           )

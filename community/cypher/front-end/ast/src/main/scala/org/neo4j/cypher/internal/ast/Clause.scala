@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
@@ -403,6 +404,7 @@ object Match {
 
 case class Match(
   optional: Boolean,
+  matchMode: MatchMode,
   pattern: Pattern,
   hints: Seq[UsingHint],
   where: Option[Where]

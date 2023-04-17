@@ -59,7 +59,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(existsExpression))),
+        match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
     }
@@ -80,14 +80,14 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
             ),
             nodePat(Some("p"))
           )(pos),
-          Some(where(greaterThan(prop(Variable("p")(pos), "a"), literal(5))))
+          where = Some(where(greaterThan(prop(Variable("p")(pos), "a"), literal(5))))
         )
       )
     )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(existsExpression))),
+        match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
     }
@@ -114,7 +114,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(existsExpression))),
+        match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
     }
@@ -142,7 +142,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(existsExpression))),
+        match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
     }
@@ -168,7 +168,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(existsExpression))),
+        match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
     }
@@ -188,7 +188,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(existsExpression))),
+        match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
     }
@@ -203,7 +203,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(name = Some("n")),
-          Some(
+          where = Some(
             where(
               AllIterablePredicate(
                 FilterScope(
@@ -223,7 +223,7 @@ class ExistsExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(existsExpression))),
+        match_(nodePat(name = Some("m")), where = Some(where(existsExpression))),
         return_(variableReturnItem("m"))
       )
     }

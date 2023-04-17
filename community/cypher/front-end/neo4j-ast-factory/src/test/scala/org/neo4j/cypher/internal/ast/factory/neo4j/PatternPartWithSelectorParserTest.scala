@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.SubqueryCall
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
@@ -81,6 +82,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
         parsing(s"MATCH $selector (a)-[r]->(b)") shouldGive {
           Match(
             optional = false,
+            matchMode = MatchMode.default(pos),
             Pattern(Seq(
               PatternPartWithSelector(
                 relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
@@ -101,6 +103,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
         parsing(s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())") shouldGive {
           Match(
             optional = false,
+            matchMode = MatchMode.default(pos),
             Pattern(Seq(
               PatternPartWithSelector(
                 ParenthesizedPath(
@@ -138,6 +141,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
         parsing(s"MATCH path = $selector ((a)-[r]->(b) WHERE a.prop = b.prop)") shouldGive {
           Match(
             optional = false,
+            matchMode = MatchMode.default(pos),
             Pattern(Seq(NamedPatternPart(
               varFor("path"),
               PatternPartWithSelector(
@@ -166,6 +170,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
         parsing(s"MATCH $selector ((a)-[r]->(b))+") shouldGive {
           Match(
             optional = false,
+            matchMode = MatchMode.default(pos),
             Pattern(Seq(
               PatternPartWithSelector(
                 QuantifiedPath(
@@ -193,6 +198,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
         parsing(s"OPTIONAL MATCH $selector (a)-[r]->(b)") shouldGive {
           Match(
             optional = true,
+            matchMode = MatchMode.default(pos),
             Pattern(Seq(
               PatternPartWithSelector(
                 relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
@@ -253,6 +259,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
                 singleQuery(
                   Match(
                     optional = false,
+                    matchMode = MatchMode.default(pos),
                     Pattern(Seq(
                       PatternPartWithSelector(
                         relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
@@ -282,6 +289,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
                 singleQuery(
                   Match(
                     optional = false,
+                    matchMode = MatchMode.default(pos),
                     Pattern(Seq(
                       PatternPartWithSelector(
                         relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
@@ -309,6 +317,7 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
             singleQuery(
               Match(
                 optional = false,
+                matchMode = MatchMode.default(pos),
                 Pattern(Seq(
                   PatternPartWithSelector(
                     relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),

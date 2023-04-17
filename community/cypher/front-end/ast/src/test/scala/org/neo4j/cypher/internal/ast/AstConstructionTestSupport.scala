@@ -71,6 +71,8 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.MatchMode
+import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.Multiply
@@ -754,14 +756,19 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def merge(pattern: PatternElement): Merge =
     Merge(PatternPart(pattern), Seq.empty)(pos)
 
-  def match_(pattern: PatternElement, where: Option[Where] = None): Match =
-    Match(optional = false, Pattern(Seq(PatternPart(pattern)))(pos), Seq(), where)(pos)
+  def match_(
+    pattern: PatternElement,
+    matchMode: MatchMode = MatchMode.default(pos),
+    where: Option[Where] = None
+  ): Match =
+    Match(optional = false, matchMode = matchMode, Pattern(Seq(PatternPart(pattern)))(pos), Seq(), where)(pos)
 
-  def optionalMatch(pattern: PatternElement, where: Option[Where] = None): Match =
-    Match(optional = true, Pattern(Seq(PatternPart(pattern)))(pos), Seq(), where)(pos)
+  def optionalMatch(pattern: PatternElement, where: Option[Where] = None): Match = {
+    Match(optional = true, MatchMode.default(pos), Pattern(Seq(PatternPart(pattern)))(pos), Seq(), where)(pos)
+  }
 
   def match_(patterns: Seq[PatternElement], where: Option[Where]): Match =
-    Match(optional = false, Pattern(patterns.map(PatternPart.apply))(pos), Seq(), where)(pos)
+    Match(optional = false, MatchMode.default(pos), Pattern(patterns.map(PatternPart.apply))(pos), Seq(), where)(pos)
 
   def with_(items: ReturnItem*): With =
     With(ReturnItems(includeExisting = false, items)(pos))(pos)
@@ -903,12 +910,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def simpleExistsExpression(
     pattern: Pattern,
     maybeWhere: Option[Where],
+    matchMode: MatchMode = MatchMode.default(pos),
     introducedVariables: Set[LogicalVariable] = Set.empty,
     scopeDependencies: Set[LogicalVariable] = Set.empty
   ): ExistsExpression = {
 
     val simpleMatchQuery = singleQuery(
-      Match(optional = false, pattern, Seq(), maybeWhere)(pos)
+      Match(optional = false, matchMode, pattern, Seq(), maybeWhere)(pos)
     )
 
     ExistsExpression(simpleMatchQuery)(pos, Some(introducedVariables), Some(scopeDependencies))
@@ -918,12 +926,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     pattern: Pattern,
     maybeWhere: Option[Where],
     returnItem: Return,
+    matchMode: MatchMode = MatchMode.default(pos),
     introducedVariables: Set[LogicalVariable] = Set.empty,
     scopeDependencies: Set[LogicalVariable] = Set.empty
   ): CollectExpression = {
 
     val simpleMatchQuery = singleQuery(
-      Match(optional = false, pattern, Seq(), maybeWhere)(pos),
+      Match(optional = false, matchMode, pattern, Seq(), maybeWhere)(pos),
       returnItem
     )
 
@@ -933,12 +942,13 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   def simpleCountExpression(
     pattern: Pattern,
     maybeWhere: Option[Where],
+    matchMode: MatchMode = MatchMode.default(pos),
     introducedVariables: Set[LogicalVariable] = Set.empty,
     scopeDependencies: Set[LogicalVariable] = Set.empty
   ): CountExpression = {
 
     val simpleMatchQuery = singleQuery(
-      Match(optional = false, pattern, Seq(), maybeWhere)(pos)
+      Match(optional = false, matchMode, pattern, Seq(), maybeWhere)(pos)
     )
 
     CountExpression(simpleMatchQuery)(pos, Some(introducedVariables), Some(scopeDependencies))

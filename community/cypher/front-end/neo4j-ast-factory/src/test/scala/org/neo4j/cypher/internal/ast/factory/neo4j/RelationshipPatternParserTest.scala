@@ -270,7 +270,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
           singleQuery(
             match_(
               pattern = nodePat(Some("n")),
-              Some(where(existsExpression))
+              where = Some(where(existsExpression))
             )
           )
         )
@@ -303,7 +303,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
           singleQuery(
             match_(
               pattern = nodePat(Some("n")),
-              Some(where(eq(countExpression, literalInt(1))))
+              where = Some(where(eq(countExpression, literalInt(1))))
             )
           )
         )
@@ -462,7 +462,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
               relPat(Some("r")),
               nodePat()
             ),
-            Some(where(labelExpressionPredicate("r", exprAstBoth)))
+            where = Some(where(labelExpressionPredicate("r", exprAstBoth)))
           )
         )
       )
@@ -477,7 +477,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
               relPat(Some("r")),
               nodePat()
             ),
-            Some(where(
+            where = Some(where(
               and(
                 equals(prop("r", "prop"), literalInt(1)),
                 labelExpressionPredicate("r", exprAstBoth)

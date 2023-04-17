@@ -146,7 +146,7 @@ class NodePatternParserTest extends PatternParserTestBase {
           singleQuery(
             match_(
               pattern = nodePat(),
-              Some(where(existsExpression))
+              where = Some(where(existsExpression))
             )
           )
         )
@@ -172,7 +172,7 @@ class NodePatternParserTest extends PatternParserTestBase {
           singleQuery(
             match_(
               pattern = nodePat(),
-              Some(where(eq(countExpression, literalInt(1))))
+              where = Some(where(eq(countExpression, literalInt(1))))
             )
           )
         )
@@ -301,7 +301,7 @@ class NodePatternParserTest extends PatternParserTestBase {
         singleQuery(
           match_(
             nodePat(Some("n")),
-            Some(where(labelExpressionPredicate("n", exprAstBoth)))
+            where = Some(where(labelExpressionPredicate("n", exprAstBoth)))
           )
         )
       )
@@ -312,7 +312,7 @@ class NodePatternParserTest extends PatternParserTestBase {
         singleQuery(
           match_(
             nodePat(Some("n")),
-            Some(where(
+            where = Some(where(
               and(
                 equals(prop("n", "prop"), literalInt(1)),
                 labelExpressionPredicate("n", exprAstBoth)

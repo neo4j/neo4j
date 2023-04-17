@@ -35,6 +35,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSIGN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AT;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BINDINGS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOSTED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BREAK;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BRIEF;
@@ -70,6 +71,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DENY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESC;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DESTROY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DETACH;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DIFFERENT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DISTINCT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DRIVER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DROP;
@@ -170,6 +172,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RELATIONSH
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RELATIONSHIPS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REMOVE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.RENAME;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPEATABLE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPLACE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REPORT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.REQUIRE;
@@ -255,6 +258,7 @@ public class IdentifierTokens {
             ASSERT,
             ASSIGN,
             AT,
+            BINDINGS,
             BOOSTED,
             BREAK,
             BRIEF,
@@ -290,6 +294,7 @@ public class IdentifierTokens {
             DESC,
             DESTROY,
             DETACH,
+            DIFFERENT,
             DISTINCT,
             DRIVER,
             DROP,
@@ -389,6 +394,7 @@ public class IdentifierTokens {
             RELATIONSHIPS,
             REMOVE,
             RENAME,
+            REPEATABLE,
             REPLACE,
             REPORT,
             REQUIRE,

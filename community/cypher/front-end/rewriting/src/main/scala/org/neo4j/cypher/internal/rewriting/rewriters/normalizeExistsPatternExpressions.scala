@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.LessThan
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -168,7 +169,7 @@ case object PatternToQueryConverter {
   ): Query = {
     SingleQuery(
       Seq(
-        Match(optional = false, pattern, Seq.empty, maybeWhere)(position)
+        Match(optional = false, matchMode = MatchMode.default(position), pattern, Seq.empty, maybeWhere)(position)
       )
     )(position)
   }

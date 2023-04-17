@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -48,6 +49,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), nodePattern),
           relationship(Some(varFor("r"))),
@@ -76,6 +78,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
           relationshipPattern,
@@ -105,6 +108,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationshipPattern, node(Some(varFor("k")))),
           relationship(Some(varFor("r"))),
@@ -135,6 +139,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
           relationship(Some(varFor("r"))),
@@ -169,6 +174,7 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
     val ast: ASTNode = SingleQuery(Seq(
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(PatternPart(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
           relationship(Some(varFor("r"))),

@@ -105,7 +105,7 @@ class ExistsTest extends SemanticFunSuite {
 
   test("inner where with regular query using missing identifier reports error") {
     val expression = ExistsExpression(
-      singleQuery(match_(relChain, Some(where(failingProperty))), return_(varFor("n").as("n")))
+      singleQuery(match_(relChain, where = Some(where(failingProperty))), return_(varFor("n").as("n")))
     )(pos, None, None)
 
     val result =

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
@@ -142,6 +143,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val CALL = {
       val MATCH = Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(List(
           PatternPart(
             NodePattern(Some(a), None, None, None)(pos)
@@ -199,6 +201,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     val MATCH = Match(
       optional = false,
+      matchMode = MatchMode.default(pos),
       Pattern(List(
         PatternPart(
           NodePattern(Some(a), None, None, None)(pos)
@@ -293,6 +296,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     val MATCH = Match(
       optional = false,
+      matchMode = MatchMode.default(pos),
       Pattern(List(
         PatternPart(
           RelationshipChain(
@@ -401,6 +405,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     val MATCH = Match(
       optional = false,
+      matchMode = MatchMode.default(pos),
       Pattern(List(
         PatternPart(
           RelationshipChain(
@@ -524,6 +529,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     val MATCH = Match(
       optional = false,
+      matchMode = MatchMode.default(pos),
       Pattern(List(
         PatternPart(
           RelationshipChain(
@@ -647,6 +653,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     val MATCH = Match(
       optional = false,
+      matchMode = MatchMode.default(pos),
       Pattern(List(
         PatternPart(
           NodePattern(Some(a), None, None, None)(pos)
@@ -740,6 +747,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     val MATCH = Match(
       optional = false,
+      matchMode = MatchMode.default(pos),
       Pattern(List(
         PatternPart(NodePattern(Some(a), None, None, None)(pos)),
         PatternPart(NodePattern(Some(b), None, None, None)(pos))
@@ -832,6 +840,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     val MATCH = Match(
       optional = false,
+      matchMode = MatchMode.default(pos),
       Pattern(List(
         PatternPart(
           NodePattern(Some(a), None, None, None)(pos)
@@ -974,6 +983,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH =
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(List(
           PatternPart(
             NodePattern(Some(a), None, None, None)(pos)
@@ -1028,6 +1038,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH =
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(List(
           PatternPart(
             NodePattern(Some(a), None, None, None)(pos)
@@ -1085,6 +1096,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH1 =
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(List(
           PatternPart(
             NodePattern(Some(a), None, None, None)(pos)
@@ -1115,6 +1127,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH2 =
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(List(
           PatternPart(
             NodePattern(Some(b), None, None, None)(pos)
@@ -1292,6 +1305,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH =
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(List(
           PatternPart(
             RelationshipChain(
@@ -1355,6 +1369,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH =
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(List(
           PatternPart(
             RelationshipChain(
@@ -1395,6 +1410,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH =
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(List(
           PatternPart(
             NodePattern(Some(a), None, None, None)(pos)
@@ -1464,6 +1480,7 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH =
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(List(
           PatternPart(
             NodePattern(Some(aId), None, None, None)(pos)

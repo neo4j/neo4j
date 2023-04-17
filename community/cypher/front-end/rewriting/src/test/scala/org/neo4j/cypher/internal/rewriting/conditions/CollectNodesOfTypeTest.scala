@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -35,6 +36,7 @@ class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupp
     val ast: ASTNode =
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(PatternPart(NodePattern(Some(idA), None, Some(idB), None) _))) _,
         Seq(),
         None
@@ -45,7 +47,13 @@ class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupp
 
   test("collect no variable") {
     val ast: ASTNode =
-      Match(optional = false, Pattern(Seq(PatternPart(NodePattern(None, None, None, None) _))) _, Seq(), None) _
+      Match(
+        optional = false,
+        matchMode = MatchMode.default(pos),
+        Pattern(Seq(PatternPart(NodePattern(None, None, None, None) _))) _,
+        Seq(),
+        None
+      ) _
 
     collector(ast) shouldBe empty
   }

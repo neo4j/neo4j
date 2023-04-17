@@ -21,6 +21,7 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -33,7 +34,13 @@ class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestS
 
   test("Happy when not finding UnaliasedReturnItem") {
     val ast: ASTNode =
-      Match(optional = false, Pattern(Seq(PatternPart(NodePattern(None, None, None, None) _))) _, Seq(), None) _
+      Match(
+        optional = false,
+        matchMode = MatchMode.default(pos),
+        Pattern(Seq(PatternPart(NodePattern(None, None, None, None) _))) _,
+        Seq(),
+        None
+      ) _
 
     condition(ast) should equal(Seq())
   }

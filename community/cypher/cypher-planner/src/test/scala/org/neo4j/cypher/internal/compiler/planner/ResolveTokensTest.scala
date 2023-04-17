@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.HasLabels
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
@@ -65,6 +66,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
+            _,
             Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
             Seq(),
             Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
@@ -88,6 +90,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
+            _,
             Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
             Seq(),
             Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
@@ -111,6 +114,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
+            _,
             Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
             Seq(),
             Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
@@ -134,6 +138,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
+            _,
             Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
             Seq(),
             Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
@@ -157,6 +162,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
+            _,
             Pattern(Seq(PatternPartWithSelector(
               RelationshipChain(
                 NodePattern(None, None, None, None),
@@ -194,6 +200,7 @@ class ResolveTokensTest extends CypherFunSuite {
       case SingleQuery(Seq(
           Match(
             false,
+            _,
             Pattern(Seq(PatternPartWithSelector(
               RelationshipChain(
                 NodePattern(None, None, None, None),

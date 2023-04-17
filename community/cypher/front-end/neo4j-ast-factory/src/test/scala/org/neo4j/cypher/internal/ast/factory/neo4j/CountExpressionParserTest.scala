@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FilterScope
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -62,7 +63,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(eq(countExpression, literal(4))))),
+        match_(nodePat(name = Some("m")), where = Some(where(eq(countExpression, literal(4))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -87,7 +88,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(lt(countExpression, literal(5))))),
+        match_(nodePat(name = Some("m")), where = Some(where(lt(countExpression, literal(5))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -108,7 +109,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(gt(countExpression, literal(7))))),
+        match_(nodePat(name = Some("m")), where = Some(where(gt(countExpression, literal(7))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -124,14 +125,14 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(Some("m"), namePos = InputPosition(25, 2, 16), position = InputPosition(24, 2, 15)),
-          Some(where(propEquality("m", "prop", 3)))
+          where = Some(where(propEquality("m", "prop", 3)))
         )
       )
     )(InputPosition(16, 2, 7), None, None)
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(eq(countExpression, literal(1))))),
+        match_(nodePat(name = Some("m")), where = Some(where(eq(countExpression, literal(1))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -257,7 +258,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("a")), Some(where(lt(countExpression, literal(9))))),
+        match_(nodePat(name = Some("a")), where = Some(where(lt(countExpression, literal(9))))),
         return_(variableReturnItem("a"))
       )
     }
@@ -274,7 +275,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("a")), None),
+        match_(nodePat(name = Some("a"))),
         return_(returnItem(countExpression, "COUNT{ MATCH (a) }"))
       )
     }
@@ -319,6 +320,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         Match(
           optional = false,
+          matchMode = MatchMode.default(pos),
           Pattern(Seq(
             NamedPatternPart(
               varFor("pt"),
@@ -339,7 +341,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("a")), Some(where(gte(countExpression, literal(5))))),
+        match_(nodePat(name = Some("a")), where = Some(where(gte(countExpression, literal(5))))),
         return_(variableReturnItem("a"))
       )
     }
@@ -365,7 +367,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(lte(countExpression, literal(2))))),
+        match_(nodePat(name = Some("m")), where = Some(where(lte(countExpression, literal(2))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -391,7 +393,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(gte(countExpression, literal(3))))),
+        match_(nodePat(name = Some("m")), where = Some(where(gte(countExpression, literal(3))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -411,7 +413,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(greaterThan(countExpression, literal(9))))),
+        match_(nodePat(name = Some("m")), where = Some(where(greaterThan(countExpression, literal(9))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -426,7 +428,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(name = Some("n"), namePos = InputPosition(31, 2, 22), position = InputPosition(30, 2, 21)),
-          Some(
+          where = Some(
             where(
               AllIterablePredicate(
                 FilterScope(
@@ -446,7 +448,7 @@ class CountExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(eq(countExpression, literal(1))))),
+        match_(nodePat(name = Some("m")), where = Some(where(eq(countExpression, literal(1))))),
         return_(variableReturnItem("m"))
       )
     }

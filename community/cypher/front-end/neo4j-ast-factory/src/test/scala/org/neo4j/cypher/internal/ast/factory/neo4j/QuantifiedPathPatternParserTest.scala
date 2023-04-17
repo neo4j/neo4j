@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule.Variable
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
@@ -285,6 +286,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccP
     gives {
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(NamedPatternPart(
           varFor("p"),
           PatternPart(ParenthesizedPath(PatternPart(RelationshipChain(
@@ -303,6 +305,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite with JavaccP
     gives {
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(
           PatternPart(nodePat(Some("a"))),
           PatternPart(PathConcatenation(Seq(

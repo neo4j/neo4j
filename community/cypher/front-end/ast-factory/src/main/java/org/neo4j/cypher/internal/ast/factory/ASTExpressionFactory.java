@@ -43,7 +43,8 @@ public interface ASTExpressionFactory<
         PROPERTY extends EXPRESSION,
         MAP_PROJECTION_ITEM,
         POS,
-        ENTITY_TYPE> {
+        ENTITY_TYPE,
+        MATCH_MODE> {
     VARIABLE newVariable(POS p, String name);
 
     PARAMETER newParameter(POS p, VARIABLE v, ParameterType type);
@@ -189,9 +190,9 @@ public interface ASTExpressionFactory<
 
     EXPRESSION patternExpression(POS p, PATTERN pattern);
 
-    EXPRESSION existsExpression(POS p, List<PATTERN> patterns, QUERY q, WHERE where);
+    EXPRESSION existsExpression(POS p, MATCH_MODE matchMode, List<PATTERN> patterns, QUERY q, WHERE where);
 
-    EXPRESSION countExpression(POS p, List<PATTERN> patterns, QUERY q, WHERE where);
+    EXPRESSION countExpression(POS p, MATCH_MODE matchMode, List<PATTERN> patterns, QUERY q, WHERE where);
 
     EXPRESSION collectExpression(POS p, QUERY q);
 

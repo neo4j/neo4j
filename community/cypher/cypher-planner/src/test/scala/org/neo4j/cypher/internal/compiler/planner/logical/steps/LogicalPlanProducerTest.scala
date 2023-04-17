@@ -969,7 +969,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
+        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, introducedVariables = Set(varFor("x"))),
         ctx.context
       )
     )
@@ -980,7 +980,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
+        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, introducedVariables = Set(varFor("x"))),
         ctx.context
       )
     )
@@ -991,7 +991,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planAntiSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithUpdate,
-        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
+        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, introducedVariables = Set(varFor("x"))),
         ctx.context
       )
     )
@@ -1002,7 +1002,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
       ctx.producer.planAntiSemiApplyInHorizon(
         ctx.lhs,
         ctx.rhsWithoutUpdate,
-        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, Set(varFor("x")), Set.empty),
+        simpleExistsExpression(Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos), None, introducedVariables = Set(varFor("x"))),
         ctx.context
       )
     )

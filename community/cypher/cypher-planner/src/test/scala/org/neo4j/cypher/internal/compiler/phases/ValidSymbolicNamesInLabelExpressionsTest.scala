@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -102,7 +103,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends AnyFunSuite with Matchers
     val labelOrRelTypeName = LabelOrRelTypeName("B")(InputPosition.NONE)
     val labelExpressionPredicate = LabelExpressionPredicate(variable, Leaf(labelOrRelTypeName))(InputPosition.NONE)
     val where = Where(labelExpressionPredicate)(InputPosition.NONE)
-    val matchClause = Match(optional = false, pattern, Seq.empty, Some(where))(InputPosition.NONE)
+    val matchClause = Match(optional = false, MatchMode.default(InputPosition.NONE), pattern, Seq.empty, Some(where))(InputPosition.NONE)
     ValidSymbolicNamesInLabelExpressions(matchClause) shouldBe empty
   }
 
@@ -116,7 +117,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends AnyFunSuite with Matchers
     val labelName = LabelName("B")(InputPosition(41, 10, 42))
     val labelExpressionPredicate = LabelExpressionPredicate(variable, Leaf(labelName))(InputPosition.NONE)
     val where = Where(labelExpressionPredicate)(InputPosition.NONE)
-    val matchClause = Match(optional = false, pattern, Seq.empty, Some(where))(InputPosition.NONE)
+    val matchClause = Match(optional = false, MatchMode.default(InputPosition.NONE), pattern, Seq.empty, Some(where))(InputPosition.NONE)
     ValidSymbolicNamesInLabelExpressions(matchClause) shouldEqual List(
       "Illegal symbolic name RelTypeName(A) inside a node pattern at position: line 3, column 2 (offset: 1)",
       "Illegal symbolic name LabelName(B) inside a label expression predicate at position: line 10, column 42 (offset: 41)"

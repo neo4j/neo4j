@@ -57,7 +57,7 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
 
   test("unhappy when aggregations and Exists Expressions inside an Expression") {
     val fe = ExistsExpression(
-      singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n")))
+      singleQuery(match_(nodePat(Some("x"))), return_(varFor("n").as("n")))
     )(pos, None, None)
 
     val l = listOf(fe, CountStar() _)
@@ -67,7 +67,7 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
 
   test("unhappy when aggregations and Exists Expressions inside an Expression 2") {
     val fe = ExistsExpression(
-      singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n")))
+      singleQuery(match_(nodePat(Some("x"))), return_(varFor("n").as("n")))
     )(pos, None, None)
 
     val l = listOf(CountStar() _, fe)
@@ -86,7 +86,7 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
 
   test("unhappy when aggregations and Count Expressions inside an Expression") {
     val fe = CountExpression(
-      singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n")))
+      singleQuery(match_(nodePat(Some("x"))), return_(varFor("n").as("n")))
     )(pos, None, None)
 
     val l = listOf(fe, CountStar() _)
@@ -96,7 +96,7 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
 
   test("unhappy when aggregations and Count Expressions inside an Expression 2") {
     val fe = CountExpression(
-      singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n")))
+      singleQuery(match_(nodePat(Some("x"))), return_(varFor("n").as("n")))
     )(pos, None, None)
 
     val l = listOf(CountStar() _, fe)
@@ -115,7 +115,7 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
 
   test("unhappy when aggregations and Collect Expressions inside an Expression") {
     val fe = CollectExpression(
-      singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n")))
+      singleQuery(match_(nodePat(Some("x"))), return_(varFor("n").as("n")))
     )(pos, None, None)
 
     val l = listOf(fe, CountStar() _)
@@ -125,7 +125,7 @@ class AggregationsAreIsolatedTest extends CypherFunSuite with AstConstructionTes
 
   test("unhappy when aggregations and Collect Expressions inside an Expression 2") {
     val fe = CollectExpression(
-      singleQuery(match_(nodePat(Some("x")), None), return_(varFor("n").as("n")))
+      singleQuery(match_(nodePat(Some("x"))), return_(varFor("n").as("n")))
     )(pos, None, None)
 
     val l = listOf(CountStar() _, fe)

@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.rewriting.conditions
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -31,7 +32,13 @@ class NoReferenceEqualityAmongVariablesTest extends CypherFunSuite with AstConst
   test("unhappy when same Variable instance is used multiple times") {
     val id = varFor("a")
     val ast: ASTNode =
-      Match(optional = false, Pattern(Seq(PatternPart(NodePattern(Some(id), None, Some(id), None) _))) _, Seq(), None) _
+      Match(
+        optional = false,
+        matchMode = MatchMode.default(pos),
+        Pattern(Seq(PatternPart(NodePattern(Some(id), None, Some(id), None) _))) _,
+        Seq(),
+        None
+      ) _
 
     collector(ast) should equal(Seq(s"The instance $id is used 2 times"))
   }
@@ -39,6 +46,7 @@ class NoReferenceEqualityAmongVariablesTest extends CypherFunSuite with AstConst
   test("happy when all variable are no reference equal") {
     val ast: ASTNode = Match(
       optional = false,
+      matchMode = MatchMode.default(pos),
       Pattern(Seq(PatternPart(NodePattern(Some(varFor("a")), None, Some(varFor("a")), None) _))) _,
       Seq(),
       None

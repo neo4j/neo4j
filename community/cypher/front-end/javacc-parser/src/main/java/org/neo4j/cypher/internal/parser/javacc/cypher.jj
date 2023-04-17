@@ -129,7 +129,8 @@ public class Cypher<STATEMENT,
                     PATTERN_QUANTIFIER,
                     PATTERN_ATOM,
                     DATABASE_NAME,
-                    PATTERN_SELECTOR> {
+                    PATTERN_SELECTOR,
+                    MATCH_MODE> {
 
     ASTExceptionFactory exceptionFactory;
     ASTFactory<STATEMENT,
@@ -176,7 +177,8 @@ public class Cypher<STATEMENT,
                PATTERN_QUANTIFIER,
                PATTERN_ATOM,
                DATABASE_NAME,
-               PATTERN_SELECTOR> astFactory;
+               PATTERN_SELECTOR,
+               MATCH_MODE> astFactory;
     // to distinguish a bar that follows a label expression from the or-operator as part of a label expression, this stack keeps track of the current context
     Stack<ExpectBar> labelExpressionStack = new Stack<>();
 
@@ -224,7 +226,8 @@ public class Cypher<STATEMENT,
                              PATTERN_QUANTIFIER,
                              PATTERN_ATOM,
                              DATABASE_NAME,
-                             PATTERN_SELECTOR> astFactory,
+                             PATTERN_SELECTOR,
+                             MATCH_MODE> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
         this(stream);
@@ -418,6 +421,8 @@ TOKEN [IGNORE_CASE] :
     | < ASSIGN: "ASSIGN" >
     | < AT: "AT" >
     | < BAR: "|" >
+    | < BINDING: "BINDING" >
+    | < BINDINGS: "BINDINGS" >
     | < BOOSTED: "BOOSTED" >
     | < BREAK: "BREAK" >
     | < BRIEF: "BRIEF" >
@@ -456,6 +461,7 @@ TOKEN [IGNORE_CASE] :
     | < DESTROY: "DESTROY">
     | < DETACH: "DETACH" >
     | < DOLLAR: "$">
+    | < DIFFERENT: "DIFFERENT" >
     | < DISTINCT: "DISTINCT" >
     | < DIVIDE: "/" >
     | < DOT: "." >
@@ -557,6 +563,7 @@ TOKEN [IGNORE_CASE] :
     | < POINT: "POINT">
     | < POPULATED: "POPULATED">
     | < POW: "^" >
+    | < REPEATABLE: "REPEATABLE" >
     | < PRIMARY: "PRIMARY" >
     | < PRIMARIES: "PRIMARIES" >
     | < PRIVILEGE: "PRIVILEGE" >
@@ -1938,14 +1945,30 @@ CLAUSE MatchClause() throws Exception:
     Token t;
     Token whereToken = null;
     boolean optional = false;
+    MATCH_MODE matchMode = null;
     List<PATTERN> patterns;
     List<HINT> hints;
     WHERE where = null;
 }
 {
-    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> patterns=PatternList() hints=Hints() ( where=WhereClause() )?
+    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> ( matchMode = MatchMode() )? patterns=PatternList() hints=Hints() ( where=WhereClause() )?
     {
-        return astFactory.matchClause( pos( optionalT != null ? optionalT : t ), optional, patterns, pos( t.next ), hints, where );
+        return astFactory.matchClause( pos( optionalT != null ? optionalT : t ), optional, matchMode, patterns, pos( t.next ), hints, where );
+    }
+}
+
+MATCH_MODE MatchMode():
+{
+    Token t;
+    MATCH_MODE matchMode;
+}
+{
+    (
+        t = <REPEATABLE> ( <ELEMENT>  ( <BINDINGS> )? |  <ELEMENTS> ) { matchMode = astFactory.repeatableElements(pos(t)); } |
+        t = <DIFFERENT> ( <RELATIONSHIP>  ( <BINDINGS> )? | <RELATIONSHIPS> ) { matchMode = astFactory.differentRelationships(pos(t)); }
+    )
+    {
+        return matchMode;
     }
 }
 
@@ -3502,16 +3525,17 @@ EXPRESSION ExistsExpression() throws Exception:
 {
     Token t;
     List<PATTERN> patterns = null;
+    MATCH_MODE matchMode = null;
     QUERY q = null;
     WHERE where = null;
 }
 {
     t=<EXISTS>
     <LCURLY>
-        (q=RegularQuery() | (patterns=PatternList() ( where=WhereClause() )?))
+        (q=RegularQuery() | ( (matchMode = MatchMode() )? patterns=PatternList() ( where=WhereClause() )?))
     <RCURLY>
     {
-        return astFactory.existsExpression( pos( t ), patterns, q, where );
+        return astFactory.existsExpression( pos( t ), matchMode, patterns, q, where );
     }
 }
 
@@ -3519,16 +3543,17 @@ EXPRESSION CountExpression() throws Exception:
 {
     Token t;
     List<PATTERN> patterns = null;
+    MATCH_MODE matchMode = null;
     QUERY q = null;
     WHERE where = null;
 }
 {
     t=<COUNT>
     <LCURLY>
-        (q=RegularQuery() | (patterns=PatternList() ( where=WhereClause() )?))
+        (q=RegularQuery() | ((matchMode = MatchMode() )? patterns=PatternList() ( where=WhereClause() )?))
     <RCURLY>
     {
-        return astFactory.countExpression( pos( t ), patterns, q, where );
+        return astFactory.countExpression( pos( t ), matchMode, patterns, q, where );
     }
 }
 
@@ -6546,6 +6571,7 @@ Token UnescapedSymbolicNameString() :
         | t=<ASSERT>
         | t=<ASSIGN>
         | t=<AT>
+        | t=<BINDINGS>
         | t=<BOOSTED>
         | t=<BREAK>
         | t=<BRIEF>
@@ -6581,6 +6607,7 @@ Token UnescapedSymbolicNameString() :
         | t=<DESC>
         | t=<DESTROY>
         | t=<DETACH>
+        | t=<DIFFERENT>
         | t=<DISTINCT>
         | t=<DRIVER>
         | t=<DROP>
@@ -6678,6 +6705,7 @@ Token UnescapedSymbolicNameString() :
         | t=<RELATIONSHIPS>
         | t=<REMOVE>
         | t=<RENAME>
+        | t=<REPEATABLE>
         | t=<REPLACE>
         | t=<REPORT>
         | t=<REQUIRE>

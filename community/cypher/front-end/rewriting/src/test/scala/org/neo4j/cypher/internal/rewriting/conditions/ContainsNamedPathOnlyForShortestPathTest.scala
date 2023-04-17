@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Return
 import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.SingleQuery
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Pattern
@@ -36,6 +37,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
     val ast = SingleQuery(Seq(
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(PatternPart(NodePattern(Some(varFor("n")), None, None, None)(pos))))(pos),
         Seq.empty,
         None
@@ -59,7 +61,9 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
     val namedPattern: NamedPatternPart =
       NamedPatternPart(varFor("p"), PatternPart(NodePattern(Some(varFor("n")), None, None, None)(pos)))(pos)
     val ast = SingleQuery(Seq(
-      Match(optional = false, Pattern(Seq(namedPattern))(pos), Seq.empty, None)(pos),
+      Match(optional = false, matchMode = MatchMode.default(pos), Pattern(Seq(namedPattern))(pos), Seq.empty, None)(
+        pos
+      ),
       Return(
         distinct = false,
         ReturnItems(
@@ -79,6 +83,7 @@ class ContainsNamedPathOnlyForShortestPathTest extends CypherFunSuite with AstCo
     val ast = SingleQuery(Seq(
       Match(
         optional = false,
+        matchMode = MatchMode.default(pos),
         Pattern(Seq(NamedPatternPart(
           varFor("p"),
           ShortestPathsPatternPart(NodePattern(Some(varFor("n")), None, None, None)(pos), single = true)(pos)

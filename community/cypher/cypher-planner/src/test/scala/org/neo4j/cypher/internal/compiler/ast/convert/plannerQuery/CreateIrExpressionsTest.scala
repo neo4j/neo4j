@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -460,7 +461,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Rewrites Simple ExistsExpression") {
-    val esc = simpleExistsExpression(n_r_m_r2_o_r3_q, None, Set(n, m, o, q, r, r2, r3), Set.empty)
+    val esc = simpleExistsExpression(n_r_m_r2_o_r3_q, None, MatchMode.default(pos), Set(n, m, o, q, r, r2, r3), Set.empty)
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariableName = nameGenerator.nextName
@@ -495,7 +496,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Rewrites Simple Exists Expression with where clause") {
-    val esc = simpleExistsExpression(n_r_m_r2_o_r3_q, Some(where(rPred)), Set(n, r, m, r2, o, r3, q), Set.empty)
+    val esc = simpleExistsExpression(n_r_m_r2_o_r3_q, Some(where(rPred)), MatchMode.default(pos), Set(n, r, m, r2, o, r3, q), Set.empty)
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariableName = nameGenerator.nextName
@@ -577,7 +578,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullExistsExpression") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         aliasedReturnItem(n)
       )
@@ -612,7 +613,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullExistsExpression with ORDER BY") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         orderBy(varFor("n").asc),
         aliasedReturnItem(n)
@@ -654,7 +655,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullExistsExpression with SKIP") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         skip(2),
         aliasedReturnItem(n)
@@ -696,7 +697,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullExistsExpression with LIMIT") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         limit(42),
         aliasedReturnItem(n)
@@ -738,7 +739,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullExistsExpression with ORDER BY, SKIP and LIMIT") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         orderBy(varFor("n").asc),
         skip(2),
@@ -787,13 +788,13 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   test("Rewrites FullExistsExpression with Union") {
     val unionQuery = union(
       singleQuery(
-        match_(n_r_m_chain, None),
+        match_(n_r_m_chain),
         return_(
           aliasedReturnItem(n)
         )
       ),
       singleQuery(
-        match_(n_r_m_chain, None),
+        match_(n_r_m_chain),
         return_(
           aliasedReturnItem(n)
         )
@@ -846,7 +847,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullExistsExpression with DISTINCT") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       returnDistinct(
         aliasedReturnItem(n)
       )
@@ -933,7 +934,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCountExpression") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         aliasedReturnItem(n)
       )
@@ -971,7 +972,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCountExpression with ORDER BY") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         orderBy(varFor("n").asc),
         aliasedReturnItem(n)
@@ -1012,7 +1013,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCountExpression with SKIP") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         skip(2),
         aliasedReturnItem(n)
@@ -1058,7 +1059,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCountExpression with LIMIT") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         limit(42),
         aliasedReturnItem(n)
@@ -1104,7 +1105,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCountExpression with ORDER BY, SKIP and LIMIT") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         orderBy(varFor("n").asc),
         skip(2),
@@ -1156,7 +1157,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCountExpression with DISTINCT") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       returnDistinct(
         aliasedReturnItem(n)
       )
@@ -1201,13 +1202,13 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   test("Rewrites FullCountExpression with Union") {
     val unionQuery = union(
       singleQuery(
-        match_(n_r_m_chain, None),
+        match_(n_r_m_chain),
         return_(
           aliasedReturnItem(n)
         )
       ),
       singleQuery(
-        match_(n_r_m_chain, None),
+        match_(n_r_m_chain),
         return_(
           aliasedReturnItem(n)
         )
@@ -1278,7 +1279,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("should rewrite COUNT { (n)-[r]-(m) }") {
     val p = Pattern(Seq(PatternPart(n_r_m.element)))(pos)
-    val countExpr = simpleCountExpression(p, None, Set(m, r), Set(n))
+    val countExpr = simpleCountExpression(p, None, MatchMode.default(pos), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -1306,7 +1307,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5}") {
     val p = Pattern(Seq(PatternPart(n_r_m.element)))(pos)
-    val countExpr = simpleCountExpression(p, Some(where(rPred)), Set(m, r), Set(n))
+    val countExpr = simpleCountExpression(p, Some(where(rPred)), MatchMode.default(pos), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -1335,7 +1336,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("should rewrite count expression with longer pattern and inlined predicates") {
     val p = Pattern(Seq(PatternPart(n_r_m_withPreds.element)))(pos)
-    val countExpr = simpleCountExpression(p, None, Set(m, r), Set(n))
+    val countExpr = simpleCountExpression(p, None, MatchMode.default(pos), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -1381,7 +1382,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("should rewrite COUNT { (m) } and add a type check") {
     val p = Pattern(Seq(PatternPart(n_r_m.element.rightNode)))(pos)
-    val countExpr = simpleCountExpression(p, None, Set(n, r), Set(m))
+    val countExpr = simpleCountExpression(p, None, MatchMode.default(pos), Set(n, r), Set(m))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -1408,7 +1409,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 } and group predicates") {
     val p = Pattern(Seq(PatternPart(n_r_m.element)))(pos)
-    val countExpr = simpleCountExpression(p, Some(where(and(rPred, rLessPred))), Set(m, r), Set(n))
+    val countExpr = simpleCountExpression(p, Some(where(and(rPred, rLessPred))), MatchMode.default(pos), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -1438,7 +1439,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Should rewrite COUNT { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }") {
-    val countExpr = simpleCountExpression(n_r_m_r2_o_r3_q, None, Set(r, m, r2, r3, q), Set(n, o))
+    val countExpr = simpleCountExpression(n_r_m_r2_o_r3_q, None, MatchMode.default(pos), Set(r, m, r2, r3, q), Set(n, o))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -1476,7 +1477,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites Collect Expression") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         aliasedReturnItem(n)
       )
@@ -1513,7 +1514,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites Ordered Collect Expression") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         orderBy(n.asc),
         aliasedReturnItem(n)
@@ -1560,6 +1561,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
         orderBy(n.asc),
         aliasedReturnItem(n)
       ),
+      MatchMode.default(pos),
       Set(n, r, m, r2, o, r3, q),
       Set.empty
     )
@@ -1603,7 +1605,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCollectExpression with ORDER BY") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         orderBy(varFor("n").asc),
         aliasedReturnItem(n)
@@ -1644,7 +1646,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCollectExpression with SKIP") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         skip(2),
         aliasedReturnItem(n)
@@ -1685,7 +1687,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCollectExpression with LIMIT") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         limit(42),
         aliasedReturnItem(n)
@@ -1728,7 +1730,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCollectExpression with ORDER BY, SKIP and LIMIT") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       return_(
         orderBy(varFor("n").asc),
         skip(2),
@@ -1775,7 +1777,7 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("Rewrites FullCollectExpression with DISTINCT") {
     val simpleMatchQuery = singleQuery(
-      match_(n_r_m_chain, None),
+      match_(n_r_m_chain),
       returnDistinct(
         aliasedReturnItem(n)
       )
@@ -1817,13 +1819,13 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   test("Rewrites Collect Expression with Union") {
     val unionQuery = union(
       singleQuery(
-        match_(n_r_m_chain, None),
+        match_(n_r_m_chain),
         return_(
           aliasedReturnItem(n)
         )
       ),
       singleQuery(
-        match_(n_r_m_chain, None),
+        match_(n_r_m_chain),
         return_(
           aliasedReturnItem(n)
         )

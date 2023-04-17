@@ -382,6 +382,10 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.MapProjectionElement
+import org.neo4j.cypher.internal.expressions.MatchMode
+import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
+import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
+import org.neo4j.cypher.internal.expressions.MatchMode.RepeatableElements
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NaN
@@ -528,7 +532,8 @@ class Neo4jASTFactory(query: String)
       GraphPatternQuantifier,
       PatternAtom,
       DatabaseName,
-      PatternPart.Selector
+      PatternPart.Selector,
+      MatchMode
     ] {
 
   override def newSingleQuery(p: InputPosition, clauses: util.List[Clause]): Query = {
@@ -607,13 +612,21 @@ class Neo4jASTFactory(query: String)
   override def matchClause(
     p: InputPosition,
     optional: Boolean,
+    matchMode: MatchMode,
     patterns: util.List[PatternPart],
     patternPos: InputPosition,
     hints: util.List[UsingHint],
     where: Where
   ): Clause = {
     val patternList = patterns.asScala.toList
-    Match(optional, Pattern(patternList)(patternPos), if (hints == null) Nil else hints.asScala.toList, Option(where))(
+    val finalMatchMode = if (matchMode == null) MatchMode.default(p) else matchMode
+    Match(
+      optional,
+      finalMatchMode,
+      Pattern(patternList)(patternPos),
+      if (hints == null) Nil else hints.asScala.toList,
+      Option(where)
+    )(
       p
     )
   }
@@ -964,6 +977,14 @@ class Neo4jASTFactory(query: String)
     StarQuantifier()(p)
   }
 
+  override def repeatableElements(p: InputPosition): MatchMode = {
+    RepeatableElements()(p)
+  }
+
+  override def differentRelationships(p: InputPosition): MatchMode = {
+    DifferentRelationships()(p)
+  }
+
   override def parenthesizedPathPattern(
     p: InputPosition,
     internalPattern: PatternPart,
@@ -1218,6 +1239,7 @@ class Neo4jASTFactory(query: String)
   /** Exists and Count allow for PatternList and Optional Where, convert here to give a unified Exists / Count
    * containing a semantically valid Query. */
   private def convertSubqueryExpressionToUnifiedExpression(
+    matchMode: MatchMode,
     patterns: util.List[PatternPart],
     query: Query,
     where: Where
@@ -1227,9 +1249,12 @@ class Neo4jASTFactory(query: String)
     } else {
       val patternParts = patterns.asScala.toList
       val patternPos = patternParts.head.position
+      val finalMatchMode = if (matchMode == null) MatchMode.default(patternPos) else matchMode
       SingleQuery(
         Seq(
-          Match(optional = false, Pattern(patternParts)(patternPos), Seq.empty, Option(where))(patternPos)
+          Match(optional = false, finalMatchMode, Pattern(patternParts)(patternPos), Seq.empty, Option(where))(
+            patternPos
+          )
         )
       )(patternPos)
     }
@@ -1237,11 +1262,12 @@ class Neo4jASTFactory(query: String)
 
   override def existsExpression(
     p: InputPosition,
+    matchMode: MatchMode,
     patterns: util.List[PatternPart],
     query: Query,
     where: Where
   ): Expression = {
-    ExistsExpression(convertSubqueryExpressionToUnifiedExpression(patterns, query, where))(
+    ExistsExpression(convertSubqueryExpressionToUnifiedExpression(matchMode, patterns, query, where))(
       p,
       None,
       None
@@ -1250,11 +1276,12 @@ class Neo4jASTFactory(query: String)
 
   override def countExpression(
     p: InputPosition,
+    matchMode: MatchMode,
     patterns: util.List[PatternPart],
     query: Query,
     where: Where
   ): Expression = {
-    CountExpression(convertSubqueryExpressionToUnifiedExpression(patterns, query, where))(p, None, None)
+    CountExpression(convertSubqueryExpressionToUnifiedExpression(matchMode, patterns, query, where))(p, None, None)
   }
 
   override def collectExpression(

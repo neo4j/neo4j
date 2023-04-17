@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.FilterScope
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -64,7 +65,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(eq(collectExpression, listOfInt(1, 2, 5))))),
+        match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOfInt(1, 2, 5))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -90,7 +91,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(eq(collectExpression, listOfString("hello", "world"))))),
+        match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOfString("hello", "world"))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -114,7 +115,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(name = Some("m")),
-          Some(where(eq(collectExpression, listOf(literalInt(1), literalString("test"), nullLiteral))))
+          where = Some(where(eq(collectExpression, listOf(literalInt(1), literalString("test"), nullLiteral))))
         ),
         return_(variableReturnItem("m"))
       )
@@ -130,7 +131,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(Some("m"), namePos = InputPosition(33, 2, 24), position = InputPosition(32, 2, 23)),
-          Some(where(propEquality("m", "prop", 3)))
+          where = Some(where(propEquality("m", "prop", 3)))
         ),
         return_(returnItem(prop("m", "prop"), "m.prop"))
       )
@@ -138,7 +139,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(eq(collectExpression, listOfInt(1))))),
+        match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOfInt(1))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -271,7 +272,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(name = Some("a")),
-          Some(where(lt(ContainerIndex(collectExpression, literal(0))(pos), literal(9))))
+          where = Some(where(lt(ContainerIndex(collectExpression, literal(0))(pos), literal(9))))
         ),
         return_(variableReturnItem("a"))
       )
@@ -289,7 +290,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("a")), None),
+        match_(nodePat(name = Some("a"))),
         return_(returnItem(collectExpression, "COLLECT { MATCH (a) }"))
       )
     }
@@ -341,6 +342,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         Match(
           optional = false,
+          matchMode = MatchMode.default(pos),
           Pattern(Seq(
             NamedPatternPart(
               varFor("pt"),
@@ -367,7 +369,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(name = Some("a")),
-          Some(where(gte(ContainerIndex(collectExpression, literal(1))(pos), literal(5))))
+          where = Some(where(gte(ContainerIndex(collectExpression, literal(1))(pos), literal(5))))
         ),
         return_(variableReturnItem("a"))
       )
@@ -396,7 +398,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(name = Some("m")),
-          Some(where(lte(ContainerIndex(collectExpression, literal(2))(pos), literal(2))))
+          where = Some(where(lte(ContainerIndex(collectExpression, literal(2))(pos), literal(2))))
         ),
         return_(variableReturnItem("m"))
       )
@@ -423,7 +425,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(eq(collectExpression, listOfInt(1, 2, 3))))),
+        match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOfInt(1, 2, 3))))),
         return_(variableReturnItem("m"))
       )
     }
@@ -443,7 +445,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(eq(collectExpression, listOf())))),
+        match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOf())))),
         return_(variableReturnItem("m"))
       )
     }
@@ -458,7 +460,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
       singleQuery(
         match_(
           nodePat(name = Some("n"), namePos = InputPosition(33, 2, 24), position = InputPosition(32, 2, 23)),
-          Some(
+          where = Some(
             where(
               AllIterablePredicate(
                 FilterScope(
@@ -478,7 +480,7 @@ class CollectExpressionParserTest extends JavaccParserAstTestBase[Statement] {
 
     givesIncludingPositions {
       singleQuery(
-        match_(nodePat(name = Some("m")), Some(where(eq(collectExpression, listOf())))),
+        match_(nodePat(name = Some("m")), where = Some(where(eq(collectExpression, listOf())))),
         return_(variableReturnItem("m"))
       )
     }

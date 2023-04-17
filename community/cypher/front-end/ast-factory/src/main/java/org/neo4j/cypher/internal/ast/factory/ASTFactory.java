@@ -82,7 +82,8 @@ public interface ASTFactory<
                 PATH_PATTERN_QUANTIFIER,
                 PATTERN_ATOM,
                 DATABASE_NAME,
-                PATTERN_SELECTOR>
+                PATTERN_SELECTOR,
+                MATCH_MODE>
         extends ASTExpressionFactory<
                 EXPRESSION,
                 LABEL_EXPRESSION,
@@ -94,7 +95,8 @@ public interface ASTFactory<
                 PROPERTY,
                 MAP_PROJECTION_ITEM,
                 POS,
-                ENTITY_TYPE> {
+                ENTITY_TYPE,
+                MATCH_MODE> {
     final class NULL {
         private NULL() {
             throw new IllegalStateException("This class should not be instantiated, use `null` instead.");
@@ -146,7 +148,14 @@ public interface ASTFactory<
 
     CLAUSE withClause(POS p, RETURN_CLAUSE returnClause, WHERE where);
 
-    CLAUSE matchClause(POS p, boolean optional, List<PATTERN> patterns, POS patternPos, List<HINT> hints, WHERE where);
+    CLAUSE matchClause(
+            POS p,
+            boolean optional,
+            MATCH_MODE matchMode,
+            List<PATTERN> patterns,
+            POS patternPos,
+            List<HINT> hints,
+            WHERE where);
 
     HINT usingIndexHint(
             POS p,
@@ -262,6 +271,10 @@ public interface ASTFactory<
     PATH_PATTERN_QUANTIFIER plusPathQuantifier(POS p);
 
     PATH_PATTERN_QUANTIFIER starPathQuantifier(POS p);
+
+    MATCH_MODE repeatableElements(POS p);
+
+    MATCH_MODE differentRelationships(POS p);
 
     PATTERN_ATOM parenthesizedPathPattern(
             POS p, PATTERN internalPattern, EXPRESSION where, PATH_PATTERN_QUANTIFIER quantifier);

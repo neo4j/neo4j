@@ -104,7 +104,8 @@ public class LiteralInterpreter
                 NULL, // PATH_PATTERN_LENGTH,
                 NULL, // PATTERN_ATOM
                 NULL, // DATABASE NAME
-                NULL // PATTERN_SELECTOR
+                NULL, // PATTERN_SELECTOR
+                NULL // MATCH_MODE
         > {
 
     public static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
@@ -188,7 +189,13 @@ public class LiteralInterpreter
 
     @Override
     public NULL matchClause(
-            NULL p, boolean optional, List<NULL> nulls, NULL patternPos, List<NULL> nulls2, NULL where) {
+            NULL p,
+            boolean optional,
+            NULL matchMode,
+            List<NULL> nulls,
+            NULL patternPos,
+            List<NULL> nulls2,
+            NULL where) {
         throw new UnsupportedOperationException("matchClause is not a literal");
     }
 
@@ -381,6 +388,16 @@ public class LiteralInterpreter
     @Override
     public NULL starPathQuantifier(NULL p) {
         throw new UnsupportedOperationException("starPathQuantifier is not a literal");
+    }
+
+    @Override
+    public NULL repeatableElements(NULL p) {
+        throw new UnsupportedOperationException("repeatableElements is not a literal");
+    }
+
+    @Override
+    public NULL differentRelationships(NULL p) {
+        throw new UnsupportedOperationException("differentRelationships is not a literal");
     }
 
     @Override
@@ -1527,12 +1544,12 @@ public class LiteralInterpreter
     }
 
     @Override
-    public Object existsExpression(NULL p, List<NULL> nulls, NULL q, NULL where) {
+    public Object existsExpression(NULL p, NULL matchMode, List<NULL> nulls, NULL q, NULL where) {
         throw new UnsupportedOperationException("existsExpression is not a literal");
     }
 
     @Override
-    public Object countExpression(NULL p, List<NULL> nulls, NULL q, NULL where) {
+    public Object countExpression(NULL p, NULL matchMode, List<NULL> nulls, NULL q, NULL where) {
         throw new UnsupportedOperationException("countExpression is not a literal");
     }
 

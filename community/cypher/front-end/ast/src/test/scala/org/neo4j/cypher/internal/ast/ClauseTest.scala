@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast
 
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -29,6 +30,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH (n) WHERE n:N
     val `match` = Match(
       optional = false,
+      MatchMode.default(pos),
       Pattern(Seq(PatternPart(nodePat(Some("n")))))(pos),
       hints = Seq.empty,
       Some(Where(
@@ -45,6 +47,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH (n) WHERE n:N
     val `match` = Match(
       optional = false,
+      MatchMode.default(pos),
       Pattern(Seq(PatternPart(nodePat(Some("n"), Some(labelLeaf("N"))))))(pos),
       hints = Seq.empty,
       where = None
@@ -59,6 +62,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH (n) WHERE n:N AND n.prop = 1
     val `match` = Match(
       optional = false,
+      MatchMode.default(pos),
       Pattern(Seq(PatternPart(nodePat(Some("n")))))(pos),
       hints = Seq.empty,
       Some(Where(
@@ -78,6 +82,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH (n) WHERE n:N OR n.prop = 1
     val `match` = Match(
       optional = false,
+      MatchMode.default(pos),
       Pattern(Seq(PatternPart(nodePat(Some("n")))))(pos),
       hints = Seq.empty,
       Some(Where(
@@ -97,6 +102,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH ()-[r]-() WHERE r:R
     val `match` = Match(
       optional = false,
+      MatchMode.default(pos),
       Pattern(Seq(PatternPart(
         RelationshipChain(
           nodePat(),
@@ -121,6 +127,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH ()-[r]-() WHERE r:R
     val `match` = Match(
       optional = false,
+      MatchMode.default(pos),
       Pattern(Seq(PatternPart(
         RelationshipChain(
           nodePat(),
@@ -145,6 +152,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH ()-[r:R]-()
     val `match` = Match(
       optional = false,
+      MatchMode.default(pos),
       Pattern(Seq(PatternPart(
         RelationshipChain(
           nodePat(),
@@ -169,6 +177,7 @@ class ClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     // MATCH ()-[r:R {prop: 42}]-()
     val `match` = Match(
       optional = false,
+      MatchMode.default(pos),
       Pattern(Seq(PatternPart(
         RelationshipChain(
           nodePat(),

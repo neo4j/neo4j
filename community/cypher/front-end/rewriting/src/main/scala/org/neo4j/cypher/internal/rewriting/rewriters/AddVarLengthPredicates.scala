@@ -42,7 +42,7 @@ case object RelationshipVarLengthPredicatesInMatchAndMerge extends StepSequencer
 case object AddVarLengthPredicates extends AddRelationshipPredicates {
 
   override val rewriter: Rewriter = bottomUp(Rewriter.lift {
-    case matchClause @ Match(_, pattern: Pattern, _, where) =>
+    case matchClause @ Match(_, _, pattern: Pattern, _, where) =>
       val relationships = collectVarLengthRelationships(pattern)
       val newWhere = withPredicates(matchClause, relationships, where)
       matchClause.copy(where = newWhere)(matchClause.position)

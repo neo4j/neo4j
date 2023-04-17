@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
@@ -71,6 +72,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
             )(pos),
             nodePat(Some("  UNNAMED1"))
           ),
+          MatchMode.default(pos),
           Some(where(and(equals(varFor("  x@3"), literalInt(0)), unique(varFor("  UNNAMED5")))))
         ),
         with_(aliasedReturnItem(literalString("1"), "  x@6")).copy(
@@ -102,6 +104,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
             )(pos),
             nodePat(Some("  UNNAMED2"))
           ),
+          MatchMode.default(pos),
           Some(
             where(unique(varFor("  UNNAMED6")))
           )
@@ -159,6 +162,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         singleQuery(
           match_(
             NodePattern(Some(varFor("  a@0")), None, None, None)(pos),
+            MatchMode.default(pos),
             Some(Where(HasLabels(varFor("  a@0"), Seq(LabelName("Party")(pos)))(pos))(pos))
           ),
           return_(varFor("  a@0").as("  a@0"))
@@ -166,6 +170,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         singleQuery(
           match_(
             NodePattern(Some(varFor("  a@1")), None, None, None)(pos),
+            MatchMode.default(pos),
             Some(Where(HasLabels(varFor("  a@1"), Seq(LabelName("Animal")(pos)))(pos))(pos))
           ),
           return_(varFor("  a@1").as("  a@1"))

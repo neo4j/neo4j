@@ -373,6 +373,8 @@ import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.MapProjectionElement
+import org.neo4j.cypher.internal.expressions.MatchMode
+import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
 import org.neo4j.cypher.internal.expressions.Modulo
 import org.neo4j.cypher.internal.expressions.Multiply
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
@@ -1172,10 +1174,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _match: Gen[Match] = for {
     optional <- boolean
+    matchMode <- _matchMode
     pattern <- _pattern
     hints <- zeroOrMore(_hint)
     where <- option(_where)
-  } yield Match(optional, pattern, hints, where)(pos)
+  } yield Match(optional, matchMode, pattern, hints, where)(pos)
+
+  def _matchMode: Gen[MatchMode] = oneOf(MatchMode.RepeatableElements()(pos), MatchMode.DifferentRelationships()(pos))
 
   def _create: Gen[Create] = for {
     pattern <- _pattern
