@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting.rewriters
 
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
+import org.neo4j.cypher.internal.rewriting.rewriters.repeatWithSizeLimit.LINEAR_INCREASE_FACTOR_LIMIT
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.util.Rewriter
@@ -34,24 +35,29 @@ case class repeatWithSizeLimit(rewriter: Rewriter)(implicit val monitor: AstRewr
 
   final def apply(that: AnyRef): AnyRef = {
     val initialSize = astNodeSize(that)
-    val limit = initialSize * initialSize
+    val limit = LINEAR_INCREASE_FACTOR_LIMIT * initialSize
 
-    innerApply(that, limit)
+    innerApply(that, that, limit)
   }
 
   @tailrec
-  private def innerApply(that: AnyRef, limit: Int): AnyRef = {
-    val rewritten = rewriter.apply(that)
-    if (rewritten == that) {
-      that
+  private def innerApply(original: AnyRef, toRewrite: AnyRef, limit: Int): AnyRef = {
+    val rewritten = rewriter.apply(toRewrite)
+    if (rewritten == toRewrite) {
+      toRewrite
     } else {
       val newSize = astNodeSize(rewritten)
       if (newSize > limit) {
-        monitor.abortedRewriting(that)
-        that
+        monitor.abortedRewriting(toRewrite)
+        original
       } else {
-        innerApply(rewritten, limit)
+        innerApply(original, rewritten, limit)
       }
     }
   }
+}
+
+case object repeatWithSizeLimit {
+  // This prevents the rewritten expression from growing more than 10x
+  val LINEAR_INCREASE_FACTOR_LIMIT = 10
 }
