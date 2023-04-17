@@ -22,26 +22,76 @@ import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.distributeLawsRewriter.conversionLimit
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.distributeLawsRewriter.dnfCounts
+import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.distributeLawsRewriter.step
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.copyVariables
 import org.neo4j.cypher.internal.rewriting.rewriters.repeatWithSizeLimit
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
+import org.neo4j.cypher.internal.util.RewriterWithParent
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.topDownWithParent
 
 case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = {
-    if (dnfCounts(that) < conversionLimit(that)) {
-      instance(that)
+    instance(that)
+  }
+
+  private val instance = topDownWithParent(
+    RewriterWithParent.lift {
+      case (or: Or, _) => rewriteOrIfSmallEnough(or)
+    },
+    // Rewrite the Or, but immediately stop at its children.
+    stopper = {
+      case (_, Some(_: Or)) => true
+      case _                => false
+    }
+  )
+
+  private def rewriteOrIfSmallEnough(or: Or): AnyRef = {
+    if (dnfCounts(or) <= conversionLimit(or)) {
+      rewriteOrRepeatedly(or)
     } else {
-      monitor.abortedRewritingDueToLargeDNF(that)
-      that
+      monitor.abortedRewritingDueToLargeDNF(or)
+      or
     }
   }
+
+  private val rewriteOrRepeatedly: Rewriter = repeatWithSizeLimit(bottomUp(step))(monitor)
+}
+
+case object distributeLawsRewriter extends CnfPhase {
+  // converting from DNF to CNF is exponentially expensive, so we only do it for a small amount of clauses
+  // see https://en.wikipedia.org/wiki/Conjunctive_normal_form#Conversion_into_CNF
+  val DNF_CONVERSION_LIMIT = 8
+
+  override def instance(from: BaseState, context: BaseContext): Rewriter = {
+    implicit val monitor: AstRewritingMonitor = context.monitors.newMonitor[AstRewritingMonitor]()
+    distributeLawsRewriter()
+  }
+
+  private[cnf] def dnfCounts(or: Or): Int =
+    or.folder.treeFold(0) {
+      case Or(lhs: And, rhs: And) => acc => TraverseChildren(acc + andCount(lhs) + andCount(rhs))
+      case Or(_, rhs: And)        => acc => TraverseChildren(acc + andCount(rhs))
+      case Or(lhs: And, _)        => acc => TraverseChildren(acc + andCount(lhs))
+    }
+
+  private def andCount(and: And): Int =
+    and.folder.treeFold(0) {
+      case _: And => acc => TraverseChildren(acc + 1)
+      case _      =>
+        // Only count immediately nested Ands. Skip other children, so that we do not count
+        // Ands nested under some other AST nodes, e.g. a Not.
+        acc => SkipChildren(acc)
+    }
 
   private def conversionLimit(ast: AnyRef): Int = {
     val containsExpensiveExpressions = ast.folder.treeExists {
@@ -55,29 +105,11 @@ case class distributeLawsRewriter()(implicit monitor: AstRewritingMonitor) exten
       distributeLawsRewriter.DNF_CONVERSION_LIMIT
   }
 
-  private def dnfCounts(value: Any) = value.folder.treeFold(1) {
-    case Or(lhs, a: And) => acc => TraverseChildren(acc + 1)
-    case Or(a: And, rhs) => acc => TraverseChildren(acc + 1)
-  }
-
   private val step = Rewriter.lift {
     case p @ Or(exp1, And(exp2, exp3)) =>
       And(Or(exp1, exp2)(p.position), Or(exp1.endoRewrite(copyVariables), exp3)(p.position))(p.position)
     case p @ Or(And(exp1, exp2), exp3) =>
       And(Or(exp1, exp3)(p.position), Or(exp2, exp3.endoRewrite(copyVariables))(p.position))(p.position)
-  }
-
-  private val instance: Rewriter = repeatWithSizeLimit(bottomUp(step))(monitor)
-}
-
-case object distributeLawsRewriter extends CnfPhase {
-  // converting from DNF to CNF is exponentially expensive, so we only do it for a small amount of clauses
-  // see https://en.wikipedia.org/wiki/Conjunctive_normal_form#Conversion_into_CNF
-  val DNF_CONVERSION_LIMIT = 8
-
-  override def instance(from: BaseState, context: BaseContext): Rewriter = {
-    implicit val monitor: AstRewritingMonitor = context.monitors.newMonitor[AstRewritingMonitor]()
-    distributeLawsRewriter()
   }
 
   override def preConditions: Set[StepSequencer.Condition] = Set(

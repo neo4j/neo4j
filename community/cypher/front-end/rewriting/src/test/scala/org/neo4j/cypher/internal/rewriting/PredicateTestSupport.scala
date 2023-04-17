@@ -44,6 +44,7 @@ trait PredicateTestSupport extends CypherTestSupport {
   val Q: Expression = anExp("Q")
   val R: Expression = anExp("R")
   val S: Expression = anExp("S")
+  val T: Expression = anExp("T")
   val V: Expression = anExp("V")
 
   implicit class IFF(x: Expression) {
@@ -58,7 +59,7 @@ trait PredicateTestSupport extends CypherTestSupport {
   def anExp(s: String): Expression = StringLiteral(s)(pos)
   def and(p1: Expression, p2: Expression): Expression = And(p1, p2)(pos)
   def ands(predicates: Expression*): Expression = Ands(predicates)(pos)
-  def or(p1: Expression, p2: Expression): Expression = Or(p1, p2)(pos)
+  def or(p1: Expression, p2: Expression): Or = Or(p1, p2)(pos)
   def ors(predicates: Expression*): Expression = Ors(predicates)(pos)
   def xor(p1: Expression, p2: Expression): Expression = Xor(p1, p2)(pos)
   def not(e: Expression): Expression = Not(e)(pos)

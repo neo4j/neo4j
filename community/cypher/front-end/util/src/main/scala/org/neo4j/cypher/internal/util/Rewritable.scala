@@ -255,6 +255,17 @@ object topDown {
     new TopDownRewriter(rewriter, stopper, leftToRight, cancellation)
 }
 
+trait RewriterStopperWithParent {
+  def shouldStop(a: AnyRef, parent: Option[AnyRef]): Boolean
+}
+
+object RewriterStopperWithParent {
+  val neverStop: RewriterStopperWithParent = (_, _) => false
+
+  def apply(rewriterStopper: RewriterStopper): RewriterStopperWithParent =
+    (a: AnyRef, _: Option[AnyRef]) => rewriterStopper.shouldStop(a)
+}
+
 /**
  * Top-down rewriter that also lets the rules see the parent of each node as additional context
  */
@@ -262,7 +273,7 @@ object topDownWithParent {
 
   private class TopDownWithParentRewriter(
     rewriter: RewriterWithParent,
-    stopper: RewriterStopper,
+    stopper: RewriterStopperWithParent,
     cancellation: CancellationChecker
   ) extends Rewriter {
 
@@ -293,17 +304,17 @@ object topDownWithParent {
       } else {
         stack.pop() match {
           case (newJob :: jobs, doneJobs) =>
-            if (stopper.shouldStop(newJob)) {
+            val maybeParent = {
+              if (stack.isEmpty) {
+                None
+              } else {
+                val (parentJobs, _) = stack.top
+                parentJobs.headOption
+              }
+            }
+            if (stopper.shouldStop(newJob, maybeParent)) {
               stack.push((jobs, doneJobs += newJob))
             } else {
-              val maybeParent = {
-                if (stack.isEmpty) {
-                  None
-                } else {
-                  val (parentJobs, _) = stack.top
-                  parentJobs.headOption
-                }
-              }
               val rewrittenJob = newJob.rewrite(rewriter, maybeParent)
               stack.push((rewrittenJob :: jobs, doneJobs))
               stack.push((rewrittenJob.treeChildren.toList, new ListBuffer()))
@@ -317,7 +328,7 @@ object topDownWithParent {
 
   def apply(
     rewriter: RewriterWithParent,
-    stopper: RewriterStopper = RewriterStopper.neverStop,
+    stopper: RewriterStopperWithParent = RewriterStopperWithParent.neverStop,
     cancellation: CancellationChecker = CancellationChecker.NeverCancelled
   ): Rewriter =
     new TopDownWithParentRewriter(rewriter, stopper, cancellation)
