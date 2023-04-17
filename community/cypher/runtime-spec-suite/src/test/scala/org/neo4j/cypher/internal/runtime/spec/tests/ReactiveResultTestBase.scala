@@ -248,7 +248,11 @@ abstract class ReactiveResultTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not exhaust input when there is no demand") {
-    val (nodes, _) = given { circleGraph(1000) }
+    // NOTE: In parallel runtime with bigger morsel size and high worker count
+    //       (=> larger buffer limits before backpressure is applied)
+    //       we can get a flaky test if this is too low
+    val nNodes = if (isParallel) 5000 else 1000
+    val (nodes, _) = given { circleGraph(nNodes) }
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
