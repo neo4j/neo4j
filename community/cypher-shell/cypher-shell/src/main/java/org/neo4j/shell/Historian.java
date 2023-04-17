@@ -22,6 +22,7 @@ package org.neo4j.shell;
 import static java.lang.System.getProperty;
 
 import java.io.IOException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -81,7 +82,11 @@ public interface Historian {
 
     private static Path createFileAndDirectories(Path path) throws IOException {
         Files.createDirectories(path.getParent());
-        return Files.createFile(path);
+        try {
+            return Files.createFile(path);
+        } catch (FileAlreadyExistsException e) {
+            return path;
+        }
     }
 
     class EmptyHistory implements Historian {
