@@ -20,19 +20,11 @@
 package org.neo4j.internal.schema;
 
 public class SchemaValueTypes {
-    static final String DELIMITER = "-";
+    static final String DELIMITER = ":";
 
     public static SchemaValueType convertToSchemaValueType(String valueTypeRepresentation) {
-        String[] split = valueTypeRepresentation.split(DELIMITER, 3);
         try {
-            if (split.length == 1) {
-                return SchemaScalarValueType.valueOf(valueTypeRepresentation);
-            } else if (split.length == 2) {
-                SchemaListValueType.UserFacingType userFacingType =
-                        SchemaListValueType.UserFacingType.valueOf(split[0]);
-                SchemaScalarValueType scalarValueType = SchemaScalarValueType.valueOf(split[1]);
-                return new SchemaListValueType(userFacingType, scalarValueType);
-            }
+            return SchemaValueType.valueOf(valueTypeRepresentation);
         } catch (IllegalArgumentException ignore) {
             // Type not found, but we want our own exception with the whole value
         }
@@ -42,6 +34,6 @@ public class SchemaValueTypes {
     }
 
     public static String convertToStringRepresentation(SchemaValueType schemaValueType) {
-        return schemaValueType.stringRepresentation();
+        return schemaValueType.serialize();
     }
 }

@@ -35,9 +35,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.internal.schema.SchemaListValueType;
 import org.neo4j.internal.schema.SchemaRule;
-import org.neo4j.internal.schema.SchemaScalarValueType;
 import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
@@ -229,13 +227,7 @@ public class RandomSchema implements Supplier<SchemaRule> {
 
     private SchemaValueType randomAllowedType(SplittableRandom rng) {
         var randomValues = RandomValues.create(rng);
-        var scalarType = randomValues.among(SchemaScalarValueType.values());
-        if (rng.nextBoolean()) {
-            return scalarType;
-        } else {
-            var userFacingType = randomValues.among(SchemaListValueType.UserFacingType.values());
-            return new SchemaListValueType(userFacingType, scalarType);
-        }
+        return randomValues.among(SchemaValueType.values());
     }
 
     public long nextRuleIdForConstraint() {

@@ -25,23 +25,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 class SchemaValueTypesTest {
-
     @ParameterizedTest
-    @EnumSource(SchemaScalarValueType.class)
-    void schemaValueTypeConversions(SchemaScalarValueType scalarValueType) {
+    @EnumSource(SchemaValueType.class)
+    void schemaValueTypeConversions(SchemaValueType canonicalType) {
         assertThat(SchemaValueTypes.convertToSchemaValueType(
-                        SchemaValueTypes.convertToStringRepresentation(scalarValueType)))
-                .isEqualTo(scalarValueType);
-    }
-
-    @ParameterizedTest
-    @EnumSource(SchemaListValueType.UserFacingType.class)
-    void schemaListValueTypeConversions(SchemaListValueType.UserFacingType listType) {
-        for (SchemaScalarValueType scalarValueType : SchemaScalarValueType.values()) {
-            SchemaListValueType schemaValueType = new SchemaListValueType(listType, scalarValueType);
-            assertThat(SchemaValueTypes.convertToSchemaValueType(
-                            SchemaValueTypes.convertToStringRepresentation(schemaValueType)))
-                    .isEqualTo(schemaValueType);
-        }
+                        SchemaValueTypes.convertToStringRepresentation(canonicalType)))
+                .isEqualTo(canonicalType);
     }
 }

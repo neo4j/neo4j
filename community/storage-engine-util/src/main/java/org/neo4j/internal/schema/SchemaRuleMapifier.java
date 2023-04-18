@@ -173,7 +173,7 @@ public class SchemaRuleMapifier {
                 List<SchemaValueType> schemaValueTypes = typeConstraintDescriptor.allowedPropertyTypes();
                 String[] typeArray = new String[schemaValueTypes.size()];
                 for (int i = 0; i < typeArray.length; i++) {
-                    typeArray[i] = schemaValueTypes.get(i).stringRepresentation();
+                    typeArray[i] = schemaValueTypes.get(i).serialize();
                 }
                 putStringArrayProperty(map, PROP_CONSTRAINT_ALLOWED_TYPES, typeArray);
             }
