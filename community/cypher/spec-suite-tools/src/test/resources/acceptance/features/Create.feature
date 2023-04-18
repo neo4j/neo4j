@@ -53,6 +53,6 @@ Feature: Create
       """
     Then the result should be, in order:
       | result |
-      | NULL   |
+      | null   |
     And the side effects should be:
       | +nodes         | 1 |
