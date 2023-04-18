@@ -64,3 +64,23 @@ Feature: BooleanExpression
     Then the result should be, in any order:
       | n1    | n2     | n3    | t1   | t2   | t3   |
       | null  | null   | null  | true | true | true |
+
+  Scenario: XOR of NULL and EXISTS
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A)
+      """
+    When executing query:
+      """
+      RETURN
+        NULL XOR false AS n1,
+        NULL XOR true AS n2,
+        NULL XOR EXISTS { (:A) } AS n3,
+        NULL XOR EXISTS { (:XYZ) } AS n4,
+        NULL XOR NOT EXISTS { (:A) } AS n5,
+        NULL XOR NOT EXISTS { (:XYZ) } AS n6
+      """
+    Then the result should be, in any order:
+      | n1    | n2     | n3    | n4   | n5   | n6   |
+      | null  | null   | null  | null | null | null |
