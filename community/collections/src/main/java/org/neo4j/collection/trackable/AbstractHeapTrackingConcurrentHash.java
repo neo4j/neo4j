@@ -42,7 +42,9 @@ import org.neo4j.memory.MemoryTracker;
  * }</pre>
  *
  * NOTE: this class only tracks the memory of the internal structures, it will not track the individual entries.
- * The user of this class can use {@link #sizeOfWrapperObject()} to improve the estimation.
+ * The user of this class can use {@link #sizeOfWrapperObject()} to improve the estimation. Furthermore, this class uses a
+ * LongAdder to keep track of the size. LongAdder uses a padded array that may grow under contention up to the number of cores. This
+ * class doesn't properly keep track of the internal memory usage of LongAdder.
  */
 public abstract class AbstractHeapTrackingConcurrentHash {
 
@@ -69,6 +71,9 @@ public abstract class AbstractHeapTrackingConcurrentHash {
     static final Object RESERVED = new Object();
 
     static final long SHALLOW_SIZE_ATOMIC_REFERENCE_ARRAY = shallowSizeOfInstance(AtomicReferenceArray.class);
+
+    // NOTE: Using the shallow size will underestimate the actual memory usage since internally LongAdder uses a padded
+    // Cell[] that can grow up to the number of available cores..
     private static final long SHALLOW_SIZE_LONG_ADDER = shallowSizeOfInstance(LongAdder.class);
     /**
      * The table, resized as necessary. Length MUST Always be a power of two.

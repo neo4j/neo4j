@@ -56,12 +56,12 @@ public class ConcurrentProbeTable<K extends Measurable, V extends Measurable> ex
     public void put(K key, V value) {
         MutableLong heapUsage = new MutableLong(value.estimatedHeapUsage() + ConcurrentBag.SIZE_OF_NODE);
         var newBag = new ConcurrentBag<V>();
-        ConcurrentBag<V> old = map.putIfAbsent(key, newBag);
-        if (old == null) {
+        ConcurrentBag<V> oldBag = map.putIfAbsent(key, newBag);
+        if (oldBag == null) {
             heapUsage.add(key.estimatedHeapUsage() + map.sizeOfWrapperObject() + ConcurrentBag.SIZE_OF_BAG);
-            old = newBag;
+            oldBag = newBag;
         }
-        old.add(value);
+        oldBag.add(value);
         scopedMemoryTracker.allocateHeap(heapUsage.longValue());
     }
 
