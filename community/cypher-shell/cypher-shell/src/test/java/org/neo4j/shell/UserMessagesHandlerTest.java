@@ -25,11 +25,9 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.shell.test.Util.testConnectionConfig;
 
 import java.util.Optional;
-
 import org.fusesource.jansi.Ansi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.shell.printer.AnsiFormattedText;
 
 class UserMessagesHandlerTest {
     private Connector connector;
