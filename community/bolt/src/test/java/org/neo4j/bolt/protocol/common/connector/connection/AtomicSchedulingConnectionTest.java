@@ -400,7 +400,7 @@ class AtomicSchedulingConnectionTest {
 
         // listeners should also be notified about both being marked for closure and actually closing
         Mockito.verify(listener).onMarkedForClosure();
-        Mockito.verify(listener).onClosed();
+        Mockito.verify(listener).onConnectionClosed(true);
         Mockito.verifyNoMoreInteractions(listener);
 
         // the close future should also be marked as completed as a result of this call so that dependent
@@ -468,7 +468,7 @@ class AtomicSchedulingConnectionTest {
         inOrder.verify(job2, Mockito.never()).perform(Mockito.eq(this.fsm), Mockito.any());
 
         inOrder.verify(listener).onIdle();
-        inOrder.verify(listener).onClosed();
+        inOrder.verify(listener).onConnectionClosed(true);
         inOrder.verifyNoMoreInteractions();
 
         ConnectionAssertions.assertThat(this.connection)
@@ -534,11 +534,12 @@ class AtomicSchedulingConnectionTest {
         Mockito.verifyNoMoreInteractions(listener);
 
         // once removed, listeners should no longer receive notifications through either of the provided APIs
-        this.connection.notifyListeners(ConnectionListener::onClosed);
+        this.connection.notifyListeners(connectionListener -> connectionListener.onConnectionClosed(true));
 
         Mockito.verifyNoMoreInteractions(listener);
 
-        this.connection.notifyListenersSafely("close", ConnectionListener::onClosed);
+        this.connection.notifyListenersSafely(
+                "close", connectionListener -> connectionListener.onConnectionClosed(true));
 
         Mockito.verifyNoMoreInteractions(listener);
     }

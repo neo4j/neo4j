@@ -132,9 +132,19 @@ class MetricsConnectorListenerTest {
         var monitor = Mockito.mock(BoltConnectionMetricsMonitor.class);
 
         var listener = new MetricsConnectorListener(monitor);
-        listener.onClosed();
+        listener.onConnectionClosed(true);
 
         Mockito.verify(monitor).connectionClosed();
+        Mockito.verifyNoMoreInteractions(monitor);
+    }
+
+    @Test
+    void shouldNotNotifyMonitorViaConnectionClosedOnClosedForUnnegotiatedConnections() {
+        var monitor = Mockito.mock(BoltConnectionMetricsMonitor.class);
+
+        var listener = new MetricsConnectorListener(monitor);
+        listener.onConnectionClosed(false);
+
         Mockito.verifyNoMoreInteractions(monitor);
     }
 }

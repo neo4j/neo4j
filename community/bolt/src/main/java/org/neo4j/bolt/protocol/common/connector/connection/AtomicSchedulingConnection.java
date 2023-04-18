@@ -579,7 +579,9 @@ public class AtomicSchedulingConnection extends AbstractConnection {
 
         // notify any dependent components that the connection has completed its shutdown procedure and is now safe to
         // remove
-        this.notifyListenersSafely("close", ConnectionListener::onClosed);
+        boolean isNegotiatedConnection = this.fsm != null;
+        this.notifyListenersSafely(
+                "close", connectionListener -> connectionListener.onConnectionClosed(isNegotiatedConnection));
 
         this.closeFuture.complete(null);
     }

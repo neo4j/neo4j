@@ -186,5 +186,5 @@ public interface ConnectionListener {
      * <p />
      * This function is invoked exactly once within the lifetime of a connection.
      */
-    default void onClosed() {}
+    default void onConnectionClosed(boolean isNegotiatedConnection) {}
 }

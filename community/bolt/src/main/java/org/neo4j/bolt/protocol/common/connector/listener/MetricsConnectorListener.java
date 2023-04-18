@@ -86,7 +86,10 @@ public class MetricsConnectorListener implements ConnectorListener, ConnectionLi
     }
 
     @Override
-    public void onClosed() {
-        this.monitor.connectionClosed();
+    public void onConnectionClosed(boolean isNegotiatedConnection) {
+        // we only track negotiated connections.
+        if (isNegotiatedConnection) {
+            this.monitor.connectionClosed();
+        }
     }
 }
