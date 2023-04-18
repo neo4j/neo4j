@@ -21,6 +21,7 @@ import org.mockito.Mockito
 import org.mockito.Mockito.calls
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.patternExpression
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
 import org.neo4j.cypher.internal.expressions.Expression
@@ -66,7 +67,7 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
       )
   }
 
-  test("should not rewrite DNF predicates larger than the limit") {
+  test("should not attempt to rewrite DNF predicates larger than the DNF_CONVERSION_LIMIT") {
     // given
     val start = or(and(P, Q), and(Q, R))
     val fullOr = combineUntilLimit(start, distributeLawsRewriter.DNF_CONVERSION_LIMIT - 1)
@@ -76,11 +77,11 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
     val result = rewriter.apply(fullOr)
 
     // then result should be the same and aborted due to DNF-limit
-    if (result == fullOr) verify(monitor).abortedRewritingDueToLargeDNF(fullOr)
-    else result should be(fullOr)
+    result should be(fullOr)
+    verify(monitor).abortedRewritingDueToLargeDNF(fullOr)
   }
 
-  test("should rewrite DNF predicates smaller than the limit") {
+  test("should attempt to rewrite DNF predicates smaller than the DNF_CONVERSION_LIMIT") {
     // given
     val start = or(and(P, Q), and(Q, R))
     val fullOr = combineUntilLimit(start, distributeLawsRewriter.DNF_CONVERSION_LIMIT - 2)
@@ -89,8 +90,22 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
     // when
     val result = rewriter.apply(fullOr)
 
-    // then result should be different, or equal but aborted due to repeatWithSizeLimit
-    if (result == fullOr) verify(monitor).abortedRewriting(fullOr)
+    // When attempting to convert the expression, we still hit the size limit in `repeatWithSizeLimit` and will abort
+    result should be(fullOr)
+    verify(monitor).abortedRewriting(fullOr)
+  }
+
+  test("should succeed to rewrite DNF predicates much smaller than the DNF_CONVERSION_LIMIT") {
+    // given
+    val start = or(and(P, Q), and(Q, R))
+    val fullOr = combineUntilLimit(start, 2)
+    val (rewriter, monitor) = getRewriterAndMonitor
+
+    // when
+    val result = rewriter.apply(fullOr)
+
+    result should not be fullOr
+    verifyNoInteractions(monitor)
   }
 
   test(
@@ -107,17 +122,16 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
     // when
     val result = rewriter.apply(fullExp)
 
-    // then result should be different, or equal but aborted due to repeatWithSizeLimit
-    if (result == fullExp) {
-      val inOrder = Mockito.inOrder(monitor)
-      inOrder.verify(monitor, calls(1)).abortedRewriting(fullOr1)
-      inOrder.verify(monitor, calls(1)).abortedRewriting(fullOr2)
-      inOrder.verifyNoMoreInteractions()
-    }
+    // When attempting to convert the expressions, we still hit the size limit in `repeatWithSizeLimit` and will abort
+    result should be(fullExp)
+    val inOrder = Mockito.inOrder(monitor)
+    inOrder.verify(monitor, calls(1)).abortedRewriting(fullOr1)
+    inOrder.verify(monitor, calls(1)).abortedRewriting(fullOr2)
+    inOrder.verifyNoMoreInteractions()
   }
 
   test(
-    "in a large AST, should abort rewriting at square size of applicable OR (not at square size of AST)"
+    "in a large AST, should apply size limit of applicable OR (not size limit of whole AST)"
   ) {
     // given
     val start = or(and(P, Q), and(Q, R))
@@ -164,10 +178,9 @@ class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport
     // when
     val result = rewriter.apply(fullExp)
 
-    // then result should be different, or equal but aborted due to repeatWithSizeLimit
-    if (result == fullExp) {
-      verify(monitor).abortedRewriting(fullOr)
-    }
+    // When attempting to convert the expression, we still hit the size limit in `repeatWithSizeLimit` and will abort
+    result should be(fullExp)
+    verify(monitor).abortedRewriting(fullOr)
   }
 
   // Tests for dnfCounts
