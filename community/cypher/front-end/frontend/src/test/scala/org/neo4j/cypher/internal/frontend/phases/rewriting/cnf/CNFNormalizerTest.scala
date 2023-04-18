@@ -177,7 +177,7 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
     bigPredicate.rewrite(rewriter)
 
     // Then the rewriting was aborted
-    verify(astRewritingMonitor).abortedRewriting(any())
+    verify(astRewritingMonitor).abortedRewritingDueToLargeDNF(any())
   }
 
   override protected def beforeEach(): Unit = {
