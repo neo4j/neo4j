@@ -47,6 +47,11 @@ public interface LogRotation {
 
         @Override
         public void rotateLogFile(LogRotateEvents logRotateEvents) {}
+
+        @Override
+        public long rotationSize() {
+            return 0;
+        }
     };
 
     /**
@@ -72,4 +77,6 @@ public interface LogRotation {
      * @throws IOException
      */
     void rotateLogFile(LogRotateEvents logRotateEvents) throws IOException;
+
+    long rotationSize();
 }

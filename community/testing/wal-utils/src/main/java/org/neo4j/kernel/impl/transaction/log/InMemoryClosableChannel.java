@@ -208,9 +208,15 @@ public class InMemoryClosableChannel
     }
 
     @Override
-    public LogPosition getCurrentLogPosition() throws IOException {
+    public LogPosition getCurrentLogPosition() {
         var buffer = isReader ? reader : writer;
         return buffer.getCurrentLogPosition();
+    }
+
+    @Override
+    public void setLogPosition(LogPositionMarker positionMarker) {
+        var buffer = isReader ? reader : writer;
+        buffer.setLogPosition(positionMarker);
     }
 
     @Override
@@ -342,6 +348,11 @@ public class InMemoryClosableChannel
         @Override
         public LogPosition getCurrentLogPosition() {
             return new LogPosition(0, buffer.position());
+        }
+
+        @Override
+        public void setLogPosition(LogPositionMarker positionMarker) {
+            position(positionMarker.getByteOffset());
         }
     }
 

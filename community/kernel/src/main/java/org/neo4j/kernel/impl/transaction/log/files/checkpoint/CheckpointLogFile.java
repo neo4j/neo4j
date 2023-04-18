@@ -262,6 +262,11 @@ public class CheckpointLogFile extends LifecycleAdapter implements CheckpointFil
     }
 
     @Override
+    public long rotationSize() {
+        return rotationsSize;
+    }
+
+    @Override
     public long getLowestLogVersion() {
         return visitLogFiles(new RangeLogVersionVisitor()).getLowestVersion();
     }

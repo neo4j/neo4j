@@ -252,6 +252,11 @@ public class TransactionLogFile extends LifecycleAdapter implements LogFile {
         return rotate(context::committingTransactionId);
     }
 
+    @Override
+    public long rotationSize() {
+        return rotateAtSize.get();
+    }
+
     public synchronized Path rotate(long lastTransactionId) throws IOException {
         return rotate(() -> lastTransactionId);
     }

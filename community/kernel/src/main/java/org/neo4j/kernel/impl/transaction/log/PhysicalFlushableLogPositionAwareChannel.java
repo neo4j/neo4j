@@ -32,8 +32,8 @@ import org.neo4j.io.memory.ScopedBuffer;
  * decorated channel.
  */
 public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPositionAwareChannel {
-    private LogVersionedStoreChannel logVersionedStoreChannel;
     private final PhysicalFlushableLogChannel channel;
+    private LogVersionedStoreChannel logVersionedStoreChannel;
 
     public PhysicalFlushableLogPositionAwareChannel(
             LogVersionedStoreChannel logVersionedStoreChannel, ScopedBuffer buffer) {
@@ -50,6 +50,15 @@ public class PhysicalFlushableLogPositionAwareChannel implements FlushableLogPos
     @Override
     public LogPosition getCurrentLogPosition() throws IOException {
         return new LogPosition(logVersionedStoreChannel.getLogVersion(), channel.position());
+    }
+
+    @Override
+    public void setLogPosition(LogPositionMarker positionMarker) throws IOException {
+        if (positionMarker.getLogVersion() != logVersionedStoreChannel.getLogVersion()) {
+            throw new IllegalArgumentException("Log position points log version %d but the current one is %d"
+                    .formatted(positionMarker.getLogVersion(), logVersionedStoreChannel.getLogVersion()));
+        }
+        logVersionedStoreChannel.position(positionMarker.getByteOffset());
     }
 
     @Override

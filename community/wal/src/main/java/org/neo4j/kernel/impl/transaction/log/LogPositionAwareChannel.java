@@ -29,4 +29,6 @@ public interface LogPositionAwareChannel {
     LogPositionMarker getCurrentLogPosition(LogPositionMarker positionMarker) throws IOException;
 
     LogPosition getCurrentLogPosition() throws IOException;
+
+    void setLogPosition(LogPositionMarker positionMarker) throws IOException;
 }

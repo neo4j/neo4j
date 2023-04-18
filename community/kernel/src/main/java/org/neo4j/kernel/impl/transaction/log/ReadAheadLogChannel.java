@@ -106,6 +106,15 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     }
 
     @Override
+    public void setLogPosition(LogPositionMarker positionMarker) throws IOException {
+        if (positionMarker.getLogVersion() != channel.getLogVersion()) {
+            throw new IllegalArgumentException("Log position points log version %d but the current one is %d"
+                    .formatted(positionMarker.getLogVersion(), channel.getLogVersion()));
+        }
+        channel.position(positionMarker.getByteOffset());
+    }
+
+    @Override
     protected LogVersionedStoreChannel next(LogVersionedStoreChannel channel) throws IOException {
         return bridge.next(channel, raw);
     }

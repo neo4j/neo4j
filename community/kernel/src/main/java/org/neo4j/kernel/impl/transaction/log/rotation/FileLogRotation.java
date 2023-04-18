@@ -145,6 +145,11 @@ public class FileLogRotation implements LogRotation {
         }
     }
 
+    @Override
+    public long rotationSize() {
+        return rotatableFile.rotationSize();
+    }
+
     private void doRotate(
             LogRotateEvents logRotateEvents,
             long lastTransactionId,

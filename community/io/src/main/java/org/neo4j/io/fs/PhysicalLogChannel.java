@@ -17,23 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.files;
+package org.neo4j.io.fs;
 
 import java.io.IOException;
-import java.nio.file.Path;
+import java.nio.ByteBuffer;
 
-public interface RotatableFile {
-    /**
-     * @return {@code true} if a rotation is needed.
-     */
-    boolean rotationNeeded() throws IOException;
+/**
+ * Provides information and functionality for bridging log file boundaries.
+ */
+public interface PhysicalLogChannel extends FlushableChannel {
 
-    /**
-     * Rotate the active file.
-     * @return A file object representing the file name and path of the log file rotated to.
-     * @throws IOException if something goes wrong with either flushing the existing log file, or creating the new log file.
-     */
-    Path rotate() throws IOException;
+    long position() throws IOException;
 
-    long rotationSize();
+    void setChannel(StoreChannel channel) throws IOException;
+
+    void resetAppendedBytesCounter();
+
+    long getAppendedBytes();
+
+    @Override
+    PhysicalLogChannel putAll(ByteBuffer src) throws IOException;
 }

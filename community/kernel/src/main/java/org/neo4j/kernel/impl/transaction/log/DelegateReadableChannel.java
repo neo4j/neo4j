@@ -103,6 +103,11 @@ public class DelegateReadableChannel implements ReadableLogPositionAwareChannel 
     }
 
     @Override
+    public void setLogPosition(LogPositionMarker positionMarker) {
+        assertAssigned();
+    }
+
+    @Override
     public boolean isOpen() {
         assertAssigned();
         return delegate.isOpen();
