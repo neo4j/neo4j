@@ -497,4 +497,38 @@ abstract class LetSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
       (0 until sizeHint).map(i => if (i % 2 == 0) Array[AnyVal](i, true) else Array[AnyVal](i, false))
     runtimeResult should beColumns("x", "idName").withRows(expectedValues)
   }
+
+  test("NULL expression with empty RHS should produce NULL") {
+    // given an empty graph
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("idName")
+      .letSelectOrSemiApply("idName", "NULL")
+      .|.allNodeScan("x")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("idName").withSingleRow(null)
+  }
+
+  test("NULL expression with non-empty RHS should produce true") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("idName")
+      .letSelectOrSemiApply("idName", "NULL")
+      .|.allNodeScan("x")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("idName").withSingleRow(true)
+  }
 }

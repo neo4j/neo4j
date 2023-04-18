@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.IsTrue
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.values.storable.Values
@@ -40,14 +41,22 @@ case class LetSelectOrSemiApplyPipe(
   ): ClosingIterator[CypherRow] = {
     input.map {
       outerContext =>
-        val holds = predicate.isTrue(outerContext, state) || {
+        val predicateResult = predicate.isMatch(outerContext, state)
+        val holds = (predicateResult eq IsTrue) || {
           val innerState = state.withInitialContext(outerContext)
           val innerResults = inner.createResults(innerState)
           val result = if (negated) !innerResults.hasNext else innerResults.hasNext
           innerResults.close()
           result
         }
-        outerContext.set(letVarName, Values.booleanValue(holds))
+
+        val output =
+          if (!holds && !predicateResult.isKnown)
+            Values.NO_VALUE
+          else
+            Values.booleanValue(holds)
+
+        outerContext.set(letVarName, output)
         outerContext
     }
   }

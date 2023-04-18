@@ -525,8 +525,10 @@ object ApplyPlan {
   def unapply(applyPlan: ApplyPlan): Option[(LogicalPlan, LogicalPlan)] = Some((applyPlan.left, applyPlan.right))
 }
 
-sealed abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, idName: String)(idGen: IdGen)
+sealed abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, val idName: String)(idGen: IdGen)
     extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
+
+  def expression: Expression
 
   override val availableSymbols: Set[String] = left.availableSymbols + idName
 }
@@ -1852,7 +1854,7 @@ case class LegacyFindShortestPaths(
  *     produce leftRow
  *   } else {
  *     right.setArgument( leftRow )
- *     leftRow('idName') =  right.nonEmpty
+ *     leftRow('idName') = right.nonEmpty ? true : (expr.isNull ? NULL : false)
  *     produce leftRow
  *   }
  * }
@@ -1860,8 +1862,8 @@ case class LegacyFindShortestPaths(
 case class LetSelectOrSemiApply(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
-  idName: String,
-  expr: Expression
+  override val idName: String,
+  override val expression: Expression
 )(implicit idGen: IdGen)
     extends AbstractLetSelectOrSemiApply(left, idName)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
@@ -1878,7 +1880,7 @@ case class LetSelectOrSemiApply(
  *     produce leftRow
  *   } else {
  *     right.setArgument( leftRow )
- *     leftRow('idName') =  right.isEmpty
+ *     leftRow('idName') = right.isEmpty ? true : (expr.isNull ? NULL : false)
  *     produce leftRow
  *   }
  * }
@@ -1886,8 +1888,8 @@ case class LetSelectOrSemiApply(
 case class LetSelectOrAntiSemiApply(
   override val left: LogicalPlan,
   override val right: LogicalPlan,
-  idName: String,
-  expr: Expression
+  override val idName: String,
+  override val expression: Expression
 )(implicit idGen: IdGen)
     extends AbstractLetSelectOrSemiApply(left, idName)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)

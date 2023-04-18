@@ -44,3 +44,23 @@ Feature: BooleanExpression
       | true   |
     And no side effects
 
+  Scenario: Disjunction of NULL and EXISTS
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A)
+      """
+    When executing query:
+      """
+      RETURN
+        NULL OR false AS n1,
+        NULL OR EXISTS { (:XYZ) } AS n2,
+        NULL OR NOT EXISTS { (:A) } AS n3,
+
+        NULL OR true AS t1,
+        NULL OR EXISTS { (:A) } AS t2,
+        NULL OR NOT EXISTS { (:XYZ) } AS t3
+      """
+    Then the result should be, in any order:
+      | n1    | n2     | n3    | t1   | t2   | t3   |
+      | null  | null   | null  | true | true | true |
