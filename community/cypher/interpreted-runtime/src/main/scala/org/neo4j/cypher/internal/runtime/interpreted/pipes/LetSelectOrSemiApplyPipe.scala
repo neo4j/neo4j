@@ -32,14 +32,22 @@ case class LetSelectOrSemiApplyPipe(source: Pipe, inner: Pipe, letVarName: Strin
   protected def internalCreateResults(input: ClosingIterator[CypherRow], state: QueryState): ClosingIterator[CypherRow] = {
     input.map {
       outerContext =>
-        val holds = predicate.isTrue(outerContext, state) || {
+        val predicateResult = predicate.isMatch(outerContext, state)
+        val holds = (predicateResult.getOrElse(false)) || {
           val innerState = state.withInitialContext(outerContext)
           val innerResults = inner.createResults(innerState)
           val result = if (negated) !innerResults.hasNext else innerResults.hasNext
           innerResults.close()
           result
         }
-        outerContext.set(letVarName, Values.booleanValue(holds))
+
+        val output =
+          if (!holds && predicateResult.isEmpty)
+            Values.NO_VALUE
+          else
+            Values.booleanValue(holds)
+
+        outerContext.set(letVarName, output)
         outerContext
     }
   }

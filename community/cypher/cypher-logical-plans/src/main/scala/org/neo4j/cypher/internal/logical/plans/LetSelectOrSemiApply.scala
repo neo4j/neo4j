@@ -28,16 +28,18 @@ import org.neo4j.cypher.internal.util.attribution.IdGen
  *
  * for ( leftRow <- left ) {
  *   if ( leftRow.evaluate( expr) ) {
+ *     leftRow('idName') = true
  *     produce leftRow
  *   } else {
  *     right.setArgument( leftRow )
- *     if ( right.nonEmpty ) {
- *       produce leftRow
- *     }
+ *     leftRow('idName') = right.nonEmpty ? true : (expr.isNull ? NULL : false)
+ *     produce leftRow
  *   }
  * }
- */
-case class LetSelectOrSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: String, expr: Expression)(implicit idGen: IdGen)
+ */case class LetSelectOrSemiApply(override val left: LogicalPlan,
+                                override val right: LogicalPlan,
+                                override val idName: String,
+                                override val expression: Expression)(implicit idGen: IdGen)
   extends AbstractLetSelectOrSemiApply(left, idName)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
@@ -49,23 +51,28 @@ case class LetSelectOrSemiApply(override val left: LogicalPlan, override val rig
  *
  * for ( leftRow <- left ) {
  *   if ( leftRow.evaluate( expr) ) {
+ *     leftRow('idName') = true
  *     produce leftRow
  *   } else {
  *     right.setArgument( leftRow )
- *     if ( right.isEmpty ) {
- *       produce leftRow
- *     }
+ *     leftRow('idName') = right.isEmpty ? true : (expr.isNull ? NULL : false)
+ *     produce leftRow
  *   }
  * }
  */
-case class LetSelectOrAntiSemiApply(override val left: LogicalPlan, override val right: LogicalPlan, idName: String, expr: Expression)(implicit idGen: IdGen)
+case class LetSelectOrAntiSemiApply(override val left: LogicalPlan,
+                                    override val right: LogicalPlan,
+                                    override val idName: String,
+                                    override val expression: Expression)(implicit idGen: IdGen)
   extends AbstractLetSelectOrSemiApply(left, idName)(idGen) {
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)
   override def withRhs(newRHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(right = newRHS)(idGen)
 }
 
-abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, idName: String)(idGen: IdGen)
+sealed abstract class AbstractLetSelectOrSemiApply(left: LogicalPlan, val idName: String)(idGen: IdGen)
   extends LogicalBinaryPlan(idGen) with ApplyPlan with SingleFromRightLogicalPlan {
+
+  def expression: Expression
 
   override val availableSymbols: Set[String] = left.availableSymbols + idName
 }
