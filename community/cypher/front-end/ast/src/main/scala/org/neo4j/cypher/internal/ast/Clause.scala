@@ -60,6 +60,7 @@ import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
+import org.neo4j.cypher.internal.expressions.MatchMode.RepeatableElements
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Not
@@ -416,6 +417,7 @@ case class Match(
       SemanticPatternCheck.check(Pattern.SemanticContext.Match, pattern) chain
       hints.semanticCheck chain
       uniqueHints chain
+      checkMatchMode chain
       where.semanticCheck chain
       checkHints chain
       checkForCartesianProducts
@@ -515,6 +517,19 @@ case class Match(
     }
 
     semantics.SemanticCheckResult(newState, Seq.empty)
+  }
+
+  private def checkMatchMode: SemanticCheck = (state: SemanticState) => {
+    matchMode match {
+      case _: RepeatableElements =>
+        val errors = pattern.patternParts.collect {
+          case part if !part.isBounded => SemanticError(s"Match mode \"REPEATABLE ELEMENTS\" was used, but pattern is not bounded.", part.position)
+        }
+        semantics.SemanticCheckResult(state, errors)
+
+      case _ =>
+        semantics.SemanticCheckResult(state, Seq.empty)
+    }
   }
 
   private def checkHints: SemanticCheck = SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
