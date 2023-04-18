@@ -43,6 +43,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorSupplier;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.schema.TextIndexProvider;
@@ -218,7 +219,13 @@ class TextIndexPopulatingUpdaterIT {
                 .materialise(1);
         var bufferFactory = heapBufferFactory((int) kibiBytes(100));
         var populator = provider.getPopulator(
-                index, samplingConfig, bufferFactory, INSTANCE, mock(TokenNameLookup.class), Sets.immutable.empty());
+                index,
+                samplingConfig,
+                bufferFactory,
+                INSTANCE,
+                mock(TokenNameLookup.class),
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
         return populator;
     }

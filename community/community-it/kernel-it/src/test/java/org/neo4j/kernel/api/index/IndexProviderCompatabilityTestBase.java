@@ -82,7 +82,7 @@ abstract class IndexProviderCompatabilityTestBase {
         testDirectory.prepareDirectory(testClass, testSuite.getClass().getSimpleName());
         homePath = testDirectory.homePath(testName);
         final boolean hasNodeBasedRelIndex = random.nextBoolean();
-        storageEngineIndexingBehaviour = () -> hasNodeBasedRelIndex;
+        storageEngineIndexingBehaviour = new TestStorageEngineIndexingBehaviour(hasNodeBasedRelIndex);
 
         Config.Builder configBuilder = Config.newBuilder();
         configBuilder.set(GraphDatabaseSettings.neo4j_home, homePath);
@@ -144,6 +144,34 @@ abstract class IndexProviderCompatabilityTestBase {
             }
         } finally {
             populator.close(closeSuccessfully, NULL_CONTEXT);
+        }
+    }
+
+    private static class TestStorageEngineIndexingBehaviour implements StorageEngineIndexingBehaviour {
+        private final boolean hasNodeBasedRelIndex;
+
+        public TestStorageEngineIndexingBehaviour(boolean hasNodeBasedRelIndex) {
+            this.hasNodeBasedRelIndex = hasNodeBasedRelIndex;
+        }
+
+        @Override
+        public boolean useNodeIdsInRelationshipTokenIndex() {
+            return hasNodeBasedRelIndex;
+        }
+
+        @Override
+        public boolean requireCoordinationLocks() {
+            return false;
+        }
+
+        @Override
+        public int nodesPerPage() {
+            return 0;
+        }
+
+        @Override
+        public int relationshipsPerPage() {
+            return 0;
         }
     }
 }

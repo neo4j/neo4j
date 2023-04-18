@@ -172,7 +172,7 @@ class TransactionRecordStateTest {
     private final SchemaCache schemaCache = new SchemaCache(
             new StandardConstraintRuleAccessor(),
             (index, indexingBehaviour) -> index,
-            new RecordStorageIndexingBehaviour());
+            new RecordStorageIndexingBehaviour(0, 0));
     private long nextRuleId = 1;
 
     @Inject

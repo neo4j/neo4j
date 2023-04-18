@@ -68,6 +68,7 @@ import org.neo4j.internal.helpers.collection.BoundedIterable;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -156,7 +157,11 @@ public class TextIndexAccessorIT {
                 .materialise(99);
         populateWithInitialNodes(indexDescriptor, nodes, expectedNodes);
         try (var accessor = indexProvider.getOnlineAccessor(
-                indexDescriptor, samplingConfig, mock(TokenNameLookup.class), immutable.empty())) {
+                indexDescriptor,
+                samplingConfig,
+                mock(TokenNameLookup.class),
+                immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             // when
             removeSomeNodes(indexDescriptor, nodes / 2, accessor, expectedNodes);
 
@@ -179,7 +184,11 @@ public class TextIndexAccessorIT {
         populateWithInitialNodes(indexDescriptor, nodes, expectedNodes);
         config.set(GraphDatabaseSettings.read_only_databases, Set.of(DEFAULT_DATABASE_NAME));
         try (var onlineAccessor = indexProvider.getOnlineAccessor(
-                indexDescriptor, samplingConfig, mock(TokenNameLookup.class), immutable.empty())) {
+                indexDescriptor,
+                samplingConfig,
+                mock(TokenNameLookup.class),
+                immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             assertThrows(
                     UnsupportedOperationException.class,
                     () -> onlineAccessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false));
@@ -196,7 +205,11 @@ public class TextIndexAccessorIT {
                 .materialise(99);
         populateWithInitialNodes(indexDescriptor, nodes, expectedNodes);
         try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                indexDescriptor, samplingConfig, mock(TokenNameLookup.class), immutable.empty())) {
+                indexDescriptor,
+                samplingConfig,
+                mock(TokenNameLookup.class),
+                immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             // when
             removeSomeNodes(indexDescriptor, 2, accessor, expectedNodes);
 
@@ -217,8 +230,8 @@ public class TextIndexAccessorIT {
                 .materialise(1);
         TokenNameLookup tokenNameLookup = mock(TokenNameLookup.class);
         populateWithInitialNodes(descriptor, 0, new LongHashSet());
-        try (IndexAccessor accessor =
-                indexProvider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, immutable.empty())) {
+        try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
+                descriptor, samplingConfig, tokenNameLookup, immutable.empty(), StorageEngineIndexingBehaviour.EMPTY)) {
             // when
             BitSet expectedEntities = writeRandomThings(accessor, descriptor);
             int expectedCount = expectedEntities.cardinality();
@@ -245,7 +258,11 @@ public class TextIndexAccessorIT {
         populateWithInitialNodes(descriptor, random.nextInt(1_000, 10_000), expectedNodes);
 
         try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                descriptor, samplingConfig, mock(TokenNameLookup.class), immutable.empty())) {
+                descriptor,
+                samplingConfig,
+                mock(TokenNameLookup.class),
+                immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             // when
             MutableLongSet readNodes = new LongHashSet();
             IndexEntriesReader[] partitionReaders =
@@ -268,7 +285,11 @@ public class TextIndexAccessorIT {
                 .withName("test")
                 .materialise(1);
         try (var accessor = indexProvider.getOnlineAccessor(
-                descriptor, samplingConfig, mock(TokenNameLookup.class), immutable.empty())) {
+                descriptor,
+                samplingConfig,
+                mock(TokenNameLookup.class),
+                immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             // given  an empty index
             // when   an unsupported value type is added
             try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
@@ -290,7 +311,11 @@ public class TextIndexAccessorIT {
                 .withName("test")
                 .materialise(1);
         try (var accessor = indexProvider.getOnlineAccessor(
-                descriptor, samplingConfig, mock(TokenNameLookup.class), immutable.empty())) {
+                descriptor,
+                samplingConfig,
+                mock(TokenNameLookup.class),
+                immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             // when   an unsupported value type is added
             final var entityId = idGenerator().getAsLong();
             final var unsupportedValue = random.randomValues().nextValueOfType(unsupportedType);
@@ -323,7 +348,11 @@ public class TextIndexAccessorIT {
                 .withName("test")
                 .materialise(1);
         try (var accessor = indexProvider.getOnlineAccessor(
-                descriptor, samplingConfig, mock(TokenNameLookup.class), immutable.empty())) {
+                descriptor,
+                samplingConfig,
+                mock(TokenNameLookup.class),
+                immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             // given  an empty index
             // when   a supported value type is added
             final var entityId = idGenerator().getAsLong();
@@ -369,7 +398,8 @@ public class TextIndexAccessorIT {
                 ByteBufferFactory.heapBufferFactory((int) kibiBytes(100)),
                 INSTANCE,
                 mock(TokenNameLookup.class),
-                immutable.empty());
+                immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         Collection<IndexEntryUpdate<IndexDescriptor>> initialData = new ArrayList<>();
         populator.create();
         for (long id = 0; id < nodes; id++) {

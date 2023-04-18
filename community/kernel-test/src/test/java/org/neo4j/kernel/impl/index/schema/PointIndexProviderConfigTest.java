@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -59,7 +60,8 @@ class PointIndexProviderConfigTest {
                 .materialise(1);
 
         // When
-        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor, () -> false);
+        IndexDescriptor completedDescriptor =
+                provider.completeConfiguration(incompleteDescriptor, StorageEngineIndexingBehaviour.EMPTY);
 
         // Then
         IndexConfig sinfulIndexConfig = incompleteDescriptor.getIndexConfig();
@@ -95,7 +97,8 @@ class PointIndexProviderConfigTest {
                 .withIndexConfig(existingIndexConfig);
 
         // When
-        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor, () -> false);
+        IndexDescriptor completedDescriptor =
+                provider.completeConfiguration(incompleteDescriptor, StorageEngineIndexingBehaviour.EMPTY);
 
         // Then
         IndexConfig completedIndexConfig = completedDescriptor.getIndexConfig();

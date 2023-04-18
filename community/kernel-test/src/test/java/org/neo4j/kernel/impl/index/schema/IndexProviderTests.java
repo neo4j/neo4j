@@ -46,6 +46,7 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexCapability;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -154,7 +155,8 @@ abstract class IndexProviderTests {
         IndexDescriptor incompleteDescriptor = validPrototype().materialise(1);
 
         // When
-        IndexDescriptor completedDescriptor = provider.completeConfiguration(incompleteDescriptor, () -> false);
+        IndexDescriptor completedDescriptor =
+                provider.completeConfiguration(incompleteDescriptor, StorageEngineIndexingBehaviour.EMPTY);
 
         // Then
         assertThat(completedDescriptor.getCapability()).isNotEqualTo(IndexCapability.NO_CAPABILITY);
@@ -175,7 +177,8 @@ abstract class IndexProviderTests {
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        Sets.immutable.empty()));
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY));
     }
 
     /* getPopulationFailure */
@@ -190,7 +193,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
         populator.close(true, NULL_CONTEXT);
 
@@ -212,7 +216,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         nonFailedPopulator.create();
         nonFailedPopulator.close(true, NULL_CONTEXT);
 
@@ -222,7 +227,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         failedPopulator.create();
 
         // when
@@ -243,7 +249,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
 
         // when
@@ -266,7 +273,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         firstPopulator.create();
         IndexPopulator secondPopulator = provider.getPopulator(
                 otherDescriptor(),
@@ -274,7 +282,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         secondPopulator.create();
 
         // when
@@ -302,7 +311,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
 
         // when
@@ -342,7 +352,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
 
         // when
@@ -363,7 +374,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
         populator.markAsFailed("Just some failure");
         populator.close(false, NULL_CONTEXT);
@@ -385,7 +397,8 @@ abstract class IndexProviderTests {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
         populator.close(true, NULL_CONTEXT);
 
@@ -422,7 +435,7 @@ abstract class IndexProviderTests {
     }
 
     IndexDescriptor completeConfiguration(IndexDescriptor indexDescriptor) {
-        return provider.completeConfiguration(indexDescriptor, () -> false);
+        return provider.completeConfiguration(indexDescriptor, StorageEngineIndexingBehaviour.EMPTY);
     }
 
     @FunctionalInterface

@@ -157,7 +157,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final Map<TransactionApplicationMode, TransactionApplierFactoryChain> applierChains =
             new EnumMap<>(TransactionApplicationMode.class);
     private final RecordDatabaseEntityCounters storeEntityCounters;
-    private final RecordStorageIndexingBehaviour indexingBehaviour = new RecordStorageIndexingBehaviour();
+    private final RecordStorageIndexingBehaviour indexingBehaviour;
 
     // installed later
     private IndexUpdateListener indexUpdateListener;
@@ -213,6 +213,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         Stream.of(RecordIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
         Stream.of(SchemaIdType.values()).forEach(idType -> idGeneratorWorkSyncs.add(idGeneratorFactory.get(idType)));
 
+        indexingBehaviour = new RecordStorageIndexingBehaviour(
+                neoStores.getNodeStore().getRecordsPerPage(),
+                neoStores.getRelationshipStore().getRecordsPerPage());
         try {
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess(neoStores.getSchemaStore(), tokenHolders);
             schemaCache = new SchemaCache(constraintSemantics, indexConfigCompleter, indexingBehaviour);

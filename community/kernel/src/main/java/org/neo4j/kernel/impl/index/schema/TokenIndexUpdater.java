@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
+import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.MERGED;
+import static org.neo4j.index.internal.gbptree.ValueMerger.MergeResult.REMOVED;
 
 import java.util.Arrays;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -54,19 +55,24 @@ import org.neo4j.storageengine.api.TokenIndexEntryUpdate;
  * @see PhysicalToLogicalTokenChanges
  */
 class TokenIndexUpdater implements IndexUpdater {
+
     /**
      * {@link ValueMerger} used for adding token->entity mappings, see {@link TokenScanValue#add(TokenScanValue)}.
      */
-    private final ValueMerger<TokenScanKey, TokenScanValue> addMerger =
+    private static final ValueMerger<TokenScanKey, TokenScanValue> ADD_MERGER =
             (existingKey, newKey, existingValue, newValue) -> {
                 existingValue.add(newValue);
-                return ValueMerger.MergeResult.MERGED;
+                return MERGED;
             };
 
     /**
      * {@link ValueMerger} used for removing token->entity mappings, see {@link TokenScanValue#remove(TokenScanValue)}.
      */
-    private final ValueMerger<TokenScanKey, TokenScanValue> removeMerger;
+    private static final ValueMerger<TokenScanKey, TokenScanValue> REMOVE_MERGER =
+            (existingKey, newKey, existingValue, newValue) -> {
+                existingValue.remove(newValue);
+                return existingValue.isEmpty() ? REMOVED : MERGED;
+            };
 
     /**
      * {@link Writer} acquired when acquiring this {@link TokenIndexUpdater},
@@ -91,6 +97,8 @@ class TokenIndexUpdater implements IndexUpdater {
      * and the length defines the maximum batch size.
      */
     private final LogicalTokenUpdates[] pendingUpdates;
+
+    private final TokenIndexIdLayout idLayout;
 
     /**
      * Cursor into {@link #pendingUpdates}, where to place new {@link #process(IndexEntryUpdate) updates}.
@@ -117,12 +125,9 @@ class TokenIndexUpdater implements IndexUpdater {
 
     private boolean closed = true;
 
-    TokenIndexUpdater(int batchSize) {
+    TokenIndexUpdater(int batchSize, TokenIndexIdLayout idLayout) {
         this.pendingUpdates = new LogicalTokenUpdates[batchSize];
-        this.removeMerger = (existingKey, newKey, existingValue, newValue) -> {
-            existingValue.remove(newValue);
-            return existingValue.isEmpty() ? ValueMerger.MergeResult.REMOVED : ValueMerger.MergeResult.MERGED;
-        };
+        this.idLayout = idLayout;
     }
 
     TokenIndexUpdater initialize(Writer<TokenScanKey, TokenScanValue> writer) {
@@ -219,7 +224,7 @@ class TokenIndexUpdater implements IndexUpdater {
 
     private void change(long currentTokenId, long entityId, boolean add) {
         int tokenId = toIntExact(currentTokenId);
-        long idRange = rangeOf(entityId);
+        long idRange = idLayout.rangeOf(entityId);
         if (tokenId != key.tokenId || idRange != key.idRange || addition != add) {
             flushPendingRange();
 
@@ -229,7 +234,7 @@ class TokenIndexUpdater implements IndexUpdater {
             addition = add;
         }
 
-        int offset = toIntExact(entityId % RANGE_SIZE);
+        int offset = idLayout.idWithinRange(entityId);
         value.set(offset);
     }
 
@@ -237,16 +242,12 @@ class TokenIndexUpdater implements IndexUpdater {
         if (value.bits != 0) {
             // There are changes in the current range, flush them
             if (addition) {
-                writer.merge(key, value, addMerger);
+                writer.merge(key, value, ADD_MERGER);
             } else {
-                writer.mergeIfExists(key, value, removeMerger);
+                writer.mergeIfExists(key, value, REMOVE_MERGER);
             }
             value.clear();
         }
-    }
-
-    static long rangeOf(long entityId) {
-        return entityId / RANGE_SIZE;
     }
 
     /**

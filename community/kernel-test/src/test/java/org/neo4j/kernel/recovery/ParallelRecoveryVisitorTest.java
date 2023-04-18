@@ -409,7 +409,7 @@ class ParallelRecoveryVisitorTest {
 
         @Override
         public StorageEngineIndexingBehaviour indexingBehaviour() {
-            return () -> false;
+            return StorageEngineIndexingBehaviour.EMPTY;
         }
     }
 }

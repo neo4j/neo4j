@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.Long.min;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -48,12 +47,17 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader {
     private final List<Seeker<TokenScanKey, TokenScanValue>> cursors = new ArrayList<>();
     private final int highestTokenId;
     private final EntityType entityType;
+    private final TokenIndexIdLayout idLayout;
 
     NativeAllEntriesTokenScanReader(
-            IntFunction<Seeker<TokenScanKey, TokenScanValue>> seekProvider, int highestTokenId, EntityType entityType) {
+            IntFunction<Seeker<TokenScanKey, TokenScanValue>> seekProvider,
+            int highestTokenId,
+            EntityType entityType,
+            TokenIndexIdLayout idLayout) {
         this.seekProvider = seekProvider;
         this.highestTokenId = highestTokenId;
         this.entityType = entityType;
+        this.idLayout = idLayout;
     }
 
     @Override
@@ -101,7 +105,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader {
         private final EntityType entityType;
 
         // entityId (relative to lowestRange) --> tokenId[]
-        private final MutableLongList[] tokensForEachEntity = new MutableLongList[RANGE_SIZE];
+        private final MutableLongList[] tokensForEachEntity = new MutableLongList[TokenScanValue.RANGE_SIZE];
 
         EntityTokenRangeIterator(long lowestRange, EntityType entityType) {
             this.currentRange = lowestRange;
@@ -146,7 +150,7 @@ class NativeAllEntriesTokenScanReader implements AllEntriesTokenScanReader {
                 }
 
                 EntityTokenRange range = new EntityTokenRangeImpl(
-                        currentRange, EntityTokenRangeImpl.convertState(tokensForEachEntity), entityType);
+                        currentRange, EntityTokenRangeImpl.convertState(tokensForEachEntity), entityType, idLayout);
                 currentRange = nextLowestRange;
 
                 return range;

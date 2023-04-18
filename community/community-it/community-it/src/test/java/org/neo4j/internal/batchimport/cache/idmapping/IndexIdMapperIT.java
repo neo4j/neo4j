@@ -56,6 +56,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -122,6 +123,7 @@ class IndexIdMapperIT {
     private final Map<String, IndexDescriptor> descriptors = new HashMap<>();
     private final LifeSupport life = new LifeSupport();
     private final ImmutableSet<OpenOption> openOptions = Sets.immutable.of(PageCacheOpenOptions.BIG_ENDIAN);
+    private final StorageEngineIndexingBehaviour indexingBehaviour = StorageEngineIndexingBehaviour.EMPTY;
     private JobScheduler jobScheduler;
     private IndexIdMapper idMapper;
     private TokenHolders tokenHolders;
@@ -179,7 +181,8 @@ class IndexIdMapperIT {
                 Configuration.DEFAULT,
                 NULL,
                 indexStatisticsStore,
-                groups);
+                groups,
+                indexingBehaviour);
     }
 
     @Test
@@ -324,7 +327,8 @@ class IndexIdMapperIT {
                 .withIndexProvider(indexProvider.getProviderDescriptor())
                 .materialise(indexId);
         var indexSamplingConfig = new IndexSamplingConfig(Config.defaults());
-        var accessor = indexProvider.getOnlineAccessor(descriptor, indexSamplingConfig, tokenHolders, openOptions);
+        var accessor = indexProvider.getOnlineAccessor(
+                descriptor, indexSamplingConfig, tokenHolders, openOptions, indexingBehaviour);
         try (var updater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
             for (var dataEntry : data.entrySet()) {
                 updater.process(IndexEntryUpdate.add(dataEntry.getValue(), descriptor, Values.of(dataEntry.getKey())));

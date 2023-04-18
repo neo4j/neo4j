@@ -36,6 +36,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.batchimport.staging.ProcessorStep;
 import org.neo4j.internal.batchimport.staging.StageControl;
 import org.neo4j.internal.batchimport.store.BatchingNeoStores;
+import org.neo4j.internal.recordstorage.RecordStorageIndexingBehaviour;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -94,7 +95,10 @@ public abstract class IndexWriterStep<T> extends ProcessorStep<T> {
                     neoStores.getPageCache(),
                     contextFactory,
                     pageCacheTracer,
-                    neoStores.getOpenOptions());
+                    neoStores.getOpenOptions(),
+                    new RecordStorageIndexingBehaviour(
+                            neoStores.getNodeStore().getRecordsPerPage(),
+                            neoStores.getRelationshipStore().getRecordsPerPage()));
         }
     }
 

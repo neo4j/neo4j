@@ -30,6 +30,7 @@ import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.internal.batchimport.IndexImporter;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -54,10 +55,12 @@ public class TokenIndexImporter implements IndexImporter {
             PageCache cache,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         this.index = index;
         this.pageCacheTracer = pageCacheTracer;
-        this.accessor = tokenIndexAccessor(layout, fs, cache, contextFactory, pageCacheTracer, openOptions);
+        this.accessor =
+                tokenIndexAccessor(layout, fs, cache, contextFactory, pageCacheTracer, openOptions, indexingBehaviour);
         this.cursorContext = contextFactory.create(INDEX_TOKEN_IMPORTER_TAG);
     }
 
@@ -110,7 +113,8 @@ public class TokenIndexImporter implements IndexImporter {
             PageCache pageCache,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         var context = DatabaseIndexContext.builder(
                         pageCache, fs, contextFactory, pageCacheTracer, layout.getDatabaseName())
                 .build();
@@ -118,6 +122,6 @@ public class TokenIndexImporter implements IndexImporter {
                         layout.databaseDirectory())
                 .forProvider(TokenIndexProvider.DESCRIPTOR);
         IndexFiles indexFiles = TokenIndexProvider.indexFiles(index, fs, indexDirectoryStructure);
-        return new TokenIndexAccessor(context, indexFiles, index, immediate(), openOptions, false);
+        return new TokenIndexAccessor(context, indexFiles, index, immediate(), openOptions, false, indexingBehaviour);
     }
 }

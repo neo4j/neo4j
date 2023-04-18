@@ -24,6 +24,7 @@ import static org.neo4j.internal.batchimport.IndexImporter.EMPTY_IMPORTER;
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -41,8 +42,10 @@ public interface IndexImporterFactory {
             PageCache pageCache,
             CursorContextFactory contextFactory,
             PageCacheTracer pageCacheTracer,
-            ImmutableSet<OpenOption> openOptions);
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour);
 
     IndexImporterFactory EMPTY =
-            (descriptor, layout, fs, pageCache, contextFactory, pageCacheTracer, openOptions) -> EMPTY_IMPORTER;
+            (descriptor, layout, fs, pageCache, contextFactory, pageCacheTracer, openOptions, indexingBehaviour) ->
+                    EMPTY_IMPORTER;
 }

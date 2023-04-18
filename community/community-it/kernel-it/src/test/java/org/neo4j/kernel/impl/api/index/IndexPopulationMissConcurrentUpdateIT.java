@@ -51,6 +51,7 @@ import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -187,7 +188,8 @@ public class IndexPopulationMissConcurrentUpdateIT {
                         ByteBufferFactory bufferFactory,
                         MemoryTracker memoryTracker,
                         TokenNameLookup tokenNameLookup,
-                        ImmutableSet<OpenOption> openOptions) {
+                        ImmutableSet<OpenOption> openOptions,
+                        StorageEngineIndexingBehaviour indexingBehaviour) {
                     return new IndexPopulator.Adapter() {
                         @Override
                         public void add(
@@ -236,7 +238,8 @@ public class IndexPopulationMissConcurrentUpdateIT {
                         IndexSamplingConfig samplingConfig,
                         TokenNameLookup tokenNameLookup,
                         ImmutableSet<OpenOption> openOptions,
-                        boolean readOnly) {
+                        boolean readOnly,
+                        StorageEngineIndexingBehaviour indexingBehaviour) {
                     return mock(IndexAccessor.class);
                 }
 

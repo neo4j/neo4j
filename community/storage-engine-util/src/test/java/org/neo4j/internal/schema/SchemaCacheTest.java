@@ -62,7 +62,6 @@ class SchemaCacheTest {
     private final SchemaRule gretel = newIndexRule(3, 0, 7);
     private final ConstraintDescriptor robot = relPropertyExistenceConstraint(7L, 8, 9);
     private final IndexConfigCompleter indexConfigCompleter = (index, indexingBehaviour) -> index;
-    private final StorageEngineIndexingBehaviour indexingBehaviour = () -> false;
     private static final long[] noEntityToken = {};
 
     // For "related to" tests
@@ -582,7 +581,8 @@ class SchemaCacheTest {
     @Test
     void shouldGetRelatedNodeConstraints() {
         // given
-        SchemaCache cache = new SchemaCache(new ConstraintSemantics(), indexConfigCompleter, indexingBehaviour);
+        SchemaCache cache =
+                new SchemaCache(new ConstraintSemantics(), indexConfigCompleter, StorageEngineIndexingBehaviour.EMPTY);
         ConstraintDescriptor constraint1 =
                 ConstraintDescriptorFactory.uniqueForLabel(1, 5, 6).withId(1);
         ConstraintDescriptor constraint2 =
@@ -614,7 +614,8 @@ class SchemaCacheTest {
     @Test
     void shouldRemoveNodeConstraints() {
         // given
-        SchemaCache cache = new SchemaCache(new ConstraintSemantics(), indexConfigCompleter, indexingBehaviour);
+        SchemaCache cache =
+                new SchemaCache(new ConstraintSemantics(), indexConfigCompleter, StorageEngineIndexingBehaviour.EMPTY);
         ConstraintDescriptor constraint1 =
                 ConstraintDescriptorFactory.uniqueForLabel(1, 5, 6).withId(1);
         ConstraintDescriptor constraint2 =
@@ -680,7 +681,7 @@ class SchemaCacheTest {
             completed.add(index);
             return index.withIndexCapability(capability);
         };
-        SchemaCache cache = new SchemaCache(new ConstraintSemantics(), completer, indexingBehaviour);
+        SchemaCache cache = new SchemaCache(new ConstraintSemantics(), completer, StorageEngineIndexingBehaviour.EMPTY);
 
         IndexDescriptor index1 = newIndexRule(1, 2, 3);
         ConstraintDescriptor constraint1 = uniquenessConstraint(2, 2, 3, 1);
@@ -979,7 +980,8 @@ class SchemaCacheTest {
     }
 
     private SchemaCache newSchemaCache(SchemaRule... rules) {
-        SchemaCache cache = new SchemaCache(new ConstraintSemantics(), indexConfigCompleter, indexingBehaviour);
+        SchemaCache cache =
+                new SchemaCache(new ConstraintSemantics(), indexConfigCompleter, StorageEngineIndexingBehaviour.EMPTY);
         cache.load((rules == null || rules.length == 0) ? Collections.emptyList() : asList(rules));
         return cache;
     }

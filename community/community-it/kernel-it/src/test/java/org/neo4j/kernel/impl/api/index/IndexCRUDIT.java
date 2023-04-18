@@ -187,10 +187,15 @@ class IndexCRUDIT {
                         any(),
                         any(),
                         any(TokenNameLookup.class),
+                        any(),
                         any()))
                 .thenReturn(writer);
         when(mockedIndexProvider.getOnlineAccessor(
-                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(TokenNameLookup.class),
+                        any(),
+                        any()))
                 .thenReturn(writer);
         return writer;
     }

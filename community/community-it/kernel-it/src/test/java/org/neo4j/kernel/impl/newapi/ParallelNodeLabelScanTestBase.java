@@ -32,6 +32,7 @@ import static org.neo4j.kernel.impl.newapi.TestUtils.createRandomWorkers;
 import static org.neo4j.kernel.impl.newapi.TestUtils.createWorkers;
 import static org.neo4j.util.concurrent.Futures.getAllResults;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -171,7 +172,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
         try (NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor(cursorContext)) {
             // when
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan(FOO_LABEL);
-            MutableLongList ids = LongLists.mutable.empty();
+            var ids = new ArrayList<Long>();
             while (scan.reserveBatch(
                     nodes, 3, cursorContext, tx.securityContext().mode())) {
                 while (nodes.next()) {
@@ -180,9 +181,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             }
 
             // then
-            assertEquals(FOO_NODES.size(), ids.size());
-            assertTrue(FOO_NODES.containsAll(ids));
-            assertTrue(ids.noneSatisfy(f -> BAR_NODES.contains(f)));
+            assertThat(ids).containsExactlyInAnyOrderElementsOf(FOO_NODES.collect(Long::valueOf));
         }
     }
 

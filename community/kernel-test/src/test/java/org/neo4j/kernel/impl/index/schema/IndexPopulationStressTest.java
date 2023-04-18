@@ -156,19 +156,18 @@ abstract class IndexPopulationStressTest {
         contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         indexProvider = providerCreator.apply(this);
         tokenNameLookup = SIMPLE_NAME_LOOKUP;
-        StorageEngineIndexingBehaviour behaviour = () -> false;
         descriptor = indexProvider.completeConfiguration(
                 forSchema(forLabel(0, 0), PROVIDER)
                         .withIndexType(indexType())
                         .withName("index_0")
                         .materialise(0),
-                behaviour);
+                StorageEngineIndexingBehaviour.EMPTY);
         descriptor2 = indexProvider.completeConfiguration(
                 forSchema(forLabel(1, 0), PROVIDER)
                         .withIndexType(indexType())
                         .withName("index_1")
                         .materialise(1),
-                behaviour);
+                StorageEngineIndexingBehaviour.EMPTY);
         fs.mkdirs(indexProvider.directoryStructure().rootDirectory());
         populator = indexProvider.getPopulator(
                 descriptor,
@@ -176,7 +175,8 @@ abstract class IndexPopulationStressTest {
                 heapBufferFactory((int) kibiBytes(40)),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled(false);
     }
 
@@ -213,9 +213,17 @@ abstract class IndexPopulationStressTest {
         // then assert that a tree built by a single thread ends up exactly the same
         buildReferencePopulatorSingleThreaded(generators, updates);
         try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                        descriptor, samplingConfig, tokenNameLookup, Sets.immutable.empty());
+                        descriptor,
+                        samplingConfig,
+                        tokenNameLookup,
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY);
                 IndexAccessor referenceAccessor = indexProvider.getOnlineAccessor(
-                        descriptor2, samplingConfig, tokenNameLookup, Sets.immutable.empty());
+                        descriptor2,
+                        samplingConfig,
+                        tokenNameLookup,
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY);
                 var reader = accessor.newValueReader(NO_USAGE_TRACKER);
                 var referenceReader = referenceAccessor.newValueReader(NO_USAGE_TRACKER)) {
             RecordingClient entries = new RecordingClient();
@@ -336,7 +344,8 @@ abstract class IndexPopulationStressTest {
                 heapBufferFactory((int) kibiBytes(40)),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         referencePopulator.create();
         boolean referenceSuccess = false;
         try {

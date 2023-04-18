@@ -67,6 +67,7 @@ import org.neo4j.internal.kernel.api.TokenPredicate;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexOrder;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -85,7 +86,14 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
                         pageCache, fs, contextFactory, pageCacheTracer, DEFAULT_DATABASE_NAME)
                 .withReadOnlyChecker(writable())
                 .build();
-        return new TokenIndexAccessor(context, indexFiles, indexDescriptor, cleanup, Sets.immutable.empty(), false);
+        return new TokenIndexAccessor(
+                context,
+                indexFiles,
+                indexDescriptor,
+                cleanup,
+                Sets.immutable.empty(),
+                false,
+                StorageEngineIndexingBehaviour.EMPTY);
     }
 
     @Override
@@ -124,7 +132,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
 
         // Then
         forceAndCloseAccessor();
-        verifyUpdates(entityTokens, layout, this::getTree);
+        verifyUpdates(entityTokens, layout, this::getTree, new DefaultTokenIndexIdLayout());
     }
 
     @Test
@@ -149,7 +157,7 @@ public class TokenIndexAccessorTest extends IndexAccessorTests<TokenScanKey, Tok
         MutableLongObjectMap<long[]> entityTokens = LongObjectMaps.mutable.empty();
         doRandomizedUpdatesWithAdditionalOperation(additionalOperation, entityTokens);
         forceAndCloseAccessor();
-        verifyUpdates(entityTokens, layout, this::getTree);
+        verifyUpdates(entityTokens, layout, this::getTree, new DefaultTokenIndexIdLayout());
     }
 
     @Test

@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
 import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -93,7 +94,8 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
                 .withTag(monitorTag)
                 .withReadOnlyChecker(writable())
                 .build();
-        return new TokenIndexPopulator(context, indexFiles, indexDescriptor, Sets.immutable.empty());
+        return new TokenIndexPopulator(
+                context, indexFiles, indexDescriptor, Sets.immutable.empty(), StorageEngineIndexingBehaviour.EMPTY);
     }
 
     @Test
@@ -110,7 +112,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
         populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
         populator.close(true, NULL_CONTEXT);
 
-        TokenIndexUtility.verifyUpdates(entityTokens, layout, this::getTree);
+        TokenIndexUtility.verifyUpdates(entityTokens, layout, this::getTree, new DefaultTokenIndexIdLayout());
     }
 
     @Test
@@ -131,7 +133,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
         // then
         populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
         populator.close(true, NULL_CONTEXT);
-        TokenIndexUtility.verifyUpdates(entityTokens, layout, this::getTree);
+        TokenIndexUtility.verifyUpdates(entityTokens, layout, this::getTree, new DefaultTokenIndexIdLayout());
     }
 
     @Test
@@ -191,7 +193,7 @@ class TokenIndexPopulatorTest extends IndexPopulatorTests<TokenScanKey, TokenSca
         populator.scanCompleted(nullInstance, populationWorkScheduler, NULL_CONTEXT);
         populator.close(true, NULL_CONTEXT);
 
-        TokenIndexUtility.verifyUpdates(entityTokens, layout, this::getTree);
+        TokenIndexUtility.verifyUpdates(entityTokens, layout, this::getTree, new DefaultTokenIndexIdLayout());
     }
 
     @Test

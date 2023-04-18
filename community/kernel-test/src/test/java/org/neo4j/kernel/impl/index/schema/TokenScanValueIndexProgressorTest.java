@@ -49,21 +49,22 @@ public class TokenScanValueIndexProgressorTest {
     @Test
     void shouldNotProgressOnEmptyCursor() {
         MyClient client = new MyClient();
-        TokenScanValueIndexProgressor progressor =
-                new TokenScanValueIndexProgressor(EMPTY_CURSOR, client, IndexOrder.ASCENDING, EntityRange.FULL);
+        TokenScanValueIndexProgressor progressor = new TokenScanValueIndexProgressor(
+                EMPTY_CURSOR, client, IndexOrder.ASCENDING, EntityRange.FULL, new DefaultTokenIndexIdLayout());
         assertFalse(progressor.next());
         assertThat(client.observedIds).isEmpty();
     }
 
     @Test
     void shouldProgressAscendingThroughBitSet() {
-        List<NativeAllEntriesTokenScanReaderTest.Labels> labels = randomData(random);
+        var idLayout = new DefaultTokenIndexIdLayout();
+        List<NativeAllEntriesTokenScanReaderTest.Labels> labels = randomData(random, idLayout);
 
         for (NativeAllEntriesTokenScanReaderTest.Labels label : labels) {
             long[] nodeIds = label.getNodeIds();
             MyClient client = new MyClient();
-            TokenScanValueIndexProgressor progressor =
-                    new TokenScanValueIndexProgressor(label.cursor(), client, IndexOrder.ASCENDING, EntityRange.FULL);
+            TokenScanValueIndexProgressor progressor = new TokenScanValueIndexProgressor(
+                    label.cursor(), client, IndexOrder.ASCENDING, EntityRange.FULL, idLayout);
             while (progressor.next()) {}
 
             assertThat(client.observedIds)
@@ -73,13 +74,14 @@ public class TokenScanValueIndexProgressorTest {
 
     @Test
     void shouldProgressDescendingThroughBitSet() {
-        List<NativeAllEntriesTokenScanReaderTest.Labels> labels = randomData(random);
+        var idLayout = new DefaultTokenIndexIdLayout();
+        List<NativeAllEntriesTokenScanReaderTest.Labels> labels = randomData(random, idLayout);
 
         for (NativeAllEntriesTokenScanReaderTest.Labels label : labels) {
             long[] nodeIds = label.getNodeIds();
             MyClient client = new MyClient();
             TokenScanValueIndexProgressor progressor = new TokenScanValueIndexProgressor(
-                    label.descendingCursor(), client, IndexOrder.DESCENDING, EntityRange.FULL);
+                    label.descendingCursor(), client, IndexOrder.DESCENDING, EntityRange.FULL, idLayout);
             while (progressor.next()) {}
 
             assertThat(client.observedIds)
@@ -92,11 +94,12 @@ public class TokenScanValueIndexProgressorTest {
 
     @Test
     void shouldRespectRequestedRange() {
+        var idLayout = new DefaultTokenIndexIdLayout();
         NativeAllEntriesTokenScanReaderTest.Labels label =
-                NativeAllEntriesTokenScanReaderTest.labels(1, 20, 39, 40, 41, 60, 80, 99, 100, 101, 120);
+                NativeAllEntriesTokenScanReaderTest.labels(1, idLayout, 20, 39, 40, 41, 60, 80, 99, 100, 101, 120);
         MyClient client = new MyClient();
         TokenScanValueIndexProgressor progressor = new TokenScanValueIndexProgressor(
-                label.cursor(), client, IndexOrder.ASCENDING, new EntityRange(40, 100));
+                label.cursor(), client, IndexOrder.ASCENDING, new EntityRange(40, 100), idLayout);
         while (progressor.next()) {}
 
         assertThat(client.observedIds).containsExactlyInAnyOrder(40L, 41L, 60L, 80L, 99L);

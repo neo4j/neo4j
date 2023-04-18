@@ -36,8 +36,6 @@ import org.neo4j.values.storable.ValueCategory;
 public class TestIndexDescriptorFactory {
     private TestIndexDescriptorFactory() {}
 
-    public static final StorageEngineIndexingBehaviour BEHAVIOUR = () -> false;
-
     public static IndexDescriptor forSchema(SchemaDescriptor schema) {
         return forSchema(IndexType.RANGE, schema);
     }
@@ -48,7 +46,7 @@ public class TestIndexDescriptorFactory {
                 .withIndexType(indexType)
                 .withName("index_" + id)
                 .materialise(id);
-        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index, BEHAVIOUR);
+        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index, StorageEngineIndexingBehaviour.EMPTY);
     }
 
     public static IndexDescriptor uniqueForSchema(SchemaDescriptor schema) {
@@ -61,7 +59,7 @@ public class TestIndexDescriptorFactory {
                 .withIndexType(indexType)
                 .withName("index_" + id)
                 .materialise(id);
-        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index, BEHAVIOUR);
+        return TestIndexConfigCompleter.INSTANCE.completeConfiguration(index, StorageEngineIndexingBehaviour.EMPTY);
     }
 
     public static IndexDescriptor forLabel(int labelId, int... propertyIds) {

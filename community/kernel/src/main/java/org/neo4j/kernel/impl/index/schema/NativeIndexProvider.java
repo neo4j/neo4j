@@ -34,6 +34,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.PageCache;
@@ -95,7 +96,8 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
             ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         if (databaseIndexContext.readOnlyChecker.isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
@@ -120,7 +122,8 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly) {
+            boolean readOnly,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         IndexFiles indexFiles = indexFiles(descriptor);
         return newIndexAccessor(indexFiles, layout(descriptor), descriptor, tokenNameLookup, openOptions, readOnly);
     }

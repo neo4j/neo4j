@@ -37,6 +37,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -68,7 +69,8 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                             heapBufferFactory(1024),
                             INSTANCE,
                             tokenNameLookup,
-                            Sets.immutable.empty()),
+                            Sets.immutable.empty(),
+                            StorageEngineIndexingBehaviour.EMPTY),
                     p -> p.add(
                             Arrays.asList(
                                     add(1, descriptor, Values.of("v1"), Values.of("v2")),
@@ -77,7 +79,11 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
 
             // then
             try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                    descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty())) {
+                    descriptor,
+                    indexSamplingConfig,
+                    tokenNameLookup,
+                    Sets.immutable.empty(),
+                    StorageEngineIndexingBehaviour.EMPTY)) {
                 try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER);
                         NodeValueIterator nodes = new NodeValueIterator()) {
                     reader.query(
@@ -115,7 +121,8 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                             heapBufferFactory(1024),
                             INSTANCE,
                             tokenNameLookup,
-                            Sets.immutable.empty()),
+                            Sets.immutable.empty(),
+                            StorageEngineIndexingBehaviour.EMPTY),
                     p -> {
                         try {
                             p.add(
@@ -149,7 +156,8 @@ abstract class CompositeIndexPopulatorCompatibility extends PropertyIndexProvide
                             heapBufferFactory(1024),
                             INSTANCE,
                             tokenNameLookup,
-                            Sets.immutable.empty()),
+                            Sets.immutable.empty(),
+                            StorageEngineIndexingBehaviour.EMPTY),
                     p -> {
                         p.add(
                                 Arrays.asList(

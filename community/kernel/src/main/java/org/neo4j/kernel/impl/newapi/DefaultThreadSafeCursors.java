@@ -193,7 +193,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
 
     @Override
     public RelationshipTypeIndexCursor allocateRelationshipTypeIndexCursor(CursorContext cursorContext) {
-        if (indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()) {
+        if (indexingBehaviour.useNodeIdsInRelationshipTokenIndex()) {
             return trace(new DefaultNodeBasedRelationshipTypeIndexCursor(
                     DefaultRelationshipTypeIndexCursor::release,
                     allocateNodeCursor(cursorContext),
@@ -206,7 +206,7 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
 
     @Override
     public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext) {
-        if (indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()) {
+        if (indexingBehaviour.useNodeIdsInRelationshipTokenIndex()) {
             return trace(new DefaultNodeBasedRelationshipTypeIndexCursor(
                     DefaultRelationshipTypeIndexCursor::release,
                     allocateFullAccessNodeCursor(cursorContext),

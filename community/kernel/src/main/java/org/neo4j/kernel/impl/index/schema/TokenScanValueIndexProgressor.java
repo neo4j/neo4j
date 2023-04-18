@@ -32,21 +32,51 @@ import org.neo4j.kernel.api.index.IndexProgressor;
  * iterate over each set bit, returning actual entity ids, i.e. {@code entityIdRange+bitOffset}.
  *
  */
-public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor implements IndexProgressor, Resource {
+public class TokenScanValueIndexProgressor implements IndexProgressor, Resource {
+
+    /**
+     * {@link Seeker} to lazily read new {@link TokenScanValue} from.
+     */
+    private final Seeker<TokenScanKey, TokenScanValue> cursor;
+
+    /**
+     * Current base entityId, i.e. the {@link TokenScanKey#idRange} of the current {@link TokenScanKey}.
+     */
+    private long baseEntityId;
+    /**
+     * Bit set of the current {@link TokenScanValue}.
+     */
+    private long bits;
+    /**
+     * TokenId of previously retrieved {@link TokenScanKey}, for debugging and asserting purposes.
+     */
+    private int prevToken = -1;
+    /**
+     * IdRange of previously retrieved {@link TokenScanKey}, for debugging and asserting purposes.
+     */
+    private long prevRange = -1;
+    /**
+     * Indicate provided cursor has been closed.
+     */
+    private boolean closed;
+
     private final EntityTokenClient client;
     private final IndexOrder indexOrder;
     private final EntityRange range;
+    private final TokenIndexIdLayout idLayout;
     private int tokenId;
 
     TokenScanValueIndexProgressor(
             Seeker<TokenScanKey, TokenScanValue> cursor,
             EntityTokenClient client,
             IndexOrder indexOrder,
-            EntityRange range) {
-        super(cursor);
+            EntityRange range,
+            TokenIndexIdLayout idLayout) {
+        this.cursor = cursor;
         this.client = client;
         this.indexOrder = indexOrder;
         this.range = range;
+        this.idLayout = idLayout;
     }
 
     /**
@@ -77,9 +107,9 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
                     // We switch that bit to zero, so that we don't find it again the next time.
                     // First, create a mask where only set bit is set (easiest by bitshifting the number one),
                     // and then invert the mask and then & it with bits.
-                    long bitToZeroe = 1L << (Long.SIZE - delta - 1);
-                    bits &= ~bitToZeroe;
-                    idForClient = (baseEntityId + Long.SIZE) - 1 - delta;
+                    long bitToZero = 1L << (Long.SIZE - delta - 1);
+                    bits &= ~bitToZero;
+                    idForClient = (baseEntityId + Long.SIZE) - delta - 1;
                 }
 
                 if (isInRange(idForClient) && client.acceptEntity(idForClient, tokenId)) {
@@ -95,8 +125,8 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
                 throw new UncheckedIOException(e);
             }
 
-            TokenScanKey key = cursor.key();
-            baseEntityId = key.idRange * TokenScanValue.RANGE_SIZE;
+            var key = cursor.key();
+            baseEntityId = idLayout.firstIdOfRange(key.idRange);
             tokenId = key.tokenId;
             bits = cursor.value().bits;
 
@@ -114,5 +144,41 @@ public class TokenScanValueIndexProgressor extends TokenScanValueIndexAccessor i
      */
     private boolean isInRange(long entityId) {
         return entityId >= range.fromInclusive() && entityId < range.toExclusive();
+    }
+
+    private boolean keysInOrder(TokenScanKey key, IndexOrder order) {
+        if (order == IndexOrder.NONE) {
+            return true;
+        } else if (prevToken != -1 && prevRange != -1 && order == IndexOrder.ASCENDING) {
+            assert key.tokenId >= prevToken
+                    : "Expected to get ascending ordered results, got " + key + " where previous token was "
+                            + prevToken;
+            assert key.idRange > prevRange
+                    : "Expected to get ascending ordered results, got " + key + " where previous range was "
+                            + prevRange;
+        } else if (prevToken != -1 && prevRange != -1 && order == IndexOrder.DESCENDING) {
+            assert key.tokenId <= prevToken
+                    : "Expected to get descending ordered results, got " + key + " where previous token was "
+                            + prevToken;
+            assert key.idRange < prevRange
+                    : "Expected to get descending ordered results, got " + key + " where previous range was "
+                            + prevRange;
+        }
+        prevToken = key.tokenId;
+        prevRange = key.idRange;
+        // Made as a method returning boolean so that it can participate in an assert-call.
+        return true;
+    }
+
+    public void close() {
+        if (!closed) {
+            try {
+                cursor.close();
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            } finally {
+                closed = true;
+            }
+        }
     }
 }

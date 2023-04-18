@@ -17,36 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.kernel.impl.index.schema;
 
+import java.nio.file.OpenOption;
+import org.eclipse.collections.api.set.ImmutableSet;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 
-public class RecordStorageIndexingBehaviour implements StorageEngineIndexingBehaviour {
-    private final int nodesPerPage;
-    private final int relationshipsPerPage;
-
-    public RecordStorageIndexingBehaviour(int nodesPerPage, int relationshipsPerPage) {
-        this.nodesPerPage = nodesPerPage;
-        this.relationshipsPerPage = relationshipsPerPage;
+@ServiceProvider
+public class DefaultTokenIndexIdLayoutFactory implements TokenIndexIdLayoutFactory {
+    @Override
+    public int getPriority() {
+        return 1000;
     }
 
     @Override
-    public boolean useNodeIdsInRelationshipTokenIndex() {
-        return false;
-    }
-
-    @Override
-    public boolean requireCoordinationLocks() {
-        return true;
-    }
-
-    @Override
-    public int nodesPerPage() {
-        return nodesPerPage;
-    }
-
-    @Override
-    public int relationshipsPerPage() {
-        return relationshipsPerPage;
+    public TokenIndexIdLayout createIdLayout(
+            ImmutableSet<OpenOption> openOptions,
+            EntityType entityType,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
+        return new DefaultTokenIndexIdLayout();
     }
 }

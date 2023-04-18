@@ -30,6 +30,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -93,9 +94,16 @@ public class FailingNativeIndexProviderFactory extends BuiltInDelegatingIndexPro
                     ByteBufferFactory bufferFactory,
                     MemoryTracker memoryTracker,
                     TokenNameLookup tokenNameLookup,
-                    ImmutableSet<OpenOption> openOptions) {
+                    ImmutableSet<OpenOption> openOptions,
+                    StorageEngineIndexingBehaviour indexingBehaviour) {
                 IndexPopulator actualPopulator = actualProvider.getPopulator(
-                        descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup, openOptions);
+                        descriptor,
+                        samplingConfig,
+                        bufferFactory,
+                        memoryTracker,
+                        tokenNameLookup,
+                        openOptions,
+                        indexingBehaviour);
                 if (failureTypes.contains(FailureType.POPULATION)) {
                     return new IndexPopulator.Delegating(actualPopulator) {
                         @Override
@@ -114,10 +122,11 @@ public class FailingNativeIndexProviderFactory extends BuiltInDelegatingIndexPro
                     IndexSamplingConfig samplingConfig,
                     TokenNameLookup tokenNameLookup,
                     ImmutableSet<OpenOption> openOptions,
-                    boolean readOnly)
+                    boolean readOnly,
+                    StorageEngineIndexingBehaviour indexingBehaviour)
                     throws IOException {
                 IndexAccessor actualAccessor = actualProvider.getOnlineAccessor(
-                        descriptor, samplingConfig, tokenNameLookup, openOptions, readOnly);
+                        descriptor, samplingConfig, tokenNameLookup, openOptions, readOnly, indexingBehaviour);
                 return new IndexAccessor.Delegating(actualAccessor) {
                     @Override
                     public IndexUpdater newUpdater(

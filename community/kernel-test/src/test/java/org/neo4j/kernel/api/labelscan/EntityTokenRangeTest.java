@@ -25,6 +25,7 @@ import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.kernel.impl.index.schema.DefaultTokenIndexIdLayout;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl;
 
@@ -35,7 +36,7 @@ class EntityTokenRangeTest {
         long[][] labelsPerNode = new long[][] {{1}, {1, 3}, {3, 5, 7}, {}, {1, 5, 7}, {}, {}, {1, 2, 3, 4}};
 
         // when
-        EntityTokenRange range = new EntityTokenRangeImpl(0, labelsPerNode, NODE);
+        EntityTokenRange range = new EntityTokenRangeImpl(0, labelsPerNode, NODE, new DefaultTokenIndexIdLayout());
 
         // then
         assertArrayEquals(new long[] {0, 1, 2, 3, 4, 5, 6, 7}, range.entities());
@@ -50,10 +51,11 @@ class EntityTokenRangeTest {
         long[][] labelsPerNode = new long[][] {{1}, {1, 3}, {3, 5, 7}, {}, {1, 5, 7}, {}, {}, {1, 2, 3, 4}};
 
         // when
-        EntityTokenRange range = new EntityTokenRangeImpl(10, labelsPerNode, NODE);
+        var idLayout = new DefaultTokenIndexIdLayout();
+        EntityTokenRange range = new EntityTokenRangeImpl(10, labelsPerNode, NODE, idLayout);
 
         // then
-        long baseNodeId = range.id() * labelsPerNode.length;
+        long baseNodeId = idLayout.firstIdOfRange(range.id());
         long[] expectedNodeIds = new long[labelsPerNode.length];
         for (int i = 0; i < expectedNodeIds.length; i++) {
             expectedNodeIds[i] = baseNodeId + i;
@@ -63,13 +65,15 @@ class EntityTokenRangeTest {
 
     @Test
     void shouldAdaptToStringToEntityTypeNode() {
-        EntityTokenRange nodeLabelRange = new EntityTokenRangeImpl(0, new long[0][], NODE);
+        EntityTokenRange nodeLabelRange =
+                new EntityTokenRangeImpl(0, new long[0][], NODE, new DefaultTokenIndexIdLayout());
         assertThat(nodeLabelRange.toString()).contains("NodeLabelRange");
     }
 
     @Test
     void shouldAdaptToStringToEntityTypeRelationship() {
-        EntityTokenRange relationshipTypeRange = new EntityTokenRangeImpl(0, new long[0][], RELATIONSHIP);
+        EntityTokenRange relationshipTypeRange =
+                new EntityTokenRangeImpl(0, new long[0][], RELATIONSHIP, new DefaultTokenIndexIdLayout());
         assertThat(relationshipTypeRange.toString()).contains("RelationshipTypeRange");
     }
 }

@@ -37,7 +37,7 @@ import org.neo4j.storageengine.api.cursor.StoreCursors;
 
 /**
  * Used as store scan for building a relationship type lookup index if
- * {@link StorageEngineIndexingBehaviour#useNodeIdsInRelationshipTypeScanIndex() storage engine uses node-based relationship type lookup index}.
+ * {@link StorageEngineIndexingBehaviour#useNodeIdsInRelationshipTokenIndex() storage engine uses node-based relationship type lookup index}.
  * It visits nodes consecutively and yields its relationship types.
  */
 public class NodeRelationshipTypesStoreScan extends PropertyAwareEntityStoreScan<StorageNodeCursor> {

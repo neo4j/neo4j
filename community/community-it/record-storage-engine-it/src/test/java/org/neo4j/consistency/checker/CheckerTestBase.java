@@ -269,7 +269,9 @@ class CheckerTestBase {
                 tokenHolders,
                 contextFactory,
                 neoStores.getOpenOptions(),
-                new RecordStorageIndexingBehaviour());
+                new RecordStorageIndexingBehaviour(
+                        neoStores.getNodeStore().getRecordsPerPage(),
+                        neoStores.getRelationshipStore().getRecordsPerPage()));
         InconsistencyReport report =
                 new InconsistencyReport(new InconsistencyMessageLogger(NullLog.getInstance()), inconsistenciesSummary);
         monitor = mock(ConsistencyReporter.Monitor.class);

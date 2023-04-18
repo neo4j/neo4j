@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -93,7 +94,8 @@ class LuceneIndexProviderTest {
                         heapBufferFactory(1024),
                         INSTANCE,
                         SIMPLE_TOKEN_LOOKUP,
-                        Sets.immutable.empty()));
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY));
     }
 
     @Test
@@ -144,7 +146,8 @@ class LuceneIndexProviderTest {
                 bufferFactory,
                 INSTANCE,
                 mock(TokenNameLookup.class),
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         var race = new Race();
 
         // And the underlying index files are created
@@ -194,7 +197,11 @@ class LuceneIndexProviderTest {
     private static IndexAccessor getIndexAccessor(Config readOnlyConfig, TextIndexProvider indexProvider)
             throws IOException {
         return indexProvider.getOnlineAccessor(
-                descriptor, new IndexSamplingConfig(readOnlyConfig), SIMPLE_TOKEN_LOOKUP, Sets.immutable.empty());
+                descriptor,
+                new IndexSamplingConfig(readOnlyConfig),
+                SIMPLE_TOKEN_LOOKUP,
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
     }
 
     private static TextIndexProvider getLuceneIndexProvider(

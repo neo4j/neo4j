@@ -304,7 +304,7 @@ public abstract class TokenIndexScanPartitionedScanTestSuite<CURSER extends Curs
                         .containsExactlyInAnyOrderElementsOf(followingExpectedMatched);
             }
 
-            if (!storageEngine.indexingBehaviour().useNodeIdsInRelationshipTypeScanIndex()) {
+            if (!storageEngine.indexingBehaviour().useNodeIdsInRelationshipTokenIndex()) {
                 // then   all estimated ranges should be strictly less than the next
                 for (int i = 1; i < estimatedRanges.size(); i++) {
                     final var prev = estimatedRanges.get(i - 1);

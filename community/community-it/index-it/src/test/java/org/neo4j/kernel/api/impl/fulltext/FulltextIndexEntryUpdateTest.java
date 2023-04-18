@@ -101,7 +101,6 @@ import org.neo4j.values.storable.Values;
 class FulltextIndexEntryUpdateTest {
     private static final Config CONFIG = Config.defaults();
     private static final IndexSamplingConfig SAMPLING_CONFIG = new IndexSamplingConfig(CONFIG);
-    private static final StorageEngineIndexingBehaviour BEHAVIOUR = () -> false;
 
     private final LifeSupport life = new LifeSupport();
     private final TokenHolders tokenHolders = new TokenHolders(
@@ -172,7 +171,7 @@ class FulltextIndexEntryUpdateTest {
                         .withIndexProvider(provider.getProviderDescriptor())
                         .withName("FulltextIndex")
                         .materialise(0),
-                BEHAVIOUR);
+                StorageEngineIndexingBehaviour.EMPTY);
     }
 
     @AfterEach
@@ -438,7 +437,8 @@ class FulltextIndexEntryUpdateTest {
                 ByteBufferFactory.heapBufferFactory((int) ByteUnit.kibiBytes(100)),
                 EmptyMemoryTracker.INSTANCE,
                 tokenHolders.lookupWithIds(),
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
         return populator;
     }
@@ -452,7 +452,12 @@ class FulltextIndexEntryUpdateTest {
     }
 
     private IndexAccessor getAccessor() throws IOException {
-        return provider.getOnlineAccessor(index, SAMPLING_CONFIG, tokenHolders.lookupWithIds(), Sets.immutable.empty());
+        return provider.getOnlineAccessor(
+                index,
+                SAMPLING_CONFIG,
+                tokenHolders.lookupWithIds(),
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
     }
 
     private IndexUpdater getUpdater(IndexAccessor accessor) {

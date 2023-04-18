@@ -23,7 +23,7 @@ package org.neo4j.kernel.impl.index.schema;
  * A small bit set of maximum 64 bits. Used in {@link TokenScanLayout}.
  */
 class TokenScanValue {
-    static final int RANGE_SIZE = Long.SIZE;
+    public static final int RANGE_SIZE = Long.SIZE;
     static final int RANGE_SIZE_BYTES = Long.BYTES;
 
     /**

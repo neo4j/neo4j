@@ -140,9 +140,7 @@ public class DynamicIndexStoreViewIT {
                 () -> {
                     long relations = populateRelationships();
                     long nodes = 2 * relations;
-                    return storageEngine.indexingBehaviour().useNodeIdsInRelationshipTypeScanIndex()
-                            ? nodes
-                            : relations;
+                    return storageEngine.indexingBehaviour().useNodeIdsInRelationshipTokenIndex() ? nodes : relations;
                 },
                 this::relationshipStoreScan);
     }

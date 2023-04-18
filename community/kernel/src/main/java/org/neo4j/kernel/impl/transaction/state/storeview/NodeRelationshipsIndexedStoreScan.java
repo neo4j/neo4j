@@ -42,7 +42,7 @@ import org.neo4j.storageengine.util.StorageRelationshipByNodeScanCursor;
 
 /**
  * Used for driving an index population scan for relationship index backed by a node-based relationship type lookup index,
- * i.e. for storage engines that uses {@link StorageEngineIndexingBehaviour#useNodeIdsInRelationshipTypeScanIndex() node-based relationship type lookup index}.
+ * i.e. for storage engines that uses {@link StorageEngineIndexingBehaviour#useNodeIdsInRelationshipTokenIndex() node-based relationship type lookup index}.
  *
  * Since visited relationship IDs aren't strictly sequential then the optimization that index population has, where external updates "ahead of"
  * the current position are skipped cannot be used.

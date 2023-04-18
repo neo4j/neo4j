@@ -852,7 +852,8 @@ class IndexPopulationJobTest {
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                storageEngine.getOpenOptions());
+                storageEngine.getOpenOptions(),
+                storageEngine.indexingBehaviour());
     }
 
     private IndexPopulationJob newIndexPopulationJob(

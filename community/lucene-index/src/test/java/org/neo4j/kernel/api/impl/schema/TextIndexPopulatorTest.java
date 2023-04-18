@@ -53,6 +53,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
@@ -101,7 +102,13 @@ class TextIndexPopulatorTest {
                 .withName("index")
                 .materialise(0);
         indexPopulator = provider.getPopulator(
-                index, samplingConfig, heapBufferFactory(1024), INSTANCE, SIMPLE_TOKEN_LOOKUP, Sets.immutable.empty());
+                index,
+                samplingConfig,
+                heapBufferFactory(1024),
+                INSTANCE,
+                SIMPLE_TOKEN_LOOKUP,
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         indexPopulator.create();
     }
 

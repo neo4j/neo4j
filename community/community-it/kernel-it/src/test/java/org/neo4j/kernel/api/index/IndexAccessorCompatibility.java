@@ -47,6 +47,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexOrder;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -78,11 +79,16 @@ abstract class IndexAccessorCompatibility extends PropertyIndexProviderCompatibi
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
         populator.close(true, CursorContext.NULL_CONTEXT);
         accessor = indexProvider.getOnlineAccessor(
-                descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty());
+                descriptor,
+                indexSamplingConfig,
+                tokenNameLookup,
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
     }
 
     @AfterEach

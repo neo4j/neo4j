@@ -29,6 +29,7 @@ import java.util.Collection;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -47,8 +48,9 @@ public class TokenIndexPopulator extends TokenIndex implements IndexPopulator {
             DatabaseIndexContext databaseIndexContext,
             IndexFiles indexFiles,
             IndexDescriptor descriptor,
-            ImmutableSet<OpenOption> openOptions) {
-        super(databaseIndexContext, indexFiles, descriptor, openOptions, false);
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
+        super(databaseIndexContext, indexFiles, descriptor, openOptions, false, indexingBehaviour);
     }
 
     @Override

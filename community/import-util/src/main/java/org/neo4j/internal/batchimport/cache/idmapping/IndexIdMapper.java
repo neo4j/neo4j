@@ -55,6 +55,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.memory.UnsafeDirectByteBufferAllocator;
@@ -92,6 +93,7 @@ public class IndexIdMapper implements IdMapper {
     private final List<Index> indexes = new CopyOnWriteArrayList<>();
     private final Map<String, Populator> populators = new HashMap<>();
     private final ByteBufferFactory bufferFactory;
+    private final StorageEngineIndexingBehaviour indexingBehaviour;
     private final MutableLongSet duplicateNodeIds = LongSets.mutable.empty().asSynchronized();
 
     // key is groupName, and for some reason accessors doesn't expose which descriptor they're for, so pass that in too
@@ -105,7 +107,8 @@ public class IndexIdMapper implements IdMapper {
             Configuration configuration,
             PageCacheTracer pageCacheTracer,
             IndexStatisticsStore indexStatisticsStore,
-            ReadableGroups groups)
+            ReadableGroups groups,
+            StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
         this.accessors = accessors;
         this.tempIndexes = tempIndexes;
@@ -121,6 +124,7 @@ public class IndexIdMapper implements IdMapper {
         this.bufferFactory = new ByteBufferFactory(
                 UnsafeDirectByteBufferAllocator::new,
                 Config.defaults().get(index_populator_block_size).intValue());
+        this.indexingBehaviour = indexingBehaviour;
         for (var entry : accessors.entrySet()) {
             var descriptor = indexDescriptors.get(entry.getKey());
             var indexProvider = tempIndexes.lookup(descriptor.getIndexProvider());
@@ -130,7 +134,8 @@ public class IndexIdMapper implements IdMapper {
                     bufferFactory,
                     EmptyMemoryTracker.INSTANCE,
                     tokenNameLookup,
-                    openOptions);
+                    openOptions,
+                    indexingBehaviour);
             populator.create();
             populators.put(entry.getKey(), new Populator(populator, descriptor));
         }
@@ -214,7 +219,8 @@ public class IndexIdMapper implements IdMapper {
                         populator.descriptor,
                         new IndexSamplingConfig(Config.defaults()),
                         tokenNameLookup,
-                        openOptions)) {
+                        openOptions,
+                        indexingBehaviour)) {
                     var accessor = accessors.get(entry.getKey());
                     accessor.validate(
                             newNodesIndex,
@@ -238,7 +244,11 @@ public class IndexIdMapper implements IdMapper {
                 var descriptor = entry.getValue().descriptor;
                 var indexProvider = tempIndexes.lookup(descriptor.getIndexProvider());
                 try (var newNodesIndex = indexProvider.getOnlineAccessor(
-                        descriptor, new IndexSamplingConfig(Config.defaults()), tokenNameLookup, openOptions)) {
+                        descriptor,
+                        new IndexSamplingConfig(Config.defaults()),
+                        tokenNameLookup,
+                        openOptions,
+                        indexingBehaviour)) {
                     var accessor = accessors.get(entry.getKey());
                     accessor.insertFrom(
                             newNodesIndex,

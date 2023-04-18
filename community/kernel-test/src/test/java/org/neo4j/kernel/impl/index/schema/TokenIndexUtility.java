@@ -47,19 +47,19 @@ public class TokenIndexUtility {
     static void verifyUpdates(
             MutableLongObjectMap<long[]> expected,
             TokenScanLayout layout,
-            Supplier<GBPTree<TokenScanKey, TokenScanValue>> treeSupplier)
+            Supplier<GBPTree<TokenScanKey, TokenScanValue>> treeSupplier,
+            DefaultTokenIndexIdLayout idLayout)
             throws IOException {
         // Verify that everything in the tree is expected to exist.
         try (GBPTree<TokenScanKey, TokenScanValue> tree = treeSupplier.get();
                 Seeker<TokenScanKey, TokenScanValue> scan = scan(tree, layout)) {
             while (scan.next()) {
                 TokenScanKey key = scan.key();
-                TokenScanValue value = scan.value();
-                long entityIdBase = key.idRange * TokenScanValue.RANGE_SIZE;
-
-                for (int i = 0; i < TokenScanValue.RANGE_SIZE; i++) {
+                long bits = scan.value().bits;
+                long entityIdBase = idLayout.firstIdOfRange(key.idRange);
+                for (int i = 0; i < Long.SIZE; i++) {
                     long mask = 1L << i;
-                    long posInBits = value.bits & mask;
+                    long posInBits = bits & mask;
                     if (posInBits != 0) {
                         long entity = entityIdBase + i;
                         long[] tokens = expected.remove(entity);

@@ -28,7 +28,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.DataTree.W_BATCHED_SINGLE_THREADED;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import java.io.IOException;
 import java.util.Random;
@@ -63,6 +62,7 @@ import org.neo4j.test.utils.TestDirectory;
 class TokenIndexUpdaterTest {
     private static final int LABEL_COUNT = 5;
     private static final int NODE_COUNT = 10_000;
+    private final DefaultTokenIndexIdLayout idLayout = new DefaultTokenIndexIdLayout();
 
     @Inject
     private RandomSupport random;
@@ -89,10 +89,40 @@ class TokenIndexUpdaterTest {
     }
 
     @Test
+    void addAndSearchSequenceOfNodes() throws Exception {
+        int labelId = 2;
+        // GIVEN
+        try (var updater = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
+            updater.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
+
+            // WHEN
+            for (long i = 0; i < NODE_COUNT; i++) {
+                var update = TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {labelId});
+                updater.process(update);
+            }
+        }
+
+        // THEN
+        SimpleEntityTokenClient client = new SimpleEntityTokenClient();
+        TokenScanValueIndexProgressor progressor = new TokenScanValueIndexProgressor(
+                tree.seek(new TokenScanKey(labelId, 0), new TokenScanKey(labelId, Long.MAX_VALUE), NULL_CONTEXT),
+                client,
+                IndexOrder.ASCENDING,
+                EntityRange.FULL,
+                idLayout);
+        long expectedNodeId = 0;
+        while (progressor.next()) {
+            assertThat(client.reference).isEqualTo(expectedNodeId);
+            expectedNodeId++;
+        }
+        assertThat(expectedNodeId).isEqualTo(NODE_COUNT);
+    }
+
+    @Test
     void shouldAddAndRemoveLabels() throws Exception {
         // GIVEN
         long[] expected = new long[NODE_COUNT];
-        try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100))) {
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
             // WHEN
@@ -110,7 +140,8 @@ class TokenIndexUpdaterTest {
                     tree.seek(new TokenScanKey(i, 0), new TokenScanKey(i, Long.MAX_VALUE), NULL_CONTEXT),
                     client,
                     IndexOrder.ASCENDING,
-                    EntityRange.FULL);
+                    EntityRange.FULL,
+                    idLayout);
             MutableLongList actualNodeIds = LongLists.mutable.empty();
             while (progressor.next()) {
                 actualNodeIds.add(client.reference);
@@ -128,7 +159,7 @@ class TokenIndexUpdaterTest {
         var cursorContext = contextFactory.create("tracePageCacheAccessOnWrite");
 
         // When
-        try (TokenIndexUpdater writer = new TokenIndexUpdater(nodeCount)) {
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(nodeCount, idLayout)) {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, cursorContext));
             for (int i = 0; i < nodeCount; i++) {
                 writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {1}));
@@ -147,7 +178,7 @@ class TokenIndexUpdaterTest {
     void shouldNotAcceptUnsortedTokens() {
         // GIVEN
         assertThatThrownBy(() -> {
-                    try (TokenIndexUpdater writer = new TokenIndexUpdater(1)) {
+                    try (TokenIndexUpdater writer = new TokenIndexUpdater(1, idLayout)) {
                         writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
                         // WHEN
@@ -162,7 +193,7 @@ class TokenIndexUpdaterTest {
     void shouldNotAcceptInvalidTokens() {
         // GIVEN
         assertThatThrownBy(() -> {
-                    try (TokenIndexUpdater writer = new TokenIndexUpdater(1)) {
+                    try (TokenIndexUpdater writer = new TokenIndexUpdater(1, idLayout)) {
                         writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
                         // WHEN
@@ -180,13 +211,14 @@ class TokenIndexUpdaterTest {
         int numberOfNodesInEach = 5;
         int labelId = 1;
         long[] labels = {labelId};
-        try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100))) {
+        var idLayout = this.idLayout;
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100), idLayout)) {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
 
             // a couple of tree entries with a couple of nodes each
             // concept art: [xxxx          ][xxxx          ][xxxx          ] where x is used node.
             for (int i = 0; i < numberOfTreeEntries; i++) {
-                long baseNodeId = i * RANGE_SIZE;
+                long baseNodeId = idLayout.firstIdOfRange(i);
                 for (int j = 0; j < numberOfNodesInEach; j++) {
                     writer.process(TokenIndexEntryUpdate.change(baseNodeId + j, null, EMPTY_LONG_ARRAY, labels));
                 }
@@ -196,9 +228,9 @@ class TokenIndexUpdaterTest {
 
         // when removing all the nodes from one of the tree nodes
         int treeEntryToRemoveFrom = 1;
-        try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100))) {
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(max(5, NODE_COUNT / 100), this.idLayout)) {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
-            long baseNodeId = treeEntryToRemoveFrom * RANGE_SIZE;
+            long baseNodeId = idLayout.firstIdOfRange(treeEntryToRemoveFrom);
             for (int i = 0; i < numberOfNodesInEach; i++) {
                 writer.process(TokenIndexEntryUpdate.change(baseNodeId + i, null, labels, EMPTY_LONG_ARRAY));
             }

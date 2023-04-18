@@ -441,7 +441,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateNodeCursor(cursorContext, storeCursors),
                     storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors));
-            if (indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()) {
+            if (indexingBehaviour.useNodeIdsInRelationshipTokenIndex()) {
                 var relationshipTraversalCursor = new DefaultRelationshipTraversalCursor(
                         c -> {},
                         storageReader.allocateRelationshipTraversalCursor(cursorContext, storeCursors),
@@ -474,7 +474,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     @Override
     public RelationshipTypeIndexCursor allocateFullAccessRelationshipTypeIndexCursor(CursorContext cursorContext) {
         if (fullAccessRelationshipTypeIndexCursor == null) {
-            if (indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()) {
+            if (indexingBehaviour.useNodeIdsInRelationshipTokenIndex()) {
                 var nodeCursor = new FullAccessNodeCursor(
                         c -> {}, storageReader.allocateNodeCursor(cursorContext, storeCursors));
                 var relationshipTraversalCursor = new FullAccessRelationshipTraversalCursor(

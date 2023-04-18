@@ -137,7 +137,6 @@ public class DatabaseCompositeIndexAccessorTest {
             IndexPrototype.forSchema(SchemaDescriptors.forLabel(0, PROP_ID1, PROP_ID2));
     private static final IndexPrototype UNIQUE_SCHEMA_INDEX_DESCRIPTOR =
             IndexPrototype.uniqueForSchema(SchemaDescriptors.forLabel(1, PROP_ID1, PROP_ID2));
-    private static final StorageEngineIndexingBehaviour BEHAVIOUR = () -> false;
     private final JobScheduler jobScheduler = JobSchedulerFactory.createInitialisedScheduler();
 
     private Iterable<IndexProvider> providers;
@@ -162,14 +161,15 @@ public class DatabaseCompositeIndexAccessorTest {
                 accessors.add(indexAccessor(
                         p,
                         p.completeConfiguration(
-                                SCHEMA_INDEX_DESCRIPTOR.withName("index_" + 0).materialise(0), BEHAVIOUR)));
+                                SCHEMA_INDEX_DESCRIPTOR.withName("index_" + 0).materialise(0),
+                                StorageEngineIndexingBehaviour.EMPTY)));
                 accessors.add(indexAccessor(
                         p,
                         p.completeConfiguration(
                                 UNIQUE_SCHEMA_INDEX_DESCRIPTOR
                                         .withName("constraint_" + 1)
                                         .materialise(1),
-                                BEHAVIOUR)));
+                                StorageEngineIndexingBehaviour.EMPTY)));
             }
             return accessors;
         }
@@ -348,11 +348,17 @@ public class DatabaseCompositeIndexAccessorTest {
                 heapBufferFactory(1024),
                 INSTANCE,
                 SIMPLE_NAME_LOOKUP,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         populator.create();
         populator.close(true, CursorContext.NULL_CONTEXT);
 
-        return provider.getOnlineAccessor(descriptor, SAMPLING_CONFIG, SIMPLE_NAME_LOOKUP, Sets.immutable.empty());
+        return provider.getOnlineAccessor(
+                descriptor,
+                SAMPLING_CONFIG,
+                SIMPLE_NAME_LOOKUP,
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
     }
 
     private static Set<Long> resultSet(ValueIndexReader reader, PropertyIndexQuery... queries)

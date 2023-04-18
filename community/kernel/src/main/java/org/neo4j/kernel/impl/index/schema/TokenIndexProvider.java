@@ -92,13 +92,14 @@ public class TokenIndexProvider extends IndexProvider {
             ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         if (databaseIndexContext.readOnlyChecker.isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
 
-        return new WorkSyncedIndexPopulator(
-                new TokenIndexPopulator(databaseIndexContext, indexFiles(descriptor), descriptor, openOptions));
+        return new WorkSyncedIndexPopulator(new TokenIndexPopulator(
+                databaseIndexContext, indexFiles(descriptor), descriptor, openOptions, indexingBehaviour));
     }
 
     @Override
@@ -107,14 +108,16 @@ public class TokenIndexProvider extends IndexProvider {
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly) {
+            boolean readOnly,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         return new TokenIndexAccessor(
                 databaseIndexContext,
                 indexFiles(descriptor),
                 descriptor,
                 recoveryCleanupWorkCollector,
                 openOptions,
-                readOnly);
+                readOnly,
+                indexingBehaviour);
     }
 
     @Override
@@ -172,7 +175,7 @@ public class TokenIndexProvider extends IndexProvider {
             IndexDescriptor index, StorageEngineIndexingBehaviour indexingBehaviour) {
         if (index.getCapability().equals(IndexCapability.NO_CAPABILITY)) {
             boolean hasOrdering = !(index.schema().entityType().equals(EntityType.RELATIONSHIP)
-                    && indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex());
+                    && indexingBehaviour.useNodeIdsInRelationshipTokenIndex());
             index = index.withIndexCapability(capability(hasOrdering));
         }
         return index;

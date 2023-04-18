@@ -809,7 +809,7 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
             this(
                     descriptor.schema().entityType(),
                     descriptor.schema().entityType() == RELATIONSHIP
-                            && indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()
+                            && indexingBehaviour.useNodeIdsInRelationshipTokenIndex()
                             && descriptor.isTokenIndex());
         }
     }

@@ -51,6 +51,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.common.Subject.AUTH_DISABLED;
 import static org.neo4j.common.Subject.SYSTEM;
@@ -126,6 +127,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -200,7 +202,8 @@ class IndexingServiceTest {
             .materialise(21);
     private final IndexPopulator populator = mock(IndexPopulator.class);
     private final IndexUpdater updater = mock(IndexUpdater.class);
-    private final IndexProvider indexProvider = mock(IndexProvider.class);
+    private final IndexProvider indexProvider =
+            mock(IndexProvider.class, withSettings().name("testindexprovider"));
     private final IndexAccessor accessor = mock(IndexAccessor.class, RETURNS_MOCKS);
     private final IndexStoreView storeView = mock(IndexStoreView.class);
     private final IndexStoreViewFactory storeViewFactory = mock(IndexStoreViewFactory.class);
@@ -709,10 +712,10 @@ class IndexingServiceTest {
                 .thenReturn(updater2);
 
         when(indexProvider.getOnlineAccessor(
-                        eq(index1), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        eq(index1), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any(), any()))
                 .thenReturn(accessor1);
         when(indexProvider.getOnlineAccessor(
-                        eq(index2), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        eq(index2), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any(), any()))
                 .thenReturn(accessor2);
 
         life.start();
@@ -901,6 +904,7 @@ class IndexingServiceTest {
                         any(),
                         any(),
                         any(TokenNameLookup.class),
+                        any(),
                         any());
         verify(indexProvider)
                 .getPopulator(
@@ -912,6 +916,7 @@ class IndexingServiceTest {
                         any(),
                         any(),
                         any(TokenNameLookup.class),
+                        any(),
                         any());
         verify(indexProvider)
                 .getPopulator(
@@ -923,6 +928,7 @@ class IndexingServiceTest {
                         any(),
                         any(),
                         any(TokenNameLookup.class),
+                        any(),
                         any());
 
         waitForIndexesToComeOnline(indexing, index1, index2, index3);
@@ -938,7 +944,11 @@ class IndexingServiceTest {
         nameLookup.propertyKey(propertyKeyId, "propertyKey");
 
         when(indexProvider.getOnlineAccessor(
-                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(TokenNameLookup.class),
+                        any(),
+                        any()))
                 .thenThrow(exception);
 
         life.start();
@@ -979,7 +989,11 @@ class IndexingServiceTest {
 
         when(indexProvider.getInitialState(eq(index), any(), any())).thenReturn(POPULATING);
         when(indexProvider.getOnlineAccessor(
-                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(TokenNameLookup.class),
+                        any(),
+                        any()))
                 .thenThrow(exception);
 
         life.start();
@@ -1281,7 +1295,11 @@ class IndexingServiceTest {
         when(accessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
                 .thenReturn(updater);
         when(indexProvider.getOnlineAccessor(
-                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(TokenNameLookup.class),
+                        any(),
+                        any()))
                 .thenReturn(accessor);
 
         life.init();
@@ -1396,7 +1414,7 @@ class IndexingServiceTest {
         // given
         when(accessor.newUpdater(any(IndexUpdateMode.class), any(CursorContext.class), anyBoolean()))
                 .thenReturn(updater);
-        when(storageEngine.indexingBehaviour()).thenReturn(() -> true);
+        when(storageEngine.indexingBehaviour()).thenReturn(new NodeIdsForRelationshipsBehaviour());
         Set<IndexDescriptor> populationJobDescriptors = new CopyOnWriteArraySet<>();
         var indexingMonitor = new IndexMonitor.MonitorAdapter() {
             @Override
@@ -1456,11 +1474,12 @@ class IndexingServiceTest {
                         any(),
                         any(),
                         any(TokenNameLookup.class),
+                        any(),
                         any()))
                 .thenReturn(populator);
         withData().getsProcessedByStoreScanFrom(storeView);
         when(indexProvider.getOnlineAccessor(
-                        eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any(), any()))
                 .thenThrow(new IllegalStateException("Something unexpectedly wrong with the index here"));
         when(indexProvider.storeMigrationParticipant(
                         any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
@@ -1518,7 +1537,7 @@ class IndexingServiceTest {
 
         // and when
         when(indexProvider.getOnlineAccessor(
-                        eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any(), any()))
                 .thenReturn(accessor);
         life.start();
         indexingService.getIndexProxy(index).awaitStoreScanCompleted(1, MINUTES);
@@ -1721,11 +1740,16 @@ class IndexingServiceTest {
                         any(),
                         any(),
                         any(TokenNameLookup.class),
+                        any(),
                         any()))
                 .thenReturn(populator);
         data.getsProcessedByStoreScanFrom(storeView);
         when(indexProvider.getOnlineAccessor(
-                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(TokenNameLookup.class),
+                        any(),
+                        any()))
                 .thenReturn(accessor);
         when(indexProvider.storeMigrationParticipant(
                         any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
@@ -1914,7 +1938,11 @@ class IndexingServiceTest {
         IndexProvider provider = mockIndexProvider(descriptor);
         IndexAccessor indexAccessor = mock(IndexAccessor.class);
         when(provider.getOnlineAccessor(
-                        any(IndexDescriptor.class), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any()))
+                        any(IndexDescriptor.class),
+                        any(IndexSamplingConfig.class),
+                        any(TokenNameLookup.class),
+                        any(),
+                        any()))
                 .thenReturn(indexAccessor);
         return provider;
     }
@@ -2012,6 +2040,28 @@ class IndexingServiceTest {
         @Override
         public PartitionedTokenScan entityTokenScan(PartitionedTokenScan leadingPartition, TokenPredicate query) {
             throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class NodeIdsForRelationshipsBehaviour implements StorageEngineIndexingBehaviour {
+        @Override
+        public boolean useNodeIdsInRelationshipTokenIndex() {
+            return true;
+        }
+
+        @Override
+        public boolean requireCoordinationLocks() {
+            return false;
+        }
+
+        @Override
+        public int nodesPerPage() {
+            return 0;
+        }
+
+        @Override
+        public int relationshipsPerPage() {
+            return 0;
         }
     }
 }

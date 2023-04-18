@@ -45,6 +45,7 @@ import org.neo4j.internal.schema.AnyTokenSchemaDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -205,6 +206,7 @@ class ReadEntityIdsStepUsingTokenIndexTest {
                 INDEX_DESCRIPTOR,
                 immediate(),
                 Sets.immutable.empty(),
-                false);
+                false,
+                StorageEngineIndexingBehaviour.EMPTY);
     }
 }

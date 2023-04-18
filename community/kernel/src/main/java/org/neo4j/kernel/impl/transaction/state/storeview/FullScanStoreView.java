@@ -87,7 +87,7 @@ public class FullScanStoreView implements IndexStoreView {
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
         if (relationshipTypeScanConsumer != null
-                && storageEngine.indexingBehaviour().useNodeIdsInRelationshipTypeScanIndex()) {
+                && storageEngine.indexingBehaviour().useNodeIdsInRelationshipTokenIndex()) {
             // This scan will visit data to populate relationship type lookup index. The storage engine can have an
             // indexing behaviour where each ID in it represents a node and the storage cursors will yield all types
             // of relationships that the node has. This strategy doesn't work in combination with populating

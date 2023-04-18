@@ -80,7 +80,8 @@ public final class IndexingServiceFactory {
                 tokenNameLookup,
                 internalLogProvider,
                 storageEngine.getOpenOptions(),
-                clock);
+                clock,
+                storageEngine.indexingBehaviour());
 
         return new IndexingService(
                 storageEngine,

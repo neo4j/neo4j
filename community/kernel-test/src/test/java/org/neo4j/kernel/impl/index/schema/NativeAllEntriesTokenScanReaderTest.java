@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.Long.max;
-import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.internal.helpers.collection.Iterables.reverse;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -51,43 +49,47 @@ class NativeAllEntriesTokenScanReaderTest {
 
     @Test
     void shouldSeeNonOverlappingRanges() throws Exception {
-        int rangeSize = 4;
+        var idLayout = new DefaultTokenIndexIdLayout();
         // new ranges at: 0, 4, 8, 12 ...
         shouldIterateCorrectlyOver(
-                labels(0, rangeSize, 0, 1, 2, 3),
-                labels(1, rangeSize, 4, 6),
-                labels(2, rangeSize, 12),
-                labels(3, rangeSize, 17, 18));
+                idLayout,
+                labels(0, idLayout, 0, 1, 2, 3),
+                labels(1, idLayout, 4, 6),
+                labels(2, idLayout, 12),
+                labels(3, idLayout, 17, 18));
     }
 
     @Test
     void shouldSeeOverlappingRanges() throws Exception {
-        int rangeSize = 4;
+        var idLayout = new DefaultTokenIndexIdLayout();
         // new ranges at: 0, 4, 8, 12 ...
         shouldIterateCorrectlyOver(
-                labels(0, rangeSize, 0, 1, 3, 55),
-                labels(3, rangeSize, 1, 2, 5, 6, 43),
-                labels(5, rangeSize, 8, 9, 15, 42),
-                labels(6, rangeSize, 4, 8, 12));
+                idLayout,
+                labels(0, idLayout, 0, 1, 3, 55),
+                labels(3, idLayout, 1, 2, 5, 6, 43),
+                labels(5, idLayout, 8, 9, 15, 42),
+                labels(6, idLayout, 4, 8, 12));
     }
 
     @Test
     void shouldSeeRangesFromRandomData() throws Exception {
-        List<Labels> labels = randomData(random);
+        var idLayout = new DefaultTokenIndexIdLayout();
+        List<Labels> labels = randomData(random, idLayout);
 
-        shouldIterateCorrectlyOver(labels.toArray(new Labels[0]));
+        shouldIterateCorrectlyOver(idLayout, labels.toArray(Labels[]::new));
     }
 
-    private static void shouldIterateCorrectlyOver(Labels... data) throws Exception {
+    private static void shouldIterateCorrectlyOver(DefaultTokenIndexIdLayout idLayout, Labels... data)
+            throws Exception {
         // GIVEN
         try (AllEntriesTokenScanReader reader =
-                new NativeAllEntriesTokenScanReader(store(data), highestLabelId(data), NODE)) {
+                new NativeAllEntriesTokenScanReader(store(data), highestLabelId(data), NODE, idLayout)) {
             // WHEN/THEN
-            assertRanges(reader, data);
+            assertRanges(reader, data, idLayout);
         }
     }
 
-    static List<Labels> randomData(RandomSupport random) {
+    static List<Labels> randomData(RandomSupport random, DefaultTokenIndexIdLayout idLayout) {
         List<Labels> labels = new ArrayList<>();
         int labelCount = random.intBetween(30, 100);
         int labelId = 0;
@@ -100,7 +102,7 @@ class NativeAllEntriesTokenScanReaderTest {
                 nodeId += random.intBetween(1, 100);
                 nodeIds[j] = nodeId;
             }
-            labels.add(labels(labelId, nodeIds));
+            labels.add(labels(labelId, idLayout, nodeIds));
         }
         return labels;
     }
@@ -113,11 +115,12 @@ class NativeAllEntriesTokenScanReaderTest {
         return highest;
     }
 
-    private static void assertRanges(AllEntriesTokenScanReader reader, Labels[] data) {
+    private static void assertRanges(
+            AllEntriesTokenScanReader reader, Labels[] data, DefaultTokenIndexIdLayout idLayout) {
         Iterator<EntityTokenRange> iterator = reader.iterator();
         long highestRangeId = highestRangeId(data);
         for (long rangeId = 0; rangeId <= highestRangeId; rangeId++) {
-            SortedMap<Long /*nodeId*/, List<Long> /*labelIds*/> expected = rangeOf(data, rangeId);
+            SortedMap<Long /*nodeId*/, List<Long> /*labelIds*/> expected = rangeOf(data, rangeId, idLayout);
             if (expected != null) {
                 Assertions.assertTrue(iterator.hasNext(), "Was expecting range " + expected);
                 EntityTokenRange range = iterator.next();
@@ -134,12 +137,13 @@ class NativeAllEntriesTokenScanReaderTest {
         Assertions.assertFalse(iterator.hasNext());
     }
 
-    private static SortedMap<Long, List<Long>> rangeOf(Labels[] data, long rangeId) {
+    private static SortedMap<Long, List<Long>> rangeOf(
+            Labels[] data, long rangeId, DefaultTokenIndexIdLayout idLayout) {
         SortedMap<Long, List<Long>> result = new TreeMap<>();
         for (Labels label : data) {
             for (Pair<TokenScanKey, TokenScanValue> entry : label.entries) {
                 if (entry.first().idRange == rangeId) {
-                    long baseNodeId = entry.first().idRange * RANGE_SIZE;
+                    long baseNodeId = idLayout.firstIdOfRange(entry.first().idRange);
                     long bits = entry.other().bits;
                     while (bits != 0) {
                         long nodeId = baseNodeId + Long.numberOfTrailingZeros(bits);
@@ -173,19 +177,19 @@ class NativeAllEntriesTokenScanReaderTest {
         };
     }
 
-    static Labels labels(int labelId, long... nodeIds) {
+    static Labels labels(int labelId, DefaultTokenIndexIdLayout idLayout, long... nodeIds) {
         List<Pair<TokenScanKey, TokenScanValue>> entries = new ArrayList<>();
         long currentRange = 0;
         TokenScanValue value = new TokenScanValue();
         for (long nodeId : nodeIds) {
-            long range = nodeId / RANGE_SIZE;
+            long range = idLayout.rangeOf(nodeId);
             if (range != currentRange) {
                 if (value.bits != 0) {
                     entries.add(Pair.of(new TokenScanKey().set(labelId, currentRange), value));
                     value = new TokenScanValue();
                 }
             }
-            value.set(toIntExact(nodeId % RANGE_SIZE));
+            value.set(idLayout.idWithinRange(nodeId));
             currentRange = range;
         }
 

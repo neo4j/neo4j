@@ -26,6 +26,7 @@ package org.neo4j.index.internal.gbptree;
  * @param <KEY> type of keys to merge.
  * @param <VALUE> type of values to merge.
  */
+@FunctionalInterface
 public interface ValueMerger<KEY, VALUE> {
     /**
      * Merge an existing value with a new value.

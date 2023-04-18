@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -92,18 +92,18 @@ class DefaultTokenIndexReaderTest {
     @Test
     void shouldFindMultipleEntitiesInEachRange() {
         // WHEN
-        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKER);
+        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKER, new DefaultTokenIndexIdLayout());
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
         reader.query(tokenClient, unconstrained(), new TokenPredicate(LABEL_ID), NULL_CONTEXT);
 
         // THEN
-        assertArrayEquals(expected, asArray(tokenClient));
+        assertThat(asArray(tokenClient)).contains(expected);
     }
 
     @Test
     void shouldFindMultipleWithProgressorAscending() {
         // WHEN
-        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKER);
+        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKER, new DefaultTokenIndexIdLayout());
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
         reader.query(
                 tokenClient,
@@ -112,13 +112,13 @@ class DefaultTokenIndexReaderTest {
                 NULL_CONTEXT);
 
         // THEN
-        assertArrayEquals(expected, asArray(tokenClient));
+        assertThat(asArray(tokenClient)).contains(expected);
     }
 
     @Test
     void shouldFindMultipleWithProgressorDescending() {
         // WHEN
-        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKER);
+        var reader = new DefaultTokenIndexReader(index, NO_USAGE_TRACKER, new DefaultTokenIndexIdLayout());
         SimpleEntityTokenClient tokenClient = new SimpleEntityTokenClient();
         reader.query(
                 tokenClient,
@@ -128,7 +128,7 @@ class DefaultTokenIndexReaderTest {
 
         // THEN
         ArrayUtils.reverse(expected);
-        assertArrayEquals(expected, asArray(tokenClient));
+        assertThat(asArray(tokenClient)).contains(expected);
     }
 
     private static long[] asArray(SimpleEntityTokenClient valueClient) {

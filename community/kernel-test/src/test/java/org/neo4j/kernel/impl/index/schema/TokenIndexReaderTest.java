@@ -86,7 +86,8 @@ class TokenIndexReaderTest {
         // GIVEN an index with entries
         int expectedNodes = 5;
         int labelId = 1;
-        try (TokenIndexUpdater writer = new TokenIndexUpdater(expectedNodes)) {
+        var idLayout = new DefaultTokenIndexIdLayout();
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(expectedNodes, idLayout)) {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
             for (int i = 0; i < expectedNodes; i++) {
                 writer.process(TokenIndexEntryUpdate.change(i, null, EMPTY_LONG_ARRAY, new long[] {labelId}));
@@ -97,7 +98,7 @@ class TokenIndexReaderTest {
         var cacheTracer = new DefaultPageCacheTracer();
         var contextFactory = new CursorContextFactory(cacheTracer, EMPTY);
         var cursorContext = contextFactory.create("tracePageCache");
-        var reader = new DefaultTokenIndexReader(tree, NO_USAGE_TRACKER);
+        var reader = new DefaultTokenIndexReader(tree, NO_USAGE_TRACKER, idLayout);
         var tokenClient = new SimpleEntityTokenClient();
         reader.query(tokenClient, unconstrained(), new TokenPredicate(labelId), cursorContext);
         int actualNodes = 0;
@@ -134,7 +135,8 @@ class TokenIndexReaderTest {
         int labelId = 1;
         int highNodeId = 100_000;
         BitSet expected = new BitSet(highNodeId);
-        try (TokenIndexUpdater writer = new TokenIndexUpdater(highNodeId)) {
+        var idLayout = new DefaultTokenIndexIdLayout();
+        try (TokenIndexUpdater writer = new TokenIndexUpdater(highNodeId, idLayout)) {
             writer.initialize(tree.writer(W_BATCHED_SINGLE_THREADED, NULL_CONTEXT));
             int updates = highNodeId / sparsity;
             for (int i = 0; i < updates; i++) {
@@ -148,7 +150,7 @@ class TokenIndexReaderTest {
         long fromId = random.nextInt(highNodeId);
         int nextExpectedId = expected.nextSetBit(toIntExact(fromId));
 
-        var reader = new DefaultTokenIndexReader(tree, NO_USAGE_TRACKER);
+        var reader = new DefaultTokenIndexReader(tree, NO_USAGE_TRACKER, idLayout);
         var tokenClient = new SimpleEntityTokenClient();
         reader.query(tokenClient, unconstrained(), new TokenPredicate(labelId), EntityRange.from(fromId), NULL_CONTEXT);
         while (nextExpectedId != -1) {

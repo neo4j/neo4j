@@ -60,7 +60,7 @@ class FullScanStoreViewNodeIdsTest {
         var storageEngine = mock(StorageEngine.class);
         when(storageEngine.newReader()).thenReturn(storageReader);
         var indexingBehaviour = mock(StorageEngineIndexingBehaviour.class);
-        when(indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()).thenReturn(true);
+        when(indexingBehaviour.useNodeIdsInRelationshipTokenIndex()).thenReturn(true);
         when(storageEngine.indexingBehaviour()).thenReturn(indexingBehaviour);
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
         var fullScanStoreView = new FullScanStoreView(NO_LOCK_SERVICE, storageEngine, Config.defaults(), jobScheduler);

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import static java.lang.Math.toIntExact;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
@@ -34,7 +33,6 @@ import org.neo4j.common.EntityType;
  * where an empty long[] will be returned instead.
  */
 public class EntityTokenRangeImpl implements EntityTokenRange {
-    public static final long[][] NO_TOKENS = new long[RANGE_SIZE][];
     private final long idRange;
     private final long[] entities;
     private final long[][] tokens;
@@ -43,18 +41,19 @@ public class EntityTokenRangeImpl implements EntityTokenRange {
     private final long highRangeId;
 
     /**
-     * @param idRange entity id range, e.g. in which id span the entities are.
-     * @param tokens long[][] where first dimension is relative entity id in this range, i.e. 0-rangeSize
-     * and second the token ids for that entity, potentially empty if there are none for that entity.
-     * The first dimension must be the size of the range.
+     * @param idRange  entity id range, e.g. in which id span the entities are.
+     * @param tokens   long[][] where first dimension is relative entity id in this range, i.e. 0-rangeSize
+     *                 and second the token ids for that entity, potentially empty if there are none for that entity.
+     *                 The first dimension must be the size of the range.
+     * @param idLayout id layout
      */
-    public EntityTokenRangeImpl(long idRange, long[][] tokens, EntityType entityType) {
+    public EntityTokenRangeImpl(long idRange, long[][] tokens, EntityType entityType, TokenIndexIdLayout idLayout) {
         this.idRange = idRange;
         this.tokens = tokens;
         this.entityType = entityType;
         int rangeSize = tokens.length;
-        this.lowRangeId = idRange * rangeSize;
-        this.highRangeId = lowRangeId + rangeSize - 1;
+        this.lowRangeId = idLayout.firstIdOfRange(idRange);
+        this.highRangeId = idLayout.firstIdOfRange(idRange + 1) - 1;
 
         this.entities = new long[rangeSize];
         for (int i = 0; i < rangeSize; i++) {

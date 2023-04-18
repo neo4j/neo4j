@@ -34,6 +34,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.memory.ByteBufferFactory;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -101,7 +102,8 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor {
             ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
@@ -112,7 +114,8 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor {
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly) {
+            boolean readOnly,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();
         return mockedWriter;

@@ -50,6 +50,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -82,7 +83,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        Sets.immutable.empty()),
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY),
                 p -> p.markAsFailed(failure),
                 false);
         // THEN
@@ -101,7 +103,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        Sets.immutable.empty()),
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY),
                 p -> {
                     String failure = "The contrived failure";
 
@@ -128,7 +131,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                 heapBufferFactory(1024),
                 INSTANCE,
                 tokenNameLookup,
-                Sets.immutable.empty());
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         p.close(false, CursorContext.NULL_CONTEXT);
 
         // WHEN
@@ -149,7 +153,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        Sets.immutable.empty()),
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY),
                 p -> {
                     long nodeId = 1;
 
@@ -164,7 +169,11 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
 
         // THEN
         try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty())) {
+                descriptor,
+                indexSamplingConfig,
+                tokenNameLookup,
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER);
                     NodeValueIterator nodes = new NodeValueIterator()) {
                 int propertyKeyId = descriptor.schema().getPropertyId();
@@ -189,7 +198,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        Sets.immutable.empty()),
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY),
                 p -> p.add(updates(valueSet1), CursorContext.NULL_CONTEXT));
 
         // THEN
@@ -206,7 +216,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        Sets.immutable.empty()),
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY),
                 p -> {
                     try (IndexUpdater updater = p.newPopulatingUpdater(CursorContext.NULL_CONTEXT)) {
                         for (NodeAndValue entry : valueSet1) {
@@ -229,11 +240,16 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        Sets.immutable.empty()),
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY),
                 p -> p.add(updates(valueSet1), CursorContext.NULL_CONTEXT));
 
         try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty())) {
+                descriptor,
+                indexSamplingConfig,
+                tokenNameLookup,
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             // WHEN
             try (IndexUpdater updater =
                     accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
@@ -307,7 +323,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        Sets.immutable.empty()),
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY),
                 p -> {
                     p.add(updates(firstBatch), CursorContext.NULL_CONTEXT);
                     p.add(updates(secondBatch), CursorContext.NULL_CONTEXT);
@@ -322,7 +339,11 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
 
         // And we should be able to remove the entries in any order
         try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty())) {
+                descriptor,
+                indexSamplingConfig,
+                tokenNameLookup,
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             // WHEN
             try (IndexUpdater updater =
                     accessor.newUpdater(IndexUpdateMode.ONLINE, CursorContext.NULL_CONTEXT, false)) {
@@ -357,7 +378,11 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
 
     private void assertHasAllValues(List<NodeAndValue> values) throws IOException, IndexNotApplicableKernelException {
         try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty())) {
+                descriptor,
+                indexSamplingConfig,
+                tokenNameLookup,
+                Sets.immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY)) {
             try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for (NodeAndValue entry : values) {
@@ -392,7 +417,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                             heapBufferFactory(1024),
                             INSTANCE,
                             tokenNameLookup,
-                            Sets.immutable.empty()),
+                            Sets.immutable.empty(),
+                            StorageEngineIndexingBehaviour.EMPTY),
                     p -> {
                         p.add(updates(valueSet1, 0), CursorContext.NULL_CONTEXT);
                         p.add(updates(valueSet1, offset), CursorContext.NULL_CONTEXT);
@@ -400,7 +426,11 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
 
             // then
             try (IndexAccessor accessor = indexProvider.getOnlineAccessor(
-                    descriptor, indexSamplingConfig, tokenNameLookup, Sets.immutable.empty())) {
+                    descriptor,
+                    indexSamplingConfig,
+                    tokenNameLookup,
+                    Sets.immutable.empty(),
+                    StorageEngineIndexingBehaviour.EMPTY)) {
                 try (ValueIndexReader reader = accessor.newValueReader(NO_USAGE_TRACKER)) {
                     int propertyKeyId = descriptor.schema().getPropertyId();
                     for (NodeAndValue entry : valueSet1) {
@@ -444,7 +474,8 @@ abstract class SimpleIndexPopulatorCompatibility extends PropertyIndexProviderCo
                             heapBufferFactory(1024),
                             INSTANCE,
                             tokenNameLookup,
-                            Sets.immutable.empty()),
+                            Sets.immutable.empty(),
+                            StorageEngineIndexingBehaviour.EMPTY),
                     p -> {
                         try {
                             p.add(

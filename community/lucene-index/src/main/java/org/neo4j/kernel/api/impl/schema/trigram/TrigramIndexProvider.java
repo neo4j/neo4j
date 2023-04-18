@@ -80,7 +80,8 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         var luceneIndex = TrigramIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withSamplingConfig(samplingConfig)
@@ -101,7 +102,8 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly)
+            boolean readOnly,
+            StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
         var builder = builder(descriptor, samplingConfig);
         if (readOnly) {

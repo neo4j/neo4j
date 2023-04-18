@@ -20,9 +20,6 @@
 
 package org.neo4j.kernel.impl.index.schema;
 
-import static org.neo4j.kernel.impl.index.schema.TokenIndexUpdater.rangeOf;
-import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
-
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
@@ -40,16 +37,18 @@ import org.neo4j.kernel.api.index.EntityRange;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.util.Preconditions;
-import org.neo4j.util.VisibleForTesting;
 
 public class DefaultTokenIndexReader implements TokenIndexReader {
 
     private final GBPTree<TokenScanKey, TokenScanValue> index;
     private final IndexUsageTracker usageTracker;
+    private final TokenIndexIdLayout idLayout;
 
-    public DefaultTokenIndexReader(GBPTree<TokenScanKey, TokenScanValue> index, IndexUsageTracker usageTracker) {
+    public DefaultTokenIndexReader(
+            GBPTree<TokenScanKey, TokenScanValue> index, IndexUsageTracker usageTracker, TokenIndexIdLayout idLayout) {
         this.index = index;
         this.usageTracker = usageTracker;
+        this.idLayout = idLayout;
     }
 
     @Override
@@ -73,7 +72,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
             final int tokenId = query.tokenId();
             final IndexOrder order = constraints.order();
             Seeker<TokenScanKey, TokenScanValue> seeker = seekerForToken(range, tokenId, order, cursorContext);
-            IndexProgressor progressor = new TokenScanValueIndexProgressor(seeker, client, order, range);
+            IndexProgressor progressor = new TokenScanValueIndexProgressor(seeker, client, order, range, idLayout);
             client.initialize(progressor, tokenId, order);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -111,24 +110,27 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
     private long highestEntityIdForToken(int tokenId, CursorContext cursorContext) throws IOException {
         try (Seeker<TokenScanKey, TokenScanValue> seeker = index.seek(
                 new TokenScanKey(tokenId, Long.MAX_VALUE), new TokenScanKey(tokenId, Long.MIN_VALUE), cursorContext)) {
-            return seeker.next() ? (seeker.key().idRange + 1) * RANGE_SIZE : 0;
+            return seeker.next() ? idLayout.firstIdOfRange(seeker.key().idRange + 1) : 0;
         }
     }
 
     private Seeker<TokenScanKey, TokenScanValue> seekerForToken(
             EntityRange range, int tokenId, IndexOrder indexOrder, CursorContext cursorContext) throws IOException {
-        long rangeFrom = range.fromInclusive();
-        long rangeTo = range.toExclusive();
+        long idRangeFromInclusive;
+        long idRangeToExclusive;
 
         if (indexOrder == IndexOrder.DESCENDING) {
-            long tmp = rangeFrom;
-            rangeFrom = rangeTo;
-            rangeTo = tmp;
+            idRangeFromInclusive = idLayout.rangeOf(range.toExclusive());
+            idRangeToExclusive = idLayout.rangeOf(range.fromInclusive()) - 1;
+        } else {
+            idRangeFromInclusive = idLayout.rangeOf(range.fromInclusive());
+            idRangeToExclusive = idLayout.rangeOf(range.toExclusive()) + 1;
         }
 
-        TokenScanKey fromKey = new TokenScanKey(tokenId, rangeOf(rangeFrom));
-        TokenScanKey toKey = new TokenScanKey(tokenId, rangeOf(rangeTo));
-        return index.seek(fromKey, toKey, cursorContext);
+        return index.seek(
+                new TokenScanKey(tokenId, idRangeFromInclusive),
+                new TokenScanKey(tokenId, idRangeToExclusive),
+                cursorContext);
     }
 
     public void printTree(PrintConfig printConfig) throws IOException {
@@ -138,11 +140,6 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
     @Override
     public void close() {
         usageTracker.close();
-    }
-
-    @VisibleForTesting
-    static long roundUp(long sizeHint) {
-        return ((sizeHint + RANGE_SIZE - 1) / RANGE_SIZE) * RANGE_SIZE;
     }
 
     private class NativeTokenScan implements TokenScan {
@@ -168,7 +165,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
             if (sizeHint == 0) {
                 return IndexProgressor.EMPTY;
             }
-            long size = roundUp(sizeHint);
+            long size = idLayout.roundUp(sizeHint);
             long start = nextStart.getAndAdd(size);
             long stop = Math.min(start + size, max);
             if (start >= max) {
@@ -191,7 +188,7 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
                 throw new UncheckedIOException(e);
             }
 
-            return new TokenScanValueIndexProgressor(cursor, client, indexOrder, range);
+            return new TokenScanValueIndexProgressor(cursor, client, indexOrder, range, idLayout);
         }
     }
 
@@ -204,8 +201,8 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
                 throws IOException {
             Preconditions.requirePositive(desiredNumberOfPartitions);
             final var tokenId = query.tokenId();
-            final var fromInclusive = new TokenScanKey(tokenId, rangeOf(range.fromInclusive()));
-            final var toExclusive = new TokenScanKey(tokenId, rangeOf(range.toExclusive()));
+            final var fromInclusive = new TokenScanKey(tokenId, idLayout.rangeOf(range.fromInclusive()));
+            final var toExclusive = new TokenScanKey(tokenId, idLayout.rangeOf(range.toExclusive()) + 1);
             partitionEdges =
                     index.partitionedSeek(fromInclusive, toExclusive, desiredNumberOfPartitions, cursorContext);
         }
@@ -235,7 +232,11 @@ public class DefaultTokenIndexReader implements TokenIndexReader {
                 final var fromInclusive = partitionEdges.get(from);
                 final var toExclusive = partitionEdges.get(to);
                 return new TokenScanValueIndexProgressor(
-                        index.seek(fromInclusive, toExclusive, cursorContext), client, IndexOrder.NONE, range);
+                        index.seek(fromInclusive, toExclusive, cursorContext),
+                        client,
+                        IndexOrder.NONE,
+                        range,
+                        idLayout);
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }

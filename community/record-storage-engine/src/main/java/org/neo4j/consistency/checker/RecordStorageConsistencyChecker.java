@@ -208,7 +208,9 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
                 tokenHolders,
                 contextFactory,
                 neoStores.getOpenOptions(),
-                new RecordStorageIndexingBehaviour());
+                new RecordStorageIndexingBehaviour(
+                        neoStores.getNodeStore().getRecordsPerPage(),
+                        neoStores.getRelationshipStore().getRecordsPerPage()));
     }
 
     public void check() throws ConsistencyCheckIncompleteException {

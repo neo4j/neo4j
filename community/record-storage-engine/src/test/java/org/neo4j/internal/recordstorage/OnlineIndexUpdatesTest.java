@@ -166,7 +166,8 @@ class OnlineIndexUpdatesTest {
         schemaCache = new SchemaCache(
                 new StandardConstraintRuleAccessor(),
                 (index, indexingBehaviour) -> index,
-                new RecordStorageIndexingBehaviour());
+                new RecordStorageIndexingBehaviour(
+                        nodeStore.getRecordsPerPage(), relationshipStore.getRecordsPerPage()));
         storeCursors = new CachedStoreCursors(neoStores, NULL_CONTEXT);
         propertyPhysicalToLogicalConverter =
                 new PropertyPhysicalToLogicalConverter(neoStores.getPropertyStore(), storeCursors);

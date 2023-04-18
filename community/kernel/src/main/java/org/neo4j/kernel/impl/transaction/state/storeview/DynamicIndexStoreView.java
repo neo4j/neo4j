@@ -133,7 +133,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
         var tokenIndex = findTokenIndex(RELATIONSHIP);
         if (tokenIndex.isPresent()) {
             StoreScan storeScan;
-            if (fullScanStoreView.storageEngine.indexingBehaviour().useNodeIdsInRelationshipTypeScanIndex()) {
+            if (fullScanStoreView.storageEngine.indexingBehaviour().useNodeIdsInRelationshipTokenIndex()) {
                 // This index-type-lookup-index-backed relationship scan is node-based
                 storeScan = new NodeRelationshipsIndexedStoreScan(
                         config,

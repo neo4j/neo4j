@@ -24,6 +24,7 @@ import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
@@ -42,9 +43,10 @@ public class TrackingReadersIndexProvider extends IndexProvider.Delegating {
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly)
+            boolean readOnly,
+            StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
-        return new TrackingReadersIndexAccessor(
-                indexProvider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions, readOnly));
+        return new TrackingReadersIndexAccessor(indexProvider.getOnlineAccessor(
+                descriptor, samplingConfig, tokenNameLookup, openOptions, readOnly, indexingBehaviour));
     }
 }

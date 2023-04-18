@@ -38,6 +38,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
@@ -79,7 +80,11 @@ class RangeIndexProviderTest extends IndexProviderTests {
         // when
         IndexDescriptor descriptor = descriptorUnique();
         try (IndexAccessor accessor = provider.getOnlineAccessor(
-                        descriptor, samplingConfig(), tokenNameLookup, Sets.immutable.empty());
+                        descriptor,
+                        samplingConfig(),
+                        tokenNameLookup,
+                        Sets.immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY);
                 IndexUpdater indexUpdater = accessor.newUpdater(IndexUpdateMode.ONLINE, NULL_CONTEXT, false)) {
             indexUpdater.process(IndexEntryUpdate.add(1, descriptor, someValue));
 

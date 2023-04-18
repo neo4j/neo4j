@@ -220,7 +220,8 @@ public class FulltextIndexProvider extends IndexProvider {
             ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         if (isReadOnly()) {
             throw new UnsupportedOperationException("Can't create populator for read only index");
         }
@@ -255,7 +256,8 @@ public class FulltextIndexProvider extends IndexProvider {
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly)
+            boolean readOnly,
+            StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
         PartitionedIndexStorage indexStorage = getIndexStorage(index.getId());
         Analyzer analyzer = FulltextIndexAnalyzerLoader.INSTANCE.createAnalyzer(index, tokenHolders);

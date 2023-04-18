@@ -83,7 +83,8 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
             ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions) {
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         var index = TextIndexBuilder.create(descriptor, readOnlyChecker, config)
                 .withFileSystem(fileSystem)
                 .withSamplingConfig(samplingConfig)
@@ -103,7 +104,8 @@ public class TextIndexProvider extends AbstractTextIndexProvider {
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly)
+            boolean readOnly,
+            StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
         var builder = builder(descriptor, samplingConfig);
         if (readOnly) {

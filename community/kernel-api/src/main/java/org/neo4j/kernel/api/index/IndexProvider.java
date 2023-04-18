@@ -141,7 +141,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                         IndexSamplingConfig samplingConfig,
                         TokenNameLookup tokenNameLookup,
                         ImmutableSet<OpenOption> openOptions,
-                        boolean readOnly) {
+                        boolean readOnly,
+                        StorageEngineIndexingBehaviour indexingBehaviour) {
                     return singleWriter;
                 }
 
@@ -157,7 +158,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                         ByteBufferFactory bufferFactory,
                         MemoryTracker memoryTracker,
                         TokenNameLookup tokenNameLookup,
-                        ImmutableSet<OpenOption> openOptions) {
+                        ImmutableSet<OpenOption> openOptions,
+                        StorageEngineIndexingBehaviour indexingBehaviour) {
                     return singlePopulator;
                 }
 
@@ -219,7 +221,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
             ByteBufferFactory bufferFactory,
             MemoryTracker memoryTracker,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions);
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour);
 
     /**
      * Used for updating an index once initial population has completed.
@@ -228,9 +231,10 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
-            ImmutableSet<OpenOption> openOptions)
+            ImmutableSet<OpenOption> openOptions,
+            StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException {
-        return getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions, false);
+        return getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions, false, indexingBehaviour);
     }
 
     /**
@@ -241,7 +245,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
             IndexSamplingConfig samplingConfig,
             TokenNameLookup tokenNameLookup,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly)
+            boolean readOnly,
+            StorageEngineIndexingBehaviour indexingBehaviour)
             throws IOException;
 
     /**
@@ -339,7 +344,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 ByteBufferFactory bufferFactory,
                 MemoryTracker memoryTracker,
                 TokenNameLookup tokenNameLookup,
-                ImmutableSet<OpenOption> openOptions) {
+                ImmutableSet<OpenOption> openOptions,
+                StorageEngineIndexingBehaviour indexingBehaviour) {
             return null;
         }
 
@@ -349,7 +355,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 IndexSamplingConfig samplingConfig,
                 TokenNameLookup tokenNameLookup,
                 ImmutableSet<OpenOption> openOptions,
-                boolean readOnly) {
+                boolean readOnly,
+                StorageEngineIndexingBehaviour indexingBehaviour) {
             return null;
         }
 
@@ -410,9 +417,16 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 ByteBufferFactory bufferFactory,
                 MemoryTracker memoryTracker,
                 TokenNameLookup tokenNameLookup,
-                ImmutableSet<OpenOption> openOptions) {
+                ImmutableSet<OpenOption> openOptions,
+                StorageEngineIndexingBehaviour indexingBehaviour) {
             return provider.getPopulator(
-                    descriptor, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup, openOptions);
+                    descriptor,
+                    samplingConfig,
+                    bufferFactory,
+                    memoryTracker,
+                    tokenNameLookup,
+                    openOptions,
+                    indexingBehaviour);
         }
 
         @Override
@@ -421,9 +435,11 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 IndexSamplingConfig samplingConfig,
                 TokenNameLookup tokenNameLookup,
                 ImmutableSet<OpenOption> openOptions,
-                boolean readOnly)
+                boolean readOnly,
+                StorageEngineIndexingBehaviour indexingBehaviour)
                 throws IOException {
-            return provider.getOnlineAccessor(descriptor, samplingConfig, tokenNameLookup, openOptions, readOnly);
+            return provider.getOnlineAccessor(
+                    descriptor, samplingConfig, tokenNameLookup, openOptions, readOnly, indexingBehaviour);
         }
 
         @Override

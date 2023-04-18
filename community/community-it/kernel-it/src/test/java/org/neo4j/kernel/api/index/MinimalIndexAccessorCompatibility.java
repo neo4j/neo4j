@@ -36,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.schema.IndexPrototype;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.values.storable.Value;
 
@@ -61,7 +62,8 @@ class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBa
                     heapBufferFactory(1024),
                     INSTANCE,
                     SIMPLE_NAME_LOOKUP,
-                    Sets.immutable.empty());
+                    Sets.immutable.empty(),
+                    StorageEngineIndexingBehaviour.EMPTY);
             populator.create();
             populator.close(true, NULL_CONTEXT);
             minimalIndexAccessor = indexProvider.getMinimalIndexAccessor(descriptor);

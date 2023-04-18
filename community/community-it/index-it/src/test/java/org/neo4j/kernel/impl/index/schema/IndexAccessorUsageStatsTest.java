@@ -52,6 +52,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -66,7 +67,6 @@ import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.schema.SchemaTestUtil;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.StaticIndexProviderMapFactory;
@@ -124,6 +124,7 @@ public class IndexAccessorUsageStatsTest {
     private final IndexSamplingConfig samplingConfig = new IndexSamplingConfig(config);
     private final TokenNameLookup nameLookup = SchemaTestUtil.SIMPLE_NAME_LOOKUP;
     private final ImmutableSet<OpenOption> openOptions = Sets.immutable.empty();
+    private final StorageEngineIndexingBehaviour indexingBehaviour = StorageEngineIndexingBehaviour.EMPTY;
 
     @ParameterizedTest
     @MethodSource("propertyIndexAccessors")
@@ -282,20 +283,22 @@ public class IndexAccessorUsageStatsTest {
     private IndexAccessor createIndexAccessor(IndexProviderDescriptor providerDescriptor) throws IOException {
         var providerMap = lifeSupport.add(createIndexProviderMap());
         var provider = providerMap.lookup(providerDescriptor);
-        var completeDescriptor = provider.completeConfiguration(descriptor, TestIndexDescriptorFactory.BEHAVIOUR);
+        var completeDescriptor = provider.completeConfiguration(descriptor, indexingBehaviour);
         var populator = provider.getPopulator(
                 completeDescriptor,
                 samplingConfig,
                 heapBufferFactory(1024),
                 EmptyMemoryTracker.INSTANCE,
                 nameLookup,
-                openOptions);
+                openOptions,
+                indexingBehaviour);
         try {
             populator.create();
         } finally {
             populator.close(true, CursorContext.NULL_CONTEXT);
         }
-        return provider.getOnlineAccessor(completeDescriptor, samplingConfig, nameLookup, openOptions);
+        return provider.getOnlineAccessor(
+                completeDescriptor, samplingConfig, nameLookup, openOptions, indexingBehaviour);
     }
 
     private void tokenQuery(TokenIndexReader reader, FakeClock clock) {

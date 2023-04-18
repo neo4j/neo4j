@@ -87,7 +87,7 @@ public class IndexAccessors implements Closeable {
             accessorLookup = accessorLookup != null
                     ? accessorLookup
                     : index -> provider(providers, index)
-                            .getOnlineAccessor(index, samplingConfig, tokenNameLookup, openOptions, true);
+                            .getOnlineAccessor(index, samplingConfig, tokenNameLookup, openOptions, true, behavior);
             try (var descriptors = descriptorProvider.indexDescriptors(cursorContext)) {
                 while (descriptors.hasNext()) {
                     try {

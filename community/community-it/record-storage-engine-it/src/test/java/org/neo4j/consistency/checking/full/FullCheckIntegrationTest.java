@@ -118,6 +118,7 @@ import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
+import org.neo4j.internal.recordstorage.RecordStorageIndexingBehaviour;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -483,6 +484,7 @@ public class FullCheckIntegrationTest {
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
+        var neoStores = storeAccess.nativeStores();
         for (IndexDescriptor indexDescriptor : getValueIndexDescriptors()) {
             IndexSamplingConfig samplingConfig = new IndexSamplingConfig(Config.defaults());
             IndexPopulator populator = storeAccess
@@ -494,12 +496,15 @@ public class FullCheckIntegrationTest {
                             heapBufferFactory(1024),
                             INSTANCE,
                             tokenNameLookup,
-                            storeAccess.nativeStores().getOpenOptions());
+                            neoStores.getOpenOptions(),
+                            new RecordStorageIndexingBehaviour(
+                                    neoStores.getNodeStore().getRecordsPerPage(),
+                                    neoStores.getRelationshipStore().getRecordsPerPage()));
             populator.markAsFailed("Oh noes! I was a shiny index and then I was failed");
             populator.close(false, NULL_CONTEXT);
         }
 
-        NodeStore nodeStore = storeAccess.nativeStores().getNodeStore();
+        NodeStore nodeStore = neoStores.getNodeStore();
         StoreCursors storeCursors = fixture.getStoreCursors();
         try (var cursor = storeCursors.writeCursor(NODE_CURSOR)) {
             for (Long indexedNodeId : indexedNodes) {

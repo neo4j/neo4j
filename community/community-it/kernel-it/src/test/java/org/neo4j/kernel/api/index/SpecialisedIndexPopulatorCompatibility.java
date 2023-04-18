@@ -28,6 +28,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
 
 abstract class SpecialisedIndexPopulatorCompatibility
@@ -49,7 +50,8 @@ abstract class SpecialisedIndexPopulatorCompatibility
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        immutable.empty()),
+                        immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY),
                 p -> p.markAsFailed(failure),
                 false);
         // THEN
@@ -68,7 +70,8 @@ abstract class SpecialisedIndexPopulatorCompatibility
                         heapBufferFactory(1024),
                         INSTANCE,
                         tokenNameLookup,
-                        immutable.empty()),
+                        immutable.empty(),
+                        StorageEngineIndexingBehaviour.EMPTY),
                 p -> {
                     String failure = "The contrived failure";
 
@@ -87,7 +90,13 @@ abstract class SpecialisedIndexPopulatorCompatibility
         // GIVEN
         IndexSamplingConfig indexSamplingConfig = new IndexSamplingConfig(config);
         final IndexPopulator p = indexProvider.getPopulator(
-                descriptor, indexSamplingConfig, heapBufferFactory(1024), INSTANCE, tokenNameLookup, immutable.empty());
+                descriptor,
+                indexSamplingConfig,
+                heapBufferFactory(1024),
+                INSTANCE,
+                tokenNameLookup,
+                immutable.empty(),
+                StorageEngineIndexingBehaviour.EMPTY);
         p.close(false, NULL_CONTEXT);
 
         // WHEN

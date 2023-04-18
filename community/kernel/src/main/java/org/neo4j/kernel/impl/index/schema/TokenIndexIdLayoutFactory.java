@@ -21,29 +21,31 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
-import org.neo4j.internal.batchimport.IndexImporter;
-import org.neo4j.internal.batchimport.IndexImporterFactory;
-import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.annotations.service.Service;
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.context.CursorContextFactory;
-import org.neo4j.io.pagecache.tracing.PageCacheTracer;
+import org.neo4j.service.PrioritizedService;
+import org.neo4j.service.Services;
 
-public class IndexImporterFactoryImpl implements IndexImporterFactory {
+@Service
+public interface TokenIndexIdLayoutFactory extends PrioritizedService {
 
-    @Override
-    public IndexImporter getImporter(
-            IndexDescriptor index,
-            DatabaseLayout layout,
-            FileSystemAbstraction fs,
-            PageCache pageCache,
-            CursorContextFactory contextFactory,
-            PageCacheTracer pageCacheTracer,
+    TokenIndexIdLayout createIdLayout(
             ImmutableSet<OpenOption> openOptions,
-            StorageEngineIndexingBehaviour indexingBehaviour) {
-        return new TokenIndexImporter(
-                index, layout, fs, pageCache, contextFactory, pageCacheTracer, openOptions, indexingBehaviour);
+            EntityType entityType,
+            StorageEngineIndexingBehaviour indexingBehaviour);
+
+    static TokenIndexIdLayoutFactory getInstance() {
+        return TokenIndexIdLayoutFactoryHolder.FACTORY;
+    }
+
+    final class TokenIndexIdLayoutFactoryHolder {
+        static final TokenIndexIdLayoutFactory FACTORY = loadFactory();
+
+        private static TokenIndexIdLayoutFactory loadFactory() {
+            return Services.loadByPriority(TokenIndexIdLayoutFactory.class)
+                    .orElseThrow(() ->
+                            new IllegalStateException("Failed to load instance of " + TokenIndexIdLayoutFactory.class));
+        }
     }
 }

@@ -362,7 +362,7 @@ class DynamicIndexStoreViewTest {
         var storageEngine = mock(StorageEngine.class);
         when(storageEngine.newReader()).thenReturn(cursors);
         var indexingBehaviour = mock(StorageEngineIndexingBehaviour.class);
-        when(indexingBehaviour.useNodeIdsInRelationshipTypeScanIndex()).thenReturn(nodeBased);
+        when(indexingBehaviour.useNodeIdsInRelationshipTokenIndex()).thenReturn(nodeBased);
         when(storageEngine.indexingBehaviour()).thenReturn(indexingBehaviour);
         when(storageEngine.createStorageCursors(any())).thenReturn(StoreCursors.NULL);
         return storageEngine;

@@ -32,6 +32,7 @@ import org.neo4j.index.internal.gbptree.MultiRootGBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -139,12 +140,15 @@ public class TokenIndex implements ConsistencyCheckable {
      */
     private final IndexDescriptor monitoringDescriptor;
 
+    protected final TokenIndexIdLayout idLayout;
+
     public TokenIndex(
             DatabaseIndexContext databaseIndexContext,
             IndexFiles indexFiles,
             IndexDescriptor descriptor,
             ImmutableSet<OpenOption> openOptions,
-            boolean readOnly) {
+            boolean readOnly,
+            StorageEngineIndexingBehaviour indexingBehaviour) {
         this.readOnlyChecker = databaseIndexContext.readOnlyChecker;
         this.monitors = databaseIndexContext.monitors;
         this.monitorTag = databaseIndexContext.monitorTag;
@@ -159,6 +163,8 @@ public class TokenIndex implements ConsistencyCheckable {
         this.monitoringDescriptor = descriptor;
         this.openOptions = openOptions;
         this.readOnly = readOnly;
+        this.idLayout = TokenIndexIdLayoutFactory.getInstance()
+                .createIdLayout(openOptions, descriptor.schema().entityType(), indexingBehaviour);
     }
 
     void instantiateTree(RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
@@ -182,7 +188,7 @@ public class TokenIndex implements ConsistencyCheckable {
     }
 
     void instantiateUpdater() {
-        singleUpdater = new TokenIndexUpdater(1_000);
+        singleUpdater = new TokenIndexUpdater(1_000, idLayout);
     }
 
     private MultiRootGBPTree.Monitor treeMonitor() {

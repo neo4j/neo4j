@@ -17,36 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
+import static org.neo4j.kernel.impl.index.schema.TokenScanValue.RANGE_SIZE;
 
-public class RecordStorageIndexingBehaviour implements StorageEngineIndexingBehaviour {
-    private final int nodesPerPage;
-    private final int relationshipsPerPage;
+public class DefaultTokenIndexIdLayout implements TokenIndexIdLayout {
 
-    public RecordStorageIndexingBehaviour(int nodesPerPage, int relationshipsPerPage) {
-        this.nodesPerPage = nodesPerPage;
-        this.relationshipsPerPage = relationshipsPerPage;
+    private static final int RANGE_MASK = RANGE_SIZE - 1;
+    private static final int RANGE_SHIFT = 31 - Integer.numberOfLeadingZeros(RANGE_SIZE);
+
+    @Override
+    public int idWithinRange(long entityId) {
+        return (int) entityId & RANGE_MASK;
     }
 
     @Override
-    public boolean useNodeIdsInRelationshipTokenIndex() {
-        return false;
+    public long rangeOf(long entityId) {
+        return entityId >> RANGE_SHIFT;
     }
 
     @Override
-    public boolean requireCoordinationLocks() {
-        return true;
+    public long firstIdOfRange(long idRange) {
+        return idRange << RANGE_SHIFT;
     }
 
     @Override
-    public int nodesPerPage() {
-        return nodesPerPage;
-    }
-
-    @Override
-    public int relationshipsPerPage() {
-        return relationshipsPerPage;
+    public long roundUp(long sizeHint) {
+        return ((sizeHint + RANGE_SIZE - 1) / RANGE_SIZE) * RANGE_SIZE;
     }
 }
