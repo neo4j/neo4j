@@ -75,6 +75,8 @@ case class RelationshipsPattern(element: RelationshipChain)(val position: InputP
 sealed abstract class PatternPart extends ASTNode {
   def allVariables: Set[LogicalVariable]
   def element: PatternElement
+
+  def isBounded: Boolean
 }
 
 case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition)
@@ -82,6 +84,8 @@ case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPar
   override def element: PatternElement = patternPart.element
 
   override def allVariables: Set[LogicalVariable] = patternPart.allVariables + variable
+
+  override def isBounded: Boolean = patternPart.isBounded
 }
 
 sealed trait AnonymousPatternPart extends PatternPart {
@@ -95,6 +99,8 @@ object PatternPart {
 
   sealed trait Selector extends ASTNode {
     def prettified: String
+
+    def isBounded: Boolean
   }
 
   sealed trait CountedSelector extends Selector {
@@ -104,29 +110,36 @@ object PatternPart {
   case class AnyPath(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends Selector
       with CountedSelector {
     override def prettified: String = s"ANY ${count.value} PATHS"
+
+    override def isBounded: Boolean = true
   }
 
   case class AllPaths()(val position: InputPosition) extends Selector {
     override def prettified: String = "ALL PATHS"
+    override def isBounded: Boolean = false
   }
 
   case class AnyShortestPath(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends Selector
       with CountedSelector {
     override def prettified: String = s"SHORTEST ${count.value} PATHS"
+    override def isBounded: Boolean = true
   }
 
   case class AllShortestPaths()(val position: InputPosition) extends Selector {
     override def prettified: String = "ALL SHORTEST PATHS"
+    override def isBounded: Boolean = true
   }
 
   case class ShortestGroups(count: UnsignedDecimalIntegerLiteral)(val position: InputPosition) extends Selector
       with CountedSelector {
     override def prettified: String = s"SHORTEST ${count.value} PATH GROUPS"
+    override def isBounded: Boolean = true
   }
 }
 
 case class PatternPartWithSelector(element: PatternElement, selector: Selector) extends AnonymousPatternPart {
   override def position: InputPosition = element.position
+  override def isBounded: Boolean = element.isBounded || selector.isBounded
 }
 
 case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(val position: InputPosition)
@@ -137,6 +150,8 @@ case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(va
       "shortestPath"
     else
       "allShortestPaths"
+
+  override def isBounded: Boolean = true
 }
 
 /**
@@ -149,6 +164,8 @@ case class PathConcatenation(factors: Seq[PathFactor])(val position: InputPositi
   override def allVariables: Set[LogicalVariable] = factors.flatMap(_.allVariables).toSet
 
   override def variable: Option[LogicalVariable] = None
+
+  override def isBounded: Boolean = factors.forall(_.isBounded)
 }
 
 /**
@@ -169,6 +186,12 @@ case class QuantifiedPath(
   override def allVariables: Set[LogicalVariable] = variableGroupings.map(_.group)
 
   override def variable: Option[LogicalVariable] = None
+
+  override def isBounded: Boolean = quantifier match {
+    case IntervalQuantifier(_, Some(_)) => true
+    case FixedQuantifier(_)             => true
+    case _                              => false
+  }
 }
 
 object QuantifiedPath {
@@ -206,6 +229,8 @@ case class ParenthesizedPath(
   override def allVariables: Set[LogicalVariable] = part.element.allVariables
 
   override def variable: Option[LogicalVariable] = None
+
+  override def isBounded: Boolean = true
 }
 
 object ParenthesizedPath {
@@ -217,6 +242,7 @@ object ParenthesizedPath {
 sealed abstract class PatternElement extends ASTNode {
   def allVariables: Set[LogicalVariable]
   def variable: Option[LogicalVariable]
+  def isBounded: Boolean
 
   def isSingleNode = false
 }
@@ -242,6 +268,8 @@ case class RelationshipChain(
   override def allVariablesLeftToRight: Seq[LogicalVariable] =
     element.allVariablesLeftToRight ++ relationship.variable.toSeq ++ rightNode.allVariablesLeftToRight
 
+  override def isBounded: Boolean = relationship.isBounded && element.isBounded
+
   @tailrec
   final def leftNode: NodePattern = element match {
     case node: NodePattern      => node
@@ -265,6 +293,8 @@ case class NodePattern(
   override def allVariablesLeftToRight: Seq[LogicalVariable] = variable.toSeq
 
   override def isSingleNode = true
+
+  override def isBounded: Boolean = true
 }
 
 /**
@@ -282,4 +312,10 @@ case class RelationshipPattern(
   def isSingleLength: Boolean = length.isEmpty
 
   def isDirected: Boolean = direction != SemanticDirection.BOTH
+
+  def isBounded: Boolean = length match {
+    case Some(Some(Range(_, Some(_)))) => true
+    case None                          => true
+    case _                             => false
+  }
 }
