@@ -30,16 +30,14 @@ import org.neo4j.cypher.internal.runtime.spec.RandomValuesTestSupport
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.cypher.internal.runtime.spec.matcher.FileSystemAbstractionMatchers
 import org.neo4j.cypher.internal.runtime.spec.tests.RuntimeDebugLoggingTestBase.withDebugLog
+import org.neo4j.logging.LogAssert
 
 abstract class RuntimeDebugLoggingTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
   runtime: CypherRuntime[CONTEXT],
   val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](withDebugLog(edition), runtime)
-    with RandomValuesTestSupport
-    with FileSystemAbstractionMatchers {
-
-  private val debugLogPath = "/target/test data/neo4j/logs/debug.log"
+    with RandomValuesTestSupport {
 
   test("log ignored errors in transaction foreach") {
     assume(runtime.name != "interpreted")
@@ -63,8 +61,8 @@ abstract class RuntimeDebugLoggingTestBase[CONTEXT <: RuntimeContext](
     val expected = Range(0, size).map(x => Array[Any](x))
     result should beColumns("x").withRows(inOrder(expected))
 
-    dbmsFileSystem should haveFile(debugLogPath)
-      .containing("Recover error in inner transaction")
+    val logAssert = new LogAssert(logProvider)
+    logAssert.containsMessages("Recover error in inner transaction")
   }
 
   test("log ignored errors in transaction apply") {
@@ -88,8 +86,8 @@ abstract class RuntimeDebugLoggingTestBase[CONTEXT <: RuntimeContext](
     val expected = Range(0, size).map(x => Array[Any](x))
     result should beColumns("x").withRows(inOrder(expected))
 
-    dbmsFileSystem should haveFile(debugLogPath)
-      .containing("Recover error in inner transaction")
+    val logAssert = new LogAssert(logProvider)
+    logAssert.containsMessages("Recover error in inner transaction")
   }
 }
 
