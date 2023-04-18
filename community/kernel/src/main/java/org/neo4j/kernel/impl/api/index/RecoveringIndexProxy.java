@@ -26,11 +26,15 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.values.storable.Value;
 
 public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy {
-    RecoveringIndexProxy(IndexDescriptor indexDescriptor) {
+    private final MinimalIndexAccessor minimalIndexAccessor;
+
+    RecoveringIndexProxy(IndexDescriptor indexDescriptor, MinimalIndexAccessor minimalIndexAccessor) {
         super(indexDescriptor, null);
+        this.minimalIndexAccessor = minimalIndexAccessor;
     }
 
     @Override
@@ -69,7 +73,9 @@ public class RecoveringIndexProxy extends AbstractSwallowingIndexProxy {
     }
 
     @Override
-    public void drop() {}
+    public void drop() {
+        minimalIndexAccessor.drop();
+    }
 
     @Override
     public IndexPopulationFailure getPopulationFailure() throws IllegalStateException {

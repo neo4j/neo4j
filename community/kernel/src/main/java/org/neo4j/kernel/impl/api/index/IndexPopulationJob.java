@@ -124,6 +124,8 @@ public class IndexPopulationJob implements Runnable {
     @Override
     public void run() {
         try (var cursorContext = contextFactory.create(INDEX_POPULATION_TAG)) {
+            var indexDescriptors = multiPopulator.indexDescriptors();
+            monitor.indexPopulationJobStarting(indexDescriptors);
             if (!multiPopulator.hasPopulators() || stopped) { // Don't start if asked to stop
                 return;
             }
@@ -135,7 +137,7 @@ public class IndexPopulationJob implements Runnable {
                 multiPopulator.create(cursorContext);
                 multiPopulator.resetIndexCounts(cursorContext);
 
-                multiPopulator.monitorStart(monitor);
+                monitor.indexPopulationScanStarting(indexDescriptors);
                 indexAllEntities(contextFactory);
                 monitor.indexPopulationScanComplete();
                 if (stopped) {
@@ -189,8 +191,8 @@ public class IndexPopulationJob implements Runnable {
             if (jobHandle != null) {
                 jobHandle.cancel();
             }
-            monitor.populationCancelled();
         }
+        monitor.populationCancelled(multiPopulator.indexDescriptors(), storeScan != null);
     }
 
     /**

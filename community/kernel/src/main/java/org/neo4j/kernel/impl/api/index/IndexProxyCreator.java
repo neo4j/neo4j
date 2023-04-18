@@ -113,7 +113,7 @@ class IndexProxyCreator {
     }
 
     IndexProxy createRecoveringIndexProxy(IndexDescriptor descriptor) {
-        IndexProxy proxy = new RecoveringIndexProxy(descriptor);
+        IndexProxy proxy = new RecoveringIndexProxy(descriptor, minimalIndexAccessorFromProvider(descriptor));
         return new ContractCheckingIndexProxy(proxy);
     }
 

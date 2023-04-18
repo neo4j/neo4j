@@ -19,6 +19,7 @@
  */
 package org.neo4j.graphdb.schema;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.internal.helpers.collection.Iterables.first;
@@ -30,6 +31,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.test.Barrier;
@@ -110,7 +112,8 @@ class CancelIndexPopulationIT {
             }
 
             @Override
-            public void populationCancelled() {
+            public void populationCancelled(IndexDescriptor[] indexDescriptors, boolean storeScanHadStated) {
+                assertThat(storeScanHadStated).isTrue();
                 // When we get this call we know that the population is still active (due to being blocked in
                 // indexPopulationScanComplete())
                 // and have just gotten a call to being cancelled, which should now be known to index populators.

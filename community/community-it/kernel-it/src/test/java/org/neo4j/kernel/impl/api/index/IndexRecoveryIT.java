@@ -71,6 +71,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.extension.ExtensionFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
@@ -176,6 +177,8 @@ class IndexRecoveryIT {
                             any(),
                             any()))
                     .thenReturn(indexPopulatorWithControlledCompletionTiming(recoverySemaphore));
+            var minimalIndexAccessor = mock(MinimalIndexAccessor.class);
+            when(mockedIndexProvider.getMinimalIndexAccessor(any())).thenReturn(minimalIndexAccessor);
             boolean recoveryRequired =
                     Recovery.isRecoveryRequired(testDirectory.getFileSystem(), databaseLayout, defaults(), INSTANCE);
             monitors.addMonitorListener(new MyRecoveryMonitor(recoverySemaphore));
@@ -206,6 +209,8 @@ class IndexRecoveryIT {
                             any(TokenNameLookup.class),
                             any(),
                             any());
+            verify(mockedIndexProvider, times(1)).getMinimalIndexAccessor(any());
+            verify(minimalIndexAccessor, times(1)).drop();
         } finally {
             recoverySemaphore.release();
         }
@@ -253,6 +258,8 @@ class IndexRecoveryIT {
                             any(),
                             any()))
                     .thenReturn(indexPopulatorWithControlledCompletionTiming(populationSemaphore));
+            var minimalIndexAccessor = mock(MinimalIndexAccessor.class);
+            when(mockedIndexProvider.getMinimalIndexAccessor(any())).thenReturn(minimalIndexAccessor);
             startDb();
 
             try (Transaction transaction = db.beginTx()) {
@@ -277,6 +284,9 @@ class IndexRecoveryIT {
                             any(TokenNameLookup.class),
                             any(),
                             any());
+            // once during recovery and once during startup
+            verify(mockedIndexProvider, times(2)).getMinimalIndexAccessor(any());
+            verify(minimalIndexAccessor, times(2)).drop();
         } finally {
             populationSemaphore.release();
         }

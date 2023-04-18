@@ -51,8 +51,6 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
     public static final IndexCapability CAPABILITY = TextIndexCapability.trigram();
 
     private final FileSystemAbstraction fileSystem;
-    private final Config config;
-    private final DatabaseReadOnlyChecker readOnlyChecker;
 
     public TrigramIndexProvider(
             FileSystemAbstraction fileSystem,
@@ -61,10 +59,16 @@ public class TrigramIndexProvider extends AbstractTextIndexProvider {
             Monitors monitors,
             Config config,
             DatabaseReadOnlyChecker readOnlyChecker) {
-        super(IndexType.TEXT, DESCRIPTOR, fileSystem, directoryFactory, directoryStructureFactory, monitors, config);
+        super(
+                IndexType.TEXT,
+                DESCRIPTOR,
+                fileSystem,
+                directoryFactory,
+                directoryStructureFactory,
+                monitors,
+                config,
+                readOnlyChecker);
         this.fileSystem = fileSystem;
-        this.config = config;
-        this.readOnlyChecker = readOnlyChecker;
     }
 
     @Override

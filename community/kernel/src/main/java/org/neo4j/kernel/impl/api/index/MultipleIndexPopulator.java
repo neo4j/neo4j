@@ -47,7 +47,6 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.schema.IndexDescriptor;
@@ -497,11 +496,10 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
                 + ", concurrentUpdateQueue = " + concurrentUpdateQueue.size() + "}";
     }
 
-    public void monitorStart(IndexMonitor monitor) {
-        var indexDescriptors = populations.stream()
+    IndexDescriptor[] indexDescriptors() {
+        return populations.stream()
                 .map(p -> p.indexProxyStrategy.getIndexDescriptor())
                 .toArray(IndexDescriptor[]::new);
-        monitor.indexPopulationScanStarting(indexDescriptors);
     }
 
     public static class MultipleIndexUpdater implements IndexUpdater {

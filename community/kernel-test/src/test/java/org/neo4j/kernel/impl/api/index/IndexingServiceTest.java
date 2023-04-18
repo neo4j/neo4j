@@ -147,6 +147,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.IndexUsageStats;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
@@ -501,6 +502,7 @@ class IndexingServiceTest {
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
         when(provider.getInitialState(eq(failedIndex), any(), any())).thenReturn(FAILED);
+        when(provider.getMinimalIndexAccessor(any())).thenReturn(mock(MinimalIndexAccessor.class));
 
         indexingService.init();
 
@@ -997,6 +999,7 @@ class IndexingServiceTest {
                         any(),
                         any()))
                 .thenThrow(exception);
+        when(indexProvider.getMinimalIndexAccessor(eq(index))).thenReturn(mock(MinimalIndexAccessor.class));
 
         life.start();
         ArgumentCaptor<Boolean> closeArgs = ArgumentCaptor.forClass(Boolean.class);
@@ -1185,6 +1188,7 @@ class IndexingServiceTest {
             when(provider.getInitialState(eq(indexRule), any(), any())).thenReturn(ONLINE);
             indexes.add(indexRule);
         }
+        when(provider.getMinimalIndexAccessor(any())).thenReturn(mock(MinimalIndexAccessor.class));
         for (int i = 0; i < nextIndexId; i++) {
             nameLookup.label(i, "Label" + i);
         }
@@ -1407,8 +1411,8 @@ class IndexingServiceTest {
         indexingService.createIndexes(AUTH_DISABLED, indexDescriptor);
         life.start();
 
-        // then
-        verify(accessor).drop();
+        // then drop call two times: one from the explicit call by this test and the other from start()
+        verify(accessor, times(2)).drop();
     }
 
     @Test
@@ -1483,6 +1487,7 @@ class IndexingServiceTest {
         when(indexProvider.getOnlineAccessor(
                         eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any(), any()))
                 .thenThrow(new IllegalStateException("Something unexpectedly wrong with the index here"));
+        when(indexProvider.getMinimalIndexAccessor(eq(index))).thenReturn(mock(MinimalIndexAccessor.class));
         when(indexProvider.storeMigrationParticipant(
                         any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
@@ -1541,6 +1546,7 @@ class IndexingServiceTest {
         when(indexProvider.getOnlineAccessor(
                         eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any(), any()))
                 .thenReturn(accessor);
+        when(indexProvider.getMinimalIndexAccessor(eq(index))).thenReturn(accessor);
         life.start();
         indexingService.getIndexProxy(index).awaitStoreScanCompleted(1, MINUTES);
 
@@ -1753,6 +1759,7 @@ class IndexingServiceTest {
                         any(),
                         any()))
                 .thenReturn(accessor);
+        when(indexProvider.getMinimalIndexAccessor(any())).thenReturn(accessor);
         when(indexProvider.storeMigrationParticipant(
                         any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);

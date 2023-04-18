@@ -26,6 +26,7 @@ import java.nio.file.OpenOption;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -59,9 +60,10 @@ public abstract class AbstractTextIndexProvider extends IndexProvider {
             values -> values[0].valueGroup().category() != ValueCategory.TEXT;
 
     private final IndexStorageFactory indexStorageFactory;
-    private final Config config;
     private final Monitor monitor;
     private final IndexType supportedIndexType;
+    protected final Config config;
+    protected final DatabaseReadOnlyChecker readOnlyChecker;
 
     public AbstractTextIndexProvider(
             IndexType supportedIndexType,
@@ -70,9 +72,11 @@ public abstract class AbstractTextIndexProvider extends IndexProvider {
             DirectoryFactory directoryFactory,
             IndexDirectoryStructure.Factory directoryStructureFactory,
             Monitors monitors,
-            Config config) {
+            Config config,
+            DatabaseReadOnlyChecker readOnlyChecker) {
         super(descriptor, directoryStructureFactory);
         this.supportedIndexType = supportedIndexType;
+        this.readOnlyChecker = readOnlyChecker;
         this.monitor = monitors.newMonitor(Monitor.class, descriptor.toString());
         this.indexStorageFactory = buildIndexStorageFactory(fileSystem, directoryFactory);
         this.config = config;
@@ -102,7 +106,7 @@ public abstract class AbstractTextIndexProvider extends IndexProvider {
     public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
         PartitionedIndexStorage indexStorage = indexStorageFactory.indexStorageOf(descriptor.getId());
         var index = new MinimalDatabaseIndex<>(indexStorage, descriptor, config);
-        return new LuceneMinimalIndexAccessor<>(descriptor, index, true);
+        return new LuceneMinimalIndexAccessor<>(descriptor, index, readOnlyChecker.isReadOnly());
     }
 
     @Override
