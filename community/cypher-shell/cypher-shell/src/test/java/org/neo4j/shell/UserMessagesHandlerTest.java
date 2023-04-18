@@ -25,8 +25,11 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.shell.test.Util.testConnectionConfig;
 
 import java.util.Optional;
+
+import org.fusesource.jansi.Ansi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.shell.printer.AnsiFormattedText;
 
 class UserMessagesHandlerTest {
     private Connector connector;
@@ -38,6 +41,7 @@ class UserMessagesHandlerTest {
         when(connector.getProtocolVersion()).thenReturn("3.0");
         final var connectionConfig = testConnectionConfig("bolt://some.place.com:99");
         when(connector.connectionConfig()).thenReturn(connectionConfig);
+        Ansi.setEnabled(true);
     }
 
     @Test
