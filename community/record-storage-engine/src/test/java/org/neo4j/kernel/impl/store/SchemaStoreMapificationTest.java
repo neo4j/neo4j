@@ -33,7 +33,6 @@ import static org.neo4j.internal.schema.SchemaRuleMapifier.unmapifySchemaRule;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.existsForSchema;
 import static org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory.keyForSchema;
 
-import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
@@ -49,6 +48,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -115,12 +115,13 @@ class SchemaStoreMapificationTest {
             .withOwnedIndexId(7)
             .withId(1);
     private final ConstraintDescriptor nodeTypeConstraintSingleScalarType = ConstraintDescriptorFactory.typeForSchema(
-                    labelSchema, List.of(SchemaValueType.BOOLEAN))
+                    labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN))
             .withName("nodeTypeConstrainSingleScalarType")
             .withId(1);
     private final ConstraintDescriptor relTypeConstraintSeveralTypes = ConstraintDescriptorFactory.typeForSchema(
                     relTypeSchema,
-                    List.of(SchemaValueType.BOOLEAN, SchemaValueType.LOCAL_DATETIME, SchemaValueType.LIST_FLOAT))
+                    PropertyTypeSet.of(
+                            SchemaValueType.BOOLEAN, SchemaValueType.LOCAL_DATETIME, SchemaValueType.LIST_FLOAT))
             .withName("relTypeConstrainSeveralTypes")
             .withId(1);
 

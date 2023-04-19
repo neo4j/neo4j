@@ -19,11 +19,9 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import java.util.List;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.internal.schema.SchemaValueType;
 
 public class ConstraintDescriptorFactory {
     private ConstraintDescriptorFactory() {}
@@ -74,7 +72,7 @@ public class ConstraintDescriptorFactory {
         return ConstraintDescriptorImplementation.makeUniqueExistsConstraint(schema, indexType);
     }
 
-    public static TypeConstraintDescriptor typeForSchema(SchemaDescriptor schema, List<SchemaValueType> allowedTypes) {
+    public static TypeConstraintDescriptor typeForSchema(SchemaDescriptor schema, PropertyTypeSet allowedTypes) {
         return ConstraintDescriptorImplementation.makePropertyTypeConstraint(schema, allowedTypes);
     }
 }

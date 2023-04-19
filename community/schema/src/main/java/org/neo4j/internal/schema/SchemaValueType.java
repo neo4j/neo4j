@@ -23,6 +23,9 @@ import java.util.Set;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueRepresentation;
 
+/**
+ * Note: ordering is defined by CIP-90.
+ */
 public enum SchemaValueType {
     BOOLEAN("BOOLEAN", ValueRepresentation.BOOLEAN),
     STRING("STRING", ValueRepresentation.UTF8_TEXT, ValueRepresentation.UTF16_TEXT),

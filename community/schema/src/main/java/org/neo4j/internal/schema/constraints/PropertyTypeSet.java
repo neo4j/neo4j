@@ -19,18 +19,23 @@
  */
 package org.neo4j.internal.schema.constraints;
 
-import org.neo4j.internal.schema.ConstraintDescriptor;
+import java.util.Arrays;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
+import org.neo4j.internal.schema.SchemaValueType;
 
-public interface TypeConstraintDescriptor extends ConstraintDescriptor {
+/**
+ * An ordered set of {@link SchemaValueType}s, used to represent unions of types.
+ * The order is defined in CIP-90 and implemented in terms of the natural ordering of {@link SchemaValueType}.
+ */
+public class PropertyTypeSet extends TreeSet<SchemaValueType> {
+    public String userDescription() {
+        return stream().map(SchemaValueType::userDescription).collect(Collectors.joining(" | "));
+    }
 
-    @Override
-    TypeConstraintDescriptor withId(long id);
-
-    @Override
-    TypeConstraintDescriptor withName(String name);
-
-    /**
-     * Returns the types allowed for values of properties.
-     */
-    PropertyTypeSet allowedPropertyTypes();
+    public static PropertyTypeSet of(SchemaValueType... types) {
+        var set = new PropertyTypeSet();
+        set.addAll(Arrays.asList(types));
+        return set;
+    }
 }

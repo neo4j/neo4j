@@ -27,7 +27,6 @@ import static org.neo4j.internal.schema.ConstraintType.UNIQUE;
 import static org.neo4j.internal.schema.ConstraintType.UNIQUE_EXISTS;
 import static org.neo4j.internal.schema.SchemaUserDescription.TOKEN_ID_NAME_LOOKUP;
 
-import java.util.List;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.ConstraintType;
@@ -35,7 +34,6 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.SchemaUserDescription;
-import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.util.Preconditions;
 
 /**
@@ -54,7 +52,7 @@ public class ConstraintDescriptorImplementation
     private final String name;
     private final Long ownedIndex;
     private final IndexType ownedIndexType;
-    private final List<SchemaValueType> allowedPropertyTypes;
+    private final PropertyTypeSet allowedPropertyTypes;
 
     static ConstraintDescriptorImplementation makeExistsConstraint(SchemaDescriptor schema) {
         return new ConstraintDescriptorImplementation(EXISTS, schema, NO_ID, null, null, null, null);
@@ -73,7 +71,7 @@ public class ConstraintDescriptorImplementation
     }
 
     static TypeConstraintDescriptor makePropertyTypeConstraint(
-            SchemaDescriptor schema, List<SchemaValueType> allowedPropertyTypes) {
+            SchemaDescriptor schema, PropertyTypeSet allowedPropertyTypes) {
         Preconditions.checkState(
                 allowedPropertyTypes != null, "Property types should be supplied for property type constraints");
         return new ConstraintDescriptorImplementation(
@@ -87,7 +85,7 @@ public class ConstraintDescriptorImplementation
             String name,
             Long ownedIndex,
             IndexType ownedIndexType,
-            List<SchemaValueType> allowedPropertyTypes) {
+            PropertyTypeSet allowedPropertyTypes) {
         this.type = type;
         this.schema = schema;
         this.id = id;
@@ -328,7 +326,7 @@ public class ConstraintDescriptorImplementation
     }
 
     @Override
-    public List<SchemaValueType> allowedPropertyTypes() {
+    public PropertyTypeSet allowedPropertyTypes() {
         if (!enforcesPropertyType()) {
             throw new IllegalStateException("This constraint does not enforce property types.");
         }

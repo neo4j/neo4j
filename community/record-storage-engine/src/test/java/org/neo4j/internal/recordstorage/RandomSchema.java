@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.recordstorage;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.SplittableRandom;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
@@ -39,6 +37,7 @@ import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
@@ -216,9 +215,9 @@ public class RandomSchema implements Supplier<SchemaRule> {
         };
     }
 
-    private List<SchemaValueType> randomAllowedTypes() {
+    private PropertyTypeSet randomAllowedTypes() {
         var types = rng.nextInt(1, 5);
-        var schemaValueTypes = new ArrayList<SchemaValueType>(types);
+        var schemaValueTypes = new PropertyTypeSet();
         for (int i = 0; i < types; i++) {
             schemaValueTypes.add(randomAllowedType(rng));
         }

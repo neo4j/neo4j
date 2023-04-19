@@ -19,10 +19,8 @@
  */
 package org.neo4j.internal.schema;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.OptionalLong;
 import org.eclipse.collections.api.RichIterable;
@@ -31,6 +29,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.values.storable.IntArray;
 import org.neo4j.values.storable.LongValue;
@@ -170,10 +169,11 @@ public class SchemaRuleMapifier {
             }
             case PROPERTY_TYPE -> {
                 TypeConstraintDescriptor typeConstraintDescriptor = rule.asPropertyTypeConstraint();
-                List<SchemaValueType> schemaValueTypes = typeConstraintDescriptor.allowedPropertyTypes();
+                PropertyTypeSet schemaValueTypes = typeConstraintDescriptor.allowedPropertyTypes();
                 String[] typeArray = new String[schemaValueTypes.size()];
-                for (int i = 0; i < typeArray.length; i++) {
-                    typeArray[i] = schemaValueTypes.get(i).serialize();
+                int i = 0;
+                for (SchemaValueType schemaValueType : schemaValueTypes) {
+                    typeArray[i++] = schemaValueType.serialize();
                 }
                 putStringArrayProperty(map, PROP_CONSTRAINT_ALLOWED_TYPES, typeArray);
             }
@@ -363,8 +363,8 @@ public class SchemaRuleMapifier {
         }
     }
 
-    private static List<SchemaValueType> getAllowedTypes(String[] allowedTypes) throws MalformedSchemaRuleException {
-        ArrayList<SchemaValueType> schemaValueTypes = new ArrayList<>();
+    private static PropertyTypeSet getAllowedTypes(String[] allowedTypes) throws MalformedSchemaRuleException {
+        PropertyTypeSet schemaValueTypes = new PropertyTypeSet();
         for (String allowedType : allowedTypes) {
             try {
                 schemaValueTypes.add(SchemaValueTypes.convertToSchemaValueType(allowedType));

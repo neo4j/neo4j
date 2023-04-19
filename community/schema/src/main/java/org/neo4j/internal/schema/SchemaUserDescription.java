@@ -22,11 +22,11 @@ package org.neo4j.internal.schema;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 
-import java.util.List;
 import java.util.StringJoiner;
 import java.util.function.IntFunction;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.token.api.TokenIdPrettyPrinter;
 
 public final class SchemaUserDescription {
@@ -87,7 +87,7 @@ public final class SchemaUserDescription {
             ConstraintType type,
             SchemaDescriptor schema,
             Long ownedIndex,
-            List<SchemaValueType> allowedPropertyTypes) {
+            PropertyTypeSet allowedPropertyTypes) {
         StringJoiner joiner = new StringJoiner(", ", "Constraint( ", " )");
         maybeAddId(id, joiner);
         maybeAddName(name, joiner);
@@ -121,7 +121,7 @@ public final class SchemaUserDescription {
         }
     }
 
-    private static void maybeAddAllowedPropertyTypes(List<SchemaValueType> allowedPropertyTypes, StringJoiner joiner) {
+    private static void maybeAddAllowedPropertyTypes(PropertyTypeSet allowedPropertyTypes, StringJoiner joiner) {
         if (allowedPropertyTypes != null) {
             joiner.add("allowedPropertyTypes='" + allowedPropertyTypes + "'");
         }
