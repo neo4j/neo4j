@@ -19,9 +19,9 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
-import org.neo4j.cypher.internal.util.InputPosition
 
 class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysisTestSuiteWithDefaultQuery
     with TestName {
@@ -66,7 +66,7 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
   }
 
   test("DIFFERENT RELATIONSHIPS ((a)-[:REL]->(b)){2}") {
-     errorsFromSemanticAnalysis shouldBe empty
+    errorsFromSemanticAnalysis shouldBe empty
   }
 
   test("((a)-[:REL]->(b)){2}, ((c)-[:REL]->(d))+") {
@@ -108,6 +108,10 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
   }
 
   test("REPEATABLE ELEMENTS p = shortestPath((a)-[:REL*]->(b))") {
+    errorsFromSemanticAnalysis shouldBe empty
+  }
+
+  test("shortestPath((a)-[:REL*]->(b)), shortestPath((c)-[:REL*]->(d))") {
     errorsFromSemanticAnalysis shouldBe empty
   }
 
