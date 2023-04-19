@@ -49,6 +49,21 @@ class SemanticTypeCheckTest extends CypherFunSuite {
     }
   }
 
+  test("should fail if pattern expression is used in size()") {
+    val queries = Seq(
+      "MATCH (a) RETURN size ( (a)-[]->() )",
+      "MATCH (a) RETURN size ( (a)--() )"
+    )
+
+    queries.foreach { query =>
+      withClue(s"Failing query: $query") {
+        runPipeline(query).errors.map(_.msg) should contain(
+          PatternExpressionInNonExistenceCheck.errorMessageForSizeFunction
+        )
+      }
+    }
+  }
+
   test("should not fail if pattern expression is used where we expect a boolean value") {
     val queries = Seq(
       "MATCH (a)--() RETURN a",

@@ -22,6 +22,8 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
@@ -106,6 +108,11 @@ object PatternExpressionInNonExistenceCheck extends ExpectedBooleanTypeCheck {
         // Don't look inside exists()
         errors => SkipChildren(errors)
 
+      // The replacement for size(PatternExpression) is COUNT {PatternExpression} and not size(PatternComprehension).
+      case FunctionInvocation(_, FunctionName("size"), _, Vector(p: PatternExpression))
+        if !isExpectedTypeBoolean(baseState.semanticTable(), p) =>
+        errors => SkipChildren(errors :+ SemanticError(errorMessageForSizeFunction, p.position))
+
       case p: PatternExpression if !isExpectedTypeBoolean(baseState.semanticTable(), p) =>
         errors => SkipChildren(errors :+ SemanticError(errorMessage, p.position))
     }
@@ -114,6 +121,10 @@ object PatternExpressionInNonExistenceCheck extends ExpectedBooleanTypeCheck {
   val errorMessage: String = "A pattern expression should only be used in order to test the existence of a pattern. " +
     "It should therefore only be used in contexts that evaluate to a boolean, e.g. inside the function exists() or in a WHERE-clause. " +
     "No other uses are allowed, instead they should be replaced by a pattern comprehension."
+
+  val errorMessageForSizeFunction: String =
+    "A pattern expression should only be used in order to test the existence of a pattern. " +
+      "It can no longer be used inside the function size(), an alternative is to replace size() with COUNT {}."
 }
 
 object CreatePatternSelfReferenceCheck {
