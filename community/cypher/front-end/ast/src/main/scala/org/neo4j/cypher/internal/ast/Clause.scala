@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions.Function.isIdFunction
+import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
@@ -521,15 +522,35 @@ case class Match(
 
   private def checkMatchMode: SemanticCheck = (state: SemanticState) => {
     matchMode match {
-      case _: RepeatableElements =>
-        val errors = pattern.patternParts.collect {
-          case part if !part.isBounded => SemanticError(s"Match mode \"REPEATABLE ELEMENTS\" was used, but pattern is not bounded.", part.position)
-        }
-        semantics.SemanticCheckResult(state, errors)
-
-      case _ =>
-        semantics.SemanticCheckResult(state, Seq.empty)
+      case _: RepeatableElements => checkRepeatableElements(state)
+      case _: DifferentRelationships => checkDifferentRelationships(state)
+      case _ => semantics.SemanticCheckResult(state, Seq.empty)
     }
+  }
+
+  private def checkRepeatableElements(state: SemanticState): SemanticCheckResult = {
+    val errors = pattern.patternParts.collect {
+      case part if !part.isBounded => SemanticError(s"Match mode \"REPEATABLE ELEMENTS\" was used, but pattern is not bounded.", part.position)
+    }
+    semantics.SemanticCheckResult(state, errors)
+  }
+
+  /**
+   * Iff we are operating under a DIFFERENT RELATIONSHIPS match mode, then a selective selector
+   * (any other selector than ALL) would imply an order of evaluation of the different path patterns.
+   * Therefore, once there is at least one path pattern with a selective selector, then we need to make sure
+   * that there is no other path pattern beside it.
+   */
+  private def checkDifferentRelationships(state: SemanticState): SemanticCheckResult = {
+    val errors = if (pattern.patternParts.size > 1) {
+      pattern.patternParts
+        .find(_.isSelective)
+        .map(selectivePattern => SemanticError("A selective path pattern can only be used with match mode \"DIFFERENT RELATIONSHIPS\" if it's the only pattern in that clause.", selectivePattern.position))
+        .toSeq
+    } else {
+      Seq.empty
+    }
+    semantics.SemanticCheckResult(state, errors)
   }
 
   private def checkHints: SemanticCheck = SemanticCheck.fromFunctionWithContext { (semanticState, context) =>

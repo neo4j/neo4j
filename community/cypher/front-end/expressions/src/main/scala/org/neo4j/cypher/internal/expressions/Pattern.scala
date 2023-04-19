@@ -77,6 +77,8 @@ sealed abstract class PatternPart extends ASTNode {
   def element: PatternElement
 
   def isBounded: Boolean
+
+  def isSelective: Boolean
 }
 
 case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition)
@@ -86,6 +88,8 @@ case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPar
   override def allVariables: Set[LogicalVariable] = patternPart.allVariables + variable
 
   override def isBounded: Boolean = patternPart.isBounded
+
+  override def isSelective: Boolean = patternPart.isSelective
 }
 
 sealed trait AnonymousPatternPart extends PatternPart {
@@ -140,6 +144,7 @@ object PatternPart {
 case class PatternPartWithSelector(element: PatternElement, selector: Selector) extends AnonymousPatternPart {
   override def position: InputPosition = element.position
   override def isBounded: Boolean = element.isBounded || selector.isBounded
+  override def isSelective: Boolean = selector.isBounded
 }
 
 case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(val position: InputPosition)
@@ -152,6 +157,9 @@ case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(va
       "allShortestPaths"
 
   override def isBounded: Boolean = true
+
+  // TODO: This is not true, but is it necessary to maintain current semantics?
+  override def isSelective: Boolean = false
 }
 
 /**

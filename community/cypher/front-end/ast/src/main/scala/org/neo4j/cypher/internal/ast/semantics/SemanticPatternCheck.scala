@@ -91,28 +91,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
         ensureNoReferencesOutFromQuantifiedPath(pattern) chain
           ensureNoRepeatedRelationships(pattern) chain
           ensureNoRepeatedVarLengthRelationships(pattern)
-      } chain ensureSelectiveSelectorExclusivity(pattern)
-
-  /**
-   * Iff we are operating under a DIFFERENT RELATIONSHIPS MATCH mode, then a selective selector
-   * (any other selector than ALL) would imply an order of evaluation of the different path patterns.
-   * Therefore, once there is at least one path pattern with a selective selector, then we need to make sure
-   * that there is no other path pattern beside it.
-   */
-  private def ensureSelectiveSelectorExclusivity(pattern: Pattern): SemanticCheck = {
-    val maybeSelectiveSelector = pattern.patternParts.collectFirst {
-      case PatternPartWithSelector(_, selector) if !selector.isInstanceOf[AllPaths]                      => selector
-      case NamedPatternPart(_, PatternPartWithSelector(_, selector)) if !selector.isInstanceOf[AllPaths] => selector
-    }
-    maybeSelectiveSelector.foldSemanticCheck { selector =>
-      when(pattern.patternParts.size > 1) {
-        error(
-          "Multiple path patterns cannot be used in the same clause in combination with a selective path selector.",
-          selector.position
-        )
       }
-    }
-  }
 
   def check(ctx: SemanticContext, pattern: RelationshipsPattern): SemanticCheck =
     declareVariables(ctx, pattern.element) chain
