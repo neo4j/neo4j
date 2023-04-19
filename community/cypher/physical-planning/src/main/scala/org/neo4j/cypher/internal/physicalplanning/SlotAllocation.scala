@@ -952,11 +952,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         lhs
 
       case LetSelectOrSemiApply(_, _, name, _) =>
-        lhs.newReference(name, false, CTBoolean)
+        lhs.newReference(name, true, CTBoolean)
         lhs
 
       case LetSelectOrAntiSemiApply(_, _, name, _) =>
-        lhs.newReference(name, false, CTBoolean)
+        lhs.newReference(name, true, CTBoolean)
         lhs
 
       case _: CartesianProduct =>
