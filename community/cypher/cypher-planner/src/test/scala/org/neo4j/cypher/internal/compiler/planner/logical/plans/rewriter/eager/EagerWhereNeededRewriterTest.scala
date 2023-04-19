@@ -6293,20 +6293,6 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
-  // This one should really be fixed before enabling the new analysis
-  ignore("Should not insert an eager when the property conflict of a merge is on a stable iterator?") {
-    val planBuilder = new LogicalPlanBuilder()
-      .produceResults("d")
-      .merge(Seq(createNodeWithProperties("n", Seq(), "{foo: 5}")))
-      .filter("n.foo = 5")
-      .allNodeScan("n")
-
-    val plan = planBuilder.build()
-    val result = eagerizePlan(planBuilder, plan)
-
-    result should equal(plan)
-  }
-
   // No analysis for possible overlaps of node variables based on predicates yet.
   ignore(
     "does not insert eager between label set and all labels read if no overlap possible by property predicate means"
