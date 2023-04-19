@@ -629,9 +629,12 @@ public class IndexingService extends LifecycleAdapter implements IndexUpdateList
 
     public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         try (var fileFlushEvent = flushEvent.beginFileFlush()) {
+            internalLog.debug(
+                    "Checkpointing %s", indexStatisticsStore.storeFile().getFileName());
             indexStatisticsStore.checkpoint(fileFlushEvent, cursorContext);
         }
         indexMapRef.indexMapSnapshot().forEachIndexProxy(indexProxyOperation("force", proxy -> {
+            internalLog.debug("Checkpointing %s", proxy.getDescriptor().userDescription(tokenNameLookup));
             try (var fileFlushEvent = flushEvent.beginFileFlush()) {
                 proxy.force(fileFlushEvent, cursorContext);
             }
