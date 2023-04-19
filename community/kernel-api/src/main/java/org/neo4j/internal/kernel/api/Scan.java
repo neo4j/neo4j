@@ -27,7 +27,9 @@ import org.neo4j.io.pagecache.context.CursorContext;
  *
  * @param <Cursor>
  *         the type of cursor this object initializes.
+ * @deprecated in favor of {@link PartitionedScan}
  */
+@Deprecated(forRemoval = true)
 public interface Scan<Cursor extends org.neo4j.internal.kernel.api.Cursor> {
     /**
      * Will attempt to reserve a batch to scan.

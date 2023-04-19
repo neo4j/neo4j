@@ -192,6 +192,10 @@ public interface Read {
     PartitionedScan<RelationshipValueIndexCursor> relationshipIndexScan(
             IndexReadSession index, int desiredNumberOfPartitions, QueryContext queryContext) throws KernelException;
 
+    /**
+     * @deprecated use {@link #nodeLabelScan(TokenReadSession, int, CursorContext, TokenPredicate)}
+     */
+    @Deprecated(forRemoval = true)
     Scan<NodeLabelIndexCursor> nodeLabelScan(int label);
 
     /**
@@ -261,6 +265,10 @@ public interface Read {
      */
     void allNodesScan(NodeCursor cursor);
 
+    /**
+     * @deprecated use {{@link #allNodesScan(int, CursorContext)}}
+     */
+    @Deprecated(forRemoval = true)
     Scan<NodeCursor> allNodesScan();
 
     /**
@@ -458,6 +466,10 @@ public interface Read {
 
     void allRelationshipsScan(RelationshipScanCursor cursor);
 
+    /**
+     * @deprecated use {@link #allRelationshipsScan(int, CursorContext)}
+     */
+    @Deprecated(forRemoval = true)
     Scan<RelationshipScanCursor> allRelationshipsScan();
 
     /**
