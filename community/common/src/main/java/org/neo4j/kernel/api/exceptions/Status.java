@@ -175,6 +175,7 @@ public interface Status
                 "Explicitly terminated by the user." ),
         Interrupted( TransientError,
                 "Interrupted while waiting." ),
+        LeaderSwitch( TransientError, "The request could not be completed due to cluster leader switch" ),
         @Deprecated // Non-specific Status for migrating legacy exceptions.
         TransientTransactionFailure( TransientError,
                                      "Unable to complete transaction." );
