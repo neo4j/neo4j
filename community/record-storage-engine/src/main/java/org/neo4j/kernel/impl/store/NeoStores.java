@@ -46,6 +46,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
+import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StoreId;
 
@@ -76,6 +77,7 @@ public class NeoStores implements AutoCloseable {
     private final LogTailLogVersionsMetadata logTailMetadata;
     private final ImmutableSet<OpenOption> openOptions;
     private final boolean readOnly;
+    private final InternalLog log;
 
     NeoStores(
             FileSystemAbstraction fileSystem,
@@ -98,6 +100,7 @@ public class NeoStores implements AutoCloseable {
         this.pageCache = pageCache;
         this.pageCacheTracer = pageCacheTracer;
         this.logProvider = logProvider;
+        this.log = logProvider.getLog(getClass());
         this.recordFormats = recordFormats;
         this.contextFactory = contextFactory;
         this.readOnly = readOnly;
@@ -159,6 +162,7 @@ public class NeoStores implements AutoCloseable {
 
     public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
         visitStores(store -> {
+            log.debug("Checkpointing %s", store.storageFile.getFileName());
             try (var fileFlushEvent = flushEvent.beginFileFlush()) {
                 store.getIdGenerator().checkpoint(fileFlushEvent, cursorContext);
             }

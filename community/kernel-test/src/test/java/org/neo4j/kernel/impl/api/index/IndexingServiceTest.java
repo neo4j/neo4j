@@ -218,6 +218,7 @@ class IndexingServiceTest {
     void setUp() throws IndexNotFoundKernelException {
         when(populator.sample(any(CursorContext.class))).thenReturn(new IndexSample());
         when(indexStatisticsStore.indexSample(anyLong())).thenReturn(new IndexSample());
+        when(indexStatisticsStore.storeFile()).thenReturn(Path.of("foo"));
         when(storeViewFactory.createTokenIndexStoreView(any())).thenReturn(storeView);
         ValueIndexReader indexReader = mock(ValueIndexReader.class);
         IndexSampler indexSampler = mock(IndexSampler.class);
@@ -564,7 +565,8 @@ class IndexingServiceTest {
 
         // THEN
         // We get a snapshot per online index
-        assertThat(asCollection(files)).isEqualTo(asCollection(iterator(theFile, theFile)));
+        assertThat(asCollection(files))
+                .isEqualTo(asCollection(iterator(indexStatisticsStore.storeFile(), theFile, theFile)));
     }
 
     @Test
@@ -594,7 +596,7 @@ class IndexingServiceTest {
 
         // THEN
         // We get a snapshot from the online index, but no snapshot from the populating one
-        assertThat(asCollection(files)).isEqualTo(asCollection(iterator(theFile)));
+        assertThat(asCollection(files)).isEqualTo(asCollection(iterator(indexStatisticsStore.storeFile(), theFile)));
     }
 
     @Test
@@ -1925,7 +1927,7 @@ class IndexingServiceTest {
                 mock(SchemaState.class),
                 internalLogProvider,
                 IndexMonitor.NO_MONITOR,
-                mock(IndexStatisticsStore.class),
+                indexStatisticsStore,
                 CONTEXT_FACTORY,
                 INSTANCE,
                 "",

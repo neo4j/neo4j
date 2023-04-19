@@ -69,6 +69,7 @@ import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.recordstorage.RecordDatabaseFile;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
 import org.neo4j.io.pagecache.OutOfDiskSpaceException;
 import org.neo4j.io.pagecache.PageCache;
@@ -144,6 +145,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     private final LockService lockService;
     private final boolean consistencyCheckApply;
     private final boolean parallelIndexUpdatesApply;
+    private final InternalLog log;
     private IndexUpdatesWorkSync indexUpdatesSync;
     private final IdGeneratorFactory idGeneratorFactory;
     private final CursorContextFactory contextFactory;
@@ -187,6 +189,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         this.databaseLayout = databaseLayout;
         this.config = config;
         this.internalLogProvider = internalLogProvider;
+        this.log = internalLogProvider.getLog(getClass());
         this.tokenHolders = tokenHolders;
         this.schemaState = schemaState;
         this.lockService = lockService;
@@ -616,9 +619,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
 
     @Override
     public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorContext) throws IOException {
+
+        log.debug("Checkpointing %s", RecordDatabaseFile.COUNTS_STORE.getName());
         try (var fileFlushEvent = flushEvent.beginFileFlush()) {
             countsStore.checkpoint(fileFlushEvent, cursorContext);
         }
+        log.debug("Checkpointing %s", RecordDatabaseFile.RELATIONSHIP_GROUP_DEGREES_STORE.getName());
         try (var fileFlushEvent = flushEvent.beginFileFlush()) {
             groupDegreesStore.checkpoint(fileFlushEvent, cursorContext);
         }
