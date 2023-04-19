@@ -403,7 +403,7 @@ class AllNodesInStoreExistInLabelIndexTest {
                                 .forProvider(TokenIndexProvider.DESCRIPTOR);
                         long idxId =
                                 ((IndexDefinitionImpl) idx).getIndexReference().getId();
-                        IndexFiles indexFiles = new IndexFiles.Directory(fs, indexDirectoryStructure, idxId);
+                        IndexFiles indexFiles = new IndexFiles(fs, indexDirectoryStructure, idxId);
                         return indexFiles.getStoreFile();
                     })
                     .findAny()

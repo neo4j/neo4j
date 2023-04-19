@@ -947,7 +947,7 @@ class ConsistencyCheckWithCorruptGBPTreeIT {
                                 .forProvider(TokenIndexProvider.DESCRIPTOR);
                         long id =
                                 ((IndexDefinitionImpl) idx).getIndexReference().getId();
-                        IndexFiles indexFiles = new IndexFiles.Directory(fs, indexDirectoryStructure, id);
+                        IndexFiles indexFiles = new IndexFiles(fs, indexDirectoryStructure, id);
                         if (idx.isNodeIndex()) {
                             labelTokenIndexFile = indexFiles.getStoreFile();
                         } else {

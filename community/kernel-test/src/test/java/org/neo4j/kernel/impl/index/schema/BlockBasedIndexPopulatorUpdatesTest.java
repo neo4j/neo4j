@@ -106,7 +106,7 @@ abstract class BlockBasedIndexPopulatorUpdatesTest<KEY extends NativeIndexKey<KE
         IndexProviderDescriptor providerDescriptor = new IndexProviderDescriptor("test", "v1");
         IndexDirectoryStructure directoryStructure =
                 directoriesByProvider(directory.homePath()).forProvider(providerDescriptor);
-        indexFiles = new IndexFiles.Directory(fs, directoryStructure, INDEX_DESCRIPTOR.getId());
+        indexFiles = new IndexFiles(fs, directoryStructure, INDEX_DESCRIPTOR.getId());
         var pageCacheTracer = PageCacheTracer.NULL;
         databaseIndexContext = DatabaseIndexContext.builder(
                         pageCache,

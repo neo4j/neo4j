@@ -193,7 +193,7 @@ class ReadEntityIdsStepUsingTokenIndexTest {
         IndexDirectoryStructure indexDirectoryStructure =
                 directoriesByProvider(databaseLayout.databaseDirectory()).forProvider(TokenIndexProvider.DESCRIPTOR);
         IndexFiles indexFiles =
-                new IndexFiles.Directory(testDir.getFileSystem(), indexDirectoryStructure, INDEX_DESCRIPTOR.getId());
+                new IndexFiles(testDir.getFileSystem(), indexDirectoryStructure, INDEX_DESCRIPTOR.getId());
         return new TokenIndexAccessor(
                 DatabaseIndexContext.builder(
                                 pageCache,

@@ -118,7 +118,7 @@ public abstract class IndexTestUtil<KEY, VALUE, LAYOUT extends Layout<KEY, VALUE
             FileSystemAbstraction fs, TestDirectory directory, IndexDescriptor indexDescriptor) {
         IndexDirectoryStructure indexDirectoryStructure =
                 directoriesByProvider(directory.directory("root")).forProvider(indexDescriptor.getIndexProvider());
-        return new IndexFiles.Directory(fs, indexDirectoryStructure, indexDescriptor.getId());
+        return new IndexFiles(fs, indexDirectoryStructure, indexDescriptor.getId());
     }
 
     GBPTree<KEY, VALUE> getTree() {

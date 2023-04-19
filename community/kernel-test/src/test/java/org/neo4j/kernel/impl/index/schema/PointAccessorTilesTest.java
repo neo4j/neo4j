@@ -43,7 +43,7 @@ class PointAccessorTilesTest extends BaseAccessorTilesTest<PointKey> {
     NativeIndexAccessor<PointKey> createAccessor() {
         IndexDirectoryStructure directoryStructure = IndexDirectoryStructure.directoriesByProvider(directory.homePath())
                 .forProvider(DESCRIPTOR);
-        IndexFiles indexFiles = new IndexFiles.Directory(fs, directoryStructure, descriptor.getId());
+        IndexFiles indexFiles = new IndexFiles(fs, directoryStructure, descriptor.getId());
         PointLayout layout = new PointLayout(indexSettings);
         RecoveryCleanupWorkCollector collector = RecoveryCleanupWorkCollector.ignore();
         var cacheTracer = PageCacheTracer.NULL;

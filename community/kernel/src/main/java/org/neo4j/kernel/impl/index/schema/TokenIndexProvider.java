@@ -219,7 +219,7 @@ public class TokenIndexProvider extends IndexProvider {
 
     public static IndexFiles indexFiles(
             SchemaRule schemaRule, FileSystemAbstraction fileSystem, IndexDirectoryStructure indexDirectoryStructure) {
-        return new IndexFiles.Directory(fileSystem, indexDirectoryStructure, schemaRule.getId());
+        return new IndexFiles(fileSystem, indexDirectoryStructure, schemaRule.getId());
     }
 
     public static IndexCapability capability(boolean supportsOrder) {

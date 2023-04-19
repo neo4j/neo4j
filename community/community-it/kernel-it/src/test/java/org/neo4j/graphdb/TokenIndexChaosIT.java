@@ -216,7 +216,7 @@ public class TokenIndexChaosIT {
                                 .forProvider(TokenIndexProvider.DESCRIPTOR);
                         long id =
                                 ((IndexDefinitionImpl) idx).getIndexReference().getId();
-                        IndexFiles indexFiles = new IndexFiles.Directory(fs, indexDirectoryStructure, id);
+                        IndexFiles indexFiles = new IndexFiles(fs, indexDirectoryStructure, id);
                         return indexFiles.getStoreFile();
                     })
                     .findAny()

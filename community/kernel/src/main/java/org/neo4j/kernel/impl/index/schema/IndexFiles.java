@@ -28,133 +28,63 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 
 /**
  * Surface for a schema indexes to act on the files that it owns.
- * One instance of this class maps to a single index or sub-index if living under a Fusion umbrella.
  * Wraps all {@link IOException IOExceptions} in {@link UncheckedIOException}.
  */
-public abstract class IndexFiles {
-    public abstract Path getStoreFile();
+public class IndexFiles {
+    public static final String INDEX_FILE_PREFIX = "index-";
 
-    public abstract Path getBase();
+    private final FileSystemAbstraction fs;
+    private final Path directory;
+    private final Path storeFile;
 
-    public abstract void clear();
+    public IndexFiles(FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId) {
+        this.fs = fs;
+        this.directory = directoryStructure.directoryForIndex(indexId);
+        this.storeFile = directory.resolve(indexFileName(indexId));
+    }
 
-    public abstract void archiveIndex() throws IOException;
+    public Path getStoreFile() {
+        return storeFile;
+    }
 
-    public abstract void ensureDirectoryExist();
+    public Path getBase() {
+        return directory;
+    }
 
-    @Override
+    public void clear() {
+        try {
+            if (fs.fileExists(directory)) {
+                fs.deleteRecursively(directory);
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    public void archiveIndex() throws IOException {
+        if (fs.isDirectory(directory) && fs.fileExists(directory) && fs.listFiles(directory).length > 0) {
+            ZipUtils.zip(
+                    fs,
+                    directory,
+                    directory
+                            .getParent()
+                            .resolve("archive-" + directory.getFileName() + "-" + System.currentTimeMillis() + ".zip"));
+        }
+    }
+
+    public void ensureDirectoryExist() {
+        try {
+            fs.mkdirs(directory);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     public String toString() {
         return String.format("%s[base=%s,storeFile=%s]", getClass().getSimpleName(), getBase(), getStoreFile());
     }
 
-    public static class Directory extends IndexFiles {
-        public static final String INDEX_FILE_PREFIX = "index-";
-        private final FileSystemAbstraction fs;
-        private final Path directory;
-        private final Path storeFile;
-
-        public Directory(FileSystemAbstraction fs, IndexDirectoryStructure directoryStructure, long indexId) {
-            this.fs = fs;
-            this.directory = directoryStructure.directoryForIndex(indexId);
-            this.storeFile = directory.resolve(indexFileName(indexId));
-        }
-
-        @Override
-        public Path getStoreFile() {
-            return storeFile;
-        }
-
-        @Override
-        public Path getBase() {
-            return directory;
-        }
-
-        @Override
-        public void clear() {
-            try {
-                if (fs.fileExists(directory)) {
-                    fs.deleteRecursively(directory);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-
-        @Override
-        public void archiveIndex() throws IOException {
-            if (fs.isDirectory(directory) && fs.fileExists(directory) && fs.listFiles(directory).length > 0) {
-                ZipUtils.zip(
-                        fs,
-                        directory,
-                        directory
-                                .getParent()
-                                .resolve("archive-" + directory.getFileName() + "-" + System.currentTimeMillis()
-                                        + ".zip"));
-            }
-        }
-
-        @Override
-        public void ensureDirectoryExist() {
-            try {
-                fs.mkdirs(directory);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-
-        private static String indexFileName(long indexId) {
-            return INDEX_FILE_PREFIX + indexId;
-        }
-    }
-
-    public static class SingleFile extends IndexFiles {
-        private final FileSystemAbstraction fs;
-        private final Path singleFile;
-
-        public SingleFile(FileSystemAbstraction fs, Path singleFile) {
-            this.fs = fs;
-            this.singleFile = singleFile;
-        }
-
-        @Override
-        public Path getStoreFile() {
-            return singleFile;
-        }
-
-        @Override
-        public Path getBase() {
-            return singleFile;
-        }
-
-        @Override
-        public void clear() {
-            try {
-                if (fs.fileExists(singleFile)) {
-                    fs.deleteFileOrThrow(singleFile);
-                }
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-
-        @Override
-        public void archiveIndex() {
-            if (fs.fileExists(singleFile)) {
-                try {
-                    ZipUtils.zip(
-                            fs,
-                            singleFile,
-                            singleFile.resolve(
-                                    "archive-" + singleFile.getFileName() + "-" + System.currentTimeMillis() + ".zip"));
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
-                }
-            }
-        }
-
-        @Override
-        public void ensureDirectoryExist() {
-            // no-op
-        }
+    private static String indexFileName(long indexId) {
+        return INDEX_FILE_PREFIX + indexId;
     }
 }
