@@ -51,6 +51,10 @@ object SemanticFeature {
     override def name: String = "Shortest path as defined for GQL"
   }
 
+  case object MatchModes extends SemanticFeature with FeatureToString {
+    override def name: String = "Match modes"
+  }
+
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
@@ -58,7 +62,8 @@ object SemanticFeature {
     ExpressionsInViewInvocations,
     QuantifiedPathPatterns,
     ShowSetting,
-    GpmShortestPath
+    GpmShortestPath,
+    MatchModes
   )
 
   def fromString(str: String): SemanticFeature =

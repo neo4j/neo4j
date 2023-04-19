@@ -31,7 +31,8 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
   def errorsFromSemanticAnalysis: Seq[SemanticErrorDef] = {
     runSemanticAnalysisWithSemanticFeatures(
       SemanticFeature.QuantifiedPathPatterns,
-      SemanticFeature.GpmShortestPath
+      SemanticFeature.GpmShortestPath,
+      SemanticFeature.MatchModes
     ).errors
   }
 
@@ -44,6 +45,25 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
     "A selective path pattern can only be used with match mode \"DIFFERENT RELATIONSHIPS\" if it's the only pattern in that clause.",
     pos
   )
+
+  test("DIFFERENT RELATIONSHIPS (a)") {
+    // running without semantic feature should fail
+    runSemanticAnalysis(defaultQuery).errors.map(_.msg) shouldEqual Seq(
+      "Match modes such as `DIFFERENT RELATIONSHIPS` are not supported yet."
+    )
+  }
+
+  test("(a)") {
+    // running with implicit "DIFFERENT RELATIONSHIPS" match mode should not fail
+    runSemanticAnalysis(defaultQuery).errors.map(_.msg) shouldBe empty
+  }
+
+  test("REPEATABLE ELEMENTS (a)") {
+    // running without semantic feature should fail
+    runSemanticAnalysis(defaultQuery).errors.map(_.msg) shouldEqual Seq(
+      "Match modes such as `REPEATABLE ELEMENTS` are not supported yet."
+    )
+  }
 
   test("DIFFERENT RELATIONSHIPS ((a)-[:REL]->(b)){2}") {
      errorsFromSemanticAnalysis shouldBe empty

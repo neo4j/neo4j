@@ -59,6 +59,7 @@ import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
+import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
 import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
 import org.neo4j.cypher.internal.expressions.MatchMode.RepeatableElements
 import org.neo4j.cypher.internal.expressions.Namespace
@@ -86,7 +87,6 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.containsAggregate
 import org.neo4j.cypher.internal.expressions.functions.Function.isIdFunction
-import org.neo4j.cypher.internal.expressions.MatchMode.DifferentRelationships
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Disjunctions
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
@@ -520,17 +520,25 @@ case class Match(
     semantics.SemanticCheckResult(newState, Seq.empty)
   }
 
-  private def checkMatchMode: SemanticCheck = (state: SemanticState) => {
-    matchMode match {
-      case _: RepeatableElements => checkRepeatableElements(state)
-      case _: DifferentRelationships => checkDifferentRelationships(state)
-      case _ => semantics.SemanticCheckResult(state, Seq.empty)
+  private def checkMatchMode: SemanticCheck = {
+    whenState(!_.features.contains(SemanticFeature.MatchModes)) {
+      matchMode match {
+        case mode: DifferentRelationships if mode.implicitlyCreated => SemanticCheckResult.success(_)
+        case _ => error(s"Match modes such as `${matchMode.prettified}` are not supported yet.", matchMode.position)
+      }
+    } ifOkChain {
+      matchMode match {
+        case _: RepeatableElements     => checkRepeatableElements(_)
+        case _: DifferentRelationships => checkDifferentRelationships(_)
+        case _                         => SemanticCheckResult.success(_)
+      }
     }
   }
 
   private def checkRepeatableElements(state: SemanticState): SemanticCheckResult = {
     val errors = pattern.patternParts.collect {
-      case part if !part.isBounded => SemanticError(s"Match mode \"REPEATABLE ELEMENTS\" was used, but pattern is not bounded.", part.position)
+      case part if !part.isBounded =>
+        SemanticError(s"Match mode \"REPEATABLE ELEMENTS\" was used, but pattern is not bounded.", part.position)
     }
     semantics.SemanticCheckResult(state, errors)
   }
@@ -545,7 +553,12 @@ case class Match(
     val errors = if (pattern.patternParts.size > 1) {
       pattern.patternParts
         .find(_.isSelective)
-        .map(selectivePattern => SemanticError("A selective path pattern can only be used with match mode \"DIFFERENT RELATIONSHIPS\" if it's the only pattern in that clause.", selectivePattern.position))
+        .map(selectivePattern =>
+          SemanticError(
+            "A selective path pattern can only be used with match mode \"DIFFERENT RELATIONSHIPS\" if it's the only pattern in that clause.",
+            selectivePattern.position
+          )
+        )
         .toSeq
     } else {
       Seq.empty
