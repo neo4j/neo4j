@@ -145,6 +145,7 @@ object LogicalPlanToPlanBuilderString {
       case _: SimulatedSelection            => "simulatedFilter"
       case _: UnwindCollection              => "unwind"
       case _: FindShortestPaths             => "shortestPath"
+      case _: LegacyFindShortestPaths       => "legacyShortestPath"
       case _: NodeIndexScan                 => "nodeIndexOperator"
       case _: DirectedRelationshipIndexScan => "relationshipIndexOperator"
       case NodeIndexSeek(_, _, _, RangeQueryExpression(PointDistanceSeekRangeWrapper(_)), _, _, _) =>
