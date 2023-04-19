@@ -502,7 +502,7 @@ class IndexingServiceTest {
         when(provider.getInitialState(eq(onlineIndex), any(), any())).thenReturn(ONLINE);
         when(provider.getInitialState(eq(populatingIndex), any(), any())).thenReturn(POPULATING);
         when(provider.getInitialState(eq(failedIndex), any(), any())).thenReturn(FAILED);
-        when(provider.getMinimalIndexAccessor(any())).thenReturn(mock(MinimalIndexAccessor.class));
+        when(provider.getMinimalIndexAccessor(any(), anyBoolean())).thenReturn(mock(MinimalIndexAccessor.class));
 
         indexingService.init();
 
@@ -999,7 +999,7 @@ class IndexingServiceTest {
                         any(),
                         any()))
                 .thenThrow(exception);
-        when(indexProvider.getMinimalIndexAccessor(eq(index))).thenReturn(mock(MinimalIndexAccessor.class));
+        when(indexProvider.getMinimalIndexAccessor(index, true)).thenReturn(mock(MinimalIndexAccessor.class));
 
         life.start();
         ArgumentCaptor<Boolean> closeArgs = ArgumentCaptor.forClass(Boolean.class);
@@ -1188,7 +1188,7 @@ class IndexingServiceTest {
             when(provider.getInitialState(eq(indexRule), any(), any())).thenReturn(ONLINE);
             indexes.add(indexRule);
         }
-        when(provider.getMinimalIndexAccessor(any())).thenReturn(mock(MinimalIndexAccessor.class));
+        when(provider.getMinimalIndexAccessor(any(), anyBoolean())).thenReturn(mock(MinimalIndexAccessor.class));
         for (int i = 0; i < nextIndexId; i++) {
             nameLookup.label(i, "Label" + i);
         }
@@ -1487,7 +1487,7 @@ class IndexingServiceTest {
         when(indexProvider.getOnlineAccessor(
                         eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any(), any()))
                 .thenThrow(new IllegalStateException("Something unexpectedly wrong with the index here"));
-        when(indexProvider.getMinimalIndexAccessor(eq(index))).thenReturn(mock(MinimalIndexAccessor.class));
+        when(indexProvider.getMinimalIndexAccessor(index, true)).thenReturn(mock(MinimalIndexAccessor.class));
         when(indexProvider.storeMigrationParticipant(
                         any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);
@@ -1546,7 +1546,7 @@ class IndexingServiceTest {
         when(indexProvider.getOnlineAccessor(
                         eq(index), any(IndexSamplingConfig.class), any(TokenNameLookup.class), any(), any()))
                 .thenReturn(accessor);
-        when(indexProvider.getMinimalIndexAccessor(eq(index))).thenReturn(accessor);
+        when(indexProvider.getMinimalIndexAccessor(index, true)).thenReturn(accessor);
         life.start();
         indexingService.getIndexProxy(index).awaitStoreScanCompleted(1, MINUTES);
 
@@ -1759,7 +1759,7 @@ class IndexingServiceTest {
                         any(),
                         any()))
                 .thenReturn(accessor);
-        when(indexProvider.getMinimalIndexAccessor(any())).thenReturn(accessor);
+        when(indexProvider.getMinimalIndexAccessor(any(), anyBoolean())).thenReturn(accessor);
         when(indexProvider.storeMigrationParticipant(
                         any(FileSystemAbstraction.class), any(PageCache.class), any(), any(), any()))
                 .thenReturn(StoreMigrationParticipant.NOT_PARTICIPATING);

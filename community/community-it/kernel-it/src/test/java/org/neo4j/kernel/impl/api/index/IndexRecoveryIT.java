@@ -178,7 +178,8 @@ class IndexRecoveryIT {
                             any()))
                     .thenReturn(indexPopulatorWithControlledCompletionTiming(recoverySemaphore));
             var minimalIndexAccessor = mock(MinimalIndexAccessor.class);
-            when(mockedIndexProvider.getMinimalIndexAccessor(any())).thenReturn(minimalIndexAccessor);
+            when(mockedIndexProvider.getMinimalIndexAccessor(any(), anyBoolean()))
+                    .thenReturn(minimalIndexAccessor);
             boolean recoveryRequired =
                     Recovery.isRecoveryRequired(testDirectory.getFileSystem(), databaseLayout, defaults(), INSTANCE);
             monitors.addMonitorListener(new MyRecoveryMonitor(recoverySemaphore));
@@ -209,7 +210,7 @@ class IndexRecoveryIT {
                             any(TokenNameLookup.class),
                             any(),
                             any());
-            verify(mockedIndexProvider, times(1)).getMinimalIndexAccessor(any());
+            verify(mockedIndexProvider, times(1)).getMinimalIndexAccessor(any(), anyBoolean());
             verify(minimalIndexAccessor, times(1)).drop();
         } finally {
             recoverySemaphore.release();
@@ -259,7 +260,8 @@ class IndexRecoveryIT {
                             any()))
                     .thenReturn(indexPopulatorWithControlledCompletionTiming(populationSemaphore));
             var minimalIndexAccessor = mock(MinimalIndexAccessor.class);
-            when(mockedIndexProvider.getMinimalIndexAccessor(any())).thenReturn(minimalIndexAccessor);
+            when(mockedIndexProvider.getMinimalIndexAccessor(any(), anyBoolean()))
+                    .thenReturn(minimalIndexAccessor);
             startDb();
 
             try (Transaction transaction = db.beginTx()) {
@@ -285,7 +287,7 @@ class IndexRecoveryIT {
                             any(),
                             any());
             // once during recovery and once during startup
-            verify(mockedIndexProvider, times(2)).getMinimalIndexAccessor(any());
+            verify(mockedIndexProvider, times(2)).getMinimalIndexAccessor(any(), anyBoolean());
             verify(minimalIndexAccessor, times(2)).drop();
         } finally {
             populationSemaphore.release();
@@ -416,7 +418,7 @@ class IndexRecoveryIT {
                         any(TokenNameLookup.class),
                         any(),
                         any());
-        verify(mockedIndexProvider).getMinimalIndexAccessor(any(IndexDescriptor.class));
+        verify(mockedIndexProvider).getMinimalIndexAccessor(any(IndexDescriptor.class), anyBoolean());
     }
 
     private void startDb() {

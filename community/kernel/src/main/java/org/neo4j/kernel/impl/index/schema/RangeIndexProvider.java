@@ -25,7 +25,6 @@ import java.nio.file.OpenOption;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
@@ -108,18 +107,12 @@ public class RangeIndexProvider extends NativeIndexProvider<RangeKey, RangeLayou
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor("range", "1.0");
     public static final RangeIndexCapability CAPABILITY = new RangeIndexCapability();
 
-    private final boolean archiveFailedIndex;
-    private final Config config;
-
     public RangeIndexProvider(
             DatabaseIndexContext databaseIndexContext,
             IndexDirectoryStructure.Factory directoryStructureFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Config config) {
-        super(databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector);
-
-        this.archiveFailedIndex = config.get(GraphDatabaseInternalSettings.archive_failed_index);
-        this.config = config;
+        super(databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector, config);
     }
 
     @Override

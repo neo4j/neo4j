@@ -66,7 +66,7 @@ class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBa
                     StorageEngineIndexingBehaviour.EMPTY);
             populator.create();
             populator.close(true, NULL_CONTEXT);
-            minimalIndexAccessor = indexProvider.getMinimalIndexAccessor(descriptor);
+            minimalIndexAccessor = indexProvider.getMinimalIndexAccessor(descriptor, false);
         }
 
         @Test
@@ -106,7 +106,7 @@ class MinimalIndexAccessorCompatibility extends IndexProviderCompatabilityTestBa
 
         @Test
         void dropShouldBeBlockedIfReadOnly() {
-            MinimalIndexAccessor minimalIndexAccessor = indexProvider.getMinimalIndexAccessor(descriptor);
+            MinimalIndexAccessor minimalIndexAccessor = indexProvider.getMinimalIndexAccessor(descriptor, false);
             IllegalStateException e = assertThrows(IllegalStateException.class, minimalIndexAccessor::drop);
             assertThat(e).hasMessageContaining("read-only");
         }

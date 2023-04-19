@@ -147,7 +147,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
                 }
 
                 @Override
-                public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
+                public MinimalIndexAccessor getMinimalIndexAccessor(
+                        IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
                     return singleMinimalAccessor;
                 }
 
@@ -210,7 +211,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         this.directoryStructure = directoryStructureFactory.forProvider(descriptor);
     }
 
-    public abstract MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor);
+    public abstract MinimalIndexAccessor getMinimalIndexAccessor(
+            IndexDescriptor descriptor, boolean forRebuildDuringRecovery);
 
     /**
      * Used for initially populating a created index, using batch insertion.
@@ -333,7 +335,8 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
+        public MinimalIndexAccessor getMinimalIndexAccessor(
+                IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
             return null;
         }
 
@@ -406,8 +409,9 @@ public abstract class IndexProvider extends LifecycleAdapter implements IndexCon
         }
 
         @Override
-        public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
-            return provider.getMinimalIndexAccessor(descriptor);
+        public MinimalIndexAccessor getMinimalIndexAccessor(
+                IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
+            return provider.getMinimalIndexAccessor(descriptor, forRebuildDuringRecovery);
         }
 
         @Override

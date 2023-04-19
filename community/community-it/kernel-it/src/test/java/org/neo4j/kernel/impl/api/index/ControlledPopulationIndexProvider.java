@@ -42,6 +42,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.MinimalIndexAccessor;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
@@ -118,6 +119,11 @@ public class ControlledPopulationIndexProvider extends IndexProvider.Adaptor {
             StorageEngineIndexingBehaviour indexingBehaviour) {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();
+        return mockedWriter;
+    }
+
+    @Override
+    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
         return mockedWriter;
     }
 

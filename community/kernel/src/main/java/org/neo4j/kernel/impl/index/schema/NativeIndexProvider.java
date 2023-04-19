@@ -27,6 +27,8 @@ import java.nio.file.Path;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.MetadataMismatchException;
@@ -63,17 +65,22 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
     protected final DatabaseIndexContext databaseIndexContext;
     protected final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final Monitor monitor;
+    protected final Config config;
+    protected final boolean archiveFailedIndex;
 
     protected NativeIndexProvider(
             DatabaseIndexContext databaseIndexContext,
             IndexProviderDescriptor descriptor,
             Factory directoryStructureFactory,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector) {
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            Config config) {
         super(descriptor, directoryStructureFactory);
         this.databaseIndexContext = databaseIndexContext;
         this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
         this.monitor =
                 databaseIndexContext.monitors.newMonitor(IndexProvider.Monitor.class, databaseIndexContext.monitorTag);
+        this.config = config;
+        this.archiveFailedIndex = config.get(GraphDatabaseInternalSettings.archive_failed_index);
     }
 
     /**
@@ -85,8 +92,12 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>, LAYOUT exten
     abstract LAYOUT layout(IndexDescriptor descriptor);
 
     @Override
-    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
-        return new NativeMinimalIndexAccessor(descriptor, indexFiles(descriptor), databaseIndexContext.readOnlyChecker);
+    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
+        return new NativeMinimalIndexAccessor(
+                descriptor,
+                indexFiles(descriptor),
+                databaseIndexContext.readOnlyChecker,
+                archiveFailedIndex && forRebuildDuringRecovery);
     }
 
     @Override

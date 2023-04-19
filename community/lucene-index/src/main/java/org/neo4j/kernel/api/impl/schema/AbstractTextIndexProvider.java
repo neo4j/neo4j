@@ -103,7 +103,7 @@ public abstract class AbstractTextIndexProvider extends IndexProvider {
     }
 
     @Override
-    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
+    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
         PartitionedIndexStorage indexStorage = indexStorageFactory.indexStorageOf(descriptor.getId());
         var index = new MinimalDatabaseIndex<>(indexStorage, descriptor, config);
         return new LuceneMinimalIndexAccessor<>(descriptor, index, readOnlyChecker.isReadOnly());

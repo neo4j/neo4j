@@ -76,7 +76,7 @@ public class PointIndexProvider extends NativeIndexProvider<PointKey, PointLayou
             IndexDirectoryStructure.Factory directoryStructureFactory,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
             Config config) {
-        super(databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector);
+        super(databaseIndexContext, DESCRIPTOR, directoryStructureFactory, recoveryCleanupWorkCollector, config);
         this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache(config);
         this.configuration = getConfiguredSpaceFillingCurveConfiguration(config);
         this.archiveFailedIndex = config.get(GraphDatabaseInternalSettings.archive_failed_index);

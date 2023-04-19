@@ -81,8 +81,9 @@ public class TokenIndexProvider extends IndexProvider {
     }
 
     @Override
-    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
-        return new NativeMinimalIndexAccessor(descriptor, indexFiles(descriptor), databaseIndexContext.readOnlyChecker);
+    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
+        return new NativeMinimalIndexAccessor(
+                descriptor, indexFiles(descriptor), databaseIndexContext.readOnlyChecker, false);
     }
 
     @Override

@@ -202,7 +202,7 @@ public class FulltextIndexProvider extends IndexProvider {
     }
 
     @Override
-    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor) {
+    public MinimalIndexAccessor getMinimalIndexAccessor(IndexDescriptor descriptor, boolean forRebuildDuringRecovery) {
         PartitionedIndexStorage indexStorage = getIndexStorage(descriptor.getId());
         var index = new MinimalDatabaseIndex<>(indexStorage, descriptor, config);
         log.debug("Creating dropper for fulltext schema index: %s", descriptor);

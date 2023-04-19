@@ -113,7 +113,7 @@ class IndexProxyCreator {
     }
 
     IndexProxy createRecoveringIndexProxy(IndexDescriptor descriptor) {
-        IndexProxy proxy = new RecoveringIndexProxy(descriptor, minimalIndexAccessorFromProvider(descriptor));
+        IndexProxy proxy = new RecoveringIndexProxy(descriptor, minimalIndexAccessorFromProvider(descriptor, true));
         return new ContractCheckingIndexProxy(proxy);
     }
 
@@ -148,7 +148,7 @@ class IndexProxyCreator {
         // Note about the buffer factory instantiation here. Question is why an index populator is instantiated for a
         // failed index proxy to begin with.
         // The byte buffer factory should not be used here anyway so the buffer size doesn't actually matter.
-        MinimalIndexAccessor minimalIndexAccessor = minimalIndexAccessorFromProvider(descriptor);
+        MinimalIndexAccessor minimalIndexAccessor = minimalIndexAccessorFromProvider(descriptor, false);
         IndexProxyStrategy indexProxyStrategy = createIndexProxyStrategy(descriptor);
         IndexProxy proxy;
         proxy = new FailedIndexProxy(indexProxyStrategy, minimalIndexAccessor, populationFailure, logProvider);
@@ -165,9 +165,10 @@ class IndexProxyCreator {
                 index, samplingConfig, bufferFactory, memoryTracker, tokenNameLookup, openOptions, indexingBehaviour);
     }
 
-    private MinimalIndexAccessor minimalIndexAccessorFromProvider(IndexDescriptor index) {
+    private MinimalIndexAccessor minimalIndexAccessorFromProvider(
+            IndexDescriptor index, boolean forRebuildDuringRecovery) {
         IndexProvider provider = providerMap.lookup(index.getIndexProvider());
-        return provider.getMinimalIndexAccessor(index);
+        return provider.getMinimalIndexAccessor(index, forRebuildDuringRecovery);
     }
 
     private IndexAccessor onlineAccessorFromProvider(IndexDescriptor index, IndexSamplingConfig samplingConfig)
