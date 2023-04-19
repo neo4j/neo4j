@@ -274,19 +274,19 @@ object ReadsAndWritesFinder {
    * @param plansThatIntroduceVariable  a list of plans that introduce the variable
    *                                     or have a filter on the variable. The plan is bundled with
    *                                     a list of predicates that all depend on the variable.
-   * @param lastPlansToReferenceVariable the last plans that reference the variable. These are the read plans that must be used to define
-   *                                     the Conflict on. We cannot use an earlier plan (e.g. where the variable was introduced), like in
+   * @param plansThatReferenceVariable the plans that reference the variable. These are the read plans that must be used to define
+   *                                     the Conflict on. We cannot only use an earlier plan (e.g. where the variable was introduced), like in
    *                                     CREATE/MATCH conflicts, because evaluating any expression on a deleted node might crash.
    */
   case class PossibleDeleteConflictPlans(
     plansThatIntroduceVariable: Seq[PlanThatIntroducesVariable],
-    lastPlansToReferenceVariable: Seq[LogicalPlan]
+    plansThatReferenceVariable: Seq[LogicalPlan]
   ) {
 
     def ++(other: PossibleDeleteConflictPlans): PossibleDeleteConflictPlans = {
       PossibleDeleteConflictPlans(
         this.plansThatIntroduceVariable ++ other.plansThatIntroduceVariable,
-        this.lastPlansToReferenceVariable ++ other.lastPlansToReferenceVariable
+        this.plansThatReferenceVariable ++ other.plansThatReferenceVariable
       )
     }
   }
@@ -482,22 +482,22 @@ object ReadsAndWritesFinder {
     }
 
     /**
-     * Update [[PossibleDeleteConflictPlans.lastPlansToReferenceVariable]].
+     * Update [[PossibleDeleteConflictPlans.plansThatReferenceVariable]].
      * This should be called if a plan references a node variable.
      */
-    def updateLastPlansToReferenceNodeVariable(plan: LogicalPlan, variable: LogicalVariable): Reads = {
+    def updatePlansThatReferenceNodeVariable(plan: LogicalPlan, variable: LogicalVariable): Reads = {
       val prev = possibleNodeDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
-      val next = prev.copy(lastPlansToReferenceVariable = Seq(plan))
+      val next = prev.copy(plansThatReferenceVariable = prev.plansThatReferenceVariable :+ plan)
       copy(possibleNodeDeleteConflictPlans = possibleNodeDeleteConflictPlans.updated(variable, next))
     }
 
     /**
-     * Update [[PossibleDeleteConflictPlans.lastPlansToReferenceVariable]].
+     * Update [[PossibleDeleteConflictPlans.plansThatReferenceVariable]].
      * This should be called if a plan references a relationship variable.
      */
-    def updateLastPlansToReferenceRelationshipVariable(plan: LogicalPlan, variable: LogicalVariable): Reads = {
+    def updatePlansThatReferenceRelationshipVariable(plan: LogicalPlan, variable: LogicalVariable): Reads = {
       val prev = possibleRelDeleteConflictPlans.getOrElse(variable, PossibleDeleteConflictPlans(Seq.empty, Seq.empty))
-      val next = prev.copy(lastPlansToReferenceVariable = Seq(plan))
+      val next = prev.copy(plansThatReferenceVariable = prev.plansThatReferenceVariable :+ plan)
       copy(possibleRelDeleteConflictPlans = possibleRelDeleteConflictPlans.updated(variable, next))
     }
 
@@ -522,7 +522,7 @@ object ReadsAndWritesFinder {
         },
         acc => {
           planReads.referencedNodeVariables.foldLeft(acc) {
-            case (acc, variable) => acc.updateLastPlansToReferenceNodeVariable(plan, variable)
+            case (acc, variable) => acc.updatePlansThatReferenceNodeVariable(plan, variable)
           }
         },
         acc => if (planReads.readsUnknownLabels) acc.withUnknownLabelsRead(plan) else acc,
@@ -542,7 +542,7 @@ object ReadsAndWritesFinder {
         },
         acc => {
           planReads.referencedRelationshipVariables.foldLeft(acc) {
-            case (acc, variable) => acc.updateLastPlansToReferenceRelationshipVariable(plan, variable)
+            case (acc, variable) => acc.updatePlansThatReferenceRelationshipVariable(plan, variable)
           }
         },
         acc => if (planReads.readsUnknownRelProperties) acc.withUnknownRelPropertiesRead(plan) else acc
@@ -551,7 +551,7 @@ object ReadsAndWritesFinder {
 
     /**
      * Returns a copy of this class, except that the [[FilterExpressions]] from the other plan are merged in
-     * as if it was invoked like `other ++ (this, mergePlan)`.
+     * as if it was invoked like `other.mergeWith(this, mergePlan)`.
      */
     def mergeFilterExpressions(other: Reads, mergePlan: LogicalBinaryPlan): Reads = {
       copy(
@@ -893,7 +893,7 @@ object ReadsAndWritesFinder {
 
     /**
      * Returns a copy of this class, except that the [[FilterExpressions]] from the other plan are merged in
-     * as if it was invoked like `other ++ (this, mergePlan)`.
+     * as if it was invoked like `other.mergeWith(this, mergePlan)`.
      */
     def mergeFilterExpressions(other: ReadsAndWrites, mergePlan: LogicalBinaryPlan): ReadsAndWrites = {
       copy(

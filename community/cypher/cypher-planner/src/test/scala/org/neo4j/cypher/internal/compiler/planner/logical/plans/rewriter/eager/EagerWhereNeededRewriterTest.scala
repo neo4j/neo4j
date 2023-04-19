@@ -3727,7 +3727,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .deleteNode("n")
         .deleteNode("m")
-        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(3), Id(5))))))
+        .eager(ListSet(
+          ReadDeleteConflict("m", Some(Conflict(Id(3), Id(5)))),
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(5))))
+        ))
         .cartesianProduct()
         .|.nodeByLabelScan("m", "M")
         .nodeByLabelScan("n", "N")
@@ -4003,6 +4006,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(5))))
         ))
         .projection("m.prop AS prop")
@@ -4188,6 +4192,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(5))))
         ))
         .projection(Map("props" -> nestedPlanExpression)).withCardinality(60)
@@ -4378,6 +4383,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .detachDeleteNode("n")
         .eager(ListSet(
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
         ))
         .apply()
@@ -4413,6 +4419,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .detachDeleteNode("n")
         .eager(ListSet(
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
         ))
         .apply()
@@ -4452,6 +4459,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .detachDeleteNode("n")
         .eager(ListSet(
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
         ))
         .apply()
@@ -5913,8 +5921,11 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .deletePath("p")
         .eager(ListSet(
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
           ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
-          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
         ))
         .projection(Map("p" -> multiOutgoingRelationshipPath))
         .expandAll("(n)-[r:SMELLS*2]-(m)")
@@ -6362,7 +6373,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (NodeHashJoin)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))
+        ))
         .nodeHashJoin("n")
         .|.nodeByLabelScan("n", "B")
         .nodeByLabelScan("n", "A")
@@ -6387,7 +6401,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (LeftOuterHashJoin)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))
+        ))
         .leftOuterHashJoin("n")
         .|.nodeByLabelScan("n", "B")
         .nodeByLabelScan("n", "A")
@@ -6412,7 +6429,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (RightOuterHashJoin)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))
+        ))
         .rightOuterHashJoin("n")
         .|.nodeByLabelScan("n", "B")
         .nodeByLabelScan("n", "A")
@@ -6440,7 +6460,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 4 (Sort)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
+        ))
         .apply()
         .|.sort(Seq(Descending("n")))
         .|.nodeByLabelScan("n", "A")
@@ -6469,7 +6492,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (PartialSort)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
+        ))
         .partialSort(Seq(Ascending("x")), Seq(Descending("n")))
         .apply()
         .|.nodeByLabelScan("n", "A")
@@ -6499,7 +6525,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 4 (Top)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
+        ))
         .apply()
         .|.top(Seq(Descending("n")), 1)
         .|.nodeByLabelScan("n", "A")
@@ -6529,7 +6558,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 4 (Top1WithTies)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
+        ))
         .apply()
         .|.top1WithTies(Seq(Descending("n")))
         .|.nodeByLabelScan("n", "A")
@@ -6558,7 +6590,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (PartialTop)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
+        ))
         .partialTop(Seq(Ascending("x")), Seq(Descending("n")), 1)
         .apply()
         .|.nodeByLabelScan("n", "A")
@@ -6585,7 +6620,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (OrderedUnion)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))
+        ))
         .orderedUnion(Seq(Ascending("n")))
         .|.nodeByLabelScan("n", "B")
         .nodeByLabelScan("n", "A")
@@ -6613,7 +6651,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (ConditionalApply)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(6))))
+        ))
         .conditionalApply("n")
         .|.argument("n")
         .apply()
@@ -6644,7 +6685,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (AntiConditionalApply)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(6))))
+        ))
         .antiConditionalApply("n")
         .|.argument("n")
         .apply()
@@ -6679,7 +6723,9 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4)))),
           // Important that this is ID 3 (RollUpApply)
-          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(7))))
         ))
         .rollUpApply("list", "n")
         .|.expand("(n)-[r]->(m)")
@@ -6709,7 +6755,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (AssertSameNode)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))
+        ))
         .assertSameNode("n")
         .|.nodeIndexOperator("n:B(prop = 0)", unique = true)
         .nodeIndexOperator("n:A(prop = 0)", unique = true)
@@ -6734,7 +6783,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .deleteRelationship("r")
         // Important that this is ID 3 (AssertSameRelationship)
-        .eager(ListSet(ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
+        ))
         .assertSameRelationship("r")
         .|.relationshipIndexOperator("(n2)-[r:R(prop < 100)]->(m2)", unique = true)
         .relationshipIndexOperator("(n)-[r:R(prop > 0)]->(m)", unique = true)
@@ -6761,7 +6813,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 4 (Optional)
-        .eager(ListSet(ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))))
+        .eager(ListSet(
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
+        ))
         .apply()
         .|.optional("n")
         .|.filter("n:B")
@@ -6791,8 +6846,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .eager(ListSet(
           ReadDeleteConflict("m2", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4)))),
           ReadDeleteConflict("m", Some(Conflict(Id(2), Id(4)))),
-          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(4))))
         ))
         .projectEndpoints("(n)-[r]->(m2)", startInScope = true, endInScope = false)
         .expand("(n)-[r]->(m)")
@@ -6820,7 +6877,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .deleteRelationship("r")
         // Important that this is ID 3 (ProjectEndpoints)
-        .eager(ListSet(ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("r", Some(Conflict(Id(2), Id(5))))
+        ))
         .projectEndpoints("(n)-[r]->(m2)", startInScope = true, endInScope = false)
         .apply()
         .|.allRelationshipsScan("(n)-[r]->(m)")
@@ -6848,7 +6908,10 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .detachDeleteNode("n")
         // Important that this is ID 3 (Projection)
-        .eager(ListSet(ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3))))))
+        .eager(ListSet(
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("m", Some(Conflict(Id(2), Id(5))))
+        ))
         .projection(Seq("1 AS one"), discard = Set("m"))
         .cartesianProduct()
         .|.nodeByLabelScan("m", "B")
@@ -6875,17 +6938,53 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
         .produceResults("count")
         .aggregation(Seq.empty, Seq("count(*) AS count"))
         .deleteNode("a")
-        // Important that this is ID 3 (TriadicSelection)
+        // Important that this includes ID 3 (TriadicSelection)
         .eager(ListSet(
           ReadDeleteConflict("a", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("a", Some(Conflict(Id(2), Id(6)))),
           ReadDeleteConflict("b", Some(Conflict(Id(2), Id(3)))),
-          ReadDeleteConflict("c", Some(Conflict(Id(2), Id(3))))
+          ReadDeleteConflict("b", Some(Conflict(Id(2), Id(4)))),
+          ReadDeleteConflict("b", Some(Conflict(Id(2), Id(6)))),
+          ReadDeleteConflict("c", Some(Conflict(Id(2), Id(3)))),
+          ReadDeleteConflict("c", Some(Conflict(Id(2), Id(4))))
         ))
         .triadicSelection(positivePredicate = false, "a", "b", "c")
         .|.expandAll("(b)-[r2]->(c)")
         .|.argument("b", "r1")
         .expandAll("(a)-[r1]->(b)")
         .nodeByLabelScan("a", "X")
+        .build()
+    )
+  }
+
+  test("Should insert 2 Eagers in Delete/Read conflicts with last references on LHS and RHS of SubqueryForeach") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("count")
+      .aggregation(Seq.empty, Seq("count(*) AS count"))
+      .subqueryForeach()
+      .|.deleteNode("b")
+      .|.expandAll("(a)-[r]->(b)")
+      .|.argument("a")
+      .filter("a.prop = 0")
+      .nodeByLabelScan("a", "A")
+    val plan = planBuilder.build()
+
+    val result = eagerizePlan(planBuilder, plan)
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("count")
+        .aggregation(Seq.empty, Seq("count(*) AS count"))
+        .subqueryForeach()
+        .|.deleteNode("b")
+        .|.eager(ListSet(
+          ReadDeleteConflict("a", Some(Conflict(Id(3), Id(4)))),
+          ReadDeleteConflict("b", Some(Conflict(Id(3), Id(4))))
+        ))
+        .|.expandAll("(a)-[r]->(b)")
+        .|.argument("a")
+        .eager(ListSet(ReadDeleteConflict("a", Some(Conflict(Id(3), Id(6))))))
+        .filter("a.prop = 0")
+        .nodeByLabelScan("a", "A")
         .build()
     )
   }

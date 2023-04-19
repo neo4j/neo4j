@@ -233,7 +233,7 @@ object ConflictFinder {
     for {
       (Ref(writePlan), deletedEntities) <- deletedEntities(readsAndWrites.writes.deletes)
 
-      (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, lastPlansToReferenceVar), conflictType)) <-
+      (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, plansThatReferenceVariable), conflictType)) <-
         deleteReadVariables(readsAndWrites, writePlan, possibleDeleteConflictPlans, possibleDeleteConflictPlanSnapshots)
 
       // Filter out Delete vs Create conflicts
@@ -246,10 +246,10 @@ object ConflictFinder {
         filterExpressions(readsAndWrites.reads).getOrElse(deletedEntity, FilterExpressions(Set.empty))
       if deleteOverlaps(readPlans, Seq(deletedExpression))
 
-      // For a MatchDeleteConflict we need to place the Eager between the last plan to reference the variable and the Delete plan.
+      // For a MatchDeleteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
       // For a DeleteMatchConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
       readPlan <- conflictType match {
-        case MatchDeleteConflict => lastPlansToReferenceVar
+        case MatchDeleteConflict => plansThatReferenceVariable
         case DeleteMatchConflict => readPlans.map(_.plan)
       }
       if isValidConflict(readPlan, writePlan, wholePlan)
@@ -274,14 +274,14 @@ object ConflictFinder {
           readsAndWrites.writes.deletes
         ) ++ readsAndWrites.writes.deletes.plansThatDeleteUnknownTypeExpressions
 
-      (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, lastPlansToReferenceVar), conflictType)) <-
+      (variable, (PossibleDeleteConflictPlans(plansThatIntroduceVar, plansThatReferenceVariable), conflictType)) <-
         deleteReadVariables(readsAndWrites, writePlan, possibleDeleteConflictPlans, possibleDeleteConflictPlanSnapshots)
       if deleteOverlaps(plansThatIntroduceVar, Seq.empty)
 
-      // For a MatchDeleteConflict we need to place the Eager between the last plan to reference the variable and the Delete plan.
+      // For a MatchDeleteConflict we need to place the Eager between the plans that reference the variable and the Delete plan.
       // For a DeleteMatchConflict we need to place the Eager between the Delete plan and the plan that introduced the variable.
       readPlan <- conflictType match {
-        case MatchDeleteConflict => lastPlansToReferenceVar
+        case MatchDeleteConflict => plansThatReferenceVariable
         case DeleteMatchConflict => plansThatIntroduceVar.map(_.plan)
       }
       if isValidConflict(readPlan, writePlan, wholePlan)
