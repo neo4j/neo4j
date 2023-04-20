@@ -1408,9 +1408,17 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
     val plannerQuery = solveds.get(left.id).asSinglePlannerQuery ++ solveds.get(right.id).asSinglePlannerQuery
     val solved = plannerQuery.amendQueryGraph(_.addPredicates(originalPredicate))
-    // `join` is an Expression that could go through the ListSubqueryExpressionSolver, but a value hash join
-    // is only planned for Expressions such as `lhs.prop = rhs.prop`
-    annotate(ValueHashJoin(left, right, join), solved, providedOrders.get(right.id).fromRight, context)
+
+    val (rewrittenLhsExpr, rewrittenLhs) = SubqueryExpressionSolver.ForSingle.solve(left, join.lhs, context)
+    val (rewrittenRhsExpr, rewrittenRhs) = SubqueryExpressionSolver.ForSingle.solve(right, join.rhs, context)
+    val rewrittenJoin = join.copy(lhs = rewrittenLhsExpr, rhs = rewrittenRhsExpr)(join.position)
+
+    annotate(
+      ValueHashJoin(rewrittenLhs, rewrittenRhs, rewrittenJoin),
+      solved,
+      providedOrders.get(right.id).fromRight,
+      context
+    )
   }
 
   def planNodeUniqueIndexSeek(

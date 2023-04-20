@@ -1366,4 +1366,65 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .allNodeScan("a")
       .build())
   }
+
+  test("should plan value hash join with EXISTS expression") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 20)
+      .setLabelCardinality("B", 500)
+      .setLabelCardinality("C", 200)
+      .setRelationshipCardinality("()-[]->()", 300)
+      .setRelationshipCardinality("(:B)-[]->()", 300)
+      .setRelationshipCardinality("(:B)-[]->(:C)", 300)
+      .build()
+
+    val q =
+      """MATCH (a:A), (b:B)
+        |WHERE a.prop = EXISTS { (b)-[r]->(c:C) }
+        |RETURN a, b
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .valueHashJoin("a.prop = anon_0")
+      .|.letSemiApply("anon_0")
+      .|.|.filter("c:C")
+      .|.|.expandAll("(b)-[r]->(c)")
+      .|.|.argument("b")
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build()
+  }
+
+  test("should plan value hash join with COUNT expression") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 20)
+      .setLabelCardinality("B", 500)
+      .setLabelCardinality("C", 200)
+      .setRelationshipCardinality("()-[]->()", 300)
+      .setRelationshipCardinality("(:B)-[]->()", 300)
+      .setRelationshipCardinality("(:B)-[]->(:C)", 300)
+      .build()
+
+    val q =
+      """MATCH (a:A), (b:B)
+        |WHERE a.prop = COUNT { (b)-[r]->(c:C) }
+        |RETURN a, b
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .valueHashJoin("a.prop = anon_0")
+      .|.apply()
+      .|.|.aggregation(Seq.empty, Seq("count(*) AS anon_0"))
+      .|.|.filter("c:C")
+      .|.|.expandAll("(b)-[r]->(c)")
+      .|.|.argument("b")
+      .|.nodeByLabelScan("b", "B")
+      .nodeByLabelScan("a", "A")
+      .build()
+  }
 }

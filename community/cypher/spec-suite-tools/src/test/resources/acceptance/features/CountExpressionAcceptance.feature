@@ -1390,3 +1390,33 @@ Feature: CountExpressionAcceptance
       RETURN n
       """
     Then a SyntaxError should be raised at compile time: *
+
+  Scenario: COUNT subquery in join key
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {prop: 1})
+      CREATE (:A {prop: 2})
+      CREATE (:A {prop: 3})
+
+      CREATE (b1:B {name: 'one'})-[:REL]->(:X)
+
+      CREATE (b3:B {name: 'three'})-[:REL]->(:X)
+      CREATE (b3)-[:REL]->(:X)
+      CREATE (b3)-[:REL]->(:X)
+
+      CREATE (b4:B {name: 'four'})-[:REL]->(:X)
+      CREATE (b4)-[:REL]->(:X)
+      CREATE (b4)-[:REL]->(:X)
+      CREATE (b4)-[:REL]->(:X)
+      """
+    When executing query:
+      """
+      MATCH (a:A), (b:B)
+      WHERE a.prop = COUNT { (b)-->(:X) }
+      RETURN a.prop, b.name
+      """
+    Then the result should be, in any order:
+      | a.prop | b.name  |
+      | 1      | 'one'   |
+      | 3      | 'three' |

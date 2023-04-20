@@ -2442,5 +2442,29 @@ Feature: ExistsExpressionAcceptance
       | 'Chris' |
     And no side effects
 
+  Scenario: EXISTS subquery in join key
+    Given an empty graph
+    And having executed:
+      """
+      CREATE (:A {prop: true})
+      CREATE (:A {prop: false})
 
+      CREATE (b0:B {name: 'zero'})
 
+      CREATE (b1:B {name: 'one'})-[:REL]->(:X)
+
+      CREATE (b3:B {name: 'three'})-[:REL]->(:X)
+      CREATE (b3)-[:REL]->(:X)
+      CREATE (b3)-[:REL]->(:X)
+      """
+    When executing query:
+      """
+      MATCH (a:A), (b:B)
+      WHERE a.prop = EXISTS { (b)-->(:X) }
+      RETURN a.prop, b.name
+      """
+    Then the result should be, in any order:
+      | a.prop | b.name  |
+      | false  | 'zero'  |
+      | true   | 'one'   |
+      | true   | 'three' |
