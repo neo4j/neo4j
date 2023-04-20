@@ -19,6 +19,7 @@
  */
 package org.neo4j.dbms.database;
 
+import java.util.List;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.KernelVersion;
@@ -64,6 +65,8 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
      * Glorious future version to be used for testing coming versions.
      */
     GLORIOUS_FUTURE(Integer.MAX_VALUE, DBMS_RUNTIME_COMPONENT, "Future version", KernelVersion.GLORIOUS_FUTURE);
+
+    public static final List<DbmsRuntimeVersion> VERSIONS = List.of(values());
 
     // The latest version should be kept private to be able to override it from tests.
     // getLatestVersion should be used when the latest version is required.
@@ -118,7 +121,7 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     }
 
     public static DbmsRuntimeVersion fromVersionNumber(int versionNumber) {
-        for (DbmsRuntimeVersion componentVersion : DbmsRuntimeVersion.values()) {
+        for (DbmsRuntimeVersion componentVersion : VERSIONS) {
             if (componentVersion.version == versionNumber) {
                 return componentVersion;
             }
