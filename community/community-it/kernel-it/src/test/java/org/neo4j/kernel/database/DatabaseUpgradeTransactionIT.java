@@ -62,6 +62,7 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
+import org.neo4j.kernel.ZippedStore;
 import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
@@ -85,6 +86,14 @@ import org.neo4j.util.concurrent.BinaryLatch;
 
 @TestDirectoryExtension
 public class DatabaseUpgradeTransactionIT {
+    private static final ZippedStore ZIPPED_STORE = ZippedStoreCommunity.REC_AF11_V50_EMPTY;
+    private static final KernelVersion OLD_KERNEL_VERSION =
+            ZIPPED_STORE.statistics().kernelVersion();
+    private static final DbmsRuntimeVersion OLD_DBMS_RUNTIME_VERSION = DbmsRuntimeVersion.VERSIONS.stream()
+            .filter(dbmsRuntimeVersion -> dbmsRuntimeVersion.kernelVersion() == OLD_KERNEL_VERSION)
+            .findFirst()
+            .orElseThrow();
+
     @Inject
     private TestDirectory testDirectory;
 
@@ -92,6 +101,8 @@ public class DatabaseUpgradeTransactionIT {
     protected DatabaseManagementService dbms;
     protected GraphDatabaseAPI db;
     private GraphDatabaseAPI systemDb;
+    protected KernelVersion oldKernelVersion;
+    protected DbmsRuntimeVersion oldDbmsRuntimeVersion;
 
     @BeforeEach
     void setUp() throws IOException {
@@ -107,7 +118,9 @@ public class DatabaseUpgradeTransactionIT {
     }
 
     protected void createDbFiles() throws IOException {
-        ZippedStoreCommunity.REC_AF11_V50_EMPTY.unzip(testDirectory.homePath());
+        oldKernelVersion = OLD_KERNEL_VERSION;
+        oldDbmsRuntimeVersion = OLD_DBMS_RUNTIME_VERSION;
+        ZIPPED_STORE.unzip(testDirectory.homePath());
     }
 
     protected TestDatabaseManagementServiceBuilder configure(TestDatabaseManagementServiceBuilder builder) {
@@ -122,7 +135,7 @@ public class DatabaseUpgradeTransactionIT {
         long startTransaction = lastCommittedTransactionId();
 
         // Then
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        assertThat(kernelVersion()).isEqualTo(oldKernelVersion);
         createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
         set(LatestVersions.LATEST_RUNTIME_VERSION);
 
@@ -130,42 +143,44 @@ public class DatabaseUpgradeTransactionIT {
         createReadTransaction();
 
         // Then
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        assertThat(kernelVersion()).isEqualTo(oldKernelVersion);
 
         // When
         createWriteTransaction();
 
         // Then
         assertThat(kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
-        assertUpgradeTransactionInOrder(KernelVersion.V5_0, LatestVersions.LATEST_KERNEL_VERSION, startTransaction);
+        assertUpgradeTransactionInOrder(oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION, startTransaction);
     }
 
     @ParameterizedTest
-    @EnumSource(mode = Mode.MATCH_ALL, names = "V5_[1-9]\\d*")
+    @EnumSource(mode = Mode.MATCH_ALL, names = "V5_[0-9]+")
     void shouldUpgradeDatabaseToMaxKernelVersionForDbmsRuntimeVersionOnFirstWriteTransaction(
             DbmsRuntimeVersion dbmsRuntimeVersion) throws Exception {
         // Given
-        assumeThat(dbmsRuntimeVersion).isLessThan(DbmsRuntimeVersion.V5_7);
+        assumeThat(dbmsRuntimeVersion).as("needs to be newer to upgrade").isGreaterThan(oldDbmsRuntimeVersion);
 
         long startTransaction = lastCommittedTransactionId();
 
         // Then
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        assertThat(kernelVersion()).isEqualTo(oldKernelVersion);
+        assertThat(dbmsRuntimeVersion()).isEqualTo(oldDbmsRuntimeVersion);
         createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
+
         set(dbmsRuntimeVersion);
 
         // When
         createReadTransaction();
 
         // Then
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        assertThat(kernelVersion()).isEqualTo(oldKernelVersion);
 
         // When
         createWriteTransaction();
 
         // Then
         assertThat(kernelVersion()).isEqualTo(dbmsRuntimeVersion.kernelVersion());
-        assertUpgradeTransactionInOrder(KernelVersion.V5_0, dbmsRuntimeVersion.kernelVersion(), startTransaction);
+        assertUpgradeTransactionInOrder(oldKernelVersion, dbmsRuntimeVersion.kernelVersion(), startTransaction);
     }
 
     @Test
@@ -173,8 +188,8 @@ public class DatabaseUpgradeTransactionIT {
         long startTransaction = lastCommittedTransactionId();
 
         // Then
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
-        assertThat(dbmsRuntimeVersion()).isEqualTo(DbmsRuntimeVersion.V5_0);
+        assertThat(kernelVersion()).isEqualTo(oldKernelVersion);
+        assertThat(dbmsRuntimeVersion()).isEqualTo(oldDbmsRuntimeVersion);
         createWriteTransaction(); // Just to have at least one tx from our measurement point in the old version
 
         // When
@@ -191,7 +206,7 @@ public class DatabaseUpgradeTransactionIT {
         // Then
         assertThat(kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
         assertThat(dbmsRuntimeVersion()).isEqualTo(LatestVersions.LATEST_RUNTIME_VERSION);
-        assertUpgradeTransactionInOrder(KernelVersion.V5_0, LatestVersions.LATEST_KERNEL_VERSION, startTransaction);
+        assertUpgradeTransactionInOrder(oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION, startTransaction);
     }
 
     @Test
@@ -199,8 +214,8 @@ public class DatabaseUpgradeTransactionIT {
         long startTransaction = lastCommittedTransactionId();
 
         // Then
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
-        assertThat(dbmsRuntimeVersion()).isEqualTo(DbmsRuntimeVersion.V5_0);
+        assertThat(kernelVersion()).isEqualTo(oldKernelVersion);
+        assertThat(dbmsRuntimeVersion()).isEqualTo(oldDbmsRuntimeVersion);
         String nodeId = createDenseNode();
 
         // When
@@ -251,7 +266,7 @@ public class DatabaseUpgradeTransactionIT {
         // Then
         assertThat(kernelVersion()).isEqualTo(LatestVersions.LATEST_KERNEL_VERSION);
         assertThat(dbmsRuntimeVersion()).isEqualTo(LatestVersions.LATEST_RUNTIME_VERSION);
-        assertUpgradeTransactionInOrder(KernelVersion.V5_0, LatestVersions.LATEST_KERNEL_VERSION, startTransaction);
+        assertUpgradeTransactionInOrder(oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION, startTransaction);
         assertDegrees(nodeId);
     }
 
@@ -261,7 +276,7 @@ public class DatabaseUpgradeTransactionIT {
         createWriteTransaction();
 
         // Then
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        assertThat(kernelVersion()).isEqualTo(oldKernelVersion);
     }
 
     @Test
@@ -325,13 +340,13 @@ public class DatabaseUpgradeTransactionIT {
         LogAssertions.assertThat(logProvider)
                 .containsMessageWithArguments(
                         "Upgrade transaction from %s to %s not possible right now due to conflicting transaction, will retry on next write",
-                        KernelVersion.V5_0, LatestVersions.LATEST_KERNEL_VERSION)
+                        oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION)
                 .doesNotContainMessageWithArguments(
                         "Upgrade transaction from %s to %s started",
-                        KernelVersion.V5_0, LatestVersions.LATEST_KERNEL_VERSION);
+                        oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION);
 
         assertThat(getNodeCount()).as("Both transactions succeeded").isEqualTo(numNodesBefore + 2);
-        assertThat(kernelVersion()).isEqualTo(KernelVersion.V5_0);
+        assertThat(kernelVersion()).isEqualTo(oldKernelVersion);
 
         // When
         createWriteTransaction();
@@ -341,10 +356,10 @@ public class DatabaseUpgradeTransactionIT {
         LogAssertions.assertThat(logProvider)
                 .containsMessageWithArguments(
                         "Upgrade transaction from %s to %s started",
-                        KernelVersion.V5_0, LatestVersions.LATEST_KERNEL_VERSION)
+                        oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION)
                 .containsMessageWithArguments(
                         "Upgrade transaction from %s to %s completed",
-                        KernelVersion.V5_0, LatestVersions.LATEST_KERNEL_VERSION);
+                        oldKernelVersion, LatestVersions.LATEST_KERNEL_VERSION);
     }
 
     private long getNodeCount() {
