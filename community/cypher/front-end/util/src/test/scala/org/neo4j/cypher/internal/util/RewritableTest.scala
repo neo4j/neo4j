@@ -280,6 +280,20 @@ class RewritableTest extends CypherFunSuite {
     }
   }
 
+  test("topDown should stop with a stopper") {
+    val ast = Add(ExpList(List(Val(1))), Val(2))
+
+    val result = ast.rewrite(topDown(
+      Rewriter.lift {
+        case Val(i) =>
+          Val(i * 2)
+      },
+      stopper = _.isInstanceOf[ExpList]
+    ))
+
+    assert(result === Add(ExpList(List(Val(1))), Val(4)))
+  }
+
   // -------------------
   // topDown rightToLeft
   // -------------------
@@ -471,6 +485,20 @@ class RewritableTest extends CypherFunSuite {
 
       assert(result === Add(Val(99), ExpList(List(Val(99), Val(99)))))
     }
+  }
+
+  test("bottomUp should stop with a stopper") {
+    val ast = Add(ExpList(List(Val(1))), Val(2))
+
+    val result = ast.rewrite(bottomUp(
+      Rewriter.lift {
+        case Val(i) =>
+          Val(i * 2)
+      },
+      stopper = _.isInstanceOf[ExpList]
+    ))
+
+    assert(result === Add(ExpList(List(Val(1))), Val(4)))
   }
 
   test("should not create unnecessary copies of objects that have Seq's as Children (when using ListBuffer)") {
