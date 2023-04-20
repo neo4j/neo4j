@@ -16,16 +16,30 @@
  */
 package org.neo4j.cypher.internal.rewriting.rewriters
 
+import org.neo4j.cypher.internal.ast.Match
+import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
+import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
+import org.neo4j.cypher.internal.expressions.QuantifiedPath
+import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
+import org.neo4j.cypher.internal.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
+import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.StepSequencer.Condition
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.ParameterTypeInfo
 
 case object ParenthesizedPathUnwrapped extends Condition
@@ -45,7 +59,7 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with ASTRewriterF
 
   override def postConditions: Set[StepSequencer.Condition] = Set(ParenthesizedPathUnwrapped)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable + AndRewrittenToAnds
 
   override def getRewriter(
     semanticState: SemanticState,
@@ -58,7 +72,75 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with ASTRewriterF
 
   val instance: Rewriter = bottomUp(
     Rewriter.lift {
+      case m @ Match(_, pattern, _, where) =>
+        val newOuterExp = extractPredicatesAndMergeWhereExpressions(pattern, where.map(_.expression), m.position)
+
+        val newWhere = newOuterExp.map {
+          Where(_)(where.fold(m.position)(_.position))
+        }
+
+        m.copy(
+          pattern = replaceParenthesizedPaths(pattern),
+          where = newWhere
+        )(m.position)
+
+      case outer @ ParenthesizedPath(part, outerWhere) =>
+        val newOuterWhere = extractPredicatesAndMergeWhereExpressions(part, outerWhere, outer.position)
+
+        outer.copy(
+          replaceParenthesizedPaths(part),
+          newOuterWhere
+        )(outer.position)
+
+      case outer @ QuantifiedPath(part, _, outerWhere, _) =>
+        val newOuterWhere = extractPredicatesAndMergeWhereExpressions(part, outerWhere, outer.position)
+
+        outer.copy(
+          part = replaceParenthesizedPaths(part),
+          optionalWhereExpression = newOuterWhere
+        )(outer.position)
+    }
+  )
+
+  private def extractPredicatesAndMergeWhereExpressions(
+    pattern: AnyRef,
+    outerWhere: Option[Expression],
+    position: InputPosition
+  ): Option[Expression] = {
+    val innerPredicates = extractPredicates(pattern)
+    val newPredicates = innerPredicates ++ outerWhere
+    newPredicates.reduceOption(And(_, _)(position))
+  }
+
+  private def extractPredicates(pattern: AnyRef): Seq[Expression] = pattern.folder.treeFold(Vector.empty[Expression]) {
+    // Extract Predicates from ParenthesizedPaths
+    case ParenthesizedPath(_, Some(where)) => acc => TraverseChildren(acc :+ where)
+    // Do not traverse down into pattern parts with selectors (!= AllPaths)
+    case PatternPartWithSelector(_, selector) if !selector.isInstanceOf[AllPaths] => acc => SkipChildren(acc)
+    // Traverse the rest
+    case _ => acc => TraverseChildren(acc)
+  }
+
+  private def replaceParenthesizedPaths[T <: AnyRef](pattern: T): T = pattern.endoRewrite(
+    inSequence(
+      replaceParenthesizedPathsInPatternsWithNoSelector,
+      replaceParenthesizedPathsWithNoPredicates
+    )
+  )
+
+  private def replaceParenthesizedPathsInPatternsWithNoSelector: Rewriter = bottomUp(
+    Rewriter.lift {
       case p: ParenthesizedPath => p.part.element
+    },
+    stopper = {
+      case PatternPartWithSelector(_, selector) if !selector.isInstanceOf[AllPaths] => true
+      case _                                                                        => false
+    }
+  )
+
+  private def replaceParenthesizedPathsWithNoPredicates: Rewriter = bottomUp(
+    Rewriter.lift {
+      case ParenthesizedPath(part, None) => part.element
     }
   )
 }

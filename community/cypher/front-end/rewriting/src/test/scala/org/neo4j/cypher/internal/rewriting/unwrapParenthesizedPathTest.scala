@@ -45,4 +45,43 @@ class unwrapParenthesizedPathTest extends CypherFunSuite with RewriteTest {
       "MATCH (a)-->(b)-->(c) RETURN count(*)"
     )
   }
+
+  test("Unwrap parenthesized path with predicates if the path selector is ALL") {
+    assertRewrite(
+      "MATCH ALL ((a:A)-[r:R]->(b) WHERE b.prop > 1) RETURN *",
+      "MATCH ALL (a:A)-[r:R]->(b) WHERE b.prop > 1 RETURN *"
+    )
+  }
+
+  test("Unwraps nested parenthesized paths with predicates") {
+    assertRewrite(
+      "MATCH ((((((a:A)-[r:R]->(b) WHERE b.prop > 1)) WHERE a.prop > 1))) RETURN *",
+      "MATCH (a:A)-[r:R]->(b) WHERE b.prop > 1 AND a.prop > 1 RETURN *"
+    )
+  }
+
+  test("Unwraps nested parenthesized paths with predicates WITH SHORTEST selector") {
+    assertRewrite(
+      "MATCH ANY SHORTEST ((((((a:A)-[r:R]->+(b) WHERE b.prop > 1)) WHERE a.prop > 1))) RETURN *",
+      "MATCH ANY SHORTEST ((a:A)-[r:R]->+(b) WHERE b.prop > 1 AND a.prop > 1) RETURN *"
+    )
+  }
+
+  test("Unwraps nested parenthesized paths in QPP") {
+    assertRewrite(
+      "MATCH () ( ((((a:A)-[r:R]->(b) WHERE b.prop > 1) WHERE a.prop > 1)) )+ () RETURN *",
+      "MATCH () ( (a:A)-[r:R]->(b) WHERE b.prop > 1 AND a.prop > 1 )+ () RETURN *"
+    )
+  }
+
+  test("Does not unwrap parenthesized path with predicates if the path selector is different from ALL") {
+    assertIsNotRewritten("MATCH ALL SHORTEST ((a:A)-[r:R]->(b) WHERE b.prop > 1) RETURN *")
+  }
+
+  test("Unwraps parenthesized path without predicates if the path selector is different from ALL") {
+    assertRewrite(
+      "MATCH ALL SHORTEST ((a:A)-[r:R]->+(b)) RETURN *",
+      "MATCH ALL SHORTEST (a:A)-[r:R]->+(b) RETURN *"
+    )
+  }
 }
