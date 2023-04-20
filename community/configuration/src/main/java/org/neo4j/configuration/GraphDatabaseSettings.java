@@ -871,15 +871,18 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
 
     public enum TransactionStateMemoryAllocation {
         ON_HEAP,
+        @Deprecated(since = "5.8.0", forRemoval = true)
         OFF_HEAP
     }
 
+    @Deprecated(since = "5.8.0", forRemoval = true)
     @Description("Defines whether memory for transaction state should be allocated on- or off-heap. "
             + "Note that for small transactions you can gain up to 25% write speed by setting it to `ON_HEAP`.")
     public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation = newBuilder(
                     "db.tx_state.memory_allocation", ofEnum(TransactionStateMemoryAllocation.class), ON_HEAP)
             .build();
 
+    @Deprecated(since = "5.8.0", forRemoval = true)
     @Description(
             "The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory "
                     + "shared across all active transactions. Zero means 'unlimited'. Used when db.tx_state.memory_allocation is set to 'OFF_HEAP'.")
