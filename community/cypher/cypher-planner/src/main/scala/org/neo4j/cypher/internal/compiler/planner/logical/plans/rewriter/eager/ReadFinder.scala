@@ -70,7 +70,6 @@ import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
-import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.CommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
@@ -411,8 +410,25 @@ object ReadFinder {
           case _: Argument =>
             PlanReads()
 
-          case _: Input =>
-            PlanReads()
+          case Input(nodes, rels, vars, _) =>
+            // An Input can introduce entities. These must be captured with
+            // .withIntroducedNodeVariable / .withIntroducedRelationshipVariable
+            // However, Input is always the left-most-leaf plan, and therefore stable and never part of a Conflict.
+            // We only include this to be prepared for potential future refactorings
+            Function.chain[PlanReads](Seq(
+              nodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
+              rels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
+              vars.foldLeft(_) { (acc, col) =>
+                var res = acc
+                if (semanticTable.containsNode(col)) {
+                  res = res.withIntroducedNodeVariable(col)
+                }
+                if (semanticTable.containsRelationship(col)) {
+                  res = res.withIntroducedRelationshipVariable(col)
+                }
+                res
+              }
+            ))(PlanReads())
 
           case UndirectedAllRelationshipsScan(idName, leftNode, rightNode, _) =>
             processRelationshipRead(idName, leftNode, rightNode)
@@ -689,26 +705,6 @@ object ReadFinder {
 
       case AssertSameRelationship(rel, _, _) =>
         PlanReads().withReferencedRelationshipVariable(rel)
-
-      case Input(nodes, rels, vars, _) =>
-        // An Input can introduce entities. These must be captured with
-        // .withIntroducedNodeVariable / .withIntroducedRelationshipVariable
-        // However, Input is always the left-most-leaf plan, and therefore stable and never part of a Conflict.
-        // We only include this to be prepared for potential future refactorings
-        Function.chain[PlanReads](Seq(
-          nodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
-          rels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
-          vars.foldLeft(_) { (acc, col) =>
-            var res = acc
-            if (semanticTable.containsNode(col)) {
-              res = res.withIntroducedNodeVariable(col)
-            }
-            if (semanticTable.containsRelationship(col)) {
-              res = res.withIntroducedRelationshipVariable(col)
-            }
-            res
-          }
-        ))(PlanReads())
 
       case Optional(_, symbols) =>
         processPotentialEntityReferences(symbols, semanticTable)
