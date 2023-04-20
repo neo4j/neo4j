@@ -97,7 +97,7 @@ object PatternPart {
     def prettified: String
   }
 
-  sealed trait CountedSelector {
+  sealed trait CountedSelector extends Selector {
     val count: UnsignedDecimalIntegerLiteral
   }
 

@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Parameter
+import org.neo4j.cypher.internal.expressions.PatternPart.CountedSelector
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.util.ASTNode
@@ -86,7 +87,8 @@ object literalReplacement {
     case _: Clause |
       _: Limit |
       _: Skip |
-      _: GraphPatternQuantifier =>
+      _: GraphPatternQuantifier |
+      _: CountedSelector =>
       acc => SkipChildren(acc)
     case n: NodePattern =>
       acc => SkipChildren(n.properties.folder.treeFold(acc)(literalMatcher(state)))

@@ -75,6 +75,22 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
     assertDoesNotRewrite(s"MATCH ((a)-->(b)){1, 2} RETURN *")
   }
 
+  test("should not extract ANY n in path selector") {
+    assertDoesNotRewrite(s"MATCH ANY 5 (a)-->(b) RETURN *")
+  }
+
+  test("should not extract ANY SHORTEST in path selector") {
+    assertDoesNotRewrite(s"MATCH ANY SHORTEST PATHS (a)-->(b) RETURN *")
+  }
+
+  test("should not extract SHORTEST n in path selector") {
+    assertDoesNotRewrite(s"MATCH SHORTEST 5 PATHS (a)-->(b) RETURN *")
+  }
+
+  test("should not extract SHORTEST n GROUPS in path selector") {
+    assertDoesNotRewrite(s"MATCH SHORTEST 3 GROUPS (a)-->(b) RETURN *")
+  }
+
   test("should extract literals in match clause") {
     assertRewrite("MATCH ({a:1})", "MATCH ({a:$`  AUTOINT0`})", Map("  AUTOINT0" -> 1))
     assertRewrite("MATCH ({a:1.1})", "MATCH ({a:$`  AUTODOUBLE0`})", Map("  AUTODOUBLE0" -> 1.1))
