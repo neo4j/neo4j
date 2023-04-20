@@ -814,4 +814,130 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     val result = execute(logicalQuery, runtime, inputValues(input.map(_.toArray[Any]): _*))
     result.awaitAll()
   }
+
+  test("aggregation on the lhs of an apply under cartesian product") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("42 AS res")
+      .cartesianProduct(fromSubquery = true)
+      .|.apply()
+      .|.|.projection("1 AS count")
+      .|.|.argument("n1")
+      .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
+      .|.argument("n0")
+      .unwind("[42] AS n0")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("res").withSingleRow(42)
+  }
+
+  test("aggregations under nested cartesian product") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("42 AS res")
+      .cartesianProduct(fromSubquery = true)
+      .|.cartesianProduct()
+      .|.|.aggregation(Seq.empty, Seq("min(0) AS n2"))
+      .|.|.argument("n0")
+      .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
+      .|.argument("n0")
+      .unwind("[42] AS n0")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("res").withSingleRow(42)
+  }
+
+  test("aggregations under join under a cartesian product") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("42 AS res")
+      .cartesianProduct(fromSubquery = true)
+      .|.valueHashJoin("n1=n2")
+      .|.|.aggregation(Seq.empty, Seq("min(0) AS n2"))
+      .|.|.argument("n0")
+      .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
+      .|.argument("n0")
+      .unwind("[42] AS n0")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("res").withSingleRow(42)
+  }
+
+  test("aggregations under join under a cartesian product with additional projections") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("42 AS res")
+      .cartesianProduct(fromSubquery = true)
+      .|.valueHashJoin("n1=n2")
+      .|.|.aggregation(Seq.empty, Seq("min(0) AS n2"))
+      .|.|.projection("42 as somethingOrOther")
+      .|.|.argument("n0")
+      .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
+      .|.projection("42 as whatever")
+      .|.argument("n0")
+      .unwind("[42] AS n0")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("res").withSingleRow(42)
+  }
+
+  test("aggregation on the lhs of an apply followed by optional under cartesian product") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("42 AS res")
+      .cartesianProduct(fromSubquery = true)
+      .|.optional("n1")
+      .|.apply()
+      .|.|.projection("1 AS count")
+      .|.|.argument("n1")
+      .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
+      .|.argument("n0")
+      .unwind("[42] AS n0")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("res").withSingleRow(42)
+  }
+
+  test("aggregation on the lhs of an apply under cartesian product all under an apply") {
+    // given
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("res")
+      .projection("42 AS res")
+      .apply()
+      .|.cartesianProduct(fromSubquery = true)
+      .|.|.optional("n1")
+      .|.|.apply()
+      .|.|.|.projection("1 AS count")
+      .|.|.|.argument("n1")
+      .|.|.aggregation(Seq.empty, Seq("min(0) AS n1"))
+      .|.|.argument("n0")
+      .|.argument("n0")
+      .unwind("[42] AS n0")
+      .argument()
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("res").withSingleRow(42)
+  }
 }
