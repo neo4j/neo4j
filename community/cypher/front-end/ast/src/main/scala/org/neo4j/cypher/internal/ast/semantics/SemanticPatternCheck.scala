@@ -154,16 +154,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                 error(s"Path selectors such as `${x.selector.prettified}` are not supported yet", x.selector.position)
               }
           } chain
-          check(x.selector) chain
-          (x.selector match {
-            case _: AllPaths => x.element match {
-                case ParenthesizedPath(_, Some(where)) =>
-                  // We should `ALL (... WHERE ...)` eventually rewrite this to `ALL ... WHERE ...
-                  error("WHERE in parenthesized path patterns is not supported yet.", where.position)
-                case _ => success
-              }
-            case _ => success
-          })
+          check(x.selector)
 
       case x: ShortestPathsPatternPart =>
         def checkContainsSingle: SemanticCheck =

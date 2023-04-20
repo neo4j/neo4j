@@ -254,21 +254,15 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
         )
         resultWithFeatureEnabled.errors shouldBe empty
       } else {
-        result.errorMessages shouldBe Seq(
-          // Should be allowed for anything but `ALL` and for `ALL` once we have a rewriter to move the predicates to the outer clause.
-          "WHERE in parenthesized path patterns is not supported yet."
-        )
-        resultWithFeatureEnabled.errorMessages shouldBe Seq(
-          // Should be allowed for anything but `ALL` and for `ALL` once we have a rewriter to move the predicates to the outer clause.
-          "WHERE in parenthesized path patterns is not supported yet."
-        )
+        result.errorMessages shouldBe empty
+        resultWithFeatureEnabled.errorMessages shouldBe empty
       }
     }
   }
 
   // Do semantic checking in the WHERE clause
-  allSelectiveSelectors.foreach { selector =>
-    test(s"MATCH $selector ((a) WHERE c.prop) RETURN 1") {
+  selectors.foreach { selector =>
+    test(s"MATCH ${selector.syntax} ((a) WHERE c.prop) RETURN 1") {
       val result =
         runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath, SemanticFeature.QuantifiedPathPatterns)
       result.errorMessages shouldBe Seq(
