@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.InequalityExpression
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.rewriting.conditions.NoInequalityInsideNot
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer

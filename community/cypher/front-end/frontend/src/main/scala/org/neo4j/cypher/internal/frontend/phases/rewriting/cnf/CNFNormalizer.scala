@@ -52,15 +52,3 @@ object CNFNormalizer {
 
   val PredicatesInCNF: Set[StepSequencer.Condition] = steps.flatMap(_.postConditions)
 }
-
-case object NotsBelowBooleanOperators extends StepSequencer.Condition
-
-case object NoXorOperators extends StepSequencer.Condition
-
-case object AndsAboveOrs extends StepSequencer.Condition
-
-case object AndRewrittenToAnds extends StepSequencer.Condition
-
-case object OrRewrittenToOrs extends StepSequencer.Condition
-
-case object NoInequalityInsideNot extends StepSequencer.Condition

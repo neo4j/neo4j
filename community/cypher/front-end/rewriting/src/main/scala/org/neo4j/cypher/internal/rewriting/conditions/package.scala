@@ -29,6 +29,12 @@ package object conditions {
   case object SensitiveLiteralsExtracted extends StepSequencer.Condition
   case object LiteralsExtracted extends StepSequencer.Condition
   case object PredicatesSimplified extends StepSequencer.Condition
+  case object NotsBelowBooleanOperators extends StepSequencer.Condition
+  case object NoXorOperators extends StepSequencer.Condition
+  case object AndsAboveOrs extends StepSequencer.Condition
+  case object AndRewrittenToAnds extends StepSequencer.Condition
+  case object OrRewrittenToOrs extends StepSequencer.Condition
+  case object NoInequalityInsideNot extends StepSequencer.Condition
 
   /**
    * A collection of all conditions that require semantic info available for some AST nodes

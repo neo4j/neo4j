@@ -26,6 +26,9 @@ import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.distributeLawsRew
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.distributeLawsRewriter.dnfCounts
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.distributeLawsRewriter.step
 import org.neo4j.cypher.internal.rewriting.AstRewritingMonitor
+import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
+import org.neo4j.cypher.internal.rewriting.conditions.AndsAboveOrs
+import org.neo4j.cypher.internal.rewriting.conditions.OrRewrittenToOrs
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.copyVariables
 import org.neo4j.cypher.internal.rewriting.rewriters.repeatWithSizeLimit

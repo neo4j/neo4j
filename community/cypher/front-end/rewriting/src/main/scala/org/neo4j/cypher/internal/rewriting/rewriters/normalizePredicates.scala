@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
+import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.conditions.noUnnamedNodesAndRelationships
 import org.neo4j.cypher.internal.rewriting.rewriters.factories.ASTRewriterFactory
@@ -44,7 +45,7 @@ case object normalizePredicates extends StepSequencer.Step with ASTRewriterFacto
 
   override def postConditions: Set[StepSequencer.Condition] = Set(NoNodeOrRelationshipPredicates)
 
-  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable
+  override def invalidatedConditions: Set[StepSequencer.Condition] = SemanticInfoAvailable + AndRewrittenToAnds
 
   override def getRewriter(
     semanticState: SemanticState,

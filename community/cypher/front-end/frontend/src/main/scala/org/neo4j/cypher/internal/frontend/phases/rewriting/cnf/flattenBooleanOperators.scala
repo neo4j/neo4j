@@ -22,6 +22,8 @@ import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.BaseState
+import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
+import org.neo4j.cypher.internal.rewriting.conditions.OrRewrittenToOrs
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
