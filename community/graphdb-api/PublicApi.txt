@@ -401,8 +401,10 @@ org.neo4j.graphdb.schema.ConstraintDefinition::isConstraintType(org.neo4j.graphd
 org.neo4j.graphdb.schema.ConstraintType public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.ConstraintType>
 org.neo4j.graphdb.schema.ConstraintType::NODE_KEY org.neo4j.graphdb.schema.ConstraintType public static final
 org.neo4j.graphdb.schema.ConstraintType::NODE_PROPERTY_EXISTENCE org.neo4j.graphdb.schema.ConstraintType public static final
+org.neo4j.graphdb.schema.ConstraintType::NODE_PROPERTY_TYPE org.neo4j.graphdb.schema.ConstraintType public static final
 org.neo4j.graphdb.schema.ConstraintType::RELATIONSHIP_KEY org.neo4j.graphdb.schema.ConstraintType public static final
 org.neo4j.graphdb.schema.ConstraintType::RELATIONSHIP_PROPERTY_EXISTENCE org.neo4j.graphdb.schema.ConstraintType public static final
+org.neo4j.graphdb.schema.ConstraintType::RELATIONSHIP_PROPERTY_TYPE org.neo4j.graphdb.schema.ConstraintType public static final
 org.neo4j.graphdb.schema.ConstraintType::RELATIONSHIP_UNIQUENESS org.neo4j.graphdb.schema.ConstraintType public static final
 org.neo4j.graphdb.schema.ConstraintType::UNIQUENESS org.neo4j.graphdb.schema.ConstraintType public static final
 org.neo4j.graphdb.schema.ConstraintType::valueOf(java.lang.String) org.neo4j.graphdb.schema.ConstraintType public static
