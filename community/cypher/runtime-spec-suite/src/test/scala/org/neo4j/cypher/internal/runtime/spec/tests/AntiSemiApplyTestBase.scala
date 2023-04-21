@@ -555,4 +555,23 @@ abstract class AntiSemiApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "extra").withNoRows()
   }
 
+  test("single row (of many filtered out) rhs, sort on top") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .sort(Seq(Ascending("x")))
+      .antiSemiApply()
+      .|.filter(s"NOT x=${sizeHint / 2}")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withSingleRow(sizeHint / 2)
+  }
 }
