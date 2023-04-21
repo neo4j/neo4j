@@ -457,7 +457,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("Create should eliminate provided order") {
     shouldEliminateProvidedOrder(ctx =>
-      ctx.producer.planCreate(ctx.lhs, CreatePattern(Seq(CreateNode("n", Set(), None)), Seq()), ctx.context)
+      ctx.producer.planCreate(ctx.lhs, CreatePattern(Seq(CreateNode("n", Set(), None))), ctx.context)
     )
   }
 

@@ -2511,8 +2511,9 @@ case class LogicalPlanProducer(
 
   def planCreate(inner: LogicalPlan, pattern: CreatePattern, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
-    val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
-    val plan = plans.Create(rewrittenInner, rewrittenPattern.nodes, rewrittenPattern.relationships)
+    val (rewrittenPattern: CreatePattern, rewrittenInner) =
+      SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
+    val plan = plans.Create(rewrittenInner, rewrittenPattern.commands)
     val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
   }
@@ -2545,9 +2546,13 @@ case class LogicalPlanProducer(
         )
       }
     val rewrittenNodePatterns =
-      createNodePatterns.map(p => SubqueryExpressionSolver.ForMappable().solve(inner, p, context)._1)
+      createNodePatterns.map(p =>
+        SubqueryExpressionSolver.ForMappable().solve(inner, p, context)._1.asInstanceOf[CreateNode]
+      )
     val rewrittenRelPatterns =
-      createRelationshipPatterns.map(p => SubqueryExpressionSolver.ForMappable().solve(inner, p, context)._1)
+      createRelationshipPatterns.map(p =>
+        SubqueryExpressionSolver.ForMappable().solve(inner, p, context)._1.asInstanceOf[CreateRelationship]
+      )
 
     val solved = RegularSinglePlannerQuery().amendQueryGraph(_.addMutatingPatterns(patterns))
     val merge =

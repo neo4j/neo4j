@@ -112,7 +112,7 @@ case class CreateSlottedRelationship(command: CreateRelationshipSlottedCommand, 
         )
         relationship
       }
-    row.setLongAt(command.relIdOffset, relationship)
+    row.setLongAt(command.idOffset, relationship)
   }
 }
 

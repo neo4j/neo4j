@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.ir.CreateCommand
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
@@ -261,11 +262,8 @@ object LogicalPlanToPlanBuilderString {
         wrapInQuotationsAndMkString(argumentIds.toSeq)
       case CacheProperties(_, properties) =>
         wrapInQuotationsAndMkString(properties.toSeq.map(expressionStringifier(_)))
-      case Create(_, nodes, Seq()) =>
-        nodes.map(createNodeToString).mkString(", ")
-      case Create(_, nodes, relationships) =>
-        s"Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")})"
-
+      case Create(_, commands) =>
+        commands.map(createCreateCommandToString).mkString(", ")
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
         val nodesToCreate = createNodes.map(createNodeToString)
         val relsToCreate = createRelationships.map(createRelationshipToString)
@@ -1307,6 +1305,11 @@ object LogicalPlanToPlanBuilderString {
     }.mkString("Map(", ", ", ")")
   }
 
+  private def createCreateCommandToString(create: CreateCommand) = create match {
+    case c: CreateNode         => createNodeToString(c)
+    case c: CreateRelationship => createRelationshipToString(c)
+  }
+
   private def createNodeToString(createNode: CreateNode) = createNode match {
     case CreateNode(idName, labels, None) =>
       s"createNode(${wrapInQuotationsAndMkString(idName +: labels.map(_.name).toSeq)})"
@@ -1320,8 +1323,8 @@ object LogicalPlanToPlanBuilderString {
   }
 
   private def mutationToString(op: SimpleMutatingPattern): String = op match {
-    case CreatePattern(nodes, relationships) =>
-      s"createPattern(Seq(${nodes.map(createNodeToString).mkString(", ")}), Seq(${relationships.map(createRelationshipToString).mkString(", ")}))"
+    case c: CreatePattern =>
+      s"createPattern(Seq(${c.nodes.map(createNodeToString).mkString(", ")}), Seq(${c.relationships.map(createRelationshipToString).mkString(", ")}))"
     case org.neo4j.cypher.internal.ir.DeleteExpression(expression, forced) =>
       s"delete(${wrapInQuotations(expressionStringifier(expression))}, $forced)"
     case SetLabelPattern(node, labelNames) =>

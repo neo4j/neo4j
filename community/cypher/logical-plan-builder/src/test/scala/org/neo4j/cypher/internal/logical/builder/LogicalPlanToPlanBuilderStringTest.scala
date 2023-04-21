@@ -711,8 +711,9 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     new TestPlanBuilder()
       .produceResults("x", "y")
       .create(
-        Seq(createNode("a", "A"), createNodeWithProperties("b", Seq("B"), "{node: true}")),
-        Seq(createRelationship("r", "a", "R", "b", INCOMING, Some("{rel: true}")))
+        createNode("a", "A"),
+        createNodeWithProperties("b", Seq("B"), "{node: true}"),
+        createRelationship("r", "a", "R", "b", INCOMING, Some("{rel: true}"))
       )
       .argument()
       .build()

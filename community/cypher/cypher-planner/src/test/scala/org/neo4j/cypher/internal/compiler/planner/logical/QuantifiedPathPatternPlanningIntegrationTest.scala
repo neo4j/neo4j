@@ -1157,7 +1157,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldEqual planner.subPlanBuilder()
-      .create(Nil, List(createRelationship("r2", "a", "T", "b", SemanticDirection.OUTGOING)))
+      .create(createRelationship("r2", "a", "T", "b", SemanticDirection.OUTGOING))
       .eager(ListSet(EagernessReason.Unknown))
       .expandAll("(a)-[r*1..5]->(b)")
       .allNodeScan("a")

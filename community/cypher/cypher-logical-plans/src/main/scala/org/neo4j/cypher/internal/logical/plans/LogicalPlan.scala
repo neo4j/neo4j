@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.CSVFormat
+import org.neo4j.cypher.internal.ir.CreateCommand
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
@@ -991,15 +992,23 @@ case class ConditionalApply(override val left: LogicalPlan, override val right: 
 /**
  * For each input row, create new nodes and relationships.
  */
-case class Create(override val source: LogicalPlan, nodes: Seq[CreateNode], relationships: Seq[CreateRelationship])(
+case class Create(override val source: LogicalPlan, commands: Seq[CreateCommand])(
   implicit idGen: IdGen
 ) extends LogicalUnaryPlan(idGen) with UpdatingPlan {
+
+  def nodes: Seq[CreateNode] = commands.collect {
+    case c: CreateNode => c
+  }
+
+  def relationships: Seq[CreateRelationship] = commands.collect {
+    case c: CreateRelationship => c
+  }
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan with UpdatingPlan =
     copy(source = newLHS)(idGen)
 
   override val availableSymbols: Set[String] = {
-    source.availableSymbols ++ nodes.map(_.idName) ++ relationships.map(_.idName)
+    source.availableSymbols ++ commands.map(_.idName)
   }
 }
 

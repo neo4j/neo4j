@@ -109,8 +109,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
 
     query.queryGraph.mutatingPatterns should equal(Seq(
       CreatePattern(
-        nodes("a", "b"),
-        relationship("r", "a", "X", "b")
+        nodes("a", "b") ++ relationship("r", "a", "X", "b")
       )
     ))
 
@@ -124,7 +123,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     ))
 
     query.queryGraph.patternNodes should equal(Set("n"))
-    query.queryGraph.mutatingPatterns should equal(Seq(CreatePattern(nodes("m"), Nil)))
+    query.queryGraph.mutatingPatterns should equal(Seq(CreatePattern(nodes("m"))))
 
     val next = query.tail.get
 
@@ -140,7 +139,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
     val second = query.tail.get
 
     second.queryGraph.patternNodes should equal(Set("n"))
-    second.queryGraph.mutatingPatterns should equal(IndexedSeq(CreatePattern(nodes("m"), Nil)))
+    second.queryGraph.mutatingPatterns should equal(IndexedSeq(CreatePattern(nodes("m"))))
 
     val third = second.tail.get
 
@@ -166,7 +165,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
             Vector.empty,
             Set.empty,
             Set.empty,
-            IndexedSeq(CreatePattern(nodes("a"), Nil))
+            IndexedSeq(CreatePattern(nodes("a")))
           ),
           InterestingOrder.empty,
           PassthroughAllHorizon(),
@@ -187,7 +186,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         queryGraph = QueryGraph(
           argumentIds = Set("n"),
           mutatingPatterns = IndexedSeq(
-            CreatePattern(nodes("m"), Seq.empty)
+            CreatePattern(nodes("m"))
           )
         ),
         horizon = RegularQueryProjection(
@@ -208,7 +207,7 @@ class MutatingStatementConvertersTest extends CypherFunSuite with LogicalPlannin
         queryGraph = QueryGraph(
           argumentIds = Set("n"),
           mutatingPatterns = IndexedSeq(
-            CreatePattern(nodes("m"), Seq.empty)
+            CreatePattern(nodes("m"))
           )
         )
       )

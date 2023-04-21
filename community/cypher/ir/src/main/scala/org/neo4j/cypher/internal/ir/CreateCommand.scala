@@ -20,12 +20,29 @@
 package org.neo4j.cypher.internal.ir
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 
+sealed trait CreateCommand extends HasMappableExpressions[CreateCommand] {
+  def idName: String
+  def properties: Option[Expression]
+  def dependencies: Set[String]
+}
+
 /**
- * Create a new relationship with the provided type and properties and assign it to the variable 'idName'.
+ * Create a new node with the provided labels and properties and assign it to the variable 'idName'.
  */
+case class CreateNode(idName: String, labels: Set[LabelName], properties: Option[Expression])
+    extends CreateCommand {
+  def dependencies: Set[String] = properties.map(_.dependencies.map(_.name)).getOrElse(Set.empty)
+
+  override def mapExpressions(f: Expression => Expression): CreateNode = copy(properties = properties.map(f))
+}
+
+/**
+* Create a new relationship with the provided type and properties and assign it to the variable 'idName'.
+*/
 case class CreateRelationship(
   idName: String,
   leftNode: String,
@@ -33,7 +50,7 @@ case class CreateRelationship(
   rightNode: String,
   direction: SemanticDirection,
   properties: Option[Expression]
-) extends HasMappableExpressions[CreateRelationship] {
+) extends CreateCommand {
 
   val (startNode, endNode) =
     if (direction == SemanticDirection.OUTGOING || direction == SemanticDirection.BOTH) (leftNode, rightNode)

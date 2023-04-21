@@ -39,6 +39,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
+import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
@@ -61,6 +62,7 @@ import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
@@ -2222,6 +2224,31 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       )
     }
     ex should have message cancellationChecker.message
+  }
+
+  test("Should combine two simple create statement into one create pattern") {
+    val query = buildSinglePlannerQuery("CREATE (a) CREATE (b)")
+    query.queryGraph shouldBe QueryGraph(
+      mutatingPatterns = IndexedSeq(CreatePattern(Seq(createNode("a"), createNode("b"))))
+    )
+
+    query.tail shouldBe empty
+  }
+
+  test("Should combine two patterns into one") {
+    val query = buildSinglePlannerQuery("CREATE (a)-[r1:R {p: 1}]->(b) CREATE (c)-[r2: R {p: 1}]->(d)")
+    query.queryGraph shouldBe QueryGraph(
+      mutatingPatterns = IndexedSeq(CreatePattern(Seq(
+        createNode("a"),
+        createNode("b"),
+        createRelationship("r1", "a", "R", "b", properties = Some("{p: 1}")),
+        createNode("c"),
+        createNode("d"),
+        createRelationship("r2", "c", "R", "d", properties = Some("{p: 1}"))
+      )))
+    )
+
+    query.tail shouldBe empty
   }
 
   private class TestCountdownCancellationChecker(var count: Int) extends CancellationChecker {

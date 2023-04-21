@@ -147,33 +147,33 @@ case class RemoveLabelPattern(idName: String, labels: Seq[LabelName]) extends Se
   override def dependencies: Set[String] = Set(idName)
 }
 
-case class CreatePattern(nodes: Seq[CreateNode], relationships: Seq[CreateRelationship]) extends SimpleMutatingPattern
+case class CreatePattern(commands: Seq[CreateCommand]) extends SimpleMutatingPattern
     with HasMappableExpressions[CreatePattern] {
+
+  def nodes: Seq[CreateNode] = commands.collect {
+    case c: CreateNode => c
+  }
+
+  def relationships: Seq[CreateRelationship] = commands.collect {
+    case c: CreateRelationship => c
+  }
 
   override def coveredIds: Set[String] = {
     val builder = Set.newBuilder[String]
-    for (node <- nodes)
-      builder += node.idName
-    for (relationship <- relationships) {
-      builder += relationship.idName
-    }
+    for (command <- commands)
+      builder += command.idName
     builder.result()
   }
 
   override def dependencies: Set[String] = {
     val builder = Set.newBuilder[String]
-    for (node <- nodes)
-      builder ++= deps(node.properties)
-    for (relationship <- relationships) {
-      builder ++= deps(relationship.properties)
-      builder += relationship.leftNode
-      builder += relationship.rightNode
-    }
+    for (command <- commands)
+      builder ++= command.dependencies
     builder.result()
   }
 
   override def mapExpressions(f: Expression => Expression): CreatePattern = {
-    copy(nodes = nodes.map(_.mapExpressions(f)), relationships = relationships.map(_.mapExpressions(f)))
+    copy(commands = commands.map(_.mapExpressions(f)))
   }
 }
 

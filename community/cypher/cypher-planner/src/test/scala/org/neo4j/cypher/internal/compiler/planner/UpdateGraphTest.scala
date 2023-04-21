@@ -260,7 +260,6 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
     val ug = QueryGraph(mutatingPatterns =
       IndexedSeq(
         CreatePattern(
-          Nil,
           List(
             CreateRelationship(
               "r2",
@@ -455,11 +454,10 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   private def createNode(name: String, labels: String*) =
-    CreatePattern(List(CreateNode(name, labels.map(l => LabelName(l)(pos)).toSet, None)), Nil)
+    CreatePattern(List(CreateNode(name, labels.map(l => LabelName(l)(pos)).toSet, None)))
 
   private def createRelationship(name: String, start: String, relType: String, end: String) =
     CreatePattern(
-      Nil,
       List(CreateRelationship(name, start, RelTypeName(relType)(pos), end, SemanticDirection.OUTGOING, None))
     )
 }

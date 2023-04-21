@@ -489,8 +489,8 @@ class WithPlanningIntegrationTest extends CypherFunSuite
         .projection("n2.prop AS prop2")
         .apply(fromSubquery = true)
         .|.create(
-          nodes = Seq(createNodeWithProperties("n2", Seq(), "{prop: n1.x}")),
-          relationships = Seq(createRelationship("anon_0", "n1", "LIKES", "n2", OUTGOING))
+          createNodeWithProperties("n2", Seq(), "{prop: n1.x}"),
+          createRelationship("anon_0", "n1", "LIKES", "n2", OUTGOING)
         )
         .|.argument("n1")
         .projection(project = Seq("n AS n1", "n.prop AS prop"), discard = Set("n"))

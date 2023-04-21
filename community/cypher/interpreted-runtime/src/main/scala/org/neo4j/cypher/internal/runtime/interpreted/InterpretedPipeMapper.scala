@@ -777,27 +777,25 @@ case class InterpretedPipeMapper(
 
     def compileEffects(sideEffect: SimpleMutatingPattern): Seq[SideEffect] = {
       sideEffect match {
-        case CreatePattern(nodes, relationships) =>
-          val nodeOps = nodes.map {
+        case CreatePattern(commands) =>
+          commands.map {
             case ir.CreateNode(node, labels, properties) =>
               CreateNode(
                 CreateNodeCommand(node, labels.toSeq.map(LazyLabel.apply), properties.map(buildExpression)),
                 allowNullOrNaNProperty = true
               )
+            case r: ir.CreateRelationship =>
+              CreateRelationship(
+                CreateRelationshipCommand(
+                  r.idName,
+                  r.startNode,
+                  LazyType(r.relType)(semanticTable),
+                  r.endNode,
+                  r.properties.map(buildExpression)
+                ),
+                allowNullOrNaNProperty = true
+              )
           }
-          val relOps = relationships.map { r: ir.CreateRelationship =>
-            CreateRelationship(
-              CreateRelationshipCommand(
-                r.idName,
-                r.startNode,
-                LazyType(r.relType)(semanticTable),
-                r.endNode,
-                r.properties.map(buildExpression)
-              ),
-              allowNullOrNaNProperty = true
-            )
-          }
-          nodeOps ++ relOps
 
         case ir.DeleteExpression(expression, forced) => Seq(DeleteOperation(buildExpression(expression), forced))
         case SetLabelPattern(node, labelNames)       => Seq(SetLabelsOperation(node, labelNames.map(LazyLabel.apply)))
@@ -1284,21 +1282,21 @@ case class InterpretedPipeMapper(
       case ProduceResult(_, columns) =>
         ProduceResultsPipe(source, columns.toArray)(id = id)
 
-      case Create(_, nodes, relationships) =>
+      case Create(_, commands) =>
         CreatePipe(
           source,
-          nodes.map(n =>
-            CreateNodeCommand(n.idName, n.labels.toSeq.map(LazyLabel.apply), n.properties.map(buildExpression))
-          ).toArray,
-          relationships.map(r =>
-            CreateRelationshipCommand(
-              r.idName,
-              r.startNode,
-              LazyType(r.relType.name),
-              r.endNode,
-              r.properties.map(buildExpression)
-            )
-          ).toArray
+          commands.map {
+            case n: ir.CreateNode =>
+              CreateNodeCommand(n.idName, n.labels.toSeq.map(LazyLabel.apply), n.properties.map(buildExpression))
+            case r: ir.CreateRelationship =>
+              CreateRelationshipCommand(
+                r.idName,
+                r.startNode,
+                LazyType(r.relType.name),
+                r.endNode,
+                r.properties.map(buildExpression)
+              )
+          }.toArray
         )(id = id)
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>

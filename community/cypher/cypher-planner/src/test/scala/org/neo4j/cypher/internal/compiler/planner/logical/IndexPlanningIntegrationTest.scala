@@ -976,8 +976,9 @@ class IndexPlanningIntegrationTest
       .|.relationshipTypeScan("(a)-[r:REL]->(b)", "c")
       .aggregation(Seq(), Seq("count(*) AS c"))
       .create(
-        nodes = Seq(createNode("a"), createNode("b")),
-        relationships = Seq(createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING))
+        createNode("a"),
+        createNode("b"),
+        createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING)
       )
       .argument()
       .build()
@@ -1015,8 +1016,9 @@ class IndexPlanningIntegrationTest
       .|.relationshipTypeScan("(a)-[r:REL]->(b)", "c")
       .aggregation(Seq(), Seq("count(*) AS c"))
       .create(
-        nodes = Seq(createNode("a"), createNode("b")),
-        relationships = Seq(createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING))
+        createNode("a"),
+        createNode("b"),
+        createRelationship("r", "a", "REL", "b", SemanticDirection.OUTGOING)
       )
       .argument()
       .build()
@@ -1062,15 +1064,16 @@ class IndexPlanningIntegrationTest
     plan shouldEqual planner.subPlanBuilder()
       .emptyResult()
       .create(
-        nodes = Seq(createNode("c"), createNode("d")),
-        relationships = Seq(createRelationship(
+        createNode("c"),
+        createNode("d"),
+        createRelationship(
           "r2",
           "c",
           "REL",
           "d",
           SemanticDirection.OUTGOING,
           Some("{prop: cacheR[r1.prop] * 2}")
-        ))
+        )
       )
       .eager()
       .relationshipIndexOperator(

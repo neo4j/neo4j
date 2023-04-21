@@ -261,9 +261,9 @@ object WriteFinder {
         case RemoveLabels(_, _, labelNames) =>
           PlanWrites(sets = PlanSets(writtenLabels = labelNames))
 
-        case Create(_, nodes, relationships) =>
-          val nodeCreates = processCreateNodes(PlanCreates(), nodes)
-          val creates = processCreateRelationships(nodeCreates, relationships)
+        case c: Create =>
+          val nodeCreates = processCreateNodes(PlanCreates(), c.nodes)
+          val creates = processCreateRelationships(nodeCreates, c.relationships)
           PlanWrites(creates = creates)
 
         case Merge(_, nodes, relationships, onMatch, onCreate, _) =>
@@ -443,9 +443,9 @@ object WriteFinder {
     setMutatingPatterns: Seq[SimpleMutatingPattern]
   ): PlanCreates = {
     setMutatingPatterns.foldLeft[PlanCreates](acc) {
-      case (acc, CreatePattern(nodes, relationships)) =>
-        val planNodeCreates = processCreateNodes(acc, nodes)
-        processCreateRelationships(planNodeCreates, relationships)
+      case (acc, c: CreatePattern) =>
+        val planNodeCreates = processCreateNodes(acc, c.nodes)
+        processCreateRelationships(planNodeCreates, c.relationships)
 
       case (_, mutatingPattern) =>
         throw new UnsupportedOperationException(

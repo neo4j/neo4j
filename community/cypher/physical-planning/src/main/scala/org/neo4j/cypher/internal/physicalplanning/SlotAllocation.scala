@@ -798,9 +798,11 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         slots.newLong(expand.to, nullable, CTNode)
         expand.depthName.foreach(name => slots.newReference(name, nullable, CTInteger))
 
-      case Create(_, nodes, relationships) =>
-        nodes.foreach(n => slots.newLong(n.idName, nullable = false, CTNode))
-        relationships.foreach(r => slots.newLong(r.idName, nullable = config.lenientCreateRelationship, CTRelationship))
+      case c: Create =>
+        c.nodes.foreach(n => slots.newLong(n.idName, nullable = false, CTNode))
+        c.relationships.foreach(r =>
+          slots.newLong(r.idName, nullable = config.lenientCreateRelationship, CTRelationship)
+        )
 
       case _: EmptyResult |
         _: ErrorPlan |
@@ -883,9 +885,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
       case Foreach(_, variableName, listExpression, mutations) =>
         mutations.foreach {
-          case CreatePattern(nodes, relationships) =>
-            nodes.foreach(n => slots.newLong(n.idName, false, CTNode))
-            relationships.foreach(r => slots.newLong(r.idName, false, CTRelationship))
+          case c: CreatePattern =>
+            c.nodes.foreach(n => slots.newLong(n.idName, false, CTNode))
+            c.relationships.foreach(r => slots.newLong(r.idName, false, CTRelationship))
           case _ =>
         }
         val maybeTypeSpec = Try(semanticTable.getActualTypeFor(listExpression)).toOption

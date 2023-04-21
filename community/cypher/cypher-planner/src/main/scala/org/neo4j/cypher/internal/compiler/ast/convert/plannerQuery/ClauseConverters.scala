@@ -78,6 +78,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CommandProjection
+import org.neo4j.cypher.internal.ir.CreateCommand
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
@@ -346,9 +347,7 @@ object ClauseConverters {
     }
 
   private def addCreateToLogicalPlanInput(builder: PlannerQueryBuilder, clause: Create): PlannerQueryBuilder = {
-
-    val nodes = new ArrayBuffer[CreateNode]()
-    val relationships = new ArrayBuffer[CreateRelationship]()
+    val commands = new ArrayBuffer[CreateCommand]()
 
     // We need this locally to avoid creating nodes twice if they occur
     // multiple times in this clause, but haven't occured before
@@ -361,39 +360,29 @@ object ClauseConverters {
       // CREATE (n :L1:L2 {prop: 42})
       case PatternPartWithSelector(NodePattern(Some(id), labelExpression, props, None), _) =>
         val labels = getLabelNameSet(labelExpression)
-        nodes += CreateNode(id.name, labels, props)
+        commands += CreateNode(id.name, labels, props)
         seenPatternNodes += id.name
         ()
 
       // CREATE (n)-[r: R]->(m)
       case PatternPartWithSelector(pattern: RelationshipChain, _) =>
-        val (currentNodes, currentRelationships) = allCreatePatterns(pattern)
-
-        // remove duplicates from loops, (a:L)-[:ER1]->(a)
-        val dedupedNodes = dedup(currentNodes)
-
-        // create nodes that are not already matched or created
-        val (nodesCreatedBefore, nodesToCreate) = dedupedNodes.partition {
-          case CreateNodeCommand(pattern, _) => seenPatternNodes(pattern.idName)
+        allCreatePatternsInOrderAndDeduped(pattern).foreach {
+          case CreateNodeCommand(create, _) =>
+            if (seenPatternNodes.add(create.idName)) {
+              commands += create
+            } else if (create.labels.nonEmpty || create.properties.nonEmpty) {
+              throw new SyntaxException(
+                s"Can't create node `${create.idName}` with labels or properties here. The variable is already declared in this context"
+              )
+            }
+          case CreateRelCommand(create, _) =>
+            commands += create
         }
-
-        // we must check that we are not trying to set a pattern or label on any already created nodes
-        nodesCreatedBefore.collectFirst {
-          case CreateNodeCommand(c, _) if c.labels.nonEmpty || c.properties.nonEmpty =>
-            throw new SyntaxException(
-              s"Can't create node `${c.idName}` with labels or properties here. The variable is already declared in this context"
-            )
-        }
-
-        nodes ++= nodesToCreate.map(_.create)
-        seenPatternNodes ++= nodesToCreate.map(_.create.idName)
-        relationships ++= currentRelationships.map(_.create)
         ()
-
       case _ => throw new InternalException(s"Received an AST-clause that has no representation the QG: $clause")
     }
 
-    builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(nodes.toSeq, relationships.toSeq)))
+    builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(commands.toSeq)))
   }
 
   private def getLabelNameSet(labelExpression: Option[LabelExpression]): Set[LabelName] =
@@ -402,27 +391,10 @@ object ClauseConverters {
       case ColonConjunction(lhs, rhs, _) => getLabelNameSet(Some(lhs)) ++ getLabelNameSet(Some(rhs))
     }.getOrElse(Set.empty)
 
-  private def dedup(nodePatterns: Vector[CreateNodeCommand]) = {
-    val seen = mutable.Set.empty[String]
-    val result = mutable.ListBuffer.empty[CreateNodeCommand]
-    nodePatterns.foreach {
-      case c @ CreateNodeCommand(pattern, _) =>
-        if (!seen(pattern.idName)) {
-          result += c
-        } else if (pattern.labels.nonEmpty || pattern.properties.nonEmpty) {
-          // reused patterns must be pure variable
-          throw new SyntaxException(
-            s"Can't create node `${pattern.idName}` with labels or properties here. The variable is already declared in this context"
-          )
-        }
-        seen.add(pattern.idName)
-    }
-    result.toIndexedSeq
-  }
+  sealed private trait CreateEntityCommand
+  private case class CreateNodeCommand(create: CreateNode, variable: LogicalVariable) extends CreateEntityCommand
 
-  private case class CreateNodeCommand(create: CreateNode, variable: LogicalVariable)
-
-  private case class CreateRelCommand(create: CreateRelationship, variable: LogicalVariable)
+  private case class CreateRelCommand(create: CreateRelationship, variable: LogicalVariable) extends CreateEntityCommand
 
   private def createNodeCommand(pattern: NodePattern): CreateNodeCommand = pattern match {
     case NodePattern(Some(variable), labelExpression, props, None) =>
@@ -430,30 +402,35 @@ object ClauseConverters {
     case _ => throw new InternalException("All nodes must be named at this instance")
   }
 
-  private def allCreatePatterns(element: PatternElement): (Vector[CreateNodeCommand], Vector[CreateRelCommand]) =
+  private def allCreatePatternsInOrderAndDeduped(chain: RelationshipChain): Seq[CreateEntityCommand] = {
+    allCreatePatternsInOrderAndDeduped(chain, Vector.empty, Set.empty)._1
+  }
+
+  private def allCreatePatternsInOrderAndDeduped(
+    element: PatternElement,
+    acc: Vector[CreateEntityCommand],
+    seenNodes: Set[String]
+  ): (Vector[CreateEntityCommand], Set[String], String) = {
+    def addNode(node: NodePattern): Vector[CreateEntityCommand] = {
+      // avoid loops such as CREATE (a)-[:R]->(a)
+      if (seenNodes.contains(node.variable.get.name)) {
+        if (node.labelExpression.nonEmpty || node.properties.nonEmpty) {
+          // reused patterns must be pure variable
+          throw new SyntaxException(
+            s"Can't create node `${node.variable.get.name}` with labels or properties here. The variable is already declared in this context"
+          )
+        }
+        acc
+      } else {
+        acc :+ createNodeCommand(node)
+      }
+
+    }
+
     element match {
       // CREATE ()
-      case np: NodePattern => (Vector(createNodeCommand(np)), Vector.empty)
-
-      // CREATE ()-[:R]->()
-      // Semantic checking enforces types.size == 1
-      case RelationshipChain(
-          leftNode @ NodePattern(Some(leftVar), _, _, _),
-          RelationshipPattern(Some(relVar), Some(Leaf(relType: RelTypeName, _)), _, properties, _, direction),
-          rightNode @ NodePattern(Some(rightVar), _, _, _)
-        ) =>
-        (
-          Vector(
-            createNodeCommand(leftNode),
-            createNodeCommand(rightNode)
-          ),
-          Vector(
-            CreateRelCommand(
-              CreateRelationship(relVar.name, leftVar.name, relType, rightVar.name, direction, properties),
-              relVar
-            )
-          )
-        )
+      case np @ NodePattern(Some(node), _, _, _) =>
+        (addNode(np), seenNodes + node.name, node.name)
 
       // CREATE ()->[:R]->()-[:R]->...->()
       case RelationshipChain(
@@ -461,20 +438,19 @@ object ClauseConverters {
           RelationshipPattern(Some(relVar), Some(Leaf(relType: RelTypeName, _)), _, properties, _, direction),
           rightNode @ NodePattern(Some(rightVar), _, _, _)
         ) =>
-        val (nodes, rels) = allCreatePatterns(left)
-        (
-          nodes :+
-            createNodeCommand(rightNode),
-          rels :+
-            CreateRelCommand(
-              CreateRelationship(relVar.name, nodes.last.create.idName, relType, rightVar.name, direction, properties),
-              relVar
-            )
+        val (addLeft, seenLeft, leftNode) = allCreatePatternsInOrderAndDeduped(left, acc, seenNodes)
+        val (addRight, seenRight, _) = allCreatePatternsInOrderAndDeduped(rightNode, addLeft, seenLeft)
+
+        val newR = CreateRelCommand(
+          CreateRelationship(relVar.name, leftNode, relType, rightVar.name, direction, properties),
+          relVar
         )
+        (addRight :+ newR, seenRight, rightVar.name)
 
       case x =>
         throw new IllegalArgumentException(s"The pattern element must be a NodePattern or a RelationshipChain. Got: $x")
     }
+  }
 
   private def addDeleteToLogicalPlanInput(acc: PlannerQueryBuilder, clause: Delete): PlannerQueryBuilder = {
     acc.amendQueryGraph(_.addMutatingPatterns(clause.expressions.map(DeleteExpression(_, clause.forced))))
@@ -671,21 +647,24 @@ object ClauseConverters {
 
       // MERGE (n)-[r: R]->(m)
       case PatternPartWithSelector(pattern: RelationshipChain, _) =>
-        val (nodes, rels) = allCreatePatterns(pattern)
-        // remove duplicates from loops, (a:L)-[:ER1]->(a)
-        val dedupedNodes = dedup(nodes)
+        val (nodes, rels) =
+          allCreatePatternsInOrderAndDeduped(pattern).foldRight((
+            Seq.empty[CreateNodeCommand],
+            Seq.empty[CreateRelCommand]
+          )) { case (e, (ns, rs)) =>
+            e match {
+              case n: CreateNodeCommand => (n +: ns, rs)
+              case r: CreateRelCommand  => (ns, r +: rs)
+            }
+          }
 
         // If the variable is both an argument and appears in a node pattern in a MERGE, it has to be a node,
         // otherwise SemanticAnalysis would already have failed.
         val seenPatternNodesAndArguments = builder.lastQGNodesAndArguments
-        // create nodes that are not already matched or created
-        val nodesToCreate = dedupedNodes.filterNot {
-          case CreateNodeCommand(pattern, _) => seenPatternNodesAndArguments(pattern.idName)
+
+        val (nodesCreatedBefore, nodesToCreate) = nodes.partition {
+          case CreateNodeCommand(c, _) => seenPatternNodesAndArguments(c.idName)
         }
-        // we must check that we are not trying to set a pattern or label on any already created nodes
-        val nodesCreatedBefore = dedupedNodes.filter {
-          case CreateNodeCommand(pattern, _) => seenPatternNodesAndArguments(pattern.idName)
-        }.toSet
 
         nodesCreatedBefore.collectFirst {
           case CreateNodeCommand(c, _) if c.labels.nonEmpty || c.properties.nonEmpty =>

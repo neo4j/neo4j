@@ -81,7 +81,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   /**
    * Create node from command.
    */
-  protected def createNode(
+  def createNode(
     context: CypherRow,
     state: QueryState,
     data: CreateNodeCommand
@@ -96,7 +96,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   /**
    * Create relationship from command.
    */
-  protected def createRelationship(
+  def createRelationship(
     context: CypherRow,
     state: QueryState,
     data: CreateRelationshipCommand
@@ -129,7 +129,7 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
 /**
  * Creates nodes and relationships from the constructor commands.
  */
-case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships: Array[CreateRelationshipCommand])(
+case class CreatePipe(src: Pipe, commands: Array[CreateCommand])(
   val id: Id = Id.INVALID_ID
 ) extends EntityCreatePipe(src) {
 
@@ -138,22 +138,25 @@ case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships:
     state: QueryState
   ): ClosingIterator[CypherRow] =
     input.map(row => {
-      nodes.foreach { nodeCommand =>
-        val (key, node) = createNode(row, state, nodeCommand)
+      commands.foreach { command =>
+        val (key, node) = command.createEntity(this, row, state)
         row.set(key, node)
       }
-
-      relationships.foreach { relCommand =>
-        val (key, node) = createRelationship(row, state, relCommand)
-        row.set(key, node)
-      }
-
       row
     })
 }
 
-case class CreateNodeCommand(idName: String, labels: Seq[LazyLabel], properties: Option[Expression]) {
+sealed trait CreateCommand {
+  def createEntity(pipe: CreatePipe, context: CypherRow, state: QueryState): (String, AnyValue)
+  def idName: String
+}
+
+case class CreateNodeCommand(idName: String, labels: Seq[LazyLabel], properties: Option[Expression])
+    extends CreateCommand {
   checkOnlyWhenAssertionsAreEnabled(labels.toSet.size == labels.size)
+
+  override def createEntity(pipe: CreatePipe, context: CypherRow, state: QueryState): (String, AnyValue) =
+    pipe.createNode(context, state, this)
 }
 
 case class CreateRelationshipCommand(
@@ -162,4 +165,8 @@ case class CreateRelationshipCommand(
   relType: LazyType,
   endNode: String,
   properties: Option[Expression]
-)
+) extends CreateCommand {
+
+  override def createEntity(pipe: CreatePipe, context: CypherRow, state: QueryState): (String, AnyValue) =
+    pipe.createRelationship(context, state, this)
+}

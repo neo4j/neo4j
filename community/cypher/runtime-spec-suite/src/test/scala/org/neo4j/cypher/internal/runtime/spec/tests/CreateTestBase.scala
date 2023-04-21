@@ -302,10 +302,9 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .create(
-        nodes = Seq(createNode("n", "A"), createNode("m", "B")),
-        relationships = Seq(
-          createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: 2, p3: 3}"))
-        )
+        createNode("n", "A"),
+        createNode("m", "B"),
+        createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: 2, p3: 3}"))
       )
       .argument()
       .build(readOnly = false)
@@ -331,10 +330,9 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .create(
-        nodes = Seq(createNode("n", "A"), createNode("m", "B")),
-        relationships = Seq(
-          createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: null}"))
-        )
+        createNode("n", "A"),
+        createNode("m", "B"),
+        createRelationship("r", "n", "R", "m", OUTGOING, Some("{p1: 1, p2: null}"))
       )
       .argument()
       .build(readOnly = false)
@@ -361,11 +359,10 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r1prop", "r2prop")
       .projection("r1.prop AS r1prop", "r2.prop AS r2prop")
       .create(
-        nodes = Seq(createNode("n", "A"), createNode("m", "B")),
-        relationships = Seq(
-          createRelationship("r1", "n", "R", "m", OUTGOING, Some("{prop: 1}")),
-          createRelationship("r2", "n", "R", "m", OUTGOING, Some("{prop: r1.prop + 1}"))
-        )
+        createNode("n", "A"),
+        createNode("m", "B"),
+        createRelationship("r1", "n", "R", "m", OUTGOING, Some("{prop: 1}")),
+        createRelationship("r2", "n", "R", "m", OUTGOING, Some("{prop: r1.prop + 1}"))
       )
       .argument()
       .build(readOnly = false)
@@ -390,7 +387,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .apply()
-      .|.create(nodes = Seq.empty, relationships = Seq(createRelationship("r", "x", "NEW", "y", OUTGOING)))
+      .|.create(createRelationship("r", "x", "NEW", "y", OUTGOING))
       .|.expand("(x)-[:R]-(y)")
       .|.argument("x")
       .nodeByLabelScan("x", "L", IndexOrderNone)
@@ -417,7 +414,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq.empty, relationships = Seq(createRelationship("r", "n", "R", "n", OUTGOING)))
+      .create(createRelationship("r", "n", "R", "n", OUTGOING))
       .input(nodes = Seq("n"))
       .build(readOnly = false)
 
@@ -434,7 +431,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("m", "A")), relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .create(createNode("m", "A"), createRelationship("r", "n", "R", "m", OUTGOING))
       .input(nodes = Seq("n"))
       .build(readOnly = false)
 
@@ -451,7 +448,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("n", "A")), relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .create(createNode("n", "A"), createRelationship("r", "n", "R", "m", OUTGOING))
       .input(nodes = Seq("m"))
       .build(readOnly = false)
 
@@ -587,7 +584,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
       .produceResults("r")
       .nonFuseable()
       .unwind(s"range(1, $size) AS r")
-      .create(Seq(createNode("n"), createNode("m")), Seq(createRelationship("rel", "n", "R", "m")))
+      .create(createNode("n"), createNode("m"), createRelationship("rel", "n", "R", "m"))
       .argument()
       .build(readOnly = false)
 
@@ -1044,7 +1041,7 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq.empty, relationships = Seq(createRelationship("r", "n", "R", "n", OUTGOING)))
+      .create(createRelationship("r", "n", "R", "n", OUTGOING))
       .input(nodes = Seq("n"))
       .build(readOnly = false)
 
@@ -1058,7 +1055,7 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("m", "A")), relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .create(createNode("m", "A"), createRelationship("r", "n", "R", "m", OUTGOING))
       .input(nodes = Seq("n"))
       .build(readOnly = false)
 
@@ -1072,7 +1069,7 @@ abstract class LenientCreateRelationshipTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
-      .create(nodes = Seq(createNode("n", "A")), relationships = Seq(createRelationship("r", "n", "R", "m", OUTGOING)))
+      .create(createNode("n", "A"), createRelationship("r", "n", "R", "m", OUTGOING))
       .input(nodes = Seq("m"))
       .build(readOnly = false)
 

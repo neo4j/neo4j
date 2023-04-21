@@ -56,6 +56,7 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir
 import org.neo4j.cypher.internal.ir.CSVFormat
+import org.neo4j.cypher.internal.ir.CreateCommand
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.CreateRelationship
@@ -1961,23 +1962,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
-  def create(nodes: CreateNode*): IMPL = {
-    nodes.foreach(node => {
-      newNode(varFor(VariableParser.unescaped(node.idName)))
-    })
-    appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, Seq.empty)(_)))
-  }
+  def create(commands: CreateCommand*): IMPL = {
+    commands.foreach {
+      case node: CreateNode => newNode(varFor(VariableParser.unescaped(node.idName)))
+      case relationship: CreateRelationship =>
+        newRelationship(varFor(VariableParser.unescaped(relationship.idName)))
+        newNode(varFor(VariableParser.unescaped(relationship.startNode)))
+        newNode(varFor(VariableParser.unescaped(relationship.endNode)))
+    }
 
-  def create(nodes: Seq[CreateNode], relationships: Seq[CreateRelationship]): IMPL = {
-    nodes.foreach(node => {
-      newNode(varFor(VariableParser.unescaped(node.idName)))
-    })
-    relationships.foreach(relationship => {
-      newRelationship(varFor(VariableParser.unescaped(relationship.idName)))
-      newNode(varFor(VariableParser.unescaped(relationship.startNode)))
-      newNode(varFor(VariableParser.unescaped(relationship.endNode)))
-    })
-    appendAtCurrentIndent(UnaryOperator(source => Create(source, nodes, relationships)(_)))
+    appendAtCurrentIndent(UnaryOperator(source => Create(source, commands)(_)))
   }
 
   def merge(
@@ -2383,7 +2377,7 @@ object AbstractLogicalPlanBuilder {
     nodes: Seq[CreateNode] = Seq.empty,
     relationships: Seq[CreateRelationship] = Seq.empty
   ): CreatePattern = {
-    CreatePattern(nodes, relationships)
+    CreatePattern(nodes ++ relationships)
   }
 
   def createNode(node: String, labels: String*): CreateNode =

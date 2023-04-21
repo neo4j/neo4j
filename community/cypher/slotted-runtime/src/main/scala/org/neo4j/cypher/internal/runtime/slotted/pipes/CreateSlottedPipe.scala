@@ -45,7 +45,7 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
   /**
    * Create node and return id.
    */
-  protected def createNode(context: CypherRow, state: QueryState, command: CreateNodeSlottedCommand): Long = {
+  def createNode(context: CypherRow, state: QueryState, command: CreateNodeSlottedCommand): Long = {
     val labelIds = command.labels.map(_.getOrCreateId(state.query)).toArray
     val nodeId = state.query.createNodeId(labelIds)
     command.properties.foreach(setProperties(context, state, nodeId, _, state.query.nodeWriteOps))
@@ -55,7 +55,7 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
   /**
    * Create relationship and return id.
    */
-  protected def createRelationship(
+  def createRelationship(
     context: CypherRow,
     state: QueryState,
     command: CreateRelationshipSlottedCommand
@@ -79,12 +79,22 @@ abstract class EntityCreateSlottedPipe(source: Pipe) extends BaseCreatePipe(sour
   }
 }
 
-case class CreateNodeSlottedCommand(idOffset: Int, labels: Seq[LazyLabel], properties: Option[Expression]) {
+sealed trait CreateSlottedCommand {
+  def createEntity(pipe: CreateSlottedPipe, context: CypherRow, state: QueryState): Long
+  def idOffset: Int
+}
+
+case class CreateNodeSlottedCommand(idOffset: Int, labels: Seq[LazyLabel], properties: Option[Expression])
+    extends CreateSlottedCommand {
   checkOnlyWhenAssertionsAreEnabled(labels.toSet.size == labels.size)
+
+  override def createEntity(pipe: CreateSlottedPipe, context: CypherRow, state: QueryState): Long = {
+    pipe.createNode(context, state, this)
+  }
 }
 
 case class CreateRelationshipSlottedCommand(
-  relIdOffset: Int,
+  idOffset: Int,
   startNodeIdGetter: ToLongFunction[ReadableRow],
   relType: LazyType,
   endNodeIdGetter: ToLongFunction[ReadableRow],
@@ -92,7 +102,7 @@ case class CreateRelationshipSlottedCommand(
   relName: String,
   startName: String,
   endName: String
-) {
+) extends CreateSlottedCommand {
 
   val startVariableName: String = {
     // " UNNAMED X" -> Auto generated variable names, do not expose
@@ -109,6 +119,10 @@ case class CreateRelationshipSlottedCommand(
     else
       endName
   }
+
+  override def createEntity(pipe: CreateSlottedPipe, context: CypherRow, state: QueryState): Long = {
+    pipe.createRelationship(context, state, this)
+  }
 }
 
 /**
@@ -116,8 +130,7 @@ case class CreateRelationshipSlottedCommand(
  */
 case class CreateSlottedPipe(
   source: Pipe,
-  nodes: IndexedSeq[CreateNodeSlottedCommand],
-  relationships: IndexedSeq[CreateRelationshipSlottedCommand]
+  commands: IndexedSeq[CreateSlottedCommand]
 )(val id: Id = Id.INVALID_ID)
     extends EntityCreateSlottedPipe(source) {
 
@@ -128,21 +141,11 @@ case class CreateSlottedPipe(
     input.map {
       row =>
         var i = 0
-        while (i < nodes.length) {
-          val command = nodes(i)
-          val nodeId = createNode(row, state, command)
-          row.setLongAt(command.idOffset, nodeId)
+        while (i < commands.length) {
+          val command = commands(i)
+          row.setLongAt(command.idOffset, command.createEntity(this, row, state))
           i += 1
         }
-
-        i = 0
-        while (i < relationships.length) {
-          val command = relationships(i)
-          val relationshipId = createRelationship(row, state, command)
-          row.setLongAt(command.relIdOffset, relationshipId)
-          i += 1
-        }
-
         row
     }
   }

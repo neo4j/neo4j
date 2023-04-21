@@ -3803,8 +3803,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Create(
           lhsLP,
-          Seq(CreateNode("x", Set.empty, None)),
-          Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None))
+          Seq(
+            CreateNode("x", Set.empty, None),
+            CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)
+          )
         ),
         32.2
       ),
@@ -3815,8 +3817,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Create(
           lhsLP,
-          Seq(CreateNode("x", Set(label("Label")), None)),
-          Seq(CreateRelationship("  UNNAMED67", "x", relType("R"), "y", SemanticDirection.INCOMING, None))
+          Seq(
+            CreateNode("x", Set(label("Label")), None),
+            CreateRelationship("  UNNAMED67", "x", relType("R"), "y", SemanticDirection.INCOMING, None)
+          )
         ),
         32.2
       ),
@@ -3833,8 +3837,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Create(
           lhsLP,
-          Seq(CreateNode("x", Set(label("Label1"), label("Label2")), None)),
-          Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None))
+          Seq(
+            CreateNode("x", Set(label("Label1"), label("Label2")), None),
+            CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, None)
+          )
         ),
         32.2
       ),
@@ -3851,8 +3857,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         Create(
           lhsLP,
-          Seq(CreateNode("x", Set(label("Label")), Some(properties))),
-          Seq(CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties)))
+          Seq(
+            CreateNode("x", Set(label("Label")), Some(properties)),
+            CreateRelationship("r", "x", relType("R"), "y", SemanticDirection.INCOMING, Some(properties))
+          )
         ),
         32.2
       ),

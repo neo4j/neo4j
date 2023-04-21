@@ -803,8 +803,9 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .transactionForeach(onErrorBehaviour = randomErrorBehavior())
       .|.emptyResult()
       .|.create(
-        nodes = Seq(createNode("n"), createNode("m")),
-        relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}")))
+        createNode("n"),
+        createNode("m"),
+        createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}"))
       )
       .|.aggregation(Seq.empty, Seq("count(*) AS c"))
       .|.relationshipTypeScan("(a)-[r:R]->(b)")
@@ -832,14 +833,16 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
       .|.union()
       .|.|.emptyResult()
       .|.|.create(
-        nodes = Seq(createNode("n"), createNode("m")),
-        relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}")))
+        createNode("n"),
+        createNode("m"),
+        createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: c}"))
       )
       .|.|.aggregation(Seq.empty, Seq("count(*) AS c"))
       .|.|.relationshipTypeScan("(a)-[r:R]->(b)")
       .|.create(
-        nodes = Seq(createNode("n"), createNode("m")),
-        relationships = Seq(createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: x}")))
+        createNode("n"),
+        createNode("m"),
+        createRelationship("newR", "n", "R", "m", OUTGOING, Some("{prop: x}"))
       )
       .|.argument("x")
       .unwind("[100, 101, 102] AS x")

@@ -2165,7 +2165,7 @@ trait NonFusedWriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] extends Wr
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults()
       .emptyResult()
-      .create(createNodes, createRelationships)
+      .create(createNodes ++ createRelationships: _*)
       .argument()
       .build(readOnly = false)
 

@@ -1305,8 +1305,9 @@ case class LogicalPlan2PlanDescription(
         val details = aggregationInfo(groupingExpressions, aggregationExpressions, orderToLeverage)
         PlanDescriptionImpl(id, "OrderedAggregation", children, Seq(Details(details)), variables, withRawCardinalities)
 
-      case Create(_, nodes, relationships) =>
-        val relationshipDetails = relationships.map {
+      case Create(_, commands) =>
+        val details = commands.map {
+          case c: CreateNode => createNodeDescription(c)
           case CreateRelationship(idName, leftNode, relType, rightNode, direction, properties) =>
             expandExpressionDescription(
               leftNode,
@@ -1319,12 +1320,11 @@ case class LogicalPlan2PlanDescription(
               properties
             )
         }
-        val nodeDetails = nodes.map(createNodeDescription)
         PlanDescriptionImpl(
           id,
           "Create",
           children,
-          Seq(Details(nodeDetails ++ relationshipDetails)),
+          Seq(Details(details)),
           variables,
           withRawCardinalities
         )
@@ -2959,9 +2959,9 @@ case class LogicalPlan2PlanDescription(
   }
 
   def mutatingPatternString(setOp: SimpleMutatingPattern): PrettyString = setOp match {
-    case CreatePattern(nodes, relationships) =>
-      val createNodesPretty = nodes.map(createNodeDescription)
-      val createRelsPretty = relationships.map {
+    case CreatePattern(commands) =>
+      val details = commands.map {
+        case c: CreateNode => createNodeDescription(c)
         case CreateRelationship(relationship, startNode, typ, endNode, direction, properties) =>
           expandExpressionDescription(
             startNode,
@@ -2974,7 +2974,7 @@ case class LogicalPlan2PlanDescription(
             properties
           )
       }
-      pretty"CREATE ${(createNodesPretty ++ createRelsPretty).mkPrettyString(", ")}"
+      pretty"CREATE ${details.mkPrettyString(", ")}"
     case ir.DeleteExpression(toDelete, forced) =>
       if (forced) pretty"DETACH DELETE ${asPrettyString(toDelete)}" else pretty"DELETE ${asPrettyString(toDelete)}"
     case SetLabelPattern(node, labelNames) =>

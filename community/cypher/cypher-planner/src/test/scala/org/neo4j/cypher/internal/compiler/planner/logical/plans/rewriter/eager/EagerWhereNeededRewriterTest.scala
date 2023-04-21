@@ -1013,7 +1013,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   ) {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
-      .create(Seq.empty, Seq(createRelationship("r", "m", "REL", "m")))
+      .create(createRelationship("r", "m", "REL", "m"))
       .apply()
       .|.relationshipCountFromCountStore("count", Some("N"), Seq("REL"), None)
       .nodeByLabelScan("m", "M")
@@ -1023,7 +1023,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("m")
-        .create(Seq.empty, Seq(createRelationship("r", "m", "REL", "m")))
+        .create(createRelationship("r", "m", "REL", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("REL"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.relationshipCountFromCountStore("count", Some("N"), Seq("REL"), None)
@@ -1077,7 +1077,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("result")
       .projection("1 AS result")
-      .create(Seq.empty, Seq(createRelationship("r", "m", "REL", "m")))
+      .create(createRelationship("r", "m", "REL", "m"))
       .apply()
       .|.relationshipCountFromCountStore("count", None, Seq("REL"), None)
       .allNodeScan("m")
@@ -1088,7 +1088,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("result")
         .projection("1 AS result")
-        .create(Seq.empty, Seq(createRelationship("r", "m", "REL", "m")))
+        .create(createRelationship("r", "m", "REL", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("REL"), Some(Conflict(Id(2), Id(4))))))
         .apply()
         .|.relationshipCountFromCountStore("count", None, Seq("REL"), None)
@@ -4208,7 +4208,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .produceResults("count")
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "n")))
+      .create(createRelationship("r", "n", "R", "n"))
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
     val result = eagerizePlan(planBuilder, plan)
@@ -4222,7 +4222,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("r", Some(Conflict(Id(2), Id(3))))
         ))
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "n")))
+        .create(createRelationship("r", "n", "R", "n"))
         .nodeByLabelScan("n", "A")
         .build()
     )
@@ -4645,7 +4645,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("o")
       .filter("r:O")
-      .create(Seq.empty, Seq(createRelationship("o", "q", "R", "z")))
+      .create(createRelationship("o", "q", "R", "z"))
       .cartesianProduct()
       .|.relationshipTypeScan("(n)-[r:R]->(m)")
       .allNodeScan("a")
@@ -4656,7 +4656,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       new LogicalPlanBuilder()
         .produceResults("o")
         .filter("r:O")
-        .create(Seq(), Seq(createRelationship("o", "q", "R", "z")))
+        .create(createRelationship("o", "q", "R", "z"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(2), Id(4))))))
         .cartesianProduct()
         .|.relationshipTypeScan("(n)-[r:R]->(m)")
@@ -4668,7 +4668,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedAllRelationshipsScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .create(createRelationship("r", "n", "R", "m"))
       .apply()
       .|.allRelationshipsScan("(n)-[r]-(m)")
       .unwind("[1,2,3] AS i")
@@ -4679,7 +4679,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+        .create(createRelationship("r", "n", "R", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.allRelationshipsScan("(n)-[r]-(m)")
@@ -4692,7 +4692,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedAllRelationshipsScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .create(createRelationship("r", "n", "R", "m"))
       .apply()
       .|.allRelationshipsScan("(n)-[r]->(m)")
       .unwind("[1,2,3] AS i")
@@ -4703,7 +4703,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+        .create(createRelationship("r", "n", "R", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.allRelationshipsScan("(n)-[r]->(m)")
@@ -4716,7 +4716,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedRelationshipsTypeScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .create(createRelationship("r", "n", "R", "m"))
       .apply()
       .|.relationshipTypeScan("(n)-[r:R]->(m)")
       .unwind("[1,2,3] AS i")
@@ -4727,7 +4727,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+        .create(createRelationship("r", "n", "R", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.relationshipTypeScan("(n)-[r:R]->(m)")
@@ -4740,7 +4740,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be not eager in read/create conflict with DirectedRelationshipsTypeScan where types does not overlap") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R2", "m")))
+      .create(createRelationship("r", "n", "R2", "m"))
       .apply()
       .|.relationshipTypeScan("(n)-[r:R1]->(m)")
       .unwind("[1,2,3] AS i")
@@ -4754,7 +4754,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedRelationshipsTypeScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .create(createRelationship("r", "n", "R", "m"))
       .apply()
       .|.relationshipTypeScan("(n)-[r:R]-(m)")
       .unwind("[1,2,3] AS i")
@@ -4765,7 +4765,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+        .create(createRelationship("r", "n", "R", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.relationshipTypeScan("(n)-[r:R]-(m)")
@@ -4780,7 +4780,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   ) {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R2", "m")))
+      .create(createRelationship("r", "n", "R2", "m"))
       .apply()
       .|.relationshipTypeScan("(n)-[r:R1]-(m)")
       .unwind("[1,2,3] AS i")
@@ -4794,7 +4794,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedRelationshipIndexSeek") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop>5)]->(m)")
       .unwind("[1,2,3] AS i")
@@ -4805,7 +4805,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -4821,7 +4821,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedRelationshipIndexSeek") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop>5)]-(m)")
       .unwind("[1,2,3] AS i")
@@ -4832,7 +4832,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -4848,7 +4848,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedRelationshipIndexEndsWithScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop ENDS WITH 'foo')]->(m)")
       .unwind("[1,2,3] AS i")
@@ -4859,7 +4859,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -4875,7 +4875,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedRelationshipIndexEndsWithScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop ENDS WITH 'foo')]-(m)")
       .unwind("[1,2,3] AS i")
@@ -4886,7 +4886,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -4902,7 +4902,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedRelationshipIndexContainsScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop CONTAINS 'foo')]->(m)")
       .unwind("[1,2,3] AS i")
@@ -4913,7 +4913,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -4929,7 +4929,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedRelationshipIndexContainsScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop CONTAINS 'foo')]-(m)")
       .unwind("[1,2,3] AS i")
@@ -4940,7 +4940,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -4956,7 +4956,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedRelationshipUniqueIndexSeek") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop>5)]->(m)", unique = true)
       .unwind("[1,2,3] AS i")
@@ -4967,7 +4967,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -4983,7 +4983,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedRelationshipUniqueIndexSeek") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop>5)]-(m)", unique = true)
       .unwind("[1,2,3] AS i")
@@ -4994,7 +4994,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -5010,7 +5010,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedRelationshipIndexScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop)]->(m)")
       .unwind("[1,2,3] AS i")
@@ -5021,7 +5021,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -5037,7 +5037,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedRelationshipIndexScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.relationshipIndexOperator("(n)-[r:R(prop)]-(m)")
       .unwind("[1,2,3] AS i")
@@ -5048,7 +5048,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3)))),
           PropertyReadSetConflict(propName("prop"), Some(Conflict(Id(1), Id(3))))
@@ -5064,7 +5064,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedRelationshipIdSeek") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.directedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
       .unwind("[1,2,3] AS i")
@@ -5075,7 +5075,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))
         ))
@@ -5090,7 +5090,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedRelationshipIdSeek") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.undirectedRelationshipByIdSeek("r1", "x", "y", Set(), 23, 22.0, -1)
       .unwind("[1,2,3] AS i")
@@ -5101,7 +5101,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))
         ))
@@ -5116,7 +5116,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedRelationshipByElementIdSeek") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.directedRelationshipByElementIdSeek("r1", "x", "y", Set(), "23", "22.0", "-1")
       .unwind("[1,2,3] AS i")
@@ -5127,7 +5127,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))
         ))
@@ -5142,7 +5142,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedRelationshipByElementIdSeek") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+      .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
       .apply()
       .|.undirectedRelationshipByElementIdSeek("r1", "x", "y", Set(), "23", "22.0", "-1")
       .unwind("[1,2,3] AS i")
@@ -5153,7 +5153,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}"))))
+        .create(createRelationship("r", "n", "R", "m", properties = Some("{prop: 1}")))
         .eager(ListSet(
           TypeReadSetConflict(relTypeName("R"), Some(Conflict(Id(1), Id(3))))
         ))
@@ -5168,7 +5168,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with UndirectedUnionRelationshipTypesScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .apply()
       .|.unionRelationshipTypesScan("(n)-[r:R1|R2]-(m)")
       .unwind("[1,2,3] AS i")
@@ -5179,7 +5179,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.unionRelationshipTypesScan("(n)-[r:R1|R2]-(m)")
@@ -5192,7 +5192,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with DirectedUnionRelationshipTypesScan") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .apply()
       .|.unionRelationshipTypesScan("(n)-[r:R1|R2]->(m)")
       .unwind("[1,2,3] AS i")
@@ -5203,7 +5203,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(3))))))
         .apply()
         .|.unionRelationshipTypesScan("(n)-[r:R1|R2]->(m)")
@@ -5216,7 +5216,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with Expand") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .expand("(n)-[r:R1|R2]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5225,7 +5225,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .expand("(n)-[r:R1|R2]->(m)")
         .allNodeScan("n")
@@ -5236,7 +5236,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should not be eager in read/create conflict with Expand with no overlapping types") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .expand("(n)-[r:R2|R3]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5245,7 +5245,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .expand("(n)-[r:R2|R3]->(m)")
         .allNodeScan("n")
         .build()
@@ -5255,7 +5255,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with Optional Expand") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .optionalExpandInto("(n)-[r:R1|R2]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5264,7 +5264,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .optionalExpandInto("(n)-[r:R1|R2]->(m)")
         .allNodeScan("n")
@@ -5275,7 +5275,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should not be eager in read/create conflict with Optional Expand  with no overlapping types") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .optionalExpandInto("(n)-[r:R2|R3]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5284,7 +5284,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .optionalExpandInto("(n)-[r:R2|R3]->(m)")
         .allNodeScan("n")
         .build()
@@ -5294,7 +5294,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with VarExpand") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .expand("(n)-[r:R1|R2*1..2]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5303,7 +5303,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .expand("(n)-[r:R1|R2*1..2]->(m)")
         .allNodeScan("n")
@@ -5314,7 +5314,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with PruningVarExpand") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .pruningVarExpand("(n)-[:R1|R2*1..2]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5323,7 +5323,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .pruningVarExpand("(n)-[r:R1|R2*1..2]->(m)")
         .allNodeScan("n")
@@ -5334,7 +5334,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with BFSPruningVarExpand") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .bfsPruningVarExpand("(n)-[:R1|R2*1..2]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5343,7 +5343,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .bfsPruningVarExpand("(n)-[r:R1|R2*1..2]->(m)")
         .allNodeScan("n")
@@ -5376,7 +5376,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should not be eager in read/create conflict with VarExpand with no overlapping types") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .expand("(n)-[r:R2|R3*1..2]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5385,7 +5385,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .expand("(n)-[r:R2|R3*1..2]->(m)")
         .allNodeScan("n")
         .build()
@@ -5395,7 +5395,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with ShortestPath") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .shortestPath("(n)-[r]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5404,7 +5404,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .shortestPath("(n)-[r]->(m)")
         .allNodeScan("n")
@@ -5415,7 +5415,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with LegacyShortestPath") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .legacyShortestPath("(n)-[r]->(m)")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5424,7 +5424,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("r")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .legacyShortestPath("(n)-[r]->(m)")
         .allNodeScan("n")
@@ -5473,7 +5473,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with a getDegree filter") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .filterExpression(getDegree(varFor("n"), SemanticDirection.OUTGOING))
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -5482,7 +5482,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .filterExpression(getDegree(varFor("n"), SemanticDirection.OUTGOING))
         .allNodeScan("n")
@@ -5493,7 +5493,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with a HasDegree filter") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .filterExpression(
         HasDegree(varFor("n"), Some(relTypeName("R1")), SemanticDirection.OUTGOING, literalInt(10L))(InputPosition.NONE)
       )
@@ -5504,7 +5504,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .filterExpression(HasDegree(varFor("n"), Some(relTypeName("R1")), SemanticDirection.OUTGOING, literalInt(10L))(
           InputPosition.NONE
@@ -5517,7 +5517,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with a HasDegreeGreaterThan filter") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .filterExpression(HasDegreeGreaterThan(
         varFor("n"),
         Some(relTypeName("R1")),
@@ -5531,7 +5531,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .filterExpression(HasDegreeGreaterThan(
           varFor("n"),
@@ -5547,7 +5547,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with a HasDegreeGreaterThanOrEqual filter") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .filterExpression(HasDegreeGreaterThanOrEqual(
         varFor("n"),
         Some(relTypeName("R1")),
@@ -5561,7 +5561,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .filterExpression(HasDegreeGreaterThanOrEqual(
           varFor("n"),
@@ -5577,7 +5577,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with a HasDegreeLessThan filter") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .filterExpression(HasDegreeLessThan(
         varFor("n"),
         Some(relTypeName("R1")),
@@ -5591,7 +5591,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .filterExpression(HasDegreeLessThan(
           varFor("n"),
@@ -5607,7 +5607,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("Should be eager in read/create conflict with a HasDegreeLessThanOrEqual filter") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("n")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .create(createRelationship("r", "n", "R1", "m"))
       .filterExpression(HasDegreeLessThanOrEqual(
         varFor("n"),
         Some(relTypeName("R1")),
@@ -5621,7 +5621,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     result should equal(
       new LogicalPlanBuilder()
         .produceResults("n")
-        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .create(createRelationship("r", "n", "R1", "m"))
         .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
         .filterExpression(HasDegreeLessThanOrEqual(
           varFor("n"),
@@ -6319,8 +6319,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("inserts no Eager between relationship Create and Create") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
-      .create(Seq.empty, Seq(createRelationship("o", "m", "R", "n")))
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .create(createRelationship("o", "m", "R", "n"))
+      .create(createRelationship("r", "n", "R", "m"))
       .allNodeScan("n")
     val plan = planBuilder.build()
 
@@ -6333,8 +6333,8 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .produceResults("m")
       .filter("r.prop > 0")
       .filter("o.prop > 0")
-      .create(Seq.empty, Seq(createRelationship("o", "m", "R", "n")))
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .create(createRelationship("o", "m", "R", "n"))
+      .create(createRelationship("r", "n", "R", "m"))
       .allNodeScan("n")
     val plan = planBuilder.build()
 
@@ -6346,7 +6346,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
       .foreach("i", "[1]", Seq(createPattern(Seq.empty, Seq(createRelationship("o", "m", "R", "n")))))
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .create(createRelationship("r", "n", "R", "m"))
       .allNodeScan("n")
     val plan = planBuilder.build()
 
@@ -6358,7 +6358,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
       .deleteRelationship("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .create(createRelationship("r", "n", "R", "m"))
       .allNodeScan("n")
     val plan = planBuilder.build()
 
@@ -6370,7 +6370,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("m")
       .deleteRelationship("r")
-      .create(Seq.empty, Seq(createRelationship("r", "n", "R", "m")))
+      .create(createRelationship("r", "n", "R", "m"))
       .allNodeScan("n")
     val plan = planBuilder.build()
 

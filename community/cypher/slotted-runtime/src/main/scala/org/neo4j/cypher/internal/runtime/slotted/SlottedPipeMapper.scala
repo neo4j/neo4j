@@ -24,7 +24,9 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.ir
+import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -701,8 +703,8 @@ class SlottedPipeMapper(
 
     def compileEffects(sideEffect: SimpleMutatingPattern): Seq[SideEffect] = sideEffect match {
 
-      case CreatePattern(nodes, relationships) =>
-        val nodeOps = nodes.map {
+      case CreatePattern(commands) =>
+        commands.map {
           case ir.CreateNode(node, labels, properties) =>
             CreateSlottedNode(
               CreateNodeSlottedCommand(
@@ -712,24 +714,21 @@ class SlottedPipeMapper(
               ),
               allowNullOrNaNProperty = true
             )
-
+          case r: ir.CreateRelationship =>
+            CreateSlottedRelationship(
+              CreateRelationshipSlottedCommand(
+                slots.getLongOffsetFor(r.idName),
+                SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
+                LazyType(r.relType.name),
+                SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
+                r.properties.map(convertExpressions),
+                r.idName,
+                r.startNode,
+                r.endNode
+              ),
+              allowNullOrNaNProperty = true
+            )
         }
-        val relOps = relationships.map { r: ir.CreateRelationship =>
-          CreateSlottedRelationship(
-            CreateRelationshipSlottedCommand(
-              slots.getLongOffsetFor(r.idName),
-              SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
-              LazyType(r.relType.name),
-              SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
-              r.properties.map(convertExpressions),
-              r.idName,
-              r.startNode,
-              r.endNode
-            ),
-            allowNullOrNaNProperty = true
-          )
-        }
-        nodeOps ++ relOps
       case ir.DeleteExpression(expression, forced) => Seq(DeleteOperation(convertExpressions(expression), forced))
       case SetLabelPattern(node, labelNames) =>
         Seq(SlottedSetLabelsOperation(slots(node), labelNames.map(LazyLabel.apply)))
@@ -983,28 +982,29 @@ class SlottedPipeMapper(
         }
         ProjectionPipe(source, expressionConverters.toCommandProjection(id, toProject))(id)
 
-      case Create(_, nodes, relationships) =>
+      case Create(_, commands) =>
         CreateSlottedPipe(
           source,
-          nodes.map(n =>
-            CreateNodeSlottedCommand(
-              slots.getLongOffsetFor(n.idName),
-              n.labels.toSeq.map(LazyLabel.apply),
-              n.properties.map(convertExpressions)
-            )
-          ).toIndexedSeq,
-          relationships.map(r =>
-            CreateRelationshipSlottedCommand(
-              slots.getLongOffsetFor(r.idName),
-              SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
-              LazyType(r.relType.name),
-              SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
-              r.properties.map(convertExpressions),
-              r.idName,
-              r.startNode,
-              r.endNode
-            )
-          ).toIndexedSeq
+          commands.map {
+            case n: CreateNode =>
+              CreateNodeSlottedCommand(
+                slots.getLongOffsetFor(n.idName),
+                n.labels.toSeq.map(LazyLabel.apply),
+                n.properties.map(convertExpressions)
+              )
+
+            case r: CreateRelationship =>
+              CreateRelationshipSlottedCommand(
+                slots.getLongOffsetFor(r.idName),
+                SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
+                LazyType(r.relType.name),
+                SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
+                r.properties.map(convertExpressions),
+                r.idName,
+                r.startNode,
+                r.endNode
+              )
+          }.toIndexedSeq
         )(id)
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>

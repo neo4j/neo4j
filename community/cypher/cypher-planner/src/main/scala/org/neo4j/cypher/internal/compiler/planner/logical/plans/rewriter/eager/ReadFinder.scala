@@ -778,7 +778,9 @@ object ReadFinder {
       case TriadicSelection(_, _, _, sourceId, seenId, targetId) =>
         Seq(sourceId, seenId, targetId).foldLeft(PlanReads())(_.withReferencedNodeVariable(_))
 
-      case Create(_, nodes, rels) =>
+      case c: Create =>
+        val nodes = c.nodes
+        val rels = c.relationships
         val createdNodes = nodes.map(_.idName)
         val createdRels = rels.map(_.idName)
         val referencedNodes = rels.flatMap(r => Seq(r.leftNode, r.rightNode))
@@ -1084,7 +1086,9 @@ object ReadFinder {
     pattern: SimpleMutatingPattern
   ): PlanReads = {
     pattern match {
-      case CreatePattern(nodes, rels) =>
+      case c: CreatePattern =>
+        val nodes = c.nodes
+        val rels = c.relationships
         val createdNodes = nodes.map(_.idName)
         val createdRels = rels.map(_.idName)
         val referencedNodes = rels.flatMap(r => Seq(r.leftNode, r.rightNode))
