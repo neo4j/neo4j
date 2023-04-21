@@ -22,7 +22,7 @@ package org.neo4j.dbms.database;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
-public class TestSystemGraphComponent implements SystemGraphComponent {
+public class TestSystemGraphComponent implements SystemGraphComponentWithVersion {
     final Name component;
     final int version;
     SystemGraphComponent.Status status;

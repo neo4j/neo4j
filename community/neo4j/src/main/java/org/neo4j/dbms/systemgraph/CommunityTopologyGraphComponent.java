@@ -27,6 +27,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.AbstractSystemGraphComponent;
 import org.neo4j.dbms.database.KnownSystemComponentVersions;
 import org.neo4j.dbms.database.SystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponentWithVersion;
 import org.neo4j.dbms.systemgraph.versions.CommunityTopologyComponentVersion_0_44;
 import org.neo4j.dbms.systemgraph.versions.CommunityTopologyComponentVersion_1_50;
 import org.neo4j.dbms.systemgraph.versions.CommunityTopologyComponentVersion_2_58;
@@ -41,7 +42,8 @@ import org.neo4j.logging.InternalLogProvider;
  * This component handles the community parts of the topology graph:
  * - the database access property
  */
-public class CommunityTopologyGraphComponent extends AbstractSystemGraphComponent {
+public class CommunityTopologyGraphComponent extends AbstractSystemGraphComponent
+        implements SystemGraphComponentWithVersion {
     private final InternalLog log;
     private final KnownSystemComponentVersions<KnownCommunityTopologyComponentVersion>
             knownCommunityTopologyComponentVersions =

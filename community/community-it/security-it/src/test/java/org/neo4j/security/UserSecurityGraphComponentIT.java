@@ -60,6 +60,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.KeepFirstDuplicateBuilder;
 import org.neo4j.dbms.database.SystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponentWithVersion;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -405,7 +406,7 @@ class UserSecurityGraphComponentIT {
         }
     }
 
-    static class StubComponent implements SystemGraphComponent {
+    static class StubComponent implements SystemGraphComponentWithVersion {
 
         private final SystemGraphComponent.Name name;
 

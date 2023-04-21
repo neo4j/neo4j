@@ -19,7 +19,10 @@
  */
 package org.neo4j.dbms.database;
 
+import static org.neo4j.dbms.database.SystemGraphComponent.VERSION_LABEL;
+
 import org.neo4j.configuration.Config;
+import org.neo4j.dbms.database.SystemGraphComponent.Name;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
@@ -36,7 +39,6 @@ import org.neo4j.logging.Log;
 public abstract class KnownSystemComponentVersion {
     public static final int UNKNOWN_VERSION = -1;
 
-    private final Label versionLabel = Label.label("Version");
     private final ComponentVersion componentVersion;
     protected final SystemGraphComponent.Name componentName;
     public final int version;
@@ -111,6 +113,10 @@ public abstract class KnownSystemComponentVersion {
     }
 
     public void setVersionProperty(Transaction tx, int newVersion) {
+        setVersionProperty(tx, newVersion, componentName, debugLog);
+    }
+
+    public static void setVersionProperty(Transaction tx, int newVersion, Name componentName, Log debugLog) {
         Node versionNode = findOrCreateVersionNode(tx);
         var oldVersion = versionNode.getProperty(componentName.name(), null);
         if (oldVersion != null) {
@@ -122,8 +128,8 @@ public abstract class KnownSystemComponentVersion {
         versionNode.setProperty(componentName.name(), newVersion);
     }
 
-    private Node findOrCreateVersionNode(Transaction tx) {
-        try (ResourceIterator<Node> nodes = tx.findNodes(versionLabel)) {
+    private static Node findOrCreateVersionNode(Transaction tx) {
+        try (ResourceIterator<Node> nodes = tx.findNodes(VERSION_LABEL)) {
             if (nodes.hasNext()) {
                 Node node = nodes.next();
                 if (nodes.hasNext()) {
@@ -132,6 +138,6 @@ public abstract class KnownSystemComponentVersion {
                 return node;
             }
         }
-        return tx.createNode(versionLabel);
+        return tx.createNode(VERSION_LABEL);
     }
 }

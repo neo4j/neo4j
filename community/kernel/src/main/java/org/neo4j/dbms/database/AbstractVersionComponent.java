@@ -31,7 +31,8 @@ import org.neo4j.util.Preconditions;
 /**
  * These components only care about the version number
  */
-public abstract class AbstractVersionComponent<T extends ComponentVersion> extends AbstractSystemGraphComponent {
+public abstract class AbstractVersionComponent<T extends ComponentVersion> extends AbstractSystemGraphComponent
+        implements SystemGraphComponentWithVersion {
     private final SystemGraphComponent.Name componentName;
     private final T latestVersion;
     protected final Function<Integer, T> convertToVersion;

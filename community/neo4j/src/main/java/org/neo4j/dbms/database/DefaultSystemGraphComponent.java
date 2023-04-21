@@ -63,10 +63,6 @@ import org.neo4j.kernel.database.NormalizedDatabaseName;
  * that represent the default database and all databases, respectively.
  */
 public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
-    /**
-     * Every component must have a version number, even if it is never intended to be upgraded.
-     */
-    private static final int LATEST_VERSION = 0;
 
     private final NormalizedDatabaseName defaultDbName;
     private final Clock clock;
@@ -80,11 +76,6 @@ public class DefaultSystemGraphComponent extends AbstractSystemGraphComponent {
     @Override
     public Name componentName() {
         return ComponentVersion.MULTI_DATABASE_COMPONENT;
-    }
-
-    @Override
-    public int getLatestSupportedVersion() {
-        return LATEST_VERSION;
     }
 
     @Override

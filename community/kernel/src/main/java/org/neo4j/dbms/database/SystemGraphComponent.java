@@ -54,13 +54,6 @@ public interface SystemGraphComponent {
     Name componentName();
 
     /**
-     * Return the latest version of this component which the local instance can support.
-     *
-     * Note: this is not the same as the version of the component which is "installed" in the system database.
-     */
-    int getLatestSupportedVersion();
-
-    /**
      * Return the current status of this component. This involves reading the current contents of the system database and detecting whether the sub-graph
      * managed by this component is missing, old or up-to-date. Older sub-graphs could be supported for upgrade, or unsupported (in which case the server cannot
      * be started).

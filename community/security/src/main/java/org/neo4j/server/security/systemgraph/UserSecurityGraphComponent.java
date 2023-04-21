@@ -29,6 +29,7 @@ import org.neo4j.dbms.database.AbstractSystemGraphComponent;
 import org.neo4j.dbms.database.ComponentVersion;
 import org.neo4j.dbms.database.KnownSystemComponentVersions;
 import org.neo4j.dbms.database.SystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponentWithVersion;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
@@ -51,7 +52,8 @@ import org.neo4j.util.VisibleForTesting;
  * Each user is represented by a node in the system database with the label :User and properties for username, credentials, passwordChangeRequired and status.
  * The schema is the same in both community and enterprise (even if status is an enterprise-only feature).
  */
-public class UserSecurityGraphComponent extends AbstractSystemGraphComponent {
+public class UserSecurityGraphComponent extends AbstractSystemGraphComponent
+        implements SystemGraphComponentWithVersion {
     private final KnownSystemComponentVersions<KnownCommunitySecurityComponentVersion>
             knownUserSecurityComponentVersions =
                     new KnownSystemComponentVersions<>(new NoCommunitySecurityComponentVersion());
