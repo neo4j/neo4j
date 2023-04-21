@@ -528,6 +528,15 @@ class FulltextIndexProviderTest {
             transaction.commit();
         }
 
+        // The population job must have started for the fulltext index directory to exist. If the directory doesn't
+        // exist when starting up and finding the bogus analyzer we won't be able to create the failure message
+        // file and the failure message will be "". Easiest thing is just waiting for the index to come online,
+        // then it definitely exists.
+        try (Transaction tx = db.beginTx()) {
+            tx.schema().awaitIndexesOnline(30, TimeUnit.SECONDS);
+            tx.commit();
+        }
+
         // Modify the full-text index such that it has an analyzer configured that does not exist.
         controller.restartDbms(builder -> {
             var cacheTracer = NULL;
