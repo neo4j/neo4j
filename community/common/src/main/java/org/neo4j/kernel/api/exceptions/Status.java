@@ -188,7 +188,8 @@ public interface Status {
                 "Unable to start new transaction since the maximum number of concurrently executing transactions is "
                         + "reached (db.transaction.concurrent.maximum). "
                         + "You can retry at a later time or consider increasing allowed maximum of concurrent transactions."),
-        Interrupted(TransientError, "Interrupted while waiting.");
+        Interrupted(TransientError, "Interrupted while waiting."),
+        LeaderSwitch(TransientError, "The request could not be completed due to cluster leader switch");
 
         private final Code code;
 

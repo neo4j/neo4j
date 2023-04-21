@@ -355,8 +355,13 @@ public class FabricTransactionImpl
             return runLogic.apply(this);
         } catch (RuntimeException e) {
             // the exception with stack trace will be logged by Bolt's ErrorReporter
-            rollback();
-            throw Exceptions.transform(Status.Statement.ExecutionFailed, e);
+            RuntimeException transformed = Exceptions.transform(Status.Statement.ExecutionFailed, e);
+            try {
+                rollback();
+            } catch (Exception rollbackException) {
+                transformed.addSuppressed(rollbackException);
+            }
+            throw transformed;
         }
     }
 
@@ -540,6 +545,18 @@ public class FabricTransactionImpl
     }
 
     private FabricException multipleWriteError(Location attempt) {
+        // There are two situations and the error should reflect them in order not to confuse the users:
+        // 1. This is actually the same database, but the location has changed, because of leader switch in the cluster.
+        if (writingTransaction.location().getUuid().equals(attempt.getUuid())) {
+            return new FabricException(
+                    Status.Transaction.LeaderSwitch,
+                    "Could not write to a database due to a cluster leader switch that occurred during the transaction. "
+                            + "Previous leader: %s, Current leader: %s.",
+                    writingTransaction.location(),
+                    attempt);
+        }
+
+        // 2. The user is really trying to write to two different databases.
         return new FabricException(
                 Status.Statement.AccessMode,
                 "Writing to more than one database per transaction is not allowed. Attempted write to %s, currently writing to %s",
