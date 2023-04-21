@@ -35,7 +35,6 @@ public class FabricDatabaseManager {
     protected final FabricConfig fabricConfig;
     protected final DatabaseReferenceRepository databaseReferenceRepo;
     protected final DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider;
-    private final boolean multiGraphEverywhere;
 
     public FabricDatabaseManager(
             FabricConfig fabricConfig,
@@ -44,19 +43,10 @@ public class FabricDatabaseManager {
         this.fabricConfig = fabricConfig;
         this.databaseContextProvider = databaseContextProvider;
         this.databaseReferenceRepo = databaseReferenceRepo;
-        this.multiGraphEverywhere = fabricConfig.isEnabledByDefault();
     }
 
     public DatabaseReferenceRepository databaseReferenceRepository() {
         return databaseReferenceRepo;
-    }
-
-    public boolean hasMultiGraphCapabilities(String databaseNameRaw) {
-        return multiGraphCapabilitiesEnabledForAllDatabases() || isFabricDatabase(databaseNameRaw);
-    }
-
-    public boolean multiGraphCapabilitiesEnabledForAllDatabases() {
-        return multiGraphEverywhere;
     }
 
     public DatabaseReference getDatabaseReference(String databaseNameRaw) {
@@ -90,11 +80,6 @@ public class FabricDatabaseManager {
 
     private static Supplier<DatabaseNotFoundException> databaseNotFound(String databaseNameRaw) {
         return () -> new DatabaseNotFoundException("Database " + databaseNameRaw + " not found");
-    }
-
-    public boolean isFabricDatabase(String databaseNameRaw) {
-        // a "Fabric" database with special capabilities cannot exist in CE
-        return false;
     }
 
     public boolean isFabricDatabase(NamedDatabaseId databaseId) {

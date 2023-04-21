@@ -21,5 +21,4 @@ package org.neo4j.fabric.config;
 
 public class FabricConstants {
     public static final int BATCH_SIZE = 50;
-    public static final boolean ENABLED_BY_DEFAULT = true;
 }

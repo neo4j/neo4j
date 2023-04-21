@@ -28,17 +28,11 @@ public class FabricConfig {
     private final Supplier<Duration> transactionTimeout;
     private final DataStream dataStream;
     private final boolean routingEnabled;
-    private final boolean enabledByDefault;
 
-    public FabricConfig(
-            Supplier<Duration> transactionTimeout,
-            DataStream dataStream,
-            boolean routingEnabled,
-            boolean enabledByDefault) {
+    public FabricConfig(Supplier<Duration> transactionTimeout, DataStream dataStream, boolean routingEnabled) {
         this.transactionTimeout = transactionTimeout;
         this.dataStream = dataStream;
         this.routingEnabled = routingEnabled;
-        this.enabledByDefault = enabledByDefault;
     }
 
     public Duration getTransactionTimeout() {
@@ -53,17 +47,11 @@ public class FabricConfig {
         return routingEnabled;
     }
 
-    public boolean isEnabledByDefault() {
-        return enabledByDefault;
-    }
-
     public static FabricConfig from(Config config) {
         var syncBatchSize = FabricConstants.BATCH_SIZE;
         // the rest of the settings are not used for any type of queries supported in CE
         var dataStream = new DataStream(0, 0, syncBatchSize, 0);
-        var enabledByDefault = FabricConstants.ENABLED_BY_DEFAULT;
-        return new FabricConfig(
-                () -> config.get(GraphDatabaseSettings.transaction_timeout), dataStream, false, enabledByDefault);
+        return new FabricConfig(() -> config.get(GraphDatabaseSettings.transaction_timeout), dataStream, false);
     }
 
     public static class DataStream {

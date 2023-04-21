@@ -26,7 +26,6 @@ import static org.neo4j.dbms.routing.RoutingTableTTLProvider.ttlFromConfig;
 
 import java.util.function.Supplier;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.dbapi.impl.BoltKernelDatabaseManagementServiceProvider;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -396,21 +395,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
             Monitors monitors,
             SystemNanoClock clock,
             LogService logService) {
-        var kernelDatabaseManagementService =
-                createBoltKernelDatabaseManagementServiceProvider(dependencies, managementService, monitors, clock);
-        return fabricServicesBootstrap.createBoltDatabaseManagementServiceProvider(
-                kernelDatabaseManagementService, managementService, monitors, clock);
-    }
-
-    protected static BoltGraphDatabaseManagementServiceSPI createBoltKernelDatabaseManagementServiceProvider(
-            Dependencies dependencies,
-            DatabaseManagementService managementService,
-            Monitors monitors,
-            SystemNanoClock clock) {
-        var config = dependencies.resolveDependency(Config.class);
-        var bookmarkAwaitDuration = config.get(GraphDatabaseSettings.bookmark_ready_timeout);
-        return new BoltKernelDatabaseManagementServiceProvider(
-                managementService, monitors, clock, bookmarkAwaitDuration);
+        return fabricServicesBootstrap.createBoltDatabaseManagementServiceProvider(managementService, monitors, clock);
     }
 
     protected CommitProcessFactory createCommitProcessFactory() {

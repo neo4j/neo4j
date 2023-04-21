@@ -23,11 +23,8 @@ import static org.neo4j.scheduler.Group.CYPHER_CACHE;
 import static org.neo4j.scheduler.Group.FABRIC_WORKER;
 import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
-import java.util.Optional;
 import java.util.concurrent.Executor;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
-import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -35,7 +32,6 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.cypher.internal.cache.ExecutorBasedCaffeineCacheFactory;
 import org.neo4j.cypher.internal.config.CypherConfiguration;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.FabricDatabaseManager;
@@ -60,14 +56,12 @@ import org.neo4j.internal.kernel.api.security.AbstractSecurityLog;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
-import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.TransactionIdStore;
@@ -174,7 +168,7 @@ public abstract class FabricServicesBootstrap {
                 fabricConfig, planner, useEvaluation, internalLogProvider, statementLifecycles, fabricWorkerExecutor);
         register(fabricExecutor, FabricExecutor.class);
 
-        register(new TransactionBookmarkManagerFactory(fabricDatabaseManager), TransactionBookmarkManagerFactory.class);
+        register(new TransactionBookmarkManagerFactory(), TransactionBookmarkManagerFactory.class);
     }
 
     protected DatabaseLookup createDatabaseLookup(FabricDatabaseManager fabricDatabaseManager) {
@@ -182,10 +176,7 @@ public abstract class FabricServicesBootstrap {
     }
 
     public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider(
-            BoltGraphDatabaseManagementServiceSPI kernelDatabaseManagementService,
-            DatabaseManagementService managementService,
-            Monitors monitors,
-            SystemNanoClock clock) {
+            DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock) {
         FabricExecutor fabricExecutor = dependencies.resolveDependency(FabricExecutor.class);
         TransactionManager transactionManager = dependencies.resolveDependency(TransactionManager.class);
         FabricDatabaseManager fabricDatabaseManager = dependencies.resolveDependency(FabricDatabaseManager.class);
@@ -199,31 +190,13 @@ public abstract class FabricServicesBootstrap {
 
         var localGraphTransactionIdTracker =
                 new LocalGraphTransactionIdTracker(transactionIdTracker, databaseIdRepository, serverConfig);
-        var fabricDatabaseManagementService = dependencies.satisfyDependency(new BoltFabricDatabaseManagementService(
+        return dependencies.satisfyDependency(new BoltFabricDatabaseManagementService(
                 fabricExecutor,
                 fabricConfig,
                 transactionManager,
                 fabricDatabaseManager,
                 localGraphTransactionIdTracker,
                 transactionBookmarkManagerFactory));
-
-        return new BoltGraphDatabaseManagementServiceSPI() {
-
-            @Override
-            public BoltGraphDatabaseServiceSPI database(String databaseName, MemoryTracker memoryTracker)
-                    throws UnavailableException, DatabaseNotFoundException {
-                if (fabricDatabaseManager.hasMultiGraphCapabilities(databaseName)) {
-                    return fabricDatabaseManagementService.database(databaseName, memoryTracker);
-                }
-
-                return kernelDatabaseManagementService.database(databaseName, memoryTracker);
-            }
-
-            @Override
-            public Optional<CustomBookmarkFormatParser> getCustomBookmarkFormatParser() {
-                return fabricDatabaseManagementService.getCustomBookmarkFormatParser();
-            }
-        };
     }
 
     protected abstract FabricDatabaseManager createFabricDatabaseManager(FabricConfig fabricConfig);
