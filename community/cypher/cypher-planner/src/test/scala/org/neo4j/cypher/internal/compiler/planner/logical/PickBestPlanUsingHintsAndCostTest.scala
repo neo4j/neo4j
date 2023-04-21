@@ -153,7 +153,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
 
   private def assertTopPlan(winner: LogicalPlan, planningAttributes: PlanningAttributes, candidates: Seq[LogicalPlan], heuristic: SelectorHeuristic = SelectorHeuristic.constant)(GIVEN: given): Unit = {
     val environment = LogicalPlanningEnvironment(GIVEN)
-    val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.planContext, GIVEN.expressionEvaluator, ExecutionModel.default, planningTextIndexesEnabled = false)
+    val metrics: Metrics = environment.metricsFactory.newMetrics(GIVEN.planContext, simpleExpressionEvaluator, ExecutionModel.default, planningTextIndexesEnabled = false)
     val producer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
     val context = LogicalPlanningContext(null,
       producer,

@@ -21,11 +21,12 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanTransformer
+import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
-import org.neo4j.cypher.internal.logical.plans.EagerLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -37,15 +38,16 @@ import scala.annotation.tailrec
 object skipAndLimit extends PlanTransformer {
 
     @tailrec
-    def shouldPlanExhaustiveLimit(plan: LogicalPlan): Boolean = plan match {
+    def shouldPlanExhaustiveLimit(plan: LogicalPlan, limit: Option[Long]): Boolean = plan match {
       case _: UpdatingPlan => true
-      case _: EagerLogicalPlan => false
-      case p: LogicalBinaryPlan => p.right.folder.treeExists{case _: UpdatingPlan => true} || shouldPlanExhaustiveLimit(p.left)
-      case p: LogicalPlan => if (p.lhs.nonEmpty) shouldPlanExhaustiveLimit(p.lhs.get) else false
+      case _: ExhaustiveLogicalPlan if limit.exists(_ > 0) => false
+      case p: LogicalBinaryPlan => p.right.folder.treeExists{case _: UpdatingPlan => true} || shouldPlanExhaustiveLimit(p.left, limit)
+      case p: LogicalPlan => if (p.lhs.nonEmpty) shouldPlanExhaustiveLimit(p.lhs.get, limit) else false
     }
 
   def planLimitOnTopOf(plan: LogicalPlan, count: Expression)(implicit idGen: IdGen): LogicalPlan =
-    if (shouldPlanExhaustiveLimit(plan)) ExhaustiveLimit(plan, count)(idGen)
+    if (shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(count)))
+      ExhaustiveLimit(plan, count)(idGen)
     else Limit(plan, count)(idGen)
 
   def apply(plan: LogicalPlan, query: SinglePlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
@@ -54,12 +56,13 @@ object skipAndLimit extends PlanTransformer {
         val queryPagination = p.queryPagination
         (queryPagination.skip, queryPagination.limit) match {
           case (Some(skipExpr), Some(limitExpr)) =>
-            context.logicalPlanProducer.planSkipAndLimit(plan, skipExpr, limitExpr, query.interestingOrder, context, shouldPlanExhaustiveLimit(plan))
+            context.logicalPlanProducer.planSkipAndLimit(plan, skipExpr, limitExpr, query.interestingOrder, context, shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(limitExpr)))
 
           case (Some(skipExpr), _) =>
             context.logicalPlanProducer.planSkip(plan, skipExpr, query.interestingOrder, context)
 
-          case (_, Some(limitExpr)) if shouldPlanExhaustiveLimit(plan) =>
+          case (_, Some(limitExpr))
+            if shouldPlanExhaustiveLimit(plan, simpleExpressionEvaluator.evaluateLongIfStable(limitExpr)) =>
             context.logicalPlanProducer.planExhaustiveLimit(plan, limitExpr, limitExpr, query.interestingOrder, context = context)
 
           case (_, Some(limitExpr)) =>

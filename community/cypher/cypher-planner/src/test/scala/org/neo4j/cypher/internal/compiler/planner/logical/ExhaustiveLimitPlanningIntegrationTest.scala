@@ -325,4 +325,61 @@ class ExhaustiveLimitPlanningIntegrationTest
       .allNodeScan("n")
       .build()
   }
+
+  test("Should plan exhaustive limit with LIMIT 0, even if there is an eager plan in between") {
+    // given
+    val config = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .build()
+
+    val query =
+      """CREATE (a) 
+        |WITH a 
+        |ORDER BY a 
+        |WITH a AS b 
+        |RETURN b 
+        |LIMIT 0""".stripMargin
+
+    // when
+    val plan = config.plan(query)
+
+    // then
+    plan shouldEqual config.planBuilder()
+      .produceResults("b")
+      .exhaustiveLimit(0)
+      .projection("a AS b")
+      .sort(Seq(Ascending("a")))
+      .create(createNode("a"))
+      .argument()
+      .build()
+  }
+
+  test("Should not plan exhaustive limit with LIMIT 1, if there is an eager plan in between") {
+    // given
+    val config = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .build()
+
+    val query =
+      """CREATE (a) 
+        |WITH a 
+        |ORDER BY a 
+        |WITH a AS b 
+        |RETURN b 
+        |LIMIT 1
+        |""".stripMargin
+
+    // when
+    val plan = config.plan(query)
+
+    // then
+    plan shouldEqual config.planBuilder()
+      .produceResults("b")
+      .limit(1)
+      .projection("a AS b")
+      .sort(Seq(Ascending("a")))
+      .create(createNode("a"))
+      .argument()
+      .build()
+  }
 }

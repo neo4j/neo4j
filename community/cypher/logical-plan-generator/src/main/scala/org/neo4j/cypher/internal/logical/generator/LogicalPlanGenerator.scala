@@ -394,7 +394,7 @@ class LogicalPlanGenerator(labelsWithIds: Map[String, Int],
     WithState(source, state) <- innerLogicalPlan(state)
     count <- Gen.chooseNum(0, Long.MaxValue, 1)
   } yield {
-    if (shouldPlanExhaustiveLimit(source)) {
+    if (shouldPlanExhaustiveLimit(source, Some(count))) {
       annotate(ExhaustiveLimit(source, literalInt(count))(state.idGen), state)
     } else {
       annotate(Limit(source, literalInt(count))(state.idGen), state)

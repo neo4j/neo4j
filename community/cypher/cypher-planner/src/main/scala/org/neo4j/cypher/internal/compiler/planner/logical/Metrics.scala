@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompa
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -50,6 +51,7 @@ import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Cost
 import org.neo4j.cypher.internal.util.CypherException
 import org.neo4j.cypher.internal.util.Selectivity
+import org.neo4j.values.storable.NumberValue
 
 object Metrics {
 
@@ -165,6 +167,23 @@ trait ExpressionEvaluator {
   }
 
   def evaluateExpression(expr: Expression): Option[Any]
+
+  /*
+   * Returns the evaluated long value from the specified expression if the expression is stable and can be evaluated to a long.
+   */
+  def evaluateLongIfStable(expression: Expression): Option[Long] = {
+    def isStable(expression: Expression): Boolean = {
+      !hasParameters(expression) && isDeterministic(expression)
+    }
+
+    expression match {
+      case literal: IntegerLiteral => Some(literal.value)
+      case nonLiteral if isStable(nonLiteral) =>
+        evaluateExpression(nonLiteral)
+          .collect { case number: NumberValue => number.longValue() }
+      case _ => None
+    }
+  }
 }
 
 /**

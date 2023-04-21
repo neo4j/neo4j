@@ -55,7 +55,6 @@ import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.Multiplier
-import org.neo4j.values.storable.NumberValue
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel,
                                        selectivityCalculator: SelectivityCalculator,
@@ -166,7 +165,8 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     queryPagination.limit match {
       case None => cardinalityBeforeLimit
       case Some(limitExpression) =>
-        val limitRowCount: Long = evaluateLongIfStable(limitExpression).getOrElse(DEFAULT_LIMIT_ROW_COUNT)
+        val limitRowCount: Long =
+          simpleExpressionEvaluator.evaluateLongIfStable(limitExpression).getOrElse(DEFAULT_LIMIT_ROW_COUNT)
 
         if (limitRowCount >= cardinalityBeforeLimit.amount) cardinalityBeforeLimit
         else Cardinality(limitRowCount)
@@ -177,30 +177,13 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
     queryPagination.skip match {
       case None => cardinalityBeforeSkip
       case Some(skipExpression) =>
-        val skipRowCount: Long = evaluateLongIfStable(skipExpression).getOrElse(DEFAULT_SKIP_ROW_COUNT)
+        val skipRowCount: Long =
+          simpleExpressionEvaluator.evaluateLongIfStable(skipExpression).getOrElse(DEFAULT_SKIP_ROW_COUNT)
 
         if (skipRowCount == 0) cardinalityBeforeSkip
         else if (skipRowCount >= cardinalityBeforeSkip.amount) Cardinality.EMPTY
         else cardinalityBeforeSkip.map(c => c - skipRowCount)
 
-    }
-  }
-
-  /*
-   * Returns the evaluated long value from the specified expression if the expression is stable and can be evaluated to a long.
-   */
-  private def evaluateLongIfStable(expression: Expression): Option[Long] = {
-    def isStable(expression: Expression): Boolean = {
-      !simpleExpressionEvaluator.hasParameters(expression) && simpleExpressionEvaluator.isDeterministic(expression)
-    }
-
-    expression match {
-      case literal: IntegerLiteral => Some(literal.value)
-      case nonLiteral if isStable(nonLiteral) =>
-        simpleExpressionEvaluator
-          .evaluateExpression(nonLiteral)
-          .collect { case number: NumberValue => number.longValue() }
-      case _ => None
     }
   }
 
