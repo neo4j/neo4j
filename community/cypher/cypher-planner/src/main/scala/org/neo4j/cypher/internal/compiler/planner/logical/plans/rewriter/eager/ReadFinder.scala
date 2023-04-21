@@ -635,7 +635,7 @@ object ReadFinder {
 
       case LegacyFindShortestPaths(
           _,
-          ShortestPathPattern(_, PatternRelationship(name, nodes, _, types, _), _),
+          ShortestRelationshipPattern(_, PatternRelationship(name, nodes, _, types, _), _),
           _,
           _,
           _

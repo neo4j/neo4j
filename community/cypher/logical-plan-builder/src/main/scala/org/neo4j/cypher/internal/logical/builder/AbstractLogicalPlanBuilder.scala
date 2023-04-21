@@ -618,7 +618,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp =>
       LegacyFindShortestPaths(
         lp,
-        ShortestPathPattern(
+        ShortestRelationshipPattern(
           pathName,
           PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length),
           !all
