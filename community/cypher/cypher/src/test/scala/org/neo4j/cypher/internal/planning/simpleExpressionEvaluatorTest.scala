@@ -19,19 +19,40 @@
  */
 package org.neo4j.cypher.internal.planning
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.util.DummyPosition
+import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class simpleExpressionEvaluatorTest extends CypherFunSuite {
-  private val pos = DummyPosition(-1)
+class simpleExpressionEvaluatorTest extends CypherFunSuite with AstConstructionTestSupport {
+
+  private val randInvocation: FunctionInvocation =
+    FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)
 
   test("isNonDeterministic should not care about capitalization") {
     val evaluator = simpleExpressionEvaluator
-    evaluator.isDeterministic(
-      FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)
-    ) shouldBe false
+    evaluator.isDeterministic(randInvocation) shouldBe false
+  }
+
+  test("evaluateLongIfStable on IntegerLiteral") {
+    simpleExpressionEvaluator.evaluateLongIfStable(literalInt(5)) should be(Some(5))
+  }
+
+  test("evaluateLongIfStable on non-deterministic expression") {
+    simpleExpressionEvaluator.evaluateLongIfStable(randInvocation) should be(None)
+  }
+
+  test("evaluateLongIfStable on expression with parameters") {
+    simpleExpressionEvaluator.evaluateLongIfStable(add(literalInt(5), parameter("p", CTInteger))) should be(None)
+  }
+
+  test("evaluateLongIfStable on int expression") {
+    simpleExpressionEvaluator.evaluateLongIfStable(add(literalInt(5), literalInt(6))) should be(Some(11))
+  }
+
+  test("evaluateLongIfStable on string expression") {
+    simpleExpressionEvaluator.evaluateLongIfStable(literalString("foo")) should be(None)
   }
 }

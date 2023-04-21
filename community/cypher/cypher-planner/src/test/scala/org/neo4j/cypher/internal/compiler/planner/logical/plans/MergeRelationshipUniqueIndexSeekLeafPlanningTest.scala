@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.planner.StubbedLogicalPlanningConfiguration
-import org.neo4j.cypher.internal.compiler.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
+import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.mergeRelationshipUniqueIndexSeekLeafPlanner
 import org.neo4j.cypher.internal.expressions.Expression
@@ -92,7 +92,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
   private def buildLogicalPlanningContext(
     config: StubbedLogicalPlanningConfiguration
   ): LogicalPlanningContext = {
-    val metrics = config.metricsFactory.newMetrics(config.planContext, mock[ExpressionEvaluator], config.executionModel)
+    val metrics = config.metricsFactory.newMetrics(config.planContext, simpleExpressionEvaluator, config.executionModel)
 
     val planningAttributes = PlanningAttributes.newAttributes
 

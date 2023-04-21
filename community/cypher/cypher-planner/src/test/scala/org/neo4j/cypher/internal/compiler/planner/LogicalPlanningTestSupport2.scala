@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.idp.IDPQueryGraphSolve
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentIDPSolverConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.SingleComponentPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins
+import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlannerWithCaching
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.LogicalPlanProducer
@@ -429,7 +430,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     ): PlannerContext = {
       val exceptionFactory = Neo4jCypherExceptionFactory(queryString, Some(pos))
 
-      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel)
+      val metrics = metricsFactory.newMetrics(planContext, simpleExpressionEvaluator, config.executionModel)
 
       ContextHelper.create(
         planContext = planContext,
@@ -444,14 +445,14 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
 
     def withLogicalPlanningContext[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel)
+      val metrics = metricsFactory.newMetrics(planContext, simpleExpressionEvaluator, config.executionModel)
       val planningAttributes = PlanningAttributes.newAttributes
       val ctx = newLogicalPlanningContext(metrics, planningAttributes)
       f(config, ctx)
     }
 
     def withLogicalPlanningContextWithFakeAttributes[T](f: (C, LogicalPlanningContext) => T): T = {
-      val metrics = metricsFactory.newMetrics(planContext, mock[ExpressionEvaluator], config.executionModel)
+      val metrics = metricsFactory.newMetrics(planContext, simpleExpressionEvaluator, config.executionModel)
       val planningAttributes = newStubbedPlanningAttributes
       val ctx = newLogicalPlanningContext(metrics, planningAttributes)
       f(config, ctx)

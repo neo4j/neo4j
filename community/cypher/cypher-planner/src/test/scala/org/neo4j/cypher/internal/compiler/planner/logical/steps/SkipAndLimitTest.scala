@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.shouldPlanExhaustiveLimit
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryPagination
@@ -29,6 +31,8 @@ import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Skip
@@ -91,6 +95,48 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(Map.empty, QueryPagination(limit = Some(x), skip = Some(y)))
     )
+  }
+
+  test("should plan exhaustive limit on top of updating plan") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .create(createNode("a"))
+      .argument()
+      .build()
+    shouldPlanExhaustiveLimit(plan, None) should be(true)
+    shouldPlanExhaustiveLimit(plan, Some(0)) should be(true)
+    shouldPlanExhaustiveLimit(plan, Some(1)) should be(true)
+  }
+
+  test("should plan exhaustive limit on top of updating plan in RHS") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .subqueryForeach()
+      .|.create(createNode("a"))
+      .|.argument()
+      .argument()
+      .build()
+    shouldPlanExhaustiveLimit(plan, None) should be(true)
+    shouldPlanExhaustiveLimit(plan, Some(0)) should be(true)
+    shouldPlanExhaustiveLimit(plan, Some(1)) should be(true)
+  }
+
+  test("should plan limit on top of updating plan with Eager plan in between, if limit > 0") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .sort(Seq(Ascending("n")))
+      .create(createNode("a"))
+      .argument()
+      .build()
+    shouldPlanExhaustiveLimit(plan, None) should be(true)
+    shouldPlanExhaustiveLimit(plan, Some(0)) should be(true)
+    shouldPlanExhaustiveLimit(plan, Some(1)) should be(false)
+  }
+
+  test("should plan limit on top of read-only plan") {
+    val plan = new LogicalPlanBuilder(wholePlan = false)
+      .argument()
+      .build()
+    shouldPlanExhaustiveLimit(plan, None) should be(false)
+    shouldPlanExhaustiveLimit(plan, Some(0)) should be(false)
+    shouldPlanExhaustiveLimit(plan, Some(1)) should be(false)
   }
 
   private def regularProjection(skip: Option[Expression] = None, limit: Option[Expression] = None) =

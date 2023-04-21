@@ -207,7 +207,7 @@ class PickBestPlanUsingHintsAndCostTest extends CypherFunSuite with LogicalPlann
   )(GIVEN: given): Unit = {
     val environment = LogicalPlanningEnvironment(GIVEN)
     val metrics: Metrics =
-      environment.metricsFactory.newMetrics(GIVEN.planContext, GIVEN.expressionEvaluator, ExecutionModel.default)
+      environment.metricsFactory.newMetrics(GIVEN.planContext, simpleExpressionEvaluator, ExecutionModel.default)
     val producer = LogicalPlanProducer(metrics.cardinality, planningAttributes, idGen)
 
     val staticComponents = StaticComponents(

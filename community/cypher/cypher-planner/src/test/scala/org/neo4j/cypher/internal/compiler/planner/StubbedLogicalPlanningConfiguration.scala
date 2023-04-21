@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolv
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.RelTypeInfo
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.SelectivityCalculator
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -208,13 +207,6 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   var statistics: GraphStatistics = _
   var qg: QueryGraph = _
 
-  var expressionEvaluator: ExpressionEvaluator = new ExpressionEvaluator {
-    override def evaluateExpression(expr: Expression): Option[Any] = ???
-
-    override def isDeterministic(expr: Expression): Boolean = ???
-
-    override def hasParameters(expr: Expression): Boolean = ???
-  }
   var executionModel: ExecutionModel = parent.executionModel
   var lookupRelationshipsByType: LookupRelationshipsByType = LookupRelationshipsByType.default
 
