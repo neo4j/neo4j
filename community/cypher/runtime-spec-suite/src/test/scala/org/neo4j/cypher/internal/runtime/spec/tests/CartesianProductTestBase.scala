@@ -817,6 +817,9 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
 
   test("aggregation on the lhs of an apply under cartesian product") {
     // given
+    val input = batchedInputValues(sizeHint / 8, (1 to sizeHint).map(i => Array[Any](i)): _*).stream()
+
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("res")
       .projection("42 AS res")
@@ -826,17 +829,19 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .|.|.argument("n1")
       .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
       .|.argument("n0")
-      .unwind("[42] AS n0")
-      .argument()
+      .input(variables = Seq("n0"))
       .build()
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("res").withSingleRow(42)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("res").withRows(singleColumn(List.fill(sizeHint)(42)))
   }
 
   test("aggregations under nested cartesian product") {
     // given
+    val input = batchedInputValues(sizeHint / 8, (1 to sizeHint).map(i => Array[Any](i)): _*).stream()
+
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("res")
       .projection("42 AS res")
@@ -846,17 +851,19 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .|.|.argument("n0")
       .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
       .|.argument("n0")
-      .unwind("[42] AS n0")
-      .argument()
+      .input(variables = Seq("n0"))
       .build()
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("res").withSingleRow(42)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("res").withRows(singleColumn(List.fill(sizeHint)(42)))
   }
 
   test("aggregations under join under a cartesian product") {
     // given
+    val input = batchedInputValues(sizeHint / 8, (1 to sizeHint).map(i => Array[Any](i)): _*).stream()
+
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("res")
       .projection("42 AS res")
@@ -866,17 +873,19 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .|.|.argument("n0")
       .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
       .|.argument("n0")
-      .unwind("[42] AS n0")
-      .argument()
+      .input(variables = Seq("n0"))
       .build()
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("res").withSingleRow(42)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("res").withRows(singleColumn(List.fill(sizeHint)(42)))
   }
 
   test("aggregations under join under a cartesian product with additional projections") {
     // given
+    val input = batchedInputValues(sizeHint / 8, (1 to sizeHint).map(i => Array[Any](i)): _*).stream()
+
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("res")
       .projection("42 AS res")
@@ -888,17 +897,19 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
       .|.projection("42 as whatever")
       .|.argument("n0")
-      .unwind("[42] AS n0")
-      .argument()
+      .input(variables = Seq("n0"))
       .build()
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("res").withSingleRow(42)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("res").withRows(singleColumn(List.fill(sizeHint)(42)))
   }
 
   test("aggregation on the lhs of an apply followed by optional under cartesian product") {
     // given
+    val input = batchedInputValues(sizeHint / 8, (1 to sizeHint).map(i => Array[Any](i)): _*).stream()
+
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("res")
       .projection("42 AS res")
@@ -909,17 +920,19 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .|.|.argument("n1")
       .|.aggregation(Seq.empty, Seq("min(0) AS n1"))
       .|.argument("n0")
-      .unwind("[42] AS n0")
-      .argument()
+      .input(variables = Seq("n0"))
       .build()
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("res").withSingleRow(42)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("res").withRows(singleColumn(List.fill(sizeHint)(42)))
   }
 
   test("aggregation on the lhs of an apply under cartesian product all under an apply") {
     // given
+    val input = batchedInputValues(sizeHint / 8, (1 to sizeHint).map(i => Array[Any](i)): _*).stream()
+
+    // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("res")
       .projection("42 AS res")
@@ -931,13 +944,13 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
       .|.|.|.argument("n1")
       .|.|.aggregation(Seq.empty, Seq("min(0) AS n1"))
       .|.|.argument("n0")
+      .|.unwind("range(1, 11) AS i")
       .|.argument("n0")
-      .unwind("[42] AS n0")
-      .argument()
+      .input(variables = Seq("n0"))
       .build()
 
     // then
-    val runtimeResult = execute(logicalQuery, runtime)
-    runtimeResult should beColumns("res").withSingleRow(42)
+    val runtimeResult = execute(logicalQuery, runtime, input)
+    runtimeResult should beColumns("res").withRows(singleColumn(List.fill(sizeHint * 11)(42)))
   }
 }
