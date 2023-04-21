@@ -134,7 +134,7 @@ object expandSolverStep {
    */
   private def updateQPPArguments(qpp: QuantifiedPathPattern, fromLeft: Boolean): QuantifiedPathPattern = {
     val bindingNodeArg = additionalQPPArgument(qpp, fromLeft)
-    qpp.copy(pattern = qpp.pattern.addArgumentId(bindingNodeArg))
+    qpp.copy(argumentIds = qpp.argumentIds.incl(bindingNodeArg))
   }
 
   private def additionalQPPArgument(qpp: QuantifiedPathPattern, fromLeft: Boolean): String = {
@@ -145,11 +145,10 @@ object expandSolverStep {
   /**
    * Additional predicates to solve on RHS of Trail.
    */
-  private def additionalTrailPredicates(qpp: QuantifiedPathPattern): Set[Expression] = {
-    qpp.pattern.patternRelationships.map(r =>
+  private def additionalTrailPredicates(qpp: QuantifiedPathPattern): Set[Expression] =
+    qpp.patternRelationships.map(r =>
       IsRepeatTrailUnique(Variable(r.name)(InputPosition.NONE))(InputPosition.NONE)
-    )
-  }
+    ).toSet
 
   /**
    * Plan the inner pattern of a [[QuantifiedPathPattern]].
@@ -161,7 +160,7 @@ object expandSolverStep {
   ): LogicalPlan = {
     val additionalArgument = additionalQPPArgument(qpp, fromLeft)
     val additionalPredicates = additionalTrailPredicates(qpp)
-    val qg = qpp.pattern.addArgumentId(additionalArgument).addPredicates(additionalPredicates.toSeq: _*)
+    val qg = qpp.asQueryGraph.addArgumentId(additionalArgument).addPredicates(additionalPredicates.toSeq: _*)
 
     // We use InterestingOrderConfig.empty because the order from a RHS of Trail is not propagated anyway
     val plan = context.staticComponents.queryGraphSolver.plan(qg, InterestingOrderConfig.empty, context).result

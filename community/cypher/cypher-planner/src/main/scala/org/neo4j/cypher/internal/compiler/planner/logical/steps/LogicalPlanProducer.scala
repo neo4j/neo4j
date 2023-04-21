@@ -93,6 +93,7 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
+import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -965,7 +966,7 @@ case class LogicalPlanProducer(
       case UpperBound.Limited(n) => Some(n.toInt)
     }
 
-    qpp.pattern.patternRelationships.head.copy(
+    qpp.patternRelationships.head.copy(
       nodes = (qpp.leftBinding.outer, qpp.rightBinding.outer),
       name = qpp.relationshipVariableGroupings.head.groupName,
       length = VarPatternLength(qpp.repetition.min.toInt, max)
@@ -986,7 +987,7 @@ case class LogicalPlanProducer(
 
     val (pattern, solvedConnection) = nodeConnection match {
       case qpp: QuantifiedPathPattern if qpp.isSimple =>
-        val innerPatternRelationship = qpp.pattern.patternRelationships.head
+        val innerPatternRelationship = qpp.patternRelationships.head
         val innerNodes = Set(innerPatternRelationship.nodes._1, innerPatternRelationship.nodes._2)
 
         // It should be safe to mark 'qpp' as solved at this point.
@@ -996,11 +997,10 @@ case class LogicalPlanProducer(
           leftBinding = qpp.leftBinding,
           rightBinding = qpp.rightBinding,
           repetition = qpp.repetition,
-          pattern = QueryGraph(
-            patternNodes = innerNodes,
-            patternRelationships = Set(innerPatternRelationship),
-            argumentIds = qpp.pattern.argumentIds
-          ),
+          patternRelationships = List(innerPatternRelationship),
+          patternNodes = innerNodes,
+          argumentIds = qpp.argumentIds,
+          selections = Selections.empty,
           nodeVariableGroupings = Set.empty,
           relationshipVariableGroupings = qpp.relationshipVariableGroupings
         )
@@ -1106,12 +1106,18 @@ case class LogicalPlanProducer(
     previouslyBoundRelationshipGroups: Set[String],
     reverseGroupVariableProjections: Boolean
   ): LogicalPlan = {
-
-    val innerPlanSolvedQG = solveds.get(innerPlan.id).asSinglePlannerQuery.queryGraph
-    val solvedPattern = pattern.copy(pattern = innerPlanSolvedQG)
+    // Ensure that innerPlan does conform with the pattern contained inside of the quantified path pattern before we mark it as solved
+    try {
+      VerifyBestPlan(innerPlan, SinglePlannerQuery.empty.withQueryGraph(pattern.asQueryGraph), context)
+    } catch {
+      case planVerificationException: InternalException => throw new InternalException(
+          "The provided inner plan doesn't conform with the quantified path pattern being planned",
+          planVerificationException
+        )
+    }
 
     val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
-      .addQuantifiedPathPattern(solvedPattern)
+      .addQuantifiedPathPattern(pattern)
       .addPredicates(predicates: _*))
 
     val providedOrder = providedOrders.get(source.id).fromLeft
@@ -1131,7 +1137,7 @@ case class LogicalPlanProducer(
           case VariableGrouping(singleton, group) =>
             plans.Trail.VariableGrouping(singleton, group)
         },
-        innerRelationships = pattern.pattern.patternRelationships.map(_.name),
+        innerRelationships = pattern.patternRelationships.map(_.name).toSet,
         previouslyBoundRelationships = previouslyBoundRelationships,
         previouslyBoundRelationshipGroups = previouslyBoundRelationshipGroups,
         reverseGroupVariableProjections = reverseGroupVariableProjections

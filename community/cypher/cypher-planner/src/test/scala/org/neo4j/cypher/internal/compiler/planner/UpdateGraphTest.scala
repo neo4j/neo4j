@@ -411,23 +411,18 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("allQGsWithLeafInfo should include quantified path patterns") {
-    val innerQueryGraph =
-      QueryGraph
-        .empty
-        .addPatternNodes("a_n", "b_n")
-        .addPatternRelationship(PatternRelationship(
+    val quantifiedPathPattern =
+      QuantifiedPathPattern(
+        leftBinding = NodeBinding("a_n", "start"),
+        rightBinding = NodeBinding("b_n", "end"),
+        patternRelationships = List(PatternRelationship(
           name = "r_n",
           nodes = ("a_n", "b_n"),
           dir = SemanticDirection.OUTGOING,
           types = Nil,
           length = SimplePatternLength
-        ))
-
-    val quantifiedPathPattern =
-      QuantifiedPathPattern(
-        leftBinding = NodeBinding("a_n", "start"),
-        rightBinding = NodeBinding("b_n", "end"),
-        pattern = innerQueryGraph,
+        )),
+        patternNodes = Set("a_n", "b_n"),
         repetition = Repetition(min = 0, max = UpperBound.Unlimited),
         nodeVariableGroupings = Set.empty,
         relationshipVariableGroupings = Set(VariableGrouping(singletonName = "r_n", groupName = "r"))
@@ -439,6 +434,18 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
         .addPatternNodes("start", "end")
         .addPredicates(hasLabels("start", "Alpha"), hasLabels("end", "Omega"))
         .addQuantifiedPathPattern(quantifiedPathPattern)
+
+    val innerQueryGraph =
+      QueryGraph
+        .empty
+        .addPatternNodes("a_n", "b_n")
+        .addPatternRelationship(PatternRelationship(
+          name = "r_n",
+          nodes = ("a_n", "b_n"),
+          dir = SemanticDirection.OUTGOING,
+          types = Nil,
+          length = SimplePatternLength
+        ))
 
     val allQGsWithLeafInfo =
       List(queryGraph, innerQueryGraph)

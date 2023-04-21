@@ -124,7 +124,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
         }.flatten.toSet
 
       def uniquenessPredicatesWithin(qpp: QuantifiedPathPattern) =
-        qpp.pattern.selections.flatPredicates.collect {
+        qpp.selections.flatPredicates.collect {
           case pred: DifferentRelationships => pred
         }
 
@@ -279,7 +279,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
                 leftNodePredicates ++ rightNodePredicates ++ predicatesFromOuterNodes
               }
 
-              qpp.pattern.addPredicates(extraPredicatesForStep: _*)
+              qpp.asQueryGraph.addPredicates(extraPredicatesForStep: _*)
             }
 
             val stepCardinality = cardinalityModel.apply(
@@ -461,7 +461,7 @@ case class NodeConnectionMultiplierCalculator(stats: GraphStatistics, combiner: 
 
   private def copyLabelPredicates(qpp: QuantifiedPathPattern, from: String, to: String): Vector[HasLabels] = {
     val pos = InputPosition.NONE
-    qpp.pattern.selections
+    qpp.selections
       .labelPredicates.getOrElse(from, Set.empty)
       .map(_.copy(expression = Variable(to)(pos))(pos))
       .toVector

@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
-import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -240,23 +239,23 @@ class NodeConnectionMultiplierCalculatorTest extends CypherFunSuite with AstCons
       QuantifiedPathPattern(
         leftBinding = NodeBinding("a_i", "start"),
         rightBinding = NodeBinding("c_i", "end"),
-        pattern =
-          QueryGraph.empty
-            .addPatternRelationship(PatternRelationship(
-              "r_i",
-              ("a_i", "b_i"),
-              SemanticDirection.OUTGOING,
-              List(RelTypeName("R")(InputPosition.NONE)),
-              SimplePatternLength
-            )).addPatternRelationship(PatternRelationship(
-              "s_i",
-              ("b_i", "c_i"),
-              SemanticDirection.INCOMING,
-              List(RelTypeName("R")(InputPosition.NONE)),
-              SimplePatternLength
-            )).addSelections(
-              Selections.from(differentRelationships("r_i", "s_i"))
-            ),
+        patternRelationships = List(
+          PatternRelationship(
+            "r_i",
+            ("a_i", "b_i"),
+            SemanticDirection.OUTGOING,
+            List(RelTypeName("R")(InputPosition.NONE)),
+            SimplePatternLength
+          ),
+          PatternRelationship(
+            "s_i",
+            ("b_i", "c_i"),
+            SemanticDirection.INCOMING,
+            List(RelTypeName("R")(InputPosition.NONE)),
+            SimplePatternLength
+          )
+        ),
+        selections = Selections.from(differentRelationships("r_i", "s_i")),
         repetition = Repetition.apply(2, UpperBound.Limited(2)),
         nodeVariableGroupings =
           Set(VariableGrouping("a_i", "a"), VariableGrouping("b_i", "b"), VariableGrouping("c_i", "c")),

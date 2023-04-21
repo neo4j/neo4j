@@ -145,7 +145,10 @@ case class VariableGrouping(singletonName: String, groupName: String) {
 final case class QuantifiedPathPattern(
   leftBinding: NodeBinding,
   rightBinding: NodeBinding,
-  pattern: QueryGraph,
+  patternRelationships: Seq[PatternRelationship],
+  patternNodes: Set[String] = Set.empty,
+  argumentIds: Set[String] = Set.empty,
+  selections: Selections = Selections(),
   repetition: Repetition,
   nodeVariableGroupings: Set[VariableGrouping],
   relationshipVariableGroupings: Set[VariableGrouping]
@@ -158,11 +161,10 @@ final case class QuantifiedPathPattern(
 
   override lazy val coveredIds: Set[String] = coveredNodeIds ++ groupings
 
-  override def toString: String = {
-    s"QPP($leftBinding, $rightBinding, $pattern, $repetition, $nodeVariableGroupings, $relationshipVariableGroupings)"
-  }
+  override def toString: String =
+    s"QPP($leftBinding, $rightBinding, $asQueryGraph, $repetition, $nodeVariableGroupings, $relationshipVariableGroupings)"
 
-  val dependencies: Set[String] = pattern.dependencies
+  val dependencies: Set[String] = selections.predicates.flatMap(_.dependencies) ++ argumentIds
 
   val groupings: Set[String] = nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(_.groupName)
 
@@ -170,11 +172,16 @@ final case class QuantifiedPathPattern(
    * A "simple" quantified path pattern is defined as a pattern that could be rewritten to a [[PatternRelationship]] without a loss of information.
    * @return true if this qpp is "simple"
    */
-  def isSimple: Boolean = {
-    this.nodeVariableGroupings.isEmpty &&
-    this.pattern.patternRelationships.size == 1 &&
-    this.pattern.selections.isEmpty &&
-    this.pattern.quantifiedPathPatterns.isEmpty
-  }
+  def isSimple: Boolean =
+    nodeVariableGroupings.isEmpty &&
+      patternRelationships.size == 1 &&
+      selections.isEmpty
 
+  lazy val asQueryGraph: QueryGraph =
+    QueryGraph
+      .empty
+      .addPatternRelationships(patternRelationships.toSet)
+      .addPatternNodes(patternNodes.toList: _*)
+      .addArgumentIds(argumentIds.toList)
+      .addSelections(selections)
 }

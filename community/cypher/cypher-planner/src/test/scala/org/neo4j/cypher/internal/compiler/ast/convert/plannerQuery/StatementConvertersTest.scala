@@ -1715,17 +1715,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("n", "anon_0"),
           rightBinding = NodeBinding("m", "anon_1"),
-          pattern = QueryGraph(
-            patternNodes = Set("n", "m"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "r",
-                ("n", "m"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              ))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "r",
+              ("n", "m"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            )),
+          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
@@ -1743,17 +1741,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("anon_1", "anon_0"),
           rightBinding = NodeBinding("anon_3", "anon_4"),
-          pattern = QueryGraph(
-            patternNodes = Set("anon_1", "anon_3"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "anon_5",
-                ("anon_1", "anon_3"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              ))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "anon_5",
+              ("anon_1", "anon_3"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            )),
+          patternNodes = Set("anon_1", "anon_3"),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set.empty,
           relationshipVariableGroupings = Set(VariableGrouping("anon_5", "anon_6"))
@@ -1771,17 +1767,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("n", "a"),
           rightBinding = NodeBinding("m", "b"),
-          pattern = QueryGraph(
-            patternNodes = Set("n", "m"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "r",
-                ("n", "m"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              ))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "r",
+              ("n", "m"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            )),
+          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 2, max = UpperBound.Limited(5)),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
@@ -1809,17 +1803,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("n", "b"),
           rightBinding = NodeBinding("m", "x"),
-          pattern = QueryGraph(
-            patternNodes = Set("n", "m"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "r2",
-                ("n", "m"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              ))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "r2",
+              ("n", "m"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            )),
+          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 3, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r2", "r2"))
@@ -1840,17 +1832,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("n", "b"),
           rightBinding = NodeBinding("m", "x"),
-          pattern = QueryGraph(
-            patternNodes = Set("n", "m"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "r2",
-                ("n", "m"),
-                SemanticDirection.OUTGOING,
-                Seq(relTypeName("R2")),
-                SimplePatternLength
-              ))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "r2",
+              ("n", "m"),
+              SemanticDirection.OUTGOING,
+              Seq(relTypeName("R2")),
+              SimplePatternLength
+            )),
+          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 3, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r2", "r2"))
@@ -1873,17 +1863,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("n", "anon_0"),
           rightBinding = NodeBinding("m", "anon_1"),
-          pattern = QueryGraph(
-            patternNodes = Set("n", "m"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "r1",
-                ("n", "m"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              ))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "r1",
+              ("n", "m"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            )),
+          patternNodes = Set("n", "m"),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r1", "r1"))
@@ -1891,17 +1879,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("x", "anon_1"),
           rightBinding = NodeBinding("y", "anon_2"),
-          pattern = QueryGraph(
-            patternNodes = Set("x", "y"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "r2",
-                ("x", "y"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              ))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "r2",
+              ("x", "y"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            )),
+          patternNodes = Set("x", "y"),
           repetition = Repetition(min = 0, max = UpperBound.Limited(3)),
           nodeVariableGroupings = Set(VariableGrouping("x", "x"), VariableGrouping("y", "y")),
           relationshipVariableGroupings = Set(VariableGrouping("r2", "r2"))
@@ -1923,27 +1909,25 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("a", "anon_0"),
           rightBinding = NodeBinding("c", "anon_1"),
-          pattern = QueryGraph(
-            patternNodes = Set("a", "b", "c"),
-            patternRelationships =
-              Set(
-                PatternRelationship(
-                  "r1",
-                  ("a", "b"),
-                  SemanticDirection.OUTGOING,
-                  Seq.empty,
-                  SimplePatternLength
-                ),
-                PatternRelationship(
-                  "r2",
-                  ("b", "c"),
-                  SemanticDirection.OUTGOING,
-                  Seq.empty,
-                  SimplePatternLength
-                )
+          patternRelationships =
+            List(
+              PatternRelationship(
+                "r1",
+                ("a", "b"),
+                SemanticDirection.OUTGOING,
+                Seq.empty,
+                SimplePatternLength
               ),
-            selections = Selections.from(differentRelationships("r2", "r1"))
-          ),
+              PatternRelationship(
+                "r2",
+                ("b", "c"),
+                SemanticDirection.OUTGOING,
+                Seq.empty,
+                SimplePatternLength
+              )
+            ),
+          patternNodes = Set("a", "b", "c"),
+          selections = Selections.from(differentRelationships("r2", "r1")),
           repetition = Repetition(min = 5, max = UpperBound.Limited(5)),
           nodeVariableGroupings =
             Set(VariableGrouping("a", "a"), VariableGrouping("b", "b"), VariableGrouping("c", "c")),
@@ -1952,23 +1936,81 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("x", "anon_1"),
           rightBinding = NodeBinding("y", "anon_2"),
-          pattern = QueryGraph(
-            patternNodes = Set("x", "y"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "r3",
-                ("x", "y"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              ))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "r3",
+              ("x", "y"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            )),
+          patternNodes = Set("x", "y"),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("x", "x"), VariableGrouping("y", "y")),
           relationshipVariableGroupings = Set(VariableGrouping("r3", "r3"))
         )
       )
     )
+  }
+
+  test(
+    "should convert a quantified path pattern with a pattern of length > 1 whilst preserving the order in which the relationships appear"
+  ) {
+    val query = buildSinglePlannerQuery("MATCH ((a)-[r1]->(b)-[r2]->(c)<-[r3]-(d)){5} RETURN 1")
+    val expected = QueryGraph(
+      patternNodes = Set("anon_0", "anon_1"),
+      selections = Selections.from(Seq(
+        unique(add(add(varFor("r1"), varFor("r2")), varFor("r3")))
+      )),
+      quantifiedPathPatterns = Set(
+        QuantifiedPathPattern(
+          leftBinding = NodeBinding("a", "anon_0"),
+          rightBinding = NodeBinding("d", "anon_1"),
+          patternRelationships =
+            List(
+              PatternRelationship(
+                "r1",
+                ("a", "b"),
+                SemanticDirection.OUTGOING,
+                Seq.empty,
+                SimplePatternLength
+              ),
+              PatternRelationship(
+                "r2",
+                ("b", "c"),
+                SemanticDirection.OUTGOING,
+                Seq.empty,
+                SimplePatternLength
+              ),
+              PatternRelationship(
+                "r3",
+                ("c", "d"),
+                SemanticDirection.INCOMING,
+                Seq.empty,
+                SimplePatternLength
+              )
+            ),
+          patternNodes = Set("a", "b", "c", "d"),
+          selections = Selections.from(List(
+            differentRelationships("r3", "r2"),
+            differentRelationships("r3", "r1"),
+            differentRelationships("r2", "r1")
+          )),
+          repetition = Repetition(min = 5, max = UpperBound.Limited(5)),
+          nodeVariableGroupings =
+            Set(
+              VariableGrouping("a", "a"),
+              VariableGrouping("b", "b"),
+              VariableGrouping("c", "c"),
+              VariableGrouping("d", "d")
+            ),
+          relationshipVariableGroupings =
+            Set(VariableGrouping("r1", "r1"), VariableGrouping("r2", "r2"), VariableGrouping("r3", "r3"))
+        )
+      )
+    )
+
+    query.queryGraph shouldBe expected
   }
 
   test("should convert a single quantified pattern in OPTIONAL MATCH") {
@@ -1980,17 +2022,15 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
           QuantifiedPathPattern(
             leftBinding = NodeBinding("n", "anon_0"),
             rightBinding = NodeBinding("m", "anon_1"),
-            pattern = QueryGraph(
-              patternNodes = Set("n", "m"),
-              patternRelationships =
-                Set(PatternRelationship(
-                  "r",
-                  ("n", "m"),
-                  SemanticDirection.OUTGOING,
-                  Seq.empty,
-                  SimplePatternLength
-                ))
-            ),
+            patternRelationships =
+              List(PatternRelationship(
+                "r",
+                ("n", "m"),
+                SemanticDirection.OUTGOING,
+                Seq.empty,
+                SimplePatternLength
+              )),
+            patternNodes = Set("n", "m"),
             repetition = Repetition(min = 1, max = UpperBound.Unlimited),
             nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
             relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
@@ -2012,18 +2052,16 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val qpp = QuantifiedPathPattern(
       leftBinding = NodeBinding(n, "a"),
       rightBinding = NodeBinding(m, m_outer),
-      pattern = QueryGraph(
-        patternNodes = Set(n, m),
-        patternRelationships =
-          Set(PatternRelationship(
-            r,
-            (n, m),
-            SemanticDirection.OUTGOING,
-            Seq.empty,
-            SimplePatternLength
-          )),
-        argumentIds = Set("a")
-      ),
+      patternRelationships =
+        List(PatternRelationship(
+          r,
+          (n, m),
+          SemanticDirection.OUTGOING,
+          Seq.empty,
+          SimplePatternLength
+        )),
+      patternNodes = Set(n, m),
+      argumentIds = Set("a"),
       repetition = Repetition(min = 1, max = UpperBound.Unlimited),
       nodeVariableGroupings = Set(VariableGrouping(n, n), VariableGrouping(m, m)),
       relationshipVariableGroupings = Set(VariableGrouping(r, r))
@@ -2050,18 +2088,16 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("n", "anon_0"),
           rightBinding = NodeBinding("m", "anon_1"),
-          pattern = QueryGraph(
-            patternNodes = Set("n", "m"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "r",
-                ("n", "m"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              )),
-            selections = Selections.from(andedPropertyInequalities(greaterThan(prop("n", "prop"), prop("m", "prop"))))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "r",
+              ("n", "m"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            )),
+          patternNodes = Set("n", "m"),
+          selections = Selections.from(andedPropertyInequalities(greaterThan(prop("n", "prop"), prop("m", "prop")))),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
@@ -2079,21 +2115,19 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
         QuantifiedPathPattern(
           leftBinding = NodeBinding("n", "anon_0"),
           rightBinding = NodeBinding("m", "anon_1"),
-          pattern = QueryGraph(
-            patternNodes = Set("n", "m"),
-            patternRelationships =
-              Set(PatternRelationship(
-                "r",
-                ("n", "m"),
-                SemanticDirection.OUTGOING,
-                Seq.empty,
-                SimplePatternLength
-              )),
-            selections = Selections.from(andedPropertyInequalities(
-              propGreaterThan("r", "prop", 0),
-              propLessThan("r", "prop", 10)
-            ))
-          ),
+          patternRelationships =
+            List(PatternRelationship(
+              "r",
+              ("n", "m"),
+              SemanticDirection.OUTGOING,
+              Seq.empty,
+              SimplePatternLength
+            )),
+          patternNodes = Set("n", "m"),
+          selections = Selections.from(andedPropertyInequalities(
+            propGreaterThan("r", "prop", 0),
+            propLessThan("r", "prop", 10)
+          )),
           repetition = Repetition(min = 1, max = UpperBound.Unlimited),
           nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
           relationshipVariableGroupings = Set(VariableGrouping("r", "r"))

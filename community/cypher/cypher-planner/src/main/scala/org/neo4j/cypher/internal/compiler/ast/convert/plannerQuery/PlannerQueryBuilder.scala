@@ -198,7 +198,7 @@ object PlannerQueryBuilder {
 
       // A QPP can currently only refer to variables from previous clauses,
       // so we can use the arguments of the current QG
-      val qppsWithArguments = qpps.map(qpp => qpp.copy(pattern = qpp.pattern.withArgumentIds(arguments)))
+      val qppsWithArguments = qpps.map(qpp => qpp.copy(argumentIds = arguments))
       plannerQuery
         .amendQueryGraph(_.withQuantifiedPathPatterns(qppsWithArguments))
         .updateTail(fixArgumentIdsOnQPPs)

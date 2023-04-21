@@ -29,11 +29,15 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.DeleteExpression
 import org.neo4j.cypher.internal.ir.ForeachPattern
+import org.neo4j.cypher.internal.ir.NodeBinding
+import org.neo4j.cypher.internal.ir.PatternRelationship
+import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
@@ -43,7 +47,9 @@ import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
+import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.RequiredOrderCandidate
@@ -55,7 +61,10 @@ import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.ResolvedCall
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.Repetition
+import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.InternalException
 
 import scala.collection.immutable.ListSet
 
@@ -1205,6 +1214,46 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       solveds.get(p3.id).allHints shouldBe (Set(hint1, hint2))
       context.staticComponents.planningAttributes.providedOrders.get(p3.id) shouldBe (ProvidedOrder.empty)
+    }
+  }
+
+  test("should validate the inner plan against the quantified path pattern when planning Trail") {
+    new given().withLogicalPlanningContext { (_, context) =>
+      val producer = LogicalPlanProducer(context.cardinality, context.staticComponents.planningAttributes, idGen)
+
+      val sourcePlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "source")
+      val innerPlan = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "inner")
+
+      val quantifiedPathPattern = QuantifiedPathPattern(
+        leftBinding = NodeBinding("n", "anon_0"),
+        rightBinding = NodeBinding("m", "anon_1"),
+        patternRelationships =
+          List(PatternRelationship(
+            "r",
+            ("n", "m"),
+            SemanticDirection.OUTGOING,
+            Nil,
+            SimplePatternLength
+          )),
+        patternNodes = Set("n", "m"),
+        repetition = Repetition(min = 1, max = UpperBound.Unlimited),
+        nodeVariableGroupings = Set(VariableGrouping("n", "n"), VariableGrouping("m", "m")),
+        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+      )
+
+      the[InternalException] thrownBy producer.planTrail(
+        source = sourcePlan,
+        pattern = quantifiedPathPattern,
+        startBinding = quantifiedPathPattern.leftBinding,
+        endBinding = quantifiedPathPattern.rightBinding,
+        maybeHiddenFilter = None,
+        context = context,
+        innerPlan = innerPlan,
+        predicates = Nil,
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
+      ) should have message "The provided inner plan doesn't conform with the quantified path pattern being planned"
     }
   }
 }

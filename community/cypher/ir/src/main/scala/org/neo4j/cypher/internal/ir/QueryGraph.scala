@@ -81,7 +81,7 @@ case class QueryGraph(
     copy(
       selections = f(selections),
       optionalMatches = optionalMatches.map(_.mapSelections(f)),
-      quantifiedPathPatterns = quantifiedPathPatterns.map(qpp => qpp.copy(pattern = qpp.pattern.mapSelections(f)))
+      quantifiedPathPatterns = quantifiedPathPatterns.map(qpp => qpp.copy(selections = f(qpp.selections)))
     )
 
   def addPatternContent(patternContent: PatternConverters.DestructResult): QueryGraph = this
@@ -138,7 +138,7 @@ case class QueryGraph(
     QgWithLeafInfo.qgWithNoStableIdentifierAndOnlyLeaves(this) +:
       (iRExpressions ++
         optionalMatches.flatMap(_.allQGsWithLeafInfo) ++
-        quantifiedPathPatterns.flatMap(_.pattern.allQGsWithLeafInfo))
+        quantifiedPathPatterns.flatMap(_.asQueryGraph.allQGsWithLeafInfo))
   }
 
   /**
@@ -300,7 +300,7 @@ case class QueryGraph(
   private def traverseAllQueryGraphs[A](f: QueryGraph => Set[A]): Set[A] =
     f(this) ++
       optionalMatches.flatMap(_.traverseAllQueryGraphs(f)) ++
-      quantifiedPathPatterns.flatMap(_.pattern.traverseAllQueryGraphs(f))
+      quantifiedPathPatterns.flatMap(_.asQueryGraph.traverseAllQueryGraphs(f))
 
   def allPossibleLabelsOnNode(node: String): Set[LabelName] =
     traverseAllQueryGraphs(_.possibleLabelsOnNode(node))

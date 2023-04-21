@@ -51,12 +51,14 @@ class QueryGraphConnectedComponentsTest
 
   private def qpp(from: String, to: String) =
     QuantifiedPathPattern(
-      NodeBinding(s"${from}_inner", from),
-      NodeBinding(s"${to}_inner", to),
-      QueryGraph(patternRelationships = Set(rel(s"${from}_inner", s"${to}_inner"))),
-      Repetition(0, Unlimited),
-      nodeVariableGroupings =
-        Set(VariableGrouping("anon_1", s"${from}_inner"), VariableGrouping("anon_3", s"${to}_inner")),
+      leftBinding = NodeBinding(s"${from}_inner", from),
+      rightBinding = NodeBinding(s"${to}_inner", to),
+      patternRelationships = List(rel(s"${from}_inner", s"${to}_inner")),
+      repetition = Repetition(0, Unlimited),
+      nodeVariableGroupings = Set(
+        VariableGrouping("anon_1", s"${from}_inner"),
+        VariableGrouping("anon_3", s"${to}_inner")
+      ),
       relationshipVariableGroupings = Set(VariableGrouping("anon_2", "r"))
     )
 

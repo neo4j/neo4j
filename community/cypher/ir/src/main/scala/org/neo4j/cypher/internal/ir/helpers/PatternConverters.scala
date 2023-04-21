@@ -39,7 +39,6 @@ import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
-import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.VariableGrouping
@@ -208,10 +207,7 @@ object PatternConverters {
       }
 
       val patternContent = quantifiedPathElement.destructed
-      val qg = QueryGraph(
-        argumentIds = Set.empty,
-        selections = Selections.from(quantifiedPath.optionalWhereExpression)
-      ).addPatternContent(patternContent)
+      val selections = Selections.from(quantifiedPath.optionalWhereExpression)
 
       val variableGroupings = quantifiedPath.variableGroupings
       val nodeVariableGroupings = variableGroupings
@@ -224,7 +220,10 @@ object PatternConverters {
       QuantifiedPathPattern(
         leftBinding = NodeBinding(innerLeft, outerLeft),
         rightBinding = NodeBinding(innerRight, outerRight),
-        pattern = qg,
+        patternRelationships = patternContent.rels,
+        patternNodes = patternContent.nodeIds.toSet,
+        argumentIds = Set.empty,
+        selections = selections,
         repetition = quantifiedPath.quantifier.toRepetition,
         nodeVariableGroupings = nodeVariableGroupings,
         relationshipVariableGroupings = relationshipVariableGroupings

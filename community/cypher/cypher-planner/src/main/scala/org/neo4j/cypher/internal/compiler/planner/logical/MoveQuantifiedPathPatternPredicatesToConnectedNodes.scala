@@ -57,7 +57,7 @@ case object MoveQuantifiedPathPatternPredicatesToConnectedNodes extends PlannerQ
             val start = qpp.leftBinding.inner
             val end = qpp.rightBinding.inner
 
-            qpp.pattern.selections.predicates.foldLeft(Set.empty[Predicate]) {
+            qpp.selections.predicates.foldLeft(Set.empty[Predicate]) {
               case (acc, predicate) =>
                 val deps = predicate.dependencies
 
@@ -65,8 +65,8 @@ case object MoveQuantifiedPathPatternPredicatesToConnectedNodes extends PlannerQ
                 // We could theoretically also copy a predicate with dependencies on both start and end node,
                 // but that would currently mostly result in a filter _after_ the Trail plan, not filtering out anything new.
                 // What we are trying to achieve instead as a filter _before_ the Trail plan.
-                val okDependencies = deps.subsetOf(qpp.pattern.argumentIds + start) ||
-                  deps.subsetOf(qpp.pattern.argumentIds + end)
+                val okDependencies = deps.subsetOf(qpp.argumentIds + start) ||
+                  deps.subsetOf(qpp.argumentIds + end)
 
                 // IR Expressions can also not easily be rewritten, since they contain variables as simple Strings.
                 val noIRExpressions = predicate.folder.treeFindByClass[IRExpression].isEmpty
