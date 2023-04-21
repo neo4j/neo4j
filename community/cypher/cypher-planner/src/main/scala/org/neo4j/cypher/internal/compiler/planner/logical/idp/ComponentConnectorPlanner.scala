@@ -67,7 +67,7 @@ case class ComponentConnectorPlanner(singleComponentPlanner: SingleComponentPlan
     // kit.select plans predicates and shortest path patterns. If nothing is left in this area, we can skip IDP.
     val allSolved = components.flatMap(_.queryGraph.selections.predicates)
     val notYetSolved = queryGraph.selections.predicates -- allSolved
-    if (notYetSolved.isEmpty && queryGraph.optionalMatches.isEmpty && queryGraph.shortestPathPatterns.isEmpty) {
+    if (notYetSolved.isEmpty && queryGraph.optionalMatches.isEmpty && queryGraph.shortestRelationshipPatterns.isEmpty) {
       if (components.size == 1) {
         // If there is only 1 component and no optional matches there is nothing we need to do.
         components.head.plan

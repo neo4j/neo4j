@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -1709,7 +1709,7 @@ case class PathPropagatingBFS(
  */
 case class FindShortestPaths(
   override val source: LogicalPlan,
-  shortestPath: ShortestPathPattern,
+  shortestRelationship: ShortestRelationshipPattern,
   perStepNodePredicates: Seq[VariablePredicate] = Seq.empty,
   perStepRelPredicates: Seq[VariablePredicate] = Seq.empty,
   pathPredicates: Seq[Expression] = Seq.empty,
@@ -1720,7 +1720,7 @@ case class FindShortestPaths(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols ++ shortestPath.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols ++ shortestRelationship.availableSymbols
 }
 
 /**
@@ -1832,7 +1832,7 @@ case class LeftOuterHashJoin(nodes: Set[String], override val left: LogicalPlan,
  */
 case class LegacyFindShortestPaths(
   override val source: LogicalPlan,
-  shortestPath: ShortestPathPattern,
+  shortestRelationship: ShortestRelationshipPattern,
   predicates: Seq[Expression] = Seq.empty,
   withFallBack: Boolean = false,
   disallowSameNode: Boolean = true
@@ -1841,7 +1841,7 @@ case class LegacyFindShortestPaths(
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
 
-  override val availableSymbols: Set[String] = source.availableSymbols ++ shortestPath.availableSymbols
+  override val availableSymbols: Set[String] = source.availableSymbols ++ shortestRelationship.availableSymbols
 }
 
 /**

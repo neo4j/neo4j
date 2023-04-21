@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
 import org.neo4j.cypher.internal.util.Rewritable
 
 //noinspection ZeroIndexToHead
-final case class ShortestPathPattern(name: Option[String], rel: PatternRelationship, single: Boolean)(
+final case class ShortestRelationshipPattern(name: Option[String], rel: PatternRelationship, single: Boolean)(
   val expr: ShortestPathsPatternPart
 ) extends Rewritable {
 
@@ -39,6 +39,6 @@ final case class ShortestPathPattern(name: Option[String], rel: PatternRelations
   def availableSymbols: Set[String] = name.toSet ++ rel.coveredIds
 }
 
-object ShortestPathPattern {
-  implicit val byRelName = Ordering.by { sp: ShortestPathPattern => sp.rel }
+object ShortestRelationshipPattern {
+  implicit val byRelName = Ordering.by { sp: ShortestRelationshipPattern => sp.rel }
 }

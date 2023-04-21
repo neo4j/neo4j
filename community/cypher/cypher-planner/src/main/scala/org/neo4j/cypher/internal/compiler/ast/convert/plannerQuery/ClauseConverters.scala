@@ -764,7 +764,7 @@ object ClauseConverters {
      * If there are updates, we need to keep the order between read and write parts correct.
      */
     def noUpdates: Boolean = !builder.currentQueryGraph.containsUpdates && builder.readOnly
-    def noShortestPaths: Boolean = builder.currentQueryGraph.shortestPathPatterns.isEmpty
+    def noShortestPaths: Boolean = builder.currentQueryGraph.shortestRelationshipPatterns.isEmpty
 
     /**
      * If there are projections or aggregations, we have to continue in a new PlannerQuery.

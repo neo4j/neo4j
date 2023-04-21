@@ -73,7 +73,7 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -546,7 +546,7 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(UnaryOperator(lp =>
       FindShortestPaths(
         lp,
-        ShortestPathPattern(
+        ShortestRelationshipPattern(
           pathName,
           PatternRelationship(p.relName, (p.from, p.to), p.dir, p.relTypes, p.length),
           !all

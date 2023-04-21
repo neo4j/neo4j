@@ -51,7 +51,7 @@ case class QueryGraph(
   selections: Selections = Selections(),
   optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
   hints: Set[Hint] = Set.empty,
-  shortestPathPatterns: Set[ShortestPathPattern] = Set.empty,
+  shortestRelationshipPatterns: Set[ShortestRelationshipPattern] = Set.empty,
   mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty
   // !!! If you change anything here, make sure to update the equals, ++ and hashCode methods at the bottom of this class !!!
 ) extends UpdateGraph {
@@ -88,7 +88,7 @@ case class QueryGraph(
     .addPatternNodes(patternContent.nodeIds: _*)
     .addPatternRelationships(patternContent.rels.toSet)
     .addQuantifiedPathPatterns(patternContent.quantifiedPathPatterns.toSet)
-    .addShortestPaths(patternContent.shortestPaths: _*)
+    .addShortestRelationships(patternContent.shortestRelationships: _*)
 
   def addPatternNodes(nodes: String*): QueryGraph =
     copy(patternNodes = patternNodes ++ nodes)
@@ -118,11 +118,11 @@ case class QueryGraph(
   def addQuantifiedPathPatterns(pattern: Set[QuantifiedPathPattern]): QueryGraph =
     pattern.foldLeft[QueryGraph](this)((qg, rel) => qg.addQuantifiedPathPattern(rel))
 
-  def addShortestPath(shortestPath: ShortestPathPattern): QueryGraph = {
-    val rel = shortestPath.rel
+  def addShortestRelationship(shortestRelationship: ShortestRelationshipPattern): QueryGraph = {
+    val rel = shortestRelationship.rel
     copy(
       patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
-      shortestPathPatterns = shortestPathPatterns + shortestPath
+      shortestRelationshipPatterns = shortestRelationshipPatterns + shortestRelationship
     )
   }
 
@@ -164,13 +164,15 @@ case class QueryGraph(
   }
 
   def allPatternRelationshipsRead: Set[PatternRelationship] =
-    patternRelationships ++ optionalMatches.flatMap(_.allPatternRelationshipsRead) ++ shortestPathPatterns.map(_.rel)
+    patternRelationships ++ optionalMatches.flatMap(
+      _.allPatternRelationshipsRead
+    ) ++ shortestRelationshipPatterns.map(_.rel)
 
   def allPatternNodesRead: Set[String] =
     patternNodes ++ optionalMatches.flatMap(_.allPatternNodesRead)
 
-  def addShortestPaths(shortestPaths: ShortestPathPattern*): QueryGraph =
-    shortestPaths.foldLeft(this)((qg, p) => qg.addShortestPath(p))
+  def addShortestRelationships(shortestRelationships: ShortestRelationshipPattern*): QueryGraph =
+    shortestRelationships.foldLeft(this)((qg, p) => qg.addShortestRelationship(p))
 
   def addArgumentId(newId: String): QueryGraph = copy(argumentIds = argumentIds + newId)
 
@@ -324,7 +326,7 @@ case class QueryGraph(
   def idsWithoutOptionalMatchesOrUpdates: Set[String] =
     coveredIdsForPatterns ++
       argumentIds ++
-      shortestPathPatterns.flatMap(_.name) ++
+      shortestRelationshipPatterns.flatMap(_.name) ++
       quantifiedPathPatterns.flatMap(_.groupings)
 
   /**
@@ -359,7 +361,7 @@ case class QueryGraph(
           optionalMatches = optionalMatches ++ otherOptionalMatches,
           argumentIds = argumentIds ++ otherArgumentIds,
           hints = hints ++ otherHints,
-          shortestPathPatterns = shortestPathPatterns ++ otherShortestPathPatterns,
+          shortestRelationshipPatterns = shortestRelationshipPatterns ++ otherShortestPathPatterns,
           mutatingPatterns = mutatingPatterns ++ otherMutatingPatterns
         )
     }
@@ -395,10 +397,10 @@ case class QueryGraph(
     def createComponentQueryGraphStartingFrom(patternNode: String) = {
       val qg = connectedComponentFor(patternNode, visited)
       val coveredIds = qg.idsWithoutOptionalMatchesOrUpdates
-      val shortestPaths = shortestPathPatterns.filter {
+      val shortestRelationships = shortestRelationshipPatterns.filter {
         p => coveredIds.contains(p.rel.nodes._1) && coveredIds.contains(p.rel.nodes._2)
       }
-      val shortestPathIds = shortestPaths.flatMap(p => Set(p.rel.name) ++ p.name)
+      val shortestPathIds = shortestRelationships.flatMap(p => Set(p.rel.name) ++ p.name)
       val allIds = coveredIds ++ argumentIds ++ shortestPathIds
 
       val predicates = predicatesWithLocalDependencies.filter(_.dependencies.subsetOf(allIds))
@@ -406,7 +408,7 @@ case class QueryGraph(
       qg.withSelections(Selections(predicates))
         .withArgumentIds(argumentIds)
         .addHints(filteredHints)
-        .addShortestPaths(shortestPaths.toIndexedSeq: _*)
+        .addShortestRelationships(shortestRelationships.toIndexedSeq: _*)
     }
 
     /*
@@ -512,7 +514,7 @@ case class QueryGraph(
     patternRelationships.nonEmpty ||
     quantifiedPathPatterns.nonEmpty ||
     selections.nonEmpty ||
-    shortestPathPatterns.nonEmpty ||
+    shortestRelationshipPatterns.nonEmpty ||
     optionalMatches.nonEmpty ||
     containsMergeRecursive ||
     containsPropertyReadsInUpdates
@@ -539,7 +541,7 @@ case class QueryGraph(
     patternNodes
       .intersect(argumentIds)
       .diff(patternRelationships.flatMap(_.coveredIds))
-      .diff(shortestPathPatterns.flatMap(_.rel.coveredIds))
+      .diff(shortestRelationshipPatterns.flatMap(_.rel.coveredIds))
       .diff(quantifiedPathPatterns.flatMap(_.coveredNodeIds))
   }
 
@@ -577,7 +579,11 @@ case class QueryGraph(
     addSetIfNonEmpty(quantifiedPathPatterns, "Quantified path patterns", (_: QuantifiedPathPattern).toString)
     addSetIfNonEmptyS(argumentIds, "Arguments")
     addSetIfNonEmpty(selections.flatPredicates, "Predicates", (e: Expression) => stringifier.apply(e))
-    addSetIfNonEmpty(shortestPathPatterns, "Shortest paths", (_: ShortestPathPattern).toString)
+    addSetIfNonEmpty(
+      shortestRelationshipPatterns,
+      "Shortest relationships",
+      (_: ShortestRelationshipPattern).toString
+    )
     addSetIfNonEmpty(optionalMatches, "Optional Matches: ", (_: QueryGraph).toString)
     addSetIfNonEmpty(hints, "Hints", (_: Hint).toString)
     addSetIfNonEmpty(mutatingPatterns, "MutatingPatterns", (_: MutatingPattern).toString)
@@ -603,7 +609,7 @@ case class QueryGraph(
           otherSelections,
           otherOptionalMatches,
           otherHints,
-          otherShortestPathPatterns,
+          otherShortestRelationshipPatterns,
           otherMutatingPatterns
         ) =>
         if (this eq other) {
@@ -616,7 +622,7 @@ case class QueryGraph(
           selections == otherSelections &&
           optionalMatches.toSet == otherOptionalMatches.toSet &&
           hints == otherHints &&
-          shortestPathPatterns == otherShortestPathPatterns &&
+          shortestRelationshipPatterns == otherShortestRelationshipPatterns &&
           mutatingPatterns == otherMutatingPatterns
         }
       case _ =>
@@ -636,7 +642,7 @@ case class QueryGraph(
         selections,
         optionalMatches.toSet,
         hints.groupBy(identity),
-        shortestPathPatterns,
+        shortestRelationshipPatterns,
         mutatingPatterns
       ))
   }

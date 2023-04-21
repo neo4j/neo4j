@@ -53,7 +53,7 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -326,7 +326,7 @@ object LogicalPlanToPlanBuilderString {
         val fbStr = if (withFallBack) ", withFallback = true" else ""
         val dsnStr = if (!disallowSameNode) ", disallowSameNode = false" else ""
         shortestPath match {
-          case ShortestPathPattern(
+          case ShortestRelationshipPattern(
               maybePathName,
               PatternRelationship(relName, (from, to), dir, types, length),
               single
@@ -352,7 +352,7 @@ object LogicalPlanToPlanBuilderString {
         val fbStr = if (withFallBack) ", withFallback = true" else ""
         val dsnStr = if (!disallowSameNode) ", disallowSameNode = false" else ""
         shortestPath match {
-          case ShortestPathPattern(
+          case ShortestRelationshipPattern(
               maybePathName,
               PatternRelationship(relName, (from, to), dir, types, length),
               single

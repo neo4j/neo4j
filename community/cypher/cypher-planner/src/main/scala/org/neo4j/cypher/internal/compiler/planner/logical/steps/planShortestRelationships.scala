@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
@@ -47,22 +47,22 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.topDown
 import org.neo4j.exceptions.ExhaustiveShortestPathForbiddenException
 
-case object planShortestPaths {
+case object planShortestRelationships {
 
   def apply(
     inner: LogicalPlan,
     queryGraph: QueryGraph,
-    shortestPaths: ShortestPathPattern,
+    shortestRelationship: ShortestRelationshipPattern,
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
-    val patternRelationship = shortestPaths.rel
+    val patternRelationship = shortestRelationship.rel
     val relName = patternRelationship.name
-    val pathNameOpt = shortestPaths.name
+    val pathNameOpt = shortestRelationship.name
 
-    val variables = Set(shortestPaths.name, Some(shortestPaths.rel.name)).flatten
+    val variables = Set(shortestRelationship.name, Some(shortestRelationship.rel.name)).flatten
 
-    def predicateAppliesToShortestPath(p: Predicate) =
+    def predicateAppliesToShortestRelationship(p: Predicate) =
       // only select predicates related to this pattern (this is code in common with normal MATCH Pattern clauses)
       p.hasDependenciesMet(variables ++ inner.availableSymbols) &&
         // And filter with predicates that explicitly depend on shortestPath variables
@@ -70,7 +70,7 @@ case object planShortestPaths {
 
     // The predicates which apply to the shortest path pattern will be solved by this operator
     val solvedPredicates = queryGraph.selections.predicates.collect {
-      case p @ Predicate(_, expr) if predicateAppliesToShortestPath(p) => expr
+      case p @ Predicate(_, expr) if predicateAppliesToShortestRelationship(p) => expr
     }
 
     val (
@@ -83,9 +83,9 @@ case object planShortestPaths {
     val pathPredicates = solvedPredicates.diff(nonExtractedPerStepPredicates)
 
     if (pathPredicates.nonEmpty) {
-      planShortestPathsWithFallback(
+      planShortestRelationshipsWithFallback(
         inner,
-        shortestPaths,
+        shortestRelationship,
         nodePredicates,
         relPredicates,
         pathPredicates,
@@ -94,9 +94,9 @@ case object planShortestPaths {
         context
       )
     } else {
-      context.staticComponents.logicalPlanProducer.planShortestPath(
+      context.staticComponents.logicalPlanProducer.planShortestRelationship(
         inner,
-        shortestPaths,
+        shortestRelationship,
         nodePredicates,
         relPredicates,
         pathPredicates,
@@ -115,9 +115,9 @@ case object planShortestPaths {
     PathExpression(step)(pos)
   }
 
-  private def planShortestPathsWithFallback(
+  private def planShortestRelationshipsWithFallback(
     inner: LogicalPlan,
-    shortestPath: ShortestPathPattern,
+    shortestRelationship: ShortestRelationshipPattern,
     nodePredicates: Set[VariablePredicate],
     relPredicates: Set[VariablePredicate],
     pathPredicates: Set[Expression],
@@ -127,7 +127,7 @@ case object planShortestPaths {
   ) = {
     // create warning for planning a shortest path fallback
     context.staticComponents.notificationLogger.log(
-      ExhaustiveShortestPathForbiddenNotification(shortestPath.expr.position)
+      ExhaustiveShortestPathForbiddenNotification(shortestRelationship.expr.position)
     )
 
     val lpp = context.staticComponents.logicalPlanProducer
@@ -135,15 +135,15 @@ case object planShortestPaths {
     // Plan FindShortestPaths within an Apply with an Optional so we get null rows when
     // the graph algorithm does not find anything (left-hand-side)
     val lhsArgument = context.staticComponents.logicalPlanProducer.planArgument(
-      patternNodes = Set(shortestPath.rel.nodes._1, shortestPath.rel.nodes._2),
+      patternNodes = Set(shortestRelationship.rel.nodes._1, shortestRelationship.rel.nodes._2),
       patternRels = Set.empty,
       other = Set.empty,
       context = context
     )
 
-    val lhsSp = lpp.planShortestPath(
+    val lhsSp = lpp.planShortestRelationship(
       lhsArgument,
-      shortestPath,
+      shortestRelationship,
       nodePredicates,
       relPredicates,
       pathPredicates,
@@ -156,7 +156,7 @@ case object planShortestPaths {
     val lhs = lpp.planApply(inner, lhsOption, context)
 
     val rhsArgument = context.staticComponents.logicalPlanProducer.planArgument(
-      patternNodes = Set(shortestPath.rel.nodes._1, shortestPath.rel.nodes._2),
+      patternNodes = Set(shortestRelationship.rel.nodes._1, shortestRelationship.rel.nodes._2),
       patternRels = Set.empty,
       other = Set.empty,
       context = context
@@ -166,19 +166,25 @@ case object planShortestPaths {
       if (context.settings.errorIfShortestPathFallbackUsedAtRuntime) {
         lpp.planError(rhsArgument, new ExhaustiveShortestPathForbiddenException, context)
       } else {
-        buildPlanShortestPathsFallbackPlans(shortestPath, rhsArgument, solvedPredicates.toSeq, queryGraph, context)
+        buildPlanShortestRelationshipsFallbackPlans(
+          shortestRelationship,
+          rhsArgument,
+          solvedPredicates.toSeq,
+          queryGraph,
+          context
+        )
       }
 
     // We have to force the plan to solve what we actually solve
     val solved = context.staticComponents.planningAttributes.solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
-      _.addShortestPath(shortestPath).addPredicates(solvedPredicates.toSeq: _*)
+      _.addShortestRelationship(shortestRelationship).addPredicates(solvedPredicates.toSeq: _*)
     )
 
-    lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestPath.name.get), context, Some(solved))
+    lpp.planAntiConditionalApply(lhs, rhs, Seq(shortestRelationship.name.get), context, Some(solved))
   }
 
-  private def buildPlanShortestPathsFallbackPlans(
-    shortestPath: ShortestPathPattern,
+  private def buildPlanShortestRelationshipsFallbackPlans(
+    shortestRelationship: ShortestRelationshipPattern,
     rhsArgument: LogicalPlan,
     predicates: Seq[Expression],
     queryGraph: QueryGraph,
@@ -186,21 +192,21 @@ case object planShortestPaths {
   ): LogicalPlan = {
     // TODO: Decide the best from and to based on degree (generate two alternative plans and let planner decide)
     // (or do bidirectional var length expand)
-    val pattern = shortestPath.rel
+    val pattern = shortestRelationship.rel
     val from = pattern.left
     val lpp = context.staticComponents.logicalPlanProducer
     // We assume there is always a path name (either explicit or auto-generated)
-    val pathName = shortestPath.name.get
+    val pathName = shortestRelationship.name.get
 
     // TODO: When the path is named, we need to redo the projectNamedPaths stuff so that
     // we can extract the per step predicates again
 
     // Projection with path
-    val map = Map(pathName -> createPathExpression(shortestPath.expr.element))
+    val map = Map(pathName -> createPathExpression(shortestRelationship.expr.element))
 
     // Rewriter for path name to path expression
     val rewriter = topDown(Rewriter.lift {
-      case Variable(name) if name == pathName => createPathExpression(shortestPath.expr.element)
+      case Variable(name) if name == pathName => createPathExpression(shortestRelationship.expr.element)
     })
 
     // Rewrite query graph to match during inlining of predicates in var expand
@@ -240,7 +246,7 @@ case object planShortestPaths {
       context.staticComponents.logicalPlanProducer.planSelection(rhsProjection, filteredPredicates, context)
 
     // Plan Top
-    val pos = shortestPath.expr.position
+    val pos = shortestRelationship.expr.position
     val pathVariable = Variable(pathName)(pos)
     val lengthOfPath = FunctionInvocation(FunctionName(Length.name)(pos), pathVariable)(pos)
     val columnName = context.staticComponents.anonymousVariableNameGenerator.nextName
@@ -249,7 +255,7 @@ case object planShortestPaths {
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, Set.empty, rhsProjMap, Some(rhsProjMap), context)
     val sortDescription = Seq(Ascending(columnName))
     val plan =
-      if (shortestPath.single) {
+      if (shortestRelationship.single) {
         lpp.planTop(
           rhsProjected,
           SignedDecimalIntegerLiteral("1")(pos),

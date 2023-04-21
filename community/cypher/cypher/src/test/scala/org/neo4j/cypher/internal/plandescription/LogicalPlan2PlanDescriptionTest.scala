@@ -132,7 +132,7 @@ import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
@@ -4497,7 +4497,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         FindShortestPaths(
           lhsLP,
-          ShortestPathPattern(
+          ShortestRelationshipPattern(
             None,
             PatternRelationship(
               "r",
@@ -4528,7 +4528,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         FindShortestPaths(
           lhsLP,
-          ShortestPathPattern(
+          ShortestRelationshipPattern(
             None,
             PatternRelationship(
               "r",
@@ -4559,7 +4559,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         FindShortestPaths(
           lhsLP,
-          ShortestPathPattern(
+          ShortestRelationshipPattern(
             None,
             PatternRelationship(
               "r",
@@ -4590,7 +4590,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         FindShortestPaths(
           lhsLP,
-          ShortestPathPattern(
+          ShortestRelationshipPattern(
             Some("  UNNAMED12"),
             PatternRelationship(
               "r",
@@ -4623,7 +4623,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         FindShortestPaths(
           lhsLP,
-          ShortestPathPattern(
+          ShortestRelationshipPattern(
             Some("  UNNAMED12"),
             PatternRelationship(
               "r",
@@ -4656,7 +4656,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         FindShortestPaths(
           lhsLP,
-          ShortestPathPattern(
+          ShortestRelationshipPattern(
             Some("  UNNAMED12"),
             PatternRelationship(
               "r",

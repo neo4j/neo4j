@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.planner.logical.SortPlanner.orderSatis
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.ExistsSubqueryPlanner
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.planLegacyShortestPaths
-import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestPaths
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.planLegacyShortestRelationships
+import org.neo4j.cypher.internal.compiler.planner.logical.steps.planShortestRelationships
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -146,13 +146,13 @@ case class IDPQueryGraphSolver(
     qg: QueryGraph,
     context: LogicalPlanningContext
   ): LogicalPlan =
-    qg.shortestPathPatterns.foldLeft(kit.select(initialPlan, qg)) {
+    qg.shortestRelationshipPatterns.foldLeft(kit.select(initialPlan, qg)) {
       case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
         val shortestPath =
           if (context.settings.useLegacyShortestPath) {
-            planLegacyShortestPaths(plan, qg, sp, context)
+            planLegacyShortestRelationships(plan, qg, sp, context)
           } else {
-            planShortestPaths(plan, qg, sp, context)
+            planShortestRelationships(plan, qg, sp, context)
           }
         kit.select(shortestPath, qg)
       case (plan, _) => plan

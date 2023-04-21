@@ -62,7 +62,7 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -576,7 +576,7 @@ object ReadFinder {
 
       case FindShortestPaths(
           _,
-          ShortestPathPattern(_, PatternRelationship(name, nodes, _, types, _), _),
+          ShortestRelationshipPattern(_, PatternRelationship(name, nodes, _, types, _), _),
           _,
           _,
           _,

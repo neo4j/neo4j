@@ -51,7 +51,7 @@ import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UnionQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
@@ -1194,8 +1194,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("MATCH shortestPath((a)-[r]->(b)) RETURN r")
 
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.shortestPathPatterns should equal(Set(
-      ShortestPathPattern(
+    query.queryGraph.shortestRelationshipPatterns should equal(Set(
+      ShortestRelationshipPattern(
         Some("anon_0"),
         PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, VarPatternLength(1, Some(1))),
         single = true
@@ -1208,8 +1208,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("MATCH allShortestPaths((a)-[r]->(b)) RETURN r")
 
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.shortestPathPatterns should equal(Set(
-      ShortestPathPattern(
+    query.queryGraph.shortestRelationshipPatterns should equal(Set(
+      ShortestRelationshipPattern(
         Some("anon_0"),
         PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, VarPatternLength(1, Some(1))),
         single = false
@@ -1222,8 +1222,8 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("MATCH p = shortestPath((a)-[r]->(b)) RETURN p")
 
     query.queryGraph.patternNodes should equal(Set("a", "b"))
-    query.queryGraph.shortestPathPatterns should equal(Set(
-      ShortestPathPattern(
+    query.queryGraph.shortestRelationshipPatterns should equal(Set(
+      ShortestRelationshipPattern(
         Some("p"),
         PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, VarPatternLength(1, Some(1))),
         single = true

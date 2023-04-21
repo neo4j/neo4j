@@ -104,7 +104,7 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
@@ -2218,9 +2218,9 @@ case class LogicalPlanProducer(
     plan
   }
 
-  def planShortestPath(
+  def planShortestRelationship(
     inner: LogicalPlan,
-    shortestPaths: ShortestPathPattern,
+    shortestRelationship: ShortestRelationshipPattern,
     nodePredicates: Set[VariablePredicate],
     relPredicates: Set[VariablePredicate],
     pathPredicates: Set[Expression],
@@ -2231,7 +2231,7 @@ case class LogicalPlanProducer(
   ): LogicalPlan = {
 
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
-      _.addShortestPath(shortestPaths).addPredicates(solvedPredicates.toSeq: _*)
+      _.addShortestRelationship(shortestRelationship).addPredicates(solvedPredicates.toSeq: _*)
     )
 
     val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
@@ -2240,7 +2240,7 @@ case class LogicalPlanProducer(
     annotate(
       FindShortestPaths(
         rewrittenSource,
-        shortestPaths,
+        shortestRelationship,
         rewrittenNodePredicates.toSeq,
         rewrittenRelationshipPredicates.toSeq,
         pathPredicates.toSeq,
@@ -2254,23 +2254,29 @@ case class LogicalPlanProducer(
   }
 
   @deprecated(
-    "Uses the old shortest path implementation. Available for feature toggle. use planShortestPath instead.",
+    "Uses the old shortest path implementation. Available for feature toggle. use planShortestRelationship instead.",
     since = "5.3.0"
   )
-  def planLegacyShortestPath(
+  def planLegacyShortestRelationship(
     inner: LogicalPlan,
-    shortestPaths: ShortestPathPattern,
+    shortestRelationship: ShortestRelationshipPattern,
     predicates: Seq[Expression],
     withFallBack: Boolean,
     disallowSameNode: Boolean = true,
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(
-      _.addShortestPath(shortestPaths).addPredicates(predicates: _*)
+      _.addShortestRelationship(shortestRelationship).addPredicates(predicates: _*)
     )
     val (rewrittenPredicates, rewrittenInner) = SubqueryExpressionSolver.ForMulti.solve(inner, predicates, context)
     annotate(
-      LegacyFindShortestPaths(rewrittenInner, shortestPaths, rewrittenPredicates, withFallBack, disallowSameNode),
+      LegacyFindShortestPaths(
+        rewrittenInner,
+        shortestRelationship,
+        rewrittenPredicates,
+        withFallBack,
+        disallowSameNode
+      ),
       solved,
       providedOrders.get(rewrittenInner.id).fromLeft,
       context

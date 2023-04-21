@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -206,7 +206,7 @@ class GoalBitAllocationTest extends CypherFunSuite with AstConstructionTestSuppo
       QueryGraph(patternNodes = Set("c", "d")), // 2
       QueryGraph(
         patternNodes = Set("e", "f", "g"),
-        shortestPathPatterns = Set(ShortestPathPattern(
+        shortestRelationshipPatterns = Set(ShortestRelationshipPattern(
           Some("p"),
           PatternRelationship("p_r", ("e", "f"), OUTGOING, Seq(relTypeName("R")), SimplePatternLength),
           single = true

@@ -70,7 +70,7 @@ import org.neo4j.cypher.internal.ir.SetPropertyPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
@@ -1534,7 +1534,7 @@ case class LogicalPlan2PlanDescription(
 
       case FindShortestPaths(
           _,
-          ShortestPathPattern(
+          ShortestRelationshipPattern(
             maybePathName,
             PatternRelationship(relName, (fromName, toName), dir, relTypes, patternLength: PatternLength),
             isSingle
@@ -1581,7 +1581,7 @@ case class LogicalPlan2PlanDescription(
 
       case LegacyFindShortestPaths(
           _,
-          ShortestPathPattern(
+          ShortestRelationshipPattern(
             maybePathName,
             PatternRelationship(relName, (fromName, toName), dir, relTypes, patternLength: PatternLength),
             isSingle

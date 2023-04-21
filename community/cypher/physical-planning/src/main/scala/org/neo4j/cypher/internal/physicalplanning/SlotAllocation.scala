@@ -36,7 +36,7 @@ import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -452,7 +452,12 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
       case LegacyFindShortestPaths(_, shortestPathPattern, _, _, _) =>
         acc: Accumulator => {
-          allocateShortestPathPattern(shortestPathPattern, slots, nullable, anonymousVariableNameGenerator)
+          allocateShortestRelationshipPattern(
+            shortestPathPattern,
+            slots,
+            nullable,
+            anonymousVariableNameGenerator
+          )
           TraverseChildren(acc)
         }
 
@@ -858,14 +863,14 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         recordArgument(lp)
 
       case sp: FindShortestPaths =>
-        val rel = sp.shortestPath.expr.element match {
+        val rel = sp.shortestRelationship.expr.element match {
           case internal.expressions.RelationshipChain(_, relationshipPattern, _) =>
             relationshipPattern
           case _ =>
             throw new IllegalStateException("This should be caught during semantic checking")
         }
 
-        val pathName = sp.shortestPath.name.get // Should always be given anonymous name
+        val pathName = sp.shortestRelationship.name.get // Should always be given anonymous name
         val relsName = rel.variable.get.name // Should always be given anonymous name
 
         slots.newReference(pathName, nullable, CTPath)
@@ -1250,14 +1255,14 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     }
   }
 
-  private def allocateShortestPathPattern(
-    shortestPathPattern: ShortestPathPattern,
+  private def allocateShortestRelationshipPattern(
+    shortestRelationshipPattern: ShortestRelationshipPattern,
     slots: SlotConfiguration,
     nullable: Boolean,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ) = {
-    val maybePathName = shortestPathPattern.name
-    val part = shortestPathPattern.expr
+    val maybePathName = shortestRelationshipPattern.name
+    val part = shortestRelationshipPattern.expr
     val pathName = maybePathName.getOrElse(anonymousVariableNameGenerator.nextName)
     val rel = part.element match {
       case RelationshipChain(_, relationshipPattern, _) =>

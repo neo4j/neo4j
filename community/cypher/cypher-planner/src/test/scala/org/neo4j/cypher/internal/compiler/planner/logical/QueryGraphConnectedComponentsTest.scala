@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QuantifiedPathPattern
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
-import org.neo4j.cypher.internal.ir.ShortestPathPattern
+import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.util.Repetition
@@ -187,9 +187,10 @@ class QueryGraphConnectedComponentsTest
   }
 
   test("two disconnected pattern nodes with one shortest path between them") {
-    val shortestPath: ShortestPathPattern = ShortestPathPattern(Some("r"), A_to_B, single = true)(null)
+    val shortestPath: ShortestRelationshipPattern =
+      ShortestRelationshipPattern(Some("r"), A_to_B, single = true)(null)
 
-    val graph = QueryGraph(patternNodes = Set(A, B), shortestPathPatterns = Set(shortestPath))
+    val graph = QueryGraph(patternNodes = Set(A, B), shortestRelationshipPatterns = Set(shortestPath))
 
     graph.connectedComponents should equal(Seq(
       QueryGraph(patternNodes = Set(A)),
@@ -199,12 +200,13 @@ class QueryGraphConnectedComponentsTest
 
   test("a connected pattern that has a shortest path in it") {
     val B_to_A = PatternRelationship("r3", (B, A), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
-    val shortestPath: ShortestPathPattern = ShortestPathPattern(Some("r"), A_to_B, single = true)(null)
+    val shortestPath: ShortestRelationshipPattern =
+      ShortestRelationshipPattern(Some("r"), A_to_B, single = true)(null)
 
     val graph = QueryGraph(
       patternNodes = Set(A, B),
       patternRelationships = Set(B_to_A),
-      shortestPathPatterns = Set(shortestPath)
+      shortestRelationshipPatterns = Set(shortestPath)
     )
 
     graph.connectedComponents should equal(Seq(graph))

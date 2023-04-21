@@ -89,7 +89,7 @@ case class SingleComponentPlanner(
         BestResults(result.bestResult, result.bestResultFulfillingReq)
       } else {
         val solutionPlans =
-          if (qg.shortestPathPatterns.isEmpty) {
+          if (qg.shortestRelationshipPatterns.isEmpty) {
             bestLeafPlansPerAvailableSymbol
               .values
               .filter(bestPlans => planFullyCoversQG(qg, bestPlans.bestResult))

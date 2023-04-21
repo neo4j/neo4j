@@ -82,11 +82,11 @@ class QgWithLeafInfoTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("unstablePatternRelationships includes shortest path relationships") {
     val r = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
-    val spp = ShortestPathPattern(None, r, single = true)(null)
+    val spp = ShortestRelationshipPattern(None, r, single = true)(null)
 
     val qg = QueryGraph(
       patternNodes = Set("a", "b", "c"),
-      shortestPathPatterns = Set(spp)
+      shortestRelationshipPatterns = Set(spp)
     )
     val qgWithLeafInfo = QgWithLeafInfo(qg, Set.empty, Set.empty, None, isTerminatingProjection = false)
     qgWithLeafInfo.unstablePatternRelationships should equal(Set(r))

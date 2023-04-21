@@ -300,7 +300,9 @@ case object OptionalMatchRemover extends PlannerQueryRewriter with StepSequencer
   }
 
   private def noOptionalShortestPathOrQpp(qg: QueryGraph): Boolean = {
-    qg.optionalMatches.forall(qg => qg.shortestPathPatterns.isEmpty && qg.quantifiedPathPatterns.isEmpty)
+    qg.optionalMatches.forall(qg =>
+      qg.shortestRelationshipPatterns.isEmpty && qg.quantifiedPathPatterns.isEmpty
+    )
   }
 
   private def toAst(
