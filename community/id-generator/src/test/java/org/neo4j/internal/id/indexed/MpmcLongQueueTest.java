@@ -32,7 +32,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -48,13 +47,13 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.scheduler.DaemonThreadFactory;
 
 @ExtendWith(RandomExtension.class)
-class SpmcLongQueueTest {
+class MpmcLongQueueTest {
     @Inject
     private RandomSupport random;
 
     @Test
     void fillAndDrain() {
-        final SpmcLongQueue queue = new SpmcLongQueue(4);
+        final MpmcLongQueue queue = new MpmcLongQueue(4);
         assertEquals(NO_ID, queue.takeOrDefault(NO_ID));
         for (int i = 0; i < 4; i++) {
             assertTrue(queue.offer(i));
@@ -68,7 +67,7 @@ class SpmcLongQueueTest {
 
     @Test
     void wrapAround() {
-        final SpmcLongQueue queue = new SpmcLongQueue(16);
+        final MpmcLongQueue queue = new MpmcLongQueue(16);
         for (int chunk = 1; chunk < 16; chunk++) {
             for (int i = 0; i < 100; i++) {
                 for (int j = 0; j < chunk; j++) {
@@ -84,15 +83,24 @@ class SpmcLongQueueTest {
 
     @Test
     void randomizedConcurrent() throws Exception {
-        final int consumers = Runtime.getRuntime().availableProcessors() - 1;
+        // given
+        final int producers = Math.max(2, Runtime.getRuntime().availableProcessors());
+        final int consumers = producers;
         final int itemsPerConsumer = 10000;
-        final SpmcLongQueue queue = new SpmcLongQueue(1 << (32 - numberOfLeadingZeros(consumers * itemsPerConsumer)));
-        final long[] input = range(0, consumers * itemsPerConsumer).toArray();
+        final MpmcLongQueue queue = new MpmcLongQueue(1 << (32 - numberOfLeadingZeros(consumers * itemsPerConsumer)));
+        final long[][] inputs = new long[producers][];
+        for (int i = 0; i < producers; i++) {
+            var input = range(i * itemsPerConsumer, (i + 1) * itemsPerConsumer).toArray();
+            ArrayUtils.shuffle(input, random.random());
+            inputs[i] = input;
+        }
         final long[][] outputs = new long[consumers][itemsPerConsumer];
-        ArrayUtils.shuffle(input, random.random());
 
+        // when
         final Collection<Callable<Void>> workers = new ArrayList<>();
-        workers.add(createProducer(queue, input));
+        for (int producerId = 0; producerId < producers; producerId++) {
+            workers.add(createProducer(queue, inputs[producerId]));
+        }
         for (int consumerId = 0; consumerId < consumers; consumerId++) {
             workers.add(createConsumer(queue, outputs[consumerId]));
         }
@@ -104,12 +112,10 @@ class SpmcLongQueueTest {
                 future.get();
             }
 
-            final long[] actual =
-                    stream(outputs).flatMapToLong(LongStream::of).sorted().toArray();
+            var expected = stream(inputs).flatMapToLong(LongStream::of).sorted().toArray();
+            var actual = stream(outputs).flatMapToLong(LongStream::of).sorted().toArray();
 
-            Arrays.sort(input);
-
-            assertArrayEquals(input, actual);
+            assertArrayEquals(expected, actual);
         } finally {
             executor.shutdown();
             executor.awaitTermination(10, SECONDS);
@@ -119,7 +125,7 @@ class SpmcLongQueueTest {
     @Test
     void shouldClearQueue() {
         // given
-        ConcurrentLongQueue queue = new SpmcLongQueue(16);
+        ConcurrentLongQueue queue = new MpmcLongQueue(16);
         for (int i = 0; i < 10; i++) {
             queue.offer(random.nextLong(1000));
         }
@@ -134,7 +140,7 @@ class SpmcLongQueueTest {
         assertEquals(-1, queue.takeOrDefault(-1));
     }
 
-    private static Callable<Void> createConsumer(SpmcLongQueue queue, long[] output) {
+    private static Callable<Void> createConsumer(MpmcLongQueue queue, long[] output) {
         return () -> {
             for (int j = 0; j < output.length; j++) {
                 long value;
@@ -147,7 +153,7 @@ class SpmcLongQueueTest {
         };
     }
 
-    private static Callable<Void> createProducer(SpmcLongQueue queue, long[] input) {
+    private static Callable<Void> createProducer(MpmcLongQueue queue, long[] input) {
         return () -> {
             for (long value : input) {
                 while (!queue.offer(value)) {
