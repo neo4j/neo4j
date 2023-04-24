@@ -21,6 +21,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.regex.Matcher;
@@ -36,8 +37,11 @@ import org.neo4j.cli.Converters;
 import org.neo4j.cli.ExecutionContext;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.dbms.archive.Loader;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.memory.NativeScopedBuffer;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
+import org.neo4j.memory.EmptyMemoryTracker;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
@@ -49,6 +53,7 @@ import picocli.CommandLine.Parameters;
                 + "The target location is a Neo4j Aura Bolt URI. If Neo4j Cloud username and password are not provided "
                 + "either as a command option or as an environment variable, they will be requested interactively ")
 public class UploadCommand extends AbstractAdminCommand {
+    private static final long CRC32_BUFFER_SIZE = ByteUnit.mebiBytes(4);
     private static final String DEV_MODE_VAR_NAME = "P2C_DEV_MODE";
     private final Copier copier;
     private final PushToCloudConsole cons;
@@ -421,10 +426,14 @@ public class UploadCommand extends AbstractAdminCommand {
     public record Source(FileSystemAbstraction fs, Path path, long size) {
         long crc32Sum() throws IOException {
             CRC32 crc = new CRC32();
-            try (InputStream inputStream = fs.openAsInputStream(path)) {
-                int cnt;
-                while ((cnt = inputStream.read()) != -1) {
-                    crc.update(cnt);
+            try (var channel = fs.read(path);
+                    var buffer = new NativeScopedBuffer(
+                            CRC32_BUFFER_SIZE, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
+                var byteBuffer = buffer.getBuffer();
+                while ((channel.read(byteBuffer)) != -1) {
+                    byteBuffer.flip();
+                    crc.update(byteBuffer);
+                    byteBuffer.clear();
                 }
             }
             return crc.getValue();

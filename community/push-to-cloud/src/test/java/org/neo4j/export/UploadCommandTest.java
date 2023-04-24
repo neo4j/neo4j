@@ -34,6 +34,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.initial_default_data
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,6 +42,8 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.zip.CRC32;
 import org.apache.commons.io.output.NullOutputStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -53,6 +56,9 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.export.UploadCommand.Copier;
+import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
@@ -670,5 +676,31 @@ class UploadCommandTest {
         UploadCommand build() {
             return new UploadCommand(executionContext, targetCommunicator, console);
         }
+    }
+
+    @Test
+    void uploadCommandSourceShouldCalculateCrc32() throws IOException {
+        var fs = new DefaultFileSystemAbstraction();
+
+        var file = directory.file("crc32.test");
+        var random = ThreadLocalRandom.current();
+        var bytes = new byte[random.nextInt(10, Math.toIntExact(ByteUnit.mebiBytes(13)))];
+        random.nextBytes(bytes);
+        Files.write(file, bytes);
+
+        var crc32 = new UploadCommand.Source(fs, file, 0L).crc32Sum();
+        var refCrc32 = crc32bytewise(fs, file);
+        assertEquals(refCrc32, crc32);
+    }
+
+    long crc32bytewise(FileSystemAbstraction fs, Path path) throws IOException {
+        CRC32 crc = new CRC32();
+        try (InputStream inputStream = fs.openAsInputStream(path)) {
+            int cnt;
+            while ((cnt = inputStream.read()) != -1) {
+                crc.update(cnt);
+            }
+        }
+        return crc.getValue();
     }
 }
