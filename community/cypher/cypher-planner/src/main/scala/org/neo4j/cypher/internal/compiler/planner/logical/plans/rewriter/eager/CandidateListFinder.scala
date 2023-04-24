@@ -265,7 +265,7 @@ object CandidateListFinder {
         // .|.setLabel("n:A")
         // .|. ...
         // .eager()
-        // .projection("a:A AS va1")
+        // .projection("a:A AS var1")
         // . ...
         case s: SingleFromRightLogicalPlan if !s.right.readOnly =>
           throw new IllegalStateException(
