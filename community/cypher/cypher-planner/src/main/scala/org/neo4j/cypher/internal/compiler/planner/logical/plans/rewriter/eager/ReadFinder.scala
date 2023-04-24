@@ -64,15 +64,28 @@ import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
 import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
+import org.neo4j.cypher.internal.logical.plans
+import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
+import org.neo4j.cypher.internal.logical.plans.AntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.AssertSameNode
 import org.neo4j.cypher.internal.logical.plans.AssertSameRelationship
 import org.neo4j.cypher.internal.logical.plans.BFSPruningVarExpand
+import org.neo4j.cypher.internal.logical.plans.BidirectionalRepeatTrail
+import org.neo4j.cypher.internal.logical.plans.CacheProperties
+import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.CommandLogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.DeleteNode
+import org.neo4j.cypher.internal.logical.plans.DeletePath
+import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteExpression
+import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
+import org.neo4j.cypher.internal.logical.plans.DetachDeletePath
 import org.neo4j.cypher.internal.logical.plans.DirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByElementIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
@@ -83,17 +96,29 @@ import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.Distinct
+import org.neo4j.cypher.internal.logical.plans.Eager
+import org.neo4j.cypher.internal.logical.plans.EmptyResult
+import org.neo4j.cypher.internal.logical.plans.ErrorPlan
+import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Foreach
+import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 import org.neo4j.cypher.internal.logical.plans.Input
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.LegacyFindShortestPaths
-import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
+import org.neo4j.cypher.internal.logical.plans.LetAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSelectOrSemiApply
+import org.neo4j.cypher.internal.logical.plans.LetSemiApply
+import org.neo4j.cypher.internal.logical.plans.Limit
+import org.neo4j.cypher.internal.logical.plans.LoadCSV
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlanExtension
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.NodeByElementIdSeek
@@ -108,30 +133,46 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.Optional
 import org.neo4j.cypher.internal.logical.plans.OptionalExpand
+import org.neo4j.cypher.internal.logical.plans.OrderedAggregation
+import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.OrderedUnion
 import org.neo4j.cypher.internal.logical.plans.PartialSort
 import org.neo4j.cypher.internal.logical.plans.PartialTop
+import org.neo4j.cypher.internal.logical.plans.PathPropagatingBFS
 import org.neo4j.cypher.internal.logical.plans.PhysicalPlanningPlan
+import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
 import org.neo4j.cypher.internal.logical.plans.ProjectEndpoints
 import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
+import org.neo4j.cypher.internal.logical.plans.RepeatOptions
 import org.neo4j.cypher.internal.logical.plans.RightOuterHashJoin
 import org.neo4j.cypher.internal.logical.plans.RollUpApply
+import org.neo4j.cypher.internal.logical.plans.SelectOrAntiSemiApply
+import org.neo4j.cypher.internal.logical.plans.SelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.Selection
+import org.neo4j.cypher.internal.logical.plans.SemiApply
 import org.neo4j.cypher.internal.logical.plans.SetLabels
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperties
 import org.neo4j.cypher.internal.logical.plans.SetNodePropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetNodeProperty
+import org.neo4j.cypher.internal.logical.plans.SetProperties
+import org.neo4j.cypher.internal.logical.plans.SetPropertiesFromMap
+import org.neo4j.cypher.internal.logical.plans.SetProperty
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperties
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
+import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TestOnlyPlan
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
+import org.neo4j.cypher.internal.logical.plans.Trail
+import org.neo4j.cypher.internal.logical.plans.TransactionApply
+import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.TriadicSelection
 import org.neo4j.cypher.internal.logical.plans.UndirectedAllRelationshipsScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipByElementIdSeek
@@ -143,7 +184,10 @@ import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.UndirectedRelationshipUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.UndirectedUnionRelationshipTypesScan
+import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
+import org.neo4j.cypher.internal.logical.plans.UnwindCollection
+import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
@@ -295,302 +339,295 @@ object ReadFinder {
   ): PlanReads = {
     // Match on plans
     val planReads = plan match {
-      case p: LogicalLeafPlan =>
-        // This extra match is not strictly necessary, but allows us to detect a missing case for new leaf plans easier because it fail compilation.
-        p match {
-          case AllNodesScan(varName, _) =>
-            PlanReads()
-              .withIntroducedNodeVariable(varName)
+      case AllNodesScan(varName, _) =>
+        PlanReads()
+          .withIntroducedNodeVariable(varName)
 
-          case NodeByLabelScan(varName, labelName, _, _) =>
-            val variable = Variable(varName)(InputPosition.NONE)
-            val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-            PlanReads()
-              .withLabelRead(labelName)
-              .withIntroducedNodeVariable(variable)
-              .withAddedNodeFilterExpression(variable, hasLabels)
+      case NodeByLabelScan(varName, labelName, _, _) =>
+        val variable = Variable(varName)(InputPosition.NONE)
+        val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+        PlanReads()
+          .withLabelRead(labelName)
+          .withIntroducedNodeVariable(variable)
+          .withAddedNodeFilterExpression(variable, hasLabels)
 
-          case UnionNodeByLabelsScan(varName, labelNames, _, _) =>
-            val variable = Variable(varName)(InputPosition.NONE)
-            val predicates = labelNames.map { labelName =>
-              HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-            }
-            val filterExpression = Ors(predicates)(InputPosition.NONE)
-            val acc = PlanReads()
-              .withIntroducedNodeVariable(variable)
-              .withAddedNodeFilterExpression(variable, filterExpression)
-            labelNames.foldLeft(acc) { (acc, labelName) =>
-              acc.withLabelRead(labelName)
-            }
-
-          case IntersectionNodeByLabelsScan(varName, labelNames, _, _) =>
-            val acc = PlanReads()
-              .withIntroducedNodeVariable(varName)
-            labelNames.foldLeft(acc) { (acc, labelName) =>
-              val variable = Variable(varName)(InputPosition.NONE)
-              val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-              acc.withLabelRead(labelName)
-                .withAddedNodeFilterExpression(variable, hasLabels)
-            }
-
-          case NodeCountFromCountStore(_, labelNames, _) =>
-            val variable = Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
-            val acc = PlanReads()
-              .withIntroducedNodeVariable(variable)
-            labelNames.flatten.foldLeft(acc) { (acc, labelName) =>
-              val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
-              acc.withLabelRead(labelName)
-                .withAddedNodeFilterExpression(variable, hasLabels)
-            }
-
-          case RelationshipCountFromCountStore(_, startLabel, typeNames, endLabel, _) =>
-            val relVariable = Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
-            val nodeVariable = Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
-            val acc = PlanReads()
-              .withIntroducedRelationshipVariable(relVariable)
-              .withIntroducedNodeVariable(nodeVariable)
-
-            Function.chain[PlanReads](Seq(
-              Seq(startLabel, endLabel).flatten.foldLeft(_) { (acc, labelName) =>
-                val hasLabels = HasLabels(nodeVariable, Seq(labelName))(InputPosition.NONE)
-                acc.withLabelRead(labelName)
-                  .withAddedNodeFilterExpression(nodeVariable, hasLabels)
-              },
-              typeNames.foldLeft(_) { (acc, typeName) =>
-                val hasTypes = HasTypes(relVariable, Seq(typeName))(InputPosition.NONE)
-                acc.withAddedRelationshipFilterExpression(relVariable, hasTypes)
-              }
-            ))(acc)
-
-          case NodeIndexScan(varName, LabelToken(labelName, _), properties, _, _, _) =>
-            processNodeIndexPlan(varName, labelName, properties)
-
-          case NodeIndexSeek(varName, LabelToken(labelName, _), properties, _, _, _, _) =>
-            processNodeIndexPlan(varName, labelName, properties)
-
-          case NodeUniqueIndexSeek(varName, LabelToken(labelName, _), properties, _, _, _, _) =>
-            processNodeIndexPlan(varName, labelName, properties)
-
-          case NodeIndexContainsScan(
-              varName,
-              LabelToken(labelName, _),
-              property,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processNodeIndexPlan(varName, labelName, Seq(property))
-
-          case NodeIndexEndsWithScan(
-              varName,
-              LabelToken(labelName, _),
-              property,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processNodeIndexPlan(varName, labelName, Seq(property))
-
-          case NodeByIdSeek(varName, _, _) =>
-            // We could avoid eagerness when we have IdSeeks with a single ID.
-            // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
-            // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
-            PlanReads()
-              .withIntroducedNodeVariable(varName)
-
-          case NodeByElementIdSeek(varName, _, _) =>
-            // We could avoid eagerness when we have IdSeeks with a single ID.
-            // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
-            // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
-            PlanReads()
-              .withIntroducedNodeVariable(varName)
-
-          case _: Argument =>
-            PlanReads()
-
-          case Input(nodes, rels, vars, _) =>
-            // An Input can introduce entities. These must be captured with
-            // .withIntroducedNodeVariable / .withIntroducedRelationshipVariable
-            // However, Input is always the left-most-leaf plan, and therefore stable and never part of a Conflict.
-            // We only include this to be prepared for potential future refactorings
-            Function.chain[PlanReads](Seq(
-              nodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
-              rels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
-              vars.foldLeft(_) { (acc, col) =>
-                var res = acc
-                if (semanticTable.containsNode(col)) {
-                  res = res.withIntroducedNodeVariable(col)
-                }
-                if (semanticTable.containsRelationship(col)) {
-                  res = res.withIntroducedRelationshipVariable(col)
-                }
-                res
-              }
-            ))(PlanReads())
-
-          case UndirectedAllRelationshipsScan(idName, leftNode, rightNode, _) =>
-            processRelationshipRead(idName, leftNode, rightNode)
-
-          case DirectedAllRelationshipsScan(idName, leftNode, rightNode, _) =>
-            processRelationshipRead(idName, leftNode, rightNode)
-
-          case UndirectedRelationshipTypeScan(idName, leftNode, relType, rightNode, _, _) =>
-            processRelTypeRead(idName, leftNode, relType, rightNode)
-
-          case DirectedRelationshipTypeScan(idName, leftNode, relType, rightNode, _, _) =>
-            processRelTypeRead(idName, leftNode, relType, rightNode)
-
-          case DirectedRelationshipIndexScan(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              properties,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
-
-          case DirectedRelationshipIndexSeek(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              properties,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
-
-          case UndirectedRelationshipIndexScan(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              properties,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
-
-          case UndirectedRelationshipIndexSeek(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              properties,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
-
-          case UndirectedRelationshipUniqueIndexSeek(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              properties,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
-
-          case DirectedRelationshipUniqueIndexSeek(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              properties,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
-
-          case UndirectedRelationshipIndexContainsScan(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              property,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
-
-          case DirectedRelationshipIndexContainsScan(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              property,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
-
-          case UndirectedRelationshipIndexEndsWithScan(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              property,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
-
-          case DirectedRelationshipIndexEndsWithScan(
-              idName,
-              leftNode,
-              rightNode,
-              RelationshipTypeToken(typeName, _),
-              property,
-              _,
-              _,
-              _,
-              _
-            ) =>
-            processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
-
-          case UndirectedRelationshipByIdSeek(idName, _, leftNode, rightNode, _) =>
-            processRelationshipRead(idName, leftNode, rightNode)
-
-          case DirectedRelationshipByIdSeek(idName, _, leftNode, rightNode, _) =>
-            processRelationshipRead(idName, leftNode, rightNode)
-
-          case UndirectedRelationshipByElementIdSeek(idName, _, leftNode, rightNode, _) =>
-            processRelationshipRead(idName, leftNode, rightNode)
-
-          case DirectedRelationshipByElementIdSeek(idName, _, leftNode, rightNode, _) =>
-            processRelationshipRead(idName, leftNode, rightNode)
-
-          case UndirectedUnionRelationshipTypesScan(idName, leftNode, relTypes, rightNode, _, _) =>
-            processUnionRelTypeScan(idName, leftNode, relTypes, rightNode)
-
-          case DirectedUnionRelationshipTypesScan(idName, leftNode, relTypes, rightNode, _, _) =>
-            processUnionRelTypeScan(idName, leftNode, relTypes, rightNode)
-
-          case _: PhysicalPlanningPlan | _: CommandLogicalPlan | _: LogicalLeafPlanExtension | _: TestOnlyPlan =>
-            throw new IllegalStateException(s"Unsupported leaf plan in eagerness analysis: $p")
+      case UnionNodeByLabelsScan(varName, labelNames, _, _) =>
+        val variable = Variable(varName)(InputPosition.NONE)
+        val predicates = labelNames.map { labelName =>
+          HasLabels(variable, Seq(labelName))(InputPosition.NONE)
         }
+        val filterExpression = Ors(predicates)(InputPosition.NONE)
+        val acc = PlanReads()
+          .withIntroducedNodeVariable(variable)
+          .withAddedNodeFilterExpression(variable, filterExpression)
+        labelNames.foldLeft(acc) { (acc, labelName) =>
+          acc.withLabelRead(labelName)
+        }
+
+      case IntersectionNodeByLabelsScan(varName, labelNames, _, _) =>
+        val acc = PlanReads()
+          .withIntroducedNodeVariable(varName)
+        labelNames.foldLeft(acc) { (acc, labelName) =>
+          val variable = Variable(varName)(InputPosition.NONE)
+          val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+          acc.withLabelRead(labelName)
+            .withAddedNodeFilterExpression(variable, hasLabels)
+        }
+
+      case NodeCountFromCountStore(_, labelNames, _) =>
+        val variable = Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
+        val acc = PlanReads()
+          .withIntroducedNodeVariable(variable)
+        labelNames.flatten.foldLeft(acc) { (acc, labelName) =>
+          val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
+          acc.withLabelRead(labelName)
+            .withAddedNodeFilterExpression(variable, hasLabels)
+        }
+
+      case RelationshipCountFromCountStore(_, startLabel, typeNames, endLabel, _) =>
+        val relVariable = Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
+        val nodeVariable = Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE)
+        val acc = PlanReads()
+          .withIntroducedRelationshipVariable(relVariable)
+          .withIntroducedNodeVariable(nodeVariable)
+
+        Function.chain[PlanReads](Seq(
+          Seq(startLabel, endLabel).flatten.foldLeft(_) { (acc, labelName) =>
+            val hasLabels = HasLabels(nodeVariable, Seq(labelName))(InputPosition.NONE)
+            acc.withLabelRead(labelName)
+              .withAddedNodeFilterExpression(nodeVariable, hasLabels)
+          },
+          typeNames.foldLeft(_) { (acc, typeName) =>
+            val hasTypes = HasTypes(relVariable, Seq(typeName))(InputPosition.NONE)
+            acc.withAddedRelationshipFilterExpression(relVariable, hasTypes)
+          }
+        ))(acc)
+
+      case NodeIndexScan(varName, LabelToken(labelName, _), properties, _, _, _) =>
+        processNodeIndexPlan(varName, labelName, properties)
+
+      case NodeIndexSeek(varName, LabelToken(labelName, _), properties, _, _, _, _) =>
+        processNodeIndexPlan(varName, labelName, properties)
+
+      case NodeUniqueIndexSeek(varName, LabelToken(labelName, _), properties, _, _, _, _) =>
+        processNodeIndexPlan(varName, labelName, properties)
+
+      case NodeIndexContainsScan(
+          varName,
+          LabelToken(labelName, _),
+          property,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processNodeIndexPlan(varName, labelName, Seq(property))
+
+      case NodeIndexEndsWithScan(
+          varName,
+          LabelToken(labelName, _),
+          property,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processNodeIndexPlan(varName, labelName, Seq(property))
+
+      case NodeByIdSeek(varName, _, _) =>
+        // We could avoid eagerness when we have IdSeeks with a single ID.
+        // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
+        // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
+        PlanReads()
+          .withIntroducedNodeVariable(varName)
+
+      case NodeByElementIdSeek(varName, _, _) =>
+        // We could avoid eagerness when we have IdSeeks with a single ID.
+        // As soon as we have multiple IDs, future creates could create nodes with one of those IDs.
+        // Not eagerizing a single row is not worth the extra complexity, so we accept that imperfection.
+        PlanReads()
+          .withIntroducedNodeVariable(varName)
+
+      case _: Argument =>
+        PlanReads()
+
+      case Input(nodes, rels, vars, _) =>
+        // An Input can introduce entities. These must be captured with
+        // .withIntroducedNodeVariable / .withIntroducedRelationshipVariable
+        // However, Input is always the left-most-leaf plan, and therefore stable and never part of a Conflict.
+        // We only include this to be prepared for potential future refactorings
+        Function.chain[PlanReads](Seq(
+          nodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
+          rels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
+          vars.foldLeft(_) { (acc, col) =>
+            var res = acc
+            if (semanticTable.containsNode(col)) {
+              res = res.withIntroducedNodeVariable(col)
+            }
+            if (semanticTable.containsRelationship(col)) {
+              res = res.withIntroducedRelationshipVariable(col)
+            }
+            res
+          }
+        ))(PlanReads())
+
+      case UndirectedAllRelationshipsScan(idName, leftNode, rightNode, _) =>
+        processRelationshipRead(idName, leftNode, rightNode)
+
+      case DirectedAllRelationshipsScan(idName, leftNode, rightNode, _) =>
+        processRelationshipRead(idName, leftNode, rightNode)
+
+      case UndirectedRelationshipTypeScan(idName, leftNode, relType, rightNode, _, _) =>
+        processRelTypeRead(idName, leftNode, relType, rightNode)
+
+      case DirectedRelationshipTypeScan(idName, leftNode, relType, rightNode, _, _) =>
+        processRelTypeRead(idName, leftNode, relType, rightNode)
+
+      case DirectedRelationshipIndexScan(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          properties,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+
+      case DirectedRelationshipIndexSeek(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          properties,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+
+      case UndirectedRelationshipIndexScan(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          properties,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+
+      case UndirectedRelationshipIndexSeek(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          properties,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+
+      case UndirectedRelationshipUniqueIndexSeek(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          properties,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+
+      case DirectedRelationshipUniqueIndexSeek(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          properties,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+
+      case UndirectedRelationshipIndexContainsScan(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          property,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
+
+      case DirectedRelationshipIndexContainsScan(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          property,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
+
+      case UndirectedRelationshipIndexEndsWithScan(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          property,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
+
+      case DirectedRelationshipIndexEndsWithScan(
+          idName,
+          leftNode,
+          rightNode,
+          RelationshipTypeToken(typeName, _),
+          property,
+          _,
+          _,
+          _,
+          _
+        ) =>
+        processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
+
+      case UndirectedRelationshipByIdSeek(idName, _, leftNode, rightNode, _) =>
+        processRelationshipRead(idName, leftNode, rightNode)
+
+      case DirectedRelationshipByIdSeek(idName, _, leftNode, rightNode, _) =>
+        processRelationshipRead(idName, leftNode, rightNode)
+
+      case UndirectedRelationshipByElementIdSeek(idName, _, leftNode, rightNode, _) =>
+        processRelationshipRead(idName, leftNode, rightNode)
+
+      case DirectedRelationshipByElementIdSeek(idName, _, leftNode, rightNode, _) =>
+        processRelationshipRead(idName, leftNode, rightNode)
+
+      case UndirectedUnionRelationshipTypesScan(idName, leftNode, relTypes, rightNode, _, _) =>
+        processUnionRelTypeScan(idName, leftNode, relTypes, rightNode)
+
+      case DirectedUnionRelationshipTypesScan(idName, leftNode, relTypes, rightNode, _, _) =>
+        processUnionRelTypeScan(idName, leftNode, relTypes, rightNode)
 
       case Selection(Ands(expressions), _) =>
         expressions.foldLeft(PlanReads()) {
@@ -621,6 +658,10 @@ object ReadFinder {
       case BFSPruningVarExpand(_, from, _, relTypes, to, _, _, _, _, _) =>
         // bfsPruningVarExpand does not introduce a rel variable, but we need one to attach the predicates to.
         processExpand(from, relTypes, to, anonymousVariableNameGenerator.nextName)
+
+      case PathPropagatingBFS(_, _, from, _, _, relTypes, to, relName, _, _, _) =>
+        // relName is actually a List of relationships but we can consider it to be a Relationship Variable when doing eagerness analysis
+        processExpand(from, relTypes, to, relName)
 
       case FindShortestPaths(
           _,
@@ -788,10 +829,63 @@ object ReadFinder {
       case SetRelationshipProperty(_, relName, _, _) =>
         PlanReads().withReferencedRelationshipVariable(relName)
 
-      case _: PhysicalPlanningPlan | _: CommandLogicalPlan | _: LogicalLeafPlanExtension | _: TestOnlyPlan =>
-        throw new IllegalStateException(s"Unsupported plan in eagerness analysis: $plan")
+      /*
+        Be careful when adding something to this fall-through case.
+        Any (new) plan that performs reads of nodes, relationships, labels, properties or types should not be in this list.
+        Pay special attention to leaf plans and plans that reference nodes/relationship by name (a String) instead of through a Variable.
+        When in doubt, ask the planner team.
+       */
+      case Aggregation(_, _, _) |
+        AntiSemiApply(_, _) |
+        Apply(_, _, _) |
+        BidirectionalRepeatTrail(_, _, _, _, _, _, _, _, _, _, _, _, _) |
+        CacheProperties(_, _) |
+        CartesianProduct(_, _, _) |
+        plans.DeleteExpression(_, _) |
+        DeleteNode(_, _) |
+        DeletePath(_, _) |
+        DeleteRelationship(_, _) |
+        DetachDeleteExpression(_, _) |
+        DetachDeleteNode(_, _) |
+        DetachDeletePath(_, _) |
+        Distinct(_, _) |
+        EmptyResult(_) |
+        ErrorPlan(_, _) |
+        ExhaustiveLimit(_, _) |
+        ForeachApply(_, _, _, _) |
+        LetAntiSemiApply(_, _, _) |
+        LetSelectOrAntiSemiApply(_, _, _, _) |
+        LetSelectOrSemiApply(_, _, _, _) |
+        LetSemiApply(_, _, _) |
+        Limit(_, _) |
+        LoadCSV(_, _, _, _, _, _, _) |
+        OrderedAggregation(_, _, _, _) |
+        OrderedDistinct(_, _, _) |
+        ProcedureCall(_, _) |
+        RepeatOptions(_, _) |
+        SelectOrAntiSemiApply(_, _, _) |
+        SelectOrSemiApply(_, _, _) |
+        SemiApply(_, _) |
+        SetProperties(_, _, _) |
+        SetPropertiesFromMap(_, _, _, _) |
+        SetProperty(_, _, _, _) |
+        Skip(_, _) |
+        SubqueryForeach(_, _) |
+        Trail(_, _, _, _, _, _, _, _, _, _, _, _, _) |
+        TransactionApply(_, _, _, _, _) |
+        TransactionForeach(_, _, _, _, _) |
+        Union(_, _) |
+        UnwindCollection(_, _, _) |
+        ValueHashJoin(_, _, _) =>
+        PlanReads()
 
-      case _ => PlanReads()
+      case _: PhysicalPlanningPlan |
+        _: CommandLogicalPlan |
+        _: LogicalLeafPlanExtension |
+        _: LogicalPlanExtension |
+        _: TestOnlyPlan |
+        _: Eager =>
+        throw new IllegalStateException(s"Unsupported plan in eagerness analysis: $plan")
     }
 
     def processDegreeRead(relTypeNames: Option[RelTypeName], planReads: PlanReads): PlanReads = {

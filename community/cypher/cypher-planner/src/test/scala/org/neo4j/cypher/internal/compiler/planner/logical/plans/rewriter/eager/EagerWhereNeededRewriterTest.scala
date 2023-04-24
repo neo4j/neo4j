@@ -5351,6 +5351,28 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     )
   }
 
+  test("Should be eager in read/create conflict with PathPropagatingBFS") {
+    val planBuilder = new LogicalPlanBuilder()
+      .produceResults("r")
+      .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+      .pathPropagatingBFS("(n)-[:R1|R2*1..2]->(m)")
+      .|.argument("n", "m")
+      .allNodeScan("n")
+    val plan = planBuilder.build()
+    val result = eagerizePlan(planBuilder, plan)
+
+    result should equal(
+      new LogicalPlanBuilder()
+        .produceResults("r")
+        .create(Seq.empty, Seq(createRelationship("r", "n", "R1", "m")))
+        .eager(ListSet(TypeReadSetConflict(relTypeName("R1"), Some(Conflict(Id(1), Id(2))))))
+        .pathPropagatingBFS("(n)-[:R1|R2*1..2]->(m)")
+        .|.argument("n", "m")
+        .allNodeScan("n")
+        .build()
+    )
+  }
+
   test("Should not be eager in read/create conflict with VarExpand with no overlapping types") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("r")
