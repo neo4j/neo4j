@@ -240,6 +240,52 @@ abstract class SetNodePropertiesTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("p1", "p2").withSingleRow(2, 2).withStatistics(propertiesSet = 4)
   }
 
+  test("set properties should invalidate cached properties") {
+    // given a single node
+    given {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("oldValue", "newValue")
+      .projection("cacheN[n.prop] AS newValue")
+      .setProperty("n", "prop", "n.prop + 1")
+      .projection("cacheNFromStore[n.prop] AS oldValue")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("oldValue", "newValue")
+      .withSingleRow(0, 1)
+      .withStatistics(propertiesSet = 1)
+  }
+
+  test("set properties should invalidate cached properties with pipeline break") {
+    // given a single node
+    given {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("oldValue", "newValue")
+      .projection("cacheN[n.prop] AS newValue")
+      .eager()
+      .setProperty("n", "prop", "n.prop + 1")
+      .eager()
+      .projection("cacheNFromStore[n.prop] AS oldValue")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    // then
+    val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("oldValue", "newValue")
+      .withSingleRow(0, 1)
+      .withStatistics(propertiesSet = 1)
+  }
+
   test("should set node properties from null value") {
     // given a single node
     given {

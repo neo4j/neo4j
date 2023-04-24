@@ -2857,6 +2857,7 @@ case class SetNodeProperties(
  *   for ( (key,value) <- row.evaluate( expression ) )
  *     node.setProperty( key, value )
  *
+ *   node.clearUntouchedProperties() // Clear properties which weren't set above
  *   produce row
  */
 case class SetNodePropertiesFromMap(
@@ -2966,6 +2967,7 @@ case class SetRelationshipProperties(
  *   for ( (key,value) <- row.evaluate( expression ) )
  *     rel.setProperty( key, value )
  *
+ *   rel.clearUntouchedProperties() // Clear properties which weren't set above
  *   produce row
  */
 case class SetRelationshipPropertiesFromMap(

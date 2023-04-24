@@ -436,4 +436,51 @@ abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(propertiesSet = 2)
       .withLocks((EXCLUSIVE, NODE), (EXCLUSIVE, INDEX_ENTRY), (SHARED, INDEX_ENTRY), (SHARED, LABEL))
   }
+
+  test("set node property should invalidate cached properties") {
+    // given a single node
+    given {
+      nodePropertyGraph(1, { case _ => Map("prop" -> 0) })
+    }
+
+    invalidateCachedPropsTest(0) { builder =>
+      builder.setNodeProperty("n", "prop", "n.prop + 1")
+    }
+    invalidateCachedPropsTest(1) { builder =>
+      builder.setNodeProperties("n", "prop" -> "n.prop + 1")
+    }
+    invalidateCachedPropsTest(2) { builder =>
+      builder.setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false)
+    }
+    invalidateCachedPropsTest(3) { builder =>
+      builder.setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = true)
+    }
+    invalidateCachedPropsTest(4) { builder =>
+      builder.setProperty("n", "prop", "n.prop + 1")
+    }
+    invalidateCachedPropsTest(5) { builder =>
+      builder.setProperties("n", "prop" -> "n.prop + 1")
+    }
+    invalidateCachedPropsTest(6) { builder =>
+      builder.setPropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false)
+    }
+    invalidateCachedPropsTest(7) { builder =>
+      builder.setPropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = true)
+    }
+  }
+
+  private def invalidateCachedPropsTest(expected: Long)(setOp: LogicalQueryBuilder => LogicalQueryBuilder): Unit = {
+    restartTx()
+    val queryBuilder = new LogicalQueryBuilder(this)
+      .produceResults("oldValue", "newValue")
+      .projection("cacheN[n.prop] as newValue")
+    val logicalQuery = setOp.apply(queryBuilder)
+      .projection("cacheNFromStore[n.prop] AS oldValue")
+      .allNodeScan("n")
+      .build(readOnly = false)
+
+    execute(logicalQuery, runtime) should beColumns("oldValue", "newValue")
+      .withSingleRow(expected, expected + 1)
+      .withStatistics(propertiesSet = 1)
+  }
 }

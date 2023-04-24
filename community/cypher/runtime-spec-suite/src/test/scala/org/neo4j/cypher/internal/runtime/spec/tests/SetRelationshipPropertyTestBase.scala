@@ -406,4 +406,52 @@ abstract class SetRelationshipPropertyTestBase[CONTEXT <: RuntimeContext](
       .withStatistics(propertiesSet = sizeHint)
     rels.map(_.getProperty("prop")).foreach(i => i should equal(1))
   }
+
+  test("set relationship property should invalidate cached properties") {
+    // given a single node
+    given {
+      val node = runtimeTestSupport.tx.createNode()
+      node.createRelationshipTo(node, RelationshipType.withName("REL")).setProperty("prop", 0L)
+    }
+
+    invalidateCachedPropsTest(0) { builder =>
+      builder.setRelationshipProperty("r", "prop", "r.prop + 1")
+    }
+    invalidateCachedPropsTest(1) { builder =>
+      builder.setRelationshipProperties("r", "prop" -> "r.prop + 1")
+    }
+    invalidateCachedPropsTest(2) { builder =>
+      builder.setRelationshipPropertiesFromMap("r", "{prop: r.prop + 1}", removeOtherProps = false)
+    }
+    invalidateCachedPropsTest(3) { builder =>
+      builder.setRelationshipPropertiesFromMap("r", "{prop: r.prop + 1}", removeOtherProps = true)
+    }
+    invalidateCachedPropsTest(4) { builder =>
+      builder.setProperty("r", "prop", "r.prop + 1")
+    }
+    invalidateCachedPropsTest(5) { builder =>
+      builder.setProperties("r", "prop" -> "r.prop + 1")
+    }
+    invalidateCachedPropsTest(6) { builder =>
+      builder.setPropertiesFromMap("r", "{prop: r.prop + 1}", removeOtherProps = false)
+    }
+    invalidateCachedPropsTest(7) { builder =>
+      builder.setPropertiesFromMap("r", "{prop: r.prop + 1}", removeOtherProps = true)
+    }
+  }
+
+  private def invalidateCachedPropsTest(expected: Long)(setOp: LogicalQueryBuilder => LogicalQueryBuilder): Unit = {
+    restartTx()
+    val builder = new LogicalQueryBuilder(this)
+      .produceResults("oldValue", "newValue")
+      .projection("cacheR[r.prop] as newValue")
+    val logicalQuery = setOp.apply(builder)
+      .projection("cacheRFromStore[r.prop] AS oldValue")
+      .relationshipTypeScan("()-[r:REL]->()")
+      .build(readOnly = false)
+
+    execute(logicalQuery, runtime) should beColumns("oldValue", "newValue")
+      .withSingleRow(expected, expected + 1)
+      .withStatistics(propertiesSet = 1)
+  }
 }

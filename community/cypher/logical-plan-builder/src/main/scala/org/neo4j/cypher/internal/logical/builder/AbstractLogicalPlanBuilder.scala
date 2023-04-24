@@ -1905,6 +1905,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
+  def setNodeProperty(node: String, propertyKey: String, value: Expression): IMPL = {
+    appendAtCurrentIndent(UnaryOperator(source =>
+      SetNodeProperty(source, node, PropertyKeyName(propertyKey)(pos), value)(_)
+    ))
+  }
+
   def setRelationshipProperty(relationship: String, propertyKey: String, value: String): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
       SetRelationshipProperty(source, relationship, PropertyKeyName(propertyKey)(pos), parseExpression(value))(_)
@@ -1927,11 +1933,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ))
   }
 
-  def setRelationshipProperties(node: String, items: (String, String)*): IMPL = {
+  def setRelationshipProperties(relationship: String, items: (String, String)*): IMPL = {
     appendAtCurrentIndent(UnaryOperator(source =>
       SetRelationshipProperties(
         source,
-        node,
+        relationship,
         items.map(item => (PropertyKeyName(item._1)(pos), parseExpression(item._2)))
       )(_)
     ))
