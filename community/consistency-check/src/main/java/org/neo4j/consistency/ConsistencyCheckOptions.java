@@ -82,7 +82,7 @@ public class ConsistencyCheckOptions {
             paramLabel = "<path>",
             showDefaultValue = ALWAYS,
             description = "Path to where a consistency report will be written. "
-                    + "Interpreted as a directory, unless it has an extension of '.report'")
+                    + "Interpreted as a directory, unless it has an extension of '.report'.")
     private Path reportPath = Path.of(".");
 
     @Option(
@@ -93,7 +93,7 @@ public class ConsistencyCheckOptions {
             converter = MaxOffHeapMemoryConverter.class,
             description = "Maximum memory that neo4j-admin can use for page cache and various caching data structures "
                     + "to improve performance. Value can be plain numbers, "
-                    + "like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%% which will amount to 70%%"
+                    + "like 10000000 or e.g. 20G for 20 gigabytes, or even e.g. 70%%, which will amount to 70%%"
                     + " of currently free memory on the machine.")
     private long maxOffHeapMemory;
 
@@ -103,7 +103,8 @@ public class ConsistencyCheckOptions {
             defaultValue = "all",
             showDefaultValue = NEVER,
             converter = NumberOfThreadsConverter.class,
-            description = "Number of threads used to check consistency. Defaults to number of CPUs on the machine.")
+            description =
+                    "Number of threads used to check the consistency. Default: The number of CPUs on the machine.")
     private int numberOfThreads;
 
     public Path reportPath() {

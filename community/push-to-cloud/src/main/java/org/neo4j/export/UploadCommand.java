@@ -78,23 +78,23 @@ public class UploadCommand extends AbstractAdminCommand {
             paramLabel = "<uri>",
             arity = "1",
             required = true,
-            description = "'neo4j://mydatabaseid.databases.neo4j.io' Bolt URI of target database")
+            description = "'neo4j://mydatabaseid.databases.neo4j.io' Bolt URI of the target database.")
     private String boltURI;
 
     @Option(
             names = "--to-user",
             defaultValue = "${NEO4J_USERNAME}",
             description =
-                    "Username of the target database to push this database to. Prompt will ask for username if not provided. "
-                            + "Alternatively NEO4J_USERNAME environment variable can be used.")
+                    "Username of the target database to push this database to. Prompt will ask for a username if not provided. "
+                            + "Alternatively, the NEO4J_USERNAME environment variable can be used.")
     private String username;
 
     @Option(
             names = "--to-password",
             defaultValue = "${NEO4J_PASSWORD}",
             description =
-                    "Password of the target database to push this database to. Prompt will ask for password if not provided. "
-                            + "Alternatively NEO4J_PASSWORD environment variable can be used.")
+                    "Password of the target database to push this database to. Prompt will ask for a password if not provided. "
+                            + "Alternatively, the NEO4J_PASSWORD environment variable can be used.")
     private String password;
 
     @Option(

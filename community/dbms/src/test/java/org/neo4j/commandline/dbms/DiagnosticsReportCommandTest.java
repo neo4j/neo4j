@@ -68,9 +68,9 @@ class DiagnosticsReportCommandTest {
                       --expand-commands   Allow command expansion in config value evaluation.
                   -h, --help              Show this help message and exit.
                       --ignore-disk-space-check[=true|false]
-                                          Ignore disk full warning
+                                          Ignore disk full warning.
                                             Default: false
-                      --list              List all available classifiers
+                      --list              List all available classifiers.
                       --to-path=<path>    Destination directory for reports. Defaults to a
                                             system tmp directory.
                       --verbose           Enable verbose output.""");

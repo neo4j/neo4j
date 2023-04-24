@@ -98,16 +98,17 @@ public class MemoryRecommendationsCommand extends AbstractAdminCommand {
             paramLabel = "<size>",
             converter = Converters.ByteUnitConverter.class,
             description =
-                    "Recommend memory settings with respect to the given amount of memory, instead of the total memory of the system running the command.")
+                    "Recommend memory settings with respect to the given amount of memory, instead of the total memory of the system running the command. "
+                            + "Valid units are: k, K, m, M, g, G.")
     private Long memory;
 
     @Option(
             names = "--docker",
             fallbackValue = "true",
             description = "The recommended memory settings are produced in the form of environment variables "
-                    + "that can be directly passed to Neo4j docker container. The recommended use is to save "
+                    + "that can be directly passed to a Neo4j docker container. The recommended use is to save "
                     + "the generated environment variables to a file and pass the file to a docker container "
-                    + "using '--env-file' docker option.")
+                    + "using the '--env-file' docker option.")
     private boolean dockerOutput;
 
     public MemoryRecommendationsCommand(ExecutionContext ctx) {

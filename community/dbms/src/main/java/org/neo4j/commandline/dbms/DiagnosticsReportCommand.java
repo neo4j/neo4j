@@ -71,7 +71,7 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
     };
     private static final DateTimeFormatter filenameDateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HHmmss");
 
-    @Option(names = "--list", description = "List all available classifiers")
+    @Option(names = "--list", description = "List all available classifiers.")
     private boolean list;
 
     @Option(
@@ -81,7 +81,7 @@ public class DiagnosticsReportCommand extends AbstractAdminCommand {
             paramLabel = "true|false",
             fallbackValue = "true",
             showDefaultValue = ALWAYS,
-            description = "Ignore disk full warning")
+            description = "Ignore disk full warning.")
     private boolean ignoreDiskSpaceCheck;
 
     @Option(

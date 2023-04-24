@@ -102,8 +102,8 @@ public class ImportCommand {
                 converter = DatabaseNameConverter.class,
                 defaultValue = DEFAULT_DATABASE_NAME,
                 description = "Name of the database to import.%n"
-                        + "  If the database used to import into doesn't exist prior to importing,%n"
-                        + "  then it must be created subsequently using CREATE DATABASE.")
+                        + "  If the database into which you import does not exist prior to importing,%n"
+                        + "  you must create it subsequently using CREATE DATABASE.")
         private NormalizedDatabaseName database;
 
         @Option(
@@ -117,12 +117,12 @@ public class ImportCommand {
                 names = "--id-type",
                 paramLabel = "string|integer|actual",
                 defaultValue = "string",
-                description = "Each node must provide a unique id. This is used to find the "
+                description = "Each node must provide a unique ID. This is used to find the "
                         + "correct nodes when creating relationships. Possible values are:%n"
                         + "  string: arbitrary strings for identifying nodes,%n"
                         + "  integer: arbitrary integer values for identifying nodes,%n"
-                        + "  actual: (advanced) actual node ids.%n"
-                        + "For more information on id handling, please see the Neo4j Manual: "
+                        + "  actual: (advanced) actual node IDs.%n"
+                        + "For more information on ID handling, please see the Neo4j Manual: "
                         + "https://neo4j.com/docs/operations-manual/current/tools/import/",
                 converter = IdTypeConverter.class)
         IdType idType = IdType.STRING;
@@ -139,7 +139,7 @@ public class ImportCommand {
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
                 fallbackValue = "true",
-                description = "If un-specified columns should be ignored during the import.")
+                description = "If unspecified columns should be ignored during the import.")
         private boolean ignoreExtraColumns;
 
         @Option(
@@ -149,7 +149,9 @@ public class ImportCommand {
                 paramLabel = "true|false",
                 fallbackValue = "true",
                 description =
-                        "Whether or not fields from input source can span multiple lines, i.e. contain newline characters.")
+                        "Whether or not fields from an input source can span multiple lines, i.e. contain newline characters. "
+                                + "Setting --multiline-fields=true can severely degrade the performance of the importer. "
+                                + "Therefore, use it with care, especially with large imports.")
         private boolean multilineFields = DEFAULT_CSV_CONFIG.multilineFields();
 
         @Option(
@@ -177,7 +179,7 @@ public class ImportCommand {
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
                 fallbackValue = "true",
-                description = "Whether or not backslash-escaped quote e.g. \\\" is interpreted as inner quote.")
+                description = "Whether or not a backslash-escaped quote e.g. \\\" is interpreted as an inner quote.")
         private boolean legacyStyleQuoting = DEFAULT_CSV_CONFIG.legacyStyleQuoting();
 
         @Option(
@@ -185,7 +187,7 @@ public class ImportCommand {
                 paramLabel = "<char>",
                 converter = EscapedCharacterConverter.class,
                 description = "Delimiter character between values in CSV data. "
-                        + "Also accepts 'TAB' and e.g. 'U+20AC' for specifying character using unicode.")
+                        + "Also accepts 'TAB' and e.g. 'U+20AC' for specifying a character using Unicode.")
         private char delimiter = DEFAULT_CSV_CONFIG.delimiter();
 
         @Option(
@@ -193,7 +195,7 @@ public class ImportCommand {
                 paramLabel = "<char>",
                 converter = EscapedCharacterConverter.class,
                 description = "Delimiter character between array elements within a value in CSV data. "
-                        + "Also accepts 'TAB' and e.g. 'U+20AC' for specifying character using unicode.")
+                        + "Also accepts 'TAB' and e.g. 'U+20AC' for specifying a character using Unicode.")
         private char arrayDelimiter = DEFAULT_CSV_CONFIG.arrayDelimiter();
 
         @Option(
@@ -210,7 +212,7 @@ public class ImportCommand {
                 paramLabel = "<size>",
                 converter = ByteUnitConverter.class,
                 description = "Size of each buffer for reading input data. "
-                        + "The size has to at least be large enough to hold the biggest single value in the input data. "
+                        + "It has to be at least large enough to hold the biggest single value in the input data. "
                         + "The value can be a plain number or a byte units string, e.g. 128k, 1m.")
         private long bufferSize = DEFAULT_CSV_CONFIG.bufferSize();
 
@@ -221,7 +223,8 @@ public class ImportCommand {
                 converter = MaxOffHeapMemoryConverter.class,
                 description =
                         "Maximum memory that neo4j-admin can use for various data structures and caching to improve performance. "
-                                + "Values can be plain numbers, like 10000000 or e.g. 20G for 20 gigabyte, or even e.g. 70%%.")
+                                + "Values can be plain numbers, such as 10000000, or 20G for 20 gigabytes. "
+                                + "It can also be specified as a percentage of the available memory, for example 70%%.")
         private long maxOffHeapMemory;
 
         @Option(
@@ -231,7 +234,8 @@ public class ImportCommand {
                 defaultValue = "auto",
                 converter = OnOffAutoConverter.class,
                 description =
-                        "Indicate if target storage subsystem can support parallel IO with high throughput or auto detect.")
+                        "Ignore environment-based heuristics and indicate if the target storage subsystem can support parallel IO with high throughput or auto detect. "
+                                + " Typically this is on for SSDs, large raid arrays, and network-attached storage.")
         private OnOffAuto highIo;
 
         @Option(
@@ -240,7 +244,7 @@ public class ImportCommand {
                 description =
                         "(advanced) Max number of worker threads used by the importer. Defaults to the number of available processors reported by the JVM. "
                                 + "There is a certain amount of minimum threads needed so for that reason there is no lower bound for this "
-                                + "value. For optimal performance this value shouldn't be greater than the number of available processors.")
+                                + "value. For optimal performance, this value should not be greater than the number of available processors.")
         private int threads = DEFAULT_IMPORTER_CONFIG.maxNumberOfWorkerThreads();
 
         @Option(
@@ -248,7 +252,7 @@ public class ImportCommand {
                 paramLabel = "<num>",
                 description =
                         "Number of bad entries before the import is considered failed. This tolerance threshold is about relationships referring to "
-                                + "missing nodes. Format errors in input data are still treated as errors")
+                                + "missing nodes. Format errors in input data are still treated as errors.")
         private long badTolerance = 1000;
 
         @Option(
@@ -267,9 +271,9 @@ public class ImportCommand {
                 paramLabel = "true|false",
                 fallbackValue = "true",
                 description =
-                        "Whether or not to skip importing relationships that refers to missing node ids, i.e. either start or end node id/group referring "
-                                + "to node that wasn't specified by the node input data. Skipped relationships will be logged, containing at most number of entities "
-                                + "specified by bad-tolerance, unless otherwise specified by skip-bad-entries-logging option.")
+                        "Whether or not to skip importing relationships that refer to missing node IDs, i.e. either start or end node ID/group referring "
+                                + "to a node that was not specified by the node input data. Skipped relationships will be logged, containing at most the number of entities "
+                                + "specified by --bad-tolerance, unless otherwise specified by the --skip-bad-entries-logging option.")
         private boolean skipBadRelationships;
 
         @Option(
@@ -280,7 +284,7 @@ public class ImportCommand {
                 description =
                         "Whether or not the lookup of nodes referred to from relationships needs to be checked strict. "
                                 + "If disabled, most but not all relationships referring to non-existent nodes will be detected. "
-                                + "If enabled all those relationships will be found but to the cost of lower performance")
+                                + "If enabled all those relationships will be found but at the cost of lower performance.")
         private boolean strict = false;
 
         @Option(
@@ -290,9 +294,9 @@ public class ImportCommand {
                 paramLabel = "true|false",
                 fallbackValue = "true",
                 description =
-                        "Whether or not to skip importing nodes that have the same id/group. In the event of multiple nodes within the same group having "
-                                + "the same id, the first encountered will be imported whereas consecutive such nodes will be skipped. Skipped nodes will be logged, "
-                                + "containing at most number of entities specified by bad-tolerance, unless otherwise specified by skip-bad-entries-logging option.")
+                        "Whether or not to skip importing nodes that have the same ID/group. In the event of multiple nodes within the same group having "
+                                + "the same ID, the first encountered will be imported, whereas consecutive such nodes will be skipped. Skipped nodes will be logged, "
+                                + "containing at most the number of entities specified by --bad-tolerance, unless otherwise specified by the --skip-bad-entries-logging option.")
         private boolean skipDuplicateNodes;
 
         @Option(
@@ -302,7 +306,7 @@ public class ImportCommand {
                 paramLabel = "true|false",
                 fallbackValue = "true",
                 description =
-                        "Whether or not to normalize property types to Cypher types, e.g. 'int' becomes 'long' and 'float' becomes 'double'")
+                        "Whether or not to normalize property types to Cypher types, e.g. 'int' becomes 'long' and 'float' becomes 'double'.")
         private boolean normalizeTypes = true;
 
         @Option(
@@ -314,7 +318,7 @@ public class ImportCommand {
                 description =
                         "Node CSV header and data. Multiple files will be logically seen as one big file from the perspective of the importer. The first "
                                 + "line must contain the header. Multiple data sources like these can be specified in one import, where each data source has its "
-                                + "own header.")
+                                + "own header. Files can also be specified using regular expressions.")
         private List<NodeFilesGroup> nodes;
 
         @Option(
@@ -326,7 +330,7 @@ public class ImportCommand {
                 description =
                         "Relationship CSV header and data. Multiple files will be logically seen as one big file from the perspective of the importer. "
                                 + "The first line must contain the header. Multiple data sources like these can be specified in one import, where each data source has "
-                                + "its own header.")
+                                + "its own header. Files can also be specified using regular expressions.")
         private List<RelationshipFilesGroup> relationships = new ArrayList<>();
 
         @Option(
@@ -336,7 +340,7 @@ public class ImportCommand {
                 paramLabel = "true|false",
                 fallbackValue = "true",
                 description =
-                        "Automatically skip accidental header lines in subsequent files in file groups with more than one file")
+                        "Automatically skip accidental header lines in subsequent files in file groups with more than one file.")
         private boolean autoSkipHeaders;
 
         Base(ExecutionContext ctx) {
@@ -496,7 +500,7 @@ public class ImportCommand {
                 showDefaultValue = NEVER,
                 required = false,
                 description = "Name of database format. Imported database will be created of the specified format "
-                        + "or use format from configuration if not specifed.")
+                        + "or use format from configuration if not specified.")
         private String format;
 
         // Was force

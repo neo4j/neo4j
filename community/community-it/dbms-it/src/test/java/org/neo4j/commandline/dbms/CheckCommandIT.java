@@ -148,16 +148,17 @@ class CheckCommandIT {
                                                        implicitly enable <check-graph> if it were not explicitly disabled.
                                                        Default: false
                               --report-path=<path>   Path to where a consistency report will be written. Interpreted as a directory, unless it
-                                                       has an extension of '.report'
+                                                       has an extension of '.report'.
                                                        Default: .
                               --max-off-heap-memory=<size>
                                                      Maximum memory that neo4j-admin can use for page cache and various caching data structures
                                                        to improve performance. Value can be plain numbers, like 10000000 or e.g. 20G for 20
-                                                       gigabyte, or even e.g. 70% which will amount to 70% of currently free memory on the
+                                                       gigabytes, or even e.g. 70%, which will amount to 70% of currently free memory on the
                                                        machine.
                                                        Default: 90%
                               --threads=<number of threads>
-                                                     Number of threads used to check consistency. Defaults to number of CPUs on the machine.
+                                                     Number of threads used to check the consistency. Default: The number of CPUs on the
+                                                       machine.
                               --from-path-data=<path>
                                                      Path to the databases directory, containing the database directory to source from.
                                                        Default: <config: server.directories.data>/databases
