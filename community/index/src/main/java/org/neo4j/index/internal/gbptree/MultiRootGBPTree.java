@@ -1186,6 +1186,7 @@ public class MultiRootGBPTree<ROOT_KEY, KEY, VALUE> implements Closeable {
             // Drain writers, bump generation and do the final forcing of the file.
             // New writers after this section don't need to eagerly flush anymore.
             withCheckpointAndWriterLock(() -> {
+                // Eager flush is optimistic and may fail. There is a chance a few pages are still dirty at this point.
                 writersMustEagerlyFlush = false;
                 long generation = this.generation;
                 long stableGeneration = stableGeneration(generation);

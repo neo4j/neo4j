@@ -819,9 +819,9 @@ class GBPTreeTest {
                 }
             }
         };
-        var numInitialChanges = 100;
+        var numInitialChanges = 10000;
         // a bit smaller page size to get more affected pages on a smaller data set (faster test)
-        try (var pageCache = createPageCache(512);
+        try (var pageCache = createPageCache(256);
                 var index = index(pageCache).with(monitor).build();
                 var t2 = new OtherThreadExecutor("T2")) {
             index.checkpoint(FileFlushEvent.NULL, NULL_CONTEXT);
@@ -843,7 +843,7 @@ class GBPTreeTest {
             barrier.await();
             barrier.release();
             try (var writer = index.writer(NULL_CONTEXT)) {
-                for (var i = 0; i < 1_000; i++) {
+                for (var i = 0; i < 10_000; i++) {
                     data.setValue(numInitialChanges + i);
                     writer.put(data, data);
                 }
@@ -855,8 +855,9 @@ class GBPTreeTest {
             var firstFlush = flushEvent.flushEvents.get(0);
             var secondFlush = flushEvent.flushEvents.get(1);
             var thirdFlush = flushEvent.flushEvents.get(2);
-            assertThat(firstFlush.pagesFlushed()).isGreaterThan(secondFlush.pagesFlushed());
-            assertThat(secondFlush.pagesFlushed()).isOne();
+            assertThat(firstFlush.pagesFlushed()).isGreaterThan(2000).isGreaterThan(secondFlush.pagesFlushed());
+            // Eager flush may fail, so we can see some extra dirty pages being flushed here but not many
+            assertThat(secondFlush.pagesFlushed()).isLessThanOrEqualTo(10);
             assertThat(thirdFlush.pagesFlushed()).isOne();
         }
     }
