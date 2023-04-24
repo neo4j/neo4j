@@ -35,6 +35,12 @@ import scala.collection.mutable
 object BestPositionFinder {
 
   /**
+   * If we have more candidateLists than this, then we won't attempt to merge them,
+   * and insert Eager at the local optima of each candidateList.
+   */
+  private val SIZE_LIMIT = 50
+
+  /**
    * @param candidates the candidate plans
    * @param minimum    the plan with the lowest cardinality in candidates
    * @param reasons    all reasons that contributed to this candidateSet
@@ -94,32 +100,37 @@ object BestPositionFinder {
       }
     }
 
-    // Try to find the best overall location by looking at all candidate sets.
-    // If there are situations where sets more than pairwise overlap, this algorithm will not necessarily find the global optimum,
-    // since it only tries pairwise merging of sequences. But, it "only" has quadratic complexity.
-    val results = mutable.ArrayBuffer[CandidateSetWithMinimum]()
-    csWithMinima.foreach { listA =>
-      if (results.isEmpty) {
-        results += listA
-      } else {
-        var merged = false
-        val it = results.zipWithIndex.iterator
+    val results = if (csWithMinima.size > SIZE_LIMIT) {
+      csWithMinima
+    } else {
+      // Try to find the best overall location by looking at all candidate sets.
+      // If there are situations where sets more than pairwise overlap, this algorithm will not necessarily find the global optimum,
+      // since it only tries pairwise merging of sequences. But, it "only" has quadratic complexity.
+      val buffer = mutable.ArrayBuffer[CandidateSetWithMinimum]()
+      csWithMinima.foreach { listA =>
+        if (buffer.isEmpty) {
+          buffer += listA
+        } else {
+          var merged = false
+          val it = buffer.zipWithIndex.iterator
 
-        // Go through all lists already in results and see if the current one can get merged with any other list.
-        while (!merged && it.hasNext) {
-          val (listB, i) = it.next()
-          tryMerge(listA, listB) match {
-            case Some(mergedList) =>
-              // If so, only keep the merged list
-              merged = true
-              results.remove(i)
-              results += mergedList
-            case None =>
-              // Otherwise keep both
-              results += listA
+          // Go through all lists already in results and see if the current one can get merged with any other list.
+          while (!merged && it.hasNext) {
+            val (listB, i) = it.next()
+            tryMerge(listA, listB) match {
+              case Some(mergedList) =>
+                // If so, only keep the merged list
+                merged = true
+                buffer.remove(i)
+                buffer += mergedList
+              case None =>
+                // Otherwise keep both
+                buffer += listA
+            }
           }
         }
       }
+      buffer
     }
 
     results
