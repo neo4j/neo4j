@@ -68,6 +68,11 @@
             <groupId>org.scala-lang</groupId>
         </dependency>
 
+        <dependency>
+            <groupId>org.scala-lang.modules</groupId>
+            <artifactId>scala-collection-contrib_2.13</artifactId>
+        </dependency>
+
         <!-- scala test dependencies -->
 
         <dependency>
