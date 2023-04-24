@@ -1347,7 +1347,6 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
   test("Plans Generic ORDER BY with no Sort on LHS of Join") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(10)
-      .enablePrintCostComparisons()
       .build()
 
     val query =
@@ -1400,8 +1399,8 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
   test("should plan value hash join with COUNT expression") {
     val planner = plannerBuilder()
       .setAllNodesCardinality(1000)
-      .setLabelCardinality("A", 20)
-      .setLabelCardinality("B", 500)
+      .setLabelCardinality("A", 500)
+      .setLabelCardinality("B", 20)
       .setLabelCardinality("C", 200)
       .setRelationshipCardinality("()-[]->()", 300)
       .setRelationshipCardinality("(:B)-[]->()", 300)
@@ -1417,14 +1416,53 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     val plan = planner.plan(q).stripProduceResults
 
     plan shouldEqual planner.subPlanBuilder()
-      .valueHashJoin("a.prop = anon_0")
+      .valueHashJoin("anon_0 = a.prop")
+      .|.nodeByLabelScan("a", "A")
+      .apply()
+      .|.aggregation(Seq.empty, Seq("count(*) AS anon_0"))
+      .|.filter("c:C")
+      .|.expandAll("(b)-[r]->(c)")
+      .|.argument("b")
+      .nodeByLabelScan("b", "B")
+      .build()
+  }
+
+  test("should plan value hash join with COUNT expression on both sides") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(1000)
+      .setLabelCardinality("A", 500)
+      .setLabelCardinality("B", 20)
+      .setLabelCardinality("C", 200)
+      .setLabelCardinality("D", 30)
+      .setRelationshipCardinality("()-[]->()", 300)
+      .setRelationshipCardinality("(:B)-[]->()", 300)
+      .setRelationshipCardinality("(:B)-[]->(:D)", 300)
+      .setRelationshipCardinality("(:A)-[]->()", 300)
+      .setRelationshipCardinality("(:A)-[]->(:C)", 300)
+      .build()
+
+    val q =
+      """MATCH (a:A), (b:B)
+        |WHERE COUNT { (a)-[r1]->(c:C) } = COUNT { (b)-[r2]->(d:D) }
+        |RETURN a, b
+        |""".stripMargin
+
+    val plan = planner.plan(q).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .valueHashJoin("anon_1 = anon_0")
       .|.apply()
-      .|.|.aggregation(Seq.empty, Seq("count(*) AS anon_0"))
+      .|.|.aggregation(Seq(), Seq("count(*) AS anon_0"))
       .|.|.filter("c:C")
-      .|.|.expandAll("(b)-[r]->(c)")
-      .|.|.argument("b")
-      .|.nodeByLabelScan("b", "B")
-      .nodeByLabelScan("a", "A")
+      .|.|.expandAll("(a)-[r1]->(c)")
+      .|.|.argument("a")
+      .|.nodeByLabelScan("a", "A")
+      .apply()
+      .|.aggregation(Seq(), Seq("count(*) AS anon_1"))
+      .|.filter("d:D")
+      .|.expandAll("(b)-[r2]->(d)")
+      .|.argument("b")
+      .nodeByLabelScan("b", "B")
       .build()
   }
 }
