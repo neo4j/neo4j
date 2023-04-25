@@ -437,8 +437,10 @@ object ConflictFinder {
     def conflictsWithItself = writePlan eq readPlan
 
     // a merge plan can never conflict with its children
-    def mergeConflictWithChild = writePlan.isInstanceOf[Merge] && writePlan.folder.treeExists {
-      case plan: LogicalPlan if plan eq readPlan => true
+    def mergeConflictWithChild = writePlan.isInstanceOf[Merge] && hasChildRec(writePlan, readPlan)
+
+    def hasChildRec(plan: LogicalPlan, child: LogicalPlan): Boolean = {
+      (plan eq child) || plan.lhs.exists(hasChildRec(_, child)) || plan.rhs.exists(hasChildRec(_, child))
     }
 
     // We consider the leftmost plan to be potentially stable unless we are in a call in transactions.
