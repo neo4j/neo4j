@@ -135,7 +135,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
           SemanticFeature.QuantifiedPathPatterns
         )
       result.errorMessages shouldBe Seq(
-        "A selective path pattern can only be used with match mode \"DIFFERENT RELATIONSHIPS\" if it's the only pattern in that clause."
+        "Multiple path patterns cannot be used in the same clause in combination with a selective path selector."
       )
     }
     test(s"""MATCH
@@ -148,7 +148,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
           SemanticFeature.QuantifiedPathPatterns
         )
       result.errorMessages shouldBe Seq(
-        "A selective path pattern can only be used with match mode \"DIFFERENT RELATIONSHIPS\" if it's the only pattern in that clause."
+        "Multiple path patterns cannot be used in the same clause in combination with a selective path selector."
       )
     }
   }

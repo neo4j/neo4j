@@ -881,7 +881,9 @@ case class Prettifier(
     def indented(): IndentingQueryPrettifier = copy(indentLevel + 1)
     val INDENT: String = "  " * indentLevel
 
-    private def asNewLine(l: String) = NL + l
+    private def asNewLine(l: String): String = NL + l
+
+    private def appendSpaceIfNonEmpty(s: String): String = if (s.nonEmpty) s"$s " else s
 
     def query(q: Query): String =
       q match {
@@ -937,11 +939,12 @@ case class Prettifier(
 
     def asString(m: Match): String = {
       val o = if (m.optional) "OPTIONAL " else ""
+      val mm = appendSpaceIfNonEmpty(m.matchMode.prettified)
       val p = expr.patterns.apply(m.pattern)
       val ind = indented()
       val w = m.where.map(ind.asString).map(asNewLine).getOrElse("")
       val h = m.hints.map(ind.asString).map(asNewLine).mkString
-      s"$INDENT${o}MATCH $p$h$w"
+      s"$INDENT${o}MATCH $mm$p$h$w"
     }
 
     def asString(c: SubqueryCall): String = {

@@ -43,6 +43,6 @@ object MatchMode {
    *                          TODO This can be removed once "MatchModes" is enabled by default.
    */
   case class DifferentRelationships(implicitlyCreated: Boolean = false)(val position: InputPosition) extends MatchMode {
-    override def prettified: String = "DIFFERENT RELATIONSHIPS"
+    override def prettified: String = if (implicitlyCreated) "" else "DIFFERENT RELATIONSHIPS"
   }
 }

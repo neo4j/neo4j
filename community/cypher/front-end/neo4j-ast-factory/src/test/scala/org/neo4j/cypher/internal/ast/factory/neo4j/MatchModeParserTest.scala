@@ -122,7 +122,11 @@ class MatchModeParserTest extends CypherFunSuite with JavaccParserAstTestBase[Cl
     gives {
       match_(
         nodePat(),
-        where = Some(where(simpleExistsExpression(pattern, None, matchMode = MatchMode.DifferentRelationships()(pos))))
+        where = Some(where(simpleExistsExpression(
+          pattern,
+          None,
+          matchMode = MatchMode.DifferentRelationships(implicitlyCreated = true)(pos)
+        )))
       )
     }
   }
