@@ -53,30 +53,36 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
     interestingOrderConfig: InterestingOrderConfig,
     context: LogicalPlanningContext
   ): Iterator[SelectionCandidate] = {
-    unsolvedPredicates.iterator.filter(containsExistsSubquery).collect {
-      // WHERE NOT (a)-[:X]->(c)
-      case predicate @ Not(subqueryExpression: ExistsIRExpression) =>
-        findMatchingRelationshipPattern(
-          positivePredicate = false,
-          predicate,
-          subqueryExpression,
-          input,
-          queryGraph,
-          context
-        )
-          .map(SelectionCandidate(_, Set(predicate)))
-      // WHERE (a)-[:X]->(c)
-      case predicate: ExistsIRExpression =>
-        findMatchingRelationshipPattern(
-          positivePredicate = true,
-          predicate,
-          predicate,
-          input,
-          queryGraph,
-          context
-        )
-          .map(SelectionCandidate(_, Set(predicate)))
-    }.flatten
+    // The current runtime implementations of TriadicSelection relies on order being preserved and is not yet supported
+    // by parallel runtime.
+    if (context.settings.executionModel.providedOrderPreserving) {
+      unsolvedPredicates.iterator.filter(containsExistsSubquery).collect {
+        // WHERE NOT (a)-[:X]->(c)
+        case predicate @ Not(subqueryExpression: ExistsIRExpression) =>
+          findMatchingRelationshipPattern(
+            positivePredicate = false,
+            predicate,
+            subqueryExpression,
+            input,
+            queryGraph,
+            context
+          )
+            .map(SelectionCandidate(_, Set(predicate)))
+        // WHERE (a)-[:X]->(c)
+        case predicate: ExistsIRExpression =>
+          findMatchingRelationshipPattern(
+            positivePredicate = true,
+            predicate,
+            predicate,
+            input,
+            queryGraph,
+            context
+          )
+            .map(SelectionCandidate(_, Set(predicate)))
+      }.flatten
+    } else {
+      Iterator.empty[SelectionCandidate]
+    }
   }
 
   private def findMatchingRelationshipPattern(
