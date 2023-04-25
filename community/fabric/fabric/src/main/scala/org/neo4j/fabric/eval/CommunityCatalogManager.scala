@@ -116,7 +116,8 @@ class CommunityCatalogManager(
     case _ => throw new IllegalArgumentException(s"Unexpected graph type $graph")
   }
 
-  override def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean = databaseLookup.isVirtualDatabase(databaseId)
+  override def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean =
+    databaseLookup.databaseClassifier.isVirtualDatabase(databaseId)
 }
 
 class IdProvider(startingFrom: Long = 0) {

@@ -20,6 +20,7 @@
 package org.neo4j.fabric.eval
 
 import org.neo4j.fabric.FabricDatabaseManager
+import org.neo4j.fabric.eval.DatabaseLookup.DatabaseClassifier
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -40,7 +41,7 @@ trait DatabaseLookup {
 
   def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId]
 
-  def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean
+  def databaseClassifier: DatabaseClassifier
 }
 
 object DatabaseLookup {
@@ -48,9 +49,29 @@ object DatabaseLookup {
   implicit val databaseNameOrdering: Ordering[NormalizedDatabaseName] = Ordering.by(_.name)
   implicit val databaseIdOrdering: Ordering[NamedDatabaseId] = Ordering.by(_.name)
 
-  class Default(fabricDatabaseManager: FabricDatabaseManager) extends DatabaseLookup {
+  trait DatabaseClassifier {
+    def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean
+  }
 
-    private val databaseReferenceRepo: DatabaseReferenceRepository = fabricDatabaseManager.databaseReferenceRepository()
+  private def defaultDatabaseClassifier(databaseReferenceRepo: DatabaseReferenceRepository): DatabaseClassifier =
+    (namedDatabaseId: NamedDatabaseId) =>
+      databaseReferenceRepo.getCompositeDatabaseReferences.asScala
+        .map(_.databaseId())
+        .contains(namedDatabaseId)
+
+  class Default(
+    databaseReferenceRepo: DatabaseReferenceRepository,
+    classifier: DatabaseClassifier
+  ) extends DatabaseLookup {
+
+    def this(databaseReferenceRepo: DatabaseReferenceRepository) =
+      this(databaseReferenceRepo, defaultDatabaseClassifier(databaseReferenceRepo))
+
+    def this(fabricDatabaseManager: FabricDatabaseManager) =
+      this(
+        fabricDatabaseManager.databaseReferenceRepository(),
+        (databaseId: NamedDatabaseId) => fabricDatabaseManager.isFabricDatabase(databaseId)
+      )
 
     def databaseReferences: SortedSet[DatabaseReference] = {
       val unsortedSet = databaseReferenceRepo.getAllDatabaseReferences.asScala
@@ -63,7 +84,6 @@ object DatabaseLookup {
       }
     }
 
-    def isVirtualDatabase(databaseId: NamedDatabaseId): Boolean =
-      fabricDatabaseManager.isFabricDatabase(databaseId)
+    def databaseClassifier: DatabaseClassifier = classifier
   }
 }
