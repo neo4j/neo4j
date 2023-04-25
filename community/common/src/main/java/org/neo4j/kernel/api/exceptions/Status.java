@@ -33,11 +33,11 @@ import org.neo4j.annotations.api.PublicApi;
 /**
  * This is the codification of all available surface-api status codes. If you are throwing an error to a user through
  * one of the key APIs, you should opt for using or adding an error code here.
- *
+ * <br>
  * Each {@link Status} has an associated category, represented by the inner enums in this class.
  * Each {@link Status} also has an associated {@link Classification} which defines meta-data about the code, such
  * as if the error was caused by a user or the database (and later on if the code denotes an error or merely a warning).
- *
+ * <br>
  * This class is not part of the public Neo4j API, and backwards compatibility for using it as a Java class is not
  * guaranteed. Instead, the automatically generated documentation derived from this class and available in the Neo4j
  * manual should be considered a user-level API.
@@ -669,6 +669,23 @@ public interface Status {
         }
 
         Fabric(Classification classification, String description) {
+            this.code = new Code(classification, this, description);
+        }
+    }
+
+    enum ChangeDataCapture implements Status {
+        Disabled(DatabaseError, "Change Data Capture is not currently enabled for this database"),
+        ScanFailure(DatabaseError, "Unable to read the Change Data Capture data for this database"),
+        InvalidIdentifier(ClientError, "Invalid change identifier");
+
+        private final Code code;
+
+        @Override
+        public Code code() {
+            return code;
+        }
+
+        ChangeDataCapture(Classification classification, String description) {
             this.code = new Code(classification, this, description);
         }
     }

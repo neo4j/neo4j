@@ -89,6 +89,9 @@ public enum Group {
     /** Removes queries that have timed out */
     CYPHER_QUERY_MONITOR("CypherQueryMonitor"),
 
+    // CDC
+    CDC("CDC"),
+
     // DATA COLLECTOR
     DATA_COLLECTOR("DataCollector"),
 
