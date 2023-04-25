@@ -119,17 +119,18 @@ class DynamicConcurrentLongQueueTest {
     @Test
     void shouldOfferAndTakeParallel() {
         // given
-        var queue = new DynamicConcurrentLongQueue(4, 100);
-        var offerThreads = 2;
         var itemsPerThread = 200;
-        var items = itemsPerThread * offerThreads;
+        var producers = Math.max(4, Runtime.getRuntime().availableProcessors() / 2);
+        var queue = new DynamicConcurrentLongQueue(producers, itemsPerThread);
+        var consumers = producers;
+        var items = itemsPerThread * producers;
 
         // when
         var taken = new ConcurrentLinkedDeque<Long>();
         var takenCount = new AtomicInteger();
         var race = new Race().withEndCondition(() -> takenCount.get() >= items);
         race.addContestants(
-                offerThreads,
+                producers,
                 c -> () -> {
                     var startItem = c * itemsPerThread;
                     for (var i = 0; i < itemsPerThread; i++) {
@@ -138,7 +139,7 @@ class DynamicConcurrentLongQueueTest {
                     assertThat(queue.size()).isGreaterThanOrEqualTo(0);
                 },
                 1);
-        race.addContestants(4, () -> {
+        race.addContestants(consumers, () -> {
             var candidate = queue.takeOrDefault(-1);
             if (candidate != -1) {
                 taken.add(candidate);
