@@ -363,7 +363,7 @@ class BufferingIdGeneratorFactoryTest {
         public void markReserved(long id, int numberOfIds) {}
 
         @Override
-        public void markUnreserved(long id, int numberOfIds) {}
+        public void markUncached(long id, int numberOfIds) {}
 
         void verifyDeleted(long id, int numberOfIds) {
             assertThat(deleted.remove(Pair.of(id, numberOfIds))).isTrue();

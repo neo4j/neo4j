@@ -54,10 +54,12 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
                     }
 
                     var next = new Chunk(chunkSize);
+                    var accepted = next.offer(v);
+                    assert accepted;
                     chunk.next.set(next);
                     tail.set(next);
                     numChunks.incrementAndGet();
-                    return next.offer(v);
+                    return true;
                 }
             }
         }
@@ -142,6 +144,8 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
     }
 
     private static class Chunk {
+        private static final long EMPTY_VALUE = -1;
+
         private final AtomicLongArray array;
         private final int capacity;
         private final AtomicInteger readSeq = new AtomicInteger();
@@ -150,12 +154,13 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
 
         Chunk(int capacity) {
             var internalArray = new long[capacity];
-            Arrays.fill(internalArray, -1);
+            Arrays.fill(internalArray, EMPTY_VALUE);
             this.array = new AtomicLongArray(internalArray);
             this.capacity = capacity;
         }
 
         boolean offer(long v) {
+            assert v != EMPTY_VALUE;
             int currentWriteSeq;
             do {
                 currentWriteSeq = writeSeq.get();
@@ -197,7 +202,7 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
                 }
                 value = array.get(currentReadSeq);
                 // value == -1 means the slot has been allocated, but it hasn't been set yet
-            } while (value == -1 || !readSeq.compareAndSet(currentReadSeq, currentReadSeq + 1));
+            } while (value == EMPTY_VALUE || !readSeq.compareAndSet(currentReadSeq, currentReadSeq + 1));
             return value;
         }
 

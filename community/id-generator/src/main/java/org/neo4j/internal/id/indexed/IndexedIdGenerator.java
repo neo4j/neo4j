@@ -403,7 +403,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 layout,
                 cache,
                 atLeastOneIdOnFreelist,
-                context -> instantiateMarker(null, true, context),
+                this::contextualMarker,
                 generation,
                 strictlyPrioritizeFreelist,
                 monitor);
@@ -459,7 +459,7 @@ public class IndexedIdGenerator implements IdGenerator {
             // If strictly prioritizing the freelist then stay in this loop until either there's an available
             // free ID or there are no more to be found. The loop will not be busy-wait given the blocking
             // nature of the scan in this scenario.
-        } while (strictlyPrioritizeFreelist && scanner.hasMoreFreeIds(true));
+        } while (strictlyPrioritizeFreelist && scanner.hasMoreFreeIds(false));
 
         // There was no ID in the cache. This could be that either there are no free IDs in here (the typical case),
         // or a benign race where the cache ran out of IDs and it's very soon filled with more IDs from an ongoing
@@ -525,12 +525,16 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
+        if (numberOfIds == 1) {
+            return nextId(cursorContext);
+        }
+
         if (numberOfIds <= biggestSlotSize) {
             // TODO to fill cache in a do-while would be preferrable here too, but slightly harder since the scanner
             //  may say that there are more free IDs, but there may not actually be more free IDs of the given
             //  numberOfIds
             checkRefillCache(cursorContext);
-            long id = cache.takeOrDefault(NO_ID, numberOfIds, scanner::queueWastedCachedId);
+            long id = cache.takeOrDefault(NO_ID, numberOfIds, monitor, scanner::queueWastedCachedId);
             if (id != NO_ID) {
                 monitor.allocatedFromReused(id, numberOfIds);
                 return id;
@@ -571,7 +575,10 @@ public class IndexedIdGenerator implements IdGenerator {
             // OK, so the skipped IDs will be marked as deleted, but will never be picked up by the ID scanner in this
             // generation/session
             // and therefore temporarily wasted until next restart.
-            scanner.queueSkippedHighId(readHighId, skipped);
+            var accepted = cache.offer(readHighId, skipped, monitor);
+            if (accepted < skipped) {
+                scanner.queueSkippedHighId(readHighId + accepted, skipped - accepted);
+            }
             monitor.skippedIdsAtHighId(id, numberOfIds);
         }
         return id;
@@ -596,7 +603,28 @@ public class IndexedIdGenerator implements IdGenerator {
             return NOOP_MARKER;
         }
 
-        return instantiateMarker(null, true, cursorContext);
+        var realMarker = instantiateMarker(null, true, cursorContext);
+        return new ContextualMarker.Delegate(realMarker) {
+            @Override
+            public void markFree(long id, int numberOfIds) {
+                // Take a short-cut if possible, which is to place the free ID into cache right away
+                // The ones that gets accepted... let's not mark those at all. This has two benefits:
+                // - Reduce mark calls for free
+                // - Avoid a race where an ID would be added to cache and before we would mark it as free/reserved
+                //   the ID would be allocated and committed and race with our updates here
+                // We just have to make sure that these IDs gets marked as free/reserved or similar if leaving
+                // the cache w/o getting marked as used, e.g. for:
+                // - rollback
+                // - only a subset of the ID gets allocated
+                // - clear cache
+                var accepted = cache.offer(id, numberOfIds, monitor);
+
+                // Mark those that weren't added to the cache as free (the "slow" route)
+                if (accepted < numberOfIds) {
+                    realMarker.markFree(id + accepted, numberOfIds - accepted);
+                }
+            }
+        };
     }
 
     IdRangeMarker lockAndInstantiateMarker(boolean bridgeIdGaps, CursorContext cursorContext) {
@@ -630,7 +658,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
     @Override
     public void close() {
-        closeAllUnchecked(scanner, tree, monitor);
+        closeAllUnchecked(tree, monitor);
     }
 
     @Override

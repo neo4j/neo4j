@@ -99,8 +99,8 @@ class FreeIdScannerTest {
         tree.close();
     }
 
-    private boolean tryLoadFreeIdsIntoCache(FreeIdScanner scanner, boolean blocking) {
-        return scanner.tryLoadFreeIdsIntoCache(blocking, false, NULL_CONTEXT);
+    private void tryLoadFreeIdsIntoCache(FreeIdScanner scanner, boolean blocking) {
+        scanner.tryLoadFreeIdsIntoCache(blocking, false, NULL_CONTEXT);
     }
 
     @Test
@@ -109,7 +109,7 @@ class FreeIdScannerTest {
         FreeIdScanner scanner = scanner(IDS_PER_ENTRY, 8, 1, true);
 
         // then
-        assertThat(tryLoadFreeIdsIntoCache(scanner, false)).isFalse();
+        assertThat(scanner.hasMoreFreeIds(false)).isFalse();
     }
 
     @Test
@@ -130,7 +130,7 @@ class FreeIdScannerTest {
         assertThat(cache.takeOrDefault(-1)).isZero();
 
         // then
-        assertThat(tryLoadFreeIdsIntoCache(scanner, false)).isTrue();
+        assertThat(scanner.hasMoreFreeIds(false)).isTrue();
     }
 
     @Test
@@ -430,7 +430,8 @@ class FreeIdScannerTest {
         long generation = 1;
         IdCache cache = new IdCache(new Slot(32, 1));
         FreeIdScanner scanner = scanner(IDS_PER_ENTRY, cache, generation, true);
-        forEachId(generation, range(0, 5)).accept((marker, id) -> {
+        var range = range(0, 5);
+        forEachId(generation, range).accept((marker, id) -> {
             marker.markDeleted(id);
             marker.markFree(id);
         });
@@ -444,6 +445,10 @@ class FreeIdScannerTest {
         assertThat(cacheSizeBeforeClear).isEqualTo(5);
         assertThat(cache.size()).isZero();
         assertThat(reuser.unreservedIds).isEqualTo(LongLists.mutable.of(0, 1, 2, 3, 4));
+
+        // and when
+        scanner.tryLoadFreeIdsIntoCache(false, false, NULL_CONTEXT);
+        range.forEach(id -> assertThat(cache.takeOrDefault(-1)).isEqualTo(id));
     }
 
     @Test
@@ -673,11 +678,11 @@ class FreeIdScannerTest {
 
         // when
         scanner.queueSkippedHighId(id, size);
-        boolean idsWereFound = scanner.tryLoadFreeIdsIntoCache(false, true /*force the scan*/, NULL_CONTEXT);
-        assertThat(idsWereFound).isTrue();
+        scanner.tryLoadFreeIdsIntoCache(false, true, NULL_CONTEXT);
 
         // then
-        assertThat(cache.takeOrDefault(NO_ID, size, EMPTY_ID_RANGE_CONSUMER)).isEqualTo(id);
+        assertThat(cache.takeOrDefault(NO_ID, size, NO_MONITOR, EMPTY_ID_RANGE_CONSUMER))
+                .isEqualTo(id);
     }
 
     @Test
@@ -692,7 +697,7 @@ class FreeIdScannerTest {
         scanner.queueSkippedHighId(id, size);
         // Here the id range will be marked as free, although it's not yet deleted. The bridging will take care of it
         // below when marking a higher one as used
-        assertThat(tryLoadFreeIdsIntoCache(scanner, false)).isFalse();
+        assertThat(scanner.hasMoreFreeIds(false)).isFalse();
 
         // when
         try (IdRangeMarker marker = marker(generation, true)) {
@@ -705,11 +710,12 @@ class FreeIdScannerTest {
             marker.markFree(0);
         }
 
-        boolean idsWereFound = tryLoadFreeIdsIntoCache(scanner, false);
-        assertThat(idsWereFound).isTrue();
+        assertThat(scanner.hasMoreFreeIds(false)).isTrue();
+        scanner.tryLoadFreeIdsIntoCache(true, true, NULL_CONTEXT);
 
         // then
-        assertThat(cache.takeOrDefault(NO_ID, size, EMPTY_ID_RANGE_CONSUMER)).isEqualTo(id);
+        assertThat(cache.takeOrDefault(NO_ID, size, NO_MONITOR, EMPTY_ID_RANGE_CONSUMER))
+                .isEqualTo(id);
     }
 
     private FreeIdScanner scanner(int idsPerEntry, int cacheSize, long generation, boolean strict) {
@@ -803,8 +809,8 @@ class FreeIdScannerTest {
                 }
 
                 @Override
-                public void markUnreserved(long id, int numberOfIds) {
-                    actual.markUnreserved(id, numberOfIds);
+                public void markUncached(long id, int numberOfIds) {
+                    actual.markUncached(id, numberOfIds);
                     for (int i = 0; i < numberOfIds; i++) {
                         unreservedIds.add(id + i);
                     }
@@ -880,15 +886,19 @@ class FreeIdScannerTest {
         }
 
         @Override
-        void offer(PendingIdQueue pendingItemsToCache, IndexedIdGenerator.Monitor monitor) {
+        int offer(long id, int numberOfIds, IndexedIdGenerator.Monitor monitor) {
             reachBarrier(QueueMethodControl.OFFER);
-            super.offer(pendingItemsToCache, monitor);
+            return super.offer(id, numberOfIds, monitor);
         }
 
         @Override
-        long takeOrDefault(long defaultValue, int numberOfIds, IdRangeConsumer wastedIdConsumer) {
+        long takeOrDefault(
+                long defaultValue,
+                int numberOfIds,
+                IndexedIdGenerator.Monitor monitor,
+                IdRangeConsumer wastedIdConsumer) {
             reachBarrier(QueueMethodControl.TAKE);
-            return super.takeOrDefault(defaultValue, numberOfIds, wastedIdConsumer);
+            return super.takeOrDefault(defaultValue, numberOfIds, monitor, wastedIdConsumer);
         }
 
         @Override
