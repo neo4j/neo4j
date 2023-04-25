@@ -210,7 +210,7 @@ public class TableOutputFormatter implements OutputFormatter {
                         break;
                     }
 
-                    sb.appendCodePoint(renderCodePoint(codepoint));
+                    sb.appendCodePoint(codepoint);
                     offset = txt.offsetByCodePoints(offset, 1); // Move offset to next code point
                     ++codePointCount;
                 }
@@ -254,20 +254,6 @@ public class TableOutputFormatter implements OutputFormatter {
             formatRow(sb, columnSizes, row, continuation);
         }
         return sb.toString();
-    }
-
-    /**
-     * Replace some control characters with their symbolic representation.
-     * We do this to avoid sending ansi escape codes to the terminal
-     * and make the output human-readable.
-     */
-    private static int renderCodePoint(int codepoint) {
-        if (codepoint <= 0x1f && codepoint != '\n' && codepoint != '\r') {
-            // Control character symbols begins at U+2400
-            return codepoint + 0x2400;
-        } else {
-            return codepoint;
-        }
     }
 
     private static int nextLineStart(String txt, int start) {

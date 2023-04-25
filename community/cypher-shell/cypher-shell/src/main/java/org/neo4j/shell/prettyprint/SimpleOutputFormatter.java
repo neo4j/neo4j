@@ -53,8 +53,6 @@ public class SimpleOutputFormatter implements OutputFormatter {
     }
 
     private String formatRecord(final Record record) {
-        // Note, here we will output control characters as is to keep results machine-readable.
-        // In TableOutputFormatter we convert them to symbols (see renderCodePoint).
         return record.values().stream().map(this::formatValue).collect(Collectors.joining(COMMA_SEPARATOR));
     }
 

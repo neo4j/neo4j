@@ -715,36 +715,6 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
                 out.toString(UTF_8));
     }
 
-    @Test
-    void renderEscapeCharacters() {
-        // Given
-        final var builder = new StringBuilder();
-        for (int i = 0; i <= 0x21; ++i) {
-            builder.appendCodePoint(i);
-        }
-        Result result = mockResult(asList("res"), builder.toString());
-
-        // When
-        final var out = new ByteArrayOutputStream();
-        final var err = new ByteArrayOutputStream();
-        final var printer = new AnsiPrinter(Format.VERBOSE, new PrintStream(out), new PrintStream(err), true);
-        new TableOutputFormatter(true, 1).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
-
-        // Then
-        assertEquals(
-                """
-                        +--------------------------------------+
-                        | res                                  |
-                        +--------------------------------------+
-                        | "␀␁␂␃␄␅␆␇␈␉                          |
-                        \\ ␋␌                                   |
-                        \\ ␎␏␐␑␒␓␔␕␖␗␘␙␚␛␜␝␞␟ !"                |
-                        +--------------------------------------+
-
-                        """,
-                out.toString(UTF_8));
-    }
-
     private static String formatResult(Result result) {
         ToStringLinePrinter printer = new ToStringLinePrinter();
         new TableOutputFormatter(true, 1000)
