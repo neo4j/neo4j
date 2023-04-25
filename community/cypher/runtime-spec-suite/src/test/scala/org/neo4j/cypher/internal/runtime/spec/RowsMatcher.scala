@@ -190,7 +190,7 @@ abstract class EqualRowsMatcher(listInAnyOrder: Boolean) extends RowsMatcher {
       val gotRowCount = gotRows.size
       val conjunction = if (expRowCount == gotRowCount) "and" else "but"
       RowsDontMatch(
-        s"Expected ${expRowCount} rows, $conjunction got ${gotRowCount} rows${System.lineSeparator()}${diffString.result}"
+        s"Expected ${expRowCount} rows, $conjunction got ${gotRowCount} rows\n${diffString.result}"
       )
     }
   }
