@@ -158,7 +158,11 @@ case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(va
 
   override def isBounded: Boolean = true
 
-  // TODO: This is not true, but is it necessary to maintain current semantics?
+  /**
+   * While GQL's SHORTEST PATH is selective, Neo4j's shortestPath(...) is not. Although it breaks the normal DIFFERENT
+   * RELATIONSHIPS semantics that we're used to, shortestPath(...) has always been exempted from this restriction.
+   * A such, we need to consider shortestPath(...) non-selective.
+   */
   override def isSelective: Boolean = false
 }
 
@@ -196,9 +200,10 @@ case class QuantifiedPath(
   override def variable: Option[LogicalVariable] = None
 
   override def isBounded: Boolean = quantifier match {
-    case IntervalQuantifier(_, Some(_)) => true
-    case FixedQuantifier(_)             => true
-    case _                              => false
+    case FixedQuantifier(_)           => true
+    case IntervalQuantifier(_, upper) => upper.nonEmpty
+    case PlusQuantifier()             => false
+    case StarQuantifier()             => false
   }
 }
 
@@ -238,7 +243,7 @@ case class ParenthesizedPath(
 
   override def variable: Option[LogicalVariable] = None
 
-  override def isBounded: Boolean = true
+  override def isBounded: Boolean = part.isBounded
 }
 
 object ParenthesizedPath {

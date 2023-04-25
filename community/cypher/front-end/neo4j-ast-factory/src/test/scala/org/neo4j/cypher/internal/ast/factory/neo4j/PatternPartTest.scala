@@ -162,4 +162,29 @@ class PatternPartTest extends CypherFunSuite with JavaccParserAstTestBase[Patter
     val m = parsing(testName)
     m.actuals.forall(_.isBounded) shouldBe true
   }
+
+  test("((a)-[r]->(b))") {
+    val m = parsing(testName)
+    m.actuals.forall(_.isBounded) shouldBe true
+  }
+
+  test("((a)-[r]->+(b))") {
+    val m = parsing(testName)
+    m.actuals.forall(_.isBounded) shouldBe false
+  }
+
+  test("shortestPath((a)-[r]->+(b))") {
+    val m = parsing(testName)
+    m.actuals.forall(_.isBounded) shouldBe true
+  }
+
+  test("allShortestPaths((a)-[r*]->(b))") {
+    val m = parsing(testName)
+    m.actuals.forall(_.isBounded) shouldBe true
+  }
+
+  test("shortestPath((a)-[r]->(b))") {
+    val m = parsing(testName)
+    m.actuals.forall(_.isBounded) shouldBe true
+  }
 }

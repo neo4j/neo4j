@@ -530,7 +530,6 @@ case class Match(
       matchMode match {
         case _: RepeatableElements     => checkRepeatableElements(_)
         case _: DifferentRelationships => checkDifferentRelationships(_)
-        case _                         => SemanticCheckResult.success(_)
       }
     }
   }
@@ -538,7 +537,10 @@ case class Match(
   private def checkRepeatableElements(state: SemanticState): SemanticCheckResult = {
     val errors = pattern.patternParts.collect {
       case part if !part.isBounded =>
-        SemanticError(s"Match mode \"REPEATABLE ELEMENTS\" was used, but pattern is not bounded.", part.position)
+        SemanticError(
+          s"The pattern may yield an infinite number of rows under match mode REPEATABLE ELEMENTS, " +
+            s"perhaps use a path selector or add an upper bound to your quantified path patterns.", part.position
+        )
     }
     semantics.SemanticCheckResult(state, errors)
   }
@@ -550,12 +552,20 @@ case class Match(
    * that there is no other path pattern beside it.
    */
   private def checkDifferentRelationships(state: SemanticState): SemanticCheckResult = {
+    // Let's only mention match modes when that is an available feature
+    def errorMessage: String = if (state.features.contains(SemanticFeature.MatchModes)) {
+      "Multiple path patterns cannot be used in the same clause in combination with a selective path selector. " +
+        "You may want to use multiple MATCH clauses, or you might want to consider using the REPEATABLE ELEMENTS match mode."
+    } else {
+      "Multiple path patterns cannot be used in the same clause in combination with a selective path selector."
+    }
+
     val errors = if (pattern.patternParts.size > 1) {
       pattern.patternParts
         .find(_.isSelective)
         .map(selectivePattern =>
           SemanticError(
-            "A selective path pattern can only be used with match mode \"DIFFERENT RELATIONSHIPS\" if it's the only pattern in that clause.",
+            errorMessage,
             selectivePattern.position
           )
         )

@@ -421,7 +421,6 @@ TOKEN [IGNORE_CASE] :
     | < ASSIGN: "ASSIGN" >
     | < AT: "AT" >
     | < BAR: "|" >
-    | < BINDING: "BINDING" >
     | < BINDINGS: "BINDINGS" >
     | < BOOSTED: "BOOSTED" >
     | < BREAK: "BREAK" >

@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
@@ -40,7 +41,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Exists
-import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
@@ -461,7 +461,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Rewrites Simple ExistsExpression") {
-    val esc = simpleExistsExpression(n_r_m_r2_o_r3_q, None, MatchMode.default(pos), Set(n, m, o, q, r, r2, r3), Set.empty)
+    val esc =
+      simpleExistsExpression(n_r_m_r2_o_r3_q, None, MatchMode.default(pos), Set(n, m, o, q, r, r2, r3), Set.empty)
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariableName = nameGenerator.nextName
@@ -496,7 +497,13 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Rewrites Simple Exists Expression with where clause") {
-    val esc = simpleExistsExpression(n_r_m_r2_o_r3_q, Some(where(rPred)), MatchMode.default(pos), Set(n, r, m, r2, o, r3, q), Set.empty)
+    val esc = simpleExistsExpression(
+      n_r_m_r2_o_r3_q,
+      Some(where(rPred)),
+      MatchMode.default(pos),
+      Set(n, r, m, r2, o, r3, q),
+      Set.empty
+    )
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val existsVariableName = nameGenerator.nextName
@@ -1409,7 +1416,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
 
   test("should rewrite COUNT { (n)-[r]-(m) WHERE r.foo > 5 AND r.foo < 10 } and group predicates") {
     val p = Pattern(Seq(PatternPart(n_r_m.element)))(pos)
-    val countExpr = simpleCountExpression(p, Some(where(and(rPred, rLessPred))), MatchMode.default(pos), Set(m, r), Set(n))
+    val countExpr =
+      simpleCountExpression(p, Some(where(and(rPred, rLessPred))), MatchMode.default(pos), Set(m, r), Set(n))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName
@@ -1439,7 +1447,8 @@ class CreateIrExpressionsTest extends CypherFunSuite with AstConstructionTestSup
   }
 
   test("Should rewrite COUNT { (n)-[r]->(m), (o)-[r2]->(m)-[r3]->(q) }") {
-    val countExpr = simpleCountExpression(n_r_m_r2_o_r3_q, None, MatchMode.default(pos), Set(r, m, r2, r3, q), Set(n, o))
+    val countExpr =
+      simpleCountExpression(n_r_m_r2_o_r3_q, None, MatchMode.default(pos), Set(r, m, r2, r3, q), Set(n, o))
 
     val nameGenerator = makeAnonymousVariableNameGenerator()
     val countVariableName = nameGenerator.nextName

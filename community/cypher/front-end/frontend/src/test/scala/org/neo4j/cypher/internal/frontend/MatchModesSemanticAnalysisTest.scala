@@ -37,14 +37,26 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
   }
 
   def unboundRepeatableElementsSemanticError(pos: InputPosition): SemanticError = SemanticError(
-    "Match mode \"REPEATABLE ELEMENTS\" was used, but pattern is not bounded.",
+    "The pattern may yield an infinite number of rows under match mode REPEATABLE ELEMENTS, " +
+      "perhaps use a path selector or add an upper bound to your quantified path patterns.",
     pos
   )
 
-  def differentRelationshipsWithSelectivePathPatternSemanticError(pos: InputPosition): SemanticError = SemanticError(
-    "A selective path pattern can only be used with match mode \"DIFFERENT RELATIONSHIPS\" if it's the only pattern in that clause.",
-    pos
-  )
+  def differentRelationshipsSelectivePathPatternSemanticError(
+    pos: InputPosition,
+    semanticFeatureEnabled: Boolean = true
+  ): SemanticError = {
+    val matchModeTip = if (semanticFeatureEnabled) {
+      " You may want to use multiple MATCH clauses, or you might want to consider using the REPEATABLE ELEMENTS match mode."
+    } else {
+      ""
+    }
+
+    SemanticError(
+      "Multiple path patterns cannot be used in the same clause in combination with a selective path selector." + matchModeTip,
+      pos
+    )
+  }
 
   test("DIFFERENT RELATIONSHIPS (a)") {
     // running without semantic feature should fail
@@ -134,13 +146,22 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
 
   test("DIFFERENT RELATIONSHIPS SHORTEST 1 PATH (a)-[:REL*]->(b), SHORTEST 1 PATH (c)-[:REL*]->(d)") {
     errorsFromSemanticAnalysis shouldEqual Seq(
-      differentRelationshipsWithSelectivePathPatternSemanticError(InputPosition(46, 1, 47))
+      differentRelationshipsSelectivePathPatternSemanticError(InputPosition(46, 1, 47))
     )
   }
 
   test("SHORTEST 1 PATH (a)-[:REL*]->(b), (c)-[:REL]->(d)") {
     errorsFromSemanticAnalysis shouldEqual Seq(
-      differentRelationshipsWithSelectivePathPatternSemanticError(InputPosition(22, 1, 23))
+      differentRelationshipsSelectivePathPatternSemanticError(InputPosition(22, 1, 23))
+    )
+  }
+
+  test("SHORTEST 1 PATH (a)-[:REL*]->(b), (c)-[:REL]->(e)") {
+    // running without SemanticFeature.MatchModes
+    runSemanticAnalysisWithSemanticFeatures(
+      SemanticFeature.GpmShortestPath
+    ).errors shouldEqual Seq(
+      differentRelationshipsSelectivePathPatternSemanticError(InputPosition(22, 1, 23), semanticFeatureEnabled = false)
     )
   }
 
