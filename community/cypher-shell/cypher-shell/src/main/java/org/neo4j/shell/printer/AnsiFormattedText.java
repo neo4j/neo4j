@@ -25,7 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import org.fusesource.jansi.Ansi;
-import org.neo4j.util.VisibleForTesting;
 
 /**
  * A piece of text which can be rendered with Ansi format codes.
@@ -72,12 +71,10 @@ public class AnsiFormattedText {
         return st;
     }
 
-    /*
-     * Returns this ansi formatted string rendered with special syntax
-     * used by org.fusesource.jansi.AnsiRenderer (@|code(,code)* text|@).
+    /**
+     * @return the text as a string including possible formatting, ready for ANSI formatting
      */
-    @VisibleForTesting
-    protected String jansiFormattedString() {
+    public String formattedString() {
         StringBuilder sb = new StringBuilder();
         for (AnsiFormattedString s : pieces) {
             List<String> codes = new ArrayList<>();
@@ -108,7 +105,7 @@ public class AnsiFormattedText {
      * @return the text as a string rendered with ANSI escape codes
      */
     public String renderedString() {
-        return Ansi.ansi().render(jansiFormattedString()).toString();
+        return Ansi.ansi().render(formattedString()).toString();
     }
 
     /**
@@ -116,7 +113,7 @@ public class AnsiFormattedText {
      */
     public String plainString() {
         StringBuilder sb = new StringBuilder();
-        pieces.forEach(p -> sb.append(p.string));
+        pieces.forEach(sb::append);
         return sb.toString();
     }
 

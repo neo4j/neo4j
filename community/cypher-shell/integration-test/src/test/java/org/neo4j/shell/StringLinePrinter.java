@@ -21,7 +21,6 @@ package org.neo4j.shell;
 
 import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.prettyprint.OutputFormatter;
-import org.neo4j.shell.printer.AnsiFormattedText;
 import org.neo4j.shell.printer.Printer;
 
 public class StringLinePrinter implements Printer {
@@ -47,11 +46,6 @@ public class StringLinePrinter implements Printer {
 
     @Override
     public void printError(String text) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void printError(AnsiFormattedText text) {
         throw new UnsupportedOperationException();
     }
 

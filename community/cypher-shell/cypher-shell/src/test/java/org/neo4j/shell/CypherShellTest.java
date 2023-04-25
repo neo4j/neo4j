@@ -19,26 +19,23 @@
  */
 package org.neo4j.shell;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.contains;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.shell.test.Util.testConnectionConfig;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.neo4j.shell.cli.Format;
 import org.neo4j.shell.commands.CommandHelper;
 import org.neo4j.shell.exception.CommandException;
 import org.neo4j.shell.parameter.ParameterService;
@@ -46,7 +43,6 @@ import org.neo4j.shell.parser.StatementParser.CommandStatement;
 import org.neo4j.shell.parser.StatementParser.CypherStatement;
 import org.neo4j.shell.prettyprint.LinePrinter;
 import org.neo4j.shell.prettyprint.PrettyPrinter;
-import org.neo4j.shell.printer.AnsiPrinter;
 import org.neo4j.shell.printer.Printer;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.BoltStateHandler;
@@ -58,17 +54,13 @@ class CypherShellTest {
     private final PrettyPrinter mockedPrettyPrinter = mock(PrettyPrinter.class);
     private final ParameterService mockedParameterService = mock(ParameterService.class);
     private BoltStateHandler mockedBoltStateHandler;
-    private ByteArrayOutputStream out = new ByteArrayOutputStream();
-    private ByteArrayOutputStream err = new ByteArrayOutputStream();
     private Printer printer;
     private OfflineTestShell offlineTestShell;
 
     @BeforeEach
     void setup() {
-        out.reset();
-        err.reset();
         mockedBoltStateHandler = mock(BoltStateHandler.class);
-        printer = new AnsiPrinter(Format.VERBOSE, new PrintStream(out), new PrintStream(err), true);
+        printer = mock(Printer.class);
         when(mockedBoltStateHandler.getProtocolVersion()).thenReturn("");
 
         offlineTestShell = new OfflineTestShell(printer, mockedBoltStateHandler, mockedPrettyPrinter);
@@ -165,7 +157,7 @@ class CypherShellTest {
 
         OfflineTestShell shell = new OfflineTestShell(printer, boltStateHandler, mockedPrettyPrinter);
         shell.execute(new CypherStatement("RETURN 999;", true, 0, 0));
-        assertOutput("999\n");
+        verify(printer).printOut(contains("999"));
     }
 
     @Test
@@ -177,59 +169,34 @@ class CypherShellTest {
 
     @Test
     void printLicenseExpired() {
-        printer.setFormat(Format.PLAIN);
         when(mockedBoltStateHandler.licenseDetails()).thenReturn(LicenseDetails.parse("expired", -1, 120));
         offlineTestShell.printLicenseWarnings();
-        assertOutput(
-                """
-                        [33mThank you for installing Neo4j. This is a time limited trial, and the
-                        120 days have expired. Please contact https://neo4j.com/contact-us/
-                        to continue using the software. Use of this Software without
-                        a proper commercial or evaluation license with Neo4j, Inc. or
-                        its affiliates is prohibited.
-                        [m
-                        """);
+        verify(printer).printOut(contains("This is a time limited trial, and the\n120 days have expired"));
+        verify(printer, times(0)).printIfVerbose(anyString());
     }
 
     @Test
     void printLicenseAccepted() {
         when(mockedBoltStateHandler.licenseDetails()).thenReturn(LicenseDetails.parse("yes", 0, 0));
         offlineTestShell.printLicenseWarnings();
-        assertOutput("");
+        verify(printer, times(0)).printOut(anyString());
+        verify(printer, times(0)).printIfVerbose(anyString());
     }
 
     @Test
     void printLicenseNotAccepted() {
         when(mockedBoltStateHandler.licenseDetails()).thenReturn(LicenseDetails.parse("no", -1, 120));
         offlineTestShell.printLicenseWarnings();
-        assertOutput(
-                """
-                        [33mA Neo4j license has not been accepted. To accept the commercial license agreement, run
-                            neo4j-admin server license --accept-commercial.
-                        To accept the terms of the evaluation agreement, run
-                            neo4j-admin server license --accept-evaluation.
-
-                        (c) Neo4j Sweden AB. All Rights Reserved.
-                        Use of this Software without a proper commercial license, or evaluation license
-                        with Neo4j, Inc. or its affiliates is prohibited.
-                        Neo4j has the right to terminate your usage if you are not compliant.
-
-                        Please contact us about licensing via https://neo4j.com/contact-us/
-                        [m
-                        """);
+        verify(printer).printOut(contains("A Neo4j license has not been accepted"));
+        verify(printer, times(0)).printIfVerbose(anyString());
     }
 
     @Test
     void printLicenseDaysLeft() {
         when(mockedBoltStateHandler.licenseDetails()).thenReturn(LicenseDetails.parse("eval", 2, 30));
         offlineTestShell.printLicenseWarnings();
-        assertOutput(
-                """
-                        Thank you for installing Neo4j. This is a time limited trial.
-                        You have 2 days remaining out of 30 days. Please
-                        contact https://neo4j.com/contact-us/ if you require more time.
-
-                        """);
+        verify(printer).printOut(contains("This is a time limited trial.\nYou have 2 days remaining out of 30 days."));
+        verify(printer, times(0)).printIfVerbose(anyString());
     }
 
     @Test
@@ -238,10 +205,9 @@ class CypherShellTest {
         final var newConnection = testConnectionConfig("bolt://hello.hi:1");
         when(mockedBoltStateHandler.connectionConfig()).thenReturn(newConnection);
         offlineTestShell.printFallbackWarning(oldConnection.uri());
-        assertOutput(
-                """
-                        [33mFailed to connect to neo4j://hello.hi:1, fallback to bolt://hello.hi:1[m
-                        """);
+        verify(printer)
+                .printIfVerbose(contains("Failed to connect to neo4j://hello.hi:1, fallback to bolt://hello.hi:1"));
+        verify(printer, times(0)).printOut(anyString());
     }
 
     @Test
@@ -249,15 +215,7 @@ class CypherShellTest {
         final var connection = testConnectionConfig("neo4j://hello.hi:1");
         when(mockedBoltStateHandler.connectionConfig()).thenReturn(connection);
         offlineTestShell.printFallbackWarning(connection.uri());
-        assertOutput("");
-    }
-
-    private void assertOutput(String expected) {
-        assertOutput(expected, "");
-    }
-
-    private void assertOutput(String expectedOut, String expectedErr) {
-        assertEquals(expectedOut, out.toString(UTF_8).replace("\r", ""));
-        assertEquals(expectedErr, err.toString());
+        verify(printer, times(0)).printIfVerbose(anyString());
+        verify(printer, times(0)).printOut(anyString());
     }
 }

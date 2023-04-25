@@ -20,29 +20,33 @@
 package org.neo4j.shell.printer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 
-import org.fusesource.jansi.Ansi;
 import org.junit.jupiter.api.Test;
 
 class AnsiFormattedTextTest {
 
     @Test
     void simpleString() {
-        assertAnsi(AnsiFormattedText.from("hello"), "hello", "hello");
+        AnsiFormattedText st = AnsiFormattedText.from("hello");
+        assertEquals("hello", st.plainString());
+        assertEquals("hello", st.formattedString());
     }
 
     @Test
     void noStyleShouldBePlain() {
-        assertAnsi(AnsiFormattedText.s().colorDefault().boldOff().append("yo"), "yo", "yo");
+        AnsiFormattedText st = AnsiFormattedText.s().colorDefault().boldOff().append("yo");
+
+        assertEquals("yo", st.plainString());
+        assertEquals("yo", st.formattedString());
     }
 
     @Test
     void withFormatting() {
-        assertAnsi(
-                AnsiFormattedText.s().colorRed().bold("hello").colorDefault().append(" world"),
-                "@|RED,BOLD hello|@ world",
-                "\u001B[31;1mhello\u001B[m world");
+        AnsiFormattedText st =
+                AnsiFormattedText.s().colorRed().bold("hello").colorDefault().append(" world");
+
+        assertEquals("hello world", st.plainString());
+        assertEquals("@|RED,BOLD hello|@ world", st.formattedString());
     }
 
     @Test
@@ -54,29 +58,31 @@ class AnsiFormattedTextTest {
                 .boldOff()
                 .append(" world");
         st = AnsiFormattedText.s().colorRed().append(st);
-        assertAnsi(st, "@|RED,BOLD hello|@@|RED  world|@", "\u001B[31;1mhello\u001B[m\u001B[31m world\u001B[m");
+
+        assertEquals("hello world", st.plainString());
+        assertEquals("@|RED,BOLD hello|@@|RED  world|@", st.formattedString());
     }
 
     @Test
     void outerAttributeTakesColorPrecedence() {
         AnsiFormattedText st = AnsiFormattedText.s().colorRed().append("inner");
 
-        assertAnsi(st, "@|RED inner|@", "\u001B[31minner\u001B[m");
+        assertEquals("@|RED inner|@", st.formattedString());
 
         st = AnsiFormattedText.s().colorDefault().append(st);
 
-        assertAnsi(st, "inner", "inner");
+        assertEquals("inner", st.formattedString());
     }
 
     @Test
     void outerAttributeTakesBoldPrecedence() {
         AnsiFormattedText st = AnsiFormattedText.s().colorRed().bold().append("inner");
 
-        assertAnsi(st, "@|RED,BOLD inner|@", "\u001B[31;1minner\u001B[m");
+        assertEquals("@|RED,BOLD inner|@", st.formattedString());
 
         st = AnsiFormattedText.s().boldOff().append(st);
 
-        assertAnsi(st, "@|RED inner|@", "\u001B[31minner\u001B[m");
+        assertEquals("@|RED inner|@", st.formattedString());
     }
 
     @Test
@@ -85,20 +91,6 @@ class AnsiFormattedTextTest {
 
         st = st.append(" world");
 
-        assertAnsi(st, "hello world", "hello world");
-    }
-
-    /**
-     * @param in AnsiFormattedText to test
-     * @param jansiString expected jansi string
-     * @param ansiString expected string with ansi escape codes
-     */
-    private void assertAnsi(AnsiFormattedText in, String jansiString, String ansiString) {
-        assertEquals(jansiString, in.jansiFormattedString());
-        assertEquals(ansiString, in.renderedString());
-        assertFalse(in.plainString().contains("\u001B"));
-        Ansi.setEnabled(false);
-        assertEquals(Ansi.ansi().render(jansiString).toString(), in.plainString());
-        Ansi.setEnabled(true);
+        assertEquals("hello world", st.plainString());
     }
 }

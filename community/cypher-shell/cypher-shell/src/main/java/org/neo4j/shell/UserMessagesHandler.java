@@ -24,7 +24,7 @@ import static org.neo4j.shell.util.Versions.version;
 import org.neo4j.shell.printer.AnsiFormattedText;
 
 public record UserMessagesHandler(Connector connector) {
-    public AnsiFormattedText getWelcomeMessage() {
+    public String getWelcomeMessage() {
         final var message = AnsiFormattedText.from("Connected to Neo4j");
 
         String protocolVersion = connector.getProtocolVersion();
@@ -48,10 +48,11 @@ public record UserMessagesHandler(Connector connector) {
                 .bold(":exit")
                 .append(" to exit the shell.")
                 .append("\nNote that Cypher queries must end with a ")
-                .bold("semicolon.");
+                .bold("semicolon.")
+                .formattedString();
     }
 
     public static String getExitMessage() {
-        return "\nBye!";
+        return AnsiFormattedText.s().append("\nBye!").formattedString();
     }
 }

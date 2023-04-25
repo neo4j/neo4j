@@ -19,13 +19,11 @@
  */
 package org.neo4j.shell.prettyprint;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonMap;
 import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -33,9 +31,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.shell.prettyprint.OutputFormatter.NEWLINE;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.InputStreamReader;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -73,7 +69,6 @@ import org.neo4j.driver.types.Node;
 import org.neo4j.driver.types.Path;
 import org.neo4j.driver.types.Relationship;
 import org.neo4j.shell.cli.Format;
-import org.neo4j.shell.printer.AnsiPrinter;
 import org.neo4j.shell.state.BoltResult;
 import org.neo4j.shell.state.ListBoltResult;
 import org.neo4j.shell.test.LocaleDependentTestBase;
@@ -689,30 +684,6 @@ class TableOutputFormatterTest extends LocaleDependentTestBase {
 
         // then
         assertThat(formatted).isEqualTo("SERVER SIDE PLAN");
-    }
-
-    @Test
-    void renderInternalFormattingCodes() {
-        // Given
-        Result result = mockResult(asList("res"), "@|BOLD bob|@");
-
-        // When
-        final var out = new ByteArrayOutputStream();
-        final var err = new ByteArrayOutputStream();
-        final var printer = new AnsiPrinter(Format.VERBOSE, new PrintStream(out), new PrintStream(err), true);
-        new TableOutputFormatter(false, 1).formatAndCount(new ListBoltResult(result.list(), result.consume()), printer);
-
-        // Then
-        assertEquals(
-                """
-                        +----------------+
-                        | res            |
-                        +----------------+
-                        | "@|BOLD bob|@" |
-                        +----------------+
-
-                        """,
-                out.toString(UTF_8));
     }
 
     private static String formatResult(Result result) {

@@ -26,7 +26,6 @@ import static java.util.stream.Collectors.joining;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doThrow;
@@ -87,8 +86,6 @@ class InteractiveShellRunnerTest {
     File temp;
 
     private Printer printer;
-    private ByteArrayOutputStream out;
-    private ByteArrayOutputStream err;
     private StatementExecuter cmdExecuter;
     private Path historyFile;
     private TransactionHandler txHandler;
@@ -96,13 +93,12 @@ class InteractiveShellRunnerTest {
     private ClientException badLineError;
     private Connector connector;
     private UserMessagesHandler userMessagesHandler;
+    private ByteArrayOutputStream out;
     private ParameterService parameters;
 
     @BeforeEach
     void setup() throws Exception {
-        out = new ByteArrayOutputStream();
-        err = new ByteArrayOutputStream();
-        printer = new AnsiPrinter(Format.VERBOSE, new PrintStream(out), new PrintStream(err), true);
+        printer = mock(Printer.class);
         cmdExecuter = mock(StatementExecuter.class);
         txHandler = mock(TransactionHandler.class);
         databaseManager = mock(DatabaseManager.class);
@@ -115,6 +111,7 @@ class InteractiveShellRunnerTest {
         final var connectionConfig = testConnectionConfig("neo4j://localhost:7687");
         when(connector.connectionConfig()).thenReturn(connectionConfig);
         userMessagesHandler = new UserMessagesHandler(connector);
+        out = new ByteArrayOutputStream();
         when(databaseManager.getActualDatabaseAsReportedByServer()).thenReturn("mydb");
         parameters = mock(ParameterService.class);
 
@@ -131,17 +128,8 @@ class InteractiveShellRunnerTest {
         verify(cmdExecuter, times(3)).lastNeo4jErrorCode();
         verifyNoMoreInteractions(cmdExecuter);
 
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@mydb> good1;
-                        myusername@mydb> good2;
-                        myusername@mydb>\s
-
-                        Bye!
-                        """);
+        assertThat(out.toString())
+                .isEqualTo("myusername@mydb> good1;\r\nmyusername@mydb> good2;\r\nmyusername@mydb> \r\n");
     }
 
     @Test
@@ -159,24 +147,7 @@ class InteractiveShellRunnerTest {
         verify(cmdExecuter, times(6)).lastNeo4jErrorCode();
         verifyNoMoreInteractions(cmdExecuter);
 
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@mydb> good1;
-                        myusername@mydb> bad1;
-                        myusername@mydb> good2;
-                        myusername@mydb> bad2;
-                        myusername@mydb> good3;
-                        myusername@mydb>\s
-
-                        Bye!
-                        """,
-                """
-                        [31mFound a bad line[m
-                        [31mFound a bad line[m
-                        """);
+        verify(printer, times(2)).printError(badLineError);
     }
 
     @Test
@@ -197,21 +168,7 @@ class InteractiveShellRunnerTest {
         verify(cmdExecuter, times(4)).lastNeo4jErrorCode();
         verifyNoMoreInteractions(cmdExecuter);
 
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@mydb> good1;
-                        myusername@mydb> bad1;
-                        myusername@mydb> good2;
-                        myusername@mydb> exit;
-
-                        Bye!
-                        """,
-                """
-                        [31mFound a bad line[m
-                        """);
+        verify(printer).printError(badLineError);
     }
 
     @Test
@@ -299,18 +256,9 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // when
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@mydb>    \s
-                        myusername@mydb>   \s
-                        myusername@mydb> bla bla;
-                        myusername@mydb>\s
-
-                        Bye!
-                        """);
+        assertThat(out.toString())
+                .isEqualTo(
+                        "myusername@mydb>     \r\nmyusername@mydb>    \r\nmyusername@mydb> bla bla;\r\nmyusername@mydb> \r\n");
     }
 
     @Test
@@ -322,16 +270,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // when
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        Disconnected> bla bla;
-                        Disconnected>\s
-
-                        Bye!
-                        """);
+        assertThat(out.toString()).isEqualTo("Disconnected> bla bla;\r\nDisconnected> \r\n");
     }
 
     @Test
@@ -346,15 +285,8 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@foo> return 1;
-
-                        Bye!
-                        """);
+        String wantedPrompt = "myusername@foo> return 1;\r\n";
+        assertThat(out.toString()).isEqualTo(wantedPrompt);
     }
 
     @Test
@@ -369,15 +301,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@foo> return 1;
-
-                        Bye!
-                        """);
+        assertThat(out.toString()).isEqualTo("myusername@foo> return 1;\r\n");
     }
 
     @Test
@@ -392,15 +316,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@<default_database>> return 1;
-
-                        Bye!
-                        """);
+        assertThat(out.toString()).isEqualTo("myusername@<default_database>> return 1;\r\n");
     }
 
     @Test
@@ -415,15 +331,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@<default_database>> return 1;
-
-                        Bye!
-                        """);
+        assertThat(out.toString()).isEqualTo("myusername@<default_database>> return 1;\r\n");
     }
 
     @Test
@@ -440,25 +348,16 @@ class InteractiveShellRunnerTest {
 
         assertThat(exitCode).isEqualTo(EXIT_SUCCESS);
 
-        assertEquals(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome
-                        > match
-                          (n)
-                          where n.id = 1
-                         \s
-                          ;
-                        myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome
-                        > return 1;
-                        myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome
-                        >\s
-
-                        Bye!
-                        """,
-                out.toString().replace("\r", ""));
+        var expected = "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n" + "> match\n"
+                + "  (n)\n"
+                + "  where n.id = 1\n"
+                + "  \n"
+                + "  ;\n"
+                + "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n"
+                + "> return 1;\n"
+                + "myusername@TheLongestDbNameEverCreatedInAllOfHistoryAndTheUniversePlusSome\n"
+                + "> \n";
+        assertThat(out.toString().replace("\r", "")).isEqualTo(expected);
     }
 
     @Test
@@ -469,18 +368,10 @@ class InteractiveShellRunnerTest {
 
         assertThat(runner.runUntilEnd()).isEqualTo(EXIT_SUCCESS);
 
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@mydb#   \s
-                        myusername@mydb#   \s
-                        myusername@mydb# bla bla;
-                        myusername@mydb#\s
-
-                        Bye!
-                        """);
+        var expected = "myusername@mydb#    \r\n" + "myusername@mydb#    \r\n"
+                + "myusername@mydb# bla bla;\r\n"
+                + "myusername@mydb# \r\n";
+        assertThat(out.toString()).isEqualTo(expected);
     }
 
     @Test
@@ -492,16 +383,7 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // when
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m[33m impersonating [m[1memil[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername(emil)@mydb> return 40;
-                        myusername(emil)@mydb>\s
-
-                        Bye!
-                        """);
+        assertThat(out.toString()).isEqualTo("myusername(emil)@mydb> return 40;\r\nmyusername(emil)@mydb> \r\n");
     }
 
     @Test
@@ -526,37 +408,13 @@ class InteractiveShellRunnerTest {
         runner.runUntilEnd();
 
         // then
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-                        myusername@mydb>\s
-                        myusername@mydb> CREATE (n:Person) RETURN n
-                                         ;
-                        myusername@mydb>\s
-
-                        Bye!
-                        """);
-    }
-
-    @Test
-    void printsWelcomeAndExitMessageNonVerbose() {
-        printer.setFormat(Format.PLAIN);
-        // given
-        var runner = runner("\nCREATE (n:Person) RETURN n\n;\n");
-
-        // when
-        runner.runUntilEnd();
-
-        // then
-        assertOutput(
-                """
-                        myusername@mydb>\s
-                        myusername@mydb> CREATE (n:Person) RETURN n
-                                         ;
-                        myusername@mydb>\s
-                        """);
+        verify(printer)
+                .printIfVerbose(
+                        """
+                 Connected to Neo4j at @|BOLD neo4j://localhost:7687|@ as user @|BOLD myusername|@.
+                 Type @|BOLD :help|@ for a list of available commands or @|BOLD :exit|@ to exit the shell.
+                 Note that Cypher queries must end with a @|BOLD semicolon.|@""");
+        verify(printer).printIfVerbose("\nBye!");
     }
 
     @Test
@@ -606,17 +464,10 @@ class InteractiveShellRunnerTest {
         verify(cmdExecuter, times(2)).lastNeo4jErrorCode();
         verify(cmdExecuter).execute(new CommandStatement(":exit", List.of(), true, 0, 0));
         verifyNoMoreInteractions(cmdExecuter);
-        assertOutput(
-                """
-                        Connected to Neo4j at [1mneo4j://localhost:7687[m as user [1mmyusername[m.
-                        Type [1m:help[m for a list of available commands or [1m:exit[m to exit the shell.
-                        Note that Cypher queries must end with a [1msemicolon.[m
-
-                        Bye!
-                        """,
-                """
-                        [31mInterrupted (Note that Cypher queries must end with a [m[31;1msemicolon[m[31m. Type [m[31;1m:exit[m[31m to exit the shell.)[m
-                        """);
+        var expectedError =
+                "@|RED Interrupted (Note that Cypher queries must end with a |@@|RED,BOLD semicolon|@@|RED . "
+                        + "Type |@@|RED,BOLD :exit|@@|RED  to exit the shell.)|@";
+        verify(printer).printError(expectedError);
     }
 
     @Test
@@ -651,6 +502,10 @@ class InteractiveShellRunnerTest {
     }
 
     private TestInteractiveShellRunner setupInteractiveTestShellRunner(String input) {
+        // NOTE: Tests using this will test a bit more of the stack using OfflineTestShell
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ByteArrayOutputStream error = new ByteArrayOutputStream();
+
         BoltStateHandler mockedBoltStateHandler = mock(BoltStateHandler.class);
         when(mockedBoltStateHandler.getProtocolVersion()).thenReturn("");
         when(mockedBoltStateHandler.username()).thenReturn("myusername");
@@ -658,10 +513,12 @@ class InteractiveShellRunnerTest {
 
         final PrettyPrinter mockedPrettyPrinter = mock(PrettyPrinter.class);
 
+        Printer printer = new AnsiPrinter(Format.VERBOSE, new PrintStream(output), new PrintStream(error));
+
         var in = new ByteArrayInputStream(input.getBytes(UTF_8));
         var terminal = terminalBuilder()
                 .dumb()
-                .streams(in, out)
+                .streams(in, output)
                 .interactive(true)
                 .logger(printer)
                 .build();
@@ -679,7 +536,7 @@ class InteractiveShellRunnerTest {
                 userMessagesHandler,
                 historyFile);
 
-        return new TestInteractiveShellRunner(runner, out, err, mockedBoltStateHandler);
+        return new TestInteractiveShellRunner(runner, output, error, mockedBoltStateHandler);
     }
 
     @Test
@@ -853,15 +710,6 @@ class InteractiveShellRunnerTest {
             this.error = error;
             this.mockedBoltStateHandler = mockedBoltStateHandler;
         }
-    }
-
-    private void assertOutput(String expected) {
-        assertOutput(expected, "");
-    }
-
-    private void assertOutput(String expectedOut, String expectedErr) {
-        assertEquals(expectedOut, out.toString(UTF_8).replace("\r", ""));
-        assertEquals(expectedErr, err.toString());
     }
 
     private static ParsedStatement statementContains(String contains) {
