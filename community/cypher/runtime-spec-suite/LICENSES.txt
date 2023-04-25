@@ -43,6 +43,7 @@ Apache Software License, Version 2.0
   picocli
   Scala Compiler
   Scala Reflect
+  scala-collection-contrib
   Scalap
   WMI4Java
 ------------------------------------------------------------------------------

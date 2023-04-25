@@ -82,6 +82,7 @@ Apache Software License, Version 2.0
   org.opentest4j:opentest4j
   picocli
   Scala Reflect
+  scala-collection-contrib
   WMI4Java
 ------------------------------------------------------------------------------
 

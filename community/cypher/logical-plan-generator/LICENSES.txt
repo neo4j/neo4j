@@ -28,6 +28,7 @@ Apache Software License, Version 2.0
   org.opentest4j:opentest4j
   Scala Reflect
   scala-collection-compat
+  scala-collection-contrib
   scala-xml
   scalacheck-1.16
   scalactic

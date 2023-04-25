@@ -112,6 +112,7 @@ Apache Software License, Version 2.0
   request
   rxjs
   Scala Reflect
+  scala-collection-contrib
   tslib
   tunnel-agent
   WMI4Java

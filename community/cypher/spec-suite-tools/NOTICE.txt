@@ -104,6 +104,7 @@ Apache Software License, Version 2.0
   picocli
   Scala Reflect
   scala-collection-compat
+  scala-collection-contrib
   WMI4Java
 
 BSD - Scala License

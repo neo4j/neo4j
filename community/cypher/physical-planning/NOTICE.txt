@@ -45,6 +45,7 @@ Apache Software License, Version 2.0
   magnolia
   mercator
   Scala Reflect
+  scala-collection-contrib
 
 BSD - Scala License
   Scala Library

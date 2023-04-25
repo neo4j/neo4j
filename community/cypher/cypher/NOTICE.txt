@@ -62,6 +62,7 @@ Apache Software License, Version 2.0
   mercator
   picocli
   Scala Reflect
+  scala-collection-contrib
   WMI4Java
 
 BSD - Scala License
