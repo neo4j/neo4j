@@ -72,7 +72,7 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with ASTRewriterF
 
   val instance: Rewriter = bottomUp(
     Rewriter.lift {
-      case m @ Match(_, pattern, _, where) =>
+      case m @ Match(_, _, pattern, _, where) =>
         val newOuterExp = extractPredicatesAndMergeWhereExpressions(pattern, where.map(_.expression), m.position)
 
         val newWhere = newOuterExp.map {

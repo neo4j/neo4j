@@ -538,8 +538,9 @@ case class Match(
     val errors = pattern.patternParts.collect {
       case part if !part.isBounded =>
         SemanticError(
-          s"The pattern may yield an infinite number of rows under match mode REPEATABLE ELEMENTS, " +
-            s"perhaps use a path selector or add an upper bound to your quantified path patterns.", part.position
+          "The pattern may yield an infinite number of rows under match mode REPEATABLE ELEMENTS, " +
+            "perhaps use a path selector or add an upper bound to your quantified path patterns.",
+          part.position
         )
     }
     semantics.SemanticCheckResult(state, errors)
