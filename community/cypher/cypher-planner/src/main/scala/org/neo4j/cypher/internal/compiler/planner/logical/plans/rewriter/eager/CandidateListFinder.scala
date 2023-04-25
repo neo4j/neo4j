@@ -44,20 +44,20 @@ object CandidateListFinder {
 
   /**
    * @param candidates Eager may be planned on top of any of these plans.
-   *                   The candidates are in an order such that `candidates(n+1).children.contains(candidates(n))`.
+   *                   The candidates are in an order such that `candidates(n).children.contains(candidates(n+1))`.
    * @param conflict   the original conflict
    */
-  private[eager] case class CandidateList(candidates: Seq[Ref[LogicalPlan]], conflict: ConflictingPlanPair)
+  private[eager] case class CandidateList(candidates: List[Ref[LogicalPlan]], conflict: ConflictingPlanPair)
 
   /**
    * Represents a growing (therefore open) list of candidate plans on which an eager could be planned to solve the given conflict.
    *
    * @param candidates candidates for an eager operator found so far.
-   *                   The candidates are in an order such that `candidates(n+1).children.contains(candidates(n))`.
+   *                   The candidates are in an order such that `candidates(n).children.contains(candidates(n+1))`.
    * @param layer      layer of the conflicting plan that was already traversed.
    * @param conflict   the conflict that should be solved by planning an eager on either of the candidate plans
    */
-  private case class OpenSequence(candidates: Seq[Ref[LogicalPlan]], layer: Int, conflict: ConflictingPlanPair) {
+  private case class OpenSequence(candidates: List[Ref[LogicalPlan]], layer: Int, conflict: ConflictingPlanPair) {
 
     /**
      * @return a [[CandidateList]] with the current candidates and the reason of the conflict.
@@ -65,8 +65,8 @@ object CandidateListFinder {
     def candidateListWithConflict: CandidateList =
       CandidateList(candidates = candidates, conflict = conflict)
 
-    def withAddedCandidate(candidate: LogicalPlan): OpenSequence =
-      copy(candidates = candidates :+ Ref(candidate))
+    def withAddedCandidate(candidate: Ref[LogicalPlan]): OpenSequence =
+      copy(candidates = candidate :: candidates)
   }
 
   private object SequencesAcc {
@@ -106,14 +106,14 @@ object CandidateListFinder {
   ) {
 
     def withAddedOpenSequence(
-      start: LogicalPlan,
-      end: LogicalPlan,
+      start: Ref[LogicalPlan],
+      end: Ref[LogicalPlan],
       conflict: ConflictingPlanPair,
       layer: Int
     ): SequencesAcc = {
-      val oS = openSequences.getOrElse(Ref(end), Seq.empty)
+      val oS = openSequences.getOrElse(end, Seq.empty)
       copy(openSequences =
-        openSequences.updated(Ref(end), oS :+ OpenSequence(Seq(Ref(start)), layer, conflict))
+        openSequences.updated(end, oS :+ OpenSequence(List(start), layer, conflict))
       )
     }
 
@@ -126,7 +126,7 @@ object CandidateListFinder {
       val newOpenSequences = openSequences.view.mapValues {
         _.map {
           case OpenSequence(_, layer, conflict) if layer == currentLayer =>
-            OpenSequence(Seq.empty, newLayer, conflict)
+            OpenSequence(List.empty, newLayer, conflict)
           case x => x
         }
       }.toMap
@@ -228,7 +228,7 @@ object CandidateListFinder {
       // Compute new open sequences
       val filteredRhsOpenSequences =
         if (eagerizationStrategy.emptyCandidateListsForRHSvsTopConflicts)
-          rhs.openSequences.view.mapValues(_.map(_.copy(candidates = Seq.empty))).toMap
+          rhs.openSequences.view.mapValues(_.map(_.copy(candidates = List.empty))).toMap
         else rhs.openSequences
 
       // We keep only those open sequences where one of the conflicting plans has not been traversed yet and remove the ones that have already been solved.
@@ -304,22 +304,22 @@ object CandidateListFinder {
       }
     }
 
-    def updateSequences(acc: SequencesAcc, p: LogicalPlan): SequencesAcc = {
+    def updateSequences(acc: SequencesAcc, p: Ref[LogicalPlan]): SequencesAcc = {
       // Find conflicts that contain this plan
       val SequencesAcc(remainingConflicts, newOpenSequences, _, _) =
-        acc.openConflicts.get(Ref(p)) match {
+        acc.openConflicts.get(p) match {
           case Some(conflicts) =>
             // Start with an empty accumulator, except that all conflicts are kept, except the ones that will now
             // get converted to open sequences.
-            val innerAcc = SequencesAcc(acc.openConflicts.removed(Ref(p)))
+            val innerAcc = SequencesAcc(acc.openConflicts.removed(p))
             conflicts.foldLeft(innerAcc) {
               case (innerAcc, conflict) =>
-                val withOpenSequence = if (conflict.first == Ref(p)) {
+                val withOpenSequence = if (conflict.first == p) {
                   // Add an open sequence that ends at the other plan and initially contains p as a candidate
-                  innerAcc.withAddedOpenSequence(p, conflict.second.value, conflict, acc.currentLayer)
+                  innerAcc.withAddedOpenSequence(p, conflict.second, conflict, acc.currentLayer)
                 } else {
                   // Add an open sequence that ends at the other plan and initially contains p as a candidate
-                  innerAcc.withAddedOpenSequence(p, conflict.first.value, conflict, acc.currentLayer)
+                  innerAcc.withAddedOpenSequence(p, conflict.first, conflict, acc.currentLayer)
                 }
 
                 // Make sure to also remove the conflict from the "other" side.
@@ -332,11 +332,11 @@ object CandidateListFinder {
         }
 
       // Find open sequences that are closed by this plan
-      val newCandidateLists = acc.openSequences.getOrElse(Ref(p), Seq.empty).map(_.candidateListWithConflict)
+      val newCandidateLists = acc.openSequences.getOrElse(p, Seq.empty).map(_.candidateListWithConflict)
 
       val remainingOpenSequences = {
         // All sequences that do not end in p
-        (acc.openSequences - Ref(p))
+        (acc.openSequences - p)
           .view.mapValues(_.map {
             case os @ OpenSequence(_, layer, _) if acc.currentLayer == layer =>
               // Add p to all remaining open sequences on the same layer
@@ -354,7 +354,7 @@ object CandidateListFinder {
 
     def processPlan(acc: SequencesAcc, plan: LogicalPlan): SequencesAcc = {
       checkConstraints(plan)
-      updateSequences(pushLayerForLeafPlans(acc, plan), plan)
+      updateSequences(pushLayerForLeafPlans(acc, plan), Ref(plan))
     }
 
     val conflictsMapBuilder = scala.collection.mutable.MultiDict.empty[Ref[LogicalPlan], ConflictingPlanPair]
@@ -389,7 +389,7 @@ object CandidateListFinder {
     // Remove CandidateLists that traverse an EagerLogicalPlan coming from the LHS.
     // These do not need to be eagerized.
     candidateLists.filter(_.candidates.sliding(2).forall {
-      case Seq(Ref(first), Ref(second: EagerLogicalPlan)) if second.lhs.contains(first) => false
+      case Seq(Ref(first: EagerLogicalPlan), Ref(second)) if first.lhs.contains(second) => false
       case _                                                                            => true
     })
   }
