@@ -759,8 +759,6 @@ public abstract class AllStoreHolder extends Read {
     public IndexUsageStats indexUsageStats(IndexDescriptor index) throws IndexNotFoundKernelException {
         performCheckBeforeOperation();
         assertValidIndex(index);
-
-        acquireSharedSchemaLock(index);
         return indexStatisticsStore.usageStats(index.getId());
     }
 
