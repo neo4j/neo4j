@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -32,6 +33,7 @@ import java.util.function.Consumer;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.neo4j.internal.recordstorage.Command.RecordEnrichmentCommand;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaRule;
@@ -56,6 +58,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
@@ -810,6 +813,34 @@ public class LogCommandSerializationV5_0Test {
     @RepeatedTest(10)
     void relationshipGroupCommandSerialization() throws IOException {
         testDoubleSerialization(Command.RelationshipGroupCommand.class, createRandomRelationshipGroup());
+    }
+
+    @Test
+    void enrichmentReadNotSupported() {
+        try (var channel = new InMemoryClosableChannel()) {
+            final var writer = channel.writer();
+            writer.beginChecksum();
+            writer.put(EnrichmentCommand.COMMAND_CODE);
+            writer.putLong(13L);
+            writer.putChecksum();
+
+            assertThatThrownBy(() -> createReader().read(channel.reader()))
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("Unsupported in this version");
+        }
+    }
+
+    @Test
+    void enrichmentWriteNotSupported() {
+        try (var channel = new InMemoryClosableChannel()) {
+            final var writer = writer();
+            final var command =
+                    new RecordEnrichmentCommand(writer, LogCommandSerializationVGloriousFutureTest.metadata());
+
+            assertThatThrownBy(() -> writer.writeEnrichmentCommand(channel, command))
+                    .isInstanceOf(IOException.class)
+                    .hasMessageContaining("Unsupported in this version");
+        }
     }
 
     private Command.RelationshipGroupCommand createRandomRelationshipGroup() {

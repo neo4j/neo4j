@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
@@ -125,6 +126,8 @@ class LogTruncationTest {
                 new Command[] {new Command.GroupDegreeCommand(serialization, 42, RelationshipDirection.OUTGOING, 1)});
     }
 
+    private final Set<Class<? extends Command>> futureCommands = Set.of(Command.RecordEnrichmentCommand.class);
+
     @Test
     void testSerializationInFaceOfLogTruncation() throws Exception {
         for (Command cmd : enumerateCommands()) {
@@ -142,9 +145,9 @@ class LogTruncationTest {
             if (Command.class.isAssignableFrom(cmd)) {
                 if (permutations.containsKey(cmd)) {
                     commands.addAll(asList(permutations.get(cmd)));
-                } else if (!isAbstract(cmd.getModifiers())) {
+                } else if (!isAbstract(cmd.getModifiers()) && !futureCommands.contains(cmd)) {
                     throw new AssertionError("Unknown command type: " + cmd + ", please add missing instantiation to "
-                            + "test serialization of this command.");
+                            + "test serialization of this command or to the future commands set.");
                 }
             }
         }
@@ -166,7 +169,7 @@ class LogTruncationTest {
             inMemoryChannel.reset();
             cmd.serialize(inMemoryChannel);
             inMemoryChannel.truncateTo(bytesSuccessfullyWritten);
-            Command command = null;
+            StorageCommand command = null;
             try {
                 command = serialization.read(inMemoryChannel);
             } catch (ReadPastEndException e) {

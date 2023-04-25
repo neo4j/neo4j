@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.lock.LockService;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.test.LatestVersions;
@@ -180,7 +181,7 @@ class SchemaRuleCommandTest {
 
         // WHEN
         command.serialize(buffer);
-        Command readCommand = serialization.read(buffer);
+        StorageCommand readCommand = serialization.read(buffer);
 
         // THEN
         assertThat(readCommand).isInstanceOf(SchemaRuleCommand.class);
@@ -201,7 +202,7 @@ class SchemaRuleCommandTest {
 
         // WHEN
         command.serialize(buffer);
-        Command readCommand = serialization.read(buffer);
+        StorageCommand readCommand = serialization.read(buffer);
 
         // THEN
         assertThat(readCommand).isInstanceOf(SchemaRuleCommand.class);

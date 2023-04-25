@@ -48,6 +48,7 @@ import org.neo4j.internal.batchimport.ReadBehaviour;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.Input;
 import org.neo4j.internal.id.IdGeneratorFactory;
+import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -146,7 +147,7 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
             TokenHolders tokenHolders,
             SchemaState schemaState,
             ConstraintRuleAccessor constraintSemantics,
-            org.neo4j.internal.schema.IndexConfigCompleter indexConfigCompleter,
+            IndexConfigCompleter indexConfigCompleter,
             LockService lockService,
             IdGeneratorFactory idGeneratorFactory,
             DatabaseHealth databaseHealth,

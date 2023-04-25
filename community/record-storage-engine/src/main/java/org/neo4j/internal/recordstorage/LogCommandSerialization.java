@@ -24,17 +24,12 @@ import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.impl.transaction.log.LogPositionAwareChannel;
-import org.neo4j.storageengine.api.CommandReader;
+import org.neo4j.storageengine.api.BaseCommandReader;
 
-public abstract class LogCommandSerialization implements CommandReader, KernelVersionProvider {
+public abstract class LogCommandSerialization extends BaseCommandReader implements KernelVersionProvider {
 
     @Override
-    public final Command read(ReadableChannel channel) throws IOException {
-        byte commandType;
-        do {
-            commandType = channel.get();
-        } while (commandType == CommandReader.NONE);
-
+    public final Command read(byte commandType, ReadableChannel channel) throws IOException {
         return switch (commandType) {
             case NeoCommandType.NODE_COMMAND -> readNodeCommand(channel);
             case NeoCommandType.PROP_COMMAND -> readPropertyCommand(channel);
@@ -51,6 +46,7 @@ public abstract class LogCommandSerialization implements CommandReader, KernelVe
             case NeoCommandType.NEOSTORE_COMMAND -> readNeoStoreCommand(channel);
             case NeoCommandType.META_DATA_COMMAND -> readMetaDataCommand(channel);
             case NeoCommandType.UPDATE_GROUP_DEGREE_COMMAND -> readGroupDegreeCommand(channel);
+            case NeoCommandType.ENRICHMENT_COMMAND -> readEnrichmentCommand(channel);
 
                 // legacy indexes
             case NeoCommandType.INDEX_DEFINE_COMMAND -> readIndexDefineCommand(channel);
@@ -147,6 +143,10 @@ public abstract class LogCommandSerialization implements CommandReader, KernelVe
         throw unsupportedInThisVersionException();
     }
 
+    protected Command readEnrichmentCommand(ReadableChannel channel) throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
     public void writeNodeCommand(WritableChannel channel, Command.NodeCommand command) throws IOException {
         throw unsupportedInThisVersionException();
     }
@@ -197,6 +197,11 @@ public abstract class LogCommandSerialization implements CommandReader, KernelVe
     }
 
     public void writeGroupDegreeCommand(WritableChannel channel, Command.GroupDegreeCommand command)
+            throws IOException {
+        throw unsupportedInThisVersionException();
+    }
+
+    public void writeEnrichmentCommand(WritableChannel channel, Command.RecordEnrichmentCommand command)
             throws IOException {
         throw unsupportedInThisVersionException();
     }

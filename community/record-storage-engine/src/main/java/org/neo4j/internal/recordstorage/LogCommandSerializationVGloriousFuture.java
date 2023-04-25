@@ -19,7 +19,12 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import java.io.IOException;
+import org.neo4j.internal.recordstorage.Command.RecordEnrichmentCommand;
+import org.neo4j.io.fs.ReadableChannel;
+import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.storageengine.api.enrichment.Enrichment;
 
 class LogCommandSerializationVGloriousFuture extends LogCommandSerializationV5_8 {
     static final LogCommandSerializationVGloriousFuture INSTANCE = new LogCommandSerializationVGloriousFuture();
@@ -27,5 +32,25 @@ class LogCommandSerializationVGloriousFuture extends LogCommandSerializationV5_8
     @Override
     public KernelVersion kernelVersion() {
         return KernelVersion.GLORIOUS_FUTURE;
+    }
+
+    // move this into LogCommandSerializationV5_8 when the command is fully implemented in a future PR
+    @Override
+    protected Command readEnrichmentCommand(ReadableChannel channel) throws IOException {
+        // create read-only version (i.e. no enrichment data) of the command
+        final var metadata = Enrichment.readMetadataAndPastEnrichmentData(channel);
+        return new RecordEnrichmentCommand(this, metadata);
+    }
+
+    // move this into LogCommandSerializationV5_8 when the command is fully implemented in a future PR
+    @Override
+    public void writeEnrichmentCommand(WritableChannel channel, RecordEnrichmentCommand command) throws IOException {
+        try (var enrichment = command.enrichment()
+                .orElseThrow(
+                        () -> new IOException("This command is only for reading and contains no enrichment data"))) {
+
+            channel.put(NeoCommandType.ENRICHMENT_COMMAND);
+            enrichment.serialize(channel);
+        }
     }
 }

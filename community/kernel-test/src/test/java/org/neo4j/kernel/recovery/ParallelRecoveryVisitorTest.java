@@ -73,6 +73,8 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.enrichment.Enrichment;
+import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 import org.neo4j.test.Barrier;
@@ -352,6 +354,11 @@ class ParallelRecoveryVisitorTest {
         @Override
         public List<StorageCommand> createUpgradeCommands(
                 KernelVersion versionToUpgradeFrom, KernelVersion versionToUpgradeTo) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public EnrichmentCommand createEnrichmentCommand(KernelVersion kernelVersion, Enrichment enrichment) {
             throw new UnsupportedOperationException();
         }
 

@@ -38,6 +38,8 @@ import org.neo4j.lock.ResourceLocker;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.enrichment.Enrichment;
+import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
@@ -98,6 +100,15 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * @return commands for making an upgrade to the desired {@link KernelVersion}.
      */
     List<StorageCommand> createUpgradeCommands(KernelVersion versionToUpgradeFrom, KernelVersion versionToUpgradeTo);
+
+    /**
+     * The storage-engine specific mechanism for creating {@link EnrichmentCommand}s.
+     * NB The created command will have no interactions with the stores.
+     * @param kernelVersion the transaction's {@link KernelVersion}
+     * @param enrichment the enrichment data to wrap
+     * @return the storage-engine specific {@link EnrichmentCommand}
+     */
+    EnrichmentCommand createEnrichmentCommand(KernelVersion kernelVersion, Enrichment enrichment);
 
     /**
      * Claims exclusive locks for some records whilst performing recovery.

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.recordstorage;
 
+import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
+
 public interface NeoCommandType {
     byte NODE_COMMAND = (byte) 1;
     byte PROP_COMMAND = (byte) 2;
@@ -47,4 +49,6 @@ public interface NeoCommandType {
     byte UPDATE_GROUP_DEGREE_COMMAND = (byte) 20;
 
     byte REL_GROUP_EXTENDED_COMMAND = (byte) 21; // Relationship group with 3 byte type id
+
+    byte ENRICHMENT_COMMAND = EnrichmentCommand.COMMAND_CODE;
 }
