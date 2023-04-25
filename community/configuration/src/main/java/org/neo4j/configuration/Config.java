@@ -26,9 +26,13 @@ import static org.neo4j.configuration.GraphDatabaseInternalSettings.config_comma
 import static org.neo4j.configuration.GraphDatabaseSettings.strict_config_validation;
 import static org.neo4j.internal.helpers.ProcessUtils.executeCommandWithOutput;
 
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.Constructor;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
 import java.nio.file.FileVisitor;
 import java.nio.file.Files;
@@ -105,6 +109,8 @@ public class Config implements Configuration {
             Services.loadAll(SettingMigrator.class);
 
     public static final class Builder {
+        public static String ENV_CONFIG_FILE_CHARSET = "NEO4J_CONFIG_FILE_CHARSET";
+
         // We use tree sets with comparators for setting classes and migrators to have
         // some defined order in which settings classes are processed and migrators are applied
         private final Collection<Class<? extends SettingsDeclaration>> settingsClasses =
@@ -120,6 +126,7 @@ public class Config implements Configuration {
         private Config fromConfig;
         private final InternalLog log = new BufferingLog();
         private boolean expandCommands;
+        private Charset fileCharset = StandardCharsets.ISO_8859_1;
         private String strictWarningMessage;
 
         private static <T> boolean allowedToOverrideValues(String setting, T value, Map<String, T> settingValues) {
@@ -237,6 +244,11 @@ public class Config implements Configuration {
             return this;
         }
 
+        public Builder setFileCharset(Charset charset) {
+            fileCharset = charset;
+            return this;
+        }
+
         public Builder fromConfig(Config config) {
             if (fromConfig != null) {
                 throw new IllegalArgumentException("Can only build a config from one other config.");
@@ -272,7 +284,8 @@ public class Config implements Configuration {
                 if (Files.isDirectory(file)) {
                     Files.walkFileTree(file, new ConfigDirectoryFileVisitor(file));
                 } else {
-                    try (InputStream stream = Files.newInputStream(file)) {
+                    try (Reader reader =
+                            new BufferedReader(new InputStreamReader(Files.newInputStream(file), fileCharset))) {
                         new Properties() {
                             private final Set<String> duplicateDetection = new HashSet<>();
 
@@ -300,7 +313,7 @@ public class Config implements Configuration {
                                 }
                                 return null;
                             }
-                        }.load(stream);
+                        }.load(reader);
                     }
                     configFiles.add(file);
                 }
@@ -322,7 +335,16 @@ public class Config implements Configuration {
             return this;
         }
 
-        private Builder() {}
+        private Builder() {
+            String charsetOverride = System.getenv(ENV_CONFIG_FILE_CHARSET);
+            if (charsetOverride != null) {
+                try {
+                    this.fileCharset = Charset.forName(charsetOverride);
+                } catch (Exception e) {
+                    log.warn("Could not use requested configuration file charset '" + charsetOverride + "'", e);
+                }
+            }
+        }
 
         public Config build() {
             expandCommands |=

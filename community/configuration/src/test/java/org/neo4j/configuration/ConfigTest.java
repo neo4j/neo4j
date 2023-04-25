@@ -55,6 +55,7 @@ import static org.neo4j.configuration.SettingValueParsers.listOf;
 import static org.neo4j.logging.LogAssertions.assertThat;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.AclEntry;
@@ -719,6 +720,27 @@ class ConfigTest {
         Config config2 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFileNoThrow(confFile)::build);
         Stream.of(config1, config2)
                 .forEach(c -> assertEquals("foo", c.get(GraphDatabaseSettings.initial_default_database)));
+    }
+
+    @Test
+    void canOverrideDefaultCharset() throws IOException {
+        final var unicodeString = "åäö\u1234";
+        final var latin1String = "Ã¥Ã¤Ã¶á\u0088´";
+
+        Path confFile = testDirectory.file("test.conf");
+        // Writes UTF-8
+        Files.write(
+                confFile,
+                Collections.singletonList(GraphDatabaseSettings.procedure_allowlist.name() + "=" + unicodeString));
+
+        // Try reading with default charset (ISO 8859-1)
+        Config config1 = buildWithoutErrorsOrWarnings(Config.newBuilder().fromFile(confFile)::build);
+        assertThat(config1.get(GraphDatabaseSettings.procedure_allowlist)).containsExactly(latin1String);
+
+        // Try reading with UTF-8
+        Config config2 = buildWithoutErrorsOrWarnings(
+                Config.newBuilder().setFileCharset(StandardCharsets.UTF_8).fromFile(confFile)::build);
+        assertThat(config2.get(GraphDatabaseSettings.procedure_allowlist)).containsExactly(unicodeString);
     }
 
     @Test
