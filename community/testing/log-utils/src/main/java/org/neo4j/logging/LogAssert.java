@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 import org.assertj.core.api.AbstractAssert;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.assertj.core.util.Throwables;
@@ -184,6 +185,18 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
         isNotNull();
         if (haveMessage(message)) {
             failWithMessage("Unexpected log message: `%s` in:%n%s", message, actual.serialize());
+        }
+        return this;
+    }
+
+    public LogAssert onlyContainsMessages(String... messages) {
+        isNotNull();
+        if (!actual.getLogCalls().stream()
+                .filter(call -> matchedLogger(call) && matchedLevel(call))
+                .allMatch(call -> Stream.of(messages).anyMatch(message -> matchedMessage(message, call)))) {
+            failWithMessage(
+                    "Expected log to only contain messages:%n%s%nbut found:%n%s",
+                    Arrays.toString(messages), actual.serialize());
         }
         return this;
     }

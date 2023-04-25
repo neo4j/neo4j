@@ -64,11 +64,13 @@ import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_NAME_PR
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_STATUS_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.INSTANCE_UUID_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.InstanceStatus.ENABLED;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.LATEST_SUPPORTED_COMPONENT_VERSIONS_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PROPERTIES_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOTE_DATABASE_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.REMOVED_INSTANCE_LABEL;
+import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.SUPPORTED_COMPONENT_VERSIONS_LABEL;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGET_NAME_PROPERTY;
 import static org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.URL_PROPERTY;
@@ -94,6 +96,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.provider.Arguments;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.SystemGraphComponent;
 import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.graphdb.Direction;
@@ -401,6 +404,15 @@ public abstract class BaseTopologyGraphDbmsModelIT {
 
         public InstanceNodeBuilder withModeConstraint(InstanceModeConstraint modeConstraint) {
             node.setProperty(INSTANCE_MODE_CONSTRAINT_PROPERTY, modeConstraint.name());
+            return this;
+        }
+
+        public InstanceNodeBuilder withComponentVersions(Map<SystemGraphComponent.Name, Integer> versions) {
+            var versionsNode = tx.createNode(SUPPORTED_COMPONENT_VERSIONS_LABEL);
+            node.createRelationshipTo(versionsNode, LATEST_SUPPORTED_COMPONENT_VERSIONS_RELATIONSHIP);
+            versions.forEach((key, value) -> {
+                versionsNode.setProperty(key.name(), value);
+            });
             return this;
         }
 

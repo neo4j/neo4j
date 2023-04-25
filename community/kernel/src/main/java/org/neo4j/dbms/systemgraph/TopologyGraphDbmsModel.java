@@ -248,6 +248,9 @@ public interface TopologyGraphDbmsModel {
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_PROPERTY = "default_database";
     String TOPOLOGY_GRAPH_CONFIG_DEFAULT_DATABASE_CREATE_ATTEMPTED_FLAG = "default_database_created";
     String TOPOLOGY_GRAPH_CONFIG_INITIAL_INSTANCES_ENABLED_FLAG = "initial_instances_enabled";
+    Label SUPPORTED_COMPONENT_VERSIONS_LABEL = Label.label("SupportedVersions");
+    RelationshipType LATEST_SUPPORTED_COMPONENT_VERSIONS_RELATIONSHIP =
+            RelationshipType.withName("LATEST_SUPPORTED_VERSIONS");
 
     /**
      * Fetches the {@link NamedDatabaseId} corresponding to the provided alias, if one exists in this DBMS.
