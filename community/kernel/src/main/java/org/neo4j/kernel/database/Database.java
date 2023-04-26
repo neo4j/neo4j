@@ -31,6 +31,8 @@ import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
+import static org.neo4j.scheduler.Group.INDEX_CLEANUP;
+import static org.neo4j.scheduler.Group.INDEX_CLEANUP_WORK;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 
 import java.io.IOException;
@@ -60,6 +62,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.HostedOnMode;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.id.IdController;
 import org.neo4j.internal.id.IdGeneratorFactory;
@@ -357,7 +360,8 @@ public class Database extends AbstractDatabase {
         databaseDependencies.satisfyDependency(storageEngineFactory);
         databaseDependencies.satisfyDependencies(mode);
 
-        recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
+        recoveryCleanupWorkCollector = life.add(new GroupingRecoveryCleanupWorkCollector(
+                scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK, databaseLayout.getDatabaseName()));
         databaseDependencies.satisfyDependency(recoveryCleanupWorkCollector);
 
         life.add(onShutdown(versionStorage::close));
