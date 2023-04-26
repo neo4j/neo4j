@@ -241,7 +241,9 @@ object ReadsAndWritesFinder {
           // These plans are used for subqueries and sometimes yield lhs rows more or less unchanged.
           // So any rhs predicates on already defined variables must not be considered.
           lhs.expression
-        case ApplyPlan(_, applyRhs) if applyRhs.folder.treeFindByClass[Optional].nonEmpty =>
+        case ApplyPlan(_, applyRhs) if applyRhs.folder.treeExists {
+            case _: Optional => true
+          } =>
           // RHS predicates might not be applied if the rows are filtered out by Optional
           lhs.expression
         case _: Apply |
