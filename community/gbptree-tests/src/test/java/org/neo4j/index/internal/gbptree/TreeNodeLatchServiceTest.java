@@ -62,7 +62,6 @@ class TreeNodeLatchServiceTest extends LatchTestBase {
 
         // then
         assertNotSame(second, first);
-        second.releaseRead();
     }
 
     @Test

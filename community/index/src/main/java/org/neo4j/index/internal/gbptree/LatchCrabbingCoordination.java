@@ -24,6 +24,7 @@ import static java.util.Arrays.sort;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.LongAdder;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.pagecache.PageCursor;
 
 /**
@@ -138,28 +139,9 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         }
 
         // Acquire latch on the child node
-        var latch = getLatch(childTreeNodeId, depthData);
-        if (pessimistic) {
-            latch.acquireWrite();
-        } else {
-            latch.acquireRead();
-        }
-
-        depthData.latchTypeIsWrite = pessimistic;
+        depthData.refLatch(childTreeNodeId, latchService);
+        depthData.acquireLatch(pessimistic);
         depthData.childPos = childPos;
-    }
-
-    private LongSpinLatch getLatch(long childTreeNodeId, DepthData data) {
-        var latch = data.latch;
-        if (latch != null) {
-            if (latch.treeNodeId() == childTreeNodeId) {
-                // It's the same one as the last time we went down. We still have a ref on it so just use it
-                return latch;
-            }
-            data.derefLatch();
-        }
-        data.latch = latchService.latch(childTreeNodeId);
-        return data.latch;
     }
 
     @Override
@@ -281,13 +263,8 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
 
     @Override
     public void close() {
-        reset();
-        for (var depthData : dataByDepth) {
-            if (depthData == null) {
-                break;
-            }
-            depthData.derefLatch();
-        }
+        depth = -1;
+        IOUtils.closeAllUnchecked(dataByDepth);
     }
 
     /**
@@ -318,23 +295,12 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         }
 
         DepthData depthData = dataByDepth[depth];
-        if (!depthData.latchTypeIsWrite) {
-            if (!depthData.latch.tryUpgradeToWrite()) {
-                // To avoid deadlock.
-                return false;
-            }
-            depthData.latchTypeIsWrite = true;
-        }
-        return true;
+        return depthData.tryUpgradeLatchToWrite();
     }
 
     private void releaseLatchAtDepth(int depth) {
         DepthData depthData = dataByDepth[depth];
-        if (depthData.latchTypeIsWrite) {
-            depthData.latch.releaseWrite();
-        } else {
-            depthData.latch.releaseRead();
-        }
+        depthData.releaseLatch();
     }
 
     @Override
@@ -350,9 +316,10 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
         return builder.toString();
     }
 
-    private static class DepthData {
+    private static class DepthData implements AutoCloseable {
         private LongSpinLatch latch;
         private boolean latchTypeIsWrite;
+        private boolean latchIsAcquired;
         private int availableSpace;
         private int keyCount;
         private int childPos;
@@ -362,10 +329,68 @@ class LatchCrabbingCoordination implements TreeWriterCoordination {
             return childPos == 0 || childPos == keyCount;
         }
 
-        void derefLatch() {
+        private void refLatch(long childTreeNodeId, TreeNodeLatchService latchService) {
             if (latch != null) {
-                latch.deref();
-                latch = null;
+                if (latch.treeNodeId() == childTreeNodeId) {
+                    // It's the same one as the last time we went down. We still have a ref on it so just use it
+                    return;
+                }
+                derefLatch();
+            }
+            latch = latchService.latch(childTreeNodeId);
+        }
+
+        void derefLatch() {
+            assert !latchIsAcquired;
+            if (latch != null) {
+                try {
+                    latch.deref();
+                } finally {
+                    latch = null;
+                }
+            }
+        }
+
+        void acquireLatch(boolean write) {
+            assert !latchIsAcquired;
+            if (write) {
+                latch.acquireWrite();
+            } else {
+                latch.acquireRead();
+            }
+            latchTypeIsWrite = write;
+            latchIsAcquired = true;
+        }
+
+        void releaseLatch() {
+            if (latchIsAcquired) {
+                latchIsAcquired = false;
+                if (latchTypeIsWrite) {
+                    latch.releaseWrite();
+                } else {
+                    latch.releaseRead();
+                }
+            }
+        }
+
+        boolean tryUpgradeLatchToWrite() {
+            assert latchIsAcquired;
+            if (!latchTypeIsWrite) {
+                if (!latch.tryUpgradeToWrite()) {
+                    // To avoid deadlock.
+                    return false;
+                }
+                latchTypeIsWrite = true;
+            }
+            return true;
+        }
+
+        @Override
+        public void close() {
+            try {
+                releaseLatch();
+            } finally {
+                derefLatch();
             }
         }
     }

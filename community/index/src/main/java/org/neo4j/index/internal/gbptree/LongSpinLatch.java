@@ -55,11 +55,17 @@ class LongSpinLatch {
 
     private static final LongPredicate ALWAYS_TRUE = bits -> true;
     private static final LongPredicate NO_WRITE_LOCK = bits -> (bits & WRITE_LOCK_MASK) == 0;
-    private static final LongPredicate NO_WRITE_ONLY_MY_READ_LOCK = bits -> (bits & LOCK_MASK) == 1;
+    private static final LongPredicate NO_WRITE_ONLY_ONE_READ_LOCK = bits -> (bits & LOCK_MASK) == 1;
     private static final LongPredicate NO_READ_LOCK = bits -> (bits & READ_LOCK_MASK) == 0;
 
-    private static final LongToLongFunction ACQUIRE_READ_LOCK = bits -> bits + 1;
-    private static final LongToLongFunction RELEASE_READ_LOCK = bits -> bits - 1;
+    private static final LongToLongFunction ACQUIRE_READ_LOCK = bits -> {
+        assert (bits & READ_LOCK_MASK) < READ_LOCK_MASK : "Too many readers";
+        return bits + 1;
+    };
+    private static final LongToLongFunction RELEASE_READ_LOCK = bits -> {
+        assert (bits & READ_LOCK_MASK) > 0 : "No readers";
+        return bits - 1;
+    };
     private static final LongToLongFunction ACQUIRE_WRITE_LOCK = bits -> bits | WRITE_LOCK_MASK;
     private static final LongToLongFunction ACQUIRE_WRITE_LOCK_CLEAR_READ_LOCKS =
             bits -> (bits & ~LOCK_MASK) | WRITE_LOCK_MASK;
@@ -159,7 +165,7 @@ class LongSpinLatch {
      * @return whether or not the lock was upgraded. Returns {@code false} for scenarios which would result in deadlock.
      */
     boolean tryUpgradeToWrite() {
-        return spinTransform(NO_WRITE_ONLY_MY_READ_LOCK, ACQUIRE_WRITE_LOCK_CLEAR_READ_LOCKS, true, false)
+        return spinTransform(NO_WRITE_ONLY_ONE_READ_LOCK, ACQUIRE_WRITE_LOCK_CLEAR_READ_LOCKS, true, false)
                 != TEST_FAILED;
     }
 
@@ -168,8 +174,18 @@ class LongSpinLatch {
      * @return true if write lock was acquired, otherwise false which means that acquisition was attempted on a dead lock.
      */
     boolean acquireWrite() {
-        spinTransform(NO_WRITE_LOCK, ACQUIRE_WRITE_LOCK, false, false);
-        spinTransform(NO_READ_LOCK, NO_TRANSFORM, false, false);
+        boolean writeAcquired = false;
+        boolean success = false;
+        try {
+            spinTransform(NO_WRITE_LOCK, ACQUIRE_WRITE_LOCK, false, false);
+            writeAcquired = true;
+            spinTransform(NO_READ_LOCK, NO_TRANSFORM, false, false);
+            success = true;
+        } finally {
+            if (!success && writeAcquired) {
+                spinTransform(ALWAYS_TRUE, RELEASE_WRITE_LOCK, false, true);
+            }
+        }
         return true;
     }
 

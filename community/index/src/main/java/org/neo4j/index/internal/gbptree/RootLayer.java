@@ -123,6 +123,7 @@ abstract class RootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> implements TreeRootExch
     public void setRoot(Root root) {
         if (rootLatch != null) {
             rootLatch.deref();
+            rootLatch = null;
         }
         this.root = root;
         rootLatch = support.latchService().latch(root.id());
