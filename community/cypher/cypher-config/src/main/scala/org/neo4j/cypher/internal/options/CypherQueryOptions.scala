@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.options
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.config.CypherConfiguration
-import org.neo4j.cypher.internal.options.CypherDebugOption.useLPEagerAnalyzer
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_INTERPRETED_PIPES_FALLBACK_RUNTIME_COMBINATIONS
 import org.neo4j.cypher.internal.options.CypherQueryOptions.ILLEGAL_OPERATOR_ENGINE_RUNTIME_COMBINATIONS
@@ -44,7 +43,8 @@ case class CypherQueryOptions(
   replan: CypherReplanOption,
   connectComponentsPlanner: CypherConnectComponentsPlannerOption,
   debugOptions: CypherDebugOptions,
-  parallelRuntimeSupportOption: CypherParallelRuntimeSupportOption
+  parallelRuntimeSupportOption: CypherParallelRuntimeSupportOption,
+  eagerAnalyzer: CypherEagerAnalyzerOption
 ) {
 
   if (ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine, runtime)))
@@ -359,14 +359,36 @@ case object CypherConnectComponentsPlannerOption extends CypherOptionCompanion[C
   implicit val reader: OptionReader[CypherConnectComponentsPlannerOption] = singleOptionReader()
 }
 
+sealed abstract class CypherEagerAnalyzerOption(name: String) extends CypherKeyValueOption(name) {
+  override def companion: CypherEagerAnalyzerOption.type = CypherEagerAnalyzerOption
+}
+
+case object CypherEagerAnalyzerOption extends CypherOptionCompanion[CypherEagerAnalyzerOption](
+      name = "eagerAnalyzer",
+      setting = Some(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation),
+      cypherConfigField = Some(_.eagerAnalyzer)
+    ) {
+
+  case object lp extends CypherEagerAnalyzerOption("lp")
+  case object ir extends CypherEagerAnalyzerOption("ir")
+
+  override def default: CypherEagerAnalyzerOption = ir
+
+  def values: Set[CypherEagerAnalyzerOption] = Set(lp, ir)
+
+  implicit val hasDefault: OptionDefault[CypherEagerAnalyzerOption] = OptionDefault.create(default)
+  implicit val renderer: OptionRenderer[CypherEagerAnalyzerOption] = OptionRenderer.create(_.render)
+  implicit val cacheKey: OptionCacheKey[CypherEagerAnalyzerOption] = OptionCacheKey.create(_.cacheKey)
+  implicit val reader: OptionReader[CypherEagerAnalyzerOption] = singleOptionReader()
+}
+
 sealed abstract class CypherDebugOption(flag: String) extends CypherKeyValueOption(flag) {
   override def companion: CypherDebugOption.type = CypherDebugOption
 }
 
 case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
       name = "debug",
-      cypherConfigBooleans =
-        Map(useLPEagerAnalyzer -> (_.useLPEagerAnalyzer))
+      cypherConfigBooleans = Map()
     ) {
   // Unused. We need to have a default
   case object default extends CypherDebugOption("none")
@@ -386,7 +408,6 @@ case object CypherDebugOption extends CypherOptionCompanion[CypherDebugOption](
   case object logicalPlanBuilder extends CypherDebugOption("logicalplanbuilder")
   case object rawCardinalities extends CypherDebugOption("rawcardinalities")
   case object warnOnCompilationErrors extends CypherDebugOption("warnoncompilationerrors")
-  case object useLPEagerAnalyzer extends CypherDebugOption("uselogicalplaneageranalyzer")
   case object disableExistsSubqueryCaching extends CypherDebugOption("disableexistssubquerycaching")
 
   def values: Set[CypherDebugOption] = Set(
@@ -454,6 +475,5 @@ case class CypherDebugOptions(enabledOptions: Set[CypherDebugOption]) {
   val logicalPlanBuilderEnabled: Boolean = isEnabled(CypherDebugOption.logicalPlanBuilder)
   val rawCardinalitiesEnabled: Boolean = isEnabled(CypherDebugOption.rawCardinalities)
   val warnOnCompilationErrors: Boolean = isEnabled(CypherDebugOption.warnOnCompilationErrors)
-  val useLPEagerAnalyzer: Boolean = isEnabled(CypherDebugOption.useLPEagerAnalyzer)
   val disableExistsSubqueryCaching: Boolean = isEnabled(CypherDebugOption.disableExistsSubqueryCaching)
 }

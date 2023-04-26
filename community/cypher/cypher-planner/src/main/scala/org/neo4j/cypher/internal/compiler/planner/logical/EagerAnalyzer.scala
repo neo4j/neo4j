@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
@@ -57,8 +58,11 @@ import scala.collection.immutable.ListSet
 object EagerAnalyzer {
 
   def apply(context: LogicalPlanningContext): EagerAnalyzer = {
-    if (context.settings.debugOptions.useLPEagerAnalyzer) NoopEagerAnalyzer
-    else EagerAnalyzerImpl(context)
+    if (context.settings.eagerAnalyzer == CypherEagerAnalyzerOption.ir) {
+      EagerAnalyzerImpl(context)
+    } else {
+      NoopEagerAnalyzer
+    }
   }
 
   case class unnestEager(

@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.SensitiveStringLiteral
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
@@ -973,7 +974,8 @@ class FabricPlannerTest
           replan = CypherReplanOption.force,
           connectComponentsPlanner = CypherConnectComponentsPlannerOption.greedy,
           debugOptions = CypherDebugOptions(Set(CypherDebugOption.tostring)),
-          parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.all
+          parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.all,
+          eagerAnalyzer = CypherEagerAnalyzerOption.default
         )
       )
 

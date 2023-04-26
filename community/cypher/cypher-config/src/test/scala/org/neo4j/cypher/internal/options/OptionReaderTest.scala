@@ -54,8 +54,9 @@ class OptionReaderTest extends CypherFunSuite {
       ))
   }
 
-  test("Can read debug options from config") {
-
+  // Unignore and change these two tests if adding something to
+  //  CypherDebugOption.cypherConfigBooleans. The Map is empty at the time of writing, so we cannot test for this.
+  ignore("Can read debug options from config") {
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
@@ -70,12 +71,11 @@ class OptionReaderTest extends CypherFunSuite {
 
     options
       .shouldEqual(CypherQueryOptions.default.copy(
-        debugOptions = CypherDebugOptions(Set(CypherDebugOption.useLPEagerAnalyzer))
+        debugOptions = CypherDebugOptions(Set( /*CypherDebugOption.useLPEagerAnalyzer*/ ))
       ))
   }
 
-  test("Can read debug options from config and key-values") {
-
+  ignore("Can read debug options from config and key-values") {
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(
         Config.newBuilder()
@@ -90,7 +90,7 @@ class OptionReaderTest extends CypherFunSuite {
 
     options
       .shouldEqual(CypherQueryOptions.default.copy(
-        debugOptions = CypherDebugOptions(Set(CypherDebugOption.useLPEagerAnalyzer, CypherDebugOption.tostring))
+        debugOptions = CypherDebugOptions(Set( /*CypherDebugOption.useLPEagerAnalyzer,*/ CypherDebugOption.tostring))
       ))
   }
 

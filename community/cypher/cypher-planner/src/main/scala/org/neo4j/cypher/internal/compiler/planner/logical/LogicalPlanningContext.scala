@@ -46,6 +46,7 @@ import org.neo4j.cypher.internal.ir.ordering.ProvidedOrderFactory
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
@@ -111,7 +112,7 @@ object LogicalPlanningContext {
    * @param errorIfShortestPathHasCommonNodesAtRuntime a setting to fail if the start and the end node is the same for shortestPaths, at runtime.
    * @param legacyCsvQuoteEscaping a setting to configure quoting in LOAD CSV
    * @param csvBufferSize the buffer size for LOAD CSV
-   *  @param useLegacyShortestPath a setting for the shortest path algorithm to use.
+   * @param useLegacyShortestPath a setting for the shortest path algorithm to use.
    */
   case class Settings(
     executionModel: ExecutionModel,
@@ -127,7 +128,8 @@ object LogicalPlanningContext {
     csvBufferSize: Int = GraphDatabaseSettings.csv_buffer_size.defaultValue().intValue(),
     planningIntersectionScansEnabled: Boolean =
       GraphDatabaseInternalSettings.planning_intersection_scans_enabled.defaultValue(),
-    useLegacyShortestPath: Boolean = GraphDatabaseInternalSettings.use_legacy_shortest_path.defaultValue()
+    useLegacyShortestPath: Boolean = GraphDatabaseInternalSettings.use_legacy_shortest_path.defaultValue(),
+    eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default
   ) {
 
     val costComparisonListener: CostComparisonListener =
@@ -150,7 +152,8 @@ object LogicalPlanningContext {
           legacyCsvQuoteEscaping: Boolean,
           csvBufferSize: Int,
           planningIntersectionScansEnabled: Boolean,
-          useLegacyShortestPath: Boolean
+          useLegacyShortestPath: Boolean,
+          eagerAnalyzer: CypherEagerAnalyzerOption
         ) =>
         val builder = Seq.newBuilder[Any]
 
@@ -180,6 +183,9 @@ object LogicalPlanningContext {
         // use_legacy_shortest_path is dynamic, but documented to not affect caching.
         // if (GraphDatabaseInternalSettings.use_legacy_shortest_path.dynamic())
         //  builder.addOne(useLegacyShortestPath)
+
+        if (GraphDatabaseInternalSettings.cypher_eager_analysis_implementation.dynamic())
+          builder.addOne(eagerAnalyzer)
 
         builder.result()
     }

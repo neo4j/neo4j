@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.options.CypherConnectComponentsPlannerOption
 import org.neo4j.cypher.internal.options.CypherDebugOption
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.options.CypherExecutionMode
 import org.neo4j.cypher.internal.options.CypherExpressionEngineOption
 import org.neo4j.cypher.internal.options.CypherInterpretedPipesFallbackOption
@@ -62,12 +63,13 @@ class CacheKeyTest extends CypherFunSuite {
       replan = CypherReplanOption.force,
       connectComponentsPlanner = CypherConnectComponentsPlannerOption.idp,
       debugOptions = CypherDebugOptions(Set(CypherDebugOption.queryGraph, CypherDebugOption.tostring)),
-      parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.all
+      parallelRuntimeSupportOption = CypherParallelRuntimeSupportOption.all,
+      eagerAnalyzer = CypherEagerAnalyzerOption.lp
     )
 
     options.cacheKey
       .shouldEqual(
-        "PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=all"
+        "PROFILE planner=dp runtime=pipelined updateStrategy=eager expressionEngine=interpreted operatorEngine=interpreted interpretedPipesFallback=all connectComponentsPlanner=idp debug=querygraph debug=tostring parallelRuntimeSupport=all eagerAnalyzer=lp"
       )
   }
 }

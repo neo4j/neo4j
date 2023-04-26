@@ -19,7 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.EagerAnalysisImplementation
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.assertIsNode
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.labelName
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.literalInt
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.relTypeName
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.varFor
@@ -27,10 +30,13 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTest
 import org.neo4j.cypher.internal.expressions.HasDegreeGreaterThan
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
+import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.util.InputPosition
+import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.ListSet
@@ -545,6 +551,54 @@ class EagerPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIn
         .cartesianProduct()
         .|.nodeByLabelScan("c", "C")
         .nodeByLabelScan("a", "A")
+        .build()
+    )
+  }
+
+  test("should plan Eager with IR eagerness") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setLabelCardinality("A", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.IR)
+      .build()
+
+    val query = "UNWIND [1, 2] AS i MATCH (a:A) CREATE (a2:A)"
+
+    val plan = planner.plan(query)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .create(createNode("a2", "A"))
+        .eager(ListSet(EagernessReason.Unknown))
+        .apply()
+        .|.nodeByLabelScan("a", "A", IndexOrderNone, "i")
+        .unwind("[1, 2] AS i")
+        .argument()
+        .build()
+    )
+  }
+
+  test("should plan Eager with LP eagerness") {
+    val planner = plannerBuilder()
+      .setAllNodesCardinality(10)
+      .setLabelCardinality("A", 10)
+      .withSetting(GraphDatabaseInternalSettings.cypher_eager_analysis_implementation, EagerAnalysisImplementation.LP)
+      .build()
+
+    val query = "UNWIND [1, 2] AS i MATCH (a:A) CREATE (a2:A)"
+
+    val plan = planner.plan(query)
+    plan should equal(
+      planner.planBuilder()
+        .produceResults()
+        .emptyResult()
+        .create(createNode("a2", "A"))
+        .eager(ListSet(LabelReadSetConflict(labelName("A"), Some(Conflict(Id(2), Id(5))))))
+        .apply()
+        .|.nodeByLabelScan("a", "A", IndexOrderNone, "i")
+        .unwind("[1, 2] AS i")
+        .argument()
         .build()
     )
   }

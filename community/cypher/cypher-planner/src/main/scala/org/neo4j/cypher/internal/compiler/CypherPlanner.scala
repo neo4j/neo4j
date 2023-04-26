@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.macros.AssertMacros
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.IDPPlannerName
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.InputPosition
@@ -252,5 +253,12 @@ class CypherPlannerConfiguration(config: CypherConfiguration, cfg: Config, val p
       !GraphDatabaseInternalSettings.cypher_size_hint_parameters.dynamic()
     )
     () => config.useParameterSizeHint
+  }
+
+  val eagerAnalyzer: () => CypherEagerAnalyzerOption = {
+    AssertMacros.checkOnlyWhenAssertionsAreEnabled(
+      !GraphDatabaseInternalSettings.cypher_eager_analysis_implementation.dynamic()
+    )
+    () => config.eagerAnalyzer
   }
 }
