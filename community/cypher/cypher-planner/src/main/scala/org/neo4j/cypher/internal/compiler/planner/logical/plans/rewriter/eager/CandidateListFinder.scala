@@ -37,6 +37,8 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.Ref
 
+import scala.annotation.tailrec
+
 /**
  * Given conflicts between plans, computes candidate lists that describe where Eager can be planned to solve the conflicts.
  */
@@ -388,9 +390,13 @@ object CandidateListFinder {
 
     // Remove CandidateLists that traverse an EagerLogicalPlan coming from the LHS.
     // These do not need to be eagerized.
-    candidateLists.filter(_.candidates.sliding(2).forall {
-      case Seq(Ref(first: EagerLogicalPlan), Ref(second)) if first.lhs.contains(second) => false
-      case _                                                                            => true
-    })
+    candidateLists.filterNot(cl => traversesEagerPlanFromLeft(cl.candidates))
+  }
+
+  @tailrec
+  private def traversesEagerPlanFromLeft(candidates: List[Ref[LogicalPlan]]): Boolean = candidates match {
+    case Ref(first: EagerLogicalPlan) :: Ref(second) :: _ if first.lhs.contains(second) => true
+    case _ :: tail => traversesEagerPlanFromLeft(tail)
+    case Nil       => false
   }
 }
