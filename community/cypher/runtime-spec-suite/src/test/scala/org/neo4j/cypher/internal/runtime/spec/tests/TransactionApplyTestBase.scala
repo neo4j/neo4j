@@ -80,8 +80,10 @@ import org.neo4j.values.virtual.VirtualValues
 import org.scalatest.Assertion
 import org.scalatest.LoneElement
 
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
 
+import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -1411,6 +1413,44 @@ abstract class TransactionApplyTestBase[CONTEXT <: RuntimeContext](
 
     result should beColumns("lhsIds", "rhsIds", "id", "labels", "committed", "started", "expectedError")
       .withRows(inAnyOrder(expected))
+  }
+
+  test("no resource leaks with continuations on rhs") {
+    val size = 10
+    val relCount = given {
+      val (as, bs) = bipartiteGraph(size, "A", "B", "R")
+      val rIdGen = new AtomicInteger(0)
+      for {
+        a <- as
+        rel <- a.getRelationships().asScala
+      } {
+        rel.setProperty("id", rIdGen.getAndIncrement())
+      }
+      Int.box(rIdGen.get())
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("committed")
+      .projection("status.committed AS committed")
+      .transactionApply(1, OnErrorContinue, Some("status"))
+      .|.create(createNodeWithProperties("n", Seq("N"), "{p:sum}"))
+      .|.aggregation(Seq(), Seq("sum(p) as sum"))
+      .|.projection("1 / (x - r.id) AS p")
+      .|.nonFuseable()
+      .|.expandAll("(a)-[r]->(b)")
+      .|.nonFuseable()
+      .|.nodeByLabelScan("a", "A", "x")
+      .unwind(s"range(0, ${relCount - 1}) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    val result = execute(query, runtime)
+
+    // then
+    // Main assertion is that execute succeeds without exceptions
+    val expectedRow = Array[Any](false)
+    result should beColumns("committed")
+      .withRows(inOrder(Range(0, relCount).map(_ => expectedRow)))
   }
 
   private def executeAndConsume(logicalQuery: LogicalQuery, runtime: CypherRuntime[CONTEXT]) = {

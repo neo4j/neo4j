@@ -68,6 +68,8 @@ import org.neo4j.values.virtual.MapValueBuilder
 import org.neo4j.values.virtual.VirtualValues
 import org.scalacheck.Gen
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -1353,6 +1355,44 @@ abstract class TransactionForeachTestBase[CONTEXT <: RuntimeContext](
 
     result should beColumns("props", "committed", "started", "error")
       .withRows(inOrder(expected.toSeq))
+  }
+
+  test("no resource leaks with continuations on rhs") {
+    val size = 10
+    val relCount = given {
+      val (as, bs) = bipartiteGraph(size, "A", "B", "R")
+      val rIdGen = new AtomicInteger(0)
+      for {
+        a <- as
+        rel <- a.getRelationships().asScala
+      } {
+        rel.setProperty("id", rIdGen.getAndIncrement())
+      }
+      Int.box(rIdGen.get())
+    }
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("committed")
+      .projection("status.committed AS committed")
+      .transactionForeach(1, OnErrorContinue, Some("status"))
+      .|.create(createNodeWithProperties("n", Seq("N"), "{p:sum}"))
+      .|.aggregation(Seq(), Seq("sum(p) as sum"))
+      .|.projection("1 / (x - r.id) AS p")
+      .|.nonFuseable()
+      .|.expandAll("(a)-[r]->(b)")
+      .|.nonFuseable()
+      .|.nodeByLabelScan("a", "A", "x")
+      .unwind(s"range(0, ${relCount - 1}) AS x")
+      .argument()
+      .build(readOnly = false)
+
+    val result = execute(query, runtime)
+
+    // then
+    // Main assertion is that execute succeeds without exceptions
+    val expectedRow = Array[Any](false)
+    result should beColumns("committed")
+      .withRows(inOrder(Range(0, relCount).map(_ => expectedRow)))
   }
 
   private def checkExternalAndRuntimeNodes(
