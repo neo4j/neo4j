@@ -185,10 +185,10 @@ object Statement {
   case object MERGE extends Statement
 }
 
-class LabelExpressionInCreateSemanticAnalysisTestSuite
+class LabelExpressionInCreateSemanticAnalysisTest
     extends LabelExpressionSemanticAnalysisTestSuiteWithStatement(Statement.CREATE)
 
-class LabelExpressionInMergeSemanticAnalysisTestSuite
+class LabelExpressionInMergeSemanticAnalysisTest
     extends LabelExpressionSemanticAnalysisTestSuiteWithStatement(Statement.MERGE)
 
 class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSuite {

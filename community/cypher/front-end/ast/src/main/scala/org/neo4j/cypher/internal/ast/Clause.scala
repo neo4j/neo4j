@@ -770,6 +770,8 @@ case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[
 
   override def name = "MERGE"
 
+  override protected def shouldRunGpmChecks: Boolean = false
+
   private def checkNoSubqueryInMerge: SemanticCheck = {
     val hasSubqueryExpression = Seq(pattern, actions).folder.treeCollect {
       case e: FullSubqueryExpression => e
