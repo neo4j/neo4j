@@ -205,4 +205,43 @@ abstract class NodeCountFromCountStoreTestBase[CONTEXT <: RuntimeContext](
     // then we should get the correct count
     execute(plan) should beColumns("x").withRows(singleColumn(Seq(nodes.size * nodes.size * nodes.size)))
   }
+
+  test("should fail if overflowing") {
+    given(nodeGraph(128, "A"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeCountFromCountStore("x", List.fill(9)(Some("A")))
+      .build()
+
+    // then
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(execute(logicalQuery, runtime))
+  }
+
+  test("should fail if overflowing, wild card") {
+    given(nodeGraph(128))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeCountFromCountStore("x", List.fill(9)(None))
+      .build()
+
+    // then
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(execute(logicalQuery, runtime))
+  }
+
+  test("should fail if overflowing, mixed") {
+    given(nodeGraph(128, "A"))
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .nodeCountFromCountStore("x", List.fill(4)(None) ++ List.fill(5)(Some("A")))
+      .build()
+
+    // then
+    an[org.neo4j.exceptions.ArithmeticException] should be thrownBy consume(execute(logicalQuery, runtime))
+  }
 }
