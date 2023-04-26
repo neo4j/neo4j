@@ -281,7 +281,7 @@ public class ImportCommand {
                         "Whether or not the lookup of nodes referred to from relationships needs to be checked strict. "
                                 + "If disabled, most but not all relationships referring to non-existent nodes will be detected. "
                                 + "If enabled all those relationships will be found but to the cost of lower performance")
-        private boolean strict = true;
+        private boolean strict = false;
 
         @Option(
                 names = "--skip-duplicate-nodes",
