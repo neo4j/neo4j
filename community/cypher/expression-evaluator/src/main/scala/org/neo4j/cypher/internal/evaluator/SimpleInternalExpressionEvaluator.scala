@@ -21,11 +21,13 @@ package org.neo4j.cypher.internal.evaluator
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaccRule
 import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.CONVERTERS
+import org.neo4j.cypher.internal.evaluator.SimpleInternalExpressionEvaluator.NULL_CURSOR_FACTORY
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.planner.spi.ReadTokenContext
 import org.neo4j.cypher.internal.runtime.CypherRow
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
+import org.neo4j.cypher.internal.runtime.ExpressionCursors
 import org.neo4j.cypher.internal.runtime.ParameterMapping
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
 import org.neo4j.cypher.internal.runtime.createParameterArray
@@ -38,8 +40,21 @@ import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.bottomUp
+import org.neo4j.internal.kernel.api.CursorFactory
 import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.NodeCursor
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
+import org.neo4j.internal.kernel.api.PropertyCursor
+import org.neo4j.internal.kernel.api.RelationshipScanCursor
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor
+import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor
+import org.neo4j.io.pagecache.context.CursorContext
+import org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT
 import org.neo4j.kernel.impl.query.QuerySubscriber
+import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 
@@ -79,7 +94,7 @@ class SimpleInternalExpressionEvaluator extends InternalExpressionEvaluator {
       query = null,
       resources = null,
       params = slottedParams,
-      cursors = null,
+      cursors = new ExpressionCursors(NULL_CURSOR_FACTORY, NULL_CONTEXT, EmptyMemoryTracker.INSTANCE),
       queryIndexes = Array.empty[IndexReadSession],
       nodeLabelTokenReadSession = None,
       relTypeTokenReadSession = None,
@@ -117,4 +132,55 @@ object SimpleInternalExpressionEvaluator {
     def parse(text: String): Expression = JavaccRule.Expression.apply(text)
   }
 
+  private val NULL_CURSOR_FACTORY = new CursorFactory {
+    override def allocateNodeCursor(cursorContext: CursorContext): NodeCursor = null
+
+    override def allocateFullAccessNodeCursor(cursorContext: CursorContext): NodeCursor = null
+
+    override def allocateRelationshipScanCursor(cursorContext: CursorContext): RelationshipScanCursor = null
+
+    override def allocateFullAccessRelationshipScanCursor(cursorContext: CursorContext): RelationshipScanCursor = null
+
+    override def allocateRelationshipTraversalCursor(cursorContext: CursorContext): RelationshipTraversalCursor = null
+
+    override def allocateFullAccessRelationshipTraversalCursor(cursorContext: CursorContext)
+      : RelationshipTraversalCursor = null
+
+    override def allocatePropertyCursor(cursorContext: CursorContext, memoryTracker: MemoryTracker): PropertyCursor =
+      null
+
+    override def allocateFullAccessPropertyCursor(
+      cursorContext: CursorContext,
+      memoryTracker: MemoryTracker
+    ): PropertyCursor = null
+
+    override def allocateNodeValueIndexCursor(
+      cursorContext: CursorContext,
+      memoryTracker: MemoryTracker
+    ): NodeValueIndexCursor = null
+
+    override def allocateFullAccessNodeValueIndexCursor(
+      cursorContext: CursorContext,
+      memoryTracker: MemoryTracker
+    ): NodeValueIndexCursor = null
+
+    override def allocateFullAccessRelationshipValueIndexCursor(
+      cursorContext: CursorContext,
+      memoryTracker: MemoryTracker
+    ): RelationshipValueIndexCursor = null
+
+    override def allocateNodeLabelIndexCursor(cursorContext: CursorContext): NodeLabelIndexCursor = null
+
+    override def allocateFullAccessNodeLabelIndexCursor(cursorContext: CursorContext): NodeLabelIndexCursor = null
+
+    override def allocateRelationshipValueIndexCursor(
+      cursorContext: CursorContext,
+      memoryTracker: MemoryTracker
+    ): RelationshipValueIndexCursor = null
+
+    override def allocateRelationshipTypeIndexCursor(cursorContext: CursorContext): RelationshipTypeIndexCursor = null
+
+    override def allocateFullAccessRelationshipTypeIndexCursor(cursorContext: CursorContext)
+      : RelationshipTypeIndexCursor = null
+  }
 }
