@@ -55,7 +55,7 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.consistency.checker.NodeChecker.compareTwoSortedLongArrays;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.kernel.impl.index.schema.EntityTokenRangeImpl.NO_TOKENS;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
@@ -124,7 +124,7 @@ class RelationshipChecker implements Checker
         {
             ProgressListener localProgress = progress.threadLocalReporter();
             CacheAccess.Client client = cacheAccess.client();
-            MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
+            IntObjectHashMap<Value> propertyValues = new IntObjectHashMap<>();
             Iterator<EntityTokenRange> relationshipTypeRangeIterator = relationshipTypeReader.iterator();
             EntityTokenIndexCheckState typeIndexState = new EntityTokenIndexCheckState( null, fromRelationshipId - 1 );
 
@@ -177,7 +177,7 @@ class RelationshipChecker implements Checker
 
                     // Properties
                     typeHolder[0] = relationshipRecord.getType();
-                    lightClear( propertyValues );
+                    propertyValues = lightReplace( propertyValues );
                     boolean propertyChainIsOk = property.read( propertyValues, relationshipRecord, reporter::forRelationship, storeCursors );
                     if ( propertyChainIsOk )
                     {

@@ -19,11 +19,10 @@
  */
 package org.neo4j.consistency.checker;
 
-import org.eclipse.collections.api.collection.primitive.MutableIntCollection;
-import org.eclipse.collections.api.collection.primitive.MutableLongCollection;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
-import org.eclipse.collections.api.map.primitive.MutablePrimitiveObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.ArrayList;
@@ -214,7 +213,7 @@ class RecordLoading
         List<NamedToken> tokens = new ArrayList<>();
         DynamicStringStore nameStore = tokenStore.getNameStore();
         List<DynamicRecord> nameRecords = new ArrayList<>();
-        MutableLongSet seenRecordIds = new LongHashSet();
+        LongHashSet seenRecordIds = new LongHashSet();
         int nameBlockSize = nameStore.getRecordDataSize();
         try ( RecordReader<RECORD> tokenReader = new RecordReader<>( tokenStore, true, cursorContext );
               RecordReader<DynamicRecord> nameReader = new RecordReader<>( nameStore, false, cursorContext ) )
@@ -226,6 +225,7 @@ class RecordLoading
                 if ( record.inUse() )
                 {
                     String name;
+                    seenRecordIds = RecordLoading.lightReplace( seenRecordIds );
                     if ( !NULL_REFERENCE.is( record.getNameId() ) && safeLoadDynamicRecordChain( r -> nameRecords.add( r.copy() ),
                             nameReader, seenRecordIds, record.getNameId(), nameBlockSize ) )
                     {
@@ -259,8 +259,8 @@ class RecordLoading
             Consumer<DynamicRecord> notFullReferencesNextReport,
             Consumer<DynamicRecord> invalidLengthReport )
     {
+        assert seenRecordIds.isEmpty();
         long firstRecordId = recordId;
-        lightClear( seenRecordIds );
         long prevRecordId = NULL_REFERENCE.longValue();
         boolean chainIsOk = true;
         while ( !NULL_REFERENCE.is( recordId ) )
@@ -344,27 +344,23 @@ class RecordLoading
         }
     }
 
-    static void lightClear( MutableLongCollection collection )
+    static ArrayList<DynamicRecord> lightReplace( ArrayList<DynamicRecord> list )
     {
-        if ( !collection.isEmpty() )
-        {
-            collection.clear();
-        }
+        return list.isEmpty() ? list : new ArrayList<>();
     }
 
-    static void lightClear( MutableIntCollection collection )
+    static LongHashSet lightReplace( LongHashSet set )
     {
-        if ( !collection.isEmpty() )
-        {
-            collection.clear();
-        }
+        return set.isEmpty() ? set : new LongHashSet();
     }
 
-    static void lightClear( MutablePrimitiveObjectMap<?> collection )
+    static IntHashSet lightReplace( IntHashSet set )
     {
-        if ( !collection.isEmpty() )
-        {
-            collection.clear();
-        }
+        return set.isEmpty() ? set : new IntHashSet();
+    }
+
+    static IntObjectHashMap<Value> lightReplace( IntObjectHashMap<Value> map )
+    {
+        return map.isEmpty() ? map : new IntObjectHashMap<>();
     }
 }

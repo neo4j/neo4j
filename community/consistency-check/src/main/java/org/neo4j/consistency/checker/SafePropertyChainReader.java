@@ -20,11 +20,9 @@
 package org.neo4j.consistency.checker;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 
 import org.neo4j.consistency.RecordType;
@@ -43,7 +41,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.consistency.checker.RecordLoading.NO_DYNAMIC_HANDLER;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.consistency.checker.RecordLoading.safeLoadDynamicRecordChain;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -60,12 +58,12 @@ class SafePropertyChainReader implements AutoCloseable
     private final RecordReader<PropertyRecord> propertyReader;
     private final RecordReader<DynamicRecord> stringReader;
     private final RecordReader<DynamicRecord> arrayReader;
-    private final MutableLongSet seenRecords;
-    private final MutableLongSet seenDynamicRecordIds;
-    private final List<DynamicRecord> dynamicRecords;
     private final ConsistencyReport.Reporter reporter;
     private final CheckerContext context;
     private final NeoStores neoStores;
+    private LongHashSet seenRecords;
+    private LongHashSet seenDynamicRecordIds;
+    private ArrayList<DynamicRecord> dynamicRecords;
 
     SafePropertyChainReader( CheckerContext context, CursorContext cursorContext )
     {
@@ -96,7 +94,7 @@ class SafePropertyChainReader implements AutoCloseable
     <PRIMITIVE extends PrimitiveRecord> boolean read( MutableIntObjectMap<Value> intoValues, PRIMITIVE entity,
             Function<PRIMITIVE,ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter, StoreCursors storeCursors )
     {
-        lightClear( seenRecords );
+        seenRecords = lightReplace( seenRecords );
         long propertyRecordId = entity.getNextProp();
         long previousRecordId = NULL_REFERENCE.longValue();
         boolean chainIsOk = true;
@@ -154,7 +152,8 @@ class SafePropertyChainReader implements AutoCloseable
                             switch ( type )
                             {
                             case STRING:
-                                dynamicRecords.clear();
+                                dynamicRecords = lightReplace( dynamicRecords );
+                                seenDynamicRecordIds = lightReplace( seenDynamicRecordIds );
                                 if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( record.copy() ), stringReader, seenDynamicRecordIds,
                                         block.getSingleValueLong(), stringStoreBlockSize, NO_DYNAMIC_HANDLER,
                                         ( id, record ) -> reporter.forProperty( propertyRecord ).stringNotInUse( block, record ),
@@ -168,7 +167,8 @@ class SafePropertyChainReader implements AutoCloseable
                                 }
                                 break;
                             case ARRAY:
-                                dynamicRecords.clear();
+                                dynamicRecords = lightReplace( dynamicRecords );
+                                seenDynamicRecordIds = lightReplace( seenDynamicRecordIds );
                                 if ( safeLoadDynamicRecordChain( record -> dynamicRecords.add( record.copy() ), arrayReader, seenDynamicRecordIds,
                                         block.getSingleValueLong(), arrayStoreBlockSize, NO_DYNAMIC_HANDLER,
                                         ( id, record ) -> reporter.forProperty( propertyRecord ).arrayNotInUse( block, record ),

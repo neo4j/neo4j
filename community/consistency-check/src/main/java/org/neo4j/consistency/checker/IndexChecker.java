@@ -50,7 +50,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.consistency.checker.RecordLoading.entityIntersectionWithSchema;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.consistency.checker.RecordLoading.safeGetNodeLabels;
 import static org.neo4j.consistency.checker.SchemaComplianceChecker.areValuesSupportedByIndex;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -283,7 +283,7 @@ public class IndexChecker implements Checker
                 if ( nodeRecord.inUse() )
                 {
                     long[] entityTokens = safeGetNodeLabels( noReportingContext, storeCursors, nodeRecord.getId(), nodeRecord.getLabelField(), labelReader );
-                    lightClear( allValues );
+                    allValues = lightReplace( allValues );
                     boolean propertyChainRead =
                             entityTokens != null && propertyReader.read( allValues, nodeRecord, noReportingContext.reporter::forNode, storeCursors );
                     if ( propertyChainRead )

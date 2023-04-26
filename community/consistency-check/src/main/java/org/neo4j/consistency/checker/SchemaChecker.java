@@ -21,9 +21,8 @@ package org.neo4j.consistency.checker;
 
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -279,7 +278,7 @@ class SchemaChecker
         DynamicStringStore nameStore = store.getNameStore();
         DynamicRecord nameRecord = nameStore.newRecord();
         long highId = store.getHighId();
-        MutableLongSet seenNameRecordIds = LongSets.mutable.empty();
+        LongHashSet seenNameRecordIds = new LongHashSet();
         int blockSize = store.getNameStore().getRecordDataSize();
         try ( var cursorContext = new CursorContext( pageCacheTracer.createPageCursorTracer( CONSISTENCY_TOKEN_CHECKER_TAG ) );
               RecordReader<R> tokenReader = new RecordReader<>( store, true, cursorContext );
@@ -290,6 +289,7 @@ class SchemaChecker
                 R record = tokenReader.read( id );
                 if ( record.inUse() && !NULL_REFERENCE.is( record.getNameId() ) )
                 {
+                    seenNameRecordIds = RecordLoading.lightReplace( seenNameRecordIds );
                     safeLoadDynamicRecordChain( r -> {}, nameReader, seenNameRecordIds, record.getNameId(), blockSize,
                             ( i, r ) -> dynamicRecordReport.apply( nameRecord ).circularReferenceNext( r ),
                             ( i, r ) -> report.apply( record ).nameBlockNotInUse( nameRecord ),
