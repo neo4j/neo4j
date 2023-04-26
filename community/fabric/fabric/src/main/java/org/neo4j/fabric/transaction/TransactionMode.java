@@ -19,6 +19,8 @@
  */
 package org.neo4j.fabric.transaction;
 
+import org.neo4j.bolt.protocol.common.message.AccessMode;
+
 /**
  * An indication of a type of a statement and what types of statement might be coming later in the same transaction.
  */
@@ -26,25 +28,29 @@ public enum TransactionMode {
     /**
      * The current statement is a read, but a write statement might be coming later.
      */
-    MAYBE_WRITE(true),
+    MAYBE_WRITE(AccessMode.WRITE),
 
     /**
      * The current statement is a write.
      */
-    DEFINITELY_WRITE(true),
+    DEFINITELY_WRITE(AccessMode.WRITE),
 
     /**
      * The current statement is a read and no write statement will follow.
      */
-    DEFINITELY_READ(false);
+    DEFINITELY_READ(AccessMode.READ);
 
-    private final boolean requiresWrite;
+    private final AccessMode concreteAccessMode;
 
-    TransactionMode(boolean requiresWrite) {
-        this.requiresWrite = requiresWrite;
+    TransactionMode(AccessMode concreteAccessMode) {
+        this.concreteAccessMode = concreteAccessMode;
     }
 
     public boolean requiresWrite() {
-        return requiresWrite;
+        return concreteAccessMode == AccessMode.WRITE;
+    }
+
+    public AccessMode concreteAccessMode() {
+        return concreteAccessMode;
     }
 }

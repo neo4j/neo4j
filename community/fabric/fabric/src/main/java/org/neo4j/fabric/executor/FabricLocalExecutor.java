@@ -33,7 +33,7 @@ import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
 import org.neo4j.fabric.stream.Record;
 import org.neo4j.fabric.stream.StatementResult;
-import org.neo4j.fabric.transaction.CompositeTransaction;
+import org.neo4j.fabric.transaction.FabricCompoundTransaction;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -57,25 +57,25 @@ public class FabricLocalExecutor {
     }
 
     public LocalTransactionContext startTransactionContext(
-            CompositeTransaction compositeTransaction,
+            FabricCompoundTransaction parentTransaction,
             FabricTransactionInfo transactionInfo,
             TransactionBookmarkManager bookmarkManager) {
-        return new LocalTransactionContext(compositeTransaction, transactionInfo, bookmarkManager);
+        return new LocalTransactionContext(parentTransaction, transactionInfo, bookmarkManager);
     }
 
     public class LocalTransactionContext implements AutoCloseable {
         private final Map<UUID, KernelTxWrapper> kernelTransactions = new ConcurrentHashMap<>();
         private final Set<InternalTransaction> internalTransactions = ConcurrentHashMap.newKeySet();
 
-        private final CompositeTransaction compositeTransaction;
+        private final FabricCompoundTransaction parentTransaction;
         private final FabricTransactionInfo transactionInfo;
         private final TransactionBookmarkManager bookmarkManager;
 
         private LocalTransactionContext(
-                CompositeTransaction compositeTransaction,
+                FabricCompoundTransaction parentTransaction,
                 FabricTransactionInfo transactionInfo,
                 TransactionBookmarkManager bookmarkManager) {
-            this.compositeTransaction = compositeTransaction;
+            this.parentTransaction = parentTransaction;
             this.transactionInfo = transactionInfo;
             this.bookmarkManager = bookmarkManager;
         }
@@ -113,35 +113,18 @@ public class FabricLocalExecutor {
             var databaseFacade = getDatabaseFacade(location);
 
             bookmarkManager.awaitUpToDate(location);
-            return kernelTransactions.computeIfAbsent(location.getUuid(), dbUuid -> {
-                        switch (transactionMode) {
-                            case DEFINITELY_WRITE:
-                                return compositeTransaction.startWritingTransaction(location, () -> {
-                                    var tx = beginKernelTx(databaseFacade);
-                                    return new KernelTxWrapper(tx, bookmarkManager, location);
-                                });
-
-                            case MAYBE_WRITE:
-                                return compositeTransaction.startReadingTransaction(() -> {
-                                    var tx = beginKernelTx(databaseFacade);
-                                    return new KernelTxWrapper(tx, bookmarkManager, location);
-                                });
-
-                            case DEFINITELY_READ:
-                                return compositeTransaction.startReadingOnlyTransaction(() -> {
-                                    var tx = beginKernelTx(databaseFacade);
-                                    return new KernelTxWrapper(tx, bookmarkManager, location);
-                                });
-                            default:
-                                throw new IllegalArgumentException("Unexpected transaction mode: " + transactionMode);
-                        }
-                    })
+            return kernelTransactions.computeIfAbsent(
+                            location.getUuid(),
+                            dbUuid -> parentTransaction.registerNewChildTransaction(location, transactionMode, () -> {
+                                var tx = beginKernelTx(databaseFacade);
+                                return new KernelTxWrapper(tx, bookmarkManager, location);
+                            }))
                     .fabricKernelTransaction;
         }
 
         private void maybeUpgradeToWritingTransaction(KernelTxWrapper tx, TransactionMode transactionMode) {
             if (transactionMode == TransactionMode.DEFINITELY_WRITE) {
-                compositeTransaction.upgradeToWritingTransaction(tx);
+                parentTransaction.upgradeToWritingTransaction(tx);
             }
         }
 
@@ -183,7 +166,7 @@ public class FabricLocalExecutor {
                     transactionInfo.getClientConnectionInfo(),
                     transactionInfo.getTxTimeout().toMillis(),
                     TimeUnit.MILLISECONDS,
-                    compositeTransaction::childTransactionTerminated,
+                    parentTransaction::childTransactionTerminated,
                     this::transformTerminalOperationError);
 
             if (transactionInfo.getTxMetadata() != null) {

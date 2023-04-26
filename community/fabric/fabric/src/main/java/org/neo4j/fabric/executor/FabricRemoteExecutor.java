@@ -21,7 +21,7 @@ package org.neo4j.fabric.executor;
 
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.stream.StatementResult;
-import org.neo4j.fabric.transaction.CompositeTransaction;
+import org.neo4j.fabric.transaction.FabricCompoundTransaction;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionMode;
 import org.neo4j.values.virtual.MapValue;
@@ -29,7 +29,7 @@ import reactor.core.publisher.Mono;
 
 public interface FabricRemoteExecutor {
     RemoteTransactionContext startTransactionContext(
-            CompositeTransaction compositeTransaction,
+            FabricCompoundTransaction compositeTransaction,
             FabricTransactionInfo transactionInfo,
             TransactionBookmarkManager bookmarkManager);
 
