@@ -57,30 +57,32 @@ class ParallelTransactionalContextWrapper(
 ) extends TransactionalContextWrapper {
 
   // NOTE: We want all methods going through kernelExecutionContext instead of through tc.kernelTransaction, which is not thread-safe
-  private[this] val kernelExecutionContext: ExecutionContext = {
+  private[this] val _kernelExecutionContext: ExecutionContext = {
     val ktx = tc.kernelTransaction()
     ktx.assertOpen()
     ktx.createExecutionContext()
   }
 
+  override def kernelExecutionContext: ExecutionContext = _kernelExecutionContext
+
   override def commitTransaction(): Unit = unsupported()
 
-  override def kernelQueryContext: QueryContext = kernelExecutionContext.queryContext
+  override def kernelQueryContext: QueryContext = _kernelExecutionContext.queryContext
 
-  override def cursors: CursorFactory = kernelExecutionContext.cursors()
+  override def cursors: CursorFactory = _kernelExecutionContext.cursors()
 
-  override def cursorContext: CursorContext = kernelExecutionContext.cursorContext
+  override def cursorContext: CursorContext = _kernelExecutionContext.cursorContext
 
   // TODO: We want to use memory tracker from ThreadExecutionContext when we enable memory tracking in parallel runtime
   override def memoryTracker: MemoryTracker = EmptyMemoryTracker.INSTANCE // kernelExecutionContext.memoryTracker()
 
-  override def locks: Locks = kernelExecutionContext.locks()
+  override def locks: Locks = _kernelExecutionContext.locks()
 
-  override def dataRead: Read = kernelExecutionContext.dataRead()
+  override def dataRead: Read = _kernelExecutionContext.dataRead()
 
   override def dataWrite: Write = unsupported()
 
-  override def tokenRead: TokenRead = kernelExecutionContext.tokenRead()
+  override def tokenRead: TokenRead = _kernelExecutionContext.tokenRead()
 
   override def tokenWrite: TokenWrite = unsupported()
 
@@ -90,18 +92,18 @@ class ParallelTransactionalContextWrapper(
 
   override def schemaWrite: SchemaWrite = unsupported()
 
-  override def procedures: Procedures = kernelExecutionContext.procedures()
+  override def procedures: Procedures = _kernelExecutionContext.procedures()
 
-  override def securityContext: SecurityContext = kernelExecutionContext.securityContext()
+  override def securityContext: SecurityContext = _kernelExecutionContext.securityContext()
 
   override def securityAuthorizationHandler: SecurityAuthorizationHandler =
-    kernelExecutionContext.securityAuthorizationHandler()
+    _kernelExecutionContext.securityAuthorizationHandler()
 
-  override def accessMode: AccessMode = kernelExecutionContext.securityContext().mode()
+  override def accessMode: AccessMode = _kernelExecutionContext.securityContext().mode()
 
-  override def isTransactionOpen: Boolean = kernelExecutionContext.isTransactionOpen
+  override def isTransactionOpen: Boolean = _kernelExecutionContext.isTransactionOpen
 
-  override def assertTransactionOpen(): Unit = kernelExecutionContext.performCheckBeforeOperation()
+  override def assertTransactionOpen(): Unit = _kernelExecutionContext.performCheckBeforeOperation()
 
   override def close(): Unit = {
     if (DebugSupport.DEBUG_TRANSACTIONAL_CONTEXT) {
@@ -112,8 +114,8 @@ class ParallelTransactionalContextWrapper(
         Thread.currentThread().getName
       )
     }
-    kernelExecutionContext.complete()
-    kernelExecutionContext.close()
+    _kernelExecutionContext.complete()
+    _kernelExecutionContext.close()
   }
 
   override def kernelStatisticProvider: KernelStatisticProvider =

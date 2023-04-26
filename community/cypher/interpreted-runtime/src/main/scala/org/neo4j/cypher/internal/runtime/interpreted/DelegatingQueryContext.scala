@@ -82,6 +82,7 @@ import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.io.pagecache.context.CursorContext
+import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.factory.DbmsInfo
@@ -759,4 +760,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def config: Config = inner.config
 
   override def kernelExecutingQuery: org.neo4j.kernel.api.query.ExecutingQuery = inner.kernelExecutingQuery
+
+  override def kernelExecutionContext: ExecutionContext = inner.kernelExecutionContext
 }

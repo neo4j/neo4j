@@ -44,11 +44,11 @@ public record PartitionedMultiScan<INNER extends Cursor, OUTER extends Cursor>(L
         throw new UnsupportedOperationException("Do not call");
     }
 
-    public void reservePartition(INNER[] cursors, CursorContext cursorContext, AccessMode accessMode) {
+    public void reservePartition(INNER[] cursors, ExecutionContext executionContext) {
         assert cursors.length == scans.size();
         synchronized (scans) {
             for (int i = 0; i < cursors.length; i++) {
-                scans.get(i).reservePartition(cursors[i], cursorContext, accessMode);
+                scans.get(i).reservePartition(cursors[i], executionContext);
             }
         }
     }

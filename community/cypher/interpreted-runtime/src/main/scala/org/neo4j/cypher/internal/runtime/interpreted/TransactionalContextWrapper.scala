@@ -42,6 +42,7 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
@@ -184,6 +185,9 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
   override def kernelExecutingQuery: org.neo4j.kernel.api.query.ExecutingQuery = {
     tc.executingQuery()
   }
+
+  override def kernelExecutionContext: ExecutionContext =
+    throw new UnsupportedOperationException("operation only possible in parallel runtime")
 }
 
 object TransactionalContextWrapper {
