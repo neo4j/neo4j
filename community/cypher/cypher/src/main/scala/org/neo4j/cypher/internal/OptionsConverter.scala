@@ -170,15 +170,15 @@ case object ServerOptionsConverter extends OptionsConverter[ServerOptions] {
         } else if (key.equalsIgnoreCase(TAGS)) {
           value match {
             case list: ListValue =>
-              val tags: Set[String] = list.iterator().asScala.map {
+              val tags: List[String] = list.iterator().asScala.map {
                 case t: TextValue => t.stringValue()
                 case _ => throw new InvalidArgumentsException(
                     s"$TAGS expects a list of tags but got '$list'."
                   )
-              }.toSet
+              }.toList
               ops.copy(tags = Some(tags))
             case t: TextValue =>
-              ops.copy(tags = Some(Set(t.stringValue())))
+              ops.copy(tags = Some(List(t.stringValue())))
             case value: AnyValue =>
               throw new InvalidArgumentsException(
                 s"$TAGS expects a list of tags names but got '$value'."
@@ -734,5 +734,5 @@ case class ServerOptions(
   allowed: Option[Set[NormalizedDatabaseName]],
   denied: Option[Set[NormalizedDatabaseName]],
   mode: Option[InstanceModeConstraint],
-  tags: Option[Set[String]]
+  tags: Option[List[String]]
 )

@@ -28,6 +28,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.LongFunction;
 import java.util.regex.Pattern;
@@ -228,6 +229,23 @@ public final class SettingConstraints {
             @Override
             public String getDescription() {
                 return format("is of size `%s`", size);
+            }
+        };
+    }
+
+    public static <T> SettingConstraint<List<T>> noDuplicates() {
+        return new SettingConstraint<>() {
+            @Override
+            public void validate(List<T> value, Configuration config) {
+                if (Set.copyOf(value).size() != value.size()) {
+                    throw new IllegalArgumentException(
+                            format("items should not have duplicates: %s", valueToString(value)));
+                }
+            }
+
+            @Override
+            public String getDescription() {
+                return "no duplicate items";
             }
         };
     }

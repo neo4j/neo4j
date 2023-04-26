@@ -38,6 +38,7 @@ import static org.neo4j.configuration.SettingConstraints.lessThanOrEqual;
 import static org.neo4j.configuration.SettingConstraints.matches;
 import static org.neo4j.configuration.SettingConstraints.max;
 import static org.neo4j.configuration.SettingConstraints.min;
+import static org.neo4j.configuration.SettingConstraints.noDuplicates;
 import static org.neo4j.configuration.SettingConstraints.range;
 import static org.neo4j.configuration.SettingValueParsers.BOOL;
 import static org.neo4j.configuration.SettingValueParsers.BYTES;
@@ -803,6 +804,21 @@ class SettingTest {
                 enumSetting.description());
         assertEquals(Set.of(Colors.GREEN), enumSetting.defaultValue());
         assertThrows(IllegalArgumentException.class, () -> enumSetting.parse("blue, kaputt"));
+    }
+
+    @Test
+    void testNoDuplicatesConstraint() {
+        var setting = (SettingImpl<List<String>>) settingBuilder("setting", listOf(STRING))
+                .addConstraint(noDuplicates())
+                .build();
+        assertDoesNotThrow(() -> setting.validate(List.of("a", "b"), EMPTY));
+        assertDoesNotThrow(() -> setting.validate(List.of(), EMPTY));
+
+        var exception =
+                assertThrows(IllegalArgumentException.class, () -> setting.validate(List.of("a", "b", "b"), EMPTY));
+        assertEquals(
+                "Failed to validate '[a, b, b]' for 'setting': items should not have duplicates: a,b,b",
+                exception.getMessage());
     }
 
     @TestFactory
