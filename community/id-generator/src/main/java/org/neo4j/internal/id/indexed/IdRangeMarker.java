@@ -186,7 +186,8 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
             value.setBits(BITSET_REUSE, idOffset, numberOfIds);
             value.setBits(BITSET_RESERVED, idOffset, numberOfIds);
             writer.merge(key, value, merger);
-            monitor.markedAsUnreserved(id);
+            monitor.markedAsFree(id, numberOfIds);
+            monitor.markedAsUnreserved(id, numberOfIds);
         }
     }
 

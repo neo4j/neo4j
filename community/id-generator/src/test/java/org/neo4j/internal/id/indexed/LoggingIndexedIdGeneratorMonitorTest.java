@@ -78,8 +78,6 @@ class LoggingIndexedIdGeneratorMonitorTest {
             clock.forward(timeStep, MILLISECONDS);
             monitor.checkpoint(5, 6);
             clock.forward(timeStep, MILLISECONDS);
-            monitor.markedAsDeletedAndFree(7);
-            clock.forward(timeStep, MILLISECONDS);
             monitor.markedAsUsed(8, 1);
             clock.forward(timeStep, MILLISECONDS);
             monitor.markedAsDeleted(9, 1);
@@ -88,7 +86,7 @@ class LoggingIndexedIdGeneratorMonitorTest {
             clock.forward(timeStep, MILLISECONDS);
             monitor.markedAsReserved(11, 1);
             clock.forward(timeStep, MILLISECONDS);
-            monitor.markedAsUnreserved(12);
+            monitor.markedAsUnreserved(12, 1);
             clock.forward(timeStep, MILLISECONDS);
             monitor.normalized(13);
             clock.forward(timeStep, MILLISECONDS);
@@ -103,17 +101,16 @@ class LoggingIndexedIdGeneratorMonitorTest {
         LoggingIndexedIdGeneratorMonitor.dump(fs, file, dumper);
         long time = 0;
         verify(dumper).typeAndTwoIds(LoggingIndexedIdGeneratorMonitor.Type.OPENED, time += timeStep, 98, 99);
-        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.ALLOCATE_HIGH, time += timeStep, 1);
-        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.ALLOCATE_REUSED, time += timeStep, 2);
+        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.ALLOCATE_HIGH, time += timeStep, 1, 1);
+        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.ALLOCATE_REUSED, time += timeStep, 2, 1);
         verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.BRIDGED, time += timeStep, 3);
-        verify(dumper).typeAndTwoIds(LoggingIndexedIdGeneratorMonitor.Type.CACHED, time += timeStep, 4, 1);
+        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.CACHED, time += timeStep, 4, 1);
         verify(dumper).typeAndTwoIds(LoggingIndexedIdGeneratorMonitor.Type.CHECKPOINT, time += timeStep, 5, 6);
-        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_DELETED_AND_FREE, time += timeStep, 7);
-        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_USED, time += timeStep, 8);
-        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_DELETED, time += timeStep, 9);
-        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_FREE, time += timeStep, 10);
-        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_RESERVED, time += timeStep, 11);
-        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_UNRESERVED, time += timeStep, 12);
+        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_USED, time += timeStep, 8, 1);
+        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_DELETED, time += timeStep, 9, 1);
+        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_FREE, time += timeStep, 10, 1);
+        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_RESERVED, time += timeStep, 11, 1);
+        verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.MARK_UNRESERVED, time += timeStep, 12, 1);
         verify(dumper).typeAndId(LoggingIndexedIdGeneratorMonitor.Type.NORMALIZED, time += timeStep, 13);
         verify(dumper).type(LoggingIndexedIdGeneratorMonitor.Type.CLEARING_CACHE, time += timeStep);
         verify(dumper).type(LoggingIndexedIdGeneratorMonitor.Type.CLEARED_CACHE, time += timeStep);
@@ -191,6 +188,13 @@ class LoggingIndexedIdGeneratorMonitorTest {
             }
 
             @Override
+            public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id, int numberOfIds) {
+                int intId = toIntExact(id);
+                assertFalse(ids.get(intId));
+                ids.set(intId);
+            }
+
+            @Override
             public void typeAndTwoIds(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id1, long id2) {}
         };
         LoggingIndexedIdGeneratorMonitor.dump(fs, file, dumper);
@@ -240,6 +244,14 @@ class LoggingIndexedIdGeneratorMonitorTest {
 
             @Override
             public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id) {
+                if (lastId.longValue() != -1) {
+                    assertTrue(id > lastId.longValue());
+                }
+                lastId.setValue(id);
+            }
+
+            @Override
+            public void typeAndId(LoggingIndexedIdGeneratorMonitor.Type type, long time, long id, int numberOfIds) {
                 if (lastId.longValue() != -1) {
                     assertTrue(id > lastId.longValue());
                 }

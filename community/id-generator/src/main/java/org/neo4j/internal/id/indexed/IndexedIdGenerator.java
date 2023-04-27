@@ -96,9 +96,7 @@ public class IndexedIdGenerator implements IdGenerator {
 
         void markedAsReserved(long markedId, int numberOfIds);
 
-        void markedAsUnreserved(long markedId);
-
-        void markedAsDeletedAndFree(long markedId);
+        void markedAsUnreserved(long markedId, int numberOfIds);
 
         void markSessionDone();
 
@@ -140,10 +138,7 @@ public class IndexedIdGenerator implements IdGenerator {
             public void markedAsReserved(long markedId, int numberOfIds) {}
 
             @Override
-            public void markedAsUnreserved(long markedId) {}
-
-            @Override
-            public void markedAsDeletedAndFree(long markedId) {}
+            public void markedAsUnreserved(long markedId, int numberOfIds) {}
 
             @Override
             public void markSessionDone() {}

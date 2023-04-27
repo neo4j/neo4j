@@ -34,7 +34,6 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.LongPredicate;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.internal.helpers.Args;
@@ -55,7 +54,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
     private static final String ARG_TOFILE = "tofile";
     private static final String ARG_FILTER = "filter";
 
-    private static final LongPredicate NO_FILTER = id -> true;
+    private static final IdFilter NO_FILTER = (id, numberOfIds) -> true;
     private static final Type[] TYPES = Type.values();
     static final int HEADER_SIZE = Byte.BYTES + Long.BYTES;
 
@@ -115,47 +114,42 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
 
     @Override
     public synchronized void allocatedFromHigh(long allocatedId, int numberOfIds) {
-        putTypeAndId(Type.ALLOCATE_HIGH, allocatedId);
+        putTypeAndId(Type.ALLOCATE_HIGH, allocatedId, numberOfIds);
     }
 
     @Override
     public synchronized void allocatedFromReused(long allocatedId, int numberOfIds) {
-        putTypeAndId(Type.ALLOCATE_REUSED, allocatedId);
+        putTypeAndId(Type.ALLOCATE_REUSED, allocatedId, numberOfIds);
     }
 
     @Override
     public synchronized void cached(long cachedId, int numberOfIds) {
-        putTypeAndTwoIds(Type.CACHED, cachedId, numberOfIds);
+        putTypeAndId(Type.CACHED, cachedId, numberOfIds);
     }
 
     @Override
     public synchronized void markedAsUsed(long markedId, int numberOfIds) {
-        putTypeAndId(Type.MARK_USED, markedId);
+        putTypeAndId(Type.MARK_USED, markedId, numberOfIds);
     }
 
     @Override
     public synchronized void markedAsDeleted(long markedId, int numberOfIds) {
-        putTypeAndId(Type.MARK_DELETED, markedId);
+        putTypeAndId(Type.MARK_DELETED, markedId, numberOfIds);
     }
 
     @Override
     public synchronized void markedAsFree(long markedId, int numberOfIds) {
-        putTypeAndId(Type.MARK_FREE, markedId);
+        putTypeAndId(Type.MARK_FREE, markedId, numberOfIds);
     }
 
     @Override
     public synchronized void markedAsReserved(long markedId, int numberOfIds) {
-        putTypeAndId(Type.MARK_RESERVED, markedId);
+        putTypeAndId(Type.MARK_RESERVED, markedId, numberOfIds);
     }
 
     @Override
-    public synchronized void markedAsUnreserved(long markedId) {
-        putTypeAndId(Type.MARK_UNRESERVED, markedId);
-    }
-
-    @Override
-    public synchronized void markedAsDeletedAndFree(long markedId) {
-        putTypeAndId(Type.MARK_DELETED_AND_FREE, markedId);
+    public synchronized void markedAsUnreserved(long markedId, int numberOfIds) {
+        putTypeAndId(Type.MARK_UNRESERVED, markedId, numberOfIds);
     }
 
     @Override
@@ -248,6 +242,17 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         }
     }
 
+    private void putTypeAndId(Type type, long id, int numberOfIds) {
+        try {
+            putEntryHeader(type);
+            channel.putLong(id);
+            channel.putInt(numberOfIds);
+            position.addAndGet(HEADER_SIZE + Long.BYTES + Integer.BYTES);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
     private void putTypeAndId(Type type, long id) {
         try {
             putEntryHeader(type);
@@ -308,7 +313,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         Path path = Path.of(arguments.orphans().get(0));
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         String filterArg = arguments.get(ARG_FILTER, null);
-        LongPredicate filter = filterArg != null ? parseFilter(filterArg) : NO_FILTER;
+        var filter = filterArg != null ? parseFilter(filterArg) : NO_FILTER;
         PrintStream out = System.out;
         boolean redirectsToFile = arguments.getBoolean(ARG_TOFILE);
         if (redirectsToFile) {
@@ -351,16 +356,14 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
                     case CLEARING_CACHE, CLEARED_CACHE, CLOSED -> dumper.type(type, time);
                     case ALLOCATE_HIGH,
                             ALLOCATE_REUSED,
+                            CACHED,
                             MARK_USED,
                             MARK_DELETED,
                             MARK_FREE,
                             MARK_RESERVED,
-                            MARK_UNRESERVED,
-                            MARK_DELETED_AND_FREE,
-                            NORMALIZED,
-                            BRIDGED -> dumper.typeAndId(type, time, channel.getLong());
-                    case CACHED, OPENED, CHECKPOINT -> dumper.typeAndTwoIds(
-                            type, time, channel.getLong(), channel.getLong());
+                            MARK_UNRESERVED -> dumper.typeAndId(type, time, channel.getLong(), channel.getInt());
+                    case NORMALIZED, BRIDGED -> dumper.typeAndId(type, time, channel.getLong());
+                    case OPENED, CHECKPOINT -> dumper.typeAndTwoIds(type, time, channel.getLong(), channel.getLong());
                     default -> System.out.println("Unknown type " + type);
                 }
             }
@@ -369,7 +372,7 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         }
     }
 
-    private static Filter parseFilter(String arg) {
+    private static IdFilter parseFilter(String arg) {
         String[] ids = arg.split(",");
         long[] result = new long[ids.length];
         for (int i = 0; i < ids.length; i++) {
@@ -378,17 +381,17 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         return new Filter(result);
     }
 
-    private static class Filter implements LongPredicate {
+    public static class Filter implements IdFilter {
         private final long[] ids;
 
-        Filter(long... ids) {
+        public Filter(long... ids) {
             this.ids = ids;
         }
 
         @Override
-        public boolean test(long value) {
-            for (long id : ids) {
-                if (id == value) {
+        public boolean test(long id, int numberOfIds) {
+            for (long testId : ids) {
+                if (testId >= id && testId < id + numberOfIds) {
                     return true;
                 }
             }
@@ -403,14 +406,20 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
 
         void typeAndId(Type type, long time, long id);
 
+        void typeAndId(Type type, long time, long id, int numberOfIds);
+
         void typeAndTwoIds(Type type, long time, long id1, long id2);
     }
 
-    private static class Printer implements Dumper {
-        private final PrintStream out;
-        private final LongPredicate filter;
+    interface IdFilter {
+        boolean test(long id, int numberOfIds);
+    }
 
-        Printer(PrintStream out, LongPredicate filter) {
+    public static class Printer implements Dumper {
+        private final PrintStream out;
+        private final IdFilter filter;
+
+        public Printer(PrintStream out, IdFilter filter) {
             this.out = out;
             this.filter = filter;
         }
@@ -427,8 +436,15 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
 
         @Override
         public void typeAndId(Type type, long time, long id) {
-            if (filter.test(id)) {
+            if (filter.test(id, 1)) {
                 out.printf("%s %s [%d]%n", date(time), type.shortName, id);
+            }
+        }
+
+        @Override
+        public void typeAndId(Type type, long time, long id, int numberOfIds) {
+            if (filter.test(id, numberOfIds)) {
+                out.printf("%s %s [%d-%d]%n", date(time), type.shortName, id, id + numberOfIds - 1);
             }
         }
 
@@ -449,15 +465,14 @@ public class LoggingIndexedIdGeneratorMonitor implements IndexedIdGenerator.Moni
         MARK_FREE("MF"),
         MARK_RESERVED("MR"),
         MARK_UNRESERVED("MX"),
-        MARK_DELETED_AND_FREE("MA"),
         NORMALIZED("NO"),
         BRIDGED("BR"),
         CHECKPOINT("Checkpoint"),
         CLEARING_CACHE("ClearCacheStart"),
         CLEARED_CACHE("ClearCacheEnd");
 
-        byte id;
-        String shortName;
+        final byte id;
+        final String shortName;
 
         Type(String shortName) {
             this.id = (byte) ordinal();
