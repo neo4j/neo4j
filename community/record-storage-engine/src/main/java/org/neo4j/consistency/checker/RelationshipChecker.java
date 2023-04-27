@@ -22,7 +22,7 @@ package org.neo4j.consistency.checker;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.consistency.checker.NodeChecker.compareTwoSortedLongArrays;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 import java.util.Iterator;
@@ -137,7 +137,7 @@ class RelationshipChecker implements Checker {
                                 .freeIdsIterator(fromRelationshipId, toRelationshipId)
                         : null) {
             CacheAccess.Client client = cacheAccess.client();
-            MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
+            IntObjectHashMap<Value> propertyValues = new IntObjectHashMap<>();
             Iterator<EntityTokenRange> relationshipTypeRangeIterator = relationshipTypeReader.iterator();
             EntityTokenIndexCheckState typeIndexState = new EntityTokenIndexCheckState(null, fromRelationshipId - 1);
             long nextFreeId = NULL_REFERENCE.longValue();
@@ -221,7 +221,7 @@ class RelationshipChecker implements Checker {
 
                     // Properties
                     typeHolder[0] = relationshipRecord.getType();
-                    lightClear(propertyValues);
+                    propertyValues = lightReplace(propertyValues);
                     boolean propertyChainIsOk =
                             property.read(propertyValues, relationshipRecord, reporter::forRelationship, storeCursors);
                     if (propertyChainIsOk) {

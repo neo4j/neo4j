@@ -21,7 +21,7 @@ package org.neo4j.consistency.checker;
 
 import static java.lang.Math.toIntExact;
 import static java.lang.String.format;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.internal.kernel.api.IndexQueryConstraints.unconstrained;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
@@ -54,11 +54,11 @@ import org.neo4j.values.storable.Values;
 class SchemaComplianceChecker implements AutoCloseable {
     private final CheckerContext context;
     private final IntObjectMap<MutableIntSet> mandatoryProperties;
-    private final MutableIntSet reportedMissingMandatoryPropertyKeys = new IntHashSet();
     private final IndexAccessors.IndexReaders indexReaders;
     private final Iterable<IndexDescriptor> indexes;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
+    private IntHashSet reportedMissingMandatoryPropertyKeys = new IntHashSet();
 
     SchemaComplianceChecker(
             CheckerContext context,
@@ -185,7 +185,7 @@ class SchemaComplianceChecker implements AutoCloseable {
             long[] entityTokenIds,
             Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reporter) {
         if (!mandatoryProperties.isEmpty()) {
-            lightClear(reportedMissingMandatoryPropertyKeys);
+            reportedMissingMandatoryPropertyKeys = lightReplace(reportedMissingMandatoryPropertyKeys);
             for (long entityToken : entityTokenIds) {
                 MutableIntSet mandatoryPropertyKeysForEntityToken = mandatoryProperties.get(toIntExact(entityToken));
                 if (mandatoryPropertyKeysForEntityToken != null) {

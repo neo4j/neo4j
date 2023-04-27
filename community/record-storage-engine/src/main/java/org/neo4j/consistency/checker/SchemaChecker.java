@@ -20,7 +20,7 @@
 package org.neo4j.consistency.checker;
 
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.consistency.checker.RecordLoading.safeLoadDynamicRecordChain;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
@@ -31,11 +31,10 @@ import java.util.function.Function;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
-import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.SchemaRuleKey;
 import org.neo4j.consistency.checking.index.IndexAccessors;
@@ -203,7 +202,7 @@ class SchemaChecker {
                 try {
                     reader.read(id);
                     if (record.inUse()) {
-                        lightClear(propertyValues);
+                        propertyValues = lightReplace(propertyValues);
                         boolean propertyChainIsOk =
                                 propertyReader.read(propertyValues, record, reporter::forSchema, storeCursors);
                         if (!propertyChainIsOk) {
@@ -298,7 +297,7 @@ class SchemaChecker {
         DynamicStringStore nameStore = store.getNameStore();
         DynamicRecord nameRecord = nameStore.newRecord();
         long highId = store.getIdGenerator().getHighId();
-        MutableLongSet seenNameRecordIds = LongSets.mutable.empty();
+        LongHashSet seenNameRecordIds = new LongHashSet();
         int blockSize = store.getNameStore().getRecordDataSize();
         try (var cursorContext = contextFactory.create(CONSISTENCY_TOKEN_CHECKER_TAG);
                 RecordReader<R> tokenReader = new RecordReader<>(store, true, cursorContext);
@@ -307,6 +306,7 @@ class SchemaChecker {
             for (long id = 0; id < highId; id++) {
                 R record = tokenReader.read(id);
                 if (record.inUse() && !NULL_REFERENCE.is(record.getNameId())) {
+                    seenNameRecordIds = lightReplace(seenNameRecordIds);
                     safeLoadDynamicRecordChain(
                             r -> {},
                             nameReader,

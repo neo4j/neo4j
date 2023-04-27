@@ -20,7 +20,7 @@
 package org.neo4j.consistency.checker;
 
 import static org.neo4j.consistency.checker.RecordLoading.entityIntersectionWithSchema;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.consistency.checker.SchemaComplianceChecker.areValuesSupportedByIndex;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -322,7 +322,7 @@ public abstract class IndexChecker<Record extends PrimitiveRecord> implements Ch
                 if (entityRecord.inUse()) {
                     long[] entityTokens =
                             getEntityTokens(noReportingContext, storeCursors, entityRecord, entityTokenReader);
-                    lightClear(allValues);
+                    allValues = lightReplace(allValues);
                     boolean propertyChainRead = entityTokens != null
                             && propertyReader.read(
                                     allValues,

@@ -22,16 +22,14 @@ package org.neo4j.consistency.checker;
 import static org.neo4j.consistency.checker.RecordLoading.NO_DYNAMIC_HANDLER;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidInternalToken;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.consistency.checker.RecordLoading.safeLoadDynamicRecordChain;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.function.Function;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -58,14 +56,14 @@ class SafePropertyChainReader implements AutoCloseable {
     private final RecordReader<PropertyRecord> propertyReader;
     private final RecordReader<DynamicRecord> stringReader;
     private final RecordReader<DynamicRecord> arrayReader;
-    private final MutableLongSet seenRecords;
-    private final MutableLongSet seenDynamicRecordIds;
-    private final List<DynamicRecord> dynamicRecords;
     private final ConsistencyReport.Reporter reporter;
     private final CheckerContext context;
     private final NeoStores neoStores;
     private final boolean internalTokens;
     private final FreeIdCache freeIdCache;
+    private LongHashSet seenRecords;
+    private LongHashSet seenDynamicRecordIds;
+    private ArrayList<DynamicRecord> dynamicRecords;
 
     SafePropertyChainReader(CheckerContext context, CursorContext cursorContext) {
         this(context, cursorContext, false);
@@ -104,7 +102,7 @@ class SafePropertyChainReader implements AutoCloseable {
             PRIMITIVE entity,
             Function<PRIMITIVE, ConsistencyReport.PrimitiveConsistencyReport> primitiveReporter,
             StoreCursors storeCursors) {
-        lightClear(seenRecords);
+        seenRecords = lightReplace(seenRecords);
         long propertyRecordId = entity.getNextProp();
         long previousRecordId = NULL_REFERENCE.longValue();
         boolean chainIsOk = true;
@@ -175,7 +173,8 @@ class SafePropertyChainReader implements AutoCloseable {
                         try {
                             switch (type) {
                                 case STRING:
-                                    dynamicRecords.clear();
+                                    dynamicRecords = lightReplace(dynamicRecords);
+                                    seenDynamicRecordIds = lightReplace(seenDynamicRecordIds);
                                     if (safeLoadDynamicRecordChain(
                                             record -> dynamicRecords.add(new DynamicRecord(record)),
                                             stringReader,
@@ -198,7 +197,8 @@ class SafePropertyChainReader implements AutoCloseable {
                                     }
                                     break;
                                 case ARRAY:
-                                    dynamicRecords.clear();
+                                    dynamicRecords = lightReplace(dynamicRecords);
+                                    seenDynamicRecordIds = lightReplace(seenDynamicRecordIds);
                                     if (safeLoadDynamicRecordChain(
                                             record -> dynamicRecords.add(new DynamicRecord(record)),
                                             arrayReader,

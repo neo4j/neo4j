@@ -25,7 +25,7 @@ import static org.apache.commons.lang3.math.NumberUtils.max;
 import static org.apache.commons.lang3.math.NumberUtils.min;
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.consistency.checker.RecordLoading.checkValidToken;
-import static org.neo4j.consistency.checker.RecordLoading.lightClear;
+import static org.neo4j.consistency.checker.RecordLoading.lightReplace;
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.token.api.TokenConstants.ANY_LABEL;
@@ -143,7 +143,7 @@ class NodeChecker implements Checker {
                 var localProgress = nodeProgress.threadLocalReporter();
                 var freeIdsIterator =
                         context.neoStores.getNodeStore().getIdGenerator().freeIdsIterator(fromNodeId, toNodeId)) {
-            MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
+            IntObjectHashMap<Value> propertyValues = new IntObjectHashMap<>();
             CacheAccess.Client client = context.cacheAccess.client();
             long[] nextRelCacheFields =
                     new long[] {-1, -1, 1 /*inUse*/, 0, 0, 1 /*note that this needs to be checked*/, 0, 0};
@@ -206,7 +206,7 @@ class NodeChecker implements Checker {
                 nextRelCacheFields[CacheSlots.NodeLink.SLOT_HAS_SINGLE_LABEL] = CacheSlots.longOf(hasSingleLabel);
 
                 // Properties
-                lightClear(propertyValues);
+                propertyValues = lightReplace(propertyValues);
                 boolean propertyChainIsOk = property.read(propertyValues, nodeRecord, reporter::forNode, storeCursors);
 
                 // Label index
