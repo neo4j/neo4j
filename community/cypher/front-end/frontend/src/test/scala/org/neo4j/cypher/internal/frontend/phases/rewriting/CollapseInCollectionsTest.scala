@@ -27,8 +27,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CollapseInCollectionsTest extends CypherFunSuite with AstRewritingTestSupport with RewritePhaseTest {
 
+  final private val cnfNormalizerTransformer = CNFNormalizerTest.getTransformer(Nil)
+
   override def rewriterPhaseUnderTest: Transformer[BaseContext, BaseState, BaseState] =
-    CNFNormalizerTest.getTransformer andThen collapseMultipleInPredicates
+    cnfNormalizerTransformer andThen collapseMultipleInPredicates
 
   test("should collapse collection containing ConstValues for id function") {
     assertRewritten(

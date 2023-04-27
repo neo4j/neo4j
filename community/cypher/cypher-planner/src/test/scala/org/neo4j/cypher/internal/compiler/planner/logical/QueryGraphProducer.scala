@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.frontend.phases.ASTRewriter
 import org.neo4j.cypher.internal.frontend.phases.Namespacer
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.collapseMultipleInPredicates
-import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.CNFNormalizerTest
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.rewriteEqualityToInPredicate
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
@@ -108,10 +107,10 @@ trait QueryGraphProducer {
     )
     val output = (
       RewriteProcedureCalls andThen
-        SemanticAnalysis(warn = false) andThen
+        SemanticAnalysis(warn = false, semanticFeatures: _*) andThen
         Namespacer andThen
         rewriteEqualityToInPredicate andThen
-        CNFNormalizerTest.getTransformer andThen
+        cnfNormalizerTransformer andThen
         collapseMultipleInPredicates
     ).transform(state, context)
 

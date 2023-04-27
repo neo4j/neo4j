@@ -58,6 +58,7 @@ import org.scalatestplus.mockito.MockitoSugar
 
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
 
+  final private val cnfNormalizerTransformer = CNFNormalizerTest.getTransformer(Nil)
   var rewriter: Rewriter = _
   var astRewritingMonitor: AstRewritingMonitor = _
 
@@ -189,7 +190,7 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
       case e: Expression =>
         val initialState =
           InitialState("", None, NoPlannerName, new AnonymousVariableNameGenerator()).withStatement(TestStatement(e))
-        val finalState = CNFNormalizerTest.getTransformer.transform(initialState, new TestContext(monitors))
+        val finalState = cnfNormalizerTransformer.transform(initialState, new TestContext(monitors))
         val expression = finalState.statement() match {
           case TestStatement(e) => e
           case x                => fail(s"Expected TestStatement but was ${x.getClass}")
@@ -202,12 +203,13 @@ class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
 
 object CNFNormalizerTest {
 
-  case object SemanticWrapper extends Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step {
+  case class SemanticWrapper(semanticFeatures: List[SemanticFeature])
+      extends Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step {
 
     private val transformer =
       SemanticAnalysis.getTransformer(
         pushdownPropertyReads = false,
-        Seq(SemanticFeature.QuantifiedPathPatterns)
+        semanticFeatures
       )
 
     override def preConditions: Set[Condition] = SemanticAnalysis.preConditions
@@ -221,21 +223,21 @@ object CNFNormalizerTest {
     override def name: String = transformer.name
   }
 
-  val orderedSteps: Seq[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step] =
-    StepSequencer(ListStepAccumulator[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step]())
-      .orderSteps(
-        Set[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step](
-          transitiveEqualities,
-          SemanticWrapper
-        ) ++ steps,
-        initialConditions = Set(
-          BaseContains[Statement],
-          SemanticAnalysisPossible
+  def getTransformer(semanticFeatures: List[SemanticFeature]): Transformer[BaseContext, BaseState, BaseState] = {
+    val orderedSteps: Seq[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step] =
+      StepSequencer(ListStepAccumulator[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step]())
+        .orderSteps(
+          Set[Transformer[BaseContext, BaseState, BaseState] with StepSequencer.Step](
+            transitiveEqualities,
+            SemanticWrapper(semanticFeatures)
+          ) ++ steps,
+          initialConditions = Set(
+            BaseContains[Statement],
+            SemanticAnalysisPossible
+          )
         )
-      )
-      .steps
+        .steps
 
-  def getTransformer: Transformer[BaseContext, BaseState, BaseState] = {
     orderedSteps.reduceLeft[Transformer[BaseContext, BaseState, BaseState]]((t1, t2) => t1 andThen t2)
   }
 }

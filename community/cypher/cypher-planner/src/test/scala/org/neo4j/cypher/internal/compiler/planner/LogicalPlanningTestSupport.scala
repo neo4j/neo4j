@@ -410,6 +410,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   val config: CypherPlannerConfiguration = CypherPlannerConfiguration.defaults()
+  def semanticFeatures: List[SemanticFeature] = Nil
 
   def buildSinglePlannerQuery(
     query: String,
@@ -422,17 +423,19 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     }
   }
 
-  val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
+  lazy val cnfNormalizerTransformer = CNFNormalizerTest.getTransformer(semanticFeatures)
+
+  lazy val pipeLine: Transformer[PlannerContext, BaseState, LogicalPlanState] =
     Parse andThen
       PreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, SemanticFeature.QuantifiedPathPatterns) andThen
+      SemanticAnalysis(warn = true, semanticFeatures: _*) andThen
       AstRewriting() andThen
       RewriteProcedureCalls andThen
-      SemanticAnalysis(warn = true, SemanticFeature.QuantifiedPathPatterns) andThen
+      SemanticAnalysis(warn = true, semanticFeatures: _*) andThen
       Namespacer andThen
       ProjectNamedPathsRewriter andThen
       rewriteEqualityToInPredicate andThen
-      CNFNormalizerTest.getTransformer andThen
+      cnfNormalizerTransformer andThen
       collapseMultipleInPredicates andThen
       CreatePlannerQuery andThen
       NameDeduplication

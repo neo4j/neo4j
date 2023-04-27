@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.ast.Hint
 import org.neo4j.cypher.internal.ast.ProjectingUnionAll
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.UsingIndexHint
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.ProcedureCallProjection
@@ -76,6 +77,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
+  override val semanticFeatures: List[SemanticFeature] = List(SemanticFeature.QuantifiedPathPatterns)
   private val patternRel = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
   private val nProp = prop("n", "prop")
 
