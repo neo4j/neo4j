@@ -25,7 +25,6 @@ import static org.apache.commons.io.IOUtils.resourceToString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.shell.expect.ExpectTestExtension.CYPHER_SHELL_PATH;
-import static org.neo4j.shell.expect.ExpectTestExtension.DEBUG;
 import static org.neo4j.shell.expect.InteractionAssertion.assertEqualInteraction;
 
 import java.io.IOException;
@@ -49,7 +48,6 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
  * Extension to run tests using expect. Will start docker containers with neo4j and expect. Use runTestCase to run expect scenarios.
  */
 public class ExpectTestExtension implements BeforeAllCallback, AfterAllCallback {
-    static final boolean DEBUG = false; // Hello, expect also has debug options that you might want to consider
     static String CYPHER_SHELL_PATH = "/cypher-shell/bin/cypher-shell";
     private final String neo4jDockerTag;
     private NeoContainer neo4jContainer;
@@ -178,15 +176,16 @@ class InteractionAssertion {
     static void assertEqualInteraction(String actual, String expected) {
         final var cleanedActual = cleanActual(actual).collect(Collectors.joining(System.lineSeparator()));
         final var cleanedExpected = cleanExpected(expected).collect(Collectors.joining(System.lineSeparator()));
-        if (DEBUG) {
-            debugPrint(actual, "Actual Interaction");
-            debugPrint(expected, "Expected Interaction");
-            debugPrint(cleanedActual, "Actual Interaction Cleaned");
-            debugPrint(cleanedExpected, "Expected Interaction Cleaned");
-            // Can be helpful in debugging if there are ansi codes
-            // assertEquals(expected, actual);
+        if (!cleanedExpected.equals(cleanedActual)) {
+            String message =
+                    "Actual interaction was not equal to expected. Hint: expect has debug options you might want to consider"
+                            + System.lineSeparator()
+                            + debugString(cleanedActual, "Actual Interaction Cleaned")
+                            + debugString(cleanedExpected, "Expected Interaction Cleaned")
+                            + debugString(actual, "Actual Interaction")
+                            + debugString(expected, "Expected Interaction");
+            assertEquals(message, cleanedExpected, cleanedActual);
         }
-        assertEquals("\nHint, set debug flag for raw outputs\n", cleanedExpected, cleanedActual);
     }
 
     private static Stream<String> cleanActual(String input) {
@@ -233,11 +232,24 @@ class InteractionAssertion {
         return ANSI_CODE_PATTERN.matcher(input).replaceAll("");
     }
 
-    private static void debugPrint(String content, String heading) {
+    private static CharSequence debugString(String content, String heading) {
         int size = (80 - heading.length() - 2) / 2;
-        System.out.println("=".repeat(size) + " " + heading + " " + "=".repeat(size));
-        System.out.println(content);
-        final var end = "End of " + heading;
-        System.out.println("=".repeat(size - 3) + " " + end + " " + "=".repeat(size - 2));
+        final var nl = System.lineSeparator();
+        return new StringBuilder(content.length() + 80 * 2 + 12)
+                .append("=".repeat(size))
+                .append(" ")
+                .append(heading)
+                .append(" ")
+                .append("=".repeat(size))
+                .append(nl)
+                .append(content)
+                .append(nl)
+                .append("=".repeat(size - 3))
+                .append(" ")
+                .append("End of ")
+                .append(heading)
+                .append(" ")
+                .append("=".repeat(size - 2))
+                .append(nl);
     }
 }
