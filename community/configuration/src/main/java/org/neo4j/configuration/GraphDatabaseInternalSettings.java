@@ -19,16 +19,6 @@
  */
 package org.neo4j.configuration;
 
-import inet.ipaddr.IPAddressString;
-
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
-import java.util.Set;
-
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.graphdb.config.Setting;
-
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
@@ -52,6 +42,14 @@ import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+
+import inet.ipaddr.IPAddressString;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.graphdb.config.Setting;
 
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration {
