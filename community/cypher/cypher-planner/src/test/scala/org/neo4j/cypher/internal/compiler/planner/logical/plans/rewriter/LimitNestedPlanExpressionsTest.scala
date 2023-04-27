@@ -129,11 +129,27 @@ class LimitNestedPlanExpressionsTest extends CypherFunSuite with LogicalPlanning
     ci.endoRewrite(rewriter) should equal(ci)
   }
 
+  test("should not insert Limit if container index references variable") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val ci = ContainerIndex(nestedPlan, varFor("x"))(pos)
+
+    ci.endoRewrite(rewriter) should equal(ci)
+  }
+
   test("should not insert Limit on top of PartialTop in list slice to") {
     val argument: LogicalPlan = Argument(Set("a"))
     val partialTop = PartialTop(argument, Seq.empty, Seq.empty, literalInt(1))
     val nestedPlan = NestedPlanExpression.collect(partialTop, aLit, aLit)(pos)
     val ls = ListSlice(nestedPlan, None, Some(SignedDecimalIntegerLiteral("4")(pos)))(pos)
+
+    ls.endoRewrite(rewriter) should equal(ls)
+  }
+
+  test("should not insert Limit if list slice to references variable") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val ls = ListSlice(nestedPlan, None, Some(varFor("x")))(pos)
 
     ls.endoRewrite(rewriter) should equal(ls)
   }
@@ -146,6 +162,18 @@ class LimitNestedPlanExpressionsTest extends CypherFunSuite with LogicalPlanning
       nestedPlan,
       Some(SignedDecimalIntegerLiteral("2")(pos)),
       Some(SignedDecimalIntegerLiteral("4")(pos))
+    )(pos)
+
+    ls.endoRewrite(rewriter) should equal(ls)
+  }
+
+  test("should not insert Limit if list slice from/to references variable") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val ls = ListSlice(
+      nestedPlan,
+      Some(SignedDecimalIntegerLiteral("2")(pos)),
+      Some(varFor("x"))
     )(pos)
 
     ls.endoRewrite(rewriter) should equal(ls)

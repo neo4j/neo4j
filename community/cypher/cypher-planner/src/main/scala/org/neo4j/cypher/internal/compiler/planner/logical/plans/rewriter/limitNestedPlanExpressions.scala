@@ -70,14 +70,16 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position)
 
-    case ci @ ContainerIndex(npe @ NestedPlanCollectExpression(plan, _, _), index) if shouldInsertLimitOnTopOf(plan) =>
+    case ci @ ContainerIndex(npe @ NestedPlanCollectExpression(plan, _, _), index)
+      if shouldInsertLimitOnTopOf(plan) && index.isConstantForQuery =>
       val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), index)(npe.position))(
         otherAttributes.copy(plan.id)
       )
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       ci.copy(expr = npe.copy(newPlan)(npe.position))(ci.position)
 
-    case ls @ ListSlice(npe @ NestedPlanCollectExpression(plan, _, _), _, Some(to)) if shouldInsertLimitOnTopOf(plan) =>
+    case ls @ ListSlice(npe @ NestedPlanCollectExpression(plan, _, _), _, Some(to))
+      if shouldInsertLimitOnTopOf(plan) && to.isConstantForQuery =>
       val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), to)(npe.position))(
         otherAttributes.copy(plan.id)
       )
