@@ -37,11 +37,18 @@ public class TestIndexDescriptorFactory {
     private TestIndexDescriptorFactory() {}
 
     public static IndexDescriptor forSchema(SchemaDescriptor schema) {
-        return forSchema(IndexType.RANGE, schema);
+        return forSchema(randomId(), schema);
+    }
+
+    public static IndexDescriptor forSchema(long id, SchemaDescriptor schema) {
+        return forSchema(id, IndexType.RANGE, schema);
     }
 
     public static IndexDescriptor forSchema(IndexType indexType, SchemaDescriptor schema) {
-        final var id = randomId();
+        return forSchema(randomId(), indexType, schema);
+    }
+
+    public static IndexDescriptor forSchema(long id, IndexType indexType, SchemaDescriptor schema) {
         final var index = IndexPrototype.forSchema(schema)
                 .withIndexType(indexType)
                 .withName("index_" + id)

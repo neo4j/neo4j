@@ -38,6 +38,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -138,7 +139,11 @@ class IndexUsageStatsIT {
         triggerReportUsageStatistics();
         try (var tx = db.beginTransaction(EXPLICIT, AUTH_DISABLED)) {
             var ktx = tx.kernelTransaction();
-            var nonExistingIndex = TestIndexDescriptorFactory.forLabel(1, 42);
+
+            final var descriptor = SchemaDescriptors.forLabel(1, 42);
+            // pick an index ID above the 3 that currently do exist
+            final var nonExistingIndex = TestIndexDescriptorFactory.forSchema(13, descriptor);
+
             var stats = ktx.schemaRead().indexUsageStats(nonExistingIndex);
             assertThat(stats.trackedSince()).isEqualTo(0);
             assertThat(stats.lastRead()).isEqualTo(0);
