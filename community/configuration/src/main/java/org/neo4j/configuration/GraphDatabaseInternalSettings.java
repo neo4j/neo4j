@@ -19,6 +19,16 @@
  */
 package org.neo4j.configuration;
 
+import inet.ipaddr.IPAddressString;
+
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.List;
+import java.util.Set;
+
+import org.neo4j.annotations.service.ServiceProvider;
+import org.neo4j.graphdb.config.Setting;
+
 import static java.time.Duration.ofDays;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofMinutes;
@@ -42,14 +52,6 @@ import static org.neo4j.configuration.SettingValueParsers.ofEnum;
 import static org.neo4j.configuration.SettingValueParsers.setOf;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.io.ByteUnit.mebiBytes;
-
-import inet.ipaddr.IPAddressString;
-import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
-import java.util.Set;
-import org.neo4j.annotations.service.ServiceProvider;
-import org.neo4j.graphdb.config.Setting;
 
 @ServiceProvider
 public class GraphDatabaseInternalSettings implements SettingsDeclaration {
@@ -1039,7 +1041,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("Use size of lists and strings of provided parameter values in planning")
     public static final Setting<Boolean> cypher_size_hint_parameters =
-            newBuilder("internal.cypher.use_parameter_size", BOOL, false).build();
+            newBuilder("internal.cypher.use_parameter_size", BOOL, true).build();
 
     @Internal
     @Description(
