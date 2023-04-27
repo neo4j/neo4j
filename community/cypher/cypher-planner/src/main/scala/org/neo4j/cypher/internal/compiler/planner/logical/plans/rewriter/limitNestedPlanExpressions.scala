@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Head
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -50,13 +51,23 @@ case class limitNestedPlanExpressions(cardinalities: Cardinalities, otherAttribu
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       fi.copy(args = IndexedSeq(npe.copy(newPlan)(npe.position)))(fi.position)
 
-    case ci@ContainerIndex(npe@NestedPlanCollectExpression(plan, _, _), index) if !plan.isInstanceOf[Limit] =>
-      val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), index)(npe.position))(otherAttributes.copy(plan.id))
+    case ci @ ContainerIndex(npe @ NestedPlanCollectExpression(plan, _, _), index)
+      if !plan.isInstanceOf[Limit] && !index.folder.treeExists {
+        case _:Variable => true
+      } =>
+      val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), index)(npe.position))(
+        otherAttributes.copy(plan.id)
+      )
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       ci.copy(expr = npe.copy(newPlan)(npe.position))(ci.position)
 
-    case ls@ListSlice(npe@NestedPlanCollectExpression(plan, _, _), _, Some(to)) if !plan.isInstanceOf[Limit] =>
-      val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), to)(npe.position))(otherAttributes.copy(plan.id))
+    case ls @ ListSlice(npe @ NestedPlanCollectExpression(plan, _, _), _, Some(to))
+      if !plan.isInstanceOf[Limit] && !to.folder.treeExists {
+        case _: Variable => true
+      } =>
+      val newPlan = planLimitOnTopOf(plan, Add(SignedDecimalIntegerLiteral("1")(npe.position), to)(npe.position))(
+        otherAttributes.copy(plan.id)
+      )
       cardinalities.set(newPlan.id, Cardinality.SINGLE)
       ls.copy(list = npe.copy(newPlan)(npe.position))(ls.position)
   })

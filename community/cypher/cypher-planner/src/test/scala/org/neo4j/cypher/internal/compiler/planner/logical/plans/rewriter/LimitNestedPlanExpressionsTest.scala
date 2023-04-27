@@ -79,4 +79,32 @@ class LimitNestedPlanExpressionsTest extends CypherFunSuite with LogicalPlanning
         aLit, aLit)(pos), Some(SignedDecimalIntegerLiteral("2")(pos)), Some(SignedDecimalIntegerLiteral("4")(pos)))(pos)
     )
   }
+
+  test("should not insert Limit if container index references variable") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val ci = ContainerIndex(nestedPlan, varFor("x"))(pos)
+
+    ci.endoRewrite(rewriter) should equal(ci)
+  }
+
+  test("should not insert Limit if list slice to references variable") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val ls = ListSlice(nestedPlan, None, Some(varFor("x")))(pos)
+
+    ls.endoRewrite(rewriter) should equal(ls)
+  }
+
+  test("should not insert Limit if list slice from/to references variable") {
+    val argument: LogicalPlan = Argument(Set("a"))
+    val nestedPlan = NestedPlanExpression.collect(argument, aLit, aLit)(pos)
+    val ls = ListSlice(
+      nestedPlan,
+      Some(SignedDecimalIntegerLiteral("2")(pos)),
+      Some(varFor("x"))
+    )(pos)
+
+    ls.endoRewrite(rewriter) should equal(ls)
+  }
 }
