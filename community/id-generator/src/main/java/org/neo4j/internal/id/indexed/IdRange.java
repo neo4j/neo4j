@@ -217,15 +217,13 @@ class IdRange {
                 long rangeFirstId = key.getIdRangeIdx() * idsPerEntry;
                 long firstId = rangeFirstId + (long) i * BITSET_SIZE;
                 long lastId = Long.min(firstId + BITSET_SIZE, rangeFirstId + idsPerEntry) - 1;
-                throw new IllegalStateException(format(
-                        "Illegal addition ID state for range: %d (IDs %d-%d) transition%ninto: %s%nfrom: %s",
-                        key.getIdRangeIdx(), firstId, lastId, toPaddedBinaryString(into), toPaddedBinaryString(from)));
+                throw new IllegalIdTransitionException(key.getIdRangeIdx(), firstId, lastId, into, from);
             }
             // don't verify removal since we can't quite verify transitioning to USED since 0 is the default bit value
         }
     }
 
-    private static String toPaddedBinaryString(long bits) {
+    static String toPaddedBinaryString(long bits) {
         char[] padded =
                 StringUtils.leftPad(toBinaryString(bits), Long.SIZE, '0').toCharArray();
 
