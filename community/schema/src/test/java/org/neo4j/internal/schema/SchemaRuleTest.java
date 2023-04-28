@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.test.InMemoryTokens;
 
 class SchemaRuleTest {
@@ -172,6 +173,13 @@ class SchemaRuleTest {
             .withName("uniqueLabelConstraint2Named")
             .withId(5)
             .withOwnedIndexId(5);
+    private final ConstraintDescriptor nodeTypeConstraintIntBool = ConstraintDescriptorFactory.typeForSchema(
+            labelSchema, PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.BOOLEAN));
+    private final ConstraintDescriptor nodeTypeConstraintBoolInt = ConstraintDescriptorFactory.typeForSchema(
+            labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.INTEGER));
+    private final ConstraintDescriptor nodeTypeConstraintBoolString = ConstraintDescriptorFactory.typeForSchema(
+            labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING));
+
     private final InMemoryTokens lookup = new InMemoryTokens()
             .label(0, "La:bel")
             .label(1, "Label1")
@@ -202,6 +210,9 @@ class SchemaRuleTest {
         assertName(nodeKeyConstraint, "constraint_75ad9cd9");
         assertName(relKeyConstraint, "constraint_675015ed");
         assertName(existsRelTypeConstraint, "constraint_ef4bbcac");
+        assertName(nodeTypeConstraintIntBool, "constraint_6d996305");
+        assertName(nodeTypeConstraintBoolInt, "constraint_6d996305");
+        assertName(nodeTypeConstraintBoolString, "constraint_83c1f5d4");
         assertName(allLabelsPrototype, "index_f56fb29d");
         assertName(allRelTypesPrototype, "index_9625776f");
         assertName(textLabelPrototype, "index_e76ccd25");

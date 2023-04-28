@@ -38,4 +38,10 @@ public class PropertyTypeSet extends TreeSet<SchemaValueType> {
         set.addAll(Arrays.asList(types));
         return set;
     }
+
+    @Override
+    public int hashCode() {
+        // Use the types' serialization as basis for hash code to make it stable in the face of changing type ordering
+        return stream().mapToInt(type -> type.serialize().hashCode()).sum();
+    }
 }

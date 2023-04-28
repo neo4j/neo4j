@@ -88,6 +88,14 @@ public class SchemaNameUtil {
                 key = hf.update(
                         key, constraint.asIndexBackedConstraint().indexType().getTypeNumber());
             }
+            if (constraint.enforcesPropertyType()) {
+                key = hf.update(
+                        key,
+                        constraint
+                                .asPropertyTypeConstraint()
+                                .allowedPropertyTypes()
+                                .hashCode());
+            }
             return String.format("constraint_%x", hf.toInt(hf.finalise(key)));
         }
         throw new IllegalArgumentException(
