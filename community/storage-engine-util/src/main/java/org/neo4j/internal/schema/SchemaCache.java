@@ -618,7 +618,7 @@ public class SchemaCache {
 
                 for (var property : descriptor.schema().getPropertyIds()) {
                     final var mergedType = propToConstraintType.updateValue(
-                            property, descriptor::type, type -> merge(constraintType, type));
+                            property, descriptor::type, type -> merge(type, constraintType));
                     if (mergedType == ConstraintType.UNIQUE_EXISTS) {
                         propertyIds.add(property);
                     }
@@ -626,14 +626,14 @@ public class SchemaCache {
             }
         }
 
-        private ConstraintType merge(ConstraintType constraintType, ConstraintType currentType) {
+        private ConstraintType merge(ConstraintType currentType, ConstraintType additionalType) {
             if (currentType == null) {
-                return constraintType;
+                return additionalType;
             }
 
             return switch (currentType) {
-                case EXISTS -> constraintType == ConstraintType.UNIQUE ? ConstraintType.UNIQUE_EXISTS : currentType;
-                case UNIQUE -> constraintType == ConstraintType.EXISTS ? ConstraintType.UNIQUE_EXISTS : currentType;
+                case EXISTS -> additionalType == ConstraintType.EXISTS ? currentType : ConstraintType.UNIQUE_EXISTS;
+                case UNIQUE -> additionalType == ConstraintType.UNIQUE ? currentType : ConstraintType.UNIQUE_EXISTS;
                 case UNIQUE_EXISTS -> currentType;
                 default -> throw new IllegalStateException("Can not fuse %s".formatted(currentType));
             };

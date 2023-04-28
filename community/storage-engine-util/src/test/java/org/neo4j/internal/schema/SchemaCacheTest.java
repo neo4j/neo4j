@@ -44,9 +44,14 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.eclipse.collections.api.factory.Lists;
 import org.eclipse.collections.api.factory.primitive.IntSets;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.schema.IndexQuery.IndexQueryType;
@@ -936,7 +941,77 @@ class SchemaCacheTest {
                 .isEqualTo(IntSets.immutable.empty());
     }
 
+    @ParameterizedTest
+    @MethodSource("descriptorPositions")
+    void logicalKeyConstraintsForNodeKeyAndExistenceInAnyOrderSchemaRules(
+            int constraint1, int constraint2, int constraint3) {
+        final var schemaName = "schema name";
+        final var labelId = 2;
+        final var propertyId1 = 3;
+        final var propertyId2 = 4;
+
+        final var index = IndexPrototype.uniqueForSchema(forLabel(labelId, propertyId1, propertyId2))
+                .withName(schemaName)
+                .materialise(1);
+
+        final var descriptors = Lists.immutable.of(
+                nodeKeyForLabel(labelId, propertyId1, propertyId2)
+                        .withId(42)
+                        .withOwnedIndexId(index.getId())
+                        .withName(schemaName),
+                nodePropertyExistenceConstraint(43, labelId, propertyId1),
+                nodePropertyExistenceConstraint(44, labelId, propertyId2));
+
+        final var cache = newSchemaCache(index, descriptors.get(constraint1));
+        cache.addSchemaRule(descriptors.get(constraint2));
+        cache.addSchemaRule(descriptors.get(constraint3));
+
+        assertThat(cache.constraintsGetPropertyTokensForLogicalKey(labelId, NODE))
+                .as("should find the properties that makes up the logical key for the node/label")
+                .isEqualTo(IntSets.immutable.of(propertyId1, propertyId2));
+    }
+
+    @ParameterizedTest
+    @MethodSource("descriptorPositions")
+    void logicalKeyConstraintsForRelationshipKeyAndExistenceInAnyOrderSchemaRules(
+            int constraint1, int constraint2, int constraint3) {
+        final var schemaName = "schema name";
+        final var relType = 2;
+        final var propertyId1 = 3;
+        final var propertyId2 = 4;
+
+        final var index = IndexPrototype.uniqueForSchema(forLabel(relType, propertyId1, propertyId2))
+                .withName(schemaName)
+                .materialise(1);
+
+        final var descriptors = Lists.immutable.of(
+                keyForSchema(SchemaDescriptors.forRelType(relType, propertyId1, propertyId2))
+                        .withId(42)
+                        .withOwnedIndexId(index.getId())
+                        .withName(schemaName),
+                relPropertyExistenceConstraint(43, relType, propertyId1),
+                relPropertyExistenceConstraint(44, relType, propertyId2));
+
+        final var cache = newSchemaCache(index, descriptors.get(constraint1));
+        cache.addSchemaRule(descriptors.get(constraint2));
+        cache.addSchemaRule(descriptors.get(constraint3));
+
+        assertThat(cache.constraintsGetPropertyTokensForLogicalKey(relType, RELATIONSHIP))
+                .as("should find the properties that makes up the logical key for the rel/type")
+                .isEqualTo(IntSets.immutable.of(propertyId1, propertyId2));
+    }
+
     // HELPERS
+
+    private static Stream<Arguments> descriptorPositions() {
+        return Stream.of(
+                Arguments.of(0, 1, 2),
+                Arguments.of(0, 2, 1),
+                Arguments.of(1, 0, 2),
+                Arguments.of(1, 2, 0),
+                Arguments.of(2, 1, 0),
+                Arguments.of(2, 0, 1));
+    }
 
     private static long[] entityTokens(long... entityTokenIds) {
         return entityTokenIds;
