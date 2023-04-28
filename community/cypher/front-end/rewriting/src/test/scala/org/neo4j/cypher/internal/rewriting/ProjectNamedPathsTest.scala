@@ -1533,4 +1533,22 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
 
     rewritten should equal(expected)
   }
+
+  test("MATCH p = ANY SHORTEST ((a)-[r]->+(b) WHERE a.prop IS NOT NULL) RETURN p") {
+    val returns = parseReturnedExpr("MATCH p = ANY SHORTEST ((a)-[r]->+(b) WHERE a.prop IS NOT NULL) RETURN p")
+
+    val expectedPathExpression =
+      PathExpression(step =
+        NodePathStep(
+          node = varFor("a"),
+          next = RepeatPathStep(
+            variables = Nil,
+            toNode = varFor("b"),
+            next = NilPathStep()(pos)
+          )(pos)
+        )(pos)
+      )(pos)
+
+    returns shouldEqual expectedPathExpression
+  }
 }

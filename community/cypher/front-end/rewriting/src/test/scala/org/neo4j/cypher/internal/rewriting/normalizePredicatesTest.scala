@@ -585,4 +585,28 @@ class normalizePredicatesTest extends CypherFunSuite with TestName {
 
     assertRewrite(s"MATCH (n)-[r]->(m) WHERE exists( ($node1:Label)-[$rel]-($node2) ) RETURN *")
   }
+
+  test("MATCH ANY SHORTEST (a)-[r:R]->+(b) RETURN *") {
+    assertRewrite("MATCH ANY SHORTEST (a)-[r:R]->+(b) RETURN *")
+  }
+
+  test("MATCH ANY SHORTEST (a:A)-[r:R]->+(b:B) RETURN *") {
+    assertRewrite("MATCH ANY SHORTEST ((a)-[r:R]->+(b) WHERE a:A AND b:B) RETURN *")
+  }
+
+  test("MATCH ANY SHORTEST ((a:A)-[r:R]->+(b:B) WHERE b.prop IS NOT NULL) RETURN *") {
+    assertRewrite("MATCH ANY SHORTEST ((a)-[r:R]->+(b) WHERE a:A AND b:B AND b.prop IS NOT NULL) RETURN *")
+  }
+
+  test("MATCH ALL SHORTEST PATHS (a {prop: 42})-[r:R]->+(b) RETURN *") {
+    assertRewrite("MATCH ALL SHORTEST PATHS ((a)-[r:R]->+(b) WHERE a.prop = 42) RETURN *")
+  }
+
+  test("MATCH ANY (a WHERE a.prop > 10)-[r:R]->+(b) RETURN *") {
+    assertRewrite("MATCH ANY ((a)-[r:R]->+(b) WHERE a.prop > 10) RETURN *")
+  }
+
+  test("MATCH SHORTEST 2 GROUPS (a)-[r:R]->+(b WHERE b:!Foo) RETURN *") {
+    assertRewrite("MATCH SHORTEST 2 GROUPS ((a)-[r:R]->+(b) WHERE b:!Foo) RETURN *")
+  }
 }

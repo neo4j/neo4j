@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
@@ -269,6 +270,9 @@ case object projectNamedPaths extends Rewriter with StepSequencer.Step with ASTR
             RepeatPathStep.asRepeatPathStep(groupVars, node, innerStep)(qpp.position)
           case (prevStep, factor) => flip(factor, prevStep)
         }
+
+      case ParenthesizedPath(part, _) =>
+        flip(part.element, step)
 
       case _ =>
         throw new IllegalArgumentException("Could not convert to Path Step.")

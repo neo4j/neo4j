@@ -430,6 +430,24 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest with A
     )
   }
 
+  test("add uniqueness predicates inside a parenthesized path pattern used under a path selector") {
+    assertRewrite(
+      originalQuery = "MATCH ANY SHORTEST ((a:A)-[r:R]->+(b:B) WHERE b.prop IS NOT NULL) RETURN *",
+      expectedQuery = s"MATCH ANY SHORTEST ((a:A)-[r:R]->+(b:B) WHERE b.prop IS NOT NULL AND ${unique("r")}) RETURN *"
+    )
+  }
+
+  test("introduce parentheses to add uniqueness predicates under a path selector") {
+    assertRewrite(
+      originalQuery = "MATCH ANY SHORTEST (a:A)-[r:R]->+(b:B) WHERE b.prop IS NOT NULL RETURN *",
+      expectedQuery = s"MATCH ANY SHORTEST ((a:A)-[r:R]->+(b:B) WHERE ${unique("r")}) WHERE b.prop IS NOT NULL RETURN *"
+    )
+  }
+
+  test("should not introduce unnecessary parentheses if there's no predicate to add under a selector") {
+    assertIsNotRewritten("MATCH ANY SHORTEST (a) RETURN *")
+  }
+
   def rewriterUnderTest: Rewriter = inSequence(
     AddUniquenessPredicates.rewriter,
     UniquenessRewriter(new AnonymousVariableNameGenerator)

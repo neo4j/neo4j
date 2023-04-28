@@ -155,10 +155,11 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
     s"($pattern$where)$quantifier"
   }
 
-  override def apply(path: ParenthesizedPath): String = {
-    val inner = apply(path.part)
-    s"($inner)"
-  }
+  override def apply(path: ParenthesizedPath): String =
+    List(
+      Some(apply(path.part)),
+      path.optionalWhereClause.map(stringifyPredicate)
+    ).flatten.mkString("(", " ", ")")
 
   private def concatenate(separator: String, fragments: Seq[Option[String]]): Option[String] =
     Some(fragments.flatten)

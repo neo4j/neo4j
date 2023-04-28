@@ -29,8 +29,10 @@ import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -118,6 +120,31 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
       val rels: Seq[NodeConnection] = collectRelationships(pattern)
       val newWhere = withPredicates(m, rels, where)
       m.copy(where = newWhere)(m.position)
+    case part: PatternPartWithSelector if !part.selector.isInstanceOf[PatternPart.AllPaths] =>
+      part.element match {
+        case path: ParenthesizedPath =>
+          val relationships = collectRelationships(path.part.element)
+          val uniquenessPredicate = createPredicateFor(relationships, path.position)
+          val newPredicate = (path.optionalWhereClause, uniquenessPredicate) match {
+            case (None, None)                => None
+            case (Some(where), None)         => Some(where)
+            case (None, Some(unique))        => Some(unique)
+            case (Some(where), Some(unique)) => Some(And(where, unique)(path.position))
+          }
+          val newElement = path.copy(optionalWhereClause = newPredicate)(path.position)
+          part.copy(element = newElement)
+        case otherElement =>
+          val relationships = collectRelationships(otherElement)
+          createPredicateFor(relationships, part.position) match {
+            // We should not wrap the pattern in new parentheses if there is no predicate to add
+            case None                      => part
+            case Some(uniquenessPredicate) =>
+              // We need a pattern part with selector in order to create a parenthesized path, even though it doesn't make a lot of sense
+              val syntheticPatternPart = PatternPartWithSelector(otherElement, PatternPart.AllPaths()(part.position))
+              val newElement = ParenthesizedPath(syntheticPatternPart, Some(uniquenessPredicate))(part.position)
+              part.copy(element = newElement)
+          }
+      }
     case qpp @ QuantifiedPath(patternPart, _, where, _) =>
       val rels = collectRelationships(patternPart)
       val newWhere = withPredicates(qpp, rels, where.map(Where(_)(qpp.position))).map(_.expression)
@@ -152,6 +179,9 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
   def collectRelationships(pattern: ASTNode): Seq[NodeConnection] =
     pattern.folder.treeFold(Seq.empty[NodeConnection]) {
       case _: ScopeExpression =>
+        acc => SkipChildren(acc)
+
+      case PatternPartWithSelector(_, selector) if !selector.isInstanceOf[PatternPart.AllPaths] =>
         acc => SkipChildren(acc)
 
       case qpp: QuantifiedPath =>

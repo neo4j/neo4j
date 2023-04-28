@@ -279,4 +279,17 @@ class PatternStringifierTest extends CypherFunSuite with TestName with AstConstr
     patternStringifier(pattern) shouldEqual testName
   }
 
+  test("((n)-[r]->(m) WHERE n.prop = m.prop)") {
+    val pattern = parenthesizedPath(
+      relChain = relationshipChain(
+        nodePat(Some("n")),
+        relPat(Some("r")),
+        nodePat(Some("m"))
+      ),
+      optionalWhereExpression = Some(equals(prop("n", "prop"), prop("m", "prop")))
+    )
+
+    patternStringifier(pattern) shouldEqual testName
+  }
+
 }
