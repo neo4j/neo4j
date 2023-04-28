@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.csv.reader.Configuration;
+import org.neo4j.internal.batchimport.input.InputException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFilesHelper;
@@ -121,10 +122,7 @@ class CsvImporterTest {
     void tracePageCacheAccessOnCsvImport() throws IOException {
         Path logDir = testDir.directory("logs");
         Path reportLocation = testDir.file("the_report");
-        Path inputFile = testDir.file("foobar.csv");
-
-        List<String> lines = List.of("foo;bar;baz");
-        Files.write(inputFile, lines, Charset.defaultCharset());
+        Path inputFile = writeFileWithLines("foobar.csv", "foo;bar;baz");
 
         Config config = Config.defaults(GraphDatabaseSettings.logs_directory, logDir.toAbsolutePath());
 
@@ -147,5 +145,33 @@ class CsvImporterTest {
         assertThat(cacheTracer.unpins()).isEqualTo(pins);
         assertThat(cacheTracer.hits()).isGreaterThan(0).isLessThanOrEqualTo(pins);
         assertThat(cacheTracer.faults()).isGreaterThan(0).isLessThanOrEqualTo(pins);
+    }
+
+    @Test
+    void shouldEnforceBadTolerance() throws IOException {
+        // given
+        var nodes = writeFileWithLines("nodes.csv", ":ID", "abc", "abc", "abc", "abc", "abc", "abc");
+        var importer = CsvImporter.builder()
+                .withDatabaseConfig(Config.defaults(GraphDatabaseSettings.neo4j_home, testDir.homePath()))
+                .withDatabaseLayout(databaseLayout)
+                .withFileSystem(testDir.getFileSystem())
+                .withStdOut(NULL_PRINT_STREAM)
+                .withStdErr(NULL_PRINT_STREAM)
+                .withReportFile(testDir.file("report.txt"))
+                .addNodeFiles(emptySet(), new Path[] {nodes.toAbsolutePath()})
+                .withBadTolerance(4)
+                .withSkipDuplicateNodes(true)
+                .build();
+
+        // when
+        assertThatThrownBy(importer::doImport)
+                .isInstanceOf(InputException.class)
+                .hasMessageContaining("Too many bad entries");
+    }
+
+    private Path writeFileWithLines(String fileName, String... lines) throws IOException {
+        var path = testDir.file(fileName);
+        Files.write(path, List.of(lines), Charset.defaultCharset());
+        return path;
     }
 }

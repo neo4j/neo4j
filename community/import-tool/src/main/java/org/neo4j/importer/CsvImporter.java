@@ -59,7 +59,6 @@ import org.neo4j.internal.batchimport.AdditionalInitialIds;
 import org.neo4j.internal.batchimport.BatchImporter;
 import org.neo4j.internal.batchimport.Configuration;
 import org.neo4j.internal.batchimport.cache.idmapping.string.DuplicateInputIdException;
-import org.neo4j.internal.batchimport.input.BadCollector;
 import org.neo4j.internal.batchimport.input.Collector;
 import org.neo4j.internal.batchimport.input.IdType;
 import org.neo4j.internal.batchimport.input.Input;
@@ -448,13 +447,7 @@ class CsvImporter implements Importer {
         return skipBadEntriesLogging
                 ? silentBadCollector(badTolerance)
                 : badCollector(
-                        badOutput,
-                        isIgnoringSomething() ? BadCollector.UNLIMITED_TOLERANCE : 0,
-                        collect(skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns));
-    }
-
-    private boolean isIgnoringSomething() {
-        return skipBadRelationships || skipDuplicateNodes || ignoreExtraColumns;
+                        badOutput, badTolerance, collect(skipBadRelationships, skipDuplicateNodes, ignoreExtraColumns));
     }
 
     static Builder builder() {
