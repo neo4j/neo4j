@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.rewriting.conditions.AndRewrittenToAnds
 import org.neo4j.cypher.internal.rewriting.conditions.OrRewrittenToOrs
 import org.neo4j.cypher.internal.rewriting.conditions.PredicatesSimplified
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
+import org.neo4j.cypher.internal.rewriting.rewriters.copyVariables
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.helpers.fixedPoint
@@ -88,7 +89,7 @@ case class simplifyPredicates(semanticState: SemanticState) extends Rewriter {
       val predicates: ListSet[Expression] = preds.map { predicate =>
         AllIterablePredicate(FilterScope(variable, Some(predicate))(fs.position), expression)(all.position)
       }
-      Ands(predicates)(all.position)
+      Ands(predicates.endoRewrite(copyVariables))(all.position)
     case p @ Not(True())  => False()(p.position)
     case p @ Not(False()) => True()(p.position)
     case expression       => expression

@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend.phases.rewriting.cnf
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Equals
@@ -35,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
+import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -200,6 +202,17 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     assertRewrittenMatches("rand() = 1 AND rand() = 1", { case Equals(_, _) => () })
   }
 
+  test("should split all() into multiple expressions without duplicating variable references") {
+    assertRewrittenMatches("all(x IN list WHERE x > 123 AND x < 321 AND x % 2 = 0)") {
+      case rewrittenExpr @ Ands(SetExtractor(
+          _: AllIterablePredicate,
+          _: AllIterablePredicate,
+          _: AllIterablePredicate
+        )) =>
+        noReferenceEqualityAmongVariables(rewrittenExpr) shouldBe empty
+    }
+  }
+
   private val exceptionFactory = new OpenCypherExceptionFactory(None)
 
   private def assertRewrittenMatches(originalQuery: String, matcher: PartialFunction[Any, Unit]): Unit = {
@@ -209,10 +222,15 @@ class SimplifyPredicatesTest extends CypherFunSuite {
     val result = original.endoRewrite(rewriter)
     val maybeReturnExp = result.folder.treeFind({
       case UnaliasedReturnItem(expression, _) => {
-        assert(matcher.isDefinedAt(expression), expression)
+        assert(matcher.lift(expression).isDefined, expression)
         true
       }
     }: PartialFunction[AnyRef, Boolean])
     assert(maybeReturnExp.isDefined, "Could not find return in parsed query!")
+  }
+
+  private def assertRewrittenMatches(originalQuery: String)(matcher: PartialFunction[Any, Unit])(implicit
+  d: DummyImplicit): Unit = {
+    assertRewrittenMatches(originalQuery, matcher)
   }
 }
