@@ -71,10 +71,12 @@ import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.BuiltInProcedures;
 import org.neo4j.procedure.builtin.FulltextProcedures;
 import org.neo4j.procedure.builtin.TokenProcedures;
+import org.neo4j.procedure.builtin.graphschema.Introspect;
 import org.neo4j.procedure.builtin.routing.RoutingProcedureInstaller;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.util.FeatureToggles;
 
 /**
  * Edition module for {@link DatabaseManagementServiceFactory}. Implementations of this class
@@ -97,6 +99,9 @@ public abstract class AbstractEditionModule {
         globalProcedures.registerProcedure(BuiltInDbmsProcedures.class);
         globalProcedures.registerProcedure(FulltextProcedures.class);
         globalProcedures.registerProcedure(DataCollectorProcedures.class);
+        if (FeatureToggles.flag(Introspect.class, "enabled", false)) {
+            globalProcedures.registerProcedure(Introspect.class);
+        }
         registerTemporalFunctions(globalProcedures, procedureConfig);
 
         registerEditionSpecificProcedures(globalProcedures, databaseContextProvider);
