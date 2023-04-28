@@ -19,8 +19,10 @@
  */
 package org.neo4j.storageengine.api;
 
+import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 
 public class StandardConstraintRuleAccessor implements ConstraintRuleAccessor {
@@ -42,6 +44,12 @@ public class StandardConstraintRuleAccessor implements ConstraintRuleAccessor {
 
     @Override
     public ConstraintDescriptor createExistenceConstraint(long ruleId, ConstraintDescriptor constraint) {
+        return constraint.withId(ruleId);
+    }
+
+    @Override
+    public ConstraintDescriptor createPropertyTypeConstraint(long ruleId, TypeConstraintDescriptor constraint)
+            throws CreateConstraintFailureException {
         return constraint.withId(ruleId);
     }
 }

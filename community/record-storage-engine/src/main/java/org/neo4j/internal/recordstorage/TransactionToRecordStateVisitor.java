@@ -153,6 +153,11 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter {
                 ConstraintDescriptor rule = constraintSemantics.createExistenceConstraint(constraintId, constraint);
                 schemaStateChanger.createSchemaRule(recordState, rule);
             }
+            case PROPERTY_TYPE -> {
+                ConstraintDescriptor rule = constraintSemantics.createPropertyTypeConstraint(
+                        constraintId, constraint.asPropertyTypeConstraint());
+                schemaStateChanger.createSchemaRule(recordState, rule);
+            }
             default -> throw new IllegalStateException(constraint.type().toString());
         }
     }

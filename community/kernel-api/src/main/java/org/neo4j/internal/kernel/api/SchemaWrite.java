@@ -29,6 +29,8 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
 /**
  * Surface for creating and dropping indexes and constraints.
@@ -123,6 +125,18 @@ public interface SchemaWrite {
      */
     ConstraintDescriptor relationshipPropertyExistenceConstraintCreate(RelationTypeSchemaDescriptor schema, String name)
             throws KernelException;
+
+    /**
+     * Create property type constraint
+     *
+     * @param schema description of the constraint
+     * @param name the name the created constraint should have, or null
+     * @param allowedPropertyTypes the allowed property types
+     * @return the created constraint.
+     * @throws KernelException if the constraint cannot be created for some reason.
+     */
+    ConstraintDescriptor propertyTypeConstraintCreate(
+            SchemaDescriptor schema, String name, PropertyTypeSet allowedPropertyTypes) throws KernelException;
 
     /**
      * Drop the constraint with the given name.

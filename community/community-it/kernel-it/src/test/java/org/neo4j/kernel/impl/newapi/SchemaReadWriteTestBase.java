@@ -1619,7 +1619,7 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
                 throws KernelException;
     }
 
-    protected enum EntityType implements EntityControl {
+    public enum EntityType implements EntityControl {
         NODE {
             @Override
             public int selectEntityToken(int label, int type) {

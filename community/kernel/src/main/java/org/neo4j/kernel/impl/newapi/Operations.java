@@ -50,6 +50,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.RichIterable;
 import org.eclipse.collections.api.iterator.IntIterator;
@@ -96,7 +97,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.internal.schema.ConstraintDescriptor;
-import org.neo4j.internal.schema.ConstraintType;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
@@ -110,6 +110,7 @@ import org.neo4j.internal.schema.SchemaNameUtil;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
@@ -173,6 +174,7 @@ public class Operations implements Write, SchemaWrite {
     private final MemoryTracker memoryTracker;
     private final boolean additionLockVerification;
     private final boolean relationshipUniquenessConstraintEnabled;
+    private final boolean typeConstraintEnabled;
     private DefaultNodeCursor nodeCursor;
     private DefaultNodeCursor restrictedNodeCursor;
     private DefaultPropertyCursor propertyCursor;
@@ -211,6 +213,7 @@ public class Operations implements Write, SchemaWrite {
         this.memoryTracker = memoryTracker;
         this.additionLockVerification = config.get(additional_lock_verification);
         this.relationshipUniquenessConstraintEnabled = config.get(GraphDatabaseInternalSettings.rel_unique_constraints);
+        this.typeConstraintEnabled = config.get(GraphDatabaseInternalSettings.type_constraints);
     }
 
     public void initialize(CursorContext cursorContext) {
@@ -1674,13 +1677,16 @@ public class Operations implements Write, SchemaWrite {
 
         // Already constrained
         for (ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema) {
-            final boolean creatingExistenceConstraint = constraint.type() == ConstraintType.EXISTS;
-            final boolean existingIsExistenceConstraint = constraintWithSameSchema.type() == ConstraintType.EXISTS;
-            if (creatingExistenceConstraint == existingIsExistenceConstraint) {
+            boolean creatingIndexBackedConstraint = constraint.isIndexBackedConstraint();
+            boolean existingIndexBackedConstraint = constraintWithSameSchema.isIndexBackedConstraint();
+            if (creatingIndexBackedConstraint == existingIndexBackedConstraint) {
                 // Only index-backed constraints of the same index type block each other.
-                if (creatingExistenceConstraint
-                        || constraintWithSameSchema.asIndexBackedConstraint().indexType()
-                                == constraint.asIndexBackedConstraint().indexType()) {
+                if (creatingIndexBackedConstraint
+                                && constraintWithSameSchema
+                                                .asIndexBackedConstraint()
+                                                .indexType()
+                                        == constraint.asIndexBackedConstraint().indexType()
+                        || !creatingIndexBackedConstraint && constraint.type() == constraintWithSameSchema.type()) {
                     throw new AlreadyConstrainedException(constraintWithSameSchema, CONSTRAINT_CREATION, token);
                 }
             }
@@ -1930,7 +1936,41 @@ public class Operations implements Write, SchemaWrite {
         }
     }
 
+    @Override
+    public ConstraintDescriptor propertyTypeConstraintCreate(
+            SchemaDescriptor schema, String name, PropertyTypeSet allowedPropertyTypes) throws KernelException {
+        if (schema.getPropertyIds().length != 1) {
+            throw new UnsupportedOperationException("Composite property type constraints are not supported.");
+        }
+        if (!typeConstraintEnabled
+                && kernelVersionProvider
+                        .kernelVersion()
+                        .isLessThan(KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED)) {
+            throw new UnsupportedOperationException("Property type constraints are not supported in this version.");
+        }
+        ConstraintDescriptor constraint = lockAndValidatePropertyTypeConstraint(schema, name, allowedPropertyTypes);
+
+        // FIXME PTC validate existing data
+        ktx.txState().constraintDoAdd(constraint);
+        return constraint;
+    }
+
     private ConstraintDescriptor lockAndValidatePropertyExistenceConstraint(SchemaDescriptor descriptor, String name)
+            throws KernelException {
+        return lockAndValidateNonIndexPropertyConstraint(
+                descriptor, ConstraintDescriptorFactory::existsForSchema, name);
+    }
+
+    private ConstraintDescriptor lockAndValidatePropertyTypeConstraint(
+            SchemaDescriptor descriptor, String name, PropertyTypeSet allowedPropertyTypes) throws KernelException {
+        return lockAndValidateNonIndexPropertyConstraint(
+                descriptor, desc -> ConstraintDescriptorFactory.typeForSchema(desc, allowedPropertyTypes), name);
+    }
+
+    private ConstraintDescriptor lockAndValidateNonIndexPropertyConstraint(
+            SchemaDescriptor descriptor,
+            Function<SchemaDescriptor, ConstraintDescriptor> constraintFunction,
+            String name)
             throws KernelException {
         // Lock constraint schema.
         exclusiveSchemaLock(descriptor);
@@ -1940,7 +1980,7 @@ public class Operations implements Write, SchemaWrite {
             // Verify data integrity.
             assertValidDescriptor(descriptor, SchemaKernelException.OperationContext.CONSTRAINT_CREATION);
             ConstraintDescriptor constraint =
-                    ConstraintDescriptorFactory.existsForSchema(descriptor).withName(name);
+                    constraintFunction.apply(descriptor).withName(name);
             constraint = ensureConstraintHasName(constraint);
             exclusiveSchemaNameLock(constraint.getName());
             assertNoBlockingSchemaRulesExists(constraint);

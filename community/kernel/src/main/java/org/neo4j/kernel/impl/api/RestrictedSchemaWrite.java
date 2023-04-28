@@ -33,6 +33,8 @@ import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
 public class RestrictedSchemaWrite implements SchemaWrite {
     private final SchemaWrite inner;
@@ -105,6 +107,13 @@ public class RestrictedSchemaWrite implements SchemaWrite {
             RelationTypeSchemaDescriptor schema, String name) throws KernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
         return inner.relationshipPropertyExistenceConstraintCreate(schema, name);
+    }
+
+    @Override
+    public ConstraintDescriptor propertyTypeConstraintCreate(
+            SchemaDescriptor schema, String name, PropertyTypeSet allowedPropertyTypes) throws KernelException {
+        securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
+        return inner.propertyTypeConstraintCreate(schema, name, allowedPropertyTypes);
     }
 
     @Override

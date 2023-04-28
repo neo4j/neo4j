@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -152,6 +153,11 @@ public class RecordStorageEngineSupport {
 
             @Override
             public ConstraintDescriptor createExistenceConstraint(long ruleId, ConstraintDescriptor descriptor) {
+                throw new UnsupportedOperationException("Not needed a.t.m.");
+            }
+
+            @Override
+            public ConstraintDescriptor createPropertyTypeConstraint(long ruleId, TypeConstraintDescriptor descriptor) {
                 throw new UnsupportedOperationException("Not needed a.t.m.");
             }
         };
