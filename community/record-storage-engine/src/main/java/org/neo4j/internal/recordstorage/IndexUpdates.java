@@ -30,12 +30,15 @@ import org.neo4j.storageengine.api.IndexEntryUpdate;
 public interface IndexUpdates extends Iterable<IndexEntryUpdate<IndexDescriptor>>, AutoCloseable {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.
-     * @param nodeCommands node data
+     *
+     * @param nodeCommands         node data
      * @param relationshipCommands relationship data
+     * @param commandSelector
      */
     void feed(
             EntityCommandGrouper<NodeCommand>.Cursor nodeCommands,
-            EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands);
+            EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands,
+            CommandSelector commandSelector);
 
     boolean hasUpdates();
 

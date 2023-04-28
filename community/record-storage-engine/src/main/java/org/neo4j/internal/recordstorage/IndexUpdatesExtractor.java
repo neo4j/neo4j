@@ -32,11 +32,13 @@ import org.neo4j.internal.recordstorage.Command.RelationshipCommand;
  * commands that have potential to result in changes to index content.
  */
 public class IndexUpdatesExtractor extends TransactionApplier.Adapter {
+    private final CommandSelector commandSelector;
     private EntityCommandGrouper<NodeCommand> nodeCommands;
     private EntityCommandGrouper<RelationshipCommand> relationshipCommands;
     private boolean hasUpdates;
 
-    public IndexUpdatesExtractor() {
+    public IndexUpdatesExtractor(CommandSelector commandSelector) {
+        this.commandSelector = commandSelector;
         nodeCommands = new EntityCommandGrouper<>(NodeCommand.class, 16);
         relationshipCommands = new EntityCommandGrouper<>(RelationshipCommand.class, 16);
     }
@@ -63,9 +65,9 @@ public class IndexUpdatesExtractor extends TransactionApplier.Adapter {
         return false;
     }
 
-    private static boolean mayResultInIndexUpdates(NodeCommand command) {
-        long before = command.getBefore().getLabelField();
-        long after = command.getAfter().getLabelField();
+    private boolean mayResultInIndexUpdates(NodeCommand command) {
+        long before = commandSelector.getBefore(command).getLabelField();
+        long after = commandSelector.getAfter(command).getLabelField();
         return before != after
                 ||
                 // Because we don't know here, there may have been changes to a dynamic label record
@@ -76,10 +78,10 @@ public class IndexUpdatesExtractor extends TransactionApplier.Adapter {
 
     @Override
     public boolean visitPropertyCommand(PropertyCommand command) {
-        if (command.getAfter().isNodeSet()) {
+        if (commandSelector.getAfter(command).isNodeSet()) {
             nodeCommands.add(command);
             hasUpdates = true;
-        } else if (command.getAfter().isRelSet()) {
+        } else if (commandSelector.getAfter(command).isRelSet()) {
             relationshipCommands.add(command);
             hasUpdates = true;
         }

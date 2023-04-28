@@ -82,7 +82,7 @@ public enum TransactionApplicationMode {
     MVCC_ROLLBACK(
             false, // id tracking not needed because this is for the initial reverse recovery
             false, // cache invalidation not needed because this is for the initial reverse recovery
-            false, // only apply to neo store
+            true, // include indexes and counts
             true, BEFORE);
 
     private final boolean needsHighIdTracking;

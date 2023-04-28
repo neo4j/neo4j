@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.test.LatestVersions;
 
@@ -67,7 +68,7 @@ class NeoTransactionIndexApplierTest {
     }
 
     private IndexTransactionApplierFactory newIndexTransactionApplier() {
-        return new IndexTransactionApplierFactory(indexingService);
+        return new IndexTransactionApplierFactory(TransactionApplicationMode.INTERNAL, indexingService);
     }
 
     @Test

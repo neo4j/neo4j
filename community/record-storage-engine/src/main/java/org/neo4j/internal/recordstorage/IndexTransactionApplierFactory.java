@@ -28,21 +28,25 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.storageengine.api.CommandBatchToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 /**
  * Factory for applier that gather node and property changes,
  * converting them into logical updates to the indexes.
  */
 public class IndexTransactionApplierFactory implements TransactionApplierFactory {
+    private final TransactionApplicationMode mode;
     private final IndexUpdateListener indexUpdateListener;
 
-    public IndexTransactionApplierFactory(IndexUpdateListener indexUpdateListener) {
+    public IndexTransactionApplierFactory(TransactionApplicationMode mode, IndexUpdateListener indexUpdateListener) {
+        this.mode = mode;
         this.indexUpdateListener = indexUpdateListener;
     }
 
     @Override
     public TransactionApplier startTx(CommandBatchToApply commands, BatchContext batchContext) {
-        return new SingleTransactionApplier(commands, batchContext);
+        return new SingleTransactionApplier(
+                commands, batchContext, mode.isReverseStep() ? CommandSelector.REVERSE : CommandSelector.NORMAL);
     }
 
     /**
@@ -52,15 +56,19 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
      */
     private class SingleTransactionApplier extends TransactionApplier.Adapter {
         private final Subject subject;
-        private final IndexUpdatesExtractor indexUpdatesExtractor = new IndexUpdatesExtractor();
+        private final IndexUpdatesExtractor indexUpdatesExtractor;
         private List<IndexDescriptor> createdIndexes;
         private final IndexActivator indexActivator;
         private final BatchContext batchContext;
+        private final CommandSelector commandSelector;
 
-        SingleTransactionApplier(CommandBatchToApply commands, BatchContext batchContext) {
+        SingleTransactionApplier(
+                CommandBatchToApply commands, BatchContext batchContext, CommandSelector commandSelector) {
             this.subject = commands.subject();
             this.indexActivator = batchContext.getIndexActivator();
             this.batchContext = batchContext;
+            this.commandSelector = commandSelector;
+            this.indexUpdatesExtractor = new IndexUpdatesExtractor(commandSelector);
         }
 
         @Override
@@ -70,7 +78,10 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
                 // we'll feed them to the index updates work sync at the end of the batch
                 batchContext
                         .indexUpdates()
-                        .feed(indexUpdatesExtractor.getNodeCommands(), indexUpdatesExtractor.getRelationshipCommands());
+                        .feed(
+                                indexUpdatesExtractor.getNodeCommands(),
+                                indexUpdatesExtractor.getRelationshipCommands(),
+                                commandSelector);
                 indexUpdatesExtractor.close();
             }
 
@@ -116,7 +127,7 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
                 batchContext.applyPendingIndexUpdates();
 
                 switch (commandMode) {
-                    case UPDATE:
+                    case UPDATE -> {
                         // Shouldn't we be more clear about that we are waiting for an index to come online here?
                         // right now we just assume that an update to index records means wait for it to be online.
                         if (indexRule.isUnique()) {
@@ -127,18 +138,16 @@ public class IndexTransactionApplierFactory implements TransactionApplierFactory
                             // complete.
                             indexActivator.activateIndex(indexRule);
                         }
-                        break;
-                    case CREATE:
+                    }
+                    case CREATE -> {
                         // Add to list so that all these indexes will be created in one call later
                         createdIndexes = createdIndexes == null ? new ArrayList<>() : createdIndexes;
                         createdIndexes.add(indexRule);
-                        break;
-                    case DELETE:
+                    }
+                    case DELETE -> {
                         indexUpdateListener.dropIndex(indexRule);
                         indexActivator.indexDropped(indexRule);
-                        break;
-                    default:
-                        throw new IllegalStateException(commandMode.name());
+                    }
                 }
             }
         }

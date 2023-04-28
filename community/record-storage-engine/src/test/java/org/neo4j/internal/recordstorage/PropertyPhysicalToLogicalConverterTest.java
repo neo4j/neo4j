@@ -271,7 +271,7 @@ class PropertyPhysicalToLogicalConverterTest {
         }
         EntityCommandGrouper.Cursor cursor = grouper.sortAndAccessGroups();
         assertTrue(cursor.nextEntity());
-        converter.convertPropertyRecord(cursor, updates);
+        converter.convertPropertyRecord(cursor, updates, CommandSelector.NORMAL);
         return updates.build();
     }
 

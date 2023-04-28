@@ -46,8 +46,9 @@ public class PropertyPhysicalToLogicalConverter {
     /**
      * Converts physical changes to PropertyRecords for a entity into logical updates
      */
-    public void convertPropertyRecord(EntityCommandGrouper<?>.Cursor changes, EntityUpdates.Builder properties) {
-        mapBlocks(changes);
+    public void convertPropertyRecord(
+            EntityCommandGrouper<?>.Cursor changes, EntityUpdates.Builder properties, CommandSelector commandSelector) {
+        mapBlocks(changes, commandSelector);
 
         int bc = 0;
         int ac = 0;
@@ -100,7 +101,7 @@ public class PropertyPhysicalToLogicalConverter {
         }
     }
 
-    private void mapBlocks(EntityCommandGrouper<?>.Cursor changes) {
+    private void mapBlocks(EntityCommandGrouper<?>.Cursor changes, CommandSelector commandSelector) {
         beforeBlocksCursor = 0;
         afterBlocksCursor = 0;
         while (true) {
@@ -109,13 +110,13 @@ public class PropertyPhysicalToLogicalConverter {
                 break;
             }
 
-            for (PropertyBlock block : change.getBefore()) {
+            for (PropertyBlock block : commandSelector.getBefore(change)) {
                 if (beforeBlocksCursor == beforeBlocks.length) {
                     beforeBlocks = Arrays.copyOf(beforeBlocks, beforeBlocksCursor * 2);
                 }
                 beforeBlocks[beforeBlocksCursor++] = block;
             }
-            for (PropertyBlock block : change.getAfter()) {
+            for (PropertyBlock block : commandSelector.getAfter(change)) {
                 if (afterBlocksCursor == afterBlocks.length) {
                     afterBlocks = Arrays.copyOf(afterBlocks, afterBlocksCursor * 2);
                 }

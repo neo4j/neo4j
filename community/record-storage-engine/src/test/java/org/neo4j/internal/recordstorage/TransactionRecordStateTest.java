@@ -372,7 +372,7 @@ class TransactionRecordStateTest {
 
         // WHEN
         CommandBatchToApply transaction = transaction(storeCursors, recordState);
-        IndexUpdatesExtractor extractor = new IndexUpdatesExtractor();
+        IndexUpdatesExtractor extractor = new IndexUpdatesExtractor(CommandSelector.NORMAL);
         transaction.accept(extractor);
 
         // THEN
@@ -1758,7 +1758,7 @@ class TransactionRecordStateTest {
 
     private Iterable<Iterable<IndexEntryUpdate<IndexDescriptor>>> indexUpdatesOf(
             NeoStores neoStores, CommandBatchToApply transaction) throws IOException {
-        IndexUpdatesExtractor extractor = new IndexUpdatesExtractor();
+        IndexUpdatesExtractor extractor = new IndexUpdatesExtractor(CommandSelector.NORMAL);
         transaction.accept(extractor);
 
         StorageReader reader = new RecordStorageReader(neoStores);
@@ -1771,7 +1771,8 @@ class TransactionRecordStateTest {
                 NULL_CONTEXT,
                 INSTANCE,
                 storeCursors);
-        onlineIndexUpdates.feed(extractor.getNodeCommands(), extractor.getRelationshipCommands());
+        onlineIndexUpdates.feed(
+                extractor.getNodeCommands(), extractor.getRelationshipCommands(), CommandSelector.NORMAL);
         updates.add(onlineIndexUpdates);
         reader.close();
         return updates;

@@ -22,19 +22,28 @@ package org.neo4j.internal.recordstorage;
 import org.neo4j.internal.counts.GBPTreeCountsStore;
 import org.neo4j.internal.counts.RelationshipGroupDegreesStore;
 import org.neo4j.storageengine.api.CommandBatchToApply;
+import org.neo4j.storageengine.api.TransactionApplicationMode;
 
 class CountsStoreTransactionApplierFactory implements TransactionApplierFactory {
+    private final TransactionApplicationMode mode;
     private final GBPTreeCountsStore countsStore;
     private final RelationshipGroupDegreesStore groupDegreesStore;
 
     CountsStoreTransactionApplierFactory(
-            GBPTreeCountsStore countsStore, RelationshipGroupDegreesStore groupDegreesStore) {
+            TransactionApplicationMode mode,
+            GBPTreeCountsStore countsStore,
+            RelationshipGroupDegreesStore groupDegreesStore) {
+        this.mode = mode;
         this.countsStore = countsStore;
         this.groupDegreesStore = groupDegreesStore;
     }
 
     @Override
     public TransactionApplier startTx(CommandBatchToApply transaction, BatchContext batchContext) {
-        return new CountsStoreTransactionApplier(countsStore, groupDegreesStore, transaction);
+        return new CountsStoreTransactionApplier(
+                countsStore,
+                groupDegreesStore,
+                transaction,
+                mode.isReverseStep() ? CountTransformer.REVERSE : CountTransformer.NORMAL);
     }
 }

@@ -55,7 +55,7 @@ import org.neo4j.util.VisibleForTesting;
  * properties matching existing and online indexes; in that case the properties for that node needs to be read
  * from store since the commands in that transaction cannot itself provide enough information.
  *
- * One instance can be {@link IndexUpdates#feed(Cursor, Cursor) fed} data about
+ * One instance can be {@link IndexUpdates#feed(Cursor, Cursor, CommandSelector) fed} data about
  * multiple transactions, to be {@link #iterator() accessed} later.
  */
 public class OnlineIndexUpdates implements IndexUpdates {
@@ -95,15 +95,18 @@ public class OnlineIndexUpdates implements IndexUpdates {
     @Override
     public void feed(
             EntityCommandGrouper<NodeCommand>.Cursor nodeCommands,
-            EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands) {
+            EntityCommandGrouper<RelationshipCommand>.Cursor relationshipCommands,
+            CommandSelector commandSelector) {
         while (nodeCommands.nextEntity()) {
-            gatherUpdatesFor(nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands);
+            gatherUpdatesFor(
+                    nodeCommands.currentEntityId(), nodeCommands.currentEntityCommand(), nodeCommands, commandSelector);
         }
         while (relationshipCommands.nextEntity()) {
             gatherUpdatesFor(
                     relationshipCommands.currentEntityId(),
                     relationshipCommands.currentEntityCommand(),
-                    relationshipCommands);
+                    relationshipCommands,
+                    commandSelector);
         }
     }
 
@@ -113,8 +116,12 @@ public class OnlineIndexUpdates implements IndexUpdates {
     }
 
     private void gatherUpdatesFor(
-            long nodeId, NodeCommand nodeCommand, EntityCommandGrouper<NodeCommand>.Cursor propertyCommands) {
-        EntityUpdates nodeUpdates = gatherUpdatesFromCommandsForNode(nodeId, nodeCommand, propertyCommands);
+            long nodeId,
+            NodeCommand nodeCommand,
+            EntityCommandGrouper<NodeCommand>.Cursor propertyCommands,
+            CommandSelector commandSelector) {
+        EntityUpdates nodeUpdates =
+                gatherUpdatesFromCommandsForNode(nodeId, nodeCommand, propertyCommands, commandSelector);
         eagerlyGatherValueIndexUpdates(nodeUpdates, EntityType.NODE);
         eagerlyGatherTokenIndexUpdates(nodeUpdates, EntityType.NODE);
     }
@@ -122,9 +129,10 @@ public class OnlineIndexUpdates implements IndexUpdates {
     private void gatherUpdatesFor(
             long relationshipId,
             RelationshipCommand relationshipCommand,
-            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands) {
-        EntityUpdates relationshipUpdates =
-                gatherUpdatesFromCommandsForRelationship(relationshipId, relationshipCommand, propertyCommands);
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands,
+            CommandSelector commandSelector) {
+        EntityUpdates relationshipUpdates = gatherUpdatesFromCommandsForRelationship(
+                relationshipId, relationshipCommand, propertyCommands, commandSelector);
         eagerlyGatherValueIndexUpdates(relationshipUpdates, EntityType.RELATIONSHIP);
         eagerlyGatherTokenIndexUpdates(relationshipUpdates, EntityType.RELATIONSHIP);
     }
@@ -145,13 +153,18 @@ public class OnlineIndexUpdates implements IndexUpdates {
     }
 
     private EntityUpdates gatherUpdatesFromCommandsForNode(
-            long nodeId, NodeCommand nodeChanges, EntityCommandGrouper<NodeCommand>.Cursor propertyCommandsForNode) {
+            long nodeId,
+            NodeCommand nodeChanges,
+            EntityCommandGrouper<NodeCommand>.Cursor propertyCommandsForNode,
+            CommandSelector commandSelector) {
         long[] nodeLabelsBefore;
         long[] nodeLabelsAfter;
         if (nodeChanges != null) {
             // Special case since the node may not be heavy, i.e. further loading may be required
-            nodeLabelsBefore = NodeLabelsField.getNoEnsureHeavy(nodeChanges.getBefore(), nodeStore, storeCursors);
-            nodeLabelsAfter = NodeLabelsField.getNoEnsureHeavy(nodeChanges.getAfter(), nodeStore, storeCursors);
+            nodeLabelsBefore =
+                    NodeLabelsField.getNoEnsureHeavy(commandSelector.getBefore(nodeChanges), nodeStore, storeCursors);
+            nodeLabelsAfter =
+                    NodeLabelsField.getNoEnsureHeavy(commandSelector.getAfter(nodeChanges), nodeStore, storeCursors);
         } else {
             /* If the node doesn't exist here then we've most likely encountered this scenario:
              * - TX1: Node N exists and has property record P
@@ -179,7 +192,7 @@ public class OnlineIndexUpdates implements IndexUpdates {
                 .withTokensAfter(nodeLabelsAfter);
 
         // Then look for property changes
-        converter.convertPropertyRecord(propertyCommandsForNode, nodePropertyUpdates);
+        converter.convertPropertyRecord(propertyCommandsForNode, nodePropertyUpdates, commandSelector);
         return nodePropertyUpdates.build();
     }
 
@@ -196,12 +209,13 @@ public class OnlineIndexUpdates implements IndexUpdates {
     private EntityUpdates gatherUpdatesFromCommandsForRelationship(
             long relationshipId,
             RelationshipCommand relationshipCommand,
-            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands) {
+            EntityCommandGrouper<RelationshipCommand>.Cursor propertyCommands,
+            CommandSelector commandSelector) {
         long reltypeBefore;
         long reltypeAfter;
         if (relationshipCommand != null) {
-            reltypeBefore = relationshipCommand.getBefore().getType();
-            reltypeAfter = relationshipCommand.getAfter().getType();
+            reltypeBefore = commandSelector.getBefore(relationshipCommand).getType();
+            reltypeAfter = commandSelector.getAfter(relationshipCommand).getType();
         } else {
             reltypeAfter = loadRelationship(relationshipId).type();
             reltypeBefore = reltypeAfter;
@@ -215,7 +229,7 @@ public class OnlineIndexUpdates implements IndexUpdates {
             relationshipPropertyUpdates.withTokensAfter(reltypeAfter);
         }
 
-        converter.convertPropertyRecord(propertyCommands, relationshipPropertyUpdates);
+        converter.convertPropertyRecord(propertyCommands, relationshipPropertyUpdates, commandSelector);
         return relationshipPropertyUpdates.build();
     }
 

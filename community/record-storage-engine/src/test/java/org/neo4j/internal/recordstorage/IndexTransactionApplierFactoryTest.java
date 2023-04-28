@@ -30,6 +30,7 @@ import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.common.EntityType;
@@ -67,7 +68,7 @@ class IndexTransactionApplierFactoryTest {
         OrderVerifyingUpdateListener indexUpdateListener = new OrderVerifyingUpdateListener(10, 15, 20);
         IndexUpdatesWorkSync indexUpdatesSync = new IndexUpdatesWorkSync(indexUpdateListener, false);
         PropertyStore propertyStore = mock(PropertyStore.class);
-        IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory(indexUpdateListener);
+        IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory(INTERNAL, indexUpdateListener);
         final SchemaCache mock = mock(SchemaCache.class);
         IndexDescriptor nli = IndexPrototype.forSchema(
                         SchemaDescriptors.forAnyEntityTokens(EntityType.NODE),
@@ -114,7 +115,7 @@ class IndexTransactionApplierFactoryTest {
         IndexDescriptor rule1 = uniqueForSchema(forLabel(1, 1), providerKey, providerVersion, indexId1, constraintId1);
         IndexDescriptor rule2 = uniqueForSchema(forLabel(2, 1), providerKey, providerVersion, indexId2, constraintId2);
         IndexDescriptor rule3 = uniqueForSchema(forLabel(3, 1), providerKey, providerVersion, indexId3, constraintId3);
-        IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory(indexUpdateListener);
+        IndexTransactionApplierFactory applier = new IndexTransactionApplierFactory(INTERNAL, indexUpdateListener);
         var batchContext = mock(BatchContext.class);
         when(batchContext.getLockGroup()).thenReturn(new LockGroup());
         when(batchContext.indexUpdates()).thenReturn(mock(IndexUpdates.class));

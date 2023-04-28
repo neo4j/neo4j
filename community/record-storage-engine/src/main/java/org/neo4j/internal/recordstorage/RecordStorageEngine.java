@@ -290,10 +290,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
         }
         if (mode.needsAuxiliaryStores()) {
             // Counts store application
-            appliers.add(new CountsStoreTransactionApplierFactory(countsStore, groupDegreesStore));
+            appliers.add(new CountsStoreTransactionApplierFactory(mode, countsStore, groupDegreesStore));
 
             // Schema index application
-            appliers.add(new IndexTransactionApplierFactory(indexUpdateListener));
+            appliers.add(new IndexTransactionApplierFactory(mode, indexUpdateListener));
         }
         return new TransactionApplierFactoryChain(
                 idUpdateListenerFunction, appliers.toArray(new TransactionApplierFactory[0]));

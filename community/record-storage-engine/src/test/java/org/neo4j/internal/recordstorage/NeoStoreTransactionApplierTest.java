@@ -955,7 +955,7 @@ class NeoStoreTransactionApplierTest {
     }
 
     private TransactionApplierFactory newIndexApplier() {
-        return new IndexTransactionApplierFactory(indexingService);
+        return new IndexTransactionApplierFactory(INTERNAL, indexingService);
     }
 
     private boolean apply(
