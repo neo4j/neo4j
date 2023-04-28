@@ -28,7 +28,6 @@ import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
-import org.neo4j.fabric.bookmark.TransactionBookmarkManagerFactory;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.TransactionManager;
@@ -43,21 +42,18 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
     private final TransactionManager transactionManager;
     private final FabricDatabaseManager fabricDatabaseManager;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
-    private final TransactionBookmarkManagerFactory transactionBookmarkManagerFactory;
 
     public BoltFabricDatabaseManagementService(
             FabricExecutor fabricExecutor,
             FabricConfig config,
             TransactionManager transactionManager,
             FabricDatabaseManager fabricDatabaseManager,
-            LocalGraphTransactionIdTracker transactionIdTracker,
-            TransactionBookmarkManagerFactory transactionBookmarkManagerFactory) {
+            LocalGraphTransactionIdTracker transactionIdTracker) {
         this.fabricExecutor = fabricExecutor;
         this.config = config;
         this.transactionManager = transactionManager;
         this.fabricDatabaseManager = fabricDatabaseManager;
         this.transactionIdTracker = transactionIdTracker;
-        this.transactionBookmarkManagerFactory = transactionBookmarkManagerFactory;
     }
 
     @Override
@@ -77,13 +73,7 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
 
         var databaseReference = fabricDatabaseManager.getDatabaseReference(databaseName);
         return new BoltFabricDatabaseService(
-                databaseReference,
-                fabricExecutor,
-                config,
-                transactionManager,
-                transactionIdTracker,
-                transactionBookmarkManagerFactory,
-                memoryTracker);
+                databaseReference, fabricExecutor, config, transactionManager, transactionIdTracker, memoryTracker);
     }
 
     @Override

@@ -19,8 +19,11 @@
  */
 package org.neo4j.fabric.bookmark;
 
+import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.fabric.bolt.FabricBookmark;
@@ -31,57 +34,59 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class TransactionBookmarkManagerImpl implements TransactionBookmarkManager {
     private final FabricBookmarkParser fabricBookmarkParser = new FabricBookmarkParser();
-    private final LocalGraphTransactionIdTracker transactionIdTracker;
+    private final FabricBookmark submittedBookmark;
 
     // must be taken when updating the final bookmark
     private final Object finalBookmarkLock = new Object();
-
-    private volatile FabricBookmark submittedBookmark;
     private volatile FabricBookmark finalBookmark;
 
-    public TransactionBookmarkManagerImpl(LocalGraphTransactionIdTracker transactionIdTracker) {
-        this.transactionIdTracker = transactionIdTracker;
-    }
-
-    @Override
-    public void processSubmittedByClient(List<Bookmark> bookmarks) {
-        var fabricBookmarks = convert(bookmarks);
+    public TransactionBookmarkManagerImpl(List<Bookmark> bookmarksSubmittedByClient) {
+        var fabricBookmarks = convert(bookmarksSubmittedByClient);
         this.submittedBookmark = FabricBookmark.merge(fabricBookmarks);
         this.finalBookmark = new FabricBookmark(
                 new ArrayList<>(submittedBookmark.getInternalGraphStates()),
                 new ArrayList<>(submittedBookmark.getExternalGraphStates()));
-        // regardless of what we do, System graph must be always up to date
-        awaitSystemGraphUpToDate();
+    }
+
+    @Override
+    public Optional<LocalBookmark> getBookmarkForLocal(Location.Local location) {
+        return submittedBookmark.getInternalGraphStates().stream()
+                .filter(egs -> egs.graphUuid().equals(location.getUuid()))
+                .map(FabricBookmark.InternalGraphState::transactionId)
+                .map(LocalBookmark::new)
+                .findAny();
+    }
+
+    @Override
+    public Optional<LocalBookmark> getBookmarkForLocalSystemDatabase() {
+        return submittedBookmark.getInternalGraphStates().stream()
+                .filter(internalGraphState -> internalGraphState
+                        .graphUuid()
+                        .equals(NAMED_SYSTEM_DATABASE_ID.databaseId().uuid()))
+                .map(internalGraphState -> new LocalBookmark(internalGraphState.transactionId()))
+                .findFirst();
     }
 
     private List<FabricBookmark> convert(List<Bookmark> bookmarks) {
         return bookmarks.stream()
                 .map(bookmark -> {
-                    if (bookmark instanceof FabricBookmark fabricBookmark) {
-                        return fabricBookmark;
+                    if (bookmark instanceof FabricBookmark) {
+                        return (FabricBookmark) bookmark;
                     }
 
                     throw new FabricException(
-                            Status.Transaction.InvalidBookmarkMixture,
+                            Status.Transaction.InvalidBookmark,
                             "Bookmark for unexpected database encountered: " + bookmark);
                 })
                 .collect(Collectors.toList());
-    }
-
-    private void awaitSystemGraphUpToDate() {
-        var graphUuid2TxIdMapping = submittedBookmark.getInternalGraphStates().stream()
-                .collect(Collectors.toMap(
-                        FabricBookmark.InternalGraphState::getGraphUuid,
-                        FabricBookmark.InternalGraphState::getTransactionId));
-        transactionIdTracker.awaitSystemGraphUpToDate(graphUuid2TxIdMapping);
     }
 
     @Override
     public List<RemoteBookmark> getBookmarksForRemote(Location.Remote location) {
         if (location instanceof Location.Remote.External) {
             return submittedBookmark.getExternalGraphStates().stream()
-                    .filter(egs -> egs.getGraphUuid().equals(location.getUuid()))
-                    .map(FabricBookmark.ExternalGraphState::getBookmarks)
+                    .filter(egs -> egs.graphUuid().equals(location.getUuid()))
+                    .map(FabricBookmark.ExternalGraphState::bookmarks)
                     .findAny()
                     .orElse(List.of());
         }
@@ -102,26 +107,17 @@ public class TransactionBookmarkManagerImpl implements TransactionBookmarkManage
                 var bookmarkUpdate = new FabricBookmark(List.of(), List.of(externalGraphState));
                 finalBookmark = FabricBookmark.merge(List.of(finalBookmark, bookmarkUpdate));
             } else {
-                var fabricBookmark = fabricBookmarkParser.parse(bookmark.getSerialisedState());
+                var fabricBookmark = fabricBookmarkParser.parse(bookmark.serializedState());
                 finalBookmark = FabricBookmark.merge(List.of(finalBookmark, fabricBookmark));
             }
         }
     }
 
     @Override
-    public void awaitUpToDate(Location.Local location) {
-        submittedBookmark.getInternalGraphStates().stream()
-                .filter(egs -> egs.getGraphUuid().equals(location.getUuid()))
-                .map(FabricBookmark.InternalGraphState::getTransactionId)
-                .findAny()
-                .ifPresent(transactionId -> transactionIdTracker.awaitGraphUpToDate(location, transactionId));
-    }
-
-    @Override
-    public void localTransactionCommitted(Location.Local location) {
+    public void localTransactionCommitted(Location.Local location, LocalBookmark bookmark) {
         synchronized (finalBookmarkLock) {
-            long transactionId = transactionIdTracker.getTransactionId(location);
-            var internalGraphState = new FabricBookmark.InternalGraphState(location.getUuid(), transactionId);
+            var internalGraphState =
+                    new FabricBookmark.InternalGraphState(location.getUuid(), bookmark.transactionId());
             var bookmarkUpdate = new FabricBookmark(List.of(internalGraphState), List.of());
             finalBookmark = FabricBookmark.merge(List.of(finalBookmark, bookmarkUpdate));
         }

@@ -170,7 +170,7 @@ public class DatabaseManagementServiceFactory {
         // Fabric depends on Procedures
         setupProcedures(globalModule, edition, databaseContextProvider, routingService);
 
-        edition.bootstrapFabricServices();
+        edition.bootstrapFabricServices(managementService);
 
         edition.registerDatabaseInitializers(globalModule);
 
@@ -184,12 +184,7 @@ public class DatabaseManagementServiceFactory {
 
         globalLife.add(globalModule.getGlobalExtensions());
         BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI =
-                edition.createBoltDatabaseManagementServiceProvider(
-                        globalDependencies,
-                        managementService,
-                        globalModule.getGlobalMonitors(),
-                        globalModule.getGlobalClock(),
-                        logService);
+                edition.createBoltDatabaseManagementServiceProvider();
 
         var transactionManager =
                 new TransactionManagerImpl(boltGraphDatabaseManagementServiceSPI, globalModule.getGlobalClock());

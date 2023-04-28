@@ -65,8 +65,6 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.InternalLogProvider;
-import org.neo4j.logging.internal.LogService;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures;
 import org.neo4j.procedure.builtin.BuiltInProcedures;
 import org.neo4j.procedure.builtin.FulltextProcedures;
@@ -75,7 +73,6 @@ import org.neo4j.procedure.builtin.graphschema.Introspect;
 import org.neo4j.procedure.builtin.routing.RoutingProcedureInstaller;
 import org.neo4j.procedure.impl.ProcedureConfig;
 import org.neo4j.server.config.AuthConfigProvider;
-import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.FeatureToggles;
 
 /**
@@ -163,14 +160,9 @@ public abstract class AbstractEditionModule {
         return defaultDatabaseResolver;
     }
 
-    public abstract void bootstrapFabricServices();
+    public abstract void bootstrapFabricServices(DatabaseManagementService databaseManagementService);
 
-    public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider(
-            Dependencies dependencies,
-            DatabaseManagementService managementService,
-            Monitors monitors,
-            SystemNanoClock clock,
-            LogService logService);
+    public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider();
 
     public AuthManager getBoltAuthManager(DependencyResolver dependencyResolver) {
         return dependencyResolver.resolveDependency(AuthManager.class);

@@ -20,12 +20,6 @@
 package org.neo4j.fabric.bookmark;
 
 /**
- * The main purpose of this factory is to make bookmark logic testable.
+ * A bookmark received after interacting with a local graph.
  */
-public class TransactionBookmarkManagerFactory {
-
-    public TransactionBookmarkManager createTransactionBookmarkManager(
-            LocalGraphTransactionIdTracker transactionIdTracker) {
-        return new TransactionBookmarkManagerImpl(transactionIdTracker);
-    }
-}
+public record LocalBookmark(long transactionId) {}

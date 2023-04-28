@@ -41,6 +41,7 @@ import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.configuration.Config;
 import org.neo4j.fabric.FabricDatabaseManager;
+import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.CatalogManager;
@@ -189,7 +190,8 @@ public class FabricTransactionImplTest {
             }
         });
 
-        return new FabricLocalExecutor(FabricConfig.from(config), fabricDatabaseManager);
+        return new FabricLocalExecutor(
+                FabricConfig.from(config), fabricDatabaseManager, mock(LocalGraphTransactionIdTracker.class));
     }
 
     private static TransactionManager transactionManager(Config config, FabricLocalExecutor localExecutor) {

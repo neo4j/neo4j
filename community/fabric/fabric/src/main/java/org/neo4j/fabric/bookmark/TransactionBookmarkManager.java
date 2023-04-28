@@ -20,7 +20,7 @@
 package org.neo4j.fabric.bookmark;
 
 import java.util.List;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
+import java.util.Optional;
 import org.neo4j.fabric.bolt.FabricBookmark;
 import org.neo4j.fabric.executor.Location;
 
@@ -30,7 +30,15 @@ import org.neo4j.fabric.executor.Location;
  * An implementation MUST NOT be shared across transactions.
  */
 public interface TransactionBookmarkManager {
-    void processSubmittedByClient(List<Bookmark> bookmarks);
+    /**
+     * Return a bookmark for a local graph if such bookmark exists.
+     */
+    Optional<LocalBookmark> getBookmarkForLocal(Location.Local location);
+
+    /**
+     * Return a bookmark for a local System graph if such bookmark exists.
+     */
+    Optional<LocalBookmark> getBookmarkForLocalSystemDatabase();
 
     /**
      * Returns bookmarks that should be sent to a remote when opening a transaction there.
@@ -43,14 +51,9 @@ public interface TransactionBookmarkManager {
     void remoteTransactionCommitted(Location.Remote location, RemoteBookmark bookmark);
 
     /**
-     * Will wait until the local graph in a state required by bookmarks submitted in {@link #processSubmittedByClient(List)}.
-     */
-    void awaitUpToDate(Location.Local location);
-
-    /**
      * Notifies the manager that a local transaction has been committed.
      */
-    void localTransactionCommitted(Location.Local local);
+    void localTransactionCommitted(Location.Local location, LocalBookmark bookmark);
 
     /**
      * Constructs a bookmark that will hold the information collected by this bookmark manager.

@@ -28,6 +28,8 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.cypher.internal.FullyParsedQuery;
 import org.neo4j.cypher.internal.javacompat.ExecutionEngine;
 import org.neo4j.fabric.FabricDatabaseManager;
+import org.neo4j.fabric.bookmark.LocalBookmark;
+import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManager;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricStatementLifecycles.StatementLifecycle;
@@ -50,10 +52,13 @@ import reactor.core.publisher.Mono;
 public class FabricLocalExecutor {
     private final FabricConfig config;
     private final FabricDatabaseManager dbms;
+    private final LocalGraphTransactionIdTracker transactionIdTracker;
 
-    public FabricLocalExecutor(FabricConfig config, FabricDatabaseManager dbms) {
+    public FabricLocalExecutor(
+            FabricConfig config, FabricDatabaseManager dbms, LocalGraphTransactionIdTracker transactionIdTracker) {
         this.config = config;
         this.dbms = dbms;
+        this.transactionIdTracker = transactionIdTracker;
     }
 
     public LocalTransactionContext startTransactionContext(
@@ -112,7 +117,9 @@ public class FabricLocalExecutor {
             // Unlike the bookmark logic, this will fail gracefully if the database is not available
             var databaseFacade = getDatabaseFacade(location);
 
-            bookmarkManager.awaitUpToDate(location);
+            bookmarkManager
+                    .getBookmarkForLocal(location)
+                    .ifPresent(bookmark -> transactionIdTracker.awaitGraphUpToDate(location, bookmark.transactionId()));
             return kernelTransactions.computeIfAbsent(
                             location.getUuid(),
                             dbUuid -> parentTransaction.registerNewChildTransaction(location, transactionMode, () -> {
@@ -204,7 +211,7 @@ public class FabricLocalExecutor {
         }
     }
 
-    private static class KernelTxWrapper implements SingleDbTransaction {
+    private class KernelTxWrapper implements SingleDbTransaction {
 
         private final FabricKernelTransaction fabricKernelTransaction;
         private final TransactionBookmarkManager bookmarkManager;
@@ -231,7 +238,8 @@ public class FabricLocalExecutor {
 
         private void doCommit() {
             fabricKernelTransaction.commit();
-            bookmarkManager.localTransactionCommitted(location);
+            long transactionId = transactionIdTracker.getTransactionId(location);
+            bookmarkManager.localTransactionCommitted(location, new LocalBookmark(transactionId));
         }
 
         private void doRollback() {

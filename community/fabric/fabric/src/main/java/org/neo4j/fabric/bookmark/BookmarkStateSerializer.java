@@ -76,8 +76,8 @@ public class BookmarkStateSerializer {
         }
 
         void packInternalGraph(PackstreamBuf buf, FabricBookmark.InternalGraphState internalGraphState) {
-            packUuid(buf, internalGraphState.getGraphUuid());
-            buf.writeInt(internalGraphState.getTransactionId());
+            packUuid(buf, internalGraphState.graphUuid());
+            buf.writeInt(internalGraphState.transactionId());
         }
 
         void packExternalGraphs(List<FabricBookmark.ExternalGraphState> externalGraphStates) {
@@ -85,9 +85,8 @@ public class BookmarkStateSerializer {
         }
 
         void packExternalGraph(PackstreamBuf buf, FabricBookmark.ExternalGraphState externalGraphState) {
-            packUuid(buf, externalGraphState.getGraphUuid());
-            buf.writeList(
-                    externalGraphState.getBookmarks(), (b, bookmark) -> b.writeString(bookmark.getSerialisedState()));
+            packUuid(buf, externalGraphState.graphUuid());
+            buf.writeList(externalGraphState.bookmarks(), (b, bookmark) -> b.writeString(bookmark.serializedState()));
         }
 
         void packUuid(PackstreamBuf buf, UUID uuid) {

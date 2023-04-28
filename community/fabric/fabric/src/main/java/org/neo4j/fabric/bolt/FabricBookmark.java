@@ -94,7 +94,7 @@ public class FabricBookmark extends BookmarkMetadata implements Bookmark {
         fabricBookmarks.stream()
                 .flatMap(fabricBookmark -> fabricBookmark.getInternalGraphStates().stream())
                 .forEach(internalGraphState -> internalGraphTxIds.merge(
-                        internalGraphState.getGraphUuid(), internalGraphState.getTransactionId(), Math::max));
+                        internalGraphState.graphUuid(), internalGraphState.transactionId(), Math::max));
 
         return internalGraphTxIds.entrySet().stream()
                 .map(entry -> new InternalGraphState(entry.getKey(), entry.getValue()))
@@ -107,8 +107,8 @@ public class FabricBookmark extends BookmarkMetadata implements Bookmark {
         fabricBookmarks.stream()
                 .flatMap(fabricBookmark -> fabricBookmark.getExternalGraphStates().stream())
                 .forEach(externalGraphState -> externalGraphStates
-                        .computeIfAbsent(externalGraphState.getGraphUuid(), key -> new ArrayList<>())
-                        .addAll(externalGraphState.getBookmarks()));
+                        .computeIfAbsent(externalGraphState.graphUuid(), key -> new ArrayList<>())
+                        .addAll(externalGraphState.bookmarks()));
 
         return externalGraphStates.entrySet().stream()
                 .map(entry -> new ExternalGraphState(entry.getKey(), entry.getValue()))
@@ -142,86 +142,10 @@ public class FabricBookmark extends BookmarkMetadata implements Bookmark {
     /**
      * State of a graph that is located in current DBMS.
      */
-    public static class InternalGraphState {
-        private final UUID graphUuid;
-        private final long transactionId;
-
-        public InternalGraphState(UUID graphUuid, long transactionId) {
-            this.graphUuid = graphUuid;
-            this.transactionId = transactionId;
-        }
-
-        public UUID getGraphUuid() {
-            return graphUuid;
-        }
-
-        public long getTransactionId() {
-            return transactionId;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            InternalGraphState that = (InternalGraphState) o;
-            return transactionId == that.transactionId && graphUuid.equals(that.graphUuid);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(graphUuid, transactionId);
-        }
-
-        @Override
-        public String toString() {
-            return "InternalGraphState{" + "graphUuid=" + graphUuid + ", transactionId=" + transactionId + '}';
-        }
-    }
+    public record InternalGraphState(UUID graphUuid, long transactionId) {}
 
     /**
      * State of a graph that is located in another DBMS.
      */
-    public static class ExternalGraphState {
-        private final UUID graphUuid;
-        private final List<RemoteBookmark> bookmarks;
-
-        public ExternalGraphState(UUID graphUuid, List<RemoteBookmark> bookmarks) {
-            this.graphUuid = graphUuid;
-            this.bookmarks = bookmarks;
-        }
-
-        public UUID getGraphUuid() {
-            return graphUuid;
-        }
-
-        public List<RemoteBookmark> getBookmarks() {
-            return bookmarks;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            ExternalGraphState that = (ExternalGraphState) o;
-            return graphUuid.equals(that.graphUuid) && bookmarks.equals(that.bookmarks);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(graphUuid, bookmarks);
-        }
-
-        @Override
-        public String toString() {
-            return "ExternalGraphState{" + "graphUuid=" + graphUuid + ", bookmarks=" + bookmarks + '}';
-        }
-    }
+    public record ExternalGraphState(UUID graphUuid, List<RemoteBookmark> bookmarks) {}
 }

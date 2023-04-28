@@ -33,7 +33,7 @@ import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
-import org.neo4j.fabric.bookmark.TransactionBookmarkManagerFactory;
+import org.neo4j.fabric.bookmark.TransactionBookmarkManagerImpl;
 import org.neo4j.fabric.bootstrap.TestOverrides;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.executor.FabricExecutor;
@@ -62,7 +62,6 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
     private final FabricConfig config;
     private final TransactionManager transactionManager;
     private final LocalGraphTransactionIdTracker transactionIdTracker;
-    private final TransactionBookmarkManagerFactory transactionBookmarkManagerFactory;
     private final MemoryTracker memoryTracker;
 
     public BoltFabricDatabaseService(
@@ -71,14 +70,12 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
             FabricConfig config,
             TransactionManager transactionManager,
             LocalGraphTransactionIdTracker transactionIdTracker,
-            TransactionBookmarkManagerFactory transactionBookmarkManagerFactory,
             MemoryTracker memoryTracker) {
         this.databaseReference = databaseReference;
         this.config = config;
         this.transactionManager = transactionManager;
         this.fabricExecutor = fabricExecutor;
         this.transactionIdTracker = transactionIdTracker;
-        this.transactionBookmarkManagerFactory = transactionBookmarkManagerFactory;
         this.memoryTracker = memoryTracker;
     }
 
@@ -110,9 +107,12 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
                 TestOverrides.routingContext(routingContext),
                 queryExecutionConfiguration);
 
-        var transactionBookmarkManager =
-                transactionBookmarkManagerFactory.createTransactionBookmarkManager(transactionIdTracker);
-        transactionBookmarkManager.processSubmittedByClient(bookmarks);
+        var transactionBookmarkManager = new TransactionBookmarkManagerImpl(bookmarks);
+        // regardless of what we do, System graph must be always up to date
+        transactionBookmarkManager
+                .getBookmarkForLocalSystemDatabase()
+                .ifPresent(
+                        localBookmark -> transactionIdTracker.awaitSystemGraphUpToDate(localBookmark.transactionId()));
 
         FabricTransaction fabricTransaction = transactionManager.begin(transactionInfo, transactionBookmarkManager);
         return new BoltTransactionImpl(transactionInfo, fabricTransaction);

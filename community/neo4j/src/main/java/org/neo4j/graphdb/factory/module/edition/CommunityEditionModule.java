@@ -94,7 +94,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.monitoring.Monitors;
 import org.neo4j.router.QueryRouterBootstrap;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.config.AuthConfigProvider;
@@ -102,7 +101,6 @@ import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.systemgraph.CommunityDefaultDatabaseResolver;
 import org.neo4j.ssl.config.SslPolicyLoader;
-import org.neo4j.time.SystemNanoClock;
 
 /**
  * This implementation of {@link AbstractEditionModule} creates the implementations of services
@@ -389,13 +387,8 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     }
 
     @Override
-    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider(
-            Dependencies dependencies,
-            DatabaseManagementService managementService,
-            Monitors monitors,
-            SystemNanoClock clock,
-            LogService logService) {
-        return fabricServicesBootstrap.createBoltDatabaseManagementServiceProvider(managementService, monitors, clock);
+    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider() {
+        return fabricServicesBootstrap.createBoltDatabaseManagementServiceProvider();
     }
 
     protected CommitProcessFactory createCommitProcessFactory() {
@@ -403,8 +396,8 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     }
 
     @Override
-    public void bootstrapFabricServices() {
-        fabricServicesBootstrap.bootstrapServices();
+    public void bootstrapFabricServices(DatabaseManagementService databaseManagementService) {
+        fabricServicesBootstrap.bootstrapServices(databaseManagementService);
     }
 
     @Override

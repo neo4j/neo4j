@@ -94,7 +94,7 @@ public class SystemDbUpgrader {
         edition.registerSystemGraphComponents(systemGraphComponentsBuilder, globalModule);
 
         var databaseContextProvider = edition.createDatabaseContextProvider(globalModule);
-        edition.bootstrapFabricServices();
+        edition.bootstrapFabricServices(null);
         edition.registerDatabaseInitializers(globalModule);
 
         edition.createDefaultDatabaseResolver(globalModule);

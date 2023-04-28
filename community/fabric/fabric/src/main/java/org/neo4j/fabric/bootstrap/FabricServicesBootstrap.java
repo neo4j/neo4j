@@ -37,7 +37,6 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.fabric.bolt.BoltFabricDatabaseManagementService;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
-import org.neo4j.fabric.bookmark.TransactionBookmarkManagerFactory;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.fabric.eval.CatalogManager;
 import org.neo4j.fabric.eval.CommunityCatalogManager;
@@ -108,7 +107,7 @@ public abstract class FabricServicesBootstrap {
         return dependencies.resolveDependency(type);
     }
 
-    public void bootstrapServices() {
+    public void bootstrapServices(DatabaseManagementService databaseManagementService) {
         InternalLogProvider internalLogProvider = logService.getInternalLogProvider();
 
         @SuppressWarnings("unchecked")
@@ -119,10 +118,18 @@ public abstract class FabricServicesBootstrap {
         var monitors = resolve(Monitors.class);
 
         var remoteExecutor = bootstrapRemoteStack();
-        var localExecutor =
-                register(new FabricLocalExecutor(fabricConfig, fabricDatabaseManager), FabricLocalExecutor.class);
-
+        var serverConfig = dependencies.resolveDependency(Config.class);
         var systemNanoClock = resolve(SystemNanoClock.class);
+
+        var transactionIdTracker = new TransactionIdTracker(databaseManagementService, monitors, systemNanoClock);
+        var databaseIdRepository = databaseProvider.databaseIdRepository();
+        var localGraphTransactionIdTracker = register(
+                new LocalGraphTransactionIdTracker(transactionIdTracker, databaseIdRepository, serverConfig),
+                LocalGraphTransactionIdTracker.class);
+        var localExecutor = register(
+                new FabricLocalExecutor(fabricConfig, fabricDatabaseManager, localGraphTransactionIdTracker),
+                FabricLocalExecutor.class);
+
         var transactionMonitor = register(
                 new FabricTransactionMonitor(config, systemNanoClock, logService, fabricConfig),
                 FabricTransactionMonitor.class);
@@ -167,36 +174,24 @@ public abstract class FabricServicesBootstrap {
         var fabricExecutor = new FabricExecutor(
                 fabricConfig, planner, useEvaluation, internalLogProvider, statementLifecycles, fabricWorkerExecutor);
         register(fabricExecutor, FabricExecutor.class);
-
-        register(new TransactionBookmarkManagerFactory(), TransactionBookmarkManagerFactory.class);
     }
 
     protected DatabaseLookup createDatabaseLookup(FabricDatabaseManager fabricDatabaseManager) {
         return new DatabaseLookup.Default(fabricDatabaseManager);
     }
 
-    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider(
-            DatabaseManagementService managementService, Monitors monitors, SystemNanoClock clock) {
+    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider() {
         FabricExecutor fabricExecutor = dependencies.resolveDependency(FabricExecutor.class);
         TransactionManager transactionManager = dependencies.resolveDependency(TransactionManager.class);
         FabricDatabaseManager fabricDatabaseManager = dependencies.resolveDependency(FabricDatabaseManager.class);
-
-        var serverConfig = dependencies.resolveDependency(Config.class);
-
-        var transactionIdTracker = new TransactionIdTracker(managementService, monitors, clock);
-
-        var databaseIdRepository = databaseProvider.databaseIdRepository();
-        var transactionBookmarkManagerFactory = dependencies.resolveDependency(TransactionBookmarkManagerFactory.class);
-
-        var localGraphTransactionIdTracker =
-                new LocalGraphTransactionIdTracker(transactionIdTracker, databaseIdRepository, serverConfig);
+        LocalGraphTransactionIdTracker localGraphTransactionIdTracker =
+                dependencies.resolveDependency(LocalGraphTransactionIdTracker.class);
         return dependencies.satisfyDependency(new BoltFabricDatabaseManagementService(
                 fabricExecutor,
                 fabricConfig,
                 transactionManager,
                 fabricDatabaseManager,
-                localGraphTransactionIdTracker,
-                transactionBookmarkManagerFactory));
+                localGraphTransactionIdTracker));
     }
 
     protected abstract FabricDatabaseManager createFabricDatabaseManager(FabricConfig fabricConfig);
