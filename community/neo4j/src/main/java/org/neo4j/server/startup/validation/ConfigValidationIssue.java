@@ -54,6 +54,13 @@ public class ConfigValidationIssue {
         return cause;
     }
 
+    public ConfigValidationIssue asWarning() {
+        if (isError) {
+            return new ConfigValidationIssue(file, message, false, cause);
+        }
+        return this;
+    }
+
     public void printStackTrace(PrintStream stream) {
         if (cause == null) {
             stream.println("No stack trace available.");

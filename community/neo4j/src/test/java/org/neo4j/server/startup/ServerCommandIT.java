@@ -36,34 +36,55 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.neo4j.cli.ExitCode;
 import org.neo4j.configuration.BootloaderSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemUtils;
 import org.neo4j.memory.EmptyMemoryTracker;
-import org.neo4j.server.NeoBootstrapper;
 
 /**
  * A base test for some commands in 'neo4j-admin server' and 'neo4j' group.
  */
 abstract class ServerCommandIT extends ServerProcessTestBase {
+    @Test
+    void startShouldFailWithNiceOutputOnInvalidNeo4jConfig() {
+        addConf(GraphDatabaseSettings.pagecache_memory, "hgb!C2/#C");
+        var exitCode = execute("start");
+        assertThat(exitCode).isEqualTo(ExitCode.FAIL);
+        assertThat(err.toString())
+                .contains(
+                        "Error: Error evaluating value for setting 'server.memory.pagecache.size'.",
+                        "Configuration contains errors.");
+    }
+
+    @Test
+    void startShouldFailOnInvalidUserLog4jConfig() throws IOException {
+        Path log4jConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
+        FileSystemUtils.writeString(fs, log4jConfig, "<Configuration></Cunfigoratzion>", EmptyMemoryTracker.INSTANCE);
+        int exitCode = execute("start");
+        assertThat(exitCode).isEqualTo(ExitCode.FAIL);
+        assertThat(err.toString())
+                .contains(
+                        "Error at 1:18: The element type \"Configuration\" must be terminated by the matching end-tag \"</Configuration>\".",
+                        "Configuration contains errors.");
+    }
+
+    @Test
+    void startShouldBeAllowedWithWarningsOnInvalidServerLog4jConfig() throws IOException {
+        Path log4jConfig = config.get(GraphDatabaseSettings.server_logging_config_path);
+        FileSystemUtils.writeString(fs, log4jConfig, "<Configuration></Cunfigoratzion>", EmptyMemoryTracker.INSTANCE);
+        int exitCode = execute("start");
+        assertThat(exitCode).isEqualTo(ExitCode.OK);
+        assertThat(err.toString())
+                .contains(
+                        "Warning at 1:18: The element type \"Configuration\" must be terminated by the matching end-tag \"</Configuration>\".");
+    }
 
     @DisabledOnOs(OS.WINDOWS)
     @Test
     void shouldBeAbleToStartAndStopRealServerOnNonWindows() {
         shouldBeAbleToStartAndStopRealServer();
         assertThat(err.toString()).isEmpty();
-    }
-
-    @DisabledOnOs(OS.WINDOWS)
-    @Test
-    void shouldPropagateErrorsOnServerStart() throws IOException {
-        Path log4jConfig = config.get(GraphDatabaseSettings.user_logging_config_path);
-        FileSystemUtils.writeString(fs, log4jConfig, "<Configuration></Cunfigoratzion>", EmptyMemoryTracker.INSTANCE);
-        int start = execute(List.of("start"), Map.of());
-        assertThat(start).isEqualTo(NeoBootstrapper.INVALID_CONFIGURATION_ERROR_CODE);
-        assertThat(err.toString())
-                .contains(
-                        "[Fatal Error] user-logs.xml:1:18: The element type \"Configuration\" must be terminated by the matching end-tag \"</Configuration>\".");
     }
 
     @EnabledOnOs(OS.WINDOWS)

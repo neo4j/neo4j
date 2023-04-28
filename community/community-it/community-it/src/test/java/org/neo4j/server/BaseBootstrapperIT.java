@@ -21,7 +21,6 @@ package org.neo4j.server;
 
 import static org.apache.commons.lang3.SystemUtils.IS_OS_WINDOWS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,6 +35,7 @@ import static org.neo4j.internal.helpers.collection.Iterators.single;
 import static org.neo4j.internal.helpers.collection.MapUtil.store;
 import static org.neo4j.internal.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
+import static org.neo4j.server.NeoBootstrapper.INVALID_CONFIGURATION_ERROR_CODE;
 import static org.neo4j.server.WebContainerTestUtils.getDefaultRelativeProperties;
 import static org.neo4j.server.WebContainerTestUtils.verifyConnector;
 import static org.neo4j.test.assertion.Assert.assertEventually;
@@ -244,8 +244,9 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
                 "--home-dir", testDirectory.homePath().toString(), "-c", setting);
 
         // Then
-        assertThatThrownBy(() -> NeoBootstrapper.start(bootstrapper, args))
-                .hasMessageContaining("is a command, but config is not explicitly told to expand it");
+        assertThat(NeoBootstrapper.start(bootstrapper, args)).isEqualTo(INVALID_CONFIGURATION_ERROR_CODE);
+        assertThat(suppressOutput.getErrorVoice().toString())
+                .contains("is a command, but config is not explicitly told to expand it");
 
         // Also then
         NeoBootstrapper.start(bootstrapper, Arrays.append(args, "--expand-commands"));
@@ -289,9 +290,11 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         };
 
         int resultCode = NeoBootstrapper.start(bootstrapper, args);
-        assertThat(resultCode).isEqualTo(NeoBootstrapper.INVALID_CONFIGURATION_ERROR_CODE);
-        assertThat(suppressOutput.getErrorVoice().containsMessage("[Fatal Error] user-logs.xml:"))
-                .isTrue();
+        assertThat(resultCode).isEqualTo(INVALID_CONFIGURATION_ERROR_CODE);
+        assertThat(suppressOutput.getErrorVoice().toString())
+                .contains(
+                        "Error at 1:17: XML document structures must start and end within the same entity.",
+                        "Configuration file validation failed.");
     }
 
     @Test
@@ -339,8 +342,8 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
                 configOption(
                         server_logging_config_path, xmlConfig.toAbsolutePath().toString()));
         assertThat(resultCode).isEqualTo(NeoBootstrapper.OK);
-        assertTrue(suppressOutput.getOutputVoice().containsMessage("[ System diagnostics ]"));
-        assertTrue(suppressOutput.getOutputVoice().containsMessage("[ System memory information ]"));
+        assertThat(suppressOutput.getOutputVoice().toString())
+                .contains("[ System diagnostics ]", "[ System memory information ]");
     }
 
     protected abstract DatabaseManagementService newEmbeddedDbms(Path homeDir);

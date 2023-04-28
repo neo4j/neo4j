@@ -22,39 +22,45 @@ package org.neo4j.server.startup.validation;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import org.neo4j.cli.CommandFailedException;
+import org.neo4j.configuration.Config;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Neo4jLogMessage;
 import org.neo4j.logging.Neo4jMessageSupplier;
-import org.neo4j.server.startup.Bootloader;
 import org.neo4j.util.VisibleForTesting;
 
 public class Neo4jConfigValidator implements ConfigValidator {
     private final Path path;
-    private final Bootloader bootloader;
+    private final Supplier<Config> configSupplier;
 
-    public Neo4jConfigValidator(Bootloader bootloader) {
-        this.bootloader = bootloader;
-        this.path = bootloader.confFile();
+    public Neo4jConfigValidator(Supplier<Config> config, Path path) {
+        this.configSupplier = config;
+        this.path = path;
     }
 
     @Override
     public List<ConfigValidationIssue> validate() {
         List<ConfigValidationIssue> issues = new ArrayList<>();
         try {
-            var config = bootloader.validateConfigThrow();
+            // Calling the supplier should build the config,
+            // and we'll record log messages and catch any exceptions here.
+            var config = configSupplier.get();
             var logger = new IssueCollectingLogger(issues);
 
             // Will replay logging calls to our logger
-            config.getUnfiltered().setLogger(logger);
+            config.setLogger(logger);
+        } catch (IllegalArgumentException e) {
+            issues.add(new ConfigValidationIssue(path, e.getMessage(), true, e));
         } catch (CommandFailedException e) {
+            // When validating using the bootloader, exceptions are wrapped in a CommandFailedException.
             var message = e.getMessage();
             var cause = e.getCause();
             if (cause != null) {
                 message = cause.getMessage();
             }
 
-            issues.add(new ConfigValidationIssue(bootloader.confFile(), message, true, e));
+            issues.add(new ConfigValidationIssue(path, message, true, e));
         }
 
         return issues;
@@ -62,7 +68,11 @@ public class Neo4jConfigValidator implements ConfigValidator {
 
     @Override
     public String getLabel() {
-        return "Neo4j configuration: %s".formatted(path.toString());
+        if (path != null) {
+            return "Neo4j configuration: %s".formatted(path.toString());
+        } else {
+            return "Neo4j configuration";
+        }
     }
 
     /**

@@ -21,7 +21,8 @@ package org.neo4j.server.startup.validation;
 
 import java.io.IOException;
 import java.util.List;
-import org.neo4j.server.startup.Bootloader;
+import java.util.function.Supplier;
+import org.neo4j.configuration.Config;
 
 public interface ConfigValidator {
     List<ConfigValidationIssue> validate() throws IOException;
@@ -29,10 +30,10 @@ public interface ConfigValidator {
     String getLabel();
 
     interface Factory {
-        ConfigValidator getNeo4jValidator(Bootloader bootloader);
+        ConfigValidator getNeo4jValidator(Supplier<Config> config);
 
-        ConfigValidator getLog4jUserValidator(Bootloader bootloader);
+        ConfigValidator getLog4jUserValidator(Supplier<Config> config);
 
-        ConfigValidator getLog4jServerValidator(Bootloader bootloader);
+        ConfigValidator getLog4jServerValidator(Supplier<Config> config);
     }
 }

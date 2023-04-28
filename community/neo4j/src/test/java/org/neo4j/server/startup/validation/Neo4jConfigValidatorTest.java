@@ -22,11 +22,9 @@ package org.neo4j.server.startup.validation;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
+import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -34,7 +32,6 @@ import org.neo4j.cli.CommandFailedException;
 import org.neo4j.configuration.Config;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Neo4jMessageSupplier;
-import org.neo4j.server.startup.Bootloader;
 
 class Neo4jConfigValidatorTest {
     @Test
@@ -52,12 +49,7 @@ class Neo4jConfigValidatorTest {
                 .when(config)
                 .setLogger(any(InternalLog.class));
 
-        var filteredConfig = new Bootloader.FilteredConfig(config, s -> true);
-
-        var bootloader = mock(Bootloader.class);
-        when(bootloader.validateConfigThrow()).then(invocation -> filteredConfig);
-
-        var validator = new Neo4jConfigValidator(bootloader);
+        var validator = new Neo4jConfigValidator(() -> config, Path.of("neo4j.conf"));
         var issues = validator.validate();
 
         assertThat(issues).zipSatisfy(warnings, (issue, warning) -> {
@@ -72,10 +64,11 @@ class Neo4jConfigValidatorTest {
         var cause = new IllegalArgumentException("error");
         var exception = new CommandFailedException("ignore this", cause);
 
-        var bootloader = mock(Bootloader.class);
-        doThrow(exception).when(bootloader).validateConfigThrow();
-
-        var validator = new Neo4jConfigValidator(bootloader);
+        var validator = new Neo4jConfigValidator(
+                () -> {
+                    throw exception;
+                },
+                Path.of("neo4j.conf"));
         var issues = validator.validate();
 
         assertThat(issues).hasSize(1).first().satisfies(issue -> {

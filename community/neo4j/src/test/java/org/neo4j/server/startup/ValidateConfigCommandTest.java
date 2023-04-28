@@ -20,186 +20,82 @@
 package org.neo4j.server.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
-import static org.neo4j.server.startup.ValidateConfigCommand.ValidationResult.ERRORS;
-import static org.neo4j.server.startup.ValidateConfigCommand.ValidationResult.OK;
-import static org.neo4j.server.startup.ValidateConfigCommand.ValidationResult.WARNINGS;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.nio.file.Path;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.cli.CommandFailedException;
-import org.neo4j.server.startup.validation.ConfigValidationIssue;
-import org.neo4j.server.startup.validation.ConfigValidator;
+import org.neo4j.configuration.Config;
+import org.neo4j.server.startup.validation.ConfigValidationHelper;
+import org.neo4j.server.startup.validation.ConfigValidationSummary;
 
 class ValidateConfigCommandTest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
-    private final ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
-    private EnhancedExecutionContext ctx;
-    private final TestConfigValidatorFactory factory = new TestConfigValidatorFactory();
+    private final Bootloader.Dbms bootloader = mock(Bootloader.Dbms.class);
+    private final EnhancedExecutionContext context = mock(EnhancedExecutionContext.class);
+
+    private final TestConfigValidationHelper helper = new TestConfigValidationHelper();
+    private final ValidateConfigCommand command = new ValidateConfigCommand(context, helper);
 
     @BeforeEach
     void setup() {
-        ctx = mock(EnhancedExecutionContext.class);
-        when(ctx.createDbmsBootloader()).thenReturn(mock(Bootloader.Dbms.class));
-        when(ctx.out()).thenReturn(new PrintStream(output));
-        when(ctx.err()).thenReturn(new PrintStream(errorOutput));
+        when(context.out()).thenReturn(new PrintStream(output));
+        when(context.createDbmsBootloader()).thenReturn(bootloader);
     }
 
     @Test
-    void shouldReportNoIssues() {
-        var command = new ValidateConfigCommand(ctx, factory);
-        assertThatCode(command::execute).doesNotThrowAnyException();
-
-        var output = this.output.toString();
-        assertThat(output)
+    void shouldPrintValidationSummary() throws IOException {
+        command.execute();
+        assertThat(output.toString())
                 .containsSubsequence(
-                        "Validating Neo4j",
-                        "No issues found.",
-                        "Validating server Log4j",
-                        "No issues found.",
-                        "Validating user Log4j",
-                        "No issues found.",
-                        "Validation successful.");
-        assertThat(errorOutput.size()).isEqualTo(0);
+                        TestConfigValidationHelper.SUMMARY_STRING, TestConfigValidationHelper.CLOSING_STATEMENT_STRING);
     }
 
     @Test
-    void shouldNotFailOnWarnings() {
-        factory.neo4jIssues.add(new ConfigValidationIssue(null, "warning 1", false, null));
-        factory.log4jServerIssues.add(new ConfigValidationIssue(null, "warning 2", false, null));
-        factory.log4jUserIssues.add(new ConfigValidationIssue(null, "warning 3", false, null));
-
-        var command = new ValidateConfigCommand(ctx, factory);
-        assertThatCode(command::execute).doesNotThrowAnyException();
-
-        var output = this.output.toString();
-        assertThat(output)
-                .containsSubsequence(
-                        "Validating Neo4j",
-                        "1 issue found.",
-                        "Warning: warning 1",
-                        "Validating server Log4j",
-                        "1 issue found.",
-                        "Warning: warning 2",
-                        "Validating user Log4j",
-                        "1 issue found.",
-                        "Warning: warning 3",
-                        "Validation successful (with warnings).");
-        assertThat(errorOutput.size()).isEqualTo(0);
-    }
-
-    @Test
-    void shouldNotPerformLog4jValidationIfNeo4jValidationContainsErrors() {
-        factory.neo4jIssues.add(new ConfigValidationIssue(null, "error", true, null));
-
-        var command = new ValidateConfigCommand(ctx, factory);
+    void shouldThrowIfErrors() {
+        helper.result = ConfigValidationSummary.ValidationResult.ERRORS;
         assertThatThrownBy(command::execute)
                 .isInstanceOf(CommandFailedException.class)
-                .hasMessageContaining("Configuration contains errors");
-
-        var output = this.output.toString();
-        assertThat(output)
-                .containsSubsequence(
-                        "Validating Neo4j", "1 issue found.", "Error: error", "Skipping Log4j", "Validation failed.");
-        assertThat(errorOutput.size()).isEqualTo(0);
+                .hasMessage("Configuration contains errors.");
     }
 
-    @Test
-    void shouldHandleIOException() {
-        var factory = spy(this.factory);
-        when(factory.getNeo4jValidator(any())).thenReturn(new ConfigValidator() {
+    private static class TestConfigValidationHelper extends ConfigValidationHelper {
+        public static final String SUMMARY_STRING = "Summary.";
+        public static final String CLOSING_STATEMENT_STRING = "Closing statement.";
+
+        public ConfigValidationSummary.ValidationResult result = ConfigValidationSummary.ValidationResult.OK;
+
+        public TestConfigValidationHelper() {
+            super(Path.of("neo4j.conf"));
+        }
+
+        public class TestConfigValidationSummary extends ConfigValidationSummary {
             @Override
-            public List<ConfigValidationIssue> validate() throws IOException {
-                throw new IOException("exception");
+            public void print(PrintStream out, boolean verbose) {
+                out.println(SUMMARY_STRING);
             }
 
             @Override
-            public String getLabel() {
-                return "Neo4j";
+            public void printClosingStatement(PrintStream out) {
+                out.println(CLOSING_STATEMENT_STRING);
             }
-        });
 
-        var command = new ValidateConfigCommand(ctx, factory);
-        assertThatThrownBy(command::execute)
-                .isInstanceOf(CommandFailedException.class)
-                .hasMessageContaining("Configuration contains errors");
-
-        var output = this.output.toString();
-        assertThat(output).containsSubsequence("Validating Neo4j", "Error: exception", "Validation failed.");
-        assertThat(errorOutput.size()).isEqualTo(0);
-    }
-
-    @Test
-    void shouldCombineResultsCorrectly() {
-        assertThat(OK.and(OK)).isEqualTo(OK);
-        assertThat(OK.and(WARNINGS)).isEqualTo(WARNINGS);
-        assertThat(OK.and(ERRORS)).isEqualTo(ERRORS);
-        assertThat(WARNINGS.and(OK)).isEqualTo(WARNINGS);
-        assertThat(WARNINGS.and(WARNINGS)).isEqualTo(WARNINGS);
-        assertThat(WARNINGS.and(ERRORS)).isEqualTo(ERRORS);
-        assertThat(ERRORS.and(OK)).isEqualTo(ERRORS);
-        assertThat(ERRORS.and(WARNINGS)).isEqualTo(ERRORS);
-        assertThat(ERRORS.and(ERRORS)).isEqualTo(ERRORS);
-    }
-
-    private static class TestConfigValidatorFactory implements ConfigValidator.Factory {
-        public List<ConfigValidationIssue> neo4jIssues = new ArrayList<>();
-        public List<ConfigValidationIssue> log4jUserIssues = new ArrayList<>();
-        public List<ConfigValidationIssue> log4jServerIssues = new ArrayList<>();
-
-        @Override
-        public ConfigValidator getNeo4jValidator(Bootloader bootloader) {
-            return new ConfigValidator() {
-                @Override
-                public List<ConfigValidationIssue> validate() throws IOException {
-                    return neo4jIssues;
-                }
-
-                @Override
-                public String getLabel() {
-                    return "Neo4j";
-                }
-            };
+            @Override
+            public ConfigValidationSummary.ValidationResult result() {
+                return result;
+            }
         }
 
         @Override
-        public ConfigValidator getLog4jUserValidator(Bootloader bootloader) {
-            return new ConfigValidator() {
-                @Override
-                public List<ConfigValidationIssue> validate() throws IOException {
-                    return log4jUserIssues;
-                }
-
-                @Override
-                public String getLabel() {
-                    return "user Log4j";
-                }
-            };
-        }
-
-        @Override
-        public ConfigValidator getLog4jServerValidator(Bootloader bootloader) {
-            return new ConfigValidator() {
-                @Override
-                public List<ConfigValidationIssue> validate() throws IOException {
-                    return log4jServerIssues;
-                }
-
-                @Override
-                public String getLabel() {
-                    return "server Log4j";
-                }
-            };
+        public ConfigValidationSummary validateAll(Supplier<Config> config) {
+            return new TestConfigValidationSummary();
         }
     }
 }

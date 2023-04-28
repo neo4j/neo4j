@@ -19,13 +19,12 @@
  */
 package org.neo4j.server.startup.validation;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.ConfigurationSource;
 import org.apache.logging.log4j.core.config.Reconfigurable;
@@ -34,21 +33,21 @@ import org.apache.logging.log4j.core.util.NullOutputStream;
 import org.apache.logging.log4j.status.StatusData;
 import org.apache.logging.log4j.status.StatusListener;
 import org.apache.logging.log4j.status.StatusLogger;
+import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.ArrayUtil;
 import org.neo4j.logging.log4j.AbstractLookup;
 import org.neo4j.logging.log4j.LookupContext;
-import org.neo4j.server.startup.Bootloader;
 import org.neo4j.util.VisibleForTesting;
 import org.xml.sax.SAXParseException;
 
 public class Log4jConfigValidator implements ConfigValidator {
     private final Path path;
-    private final Bootloader bootloader;
+    private final Config config;
     private final String label;
     static final String[] NONSENSE_ERRORS = {"No logging configuration"};
 
-    public Log4jConfigValidator(Bootloader bootloader, String label, Path path) {
-        this.bootloader = bootloader;
+    public Log4jConfigValidator(Supplier<Config> config, String label, Path path) {
+        this.config = config.get();
         this.path = path;
         this.label = label;
     }
@@ -70,7 +69,7 @@ public class Log4jConfigValidator implements ConfigValidator {
             System.setOut(new PrintStream(NullOutputStream.nullOutputStream()));
             System.setErr(new PrintStream(NullOutputStream.nullOutputStream()));
             logger.registerListener(statusListener);
-            AbstractLookup.setLookupContext(new LookupContext(null, null, bootloader.config()::configStringLookup));
+            AbstractLookup.setLookupContext(new LookupContext(null, null, config::configStringLookup));
             loadConfig(path);
         } finally {
             AbstractLookup.removeLookupContext();
@@ -86,7 +85,7 @@ public class Log4jConfigValidator implements ConfigValidator {
     private StatusListener createIssueCollectingStatusListener(List<ConfigValidationIssue> issues) {
         return new StatusListener() {
             @Override
-            public void close() throws IOException {}
+            public void close() {}
 
             @Override
             public void log(StatusData status) {
@@ -110,18 +109,18 @@ public class Log4jConfigValidator implements ConfigValidator {
     }
 
     @VisibleForTesting
-    void loadConfig(Path path) throws IOException {
-        // If the file doesn't exist, an INFO message is logged, but we don't
-        // want to listen for them in validateLog4jConfig above since we will
-        // get other non-error messages - so let's do our own check here.
-        if (Files.notExists(path)) {
-            throw new FileNotFoundException("file does not exist at " + path);
-        }
-
+    void loadConfig(Path path) {
         // If not found, error is logged to StatusLogger
         var source = ConfigurationSource.fromUri(path.toUri());
-        var config = new XmlConfigValidator(source);
-        config.initialize();
+        if (source != null) {
+            var config = new XmlConfigValidator(source);
+            config.initialize();
+
+            // We need to stop() the config to remove its appenders, and
+            // to do that it first needs to be started.
+            config.start();
+            config.stop();
+        }
     }
 
     private static class XmlConfigValidator extends XmlConfiguration {

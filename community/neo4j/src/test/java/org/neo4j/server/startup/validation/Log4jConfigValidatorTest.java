@@ -25,7 +25,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -37,7 +36,7 @@ import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.api.parallel.Resources;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.neo4j.server.startup.Bootloader;
+import org.neo4j.configuration.Config;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutput;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -59,14 +58,9 @@ class Log4jConfigValidatorTest {
     @Test
     void shouldReportAllErrors() throws IOException {
         // Log4j validation requires that a Neo4j config has been loaded
-        var config = mock(Bootloader.FilteredConfig.class);
+        var config = mock(Config.class);
 
-        var bootloader = mock(Bootloader.class);
-        when(bootloader.config()).thenReturn(config);
-        // Shouldn't actually be written to, but use a test directory to be safe
-        when(bootloader.confDir()).thenReturn(testDirectory.homePath());
-
-        var validator = spy(new Log4jConfigValidator(bootloader, "test", testDirectory.file("test.xml")));
+        var validator = spy(new Log4jConfigValidator(() -> config, "test", testDirectory.file("test.xml")));
 
         var errors = List.of(new Exception("error 1"), new Exception("error 2"));
         doAnswer(invocation -> {
@@ -90,14 +84,9 @@ class Log4jConfigValidatorTest {
     @Test
     void shouldUseThrowableMessageIfSAXParseException() throws IOException {
         // Log4j validation requires that a Neo4j config has been loaded
-        var config = mock(Bootloader.FilteredConfig.class);
+        var config = mock(Config.class);
 
-        var bootloader = mock(Bootloader.class);
-        when(bootloader.config()).thenReturn(config);
-        // Shouldn't actually be written to, but use a test directory to be safe
-        when(bootloader.confDir()).thenReturn(testDirectory.homePath());
-
-        var validator = spy(new Log4jConfigValidator(bootloader, "test", testDirectory.file("test.xml")));
+        var validator = spy(new Log4jConfigValidator(() -> config, "test", testDirectory.file("test.xml")));
 
         var error = new SAXParseException("throwable message", null);
         doAnswer(invocation -> {
@@ -121,15 +110,10 @@ class Log4jConfigValidatorTest {
         var logger = StatusLogger.getLogger();
         logger.clear();
 
-        // Log4j validation requires that a Neo4j config has been loaded
-        var config = mock(Bootloader.FilteredConfig.class);
+        // Log4j validation requires a valid Neo4j config
+        var config = mock(Config.class);
 
-        var bootloader = mock(Bootloader.class);
-        when(bootloader.config()).thenReturn(config);
-        // Shouldn't actually be written to, but use a test directory to be safe
-        when(bootloader.confDir()).thenReturn(testDirectory.homePath());
-
-        var validator = spy(new Log4jConfigValidator(bootloader, "test", testDirectory.file("test.xml")));
+        var validator = spy(new Log4jConfigValidator(() -> config, "test", testDirectory.file("test.xml")));
 
         var exception = new RuntimeException("error");
         doAnswer(invocation -> {
@@ -158,15 +142,10 @@ class Log4jConfigValidatorTest {
     @MethodSource
     void shouldFilterOutNonsenseErrors(String nonsenseError) throws IOException {
         // Log4j validation requires that a Neo4j config has been loaded
-        var config = mock(Bootloader.FilteredConfig.class);
+        var config = mock(Config.class);
         var logger = StatusLogger.getLogger();
 
-        var bootloader = mock(Bootloader.class);
-        when(bootloader.config()).thenReturn(config);
-        // Shouldn't actually be written to, but use a test directory to be safe
-        when(bootloader.confDir()).thenReturn(testDirectory.homePath());
-
-        var validator = spy(new Log4jConfigValidator(bootloader, "test", testDirectory.file("test.xml")));
+        var validator = spy(new Log4jConfigValidator(() -> config, "test", testDirectory.file("test.xml")));
 
         doAnswer(invocation -> {
                     logger.error(nonsenseError);

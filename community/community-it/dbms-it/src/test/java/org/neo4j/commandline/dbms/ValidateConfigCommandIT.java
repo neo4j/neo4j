@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.function.Supplier;
 import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
@@ -38,6 +39,7 @@ import org.neo4j.server.startup.Bootloader;
 import org.neo4j.server.startup.EnhancedExecutionContext;
 import org.neo4j.server.startup.Environment;
 import org.neo4j.server.startup.ValidateConfigCommand;
+import org.neo4j.server.startup.validation.ConfigValidationHelper;
 import org.neo4j.server.startup.validation.ConfigValidationIssue;
 import org.neo4j.server.startup.validation.ConfigValidator;
 import org.neo4j.server.startup.validation.Neo4jConfigValidator;
@@ -161,9 +163,10 @@ class ValidateConfigCommandIT {
                     () -> bootloader,
                     classLoader);
 
-            ConfigValidator.Factory factory = getConfigValidator();
+            ConfigValidator.Factory factory = getConfigValidator(bootloader.confFile());
+            var helper = new ConfigValidationHelper(factory);
 
-            var command = CommandLine.populateCommand(new ValidateConfigCommand(ctx, factory), args);
+            var command = CommandLine.populateCommand(new ValidateConfigCommand(ctx, helper), args);
 
             try {
                 int exitCode = command.call();
@@ -174,7 +177,7 @@ class ValidateConfigCommandIT {
         }
     }
 
-    private ConfigValidator.Factory getConfigValidator() {
+    private ConfigValidator.Factory getConfigValidator(Path configPath) {
         ConfigValidator NO_OP = new ConfigValidator() {
             @Override
             public List<ConfigValidationIssue> validate() {
@@ -189,17 +192,17 @@ class ValidateConfigCommandIT {
 
         return new ConfigValidator.Factory() {
             @Override
-            public ConfigValidator getNeo4jValidator(Bootloader bootloader) {
-                return new Neo4jConfigValidator(bootloader);
+            public ConfigValidator getNeo4jValidator(Supplier<Config> config) {
+                return new Neo4jConfigValidator(config, configPath);
             }
 
             @Override
-            public ConfigValidator getLog4jUserValidator(Bootloader bootloader) {
+            public ConfigValidator getLog4jUserValidator(Supplier<Config> config) {
                 return NO_OP;
             }
 
             @Override
-            public ConfigValidator getLog4jServerValidator(Bootloader bootloader) {
+            public ConfigValidator getLog4jServerValidator(Supplier<Config> config) {
                 return NO_OP;
             }
         };

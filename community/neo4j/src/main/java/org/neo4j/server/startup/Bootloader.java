@@ -25,6 +25,8 @@ import static org.neo4j.configuration.SettingValueParsers.PATH;
 import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.notNull;
 import static org.neo4j.server.startup.BootloaderOsAbstraction.UNKNOWN_PID;
+import static org.neo4j.server.startup.validation.ConfigValidationSummary.ValidationResult.ERRORS;
+import static org.neo4j.server.startup.validation.ConfigValidationSummary.ValidationResult.OK;
 
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -57,6 +59,7 @@ import org.neo4j.configuration.connectors.HttpsConnector;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.io.IOUtils;
+import org.neo4j.server.startup.validation.ConfigValidationHelper;
 import org.neo4j.time.Stopwatch;
 import org.neo4j.util.VisibleForTesting;
 
@@ -168,12 +171,38 @@ public abstract class Bootloader implements AutoCloseable {
         return confDir().resolve(Config.DEFAULT_CONFIG_FILE_NAME);
     }
 
-    public FilteredConfig validateConfigThrow() {
-        return config(true, true);
+    public FilteredConfig fullConfig() {
+        return config(true, false);
     }
 
-    public FilteredConfig validateConfig() {
-        return config(true, false);
+    protected void validateConfigVerbose(boolean silentOnSuccess) {
+        var helper = new ConfigValidationHelper(confFile());
+        var summary = helper.validateAll(() -> fullConfig().getUnfiltered());
+
+        if (silentOnSuccess) {
+            // Don't print anything at all if we only have warnings.
+            if (summary.result() == ERRORS) {
+                summary.print(environment.err(), verbose);
+                summary.printClosingStatement(environment.err());
+            }
+        } else {
+            // Print only closing statement if OK, otherwise print all issues.
+            if (summary.result() != OK) {
+                summary.print(environment.err(), verbose);
+            }
+            summary.printClosingStatement(environment.out());
+        }
+
+        if (summary.result() == ERRORS) {
+            throw new CommandFailedException(
+                    "Configuration contains errors. This validation can be performed again using '"
+                            + ValidateConfigCommand.COMMAND + "'.",
+                    ExitCode.FAIL);
+        }
+    }
+
+    protected void validateConfig() {
+        config(true, false);
     }
 
     void rebuildConfig(List<Path> additionalConfigs) {
@@ -393,7 +422,7 @@ public abstract class Bootloader implements AutoCloseable {
 
         void start() {
             BootloaderOsAbstraction os = os();
-            validateConfig();
+            validateConfigVerbose(false);
 
             Optional<Long> runningProcess = os.getPidIfRunning();
             if (runningProcess.isPresent()) {
@@ -427,7 +456,7 @@ public abstract class Bootloader implements AutoCloseable {
 
         void console(boolean dryRun) {
             BootloaderOsAbstraction os = os();
-            validateConfig();
+            validateConfigVerbose(dryRun);
 
             Optional<Long> runningProcess = os.getPidIfRunning();
 
@@ -522,7 +551,7 @@ public abstract class Bootloader implements AutoCloseable {
          *                                {@link org.neo4j.cli.AbstractCommand}
          */
         void installService() {
-            validateConfig();
+            validateConfigVerbose(false);
             if (os().serviceInstalled()) {
                 throw new CommandFailedException("Neo4j service is already installed.", EXIT_CODE_RUNNING);
             }
@@ -544,7 +573,7 @@ public abstract class Bootloader implements AutoCloseable {
         }
 
         void updateService() {
-            validateConfig();
+            validateConfigVerbose(false);
             if (!os().serviceInstalled()) {
                 throw new CommandFailedException("Neo4j service is not installed", EXIT_CODE_NOT_RUNNING);
             }
