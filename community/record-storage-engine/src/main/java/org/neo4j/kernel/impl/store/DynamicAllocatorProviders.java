@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import static org.neo4j.kernel.impl.store.StoreType.STORE_TYPES;
+
 public class DynamicAllocatorProviders {
 
     public static DynamicAllocatorProvider nonTransactionalAllocator(NeoStores neoStores) {
@@ -27,7 +29,7 @@ public class DynamicAllocatorProviders {
 
     private static class DetachedDynamicAllocatorProvider implements DynamicAllocatorProvider {
         private final StandardDynamicRecordAllocator[] dynamicAllocators =
-                new StandardDynamicRecordAllocator[StoreType.values().length];
+                new StandardDynamicRecordAllocator[STORE_TYPES.length];
         private final NeoStores neoStores;
 
         private DetachedDynamicAllocatorProvider(NeoStores neoStores) {

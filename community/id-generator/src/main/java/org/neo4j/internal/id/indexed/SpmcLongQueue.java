@@ -72,6 +72,25 @@ class SpmcLongQueue implements ConcurrentLongQueue {
     }
 
     @Override
+    public long takeInRange(long maxBoundary) {
+        long currentReadSeq;
+        long currentWriteSeq;
+        long value;
+        do {
+            currentReadSeq = readSeq.get();
+            currentWriteSeq = writeSeq.get();
+            if (currentReadSeq == currentWriteSeq) {
+                return Long.MAX_VALUE;
+            }
+            value = array.get(idx(currentReadSeq));
+            if (value >= maxBoundary) {
+                return Long.MAX_VALUE;
+            }
+        } while (!readSeq.compareAndSet(currentReadSeq, currentReadSeq + 1));
+        return value;
+    }
+
+    @Override
     public int size() {
         // Why do we need max on this value? Well the size being returned is a rough estimate since we're reading two
         // atomic longs un-atomically.

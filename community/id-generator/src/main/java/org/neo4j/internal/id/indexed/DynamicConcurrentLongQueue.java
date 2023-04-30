@@ -26,8 +26,8 @@ import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReference;
 
 class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
-    private final AtomicReference<Chunk> first;
-    private final AtomicReference<Chunk> last;
+    private final AtomicReference<Chunk> head;
+    private final AtomicReference<Chunk> tail;
     private final AtomicInteger numChunks = new AtomicInteger(1);
     private final int chunkSize;
     private final int maxNumChunks;
@@ -37,13 +37,13 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
         this.maxNumChunks = maxNumChunks;
 
         var chunk = new Chunk(chunkSize);
-        this.first = new AtomicReference<>(chunk);
-        this.last = new AtomicReference<>(chunk);
+        this.head = new AtomicReference<>(chunk);
+        this.tail = new AtomicReference<>(chunk);
     }
 
     @Override
     public boolean offer(long v) {
-        var chunk = last.get();
+        var chunk = tail.get();
         if (!chunk.offer(v)) {
             if (numChunks.get() >= maxNumChunks) {
                 return false;
@@ -51,7 +51,7 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
 
             var next = new Chunk(chunkSize);
             chunk.next.set(next);
-            last.set(next);
+            tail.set(next);
             numChunks.incrementAndGet();
             return next.offer(v);
         }
@@ -63,19 +63,41 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
         Chunk chunk;
         Chunk next;
         do {
-            chunk = first.get();
+            chunk = head.get();
             next = chunk.next.get();
             var candidate = chunk.takeOrDefault(defaultValue);
             if (candidate != defaultValue) {
                 return candidate;
             }
             if (next != null) {
-                if (first.compareAndSet(chunk, next)) {
+                if (head.compareAndSet(chunk, next)) {
                     numChunks.decrementAndGet();
                 }
             }
         } while (next != null);
         return defaultValue;
+    }
+
+    @Override
+    public long takeInRange(long maxBoundary) {
+        Chunk chunk;
+        Chunk next;
+        do {
+            chunk = head.get();
+            next = chunk.next.get();
+            var candidate = chunk.takeInRange(maxBoundary);
+            if (candidate >= 0 && candidate < maxBoundary) {
+                return candidate;
+            } else if (candidate > maxBoundary) {
+                return Long.MAX_VALUE;
+            }
+            if (candidate == -1 && next != null) {
+                if (head.compareAndSet(chunk, next)) {
+                    numChunks.decrementAndGet();
+                }
+            }
+        } while (next != null);
+        return Long.MAX_VALUE;
     }
 
     private int capacity() {
@@ -87,21 +109,21 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
         Chunk firstChunk;
         int size;
         do {
-            firstChunk = first.get();
+            firstChunk = head.get();
             size = firstChunk.size();
             var numChunks = this.numChunks.get();
             if (numChunks > 1) {
                 size += (numChunks - 2) * chunkSize;
-                size += last.get().size();
+                size += tail.get().size();
             }
-        } while (firstChunk != first.get());
+        } while (firstChunk != head.get());
         return size;
     }
 
     @Override
     public int availableSpace() {
         int capacity = capacity();
-        var lastChunk = last.get();
+        var lastChunk = tail.get();
         int occupied = (numChunks.get() - 1) * chunkSize + lastChunk.occupied();
         return capacity - occupied;
     }
@@ -109,8 +131,8 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
     @Override
     public void clear() {
         var chunk = new Chunk(chunkSize);
-        first.set(chunk);
-        last.set(chunk);
+        head.set(chunk);
+        tail.set(chunk);
     }
 
     private static class Chunk {
@@ -133,6 +155,24 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
             array.set(currentWriteSeq, v);
             writeSeq.incrementAndGet();
             return true;
+        }
+
+        long takeInRange(long maxBoundary) {
+            int currentReadSeq;
+            int currentWriteSeq;
+            long value;
+            do {
+                currentReadSeq = readSeq.get();
+                currentWriteSeq = writeSeq.get();
+                if (currentReadSeq == currentWriteSeq) {
+                    return -1;
+                }
+                value = array.get(currentReadSeq);
+                if (value >= maxBoundary) {
+                    return Long.MAX_VALUE;
+                }
+            } while (!readSeq.compareAndSet(currentReadSeq, currentReadSeq + 1));
+            return value;
         }
 
         long takeOrDefault(long defaultValue) {

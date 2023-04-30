@@ -42,6 +42,7 @@ import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.recordstorage.Command.Mode;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;
+import org.neo4j.internal.recordstorage.id.IdSequenceProvider;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -110,7 +111,7 @@ public class TransactionRecordState implements RecordState {
     private final MemoryTracker memoryTracker;
     private final LogCommandSerialization commandSerialization;
     private final DynamicAllocatorProvider dynamicAllocators;
-    private final TransactionIdSequenceProvider transactionIdSequenceProvider;
+    private final IdSequenceProvider transactionIdSequenceProvider;
     private final DegreesUpdater groupDegreesUpdater = new DegreesUpdater();
 
     private boolean prepared;
@@ -130,7 +131,7 @@ public class TransactionRecordState implements RecordState {
             MemoryTracker memoryTracker,
             LogCommandSerialization commandSerialization,
             DynamicAllocatorProvider dynamicAllocators,
-            TransactionIdSequenceProvider transactionIdSequenceProvider) {
+            IdSequenceProvider transactionIdSequenceProvider) {
         this.kernelVersionProvider = kernelVersionProvider;
         this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();

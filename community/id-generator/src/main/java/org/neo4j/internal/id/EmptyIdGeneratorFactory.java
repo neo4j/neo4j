@@ -31,6 +31,7 @@ import org.eclipse.collections.api.set.ImmutableSet;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.id.range.PageIdRange;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -179,6 +180,14 @@ public class EmptyIdGeneratorFactory implements IdGeneratorFactory {
         public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
             return EMPTY_ID;
         }
+
+        @Override
+        public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
+            return PageIdRange.EMPTY;
+        }
+
+        @Override
+        public void releasePageRange(PageIdRange range, CursorContext cursorContext) {}
 
         @Override
         public boolean consistencyCheck(

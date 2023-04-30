@@ -20,20 +20,33 @@
 package org.neo4j.internal.id;
 
 import static org.neo4j.internal.id.IdUtils.combinedIdAndNumberOfIds;
+import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
+import org.neo4j.internal.id.range.PageIdRange;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 
 class BufferingIdGenerator extends IdGenerator.Delegate {
+    private static final int MAX_BUFFERED_RANGES = 1000;
+    private final ConcurrentLinkedQueue<PageIdRange> rangeCache = new ConcurrentLinkedQueue<>();
+
+    private final BufferingIdGeneratorFactory bufferedFactory;
     private final int idTypeOrdinal;
     private final MemoryTracker memoryTracker;
     private final Runnable collector;
     private HeapTrackingLongArrayList bufferedDeletedIds;
 
-    BufferingIdGenerator(IdGenerator delegate, int idTypeOrdinal, MemoryTracker memoryTracker, Runnable collector) {
+    BufferingIdGenerator(
+            BufferingIdGeneratorFactory bufferedFactory,
+            IdGenerator delegate,
+            int idTypeOrdinal,
+            MemoryTracker memoryTracker,
+            Runnable collector) {
         super(delegate);
+        this.bufferedFactory = bufferedFactory;
         this.idTypeOrdinal = idTypeOrdinal;
         this.memoryTracker = memoryTracker;
         this.collector = collector;
@@ -42,6 +55,32 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
 
     private void newFreeBuffer() {
         bufferedDeletedIds = HeapTrackingLongArrayList.newLongArrayList(10, memoryTracker);
+    }
+
+    @Override
+    public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
+        var range = rangeCache.poll();
+        if (range != null) {
+            return range;
+        }
+
+        return delegate.nextPageRange(cursorContext, idsPerPage);
+    }
+
+    @Override
+    public void releasePageRange(PageIdRange range, CursorContext cursorContext) {
+        if (rangeCache.size() < MAX_BUFFERED_RANGES) {
+            rangeCache.add(range);
+        } else {
+            delegate.releasePageRange(range, cursorContext);
+        }
+    }
+
+    @Override
+    public void close() {
+        releaseRanges();
+        bufferedFactory.release(idType());
+        delegate.close();
     }
 
     @Override
@@ -59,6 +98,15 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
                 }
             }
         };
+    }
+
+    public void releaseRanges() {
+        if (!rangeCache.isEmpty()) {
+            try (var marker = transactionalMarker(NULL_CONTEXT)) {
+                rangeCache.forEach(pageIdRange -> pageIdRange.unallocate(marker));
+                rangeCache.clear();
+            }
+        }
     }
 
     synchronized void collectBufferedIds(List<BufferingIdGeneratorFactory.IdBuffer> idBuffers) {

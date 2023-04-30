@@ -20,11 +20,15 @@
 package org.neo4j.internal.recordstorage;
 
 import static java.lang.Math.toIntExact;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 
 import java.util.function.Supplier;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.internal.recordstorage.RecordAccess.LoadMonitor;
+import org.neo4j.internal.recordstorage.id.BatchedTransactionIdSequenceProvider;
+import org.neo4j.internal.recordstorage.id.IdSequenceProvider;
+import org.neo4j.internal.recordstorage.id.TransactionIdSequenceProvider;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.KernelVersionProvider;
@@ -58,8 +62,8 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     private CursorContext cursorContext;
     private StoreCursors storeCursors;
     private ResourceLocker locks;
-    private final DynamicAllocatorProvider dynamicAllocatorProvider = new TransactionDynamicAllocatorProvider();
-    private final TransactionIdSequenceProvider transactionSequenceProvider;
+    private final DynamicAllocatorProvider dynamicAllocatorProvider;
+    private final IdSequenceProvider transactionSequenceProvider;
 
     RecordStorageCommandCreationContext(
             NeoStores neoStores,
@@ -72,7 +76,8 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
         this.denseNodeThreshold = denseNodeThreshold;
         this.neoStores = neoStores;
         this.config = config;
-        this.transactionSequenceProvider = new TransactionIdSequenceProvider(neoStores);
+        this.transactionSequenceProvider = createIdSequenceProvider(neoStores, config);
+        this.dynamicAllocatorProvider = new TransactionDynamicAllocatorProvider(neoStores, transactionSequenceProvider);
     }
 
     @Override
@@ -145,7 +150,9 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
     }
 
     @Override
-    public void close() {}
+    public void close() {
+        transactionSequenceProvider.release(cursorContext);
+    }
 
     TransactionRecordState createTransactionRecordState(
             ResourceLocker locks,
@@ -178,9 +185,17 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
         return kernelVersionProvider.kernelVersion();
     }
 
-    private class TransactionDynamicAllocatorProvider implements DynamicAllocatorProvider {
+    private static class TransactionDynamicAllocatorProvider implements DynamicAllocatorProvider {
         private final StandardDynamicRecordAllocator[] dynamicAllocators =
-                new StandardDynamicRecordAllocator[StoreType.values().length];
+                new StandardDynamicRecordAllocator[StoreType.STORE_TYPES.length];
+        private final IdSequenceProvider transactionSequenceProvider;
+        private final NeoStores neoStores;
+
+        public TransactionDynamicAllocatorProvider(
+                NeoStores neoStores, IdSequenceProvider transactionSequenceProvider) {
+            this.neoStores = neoStores;
+            this.transactionSequenceProvider = transactionSequenceProvider;
+        }
 
         @Override
         public DynamicRecordAllocator allocator(StoreType type) {
@@ -190,10 +205,22 @@ class RecordStorageCommandCreationContext implements CommandCreationContext {
             }
 
             var newAllocator = new StandardDynamicRecordAllocator(
-                    cursorContext -> RecordStorageCommandCreationContext.this.nextId(type),
+                    cursorContext ->
+                            transactionSequenceProvider.getIdSequence(type).nextId(cursorContext),
                     neoStores.getRecordStore(type).getRecordDataSize());
             dynamicAllocators[type.ordinal()] = newAllocator;
             return newAllocator;
         }
+    }
+
+    private static IdSequenceProvider createIdSequenceProvider(NeoStores neoStores, Config config) {
+        // in multi versioned store we acquire and release ids in a page fashion
+        return isNotMultiVersioned(config)
+                ? new TransactionIdSequenceProvider(neoStores)
+                : new BatchedTransactionIdSequenceProvider(neoStores);
+    }
+
+    private static boolean isNotMultiVersioned(Config config) {
+        return !"multiversion".equals(config.get(db_format));
     }
 }

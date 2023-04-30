@@ -19,10 +19,12 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.id.indexed.FreeIdScanner.MAX_SLOT_SIZE;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
 import static org.neo4j.util.Preconditions.checkArgument;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.neo4j.internal.id.IdGenerator;
@@ -40,6 +42,7 @@ class IdCache {
     private final ConcurrentLongQueue[] queues;
     private final AtomicInteger size = new AtomicInteger();
     private final int singleIdSlotIndex;
+    private final boolean singleSlotted;
 
     IdCache(IdSlotDistribution.Slot... slots) {
         this.queues = new ConcurrentLongQueue[slots.length];
@@ -59,7 +62,17 @@ class IdCache {
                     : new SpmcLongQueue(capacity);
             queues[slotIndex] = queue;
         }
+        singleSlotted = isSingleSlotted();
         singleIdSlotIndex = findSingleSlotIndex(slotSizes);
+    }
+
+    private boolean isSingleSlotted() {
+        for (int slotSize : slotSizes) {
+            if (slotSize != 1) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static int findSingleSlotIndex(int[] slotSizes) {
@@ -144,6 +157,28 @@ class IdCache {
                 size.decrementAndGet();
             }
         }
+    }
+
+    long[] drainRange(int idsPerPage) {
+        assert singleSlotted;
+        long[] ids = null;
+        int position = 0;
+        long idPageBoundary = Long.MAX_VALUE;
+        for (ConcurrentLongQueue queue : queues) {
+            long id;
+            while ((id = queue.takeInRange(idPageBoundary)) < idPageBoundary && position < idsPerPage) {
+                if (ids == null) {
+                    ids = new long[idsPerPage];
+                    idPageBoundary = ((id / idsPerPage) + 1) * idsPerPage;
+                }
+                ids[position++] = id;
+            }
+        }
+        if (ids == null) {
+            return EMPTY_LONG_ARRAY;
+        }
+        size.getAndAdd(-position);
+        return Arrays.copyOf(ids, position);
     }
 
     int size() {

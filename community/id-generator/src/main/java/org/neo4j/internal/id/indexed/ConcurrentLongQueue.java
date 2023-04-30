@@ -40,6 +40,14 @@ interface ConcurrentLongQueue {
     long takeOrDefault(long defaultValue);
 
     /**
+     * Takes a value from this queue if value is less than provided max boundary, or if no value was available returns the Long.MAX_VALUE.
+     *
+     * @param maxBoundary maximum non-inclusive range of values that we are interested in.
+     * @return next value from this queue, or Long.MAX_VALUE if there was no value available to take.
+     */
+    long takeInRange(long maxBoundary);
+
+    /**
      * @return size of this queue, i.e. how many values are queued right now.
      */
     int size();

@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
+import static org.neo4j.kernel.impl.store.StoreType.STORE_TYPES;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.defaultFormat;
 
 import java.nio.file.OpenOption;
@@ -86,7 +87,7 @@ class NeoStoreOpenFailureTest {
                 contextFactory,
                 false,
                 logTail,
-                storeTypes,
+                STORE_TYPES,
                 openOptions);
         Path schemaStore = neoStores.getSchemaStore().getStorageFile();
         neoStores.close();
@@ -112,7 +113,7 @@ class NeoStoreOpenFailureTest {
                                 contextFactory,
                                 false,
                                 logTail,
-                                storeTypes,
+                                STORE_TYPES,
                                 openOptions));
 
         // We verify that the successfully opened stores were closed again by the failed NeoStores open,

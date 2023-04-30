@@ -214,8 +214,6 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
 
     @Override
     public void markUnallocated(long id, int numberOfIds) {
-        // To bridge this gap here is going to be very rare, basically if there are allocations that
-        // are not committed but instead freed (tx rollback after writes).
         bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, true);
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
             key.setIdRangeIdx(idRangeIndex(id));

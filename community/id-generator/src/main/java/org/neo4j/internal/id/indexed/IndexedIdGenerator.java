@@ -23,6 +23,8 @@ import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrde
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.id.IdValidator.assertIdWithinMaxCapacity;
+import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.io.IOException;
@@ -56,6 +58,9 @@ import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.internal.id.IdType;
 import org.neo4j.internal.id.IdValidator;
+import org.neo4j.internal.id.range.ArrayBasedRange;
+import org.neo4j.internal.id.range.ContinuousIdRange;
+import org.neo4j.internal.id.range.PageIdRange;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheOpenOptions;
@@ -445,10 +450,41 @@ public class IndexedIdGenerator implements IdGenerator {
         long id;
         do {
             id = highId.getAndIncrement();
-            IdValidator.assertIdWithinMaxCapacity(idType, id, maxId);
+            assertIdWithinMaxCapacity(idType, id, maxId);
         } while (IdValidator.isReservedId(id));
         monitor.allocatedFromHigh(id, 1);
         return id;
+    }
+
+    @Override
+    public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
+        checkRefillCache(cursorContext);
+        long[] reusedIds = cache.drainRange(idsPerPage);
+        if (reusedIds.length > 0) {
+            return new ArrayBasedRange(reusedIds);
+        }
+
+        long currentHighId;
+        long requestSize;
+        do {
+            currentHighId = highId.getAcquire();
+            requestSize = idsPerPage - currentHighId % idsPerPage;
+        } while (!highId.weakCompareAndSetRelease(currentHighId, currentHighId + requestSize));
+        assertIdWithinMaxCapacity(idType, currentHighId + idsPerPage, maxId);
+        monitor.allocatedFromHigh(currentHighId, (int) requestSize);
+        if (hasReservedIdInRange(currentHighId, currentHighId + idsPerPage)) {
+            return rangeWithoutReservedId(idsPerPage, currentHighId);
+        }
+        return new ContinuousIdRange(currentHighId, (int) requestSize);
+    }
+
+    @Override
+    public void releasePageRange(PageIdRange range, CursorContext context) {
+        try (var marker = transactionalMarker(context)) {
+            while (range.hasNext()) {
+                marker.markUnallocated(range.nextId());
+            }
+        }
     }
 
     @Override
@@ -481,8 +517,8 @@ public class IndexedIdGenerator implements IdGenerator {
                 id = newId;
                 endId = id + numberOfIds - 1;
             }
-            IdValidator.assertIdWithinMaxCapacity(idType, endId, maxId);
-        } while (!highId.compareAndSet(readHighId, endId + 1) || IdValidator.hasReservedIdInRange(id, endId + 1));
+            assertIdWithinMaxCapacity(idType, endId, maxId);
+        } while (!highId.compareAndSet(readHighId, endId + 1) || hasReservedIdInRange(id, endId + 1));
         monitor.allocatedFromHigh(id, numberOfIds);
         if (skipped > 0) {
             // Tell FreeIdScanner about this temporary waste?
@@ -852,5 +888,16 @@ public class IndexedIdGenerator implements IdGenerator {
 
     private void assertNotReadOnly() {
         Preconditions.checkState(!readOnly, "ID generator '%s' is read-only", path);
+    }
+
+    private static PageIdRange rangeWithoutReservedId(int idsPerPage, long currentHighId) {
+        long[] ids = new long[idsPerPage - 1];
+        for (int i = 0; i < ids.length; i++) {
+            long value = currentHighId++;
+            if (!IdValidator.isReservedId(value)) {
+                ids[i] = value;
+            }
+        }
+        return new ArrayBasedRange(ids);
     }
 }

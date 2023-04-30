@@ -21,6 +21,7 @@ package org.neo4j.internal.id;
 
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.id.range.PageIdRange;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -99,6 +100,16 @@ class ReadOnlyHighIdGenerator implements IdGenerator {
 
     @Override
     public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
+        throw new UnsupportedOperationException("Should not be required");
+    }
+
+    @Override
+    public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
+        throw new UnsupportedOperationException("Should not be required");
+    }
+
+    @Override
+    public void releasePageRange(PageIdRange range, CursorContext cursorContext) {
         throw new UnsupportedOperationException("Should not be required");
     }
 

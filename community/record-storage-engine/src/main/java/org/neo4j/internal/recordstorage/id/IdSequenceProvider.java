@@ -17,20 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.recordstorage;
+package org.neo4j.internal.recordstorage.id;
 
 import org.neo4j.internal.id.IdSequence;
-import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.store.StoreType;
 
-public class TransactionIdSequenceProvider {
-    private final NeoStores neoStores;
+/**
+ * Source of id sequences for various transactional contexts and states
+ */
+public interface IdSequenceProvider {
+    IdSequence getIdSequence(StoreType storeType);
 
-    public TransactionIdSequenceProvider(NeoStores neoStores) {
-        this.neoStores = neoStores;
-    }
-
-    public IdSequence getIdSequence(StoreType storeType) {
-        return neoStores.getRecordStore(storeType).getIdGenerator();
-    }
+    void release(CursorContext cursorContext);
 }

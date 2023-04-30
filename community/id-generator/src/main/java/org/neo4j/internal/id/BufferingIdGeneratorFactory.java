@@ -20,6 +20,7 @@
 package org.neo4j.internal.id;
 
 import static org.neo4j.internal.id.DiskBufferedIds.DEFAULT_SEGMENT_SIZE;
+import static org.neo4j.internal.id.IdGenerator.NOOP_MARKER;
 import static org.neo4j.internal.id.IdUtils.idFromCombinedId;
 import static org.neo4j.internal.id.IdUtils.numberOfIdsFromCombinedId;
 
@@ -183,7 +184,7 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
     private IdGenerator wrapAndKeep(IdType idType, IdGenerator generator) {
         int id = idTypeMapping.map(idType);
         BufferingIdGenerator bufferingGenerator =
-                new BufferingIdGenerator(generator, id, memoryTracker, () -> collectAndOffloadBufferedIds(false));
+                new BufferingIdGenerator(this, generator, id, memoryTracker, () -> collectAndOffloadBufferedIds(false));
         overriddenIdGenerators.put(idType, bufferingGenerator);
         return bufferingGenerator;
     }
@@ -231,6 +232,13 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
     }
 
     @Override
+    public void stop() throws Exception {
+        overriddenIdGenerators.values().forEach(BufferingIdGenerator::releaseRanges);
+        maintenance(CursorContext.NULL_CONTEXT);
+        super.stop();
+    }
+
+    @Override
     public void shutdown() throws Exception {
         bufferReadLock.lock();
         bufferWriteLock.lock();
@@ -242,6 +250,10 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
             bufferWriteLock.unlock();
             bufferReadLock.unlock();
         }
+    }
+
+    public void release(IdType idType) {
+        overriddenIdGenerators.remove(idType);
     }
 
     record IdBuffer(int idTypeOrdinal, HeapTrackingLongArrayList ids) implements AutoCloseable {
@@ -266,10 +278,12 @@ public class BufferingIdGeneratorFactory extends LifecycleAdapter implements IdG
 
         @Override
         public void startType(int idTypeOrdinal) {
-            marker = overriddenIdGenerators
-                    .get(idTypeMapping.get(idTypeOrdinal))
-                    .delegate
-                    .contextualMarker(cursorContext);
+            var generator = overriddenIdGenerators.get(idTypeMapping.get(idTypeOrdinal));
+            if (generator != null) {
+                marker = generator.delegate.contextualMarker(cursorContext);
+            } else {
+                marker = NOOP_MARKER;
+            }
         }
 
         @Override

@@ -25,6 +25,7 @@ import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.internal.id.range.PageIdRange;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.FileFlushEvent;
@@ -55,6 +56,22 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
      * @return the first id in the consecutive range.
      */
     long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext);
+
+    /**
+     * Reserve range of ids that cover whole page of the store
+     * @param cursorContext for tracking cursor interaction.
+     * @param idsPerPage - number of ids per page in store that this generator responsible for
+     * @return range of reserved ids
+     */
+    PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage);
+
+    /**
+     * Release back id leftovers from previously reserved range.
+     * As possibility, the whole range can be released for future users instead of individual ids.
+     * @param range range to release leftovers from
+     * @param cursorContext for tracking cursor interaction.
+     */
+    void releasePageRange(PageIdRange range, CursorContext cursorContext);
 
     /**
      * @param id the highest in use + 1
@@ -279,6 +296,16 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         @Override
         public long nextConsecutiveIdRange(int numberOfIds, boolean favorSamePage, CursorContext cursorContext) {
             return delegate.nextConsecutiveIdRange(numberOfIds, favorSamePage, cursorContext);
+        }
+
+        @Override
+        public PageIdRange nextPageRange(CursorContext cursorContext, int idsPerPage) {
+            return delegate.nextPageRange(cursorContext, idsPerPage);
+        }
+
+        @Override
+        public void releasePageRange(PageIdRange range, CursorContext cursorContext) {
+            delegate.releasePageRange(range, cursorContext);
         }
 
         @Override
