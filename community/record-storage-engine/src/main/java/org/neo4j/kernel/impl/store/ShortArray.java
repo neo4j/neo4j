@@ -660,8 +660,7 @@ public enum ShortArray {
          * Key, Property Type (ARRAY), Array Type, Array Length, Bits Per Member, Data
          */
         int totalBits = 24 + 4 + 4 + 6 + 6 + bitsForItems;
-        int result = (totalBits - 1) / 64 + 1;
-        return result;
+        return (totalBits - 1) / 64 + 1;
     }
 
     public abstract void writeAll(Object array, int length, int requiredBits, Bits result);

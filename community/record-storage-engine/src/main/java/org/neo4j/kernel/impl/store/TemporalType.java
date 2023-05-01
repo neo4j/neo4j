@@ -31,8 +31,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatSettings;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.values.storable.ArrayValue;
@@ -319,14 +317,6 @@ public enum TemporalType {
     }
 
     private static final TemporalType[] TYPES = TemporalType.values();
-    private static final Map<String, TemporalType> all = new HashMap<>(TYPES.length);
-
-    static {
-        for (TemporalType temporalType : TYPES) {
-            all.put(temporalType.name, temporalType);
-        }
-    }
-
     private static final long TEMPORAL_TYPE_MASK = 0x00000000F0000000L;
 
     private static int getTemporalType(long firstBlock) {

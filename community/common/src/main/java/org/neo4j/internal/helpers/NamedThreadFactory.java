@@ -41,7 +41,7 @@ public class NamedThreadFactory implements ThreadFactory {
 
     private final ThreadGroup group;
     private final AtomicInteger threadCounter = new AtomicInteger(1);
-    private String threadNamePrefix;
+    private final String threadNamePrefix;
     private final int priority;
     private final boolean daemon;
     private final Monitor monitor;

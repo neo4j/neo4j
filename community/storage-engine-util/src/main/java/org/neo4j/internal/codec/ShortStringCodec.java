@@ -37,23 +37,16 @@ public enum ShortStringCodec {
             if (b >= '0' && b <= '9') {
                 return b - '0';
             }
-            switch (b) {
+            return switch (b) {
                     // interm.    encoded
-                case 0:
-                    return 0xA;
-                case 2:
-                    return 0xB;
-                case 3:
-                    return 0xC;
-                case 6:
-                    return 0xD;
-                case 7:
-                    return 0xE;
-                case 8:
-                    return 0xF;
-                default:
-                    throw cannotEncode(b);
-            }
+                case 0 -> 0xA;
+                case 2 -> 0xB;
+                case 3 -> 0xC;
+                case 6 -> 0xD;
+                case 7 -> 0xE;
+                case 8 -> 0xF;
+                default -> throw cannotEncode(b);
+            };
         }
 
         @Override
@@ -83,22 +76,15 @@ public enum ShortStringCodec {
             if (b >= '0' && b <= '9') {
                 return b - '0';
             }
-            switch (b) {
-                case 0:
-                    return 0xA;
-                case 3:
-                    return 0xB;
-                case 4:
-                    return 0xC;
-                case 5:
-                    return 0xD;
-                case 6:
-                    return 0xE;
-                case 7:
-                    return 0xF;
-                default:
-                    throw cannotEncode(b);
-            }
+            return switch (b) {
+                case 0 -> 0xA;
+                case 3 -> 0xB;
+                case 4 -> 0xC;
+                case 5 -> 0xD;
+                case 6 -> 0xE;
+                case 7 -> 0xF;
+                default -> throw cannotEncode(b);
+            };
         }
 
         @Override
@@ -111,20 +97,14 @@ public enum ShortStringCodec {
             if (codePoint < 0xA) {
                 return (byte) (codePoint + '0');
             }
-            switch (codePoint) {
-                case 0xA:
-                    return ' ';
-                case 0xB:
-                    return '-';
-                case 0xC:
-                    return ':';
-                case 0xD:
-                    return '/';
-                case 0xE:
-                    return '+';
-                default:
-                    return ',';
-            }
+            return switch (codePoint) {
+                case 0xA -> ' ';
+                case 0xB -> '-';
+                case 0xC -> ':';
+                case 0xD -> '/';
+                case 0xE -> '+';
+                default -> ',';
+            };
         }
     },
     /**
@@ -212,20 +192,14 @@ public enum ShortStringCodec {
             }
 
             int offset = encOffset + 0x1B;
-            switch (b) {
-                case 1:
-                    return offset;
-                case 2:
-                    return 1 + offset;
-                case 3:
-                    return 2 + offset;
-                case 6:
-                    return 3 + offset;
-                case 9:
-                    return 4 + offset;
-                default:
-                    throw cannotEncode(b);
-            }
+            return switch (b) {
+                case 1 -> offset;
+                case 2 -> 1 + offset;
+                case 3 -> 2 + offset;
+                case 6 -> 3 + offset;
+                case 9 -> 4 + offset;
+                default -> throw cannotEncode(b);
+            };
         }
 
         @Override
@@ -236,14 +210,11 @@ public enum ShortStringCodec {
             if (codePoint <= 0x1A) {
                 return (byte) (codePoint + 'a' - 1);
             }
-            switch (codePoint) {
-                case 0x1E:
-                    return '+';
-                case 0x1F:
-                    return '@';
-                default:
-                    return decPunctuation(codePoint - 0x1A);
-            }
+            return switch (codePoint) {
+                case 0x1E -> '+';
+                case 0x1F -> '@';
+                default -> decPunctuation(codePoint - 0x1A);
+            };
         }
     },
     /**
@@ -327,14 +298,11 @@ public enum ShortStringCodec {
 
         @Override
         int encPunctuation(byte b) {
-            switch (b) {
-                case 0:
-                    return 0x00; // SPACE
-                case 1:
-                    return 0x20; // UNDERSCORE
-                default:
-                    throw cannotEncode(b);
-            }
+            return switch (b) {
+                case 0 -> 0x00; // SPACE
+                case 1 -> 0x20; // UNDERSCORE
+                default -> throw cannotEncode(b);
+            };
         }
     },
     /**
@@ -382,36 +350,21 @@ public enum ShortStringCodec {
 
         @Override
         int encPunctuation(byte b) {
-            switch (b) {
-                case 0x0:
-                    return 0x0;
-                case 0x1:
-                    return 0x1B;
-                case 0x2:
-                    return 0x1C;
-                case 0x3:
-                    return 0x1D;
-                case 0x4:
-                    return 0x1E;
-                case 0x5:
-                    return 0x1F;
-
-                case 0x6:
-                    return 0x3B;
-                case 0x7:
-                    return 0x3C;
-                case 0x8:
-                    return 0x3D;
-                case 0x9:
-                    return 0x3E;
-                case 0xA:
-                    return 0x3F;
-
-                case 0xB:
-                    return 0x20;
-                default:
-                    throw cannotEncode(b);
-            }
+            return switch (b) {
+                case 0x0 -> 0x0;
+                case 0x1 -> 0x1B;
+                case 0x2 -> 0x1C;
+                case 0x3 -> 0x1D;
+                case 0x4 -> 0x1E;
+                case 0x5 -> 0x1F;
+                case 0x6 -> 0x3B;
+                case 0x7 -> 0x3C;
+                case 0x8 -> 0x3D;
+                case 0x9 -> 0x3E;
+                case 0xA -> 0x3F;
+                case 0xB -> 0x20;
+                default -> throw cannotEncode(b);
+            };
         }
     },
     /**
@@ -460,21 +413,15 @@ public enum ShortStringCodec {
 
         @Override
         int encPunctuation(byte b) {
-            switch (b) {
-                case 0x00:
-                    return 0x40; // SPACE
-                case 0x01:
-                    return 0x60; // UNDERSCORE
-                case 0x02:
-                    return 0x17; // DOT
-                case 0x03:
-                    return 0x37; // DASH
-                case 0x07:
+            return switch (b) {
+                case 0x00 -> 0x40; // SPACE
+                case 0x01 -> 0x60; // UNDERSCORE
+                case 0x02 -> 0x17; // DOT
+                case 0x03 -> 0x37; // DASH
                     // TODO
-                    return 0;
-                default:
-                    throw cannotEncode(b);
-            }
+                case 0x07 -> 0;
+                default -> throw cannotEncode(b);
+            };
         }
     },
     // ENCODING_LATIN1 is 10th
