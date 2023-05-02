@@ -54,8 +54,14 @@ class OptionReaderTest extends CypherFunSuite {
       ))
   }
 
-  // Unignore and change these two tests if adding something to
-  //  CypherDebugOption.cypherConfigBooleans. The Map is empty at the time of writing, so we cannot test for this.
+  // If this test fails it means you introduced a debug option that can be set from the Config.
+  // Please delete this test and unignore the two following tests.
+  // They test that we can read the debug option from a config. You will have to change the tests
+  // to set your new config value instead of `cypher_eager_analysis_implementation`.
+  test("there are no debug options that can be read from config") {
+    CypherDebugOption.cypherConfigBooleans should be(empty)
+  }
+
   ignore("Can read debug options from config") {
     val options = CypherQueryOptions.fromValues(
       config = CypherConfiguration.fromConfig(

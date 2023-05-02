@@ -69,7 +69,7 @@ abstract class CypherOptionCompanion[Opt <: CypherOption](
   val name: String,
   setting: Option[Setting[_]] = None,
   cypherConfigField: Option[CypherConfiguration => Opt] = None,
-  cypherConfigBooleans: Map[Opt, CypherConfiguration => Boolean] = Map.empty[Opt, CypherConfiguration => Boolean]
+  val cypherConfigBooleans: Map[Opt, CypherConfiguration => Boolean] = Map.empty[Opt, CypherConfiguration => Boolean]
 ) {
   self: Product =>
 
