@@ -91,20 +91,7 @@ public final class UnsafeUtil {
         unsafe = UnsafeAccessor.getUnsafe();
         pageSize = unsafe.pageSize();
 
-        // See java.nio.Bits.unaligned() and its uses.
-        String alignmentProperty = System.getProperty(allowUnalignedMemoryAccessProperty);
-        if (alignmentProperty != null
-                && (alignmentProperty.equalsIgnoreCase("true") || alignmentProperty.equalsIgnoreCase("false"))) {
-            allowUnalignedMemoryAccess = Boolean.parseBoolean(alignmentProperty);
-        } else {
-            String arch = System.getProperty("os.arch", "?");
-            allowUnalignedMemoryAccess =
-                    switch (arch) // list of architectures that support unaligned access to memory
-                    {
-                        case "x86_64", "i386", "x86", "amd64", "ppc64", "ppc64le", "ppc64be" -> true;
-                        default -> false;
-                    };
-        }
+        allowUnalignedMemoryAccess = findUnalignedMemoryAccess();
         nativeByteOrderIsLittleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
 
         Class<?> dbbClass = null;
@@ -145,6 +132,32 @@ public final class UnsafeUtil {
     }
 
     private UnsafeUtil() {}
+
+    private static boolean findUnalignedMemoryAccess() {
+        String alignmentProperty = System.getProperty(allowUnalignedMemoryAccessProperty);
+        if (alignmentProperty != null
+                && (alignmentProperty.equalsIgnoreCase("true") || alignmentProperty.equalsIgnoreCase("false"))) {
+            return Boolean.parseBoolean(alignmentProperty);
+        }
+
+        try {
+            var bits = Class.forName("java.nio.Bits");
+            var unaligned = bits.getDeclaredMethod("unaligned");
+            unaligned.setAccessible(true);
+            return (boolean) unaligned.invoke(null);
+        } catch (Throwable t) {
+            return findUnalignedMemoryAccessFromArch();
+        }
+    }
+
+    private static boolean findUnalignedMemoryAccessFromArch() {
+        String arch = System.getProperty("os.arch", "?");
+        return switch (arch) // list of architectures that support unaligned access to memory
+        {
+            case "x86_64", "i386", "x86", "amd64", "ppc64", "ppc64le", "ppc64be", "aarch64" -> true;
+            default -> false;
+        };
+    }
 
     /**
      * @throws java.lang.LinkageError if the Unsafe tools are not available on in this JVM.
