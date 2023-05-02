@@ -24,6 +24,7 @@ import static java.util.Objects.requireNonNull;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.neo4j.collection.trackable.HeapTrackingArrayList;
 import org.neo4j.collection.trackable.HeapTrackingCollections;
 import org.neo4j.io.fs.WritableChannel;
@@ -374,7 +375,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
 
     private ByteBuffer newChunk() {
         memoryTracker.allocateHeap(CHUNK_SIZE);
-        currentChunk = ByteBuffer.allocate(CHUNK_SIZE);
+        currentChunk = ByteBuffer.allocate(CHUNK_SIZE).order(ByteOrder.LITTLE_ENDIAN);
         chunks.add(currentChunk);
         return currentChunk;
     }

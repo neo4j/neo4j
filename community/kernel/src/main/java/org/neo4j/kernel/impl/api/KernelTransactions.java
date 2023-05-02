@@ -38,6 +38,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -80,6 +81,7 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.ElementIdMapper;
@@ -108,6 +110,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final DbmsRuntimeRepository dbmsRuntimeRepository;
     private final TransactionIdStore transactionIdStore;
     private final KernelVersionProvider kernelVersionProvider;
+    private final ServerIdentity serverIdentity;
     private final LogicalTransactionStore transactionStore;
     private final AtomicReference<CpuClock> cpuClockRef;
     private final AccessCapabilityFactory accessCapabilityFactory;
@@ -149,6 +152,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final ConstraintSemantics constraintSemantics;
     private final AtomicInteger activeTransactionCounter = new AtomicInteger();
     private final TokenHoldersIdLookup tokenHoldersIdLookup;
+    private final ApplyEnrichmentStrategy enrichmentStrategy;
     private final AbstractSecurityLog securityLog;
     private final boolean multiVersioned;
     private ScopedMemoryPool transactionMemoryPool;
@@ -173,6 +177,7 @@ public class KernelTransactions extends LifecycleAdapter
             DbmsRuntimeRepository dbmsRuntimeRepository,
             TransactionIdStore transactionIdStore,
             KernelVersionProvider kernelVersionProvider,
+            ServerIdentity serverIdentity,
             SystemNanoClock clock,
             AtomicReference<CpuClock> cpuClockRef,
             AccessCapabilityFactory accessCapabilityFactory,
@@ -212,6 +217,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.dbmsRuntimeRepository = dbmsRuntimeRepository;
         this.transactionIdStore = transactionIdStore;
         this.kernelVersionProvider = kernelVersionProvider;
+        this.serverIdentity = serverIdentity;
         this.cpuClockRef = cpuClockRef;
         this.accessCapabilityFactory = accessCapabilityFactory;
         this.tokenHolders = tokenHolders;
@@ -241,6 +247,7 @@ public class KernelTransactions extends LifecycleAdapter
                         allTransactions, new KernelTransactionImplementationFactory(allTransactions, tracers)),
                 activeTransactionCounter,
                 config);
+        this.enrichmentStrategy = this.databaseDependencies.resolveDependency(ApplyEnrichmentStrategy.class);
         this.securityLog = this.databaseDependencies.resolveDependency(AbstractSecurityLog.class);
         doBlockNewTransactions();
     }
@@ -539,6 +546,8 @@ public class KernelTransactions extends LifecycleAdapter
                     dbmsRuntimeRepository,
                     kernelVersionProvider,
                     transactionStore,
+                    serverIdentity,
+                    enrichmentStrategy,
                     databaseHealth,
                     internalLogProvider,
                     multiVersioned);

@@ -21,6 +21,7 @@ package org.neo4j.storageengine.api.enrichment;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 
@@ -30,7 +31,7 @@ class ChannelBuffer implements WritableChannel, ReadableChannel {
     private boolean isClosed;
 
     ChannelBuffer(int capacity) {
-        this.buffer = ByteBuffer.allocate(capacity);
+        this.buffer = ByteBuffer.allocate(capacity).order(ByteOrder.LITTLE_ENDIAN);
     }
 
     @Override
@@ -167,16 +168,22 @@ class ChannelBuffer implements WritableChannel, ReadableChannel {
     }
 
     @Override
+    public long position() {
+        return buffer.position();
+    }
+
+    @Override
+    public void position(long byteOffset) throws IOException {
+        buffer.position(Math.toIntExact(byteOffset));
+    }
+
+    @Override
     public void close() {
         isClosed = true;
     }
 
     char getChar() {
         return buffer.getChar();
-    }
-
-    int position() {
-        return buffer.position();
     }
 
     ChannelBuffer flip() {

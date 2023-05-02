@@ -50,6 +50,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
@@ -80,6 +81,7 @@ import org.neo4j.memory.MemoryPools;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
@@ -148,17 +150,18 @@ class KernelTransactionTerminationTest {
             Consumer<TestKernelTransaction> thread1Action,
             Consumer<TestKernelTransaction> thread2Action)
             throws Throwable {
-        TestKernelTransaction tx = TestKernelTransaction.create();
-        long endTime = currentTimeMillis() + SECONDS.toMillis(TEST_RUN_TIME_SECS);
-        int limit = 20_000;
-        for (int i = 0; i < limit && currentTimeMillis() < endTime; i++) {
-            cleaner.run();
-            tx.initialize();
-            Race race = new Race().withRandomStartDelays(0, 10);
-            race.withEndCondition(() -> currentTimeMillis() >= endTime);
-            race.addContestant(() -> thread1Action.accept(tx), 1);
-            race.addContestant(() -> thread2Action.accept(tx), 1);
-            race.go();
+        try (TestKernelTransaction tx = TestKernelTransaction.create()) {
+            long endTime = currentTimeMillis() + SECONDS.toMillis(TEST_RUN_TIME_SECS);
+            int limit = 20_000;
+            for (int i = 0; i < limit && currentTimeMillis() < endTime; i++) {
+                cleaner.run();
+                tx.initialize();
+                Race race = new Race().withRandomStartDelays(0, 10);
+                race.withEndCondition(() -> currentTimeMillis() >= endTime);
+                race.addContestant(() -> thread1Action.accept(tx), 1);
+                race.addContestant(() -> thread2Action.accept(tx), 1);
+                race.go();
+            }
         }
     }
 
@@ -294,6 +297,8 @@ class KernelTransactionTerminationTest {
                     mock(DbmsRuntimeRepository.class),
                     LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                     mock(LogicalTransactionStore.class),
+                    mock(ServerIdentity.class),
+                    ApplyEnrichmentStrategy.NO_ENRICHMENT,
                     mock(DatabaseHealth.class),
                     NullLogProvider.getInstance(),
                     false);
@@ -330,7 +335,7 @@ class KernelTransactionTerminationTest {
         void assertTerminated() {
             assertEquals(
                     Status.Transaction.TransactionMarkedAsFailed,
-                    getReasonIfTerminated().get());
+                    getReasonIfTerminated().orElseThrow());
             assertTrue(monitor.terminated);
         }
 

@@ -52,6 +52,7 @@ import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DefaultReadOnlyDatabases;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -98,6 +99,8 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
+import org.neo4j.storageengine.api.enrichment.EnrichmentMode;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.LatestVersions;
@@ -109,6 +112,8 @@ import org.neo4j.values.ElementIdMapper;
 import org.neo4j.values.storable.Value;
 
 class KernelTransactionTestBase {
+    protected final ServerIdentity serverIdentity = mock(ServerIdentity.class);
+    protected final ApplyEnrichmentStrategy enrichmentStrategy = mock(ApplyEnrichmentStrategy.class);
     protected final StorageEngine storageEngine = mock(StorageEngine.class, RETURNS_MOCKS);
     protected final StorageReader storageReader = mock(StorageReader.class);
     protected final MetadataProvider metadataProvider = mock(MetadataProvider.class);
@@ -142,6 +147,8 @@ class KernelTransactionTestBase {
                         any(StoreCursors.class),
                         any(MemoryTracker.class)))
                 .thenReturn(List.of(new TestCommand()));
+
+        when(enrichmentStrategy.check()).thenReturn(EnrichmentMode.OFF);
     }
 
     public KernelTransactionImplementation newTransaction(long transactionTimeoutMillis) {
@@ -248,6 +255,8 @@ class KernelTransactionTestBase {
                 mock(DbmsRuntimeRepository.class),
                 LatestVersions.LATEST_KERNEL_VERSION_PROVIDER,
                 mock(LogicalTransactionStore.class),
+                serverIdentity,
+                enrichmentStrategy,
                 mock(DatabaseHealth.class),
                 NullLogProvider.getInstance(),
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));

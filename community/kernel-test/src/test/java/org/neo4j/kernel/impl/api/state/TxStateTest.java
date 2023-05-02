@@ -86,6 +86,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -122,6 +123,7 @@ abstract class TxStateTest {
                 collectionsFactory,
                 memoryTracker,
                 TransactionStateBehaviour.DEFAULT_BEHAVIOUR,
+                ApplyEnrichmentStrategy.NO_ENRICHMENT,
                 ChunkedTransactionSink.EMPTY,
                 TransactionEvent.NULL);
     }
@@ -1080,6 +1082,7 @@ abstract class TxStateTest {
                 collectionsFactory,
                 memoryTracker,
                 () -> keepDeletedRelationshipMetaData,
+                ApplyEnrichmentStrategy.NO_ENRICHMENT,
                 ChunkedTransactionSink.EMPTY,
                 TransactionEvent.NULL);
         long id = 9;

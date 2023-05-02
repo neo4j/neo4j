@@ -56,7 +56,7 @@ public enum DbmsRuntimeVersion implements ComponentVersion, KernelVersionProvide
     V5_7(7, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_57, KernelVersion.V5_7),
 
     /**
-     * Index usage statistics
+     * Index usage statistics and enrichment command
      */
     V5_8(8, DBMS_RUNTIME_COMPONENT, Neo4jVersions.VERSION_58, KernelVersion.V5_8),
 

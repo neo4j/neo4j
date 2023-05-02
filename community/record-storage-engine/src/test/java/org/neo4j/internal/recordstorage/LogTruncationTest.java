@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.recordstorage.Command.NodeCountsCommand;
 import org.neo4j.internal.recordstorage.Command.RelationshipCountsCommand;
@@ -124,9 +123,10 @@ class LogTruncationTest {
         permutations.put(
                 Command.GroupDegreeCommand.class,
                 new Command[] {new Command.GroupDegreeCommand(serialization, 42, RelationshipDirection.OUTGOING, 1)});
-    }
 
-    private final Set<Class<? extends Command>> futureCommands = Set.of(Command.RecordEnrichmentCommand.class);
+        // CDC - empty permutation as the read/write behaviour is different for enrichment commands
+        permutations.put(Command.RecordEnrichmentCommand.class, new Command[0]);
+    }
 
     @Test
     void testSerializationInFaceOfLogTruncation() throws Exception {
@@ -138,16 +138,16 @@ class LogTruncationTest {
     private Iterable<Command> enumerateCommands() {
         // We use this reflection approach rather than just iterating over the permutation map to force developers
         // writing new commands to add the new commands to this test. If you came here because of a test failure from
-        // missing commands, add all permutations you can think of of the command to the permutations map in the
+        // missing commands, add all permutations you can think of the command to the permutations map in the
         // beginning of this class.
         List<Command> commands = new ArrayList<>();
         for (Class<?> cmd : Command.class.getClasses()) {
             if (Command.class.isAssignableFrom(cmd)) {
                 if (permutations.containsKey(cmd)) {
                     commands.addAll(asList(permutations.get(cmd)));
-                } else if (!isAbstract(cmd.getModifiers()) && !futureCommands.contains(cmd)) {
+                } else if (!isAbstract(cmd.getModifiers())) {
                     throw new AssertionError("Unknown command type: " + cmd + ", please add missing instantiation to "
-                            + "test serialization of this command or to the future commands set.");
+                            + "test serialization of this command.");
                 }
             }
         }

@@ -17,22 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.enrichment;
-
-import org.neo4j.kernel.KernelVersion;
+package org.neo4j.kernel.api.database.enrichment;
 
 /**
- * The storage-engine specific factory for creating {@link EnrichmentCommand}s
- * NB The created command will have no interactions with the stores.
+ * Describes the 4 entity detail pointers that provide access to the actual entity changes.
  */
-public interface EnrichmentCommandFactory {
-
-    /**
-     * The storage-engine specific mechanism for creating {@link EnrichmentCommand}s.
-     * NB The created command will have no interactions with the stores.
-     * @param kernelVersion the transaction's {@link KernelVersion}
-     * @param enrichment the enrichment data to wrap
-     * @return the storage-engine specific {@link EnrichmentCommand}
-     */
-    EnrichmentCommand create(KernelVersion kernelVersion, Enrichment enrichment);
+enum ChangeType {
+    CONSTRAINTS,
+    PROPERTIES_STATE,
+    PROPERTIES_CHANGE,
+    LABELS_STATE,
+    LABELS_CHANGE
 }

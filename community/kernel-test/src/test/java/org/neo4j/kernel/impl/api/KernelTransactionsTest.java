@@ -72,6 +72,7 @@ import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.id.IdController;
@@ -129,6 +130,8 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
+import org.neo4j.storageengine.api.enrichment.EnrichmentMode;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.LatestVersions;
@@ -785,6 +788,7 @@ class KernelTransactionsTest {
                 mock(DbmsRuntimeRepository.class),
                 transactionIdStore,
                 kernelVersionProvider,
+                mock(ServerIdentity.class),
                 clock,
                 new AtomicReference<>(CpuClock.NOT_AVAILABLE),
                 any -> CanWrite.INSTANCE,
@@ -843,6 +847,10 @@ class KernelTransactionsTest {
 
     private static Dependencies createDependencies() {
         Dependencies dependencies = new Dependencies();
+        final var enrichmentStrategy = mock(ApplyEnrichmentStrategy.class);
+        when(enrichmentStrategy.check()).thenReturn(EnrichmentMode.OFF);
+
+        dependencies.satisfyDependency(enrichmentStrategy);
         dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
         dependencies.satisfyDependency(CommunitySecurityLog.NULL_LOG);
         return dependencies;
@@ -899,6 +907,7 @@ class KernelTransactionsTest {
                     mock(DbmsRuntimeRepository.class),
                     transactionIdStore,
                     kernelVersionProvider,
+                    mock(ServerIdentity.class),
                     clock,
                     new AtomicReference<>(CpuClock.NOT_AVAILABLE),
                     accessCapabilityFactory,

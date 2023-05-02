@@ -58,6 +58,7 @@ import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionVali
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -76,6 +77,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.dbms.identity.ServerId;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -91,11 +93,13 @@ import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransaction.Type;
 import org.neo4j.kernel.api.TransactionTimeout;
+import org.neo4j.kernel.api.database.enrichment.TxEnrichmentVisitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.DatabaseIdFactory;
+import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.lock.LockTracer;
@@ -107,6 +111,7 @@ import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.enrichment.EnrichmentMode;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.util.concurrent.Futures;
@@ -123,6 +128,19 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         return Stream.of(
                 arguments("readOperationsInNewTransaction", false, readTxInitializer),
                 arguments("write", true, writeTxInitializer));
+    }
+
+    private static Stream<Arguments> enrichmentModes() {
+        return Stream.of(
+                Arguments.of(EnrichmentMode.OFF, Type.IMPLICIT, Boolean.FALSE),
+                Arguments.of(EnrichmentMode.DIFF, Type.IMPLICIT, Boolean.FALSE),
+                Arguments.of(EnrichmentMode.FULL, Type.IMPLICIT, Boolean.FALSE),
+                Arguments.of(EnrichmentMode.OFF, Type.IMPLICIT, Boolean.TRUE),
+                Arguments.of(EnrichmentMode.DIFF, Type.IMPLICIT, Boolean.TRUE),
+                Arguments.of(EnrichmentMode.FULL, Type.IMPLICIT, Boolean.TRUE),
+                Arguments.of(EnrichmentMode.OFF, Type.EXPLICIT, Boolean.TRUE),
+                Arguments.of(EnrichmentMode.DIFF, Type.EXPLICIT, Boolean.TRUE),
+                Arguments.of(EnrichmentMode.FULL, Type.EXPLICIT, Boolean.TRUE));
     }
 
     @ParameterizedTest
@@ -810,6 +828,53 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         } finally {
             executorService.shutdown();
             assertTrue(executorService.awaitTermination(1, MINUTES));
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("enrichmentModes")
+    void txStateShouldGetEnrichmentModeFromStorageEngine(EnrichmentMode mode, Type txType, boolean createNode)
+            throws Exception {
+        // GIVEN a transaction starting at one point in time
+        when(serverIdentity.serverId()).thenReturn(new ServerId(UUID.randomUUID()));
+        when(enrichmentStrategy.check()).thenReturn(mode);
+        @SuppressWarnings("resource")
+        final var stateVisitor = mock(TxStateVisitor.class);
+
+        final var storeReader = mock(StorageReader.class);
+        when(storeReader.constraintsGetAll()).thenReturn(Collections.emptyIterator());
+
+        when(storageEngine.newReader()).thenReturn(storeReader);
+        when(storageEngine.createCommands(
+                        any(TransactionState.class),
+                        any(StorageReader.class),
+                        any(CommandCreationContext.class),
+                        any(LockTracer.class),
+                        any(TxStateVisitor.Decorator.class),
+                        any(CursorContext.class),
+                        any(StoreCursors.class),
+                        any(MemoryTracker.class)))
+                .thenAnswer(args -> {
+                    final TxStateVisitor.Decorator decorator = args.getArgument(4);
+                    final var commandVisitor = decorator.apply(stateVisitor);
+                    if (mode != EnrichmentMode.OFF && createNode) {
+                        assertThat(commandVisitor).isInstanceOf(TxEnrichmentVisitor.class);
+                    } else {
+                        assertThat(commandVisitor).isNotInstanceOf(TxEnrichmentVisitor.class);
+                    }
+                    return List.of(mock(StorageCommand.class));
+                });
+
+        try (KernelTransactionImplementation transaction = newTransaction(AnonymousContext.write())) {
+            transaction.initialize(
+                    5L, txType, SecurityContext.AUTH_DISABLED, DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
+            assertThat(((TxState) transaction.txState()).enrichmentMode()).isEqualTo(mode);
+            if (createNode) {
+                transaction.dataWrite().nodeCreate();
+            } else {
+                transaction.tokenWrite().labelCreateForName("label", false);
+            }
+            transaction.commit();
         }
     }
 

@@ -30,27 +30,36 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.recordstorage.Command.RecordEnrichmentCommand;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.enrichment.CaptureMode;
 import org.neo4j.storageengine.api.enrichment.Enrichment;
 import org.neo4j.storageengine.api.enrichment.TxMetadata;
+import org.neo4j.storageengine.api.enrichment.WriteEnrichmentChannel;
 
-public class LogCommandSerializationVGloriousFutureTest {
-    // rename this to LogCommandSerializationV5_8Test when the command is fully implemented in a future PR
+public class LogCommandSerializationV5_8Test {
+
+    private static final long[] DUMMY_DATA = new long[] {1, 2, 3};
+
     @Test
     void enrichmentSupported() throws IOException {
         final var metadata = metadata();
         try (var channel = new InMemoryClosableChannel()) {
-            final var serialization = LogCommandSerializationVGloriousFuture.INSTANCE;
+            final var serialization = LogCommandSerializationV5_8.INSTANCE;
+
+            final var enrichment = new Enrichment.Write(metadata(), dummyData(), dummyData(), dummyData(), dummyData());
 
             final var writer = channel.writer();
             writer.beginChecksum();
-            serialization.writeEnrichmentCommand(
-                    writer, new RecordEnrichmentCommand(serialization, new Enrichment.Write(metadata)));
+            serialization.writeEnrichmentCommand(writer, new RecordEnrichmentCommand(serialization, enrichment));
+            final var afterEnrichment = writer.getCurrentLogPosition();
             writer.putChecksum();
 
             final var command = serialization.read(channel.reader());
             assertThat(command).isInstanceOf(RecordEnrichmentCommand.class);
             assertMetadata(metadata, ((RecordEnrichmentCommand) command).metadata());
+            assertThat(channel.reader().getCurrentLogPosition())
+                    .as("should have read the metadata and past the dummy data blocks")
+                    .isEqualTo(afterEnrichment);
         }
     }
 
@@ -64,6 +73,14 @@ public class LogCommandSerializationVGloriousFutureTest {
                 .isEqualTo(actual.subject().executingUser());
         assertThat(expected.connectionInfo().protocol())
                 .isEqualTo(actual.connectionInfo().protocol());
+    }
+
+    private static WriteEnrichmentChannel dummyData() {
+        final var dataChannel = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE);
+        for (var entity : DUMMY_DATA) {
+            dataChannel.putLong(entity);
+        }
+        return dataChannel;
     }
 
     static TxMetadata metadata() {

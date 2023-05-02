@@ -25,6 +25,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -33,6 +34,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.BaseCommandReader;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -41,6 +43,11 @@ import org.neo4j.storageengine.api.StorageCommand;
 public class EnrichmentCommandReaderFactoryTest {
 
     private static final int BUFFER_SIZE = 1024;
+
+    private static final long[] ENTITY_DATA = new long[] {1, 2, 3};
+    private static final long[] DETAILS_DATA = new long[] {11, 12, 13};
+    private static final long[] CHANGES_DATA = new long[] {111, 112, 113};
+    private static final long[] VALUES_DATA = new long[] {1111, 1112, 1113};
 
     @Test
     void factoryCanReadDelegatesCommands() throws IOException {
@@ -56,26 +63,33 @@ public class EnrichmentCommandReaderFactoryTest {
         }
     }
 
+    @SuppressWarnings("resource")
     @Test
     void factoryCanReadEnrichmentCommand() throws IOException {
         try (var channel = new ChannelBuffer(BUFFER_SIZE)) {
             zeroPad(channel);
 
-            final var metadata = metadata();
+            final var enrichment = enrichment();
 
             channel.put(EnrichmentCommand.COMMAND_CODE);
-            metadata.serialize(channel);
+            enrichment.serialize(channel);
             channel.flip();
 
             final var reader = reader();
             final var readCommand = reader.read(channel);
 
             assertThat(readCommand).isInstanceOf(TestEnrichmentCommand.class);
-            assertMetadataEquals(metadata, ((TestEnrichmentCommand) readCommand).metadata);
-            assertThat(((TestEnrichmentCommand) readCommand).mode).isEqualTo(ReadMode.FULLY);
+            assertMetadataEquals(enrichment.metadata(), ((TestEnrichmentCommand) readCommand).metadata);
+
+            var readEnrichment = EnrichmentCommand.extractForReading((TestEnrichmentCommand) readCommand);
+            assertContents(readEnrichment.entities(), ENTITY_DATA);
+            assertContents(readEnrichment.entityDetails(), DETAILS_DATA);
+            assertContents(readEnrichment.entityChanges(), CHANGES_DATA);
+            assertContents(readEnrichment.values(), VALUES_DATA);
         }
     }
 
+    @SuppressWarnings("resource")
     @Test
     void factoryCanReadMixedCommand() throws IOException {
         try (var channel = new ChannelBuffer(BUFFER_SIZE)) {
@@ -85,12 +99,12 @@ public class EnrichmentCommandReaderFactoryTest {
             final var command2 = new TestCommand(43);
             final var command3 = new TestCommand(44);
 
-            final var metadata = metadata();
+            final var enrichment = enrichment();
 
             command1.serialize(channel);
             command2.serialize(channel);
             channel.put(EnrichmentCommand.COMMAND_CODE);
-            metadata.serialize(channel);
+            enrichment.serialize(channel);
             command3.serialize(channel);
             channel.flip();
 
@@ -100,10 +114,13 @@ public class EnrichmentCommandReaderFactoryTest {
 
             final var readCommand = reader.read(channel);
             assertThat(readCommand).isInstanceOf(TestEnrichmentCommand.class);
-            assertMetadataEquals(metadata, ((TestEnrichmentCommand) readCommand).metadata);
-            assertThat(((TestEnrichmentCommand) readCommand).mode)
-                    .as("Should return the 'fully read' command rather than the 'skipped' one from base reader")
-                    .isEqualTo(ReadMode.FULLY);
+            assertMetadataEquals(enrichment.metadata(), ((TestEnrichmentCommand) readCommand).metadata);
+
+            var readEnrichment = EnrichmentCommand.extractForReading((TestEnrichmentCommand) readCommand);
+            assertContents(readEnrichment.entities(), ENTITY_DATA);
+            assertContents(readEnrichment.entityDetails(), DETAILS_DATA);
+            assertContents(readEnrichment.entityChanges(), CHANGES_DATA);
+            assertContents(readEnrichment.values(), VALUES_DATA);
 
             assertThat(reader.read(channel)).isEqualTo(command3);
         }
@@ -127,15 +144,47 @@ public class EnrichmentCommandReaderFactoryTest {
         final var commandFactory = mock(EnrichmentCommandFactory.class);
         when(commandFactory.create(any(), any())).thenAnswer(answer -> {
             final var enrichment = answer.<Enrichment>getArgument(1);
-            return new TestEnrichmentCommand(enrichment.metadata, ReadMode.FULLY);
+            return new TestEnrichmentCommand(enrichment.metadata, Optional.of(enrichment));
         });
 
-        final var readerFactory = new EnrichmentCommandReaderFactory(new TestCommandReaderFactory(), commandFactory);
+        final var readerFactory = new EnrichmentCommandReaderFactory(
+                new TestCommandReaderFactory(), commandFactory, () -> EmptyMemoryTracker.INSTANCE);
         return readerFactory.get(KernelVersion.VERSION_CDC_INTRODUCED);
     }
 
-    private static TxMetadata metadata() {
-        return TxMetadata.create(CaptureMode.FULL, "some.server", securityContext(), 42L);
+    private static Enrichment.Write enrichment() {
+        final var entities = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE);
+        for (var entity : ENTITY_DATA) {
+            entities.putLong(entity);
+        }
+
+        final var details = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE);
+        for (var entity : DETAILS_DATA) {
+            details.putLong(entity);
+        }
+
+        final var changes = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE);
+        for (var change : CHANGES_DATA) {
+            changes.putLong(change);
+        }
+
+        final var values = new WriteEnrichmentChannel(EmptyMemoryTracker.INSTANCE);
+        for (var change : VALUES_DATA) {
+            values.putLong(change);
+        }
+
+        return new Enrichment.Write(
+                TxMetadata.create(CaptureMode.FULL, "some.server", securityContext(), 42L),
+                entities,
+                details,
+                changes,
+                values);
+    }
+
+    private static void assertContents(ByteBuffer buffer, long[] values) {
+        for (var value : values) {
+            assertThat(buffer.getLong()).isEqualTo(value);
+        }
     }
 
     private static SecurityContext securityContext() {
@@ -161,8 +210,8 @@ public class EnrichmentCommandReaderFactoryTest {
                     if (commandType == TestCommand.TYPE) {
                         return new TestCommand(channel.getLong());
                     } else if (commandType == EnrichmentCommand.COMMAND_CODE) {
-                        final var metadata = TxMetadata.deserialize(channel);
-                        return new TestEnrichmentCommand(metadata, ReadMode.SKIPPED);
+                        final var metadata = Enrichment.readMetadataAndPastEnrichmentData(channel);
+                        return new TestEnrichmentCommand(metadata, Optional.empty());
                     }
 
                     throw new IllegalArgumentException("Invalid commandType: " + commandType);
@@ -171,12 +220,8 @@ public class EnrichmentCommandReaderFactoryTest {
         }
     }
 
-    private enum ReadMode {
-        SKIPPED,
-        FULLY
-    }
-
-    private record TestEnrichmentCommand(TxMetadata metadata, ReadMode mode) implements EnrichmentCommand {
+    private record TestEnrichmentCommand(TxMetadata metadata, Optional<Enrichment> enrichment)
+            implements EnrichmentCommand {
 
         @Override
         public KernelVersion kernelVersion() {
@@ -191,7 +236,7 @@ public class EnrichmentCommandReaderFactoryTest {
 
         @Override
         public Optional<Enrichment> enrichment() {
-            return Optional.empty();
+            return enrichment;
         }
     }
 

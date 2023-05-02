@@ -21,9 +21,8 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.IOException;
 import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.io.fs.SeekableChannel;
 
-public interface ReadableLogPositionAwareChannel extends ReadableChannel, LogPositionAwareChannel, SeekableChannel {
+public interface ReadableLogPositionAwareChannel extends ReadableChannel, LogPositionAwareChannel {
     /**
      * Logically, this method is the same as calling
      * {@link LogPositionAwareChannel#getCurrentLogPosition(LogPositionMarker)} followed by a call to

@@ -199,5 +199,15 @@ class StoreIdTest {
             buffer.putInt(BASE_TX_CHECKSUM);
             return BASE_TX_CHECKSUM;
         }
+
+        @Override
+        public long position() throws IOException {
+            return buffer.position();
+        }
+
+        @Override
+        public void position(long byteOffset) throws IOException {
+            buffer.position(Math.toIntExact(byteOffset));
+        }
     }
 }

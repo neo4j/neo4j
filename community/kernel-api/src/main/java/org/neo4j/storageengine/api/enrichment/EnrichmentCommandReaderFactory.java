@@ -20,8 +20,10 @@
 package org.neo4j.storageengine.api.enrichment;
 
 import java.io.IOException;
+import java.util.function.Supplier;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.BaseCommandReader;
 import org.neo4j.storageengine.api.CommandReader;
 import org.neo4j.storageengine.api.CommandReaderFactory;
@@ -35,11 +37,15 @@ public class EnrichmentCommandReaderFactory implements CommandReaderFactory {
 
     private final CommandReaderFactory commandReaderFactory;
     private final EnrichmentCommandFactory enrichmentCommandFactory;
+    private final Supplier<MemoryTracker> memoryTracker;
 
     public EnrichmentCommandReaderFactory(
-            CommandReaderFactory commandReaderFactory, EnrichmentCommandFactory enrichmentCommandFactory) {
+            CommandReaderFactory commandReaderFactory,
+            EnrichmentCommandFactory enrichmentCommandFactory,
+            Supplier<MemoryTracker> memoryTracker) {
         this.commandReaderFactory = commandReaderFactory;
         this.enrichmentCommandFactory = enrichmentCommandFactory;
+        this.memoryTracker = memoryTracker;
     }
 
     @Override
@@ -50,7 +56,7 @@ public class EnrichmentCommandReaderFactory implements CommandReaderFactory {
                 @Override
                 public StorageCommand read(byte commandType, ReadableChannel channel) throws IOException {
                     if (EnrichmentCommand.COMMAND_CODE == commandType) {
-                        final var enrichment = Enrichment.Read.deserialize(channel);
+                        final var enrichment = Enrichment.Read.deserialize(channel, memoryTracker.get());
                         return enrichmentCommandFactory.create(version, enrichment);
                     }
 

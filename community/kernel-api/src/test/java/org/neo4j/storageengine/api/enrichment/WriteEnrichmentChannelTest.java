@@ -28,6 +28,7 @@ import static org.neo4j.storageengine.api.enrichment.WriteEnrichmentChannel.CHUN
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.eclipse.collections.api.factory.Lists;
@@ -427,6 +428,7 @@ class WriteEnrichmentChannelTest {
 
     private static ByteBuffer fillForPrimitive(int primitiveSize, byte[] bytes, int atPosition) {
         return ByteBuffer.allocate(primitiveSize)
+                .order(ByteOrder.LITTLE_ENDIAN)
                 .put(bytes, atPosition, primitiveSize)
                 .flip();
     }

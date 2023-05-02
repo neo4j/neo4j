@@ -36,7 +36,7 @@ import org.neo4j.io.memory.ScopedBuffer;
  * spanning more than one file, by properly implementing {@link #next(StoreChannel)}.
  * @param <T> The type of StoreChannel wrapped
  */
-public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel, SeekableChannel {
+public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel {
     public static final int DEFAULT_READ_AHEAD_SIZE = toIntExact(kibiBytes(4));
     private final ScopedBuffer scopedBuffer;
 

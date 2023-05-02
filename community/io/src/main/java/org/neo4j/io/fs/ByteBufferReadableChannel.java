@@ -24,7 +24,7 @@ import static java.lang.Math.toIntExact;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-public class ByteBufferReadableChannel implements ReadableChannel, SeekableChannel {
+public class ByteBufferReadableChannel implements ReadableChannel {
 
     private final ByteBuffer buffer;
     private boolean isClosed;

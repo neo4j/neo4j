@@ -19,20 +19,15 @@
  */
 package org.neo4j.storageengine.api.enrichment;
 
-import org.neo4j.kernel.KernelVersion;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 /**
- * The storage-engine specific factory for creating {@link EnrichmentCommand}s
- * NB The created command will have no interactions with the stores.
+ * A {@link TxStateVisitor} that can build an {@link EnrichmentCommand} from changes to the data during a transaction.
  */
-public interface EnrichmentCommandFactory {
-
+public interface EnrichmentTxStateVisitor extends TxStateVisitor {
     /**
-     * The storage-engine specific mechanism for creating {@link EnrichmentCommand}s.
-     * NB The created command will have no interactions with the stores.
-     * @param kernelVersion the transaction's {@link KernelVersion}
-     * @param enrichment the enrichment data to wrap
-     * @return the storage-engine specific {@link EnrichmentCommand}
+     * @return the command created during the enrichment process
      */
-    EnrichmentCommand create(KernelVersion kernelVersion, Enrichment enrichment);
+    EnrichmentCommand command(SecurityContext securityContext);
 }

@@ -24,7 +24,6 @@ import static org.neo4j.util.Preconditions.checkArgument;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import org.neo4j.io.fs.ReadableChannel;
-import org.neo4j.io.fs.SeekableChannel;
 
 public class DelegateReadableChannel implements ReadableLogPositionAwareChannel {
     private ReadableChannel delegate;
@@ -144,13 +143,13 @@ public class DelegateReadableChannel implements ReadableLogPositionAwareChannel 
     @Override
     public long position() throws IOException {
         assertAssigned();
-        return ((SeekableChannel) delegate).position();
+        return delegate.position();
     }
 
     @Override
     public void position(long byteOffset) throws IOException {
         assertAssigned();
-        ((SeekableChannel) delegate).position(byteOffset);
+        delegate.position(byteOffset);
     }
 
     private void assertAssigned() {

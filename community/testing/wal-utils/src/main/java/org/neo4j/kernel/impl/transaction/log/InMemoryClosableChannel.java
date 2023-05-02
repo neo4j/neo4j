@@ -31,16 +31,12 @@ import java.util.Arrays;
 import java.util.zip.Checksum;
 import org.neo4j.io.fs.ChecksumMismatchException;
 import org.neo4j.io.fs.ReadPastEndException;
-import org.neo4j.io.fs.SeekableChannel;
 
 /**
  * Implementation of {@link ReadableLogPositionAwareChannel} operating over a {@code byte[]} in memory.
  */
 public class InMemoryClosableChannel
-        implements ReadableLogPositionAwareChannel,
-                FlushableLogPositionAwareChannel,
-                SeekableChannel,
-                ReadableByteChannel {
+        implements ReadableLogPositionAwareChannel, FlushableLogPositionAwareChannel, ReadableByteChannel {
     private final byte[] bytes;
     private final Reader reader;
     private final Writer writer;
@@ -356,7 +352,7 @@ public class InMemoryClosableChannel
         }
     }
 
-    public class Reader extends ByteBufferBase implements ReadableLogPositionAwareChannel, SeekableChannel {
+    public class Reader extends ByteBufferBase implements ReadableLogPositionAwareChannel {
         private final Checksum checksum = CHECKSUM_FACTORY.get();
 
         Reader(ByteBuffer buffer) {

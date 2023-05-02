@@ -834,8 +834,7 @@ public class LogCommandSerializationV5_0Test {
     void enrichmentWriteNotSupported() {
         try (var channel = new InMemoryClosableChannel()) {
             final var writer = writer();
-            final var command =
-                    new RecordEnrichmentCommand(writer, LogCommandSerializationVGloriousFutureTest.metadata());
+            final var command = new RecordEnrichmentCommand(writer, LogCommandSerializationV5_8Test.metadata());
 
             assertThatThrownBy(() -> writer.writeEnrichmentCommand(channel, command))
                     .isInstanceOf(IOException.class)

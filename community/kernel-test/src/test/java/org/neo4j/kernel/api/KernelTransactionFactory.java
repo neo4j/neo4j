@@ -37,6 +37,7 @@ import org.neo4j.collection.pool.Pool;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.internal.kernel.api.security.CommunitySecurityLog;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.schema.SchemaState;
@@ -75,6 +76,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.TokenHolders;
@@ -140,6 +142,8 @@ public final class KernelTransactionFactory {
                 mock(DbmsRuntimeRepository.class),
                 kernelVersionProvider,
                 mock(LogicalTransactionStore.class),
+                mock(ServerIdentity.class),
+                ApplyEnrichmentStrategy.NO_ENRICHMENT,
                 mock(DatabaseHealth.class),
                 NullLogProvider.getInstance(),
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));

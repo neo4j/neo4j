@@ -52,6 +52,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.LocalConfig;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
 import org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker;
+import org.neo4j.dbms.identity.ServerIdentity;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.exceptions.UnspecifiedKernelException;
 import org.neo4j.graphdb.NotInTransactionException;
@@ -93,6 +94,7 @@ import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.TransactionTimeout;
+import org.neo4j.kernel.api.database.enrichment.TxEnrichmentVisitor;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
@@ -152,7 +154,11 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
+import org.neo4j.storageengine.api.enrichment.CaptureMode;
+import org.neo4j.storageengine.api.enrichment.EnrichmentMode;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.ElementIdMapper;
@@ -187,6 +193,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StorageReader storageReader;
     private final CommandCreationContext commandCreationContext;
     private final KernelVersionProvider kernelVersionProvider;
+    private final ServerIdentity serverIdentity;
     private final NamedDatabaseId namedDatabaseId;
     private final TransactionClockContext clocks;
     private final AccessCapabilityFactory accessCapabilityFactory;
@@ -196,6 +203,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final CursorContextFactory contextFactory;
     private final DatabaseReadOnlyChecker readOnlyDatabaseChecker;
     private final TransactionIdGenerator transactionIdGenerator;
+    private final ApplyEnrichmentStrategy enrichmentStrategy;
     private final DatabaseHealth databaseHealth;
     private final SecurityAuthorizationHandler securityAuthorizationHandler;
     private final LogicalTransactionStore transactionStore;
@@ -294,6 +302,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             DbmsRuntimeRepository dbmsRuntimeRepository,
             KernelVersionProvider kernelVersionProvider,
             LogicalTransactionStore transactionStore,
+            ServerIdentity serverIdentity,
+            ApplyEnrichmentStrategy enrichmentStrategy,
             DatabaseHealth databaseHealth,
             LogProvider logProvider,
             boolean multiVersioned) {
@@ -314,6 +324,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.storageReader = storageEngine.newReader();
         this.commandCreationContext = storageEngine.newCommandCreationContext();
         this.kernelVersionProvider = kernelVersionProvider;
+        this.serverIdentity = serverIdentity;
+        this.enrichmentStrategy = enrichmentStrategy;
         this.namedDatabaseId = namedDatabaseId;
         this.storageEngine = storageEngine;
         this.pool = pool;
@@ -761,7 +773,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             txState = new TxState(
                     collectionsFactory,
                     memoryTracker,
-                    storageEngine.transactionStateBehaviour(),
+                    () -> enrichmentStrategy.check() != EnrichmentMode.OFF
+                            || storageEngine.transactionStateBehaviour().keepMetaDataForDeletedRelationship(),
+                    enrichmentStrategy,
                     txStateWriter,
                     transactionEvent);
         }
@@ -996,15 +1010,58 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     public List<StorageCommand> extractCommands(MemoryTracker commandsTracker) throws KernelException {
-        return storageEngine.createCommands(
+        final var commandDecorator = commandDecorator(commandsTracker);
+        final var commands = storageEngine.createCommands(
                 txState,
                 storageReader,
                 commandCreationContext,
                 lockTracer(),
-                tx -> enforceConstraints(tx, commandsTracker),
+                commandDecorator,
                 cursorContext,
                 transactionalCursors,
                 commandsTracker);
+        return commandDecorator.transform(commands);
+    }
+
+    private CommandDecorator commandDecorator(MemoryTracker commandsTracker) {
+        final var mode = txState.enrichmentMode();
+        if (namedDatabaseId.isSystemDatabase() || mode == EnrichmentMode.OFF || !txState.hasDataChanges()) {
+            return tx -> enforceConstraints(tx, commandsTracker);
+        }
+
+        return new CommandDecorator() {
+            private TxEnrichmentVisitor enrichmentVisitor;
+
+            @Override
+            public TxStateVisitor apply(TxStateVisitor tx) {
+                enrichmentVisitor = new TxEnrichmentVisitor(
+                        enforceConstraints(tx, commandsTracker),
+                        mode == EnrichmentMode.DIFF ? CaptureMode.DIFF : CaptureMode.FULL,
+                        serverIdentity.serverId().shortName(),
+                        kernelVersionProvider,
+                        storageEngine::createEnrichmentCommand,
+                        txState,
+                        lastTransactionIdWhenStarted,
+                        storageReader,
+                        cursorContext,
+                        transactionalCursors,
+                        commandsTracker);
+                return enrichmentVisitor;
+            }
+
+            @Override
+            public List<StorageCommand> transform(List<StorageCommand> storageCommands) {
+                return (enrichmentVisitor == null) ? storageCommands : enrich(storageCommands);
+            }
+
+            private List<StorageCommand> enrich(List<StorageCommand> commands) {
+                final var enrichment = enrichmentVisitor.command(overridableSecurityContext.currentSecurityContext());
+                if (enrichment != null) {
+                    commands.add(enrichment);
+                }
+                return commands;
+            }
+        };
     }
 
     // Because of current constraint creation dance we need to refresh context version to be able
@@ -1585,6 +1642,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 CursorContext transactionCursorContext,
                 Supplier<ClockContext> clockContextSupplier,
                 ExtendedAssertOpen assertOpen);
+    }
+
+    private interface CommandDecorator extends Decorator {
+        default List<StorageCommand> transform(List<StorageCommand> storageCommands) {
+            // no enrichment is occurring
+            return storageCommands;
+        }
     }
 
     private record ExecutionContextClock(Clock systemClock, Clock transactionClock, Clock statementClock)

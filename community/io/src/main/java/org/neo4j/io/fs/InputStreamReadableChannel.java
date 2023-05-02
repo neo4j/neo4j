@@ -103,4 +103,14 @@ public class InputStreamReadableChannel implements ReadableChannel {
     public int endChecksumAndValidate() throws IOException {
         return 0;
     }
+
+    @Override
+    public long position() throws IOException {
+        throw new UnsupportedOperationException("Steam does not have a position");
+    }
+
+    @Override
+    public void position(long byteOffset) throws IOException {
+        throw new UnsupportedOperationException("Steam does not have a position");
+    }
 }

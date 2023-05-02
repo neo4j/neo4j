@@ -17,22 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.enrichment;
+package org.neo4j.kernel.api.database.enrichment;
 
-import org.neo4j.kernel.KernelVersion;
+import java.util.List;
+import org.eclipse.collections.api.map.primitive.ImmutableByteObjectMap;
+import org.eclipse.collections.impl.factory.primitive.ByteObjectMaps;
 
 /**
- * The storage-engine specific factory for creating {@link EnrichmentCommand}s
- * NB The created command will have no interactions with the stores.
+ * The type of entity change in the enrichment data
  */
-public interface EnrichmentCommandFactory {
+public enum DeltaType {
+    ADDED((byte) 0),
+    MODIFIED((byte) 1),
+    DELETED((byte) 2),
+    STATE((byte) 3);
 
-    /**
-     * The storage-engine specific mechanism for creating {@link EnrichmentCommand}s.
-     * NB The created command will have no interactions with the stores.
-     * @param kernelVersion the transaction's {@link KernelVersion}
-     * @param enrichment the enrichment data to wrap
-     * @return the storage-engine specific {@link EnrichmentCommand}
-     */
-    EnrichmentCommand create(KernelVersion kernelVersion, Enrichment enrichment);
+    public static final ImmutableByteObjectMap<DeltaType> BY_ID =
+            ByteObjectMaps.immutable.from(List.of(DeltaType.values()), DeltaType::id, v -> v);
+
+    private final byte id;
+
+    DeltaType(byte id) {
+        this.id = id;
+    }
+
+    public byte id() {
+        return id;
+    }
 }

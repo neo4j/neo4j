@@ -65,6 +65,8 @@ import org.neo4j.memory.ScopedMemoryTracker;
 import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.RelationshipVisitorWithProperties;
+import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
+import org.neo4j.storageengine.api.enrichment.EnrichmentMode;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications;
 import org.neo4j.storageengine.api.txstate.RelationshipModifications.NodeRelationshipIds;
@@ -114,6 +116,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
 
     private final ScopedMemoryTracker stateMemoryTracker;
     private final TransactionStateBehaviour behaviour;
+    private final ApplyEnrichmentStrategy enrichmentStrategy;
     private final ChunkedTransactionSink chunkWriter;
     private long revision;
     private long dataRevision;
@@ -125,6 +128,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
                 OnHeapCollectionsFactory.INSTANCE,
                 EmptyMemoryTracker.INSTANCE,
                 TransactionStateBehaviour.DEFAULT_BEHAVIOUR,
+                ApplyEnrichmentStrategy.NO_ENRICHMENT,
                 ChunkedTransactionSink.EMPTY,
                 TransactionEvent.NULL);
     }
@@ -133,6 +137,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
             CollectionsFactory collectionsFactory,
             MemoryTracker transactionTracker,
             TransactionStateBehaviour behaviour,
+            ApplyEnrichmentStrategy enrichmentStrategy,
             ChunkedTransactionSink chunkWriter,
             TransactionEvent transactionEvent) {
         transactionTracker.allocateHeap(SHALLOW_SIZE);
@@ -140,6 +145,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
         this.collectionsFactory = collectionsFactory;
         this.stateMemoryTracker = new ScopedMemoryTracker(transactionTracker);
         this.behaviour = behaviour;
+        this.enrichmentStrategy = enrichmentStrategy;
         this.transactionEvent = transactionEvent;
     }
 
@@ -258,6 +264,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home {
     @Override
     public boolean hasDataChanges() {
         return getDataRevision() != 0;
+    }
+
+    public EnrichmentMode enrichmentMode() {
+        return enrichmentStrategy.check();
     }
 
     public void reset() {

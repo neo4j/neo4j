@@ -193,6 +193,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.TransactionIdStore;
+import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.ElementIdMapper;
@@ -200,7 +201,6 @@ import org.neo4j.values.ElementIdMapper;
 public class Database extends AbstractDatabase {
     private static final String STORE_ID_VALIDATOR_TAG = "storeIdValidator";
 
-    // to be used in a future change for transaction enrichment
     private final ServerIdentity serverIdentity;
     private final PageCache globalPageCache;
 
@@ -364,6 +364,12 @@ public class Database extends AbstractDatabase {
                 scheduler, INDEX_CLEANUP, INDEX_CLEANUP_WORK, databaseLayout.getDatabaseName()));
         databaseDependencies.satisfyDependency(recoveryCleanupWorkCollector);
 
+        // Memory tracking
+        otherDatabasePool = otherMemoryPool.newDatabasePool(namedDatabaseId.name(), 0, null);
+        life.add(onShutdown(() -> otherDatabasePool.close()));
+        otherDatabaseMemoryTracker = otherDatabasePool.getPoolMemoryTracker();
+        databaseDependencies.satisfyDependency(new DatabaseMemoryTrackers(otherDatabaseMemoryTracker));
+
         life.add(onShutdown(versionStorage::close));
         life.add(new PageCacheLifecycle(databasePageCache));
         life.add(initializeExtensions(databaseDependencies));
@@ -372,12 +378,6 @@ public class Database extends AbstractDatabase {
         DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply(databaseLayout);
         life.add(watcherService);
         databaseDependencies.satisfyDependency(watcherService);
-
-        otherDatabasePool = otherMemoryPool.newDatabasePool(namedDatabaseId.name(), 0, null);
-        life.add(onShutdown(() -> otherDatabasePool.close()));
-        otherDatabaseMemoryTracker = otherDatabasePool.getPoolMemoryTracker();
-
-        databaseDependencies.satisfyDependency(new DatabaseMemoryTrackers(otherDatabaseMemoryTracker));
     }
 
     /**
@@ -955,6 +955,11 @@ public class Database extends AbstractDatabase {
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         databaseDependencies.satisfyDependency(transactionIdGenerator);
 
+        if (!databaseDependencies.containsDependency(ApplyEnrichmentStrategy.class)) {
+            // ensure by default that no enrichment occurs
+            databaseDependencies.satisfyDependency(ApplyEnrichmentStrategy.NO_ENRICHMENT);
+        }
+
         KernelTransactions kernelTransactions = life.add(new KernelTransactions(
                 databaseConfig,
                 locks,
@@ -968,6 +973,7 @@ public class Database extends AbstractDatabase {
                 globalDependencies.resolveDependency(DbmsRuntimeRepository.class),
                 transactionIdStore,
                 kernelVersionProvider,
+                serverIdentity,
                 clock,
                 cpuClockRef,
                 accessCapabilityFactory,

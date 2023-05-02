@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -68,7 +69,7 @@ class ValuesReadWriteTest {
     private record BufferBackedChannel(ByteBuffer buffer) implements WritableChannel {
 
         static ByteBuffer fill(WriteEnrichmentChannel channel) throws IOException {
-            final var buffer = ByteBuffer.allocate(channel.position());
+            final var buffer = ByteBuffer.allocate(channel.position()).order(ByteOrder.LITTLE_ENDIAN);
             try (var bufferChannel = new BufferBackedChannel(buffer)) {
                 channel.serialize(bufferChannel);
                 return buffer.flip();

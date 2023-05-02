@@ -22,8 +22,11 @@ package org.neo4j.storageengine.api.enrichment;
 import static java.util.Objects.requireNonNull;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import org.neo4j.io.fs.ReadableChannel;
 import org.neo4j.io.fs.WritableChannel;
+import org.neo4j.memory.MemoryTracker;
 
 /**
  * Describes the enrichment data of a transaction.
@@ -36,23 +39,96 @@ import org.neo4j.io.fs.WritableChannel;
 public abstract sealed class Enrichment implements AutoCloseable {
 
     /**
-     * A representation of some enrichment data for reading.
+     * A representation of some enrichment data for reading. The object has some {@link TxMetadata} associated with it
+     * and 4 data {@link ByteBuffer buffers}, representing the entities that changed, the details around those
+     * entities, the changes to those entities and the values that may have changed.
      */
     public static final class Read extends Enrichment {
 
-        private Read(TxMetadata metadata) {
-            super(requireNonNull(metadata));
-            // future PR will have the fixed buffers required to read the enrichment data
+        private final int entityCount;
+        // contains pointers to the entity details
+        private final ByteBuffer entitiesBuffer;
+        // contains details about the type of entity and pointers to changes that occurred to it
+        private final ByteBuffer detailsBuffer;
+        // describes the changes to an entity and pointers to the values that changed
+        private final ByteBuffer changesBuffer;
+        // contains serialized value objects
+        private final ByteBuffer valuesBuffer;
+        private final MemoryTracker memoryTracker;
+
+        private Read(
+                TxMetadata metadata,
+                int entityCount,
+                ByteBuffer entitiesBuffer,
+                ByteBuffer detailsBuffer,
+                ByteBuffer changesBuffer,
+                ByteBuffer valuesBuffer,
+                MemoryTracker memoryTracker) {
+            super(metadata);
+            this.entityCount = entityCount;
+            this.entitiesBuffer = entitiesBuffer;
+            this.detailsBuffer = detailsBuffer;
+            this.changesBuffer = changesBuffer;
+            this.valuesBuffer = valuesBuffer;
+            this.memoryTracker = memoryTracker;
         }
 
         /**
          *
          * @param channel the channel to read the enrichment data from
+         * @param memoryTracker for tracking memory of the enrichment data
          * @return the enrichment for reading
          * @throws IOException if unable to read the enrichment data
          */
-        public static Enrichment.Read deserialize(ReadableChannel channel) throws IOException {
-            return new Enrichment.Read(TxMetadata.deserialize(channel));
+        public static Enrichment.Read deserialize(ReadableChannel channel, MemoryTracker memoryTracker)
+                throws IOException {
+            final var txMetadata = TxMetadata.deserialize(channel);
+
+            final var entitiesSize = channel.getInt();
+            final var detailsSize = channel.getInt();
+            final var changesSize = channel.getInt();
+            final var valuesSize = channel.getInt();
+
+            return new Enrichment.Read(
+                    txMetadata,
+                    entitiesSize / Integer.BYTES,
+                    readIntoBuffer(channel, entitiesSize, memoryTracker),
+                    readIntoBuffer(channel, detailsSize, memoryTracker),
+                    readIntoBuffer(channel, changesSize, memoryTracker),
+                    readIntoBuffer(channel, valuesSize, memoryTracker),
+                    memoryTracker);
+        }
+
+        private static ByteBuffer readIntoBuffer(ReadableChannel channel, int size, MemoryTracker memoryTracker)
+                throws IOException {
+            memoryTracker.allocateHeap(size);
+            final var buffer = ByteBuffer.allocate(size).order(ByteOrder.LITTLE_ENDIAN);
+            final var read = channel.read(buffer);
+            assert read == size : "Unable to read all the expected data into the buffer";
+            return buffer.flip();
+        }
+
+        /**
+         * @return the number of entity changes described in this enrichment
+         */
+        public int numberOfEntities() {
+            return entityCount;
+        }
+
+        public ByteBuffer entities() {
+            return slice(entitiesBuffer);
+        }
+
+        public ByteBuffer entityDetails() {
+            return slice(detailsBuffer);
+        }
+
+        public ByteBuffer entityChanges() {
+            return slice(changesBuffer);
+        }
+
+        public ByteBuffer values() {
+            return slice(valuesBuffer);
         }
 
         @Override
@@ -60,30 +136,85 @@ public abstract sealed class Enrichment implements AutoCloseable {
             throw new IOException("This command is only for reading and contains no enrichment data");
         }
 
+        /**
+         * Release the memory associated with this enrichment data
+         */
         @Override
         public void close() {
-            // currently a no-op
+            memoryTracker.releaseHeap(entitiesBuffer.capacity());
+            memoryTracker.releaseHeap(detailsBuffer.capacity());
+            memoryTracker.releaseHeap(changesBuffer.capacity());
+            memoryTracker.releaseHeap(valuesBuffer.capacity());
+        }
+
+        private static ByteBuffer slice(ByteBuffer buffer) {
+            return buffer.slice().order(ByteOrder.LITTLE_ENDIAN);
         }
     }
 
     /**
-     * A representation of some enrichment data for writing.
+     * A representation of some enrichment data for writing. The data is internally captured in 4
+     * {@link WriteEnrichmentChannel channels} representing the entities that changed, the details around those
+     * entities, the changes to those entities and the values that may have changed.
      */
     public static final class Write extends Enrichment {
 
-        public Write(TxMetadata metadata) {
-            super(requireNonNull(metadata));
-            // future PR will have the dynamic buffers required to capture the enrichment data for writing
+        private final WriteEnrichmentChannel entities;
+        private final WriteEnrichmentChannel details;
+        private final WriteEnrichmentChannel changes;
+        private final WriteEnrichmentChannel values;
+
+        public Write(
+                TxMetadata metadata,
+                WriteEnrichmentChannel entities,
+                WriteEnrichmentChannel details,
+                WriteEnrichmentChannel changes,
+                WriteEnrichmentChannel values) {
+            super(metadata);
+            this.entities = requireNonNull(entities);
+            this.details = requireNonNull(details);
+            this.changes = requireNonNull(changes);
+            this.values = requireNonNull(values);
         }
 
-        @Override
+        /**
+         * @param channel the channel to write the enrichment data to
+         * @throws IOException if unable to write the enrichment data
+         */
         public void serialize(WritableChannel channel) throws IOException {
             metadata.serialize(channel);
+            // write out the sizes making it easy(er) to skip the actual content
+            channel.putInt(entities.position());
+            channel.putInt(details.position());
+            channel.putInt(changes.position());
+            channel.putInt(values.position());
+            // now write out the content
+            entities.serialize(channel);
+            details.serialize(channel);
+            changes.serialize(channel);
+            values.serialize(channel);
         }
 
+        /**
+         * @return the expected size (in bytes) that will be written when the enrichment is serialized
+         */
+        public long totalSize() {
+            return (Integer.BYTES * 4)
+                    + entities.position()
+                    + details.position()
+                    + changes.position()
+                    + values.position();
+        }
+
+        /**
+         * Release the memory associated with this enrichment data
+         */
         @Override
         public void close() {
-            // currently a no-op
+            entities.close();
+            details.close();
+            changes.close();
+            values.close();
         }
     }
 
@@ -100,8 +231,18 @@ public abstract sealed class Enrichment implements AutoCloseable {
      * @throws IOException if unable to read the channel
      */
     public static TxMetadata readMetadataAndPastEnrichmentData(ReadableChannel channel) throws IOException {
-        // there isn't any enrichment data currently - will be in a future PR
-        return TxMetadata.deserialize(channel);
+        final var metadata = TxMetadata.deserialize(channel);
+
+        long entitiesSize = channel.getInt();
+        long detailsSize = channel.getInt();
+        long changesSize = channel.getInt();
+        long valuesSize = channel.getInt();
+        long blocksSizes = entitiesSize + detailsSize + changesSize + valuesSize;
+
+        // Skip past data
+        channel.position(channel.position() + blocksSizes);
+
+        return metadata;
     }
 
     /**

@@ -106,4 +106,14 @@ public class ByteReversingReadableChannel implements ReadableChannel {
     public int read(ByteBuffer dst) throws IOException {
         return delegate.read(dst);
     }
+
+    @Override
+    public long position() throws IOException {
+        return delegate.position();
+    }
+
+    @Override
+    public void position(long byteOffset) throws IOException {
+        delegate.position(byteOffset);
+    }
 }

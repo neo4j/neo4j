@@ -50,7 +50,7 @@ public enum KernelVersion {
     V4_4((byte) 4), // 4.4. Introduces RANGE, POINT and TEXT index types.
     V5_0((byte) 5), // 5.0.
     V5_7((byte) 6), // 5.7. Introduces chunked transactions and relationship uniqueness/key constraints.
-    V5_8((byte) 7), // 5.8. Introduces index usage statistics.
+    V5_8((byte) 7), // 5.8. Introduces index usage statistics and enrichment command.
 
     // An unreleased future version.
     // This version is meant to be used when developing a new feature
@@ -65,7 +65,7 @@ public enum KernelVersion {
     public static final KernelVersion VERSION_LITTLE_ENDIAN_TX_LOG_INTRODUCED = V5_0;
     public static final KernelVersion VERSION_REL_UNIQUE_CONSTRAINTS_INTRODUCED = V5_7;
     public static final KernelVersion VERSION_INDEX_USAGE_STATISTICS_INTRODUCED = V5_8;
-    public static final KernelVersion VERSION_CDC_INTRODUCED = GLORIOUS_FUTURE;
+    public static final KernelVersion VERSION_CDC_INTRODUCED = V5_8;
     public static final KernelVersion VERSION_TYPE_CONSTRAINTS_INTRODUCED = GLORIOUS_FUTURE;
 
     // All neo4j 5.0-5.6 members defaulted to this version when bootstrapping a rafted database
