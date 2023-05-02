@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.LogService;
+import org.neo4j.server.HeapDumpDiagnostics;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageEngineFactory;
 
@@ -210,7 +211,9 @@ public class DbmsDiagnosticsManager {
                 prefix + System.lineSeparator() + " ".repeat(64) + prefix,
                 "");
         dumpFunction.accept(message);
-        log.info(message.toString());
+        String messageStr = message.toString();
+        HeapDumpDiagnostics.addDiagnostics(prefix, messageStr);
+        log.info(messageStr);
     }
 
     private static void logDatabaseStatus(Database database, DiagnosticsLogger log) {

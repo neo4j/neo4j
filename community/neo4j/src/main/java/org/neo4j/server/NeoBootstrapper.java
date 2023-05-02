@@ -23,6 +23,7 @@ import static java.lang.String.format;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.databases_root_path;
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.logging.log4j.LogConfig.createLoggerFromXmlConfig;
+import static org.neo4j.server.HeapDumpDiagnostics.INSTANCE;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -31,6 +32,7 @@ import java.lang.management.MemoryUsage;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -48,6 +50,7 @@ import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.log4j.Log4jLogProvider;
 import org.neo4j.logging.log4j.Neo4jLoggerContext;
@@ -72,6 +75,9 @@ public abstract class NeoBootstrapper implements Bootstrapper {
     private static final String NEO4J_SLF4J_PROVIDER = "org.neo4j.server.logging.slf4j.SLF4JLogBridge";
     private static final boolean USE_NEO4J_SLF4J_PROVIDER =
             FeatureToggles.flag(Bootstrapper.class, "useNeo4jSlf4jProvider", false);
+
+    @SuppressWarnings("unused")
+    private static final HeapDumpDiagnostics HEAPDUMP_DIAGNOSTICS = INSTANCE; // Keep reference alive
 
     private volatile DatabaseManagementService databaseManagementService;
     private volatile Closeable userLogFileStream;
@@ -126,6 +132,9 @@ public abstract class NeoBootstrapper implements Bootstrapper {
                 .setRaw(configOverrides)
                 .set(GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath())
                 .build();
+
+        HeapDumpDiagnostics.INSTANCE.START_TIME = Instant.now().toString();
+        HeapDumpDiagnostics.INSTANCE.NEO4J_VERSION = Version.getNeo4jVersion();
 
         pidFile = config.get(BootloaderSettings.pid_file);
         writePidSilently();
