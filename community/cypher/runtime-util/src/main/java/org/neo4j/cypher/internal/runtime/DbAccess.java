@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ElementIdMapper;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -105,7 +104,7 @@ public interface DbAccess extends EntityById {
 
     ListValue getLabelsForNode(long id, NodeCursor nodeCursor);
 
-    TextValue getTypeForRelationship(long id, RelationshipScanCursor relationshipCursor);
+    AnyValue getTypeForRelationship(long id, RelationshipScanCursor relationshipCursor);
 
     boolean isLabelSetOnNode(int label, long id, NodeCursor nodeCursor);
 
