@@ -30,7 +30,7 @@ import java.util.concurrent.ThreadFactory;
 import org.neo4j.annotations.service.ServiceProvider;
 
 /**
- * Provides a transport implementation based on the Linux `KQueue` functions.
+ * Provides a transport implementation based on the `KQueue`.
  */
 @ServiceProvider
 public final class KqueueConnectorTransport implements ConnectorTransport {
