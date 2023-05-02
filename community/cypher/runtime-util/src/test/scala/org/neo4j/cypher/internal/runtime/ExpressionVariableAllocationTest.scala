@@ -44,7 +44,7 @@ import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
-import org.neo4j.cypher.internal.runtime.ast.QueryConstant
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -371,7 +371,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
   test("should replace variables in QueryConstant") {
     // given
     val plan =
-      Selection(List(QueryConstant(varFor("A"), trueLiteral), QueryConstant(varFor("B"), falseLiteral)), Argument())
+      Selection(List(RuntimeConstant(varFor("A"), trueLiteral), RuntimeConstant(varFor("B"), falseLiteral)), Argument())
 
     // when
     val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
@@ -380,8 +380,8 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(2)
     newPlan should be(Selection(
       List(
-        QueryConstant(ExpressionVariable(0, "A"), trueLiteral),
-        QueryConstant(ExpressionVariable(1, "B"), falseLiteral)
+        RuntimeConstant(ExpressionVariable(0, "A"), trueLiteral),
+        RuntimeConstant(ExpressionVariable(1, "B"), falseLiteral)
       ),
       Argument()
     ))

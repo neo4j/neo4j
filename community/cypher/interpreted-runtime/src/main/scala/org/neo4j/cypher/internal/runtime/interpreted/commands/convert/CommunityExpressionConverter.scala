@@ -126,7 +126,7 @@ import org.neo4j.cypher.internal.runtime.ast.DefaultValueLiteral
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.MakeTraversable
 import org.neo4j.cypher.internal.runtime.ast.ParameterFromSlot
-import org.neo4j.cypher.internal.runtime.ast.QueryConstant
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.runtime.interpreted.CommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.GroupingExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands
@@ -425,7 +425,7 @@ case class CommunityExpressionConverter(
       case e: internal.expressions.CollectAll =>
         commands.expressions.CollectAll(self.toCommandExpression(id, e.arguments.head))
       case e: DefaultValueLiteral => commands.expressions.Literal(e.value)
-      case e: QueryConstant =>
+      case e: RuntimeConstant =>
         commands.expressions.QueryConstant(
           ExpressionVariable.cast(e.variable).offset,
           self.toCommandExpression(id, e.inner)

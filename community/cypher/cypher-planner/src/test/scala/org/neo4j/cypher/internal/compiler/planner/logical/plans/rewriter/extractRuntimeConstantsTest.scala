@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.compiler.planner.ProcedureTestSupport
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
-import org.neo4j.cypher.internal.runtime.ast.QueryConstant
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestSupport with ProcedureTestSupport {
+class extractRuntimeConstantsTest extends CypherFunSuite with LogicalPlanningTestSupport with ProcedureTestSupport {
 
   test("should rewrite datetime({date: $d}))") {
     val expr = ors(
@@ -38,14 +38,17 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
       greaterThan(datetime(mapOf(("date", parameter("d2", CTAny)))), varFor("n"))
     )
     rewrite(expr) shouldBe ors(
-      greaterThan(varFor("n"), QueryConstant(varFor("  UNNAMED0"), datetime(mapOf(("date", parameter("d1", CTAny)))))),
-      greaterThan(QueryConstant(varFor("  UNNAMED1"), datetime(mapOf(("date", parameter("d2", CTAny))))), varFor("n"))
+      greaterThan(
+        varFor("n"),
+        RuntimeConstant(varFor("  UNNAMED0"), datetime(mapOf(("date", parameter("d1", CTAny)))))
+      ),
+      greaterThan(RuntimeConstant(varFor("  UNNAMED1"), datetime(mapOf(("date", parameter("d2", CTAny))))), varFor("n"))
     )
   }
 
   test("should rewrite datetime({date: $d, year: $y}))") {
     val expr = datetime(mapOf(("date", parameter("d", CTAny)), ("year", parameter("y", CTAny))))
-    rewrite(expr) shouldBe QueryConstant(varFor("  UNNAMED0"), expr)
+    rewrite(expr) shouldBe RuntimeConstant(varFor("  UNNAMED0"), expr)
   }
 
   test("should not rewrite datetime({date: $d, year: randomUDF()}))") {
@@ -69,10 +72,10 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(expr) shouldBe ors(
       greaterThan(
         varFor("n"),
-        QueryConstant(varFor("  UNNAMED0"), datetime(mapOf(("datetime", parameter("d1", CTAny)))))
+        RuntimeConstant(varFor("  UNNAMED0"), datetime(mapOf(("datetime", parameter("d1", CTAny)))))
       ),
       greaterThan(
-        QueryConstant(varFor("  UNNAMED1"), datetime(mapOf(("datetime", parameter("d2", CTAny))))),
+        RuntimeConstant(varFor("  UNNAMED1"), datetime(mapOf(("datetime", parameter("d2", CTAny))))),
         varFor("n")
       )
     )
@@ -84,8 +87,11 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
       greaterThan(datetime(mapOf(("time", parameter("d2", CTAny)))), varFor("n"))
     )
     rewrite(expr) shouldBe ors(
-      greaterThan(varFor("n"), QueryConstant(varFor("  UNNAMED0"), datetime(mapOf(("time", parameter("d1", CTAny)))))),
-      greaterThan(QueryConstant(varFor("  UNNAMED1"), datetime(mapOf(("time", parameter("d2", CTAny))))), varFor("n"))
+      greaterThan(
+        varFor("n"),
+        RuntimeConstant(varFor("  UNNAMED0"), datetime(mapOf(("time", parameter("d1", CTAny)))))
+      ),
+      greaterThan(RuntimeConstant(varFor("  UNNAMED1"), datetime(mapOf(("time", parameter("d2", CTAny))))), varFor("n"))
     )
   }
 
@@ -95,8 +101,11 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
       greaterThan(datetime(mapOf(("year", parameter("y2", CTAny)))), varFor("n"))
     )
     rewrite(expr) shouldBe ors(
-      greaterThan(varFor("n"), QueryConstant(varFor("  UNNAMED0"), datetime(mapOf(("year", parameter("y1", CTAny)))))),
-      greaterThan(QueryConstant(varFor("  UNNAMED1"), datetime(mapOf(("year", parameter("y2", CTAny))))), varFor("n"))
+      greaterThan(
+        varFor("n"),
+        RuntimeConstant(varFor("  UNNAMED0"), datetime(mapOf(("year", parameter("y1", CTAny)))))
+      ),
+      greaterThan(RuntimeConstant(varFor("  UNNAMED1"), datetime(mapOf(("year", parameter("y2", CTAny))))), varFor("n"))
     )
   }
 
@@ -108,10 +117,10 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(expr) shouldBe ors(
       greaterThan(
         varFor("n"),
-        QueryConstant(varFor("  UNNAMED0"), datetime(literalString("2015-07-21T21:40:32.142+0100")))
+        RuntimeConstant(varFor("  UNNAMED0"), datetime(literalString("2015-07-21T21:40:32.142+0100")))
       ),
       greaterThan(
-        QueryConstant(varFor("  UNNAMED1"), datetime(literalString("2010-07-21T21:40:32.142+0100"))),
+        RuntimeConstant(varFor("  UNNAMED1"), datetime(literalString("2010-07-21T21:40:32.142+0100"))),
         varFor("n")
       )
     )
@@ -135,7 +144,7 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("should rewrite datetime({timezone: 'America/Los Angeles', year: 1980))") {
     val expr = datetime(mapOf(("timezone", literalString("America/Los Angeles")), ("year", literalInt(1980))))
-    rewrite(expr) shouldBe QueryConstant(varFor("  UNNAMED0"), expr)
+    rewrite(expr) shouldBe RuntimeConstant(varFor("  UNNAMED0"), expr)
   }
 
   test("should not rewrite datetime())") {
@@ -179,10 +188,10 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(expr) shouldBe ors(
       greaterThan(
         varFor("n"),
-        QueryConstant(varFor("  UNNAMED0"), localdatetime(mapOf(("date", parameter("d1", CTAny)))))
+        RuntimeConstant(varFor("  UNNAMED0"), localdatetime(mapOf(("date", parameter("d1", CTAny)))))
       ),
       greaterThan(
-        QueryConstant(varFor("  UNNAMED1"), localdatetime(mapOf(("date", parameter("d2", CTAny))))),
+        RuntimeConstant(varFor("  UNNAMED1"), localdatetime(mapOf(("date", parameter("d2", CTAny))))),
         varFor("n")
       )
     )
@@ -196,10 +205,10 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(expr) shouldBe ors(
       greaterThan(
         varFor("n"),
-        QueryConstant(varFor("  UNNAMED0"), localdatetime(mapOf(("datetime", parameter("d1", CTAny)))))
+        RuntimeConstant(varFor("  UNNAMED0"), localdatetime(mapOf(("datetime", parameter("d1", CTAny)))))
       ),
       greaterThan(
-        QueryConstant(varFor("  UNNAMED1"), localdatetime(mapOf(("datetime", parameter("d2", CTAny))))),
+        RuntimeConstant(varFor("  UNNAMED1"), localdatetime(mapOf(("datetime", parameter("d2", CTAny))))),
         varFor("n")
       )
     )
@@ -213,10 +222,10 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(expr) shouldBe ors(
       greaterThan(
         varFor("n"),
-        QueryConstant(varFor("  UNNAMED0"), localdatetime(mapOf(("time", parameter("d1", CTAny)))))
+        RuntimeConstant(varFor("  UNNAMED0"), localdatetime(mapOf(("time", parameter("d1", CTAny)))))
       ),
       greaterThan(
-        QueryConstant(varFor("  UNNAMED1"), localdatetime(mapOf(("time", parameter("d2", CTAny))))),
+        RuntimeConstant(varFor("  UNNAMED1"), localdatetime(mapOf(("time", parameter("d2", CTAny))))),
         varFor("n")
       )
     )
@@ -230,10 +239,10 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(expr) shouldBe ors(
       greaterThan(
         varFor("n"),
-        QueryConstant(varFor("  UNNAMED0"), localdatetime(mapOf(("year", parameter("y1", CTAny)))))
+        RuntimeConstant(varFor("  UNNAMED0"), localdatetime(mapOf(("year", parameter("y1", CTAny)))))
       ),
       greaterThan(
-        QueryConstant(varFor("  UNNAMED1"), localdatetime(mapOf(("year", parameter("y2", CTAny))))),
+        RuntimeConstant(varFor("  UNNAMED1"), localdatetime(mapOf(("year", parameter("y2", CTAny))))),
         varFor("n")
       )
     )
@@ -247,10 +256,10 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     rewrite(expr) shouldBe ors(
       greaterThan(
         varFor("n"),
-        QueryConstant(varFor("  UNNAMED0"), localdatetime(literalString("2015-07-21T21:40:32.142+0100")))
+        RuntimeConstant(varFor("  UNNAMED0"), localdatetime(literalString("2015-07-21T21:40:32.142+0100")))
       ),
       greaterThan(
-        QueryConstant(varFor("  UNNAMED1"), localdatetime(literalString("2010-07-21T21:40:32.142+0100"))),
+        RuntimeConstant(varFor("  UNNAMED1"), localdatetime(literalString("2010-07-21T21:40:32.142+0100"))),
         varFor("n")
       )
     )
@@ -300,7 +309,7 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     val expr = equals(varFor("n"), date(mapOf(("year", literalInt(1980)))))
     rewrite(expr) shouldBe equals(
       varFor("n"),
-      QueryConstant(varFor("  UNNAMED0"), date(mapOf(("year", literalInt(1980)))))
+      RuntimeConstant(varFor("  UNNAMED0"), date(mapOf(("year", literalInt(1980)))))
     )
   }
 
@@ -311,7 +320,7 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("should rewrite date('1980-03-11')") {
     val expr = equals(varFor("n"), date(literalString("1980-03-11")))
-    rewrite(expr) shouldBe equals(varFor("n"), QueryConstant(varFor("  UNNAMED0"), date(literalString("1980-03-11"))))
+    rewrite(expr) shouldBe equals(varFor("n"), RuntimeConstant(varFor("  UNNAMED0"), date(literalString("1980-03-11"))))
   }
 
   test("should not rewrite date()") {
@@ -333,7 +342,7 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     val expr = equals(varFor("n"), time(mapOf(("hour", literalInt(23)))))
     rewrite(expr) shouldBe equals(
       varFor("n"),
-      QueryConstant(varFor("  UNNAMED0"), time(mapOf(("hour", literalInt(23)))))
+      RuntimeConstant(varFor("  UNNAMED0"), time(mapOf(("hour", literalInt(23)))))
     )
   }
 
@@ -346,7 +355,7 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     val expr = equals(varFor("n"), time(literalString("21:40:32.142+0100")))
     rewrite(expr) shouldBe equals(
       varFor("n"),
-      QueryConstant(varFor("  UNNAMED0"), time(literalString("21:40:32.142+0100")))
+      RuntimeConstant(varFor("  UNNAMED0"), time(literalString("21:40:32.142+0100")))
     )
   }
 
@@ -369,7 +378,7 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     val expr = equals(varFor("n"), localtime(mapOf(("hour", literalInt(23)))))
     rewrite(expr) shouldBe equals(
       varFor("n"),
-      QueryConstant(varFor("  UNNAMED0"), localtime(mapOf(("hour", literalInt(23)))))
+      RuntimeConstant(varFor("  UNNAMED0"), localtime(mapOf(("hour", literalInt(23)))))
     )
   }
 
@@ -382,7 +391,7 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     val expr = equals(varFor("n"), localtime(literalString("21:40:32.142+0100")))
     rewrite(expr) shouldBe equals(
       varFor("n"),
-      QueryConstant(varFor("  UNNAMED0"), localtime(literalString("21:40:32.142+0100")))
+      RuntimeConstant(varFor("  UNNAMED0"), localtime(literalString("21:40:32.142+0100")))
     )
   }
 
@@ -405,7 +414,7 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     val expr = equals(varFor("n"), duration(mapOf(("years", literalInt(23)))))
     rewrite(expr) shouldBe equals(
       varFor("n"),
-      QueryConstant(varFor("  UNNAMED0"), duration(mapOf(("years", literalInt(23)))))
+      RuntimeConstant(varFor("  UNNAMED0"), duration(mapOf(("years", literalInt(23)))))
     )
   }
 
@@ -413,7 +422,7 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
     val expr = equals(varFor("n"), duration(literalString("P14DT16H12M")))
     rewrite(expr) shouldBe equals(
       varFor("n"),
-      QueryConstant(varFor("  UNNAMED0"), duration(literalString("P14DT16H12M")))
+      RuntimeConstant(varFor("  UNNAMED0"), duration(literalString("P14DT16H12M")))
     )
   }
 
@@ -424,14 +433,14 @@ class extractQueryConstantsTest extends CypherFunSuite with LogicalPlanningTestS
 
   test("should handle multiple constants") {
     val expr = datetime(mapOf(("date", date(mapOf(("year", literalInt(1980)))))))
-    rewrite(expr) shouldBe QueryConstant(
+    rewrite(expr) shouldBe RuntimeConstant(
       varFor("  UNNAMED1"),
-      datetime(mapOf(("date", QueryConstant(varFor("  UNNAMED0"), date(mapOf(("year", literalInt(1980))))))))
+      datetime(mapOf(("date", RuntimeConstant(varFor("  UNNAMED0"), date(mapOf(("year", literalInt(1980))))))))
     )
   }
 
   private def rewrite(e: Expression): Expression =
-    e.endoRewrite(extractQueryConstants(new AnonymousVariableNameGenerator))
+    e.endoRewrite(extractRuntimeConstants(new AnonymousVariableNameGenerator))
 
   private def datetime(expressions: Expression*): ResolvedFunctionInvocation = {
     ResolvedFunctionInvocation(QualifiedName(Seq.empty, "datetime"), None, expressions.toIndexedSeq)(InputPosition.NONE)

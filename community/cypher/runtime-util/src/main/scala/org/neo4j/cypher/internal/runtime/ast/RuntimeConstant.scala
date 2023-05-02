@@ -22,7 +22,17 @@ package org.neo4j.cypher.internal.runtime.ast
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 
-case class QueryConstant(variable: LogicalVariable, inner: Expression) extends RuntimeExpression {
+/**
+ * A runtime constant is an expression that only needs to be evaluated once per query.
+ * It is not necessarily the same thing as a literal which are true constants and the values can be cached.
+ *
+ * Examples:
+ * - `datetime({year: $param})`
+ * - `duration($AUTOSTRING)`
+ * @param variable
+ * @param inner
+ */
+case class RuntimeConstant(variable: LogicalVariable, inner: Expression) extends RuntimeExpression {
   self =>
   override def isConstantForQuery: Boolean = true
 }

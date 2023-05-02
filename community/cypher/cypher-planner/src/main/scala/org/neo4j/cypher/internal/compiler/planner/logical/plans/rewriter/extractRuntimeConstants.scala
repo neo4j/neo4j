@@ -19,21 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.extractQueryConstants.STOPPER
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.extractRuntimeConstants.STOPPER
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
 import org.neo4j.cypher.internal.logical.plans.ResolvedFunctionInvocation
-import org.neo4j.cypher.internal.runtime.ast.QueryConstant
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.RewriterStopper
 import org.neo4j.cypher.internal.util.bottomUp
 
-case class extractQueryConstants(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
+/**
+ * Extract expressions that are known to be constant for the lifetime of the execution of the query.
+ * These are not the same thing as literals, since the value can change between executions.
+ *
+ * Example:
+ * {{{
+ *   MATCH (n) WHERE n.datetime < datetime({date: $date}) RETURN n
+ * }}}
+ *
+ * will be rewritten to something like
+ *
+ * {{{
+ *   MATCH (n) WHERE n.datetime < RuntimeConstant(datetime({date: $date})) RETURN n
+ * }}}
+ */
+case class extractRuntimeConstants(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
 
   override def apply(input: AnyRef): AnyRef = {
     val rewriter = bottomUp(
@@ -52,7 +67,7 @@ case class extractQueryConstants(anonymousVariableNameGenerator: AnonymousVariab
   }
 
   private def constant(e: Expression) =
-    QueryConstant(Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE), e)
+    RuntimeConstant(Variable(anonymousVariableNameGenerator.nextName)(InputPosition.NONE), e)
 
   private def isConstant(arg: Expression): Boolean = arg match {
     // this is not supported semantically, but here just in case
@@ -64,8 +79,8 @@ case class extractQueryConstants(anonymousVariableNameGenerator: AnonymousVariab
   }
 }
 
-object extractQueryConstants {
-  val STOPPER: RewriterStopper = (a: AnyRef) => a.isInstanceOf[QueryConstant]
+object extractRuntimeConstants {
+  val STOPPER: RewriterStopper = (a: AnyRef) => a.isInstanceOf[RuntimeConstant]
 }
 
 trait FunctionMatcher extends Product {

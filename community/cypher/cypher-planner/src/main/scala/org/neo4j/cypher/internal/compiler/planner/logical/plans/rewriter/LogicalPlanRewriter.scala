@@ -98,7 +98,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         truncateDatabaseDeeagerizer,
         UniquenessRewriter(anonymousVariableNameGenerator),
         VarLengthRewriter,
-        extractQueryConstants(anonymousVariableNameGenerator)
+        extractRuntimeConstants(anonymousVariableNameGenerator)
       )
     )
 
