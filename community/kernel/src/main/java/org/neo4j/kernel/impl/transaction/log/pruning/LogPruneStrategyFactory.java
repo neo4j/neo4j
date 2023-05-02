@@ -54,7 +54,7 @@ public class LogPruneStrategyFactory {
      * </ul>
      * For example:
      * <ul>
-     *   <li>100M size - For keeping last 100 megabytes of log data</li>
+     *   <li>100M size - For keeping last 100 mebibytes of log data</li>
      *   <li>20 pcs - For keeping last 20 non-empty log files</li>
      *   <li>7 days - For keeping last 7 days worth of log data</li>
      *   <li>1k hours - For keeping last 1000 hours worth of log data</li>

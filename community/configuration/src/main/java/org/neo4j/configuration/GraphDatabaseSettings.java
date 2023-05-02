@@ -514,7 +514,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     "Must be `true` or `keep_all`, `false` or `keep_none`, or of format `<number><optional unit> <type>`. "
                             + "Valid units are `K`, `M` and `G`. "
                             + "Valid types are `files`, `size`, `txs`, `entries`, `hours` and `days`. "
-                            + "For example, `100M size` will limit logical log space on disk to 100MB per database,"
+                            + "For example, `100M size` will limit logical log space on disk to 100MiB per database,"
                             + "and `200K txs` will limit the number of transactions kept to 200 000 per database."))
             .build();
 
@@ -831,8 +831,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description(
-            "Limit the amount of memory that all of the running transactions can consume, in bytes (or kilobytes with the 'k' "
-                    + "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'.")
+            "Limit the amount of memory that all of the running transactions can consume, in bytes (or kibibytes with the 'k' "
+                    + "suffix, mebibytes with 'm' and gibibytes with 'g'). Zero means 'unlimited'.")
     @DocumentedDefaultValue("The default value is 70% of the heap size limit.")
     public static final Setting<Long> memory_transaction_global_max_size = newBuilder(
                     "dbms.memory.transaction.total.max", BYTES, calculateDefaultMaxGlobalTransactionMemorySize())
@@ -849,8 +849,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     }
 
     @Description(
-            "Limit the amount of memory that all transactions in one database can consume, in bytes (or kilobytes with the 'k' "
-                    + "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'unlimited'.")
+            "Limit the amount of memory that all transactions in one database can consume, in bytes (or kibibytes with the 'k' "
+                    + "suffix, mebibytes with 'm' and gibibytes with 'g'). Zero means 'unlimited'.")
     public static final Setting<Long> memory_transaction_database_max_size = newBuilder(
                     "db.memory.transaction.total.max", BYTES, 0L)
             .addConstraint(any(min(mebiBytes(10)), is(0L)))
@@ -858,8 +858,8 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description(
-            "Limit the amount of memory that a single transaction can consume, in bytes (or kilobytes with the 'k' "
-                    + "suffix, megabytes with 'm' and gigabytes with 'g'). Zero means 'largest possible value'.")
+            "Limit the amount of memory that a single transaction can consume, in bytes (or kibibytes with the 'k' "
+                    + "suffix, mebibytes with 'm' and gibibytes with 'g'). Zero means 'largest possible value'.")
     public static final Setting<Long> memory_transaction_max_size = newBuilder("db.memory.transaction.max", BYTES, 0L)
             .addConstraint(any(min(mebiBytes(1)), is(0L)))
             .dynamic()

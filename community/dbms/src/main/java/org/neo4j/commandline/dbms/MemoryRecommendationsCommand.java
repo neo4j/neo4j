@@ -188,7 +188,7 @@ public class MemoryRecommendationsCommand extends AbstractAdminCommand {
                 return format(ROOT, "%.0fm", mebibytes);
             }
         } else {
-            // For kilobytes there's no need to bother with decimals, just print a rough figure rounded upwards
+            // For kibibytes there's no need to bother with decimals, just print a rough figure rounded upwards
             double kibiBytes = bytes / kibi1;
             return format(ROOT, "%dk", (long) Math.ceil(kibiBytes));
         }
