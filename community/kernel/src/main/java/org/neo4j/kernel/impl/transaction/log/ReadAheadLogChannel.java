@@ -63,6 +63,10 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
                 raw);
     }
 
+    protected ReadAheadLogChannel(LogVersionedStoreChannel startingChannel, ScopedBuffer scopedBuffer) {
+        this(startingChannel, LogVersionBridge.NO_MORE_CHANNELS, scopedBuffer, false);
+    }
+
     /**
      * This constructor is private to ensure that the given buffer always comes form one of our own constructors.
      */
@@ -117,10 +121,5 @@ public class ReadAheadLogChannel extends ReadAheadChannel<LogVersionedStoreChann
     @Override
     protected LogVersionedStoreChannel next(LogVersionedStoreChannel channel) throws IOException {
         return bridge.next(channel, raw);
-    }
-
-    @Override
-    public void close() throws IOException {
-        super.close();
     }
 }
