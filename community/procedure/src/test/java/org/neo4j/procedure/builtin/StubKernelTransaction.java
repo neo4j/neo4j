@@ -51,6 +51,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.InnerTransactionHandler;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.TransactionTimeout;
@@ -67,6 +68,11 @@ public class StubKernelTransaction implements KernelTransaction {
     @Override
     public Statement acquireStatement() {
         return new StubStatement();
+    }
+
+    @Override
+    public ResourceMonitor resourceMonitor() {
+        return acquireStatement();
     }
 
     @Override

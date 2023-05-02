@@ -143,13 +143,13 @@ public class BasicContext implements Context {
     }
 
     public static class ContextBuilder {
-        private DependencyResolver resolver;
+        private final DependencyResolver resolver;
+        private final Thread thread = Thread.currentThread();
+        private final ValueMapper<Object> valueMapper;
         private Transaction procedureTransaction;
         private InternalTransaction internalTransaction;
         private SecurityContext securityContext = SecurityContext.AUTH_DISABLED;
         private ClockContext clockContext;
-        private Thread thread = Thread.currentThread();
-        private ValueMapper<Object> valueMapper;
         private ProcedureCallContext procedureCallContext;
 
         private ContextBuilder(DependencyResolver resolver, ValueMapper<Object> valueMapper) {

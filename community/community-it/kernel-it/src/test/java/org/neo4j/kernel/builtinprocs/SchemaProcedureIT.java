@@ -54,15 +54,17 @@ class SchemaProcedureIT extends KernelIntegrationTest {
 
         // When
         Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
-                procs.procedureGet(procedureName("db", "schema", "visualization"))
-                        .id(),
-                new AnyValue[0],
-                ProcedureCallContext.EMPTY);
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("db", "schema", "visualization"))
+                            .id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        assertThat(asList(stream)).containsExactly(new AnyValue[] {EMPTY_LIST, EMPTY_LIST});
+            // Then
+            assertThat(asList(stream)).containsExactly(new AnyValue[] {EMPTY_LIST, EMPTY_LIST});
+        }
     }
 
     @Test
@@ -88,28 +90,33 @@ class SchemaProcedureIT extends KernelIntegrationTest {
         commit();
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("db", "schema", "visualization"))
-                                .id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("db", "schema", "visualization"))
+                            .id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        while (stream.hasNext()) {
-            AnyValue[] next = stream.next();
-            assertEquals(2, next.length);
-            ListValue nodes = (ListValue) next[0];
-            assertEquals(1, nodes.size());
-            NodeValue node = (NodeValue) nodes.value(0);
-            assertThat(node.labels()).isEqualTo(Values.stringArray("Person"));
-            assertEquals(stringValue("Person"), node.properties().get("name"));
-            assertEquals(
-                    VirtualValues.list(stringValue("name")), node.properties().get("indexes"));
-            assertEquals(
-                    VirtualValues.list(stringValue("Constraint( id=" + constraintId(constraintName)
-                            + ", name='constraint name', type='UNIQUENESS', schema=(:Person {age}), " + "ownedIndex="
-                            + indexId(constraintName) + " )")),
-                    node.properties().get("constraints"));
+            // Then
+            while (stream.hasNext()) {
+                AnyValue[] next = stream.next();
+                assertEquals(2, next.length);
+                ListValue nodes = (ListValue) next[0];
+                assertEquals(1, nodes.size());
+                NodeValue node = (NodeValue) nodes.value(0);
+                assertThat(node.labels()).isEqualTo(Values.stringArray("Person"));
+                assertEquals(stringValue("Person"), node.properties().get("name"));
+                assertEquals(
+                        VirtualValues.list(stringValue("name")),
+                        node.properties().get("indexes"));
+                assertEquals(
+                        VirtualValues.list(stringValue("Constraint( id=" + constraintId(constraintName)
+                                + ", name='constraint name', type='UNIQUENESS', schema=(:Person {age}), "
+                                + "ownedIndex="
+                                + indexId(constraintName) + " )")),
+                        node.properties().get("constraints"));
+            }
         }
     }
 
@@ -127,24 +134,27 @@ class SchemaProcedureIT extends KernelIntegrationTest {
         transaction.dataWrite().relationshipCreate(nodeIdPerson, relationshipTypeId, nodeIdLocation);
         commit();
 
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("db", "schema", "visualization"))
-                                .id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("db", "schema", "visualization"))
+                            .id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        while (stream.hasNext()) {
-            AnyValue[] next = stream.next();
-            assertEquals(2, next.length);
-            ListValue relationships = (ListValue) next[1];
-            assertEquals(1, relationships.size());
-            RelationshipValue relationship = (RelationshipValue) relationships.value(0);
-            assertEquals("LIVES_IN", relationship.type().stringValue());
-            NodeValue start = (NodeValue) relationship.startNode();
-            NodeValue end = (NodeValue) relationship.endNode();
-            assertThat(start.labels()).isEqualTo(Values.stringArray("Person"));
-            assertThat(end.labels()).isEqualTo(Values.stringArray("Location"));
+            // Then
+            while (stream.hasNext()) {
+                AnyValue[] next = stream.next();
+                assertEquals(2, next.length);
+                ListValue relationships = (ListValue) next[1];
+                assertEquals(1, relationships.size());
+                RelationshipValue relationship = (RelationshipValue) relationships.value(0);
+                assertEquals("LIVES_IN", relationship.type().stringValue());
+                NodeValue start = (NodeValue) relationship.startNode();
+                NodeValue end = (NodeValue) relationship.endNode();
+                assertThat(start.labels()).isEqualTo(Values.stringArray("Person"));
+                assertThat(end.labels()).isEqualTo(Values.stringArray("Location"));
+            }
         }
     }
 

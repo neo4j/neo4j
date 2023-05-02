@@ -121,7 +121,7 @@ class KernelIT extends KernelIntegrationTest {
 
         long previousCommittedTxId = lastCommittedTxId(db);
 
-        assertEquals(previousCommittedTxId + 1, tx.commit());
+        assertEquals(previousCommittedTxId + 1, commit());
         assertFalse(tx.isOpen());
     }
 
@@ -170,7 +170,7 @@ class KernelIT extends KernelIntegrationTest {
             node.next();
         }
 
-        assertEquals(KernelTransaction.READ_ONLY_ID, tx.commit());
+        assertEquals(KernelTransaction.READ_ONLY_ID, commit());
         assertFalse(tx.isOpen());
     }
 

@@ -50,6 +50,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -99,16 +100,19 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
     @Test
     void listClientConfig() throws Exception {
         QualifiedName procedureName = procedureName("dbms", "clientConfig");
-        int procedureId = procs().procedureGet(procedureName).id();
-        RawIterator<AnyValue[], ProcedureException> callResult =
-                procs().procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
-        List<AnyValue[]> config = asList(callResult);
-        assertEquals(config.size(), 4);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            int procedureId = procs.procedureGet(procedureName).id();
+            RawIterator<AnyValue[], ProcedureException> callResult =
+                    procs.procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
+            List<AnyValue[]> config = asList(callResult);
+            assertEquals(config.size(), 4);
 
-        assertEquals(stringValue("browser.post_connect_cmd"), config.get(0)[0]);
-        assertEquals(stringValue("browser.remote_content_hostname_whitelist"), config.get(1)[0]);
-        assertEquals(stringValue("client.allow_telemetry"), config.get(2)[0]);
-        assertEquals(stringValue("dbms.security.auth_enabled"), config.get(3)[0]);
+            assertEquals(stringValue("browser.post_connect_cmd"), config.get(0)[0]);
+            assertEquals(stringValue("browser.remote_content_hostname_whitelist"), config.get(1)[0]);
+            assertEquals(stringValue("client.allow_telemetry"), config.get(2)[0]);
+            assertEquals(stringValue("dbms.security.auth_enabled"), config.get(3)[0]);
+        }
     }
 
     @Test
@@ -148,17 +152,21 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
     @Test
     void listCapabilities() throws KernelException {
         QualifiedName procedureName = procedureName("dbms", "listCapabilities");
-        int procedureId = procs().procedureGet(procedureName).id();
-        RawIterator<AnyValue[], ProcedureException> callResult =
-                procs().procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
-        List<AnyValue[]> capabilities = asList(callResult);
-        List<String> capabilityNames =
-                capabilities.stream().map(c -> ((TextValue) c[0]).stringValue()).collect(Collectors.toList());
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            int procedureId = procs.procedureGet(procedureName).id();
+            RawIterator<AnyValue[], ProcedureException> callResult =
+                    procs.procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
+            List<AnyValue[]> capabilities = asList(callResult);
+            List<String> capabilityNames = capabilities.stream()
+                    .map(c -> ((TextValue) c[0]).stringValue())
+                    .collect(Collectors.toList());
 
-        assertThat(capabilityNames)
-                .containsExactlyInAnyOrder(
-                        TestCapabilities.my_custom_capability.name().fullName(),
-                        TestCapabilities.my_dynamic_capability.name().fullName());
+            assertThat(capabilityNames)
+                    .containsExactlyInAnyOrder(
+                            TestCapabilities.my_custom_capability.name().fullName(),
+                            TestCapabilities.my_dynamic_capability.name().fullName());
+        }
     }
 
     @Test
@@ -168,33 +176,40 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         config.set(CapabilitiesSettings.dbms_capabilities_blocked, List.of("my.**"));
 
         QualifiedName procedureName = procedureName("dbms", "listCapabilities");
-        int procedureId = procs().procedureGet(procedureName).id();
-        RawIterator<AnyValue[], ProcedureException> callResult =
-                procs().procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
-        List<AnyValue[]> capabilities = asList(callResult);
-        List<String> capabilityNames =
-                capabilities.stream().map(c -> ((TextValue) c[0]).stringValue()).collect(Collectors.toList());
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            int procedureId = procs.procedureGet(procedureName).id();
+            RawIterator<AnyValue[], ProcedureException> callResult =
+                    procs.procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
+            List<AnyValue[]> capabilities = asList(callResult);
+            List<String> capabilityNames = capabilities.stream()
+                    .map(c -> ((TextValue) c[0]).stringValue())
+                    .collect(Collectors.toList());
 
-        assertThat(capabilityNames)
-                .doesNotContain(TestCapabilities.my_custom_capability.name().fullName());
+            assertThat(capabilityNames)
+                    .doesNotContain(TestCapabilities.my_custom_capability.name().fullName());
+        }
     }
 
     @Test
     void listCapabilitiesShouldReturnDynamicValues() throws KernelException {
         QualifiedName procedureName = procedureName("dbms", "listCapabilities");
-        int procedureId = procs().procedureGet(procedureName).id();
+        var procs = procs();
+        int procedureId = procs.procedureGet(procedureName).id();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // first call
-        RawIterator<AnyValue[], ProcedureException> callResult =
-                procs().procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
-        List<AnyValue[]> capabilities = asList(callResult);
+            // first call
+            RawIterator<AnyValue[], ProcedureException> callResult =
+                    procs.procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
+            List<AnyValue[]> capabilities = asList(callResult);
 
-        // should return false
-        assertThat(capabilities).contains(new AnyValue[] {
-            Values.stringValue(TestCapabilities.my_dynamic_capability.name().fullName()),
-            Values.stringValue(TestCapabilities.my_dynamic_capability.description()),
-            Values.booleanValue(false)
-        });
+            // should return false
+            assertThat(capabilities).contains(new AnyValue[] {
+                Values.stringValue(TestCapabilities.my_dynamic_capability.name().fullName()),
+                Values.stringValue(TestCapabilities.my_dynamic_capability.description()),
+                Values.booleanValue(false)
+            });
+        }
 
         try (var txc = db.beginTx()) {
             txc.createNode(label("my_dynamic_capability"));
@@ -202,36 +217,45 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         }
 
         // second call
-        callResult = procs().procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
-        capabilities = asList(callResult);
+        procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            var callResult = procs().procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
+            var capabilities = asList(callResult);
 
-        // should return true
-        assertThat(capabilities).contains(new AnyValue[] {
-            Values.stringValue(TestCapabilities.my_dynamic_capability.name().fullName()),
-            Values.stringValue(TestCapabilities.my_dynamic_capability.description()),
-            Values.booleanValue(true)
-        });
+            // should return true
+            assertThat(capabilities).contains(new AnyValue[] {
+                Values.stringValue(TestCapabilities.my_dynamic_capability.name().fullName()),
+                Values.stringValue(TestCapabilities.my_dynamic_capability.description()),
+                Values.booleanValue(true)
+            });
+        }
     }
 
     @Test
     void listAllCapabilities() throws KernelException {
         QualifiedName procedureName = procedureName("dbms", "listAllCapabilities");
-        int procedureId = procs().procedureGet(procedureName).id();
-        RawIterator<AnyValue[], ProcedureException> callResult =
-                procs().procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
-        List<AnyValue[]> capabilities = asList(callResult);
-        List<String> capabilityNames =
-                capabilities.stream().map(c -> ((TextValue) c[0]).stringValue()).collect(Collectors.toList());
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            int procedureId = procs.procedureGet(procedureName).id();
+            RawIterator<AnyValue[], ProcedureException> callResult =
+                    procs.procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
+            List<AnyValue[]> capabilities = asList(callResult);
+            List<String> capabilityNames = capabilities.stream()
+                    .map(c -> ((TextValue) c[0]).stringValue())
+                    .collect(Collectors.toList());
 
-        assertThat(capabilityNames)
-                .containsExactlyInAnyOrder(
-                        DBMSCapabilities.dbms_instance_version.name().fullName(),
-                        DBMSCapabilities.dbms_instance_kernel_version.name().fullName(),
-                        DBMSCapabilities.dbms_instance_edition.name().fullName(),
-                        DBMSCapabilities.dbms_instance_operational_mode.name().fullName(),
-                        TestCapabilities.my_custom_capability.name().fullName(),
-                        TestCapabilities.my_internal_capability.name().fullName(),
-                        TestCapabilities.my_dynamic_capability.name().fullName());
+            assertThat(capabilityNames)
+                    .containsExactlyInAnyOrder(
+                            DBMSCapabilities.dbms_instance_version.name().fullName(),
+                            DBMSCapabilities.dbms_instance_kernel_version.name().fullName(),
+                            DBMSCapabilities.dbms_instance_edition.name().fullName(),
+                            DBMSCapabilities.dbms_instance_operational_mode
+                                    .name()
+                                    .fullName(),
+                            TestCapabilities.my_custom_capability.name().fullName(),
+                            TestCapabilities.my_internal_capability.name().fullName(),
+                            TestCapabilities.my_dynamic_capability.name().fullName());
+        }
     }
 
     @Test
@@ -241,29 +265,39 @@ class BuiltInDbmsProceduresIT extends KernelIntegrationTest {
         config.set(CapabilitiesSettings.dbms_capabilities_blocked, List.of("my.custom.**"));
 
         QualifiedName procedureName = procedureName("dbms", "listAllCapabilities");
-        int procedureId = procs().procedureGet(procedureName).id();
-        RawIterator<AnyValue[], ProcedureException> callResult =
-                procs().procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
-        List<AnyValue[]> capabilities = asList(callResult);
-        List<String> capabilityNames =
-                capabilities.stream().map(c -> ((TextValue) c[0]).stringValue()).collect(Collectors.toList());
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        assertThat(capabilityNames)
-                .containsExactlyInAnyOrder(
-                        DBMSCapabilities.dbms_instance_version.name().fullName(),
-                        DBMSCapabilities.dbms_instance_kernel_version.name().fullName(),
-                        DBMSCapabilities.dbms_instance_edition.name().fullName(),
-                        DBMSCapabilities.dbms_instance_operational_mode.name().fullName(),
-                        TestCapabilities.my_dynamic_capability.name().fullName(),
-                        TestCapabilities.my_internal_capability.name().fullName());
+            int procedureId = procs.procedureGet(procedureName).id();
+            RawIterator<AnyValue[], ProcedureException> callResult =
+                    procs.procedureCallDbms(procedureId, new AnyValue[] {}, ProcedureCallContext.EMPTY);
+            List<AnyValue[]> capabilities = asList(callResult);
+            List<String> capabilityNames = capabilities.stream()
+                    .map(c -> ((TextValue) c[0]).stringValue())
+                    .collect(Collectors.toList());
+
+            assertThat(capabilityNames)
+                    .containsExactlyInAnyOrder(
+                            DBMSCapabilities.dbms_instance_version.name().fullName(),
+                            DBMSCapabilities.dbms_instance_kernel_version.name().fullName(),
+                            DBMSCapabilities.dbms_instance_edition.name().fullName(),
+                            DBMSCapabilities.dbms_instance_operational_mode
+                                    .name()
+                                    .fullName(),
+                            TestCapabilities.my_dynamic_capability.name().fullName(),
+                            TestCapabilities.my_internal_capability.name().fullName());
+        }
     }
 
     private List<AnyValue[]> callListConfig(String searchString) throws KernelException {
         QualifiedName procedureName = procedureName("dbms", "listConfig");
-        int procedureId = procs().procedureGet(procedureName).id();
-        RawIterator<AnyValue[], ProcedureException> callResult =
-                procs().procedureCallDbms(procedureId, toArray(stringValue(searchString)), ProcedureCallContext.EMPTY);
-        return asList(callResult);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            int procedureId = procs.procedureGet(procedureName).id();
+            RawIterator<AnyValue[], ProcedureException> callResult = procs.procedureCallDbms(
+                    procedureId, toArray(stringValue(searchString)), ProcedureCallContext.EMPTY);
+            return asList(callResult);
+        }
     }
 
     public static class TestCapabilities implements CapabilityDeclaration, CapabilityProvider {

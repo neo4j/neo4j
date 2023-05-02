@@ -2097,6 +2097,9 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         public long oldestVisibleTransactionNumber() {
             return 0;
         }
+
+        @Override
+        public void refreshVisibilityBoundaries() {}
     }
 
     private static class InfoTracer extends DefaultPageCacheTracer {

@@ -72,6 +72,7 @@ import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.InnerTransactionHandler;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TerminationMark;
@@ -795,6 +796,11 @@ class QueryExecutionLocksIT {
         @Override
         public Statement acquireStatement() {
             return internal.acquireStatement();
+        }
+
+        @Override
+        public ResourceMonitor resourceMonitor() {
+            return internal.resourceMonitor();
         }
 
         @Override

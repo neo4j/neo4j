@@ -46,7 +46,7 @@ public class TransactionVersionContext implements VersionContext {
 
     @Override
     public void initRead() {
-        transactionIds = transactionIdSnapshotFactory.createSnapshot();
+        refreshVisibilityBoundaries();
         dirty = false;
     }
 
@@ -80,6 +80,11 @@ public class TransactionVersionContext implements VersionContext {
     @Override
     public long oldestVisibleTransactionNumber() {
         return oldestTransactionId;
+    }
+
+    @Override
+    public void refreshVisibilityBoundaries() {
+        transactionIds = transactionIdSnapshotFactory.createSnapshot();
     }
 
     @Override

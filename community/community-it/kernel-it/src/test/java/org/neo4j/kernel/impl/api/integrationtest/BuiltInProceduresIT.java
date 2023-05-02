@@ -28,11 +28,8 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.internal.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureCallContext.EMPTY;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
-import static org.neo4j.values.storable.Values.doubleValue;
-import static org.neo4j.values.storable.Values.longValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import org.junit.jupiter.api.Test;
@@ -41,6 +38,7 @@ import org.neo4j.collection.RawIterator;
 import org.neo4j.cypher.internal.QueryCacheTracer;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexMonitor;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -53,8 +51,6 @@ import org.neo4j.kernel.impl.api.index.IndexSamplingMode;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.values.AnyValue;
-import org.neo4j.values.storable.Values;
-import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBase {
@@ -68,37 +64,46 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         commit();
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("db", "labels")).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("db", "labels")).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyLabel")});
+            // Then
+            assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyLabel")});
+        }
     }
 
     @Test
     void databaseInfo() throws ProcedureException {
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("db", "info")).id(), new AnyValue[0], EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("db", "info")).id(), new AnyValue[0], EMPTY);
 
-        var procedureResult = asList(stream);
-        assertFalse(procedureResult.isEmpty());
-        var dbInfoRow = procedureResult.get(0);
-        assertThat(dbInfoRow).contains(stringValue(db.databaseName()));
-        assertThat(dbInfoRow).hasSize(3);
+            var procedureResult = asList(stream);
+            assertFalse(procedureResult.isEmpty());
+            var dbInfoRow = procedureResult.get(0);
+            assertThat(dbInfoRow).contains(stringValue(db.databaseName()));
+            assertThat(dbInfoRow).hasSize(3);
+        }
     }
 
     @Test
     void dbmsInfo() throws ProcedureException {
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("dbms", "info")).id(), new AnyValue[0], EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("dbms", "info")).id(), new AnyValue[0], EMPTY);
 
-        var procedureResult = asList(stream);
-        assertFalse(procedureResult.isEmpty());
-        var dbmsInfoRow = procedureResult.get(0);
-        assertThat(dbmsInfoRow).contains(stringValue(SYSTEM_DATABASE_NAME));
-        assertThat(dbmsInfoRow).hasSize(3);
+            var procedureResult = asList(stream);
+            assertFalse(procedureResult.isEmpty());
+            var dbmsInfoRow = procedureResult.get(0);
+            assertThat(dbmsInfoRow).contains(stringValue(SYSTEM_DATABASE_NAME));
+            assertThat(dbmsInfoRow).hasSize(3);
+        }
     }
 
     @Test
@@ -132,16 +137,19 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
 
         // When
         constraintLatch.await();
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("db", "labels")).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("db", "labels")).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        try {
-            assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyLabel")});
-        } finally {
-            commitLatch.countDown();
+            // Then
+            try {
+                assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyLabel")});
+            } finally {
+                commitLatch.countDown();
+            }
         }
         createConstraintTask.get();
         constraintCreator.join();
@@ -155,14 +163,16 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         commit();
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("db", "propertyKeys"))
-                                .id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("db", "propertyKeys")).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyProp")});
+            // Then
+            assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyProp")});
+        }
     }
 
     @Test
@@ -176,20 +186,26 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         commit();
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("db", "relationshipTypes"))
-                                .id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("db", "relationshipTypes")).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyRelType")});
+            // Then
+            assertThat(asList(stream)).containsExactly(new AnyValue[] {stringValue("MyRelType")});
+        }
     }
 
     @Test
     void failWhenCallingNonExistingProcedures() {
-        assertThrows(ProcedureException.class, () -> procs().procedureCallDbms(
-                        -1, new AnyValue[0], ProcedureCallContext.EMPTY));
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            assertThrows(
+                    ProcedureException.class,
+                    () -> procs.procedureCallDbms(-1, new AnyValue[0], ProcedureCallContext.EMPTY));
+        }
     }
 
     @Test
@@ -197,49 +213,22 @@ class BuiltInProceduresIT extends KernelIntegrationTest implements ProcedureITBa
         // Given a running database
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("dbms", "components"))
-                                .id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("dbms", "components")).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        assertThat(asList(stream)).containsExactly(new AnyValue[] {
-            stringValue("Neo4j Kernel"),
-            VirtualValues.list(stringValue(Version.getNeo4jVersion())),
-            stringValue("community")
-        });
+            // Then
+            assertThat(asList(stream)).containsExactly(new AnyValue[] {
+                stringValue("Neo4j Kernel"),
+                VirtualValues.list(stringValue(Version.getNeo4jVersion())),
+                stringValue("community")
+            });
+        }
 
         commit();
-    }
-
-    private static AnyValue[] dbIndexesResult(
-            long id,
-            String name,
-            String state,
-            Double populationPercent,
-            String uniqueness,
-            String type,
-            String entityType,
-            List<String> labelsOrTypes,
-            List<String> properties,
-            String provider) {
-        ListValue labelsOrTypesList = VirtualValues.list(
-                labelsOrTypes.stream().map(Values::stringValue).toArray(AnyValue[]::new));
-        ListValue propertiesList =
-                VirtualValues.list(properties.stream().map(Values::stringValue).toArray(AnyValue[]::new));
-        return new AnyValue[] {
-            longValue(id),
-            stringValue(name),
-            stringValue(state),
-            doubleValue(populationPercent),
-            stringValue(uniqueness),
-            stringValue(type),
-            stringValue(entityType),
-            labelsOrTypesList,
-            propertiesList,
-            stringValue(provider)
-        };
     }
 
     @Test

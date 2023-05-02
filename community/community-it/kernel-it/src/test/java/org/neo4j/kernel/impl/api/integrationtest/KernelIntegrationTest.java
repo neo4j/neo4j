@@ -97,13 +97,6 @@ public abstract class KernelIntegrationTest {
         return kernelTransaction.procedures();
     }
 
-    protected Procedures procsSchema() {
-        if (kernelTransaction == null) {
-            beginTransaction(AnonymousContext.full());
-        }
-        return kernelTransaction.procedures();
-    }
-
     protected KernelTransaction newTransaction() {
         beginTransaction(AnonymousContext.read());
         return kernelTransaction;
@@ -127,10 +120,12 @@ public abstract class KernelIntegrationTest {
         };
     }
 
-    protected void commit() {
+    protected long commit() {
         transaction.commit();
+        long txId = kernelTransaction.getTransactionId();
         transaction = null;
         kernelTransaction = null;
+        return txId;
     }
 
     protected void rollback() {
@@ -168,10 +163,6 @@ public abstract class KernelIntegrationTest {
 
     protected GraphDatabaseAPI openDatabase(String databaseName) {
         return (GraphDatabaseAPI) managementService.database(databaseName);
-    }
-
-    protected void shutdownDatabase(String databaseName) {
-        managementService.shutdownDatabase(databaseName);
     }
 
     protected DatabaseManagementService createDatabaseService() {
@@ -234,31 +225,26 @@ public abstract class KernelIntegrationTest {
                 return emptyIterator();
             }
 
-            switch (direction) {
-                case OUTGOING:
-                    return outgoingIterator(
-                            transaction.cursors(),
-                            cursor,
-                            types,
-                            RelationshipDataAccessor::relationshipReference,
-                            transaction.cursorContext());
-                case INCOMING:
-                    return incomingIterator(
-                            transaction.cursors(),
-                            cursor,
-                            types,
-                            RelationshipDataAccessor::relationshipReference,
-                            transaction.cursorContext());
-                case BOTH:
-                    return allIterator(
-                            transaction.cursors(),
-                            cursor,
-                            types,
-                            RelationshipDataAccessor::relationshipReference,
-                            transaction.cursorContext());
-                default:
-                    throw new IllegalStateException(direction + " is not a valid direction");
-            }
+            return switch (direction) {
+                case OUTGOING -> outgoingIterator(
+                        transaction.cursors(),
+                        cursor,
+                        types,
+                        RelationshipDataAccessor::relationshipReference,
+                        transaction.cursorContext());
+                case INCOMING -> incomingIterator(
+                        transaction.cursors(),
+                        cursor,
+                        types,
+                        RelationshipDataAccessor::relationshipReference,
+                        transaction.cursorContext());
+                case BOTH -> allIterator(
+                        transaction.cursors(),
+                        cursor,
+                        types,
+                        RelationshipDataAccessor::relationshipReference,
+                        transaction.cursorContext());
+            };
         }
     }
 

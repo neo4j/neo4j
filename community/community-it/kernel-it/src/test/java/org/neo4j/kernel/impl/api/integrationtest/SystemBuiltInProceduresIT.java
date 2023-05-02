@@ -37,6 +37,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.schema.IndexPrototype;
@@ -57,26 +58,34 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
 
     @Test
     void databaseInfo() throws ProcedureException {
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("db", "info")).id(), new AnyValue[0], EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        var procedureResult = asList(stream);
-        assertFalse(procedureResult.isEmpty());
-        var dbInfoRow = procedureResult.get(0);
-        assertThat(dbInfoRow).contains(stringValue(SYSTEM_DATABASE_NAME));
-        assertThat(dbInfoRow).hasSize(3);
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("db", "info")).id(), new AnyValue[0], EMPTY);
+
+            var procedureResult = asList(stream);
+            assertFalse(procedureResult.isEmpty());
+            var dbInfoRow = procedureResult.get(0);
+            assertThat(dbInfoRow).contains(stringValue(SYSTEM_DATABASE_NAME));
+            assertThat(dbInfoRow).hasSize(3);
+        }
     }
 
     @Test
     void dbmsInfo() throws ProcedureException {
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("dbms", "info")).id(), new AnyValue[0], EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        var procedureResult = asList(stream);
-        assertFalse(procedureResult.isEmpty());
-        var dbmsInfoRow = procedureResult.get(0);
-        assertThat(dbmsInfoRow).contains(stringValue(SYSTEM_DATABASE_NAME));
-        assertThat(dbmsInfoRow).hasSize(3);
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("dbms", "info")).id(), new AnyValue[0], EMPTY);
+
+            var procedureResult = asList(stream);
+            assertFalse(procedureResult.isEmpty());
+            var dbmsInfoRow = procedureResult.get(0);
+            assertThat(dbmsInfoRow).contains(stringValue(SYSTEM_DATABASE_NAME));
+            assertThat(dbmsInfoRow).hasSize(3);
+        }
     }
 
     @Test
@@ -128,18 +137,18 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
         // its NOT a dummy procedure on system
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName("dbms", "components"))
-                                .id(),
-                        new AnyValue[0],
-                        EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName("dbms", "components")).id(), new AnyValue[0], EMPTY);
 
-        // Then
-        assertThat(asList(stream)).containsExactly(new AnyValue[] {
-            stringValue("Neo4j Kernel"),
-            VirtualValues.list(stringValue(Version.getNeo4jVersion())),
-            stringValue("community")
-        });
+            // Then
+            assertThat(asList(stream)).containsExactly(new AnyValue[] {
+                stringValue("Neo4j Kernel"),
+                VirtualValues.list(stringValue(Version.getNeo4jVersion())),
+                stringValue("community")
+            });
+        }
 
         commit();
     }
@@ -392,7 +401,10 @@ class SystemBuiltInProceduresIT extends KernelIntegrationTest implements Procedu
 
     @Test
     void failWhenCallingNonExistingProcedures() {
-        assertThrows(ProcedureException.class, () -> procs().procedureCallDbms(-1, new AnyValue[0], EMPTY));
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            assertThrows(ProcedureException.class, () -> procs.procedureCallDbms(-1, new AnyValue[0], EMPTY));
+        }
     }
 
     @Test

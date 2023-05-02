@@ -32,6 +32,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.internal.helpers.collection.Iterables;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
@@ -122,14 +123,17 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         internalKernel().registerProcedure(procedure);
 
         // When
-        RawIterator<AnyValue[], ProcedureException> found = procs().procedureCallRead(
-                        procs().procedureGet(new QualifiedName(new String[] {"example"}, "exampleProc"))
-                                .id(),
-                        new AnyValue[] {longValue(1337)},
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> found = procs.procedureCallRead(
+                    procs.procedureGet(new QualifiedName(new String[] {"example"}, "exampleProc"))
+                            .id(),
+                    new AnyValue[] {longValue(1337)},
+                    ProcedureCallContext.EMPTY);
+            // Then
+            assertThat(asList(found)).contains(new AnyValue[] {longValue(1337)});
+        }
 
-        // Then
-        assertThat(asList(found)).contains(new AnyValue[] {longValue(1337)});
         commit();
     }
 
@@ -150,13 +154,16 @@ class ProceduresKernelIT extends KernelIntegrationTest {
         });
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(signature.name()).id(),
-                        new AnyValue[] {Values.EMPTY_STRING},
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(signature.name()).id(),
+                    new AnyValue[] {Values.EMPTY_STRING},
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        assertNotNull(asList(stream).get(0)[0]);
+            // Then
+            assertNotNull(asList(stream).get(0)[0]);
+        }
         commit();
     }
 

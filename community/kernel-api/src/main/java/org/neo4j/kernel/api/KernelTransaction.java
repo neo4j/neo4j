@@ -292,6 +292,11 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
     Statement acquireStatement();
 
     /**
+     * Returns resource monitor that is bound to opened statement.
+     */
+    ResourceMonitor resourceMonitor();
+
+    /**
      * Create unique index which will be used to support uniqueness constraint.
      *
      * @param prototype the prototype of the unique index to create.

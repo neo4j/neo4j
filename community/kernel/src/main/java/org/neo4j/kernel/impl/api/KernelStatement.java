@@ -179,6 +179,7 @@ public class KernelStatement extends QueryStatement {
     public final void acquire() {
         if (referenceCount++ == 0) {
             clockContext.initializeStatement();
+            cursorContext.getVersionContext().refreshVisibilityBoundaries();
             var cursorTracer = cursorContext.getCursorTracer();
             this.initialStatementHits = cursorTracer.hits();
             this.initialStatementFaults = cursorTracer.faults();

@@ -92,6 +92,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.ResourceMonitor;
 import org.neo4j.kernel.api.TerminationMark;
 import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.database.enrichment.TxEnrichmentVisitor;
@@ -725,6 +726,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelStatement acquireStatement() {
         assertOpen();
         currentStatement.acquire();
+        return currentStatement;
+    }
+
+    @Override
+    public ResourceMonitor resourceMonitor() {
+        assert currentStatement.isAcquired();
         return currentStatement;
     }
 

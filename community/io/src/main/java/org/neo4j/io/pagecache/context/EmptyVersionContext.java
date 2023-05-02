@@ -68,4 +68,7 @@ public class EmptyVersionContext implements VersionContext {
     public long oldestVisibleTransactionNumber() {
         return 0;
     }
+
+    @Override
+    public void refreshVisibilityBoundaries() {}
 }

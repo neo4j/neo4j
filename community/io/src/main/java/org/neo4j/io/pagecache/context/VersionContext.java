@@ -99,4 +99,9 @@ public interface VersionContext {
      * Any version lower than this one isn't visible by any active or future transaction and can be removed.
      */
     long oldestVisibleTransactionNumber();
+
+    /**
+     * Refresh cursor context visibility boundaries
+     */
+    void refreshVisibilityBoundaries();
 }

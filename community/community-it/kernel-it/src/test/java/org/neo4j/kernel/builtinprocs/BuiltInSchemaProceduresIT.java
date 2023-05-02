@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.neo4j.collection.RawIterator;
+import org.neo4j.internal.kernel.api.Procedures;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.ProcedureCallContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -54,19 +55,23 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createNode(singletonList("This:is_a:label"), singletonList("color"), singletonList(stringValue("red")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(nodeEntry(
-                        ":`This:is_a:label`",
-                        singletonList("This:is_a:label"),
-                        "color",
-                        singletonList("String"),
-                        true));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(nodeEntry(
+                            ":`This:is_a:label`",
+                            singletonList("This:is_a:label"),
+                            "color",
+                            singletonList("String"),
+                            true));
+        }
     }
 
     @Test
@@ -83,17 +88,21 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createNode(singletonList("A"), singletonList("origin"), singletonList(stringValue("Kenya")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        nodeEntry(":`A`", singletonList("A"), "color", singletonList("String"), false),
-                        nodeEntry(":`A`", singletonList("A"), "size", singletonList("String"), false),
-                        nodeEntry(":`A`", singletonList("A"), "origin", singletonList("String"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            nodeEntry(":`A`", singletonList("A"), "color", singletonList("String"), false),
+                            nodeEntry(":`A`", singletonList("A"), "size", singletonList("String"), false),
+                            nodeEntry(":`A`", singletonList("A"), "origin", singletonList("String"), false));
+        }
     }
 
     @Test
@@ -110,17 +119,21 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
                 Arrays.asList(stringValue("red"), stringValue("M")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        nodeEntry(":`B`", singletonList("B"), "color", singletonList("String"), false),
-                        nodeEntry(":`B`", singletonList("B"), "size", singletonList("String"), false),
-                        nodeEntry(":`B`", singletonList("B"), "origin", singletonList("String"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            nodeEntry(":`B`", singletonList("B"), "color", singletonList("String"), false),
+                            nodeEntry(":`B`", singletonList("B"), "size", singletonList("String"), false),
+                            nodeEntry(":`B`", singletonList("B"), "origin", singletonList("String"), false));
+        }
     }
 
     @Test
@@ -140,18 +153,22 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
                 Arrays.asList(stringValue("Kenya"), Values.booleanValue(true)));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        nodeEntry(":`C`", singletonList("C"), "color", singletonList("String"), false),
-                        nodeEntry(":`C`", singletonList("C"), "size", singletonList("String"), false),
-                        nodeEntry(":`C`", singletonList("C"), "origin", singletonList("String"), false),
-                        nodeEntry(":`C`", singletonList("C"), "active", singletonList("Boolean"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            nodeEntry(":`C`", singletonList("C"), "color", singletonList("String"), false),
+                            nodeEntry(":`C`", singletonList("C"), "size", singletonList("String"), false),
+                            nodeEntry(":`C`", singletonList("C"), "origin", singletonList("String"), false),
+                            nodeEntry(":`C`", singletonList("C"), "active", singletonList("Boolean"), false));
+        }
     }
 
     @Test
@@ -172,17 +189,21 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createRelationship(emptyNode, "R", emptyNode, singletonList("origin"), singletonList(stringValue("Kenya")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        relEntry(":`R`", "color", singletonList("String"), false),
-                        relEntry(":`R`", "size", singletonList("String"), false),
-                        relEntry(":`R`", "origin", singletonList("String"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            relEntry(":`R`", "color", singletonList("String"), false),
+                            relEntry(":`R`", "size", singletonList("String"), false),
+                            relEntry(":`R`", "origin", singletonList("String"), false));
+        }
     }
 
     @Test
@@ -203,17 +224,21 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
                 Arrays.asList(stringValue("red"), stringValue("M")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        relEntry(":`R`", "color", singletonList("String"), false),
-                        relEntry(":`R`", "size", singletonList("String"), false),
-                        relEntry(":`R`", "origin", singletonList("String"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            relEntry(":`R`", "color", singletonList("String"), false),
+                            relEntry(":`R`", "size", singletonList("String"), false),
+                            relEntry(":`R`", "origin", singletonList("String"), false));
+        }
     }
 
     @Test
@@ -239,18 +264,22 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
                 Arrays.asList(stringValue("Kenya"), Values.booleanValue(true)));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        relEntry(":`R`", "color", singletonList("String"), false),
-                        relEntry(":`R`", "size", singletonList("String"), false),
-                        relEntry(":`R`", "origin", singletonList("String"), false),
-                        relEntry(":`R`", "active", singletonList("Boolean"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            relEntry(":`R`", "color", singletonList("String"), false),
+                            relEntry(":`R`", "size", singletonList("String"), false),
+                            relEntry(":`R`", "origin", singletonList("String"), false),
+                            relEntry(":`R`", "active", singletonList("Boolean"), false));
+        }
     }
 
     @Test
@@ -267,16 +296,20 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
                 Arrays.asList(stringValue("B2"), Values.intValue(5)));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        nodeEntry(":`B`", singletonList("B"), "type", singletonList("String"), true),
-                        nodeEntry(":`B`", singletonList("B"), "size", singletonList("Integer"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            nodeEntry(":`B`", singletonList("B"), "type", singletonList("String"), true),
+                            nodeEntry(":`B`", singletonList("B"), "size", singletonList("Integer"), false));
+        }
     }
 
     @Test
@@ -293,16 +326,20 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createNode(singletonList("B"), singletonList("type"), singletonList(stringValue("B1")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        nodeEntry(":`B`", singletonList("B"), "type", singletonList("String"), true),
-                        nodeEntry(":`B`", singletonList("B"), "size", singletonList("Integer"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            nodeEntry(":`B`", singletonList("B"), "type", singletonList("String"), true),
+                            nodeEntry(":`B`", singletonList("B"), "size", singletonList("Integer"), false));
+        }
     }
 
     @Test
@@ -323,16 +360,20 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
                 Arrays.asList(stringValue("B1"), Values.intValue(5)));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        relEntry(":`B`", "type", singletonList("String"), true),
-                        relEntry(":`B`", "size", singletonList("Integer"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            relEntry(":`B`", "type", singletonList("String"), true),
+                            relEntry(":`B`", "size", singletonList("Integer"), false));
+        }
     }
 
     @Test
@@ -353,16 +394,20 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createRelationship(nodeId1, "B", nodeId1, singletonList("type"), singletonList(stringValue("B1")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        relEntry(":`B`", "type", singletonList("String"), true),
-                        relEntry(":`B`", "size", singletonList("Integer"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            relEntry(":`B`", "type", singletonList("String"), true),
+                            relEntry(":`B`", "size", singletonList("Integer"), false));
+        }
     }
 
     @Test
@@ -383,19 +428,23 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createNode(singletonList("C"), singletonList("prop1"), singletonList(Values.stringArray("Test", "Success")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        nodeEntry(":`A`:`B`", Arrays.asList("A", "B"), "prop1", singletonList("String"), true),
-                        nodeEntry(":`A`:`B`", Arrays.asList("A", "B"), "prop2", singletonList("Integer"), true),
-                        nodeEntry(":`B`", singletonList("B"), "prop1", singletonList("Boolean"), true),
-                        nodeEntry(":`C`", singletonList("C"), "prop1", singletonList("StringArray"), true),
-                        nodeEntry("", emptyList(), null, null, false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            nodeEntry(":`A`:`B`", Arrays.asList("A", "B"), "prop1", singletonList("String"), true),
+                            nodeEntry(":`A`:`B`", Arrays.asList("A", "B"), "prop2", singletonList("Integer"), true),
+                            nodeEntry(":`B`", singletonList("B"), "prop1", singletonList("Boolean"), true),
+                            nodeEntry(":`C`", singletonList("C"), "prop1", singletonList("StringArray"), true),
+                            nodeEntry("", emptyList(), null, null, false));
+        }
     }
 
     @Test
@@ -409,14 +458,18 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createNode(singletonList("A"), singletonList("prop1"), singletonList(stringValue("Test2")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .containsExactly(nodeEntry(":`A`", singletonList("A"), "prop1", singletonList("String"), true));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .containsExactly(nodeEntry(":`A`", singletonList("A"), "prop1", singletonList("String"), true));
+        }
     }
 
     @Test
@@ -438,17 +491,20 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createNode(emptyList(), singletonList("prop1"), singletonList(stringValue("Test")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        nodeEntry("", emptyList(), "prop1", singletonList("String"), true),
-                        nodeEntry("", emptyList(), "prop2", Arrays.asList("Integer", "Float"), false),
-                        nodeEntry("", emptyList(), "prop3", Arrays.asList("String", "Boolean"), false));
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            nodeEntry("", emptyList(), "prop1", singletonList("String"), true),
+                            nodeEntry("", emptyList(), "prop2", Arrays.asList("Integer", "Float"), false),
+                            nodeEntry("", emptyList(), "prop3", Arrays.asList("String", "Boolean"), false));
+        }
     }
 
     @Test
@@ -470,17 +526,21 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
                 Arrays.asList(stringValue("Test"), Values.floatValue(1.5f), stringValue("Test")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        nodeEntry("", emptyList(), "prop1", singletonList("String"), false),
-                        nodeEntry("", emptyList(), "prop2", Arrays.asList("Integer", "Float"), false),
-                        nodeEntry("", emptyList(), "prop3", Arrays.asList("String", "Boolean"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            nodeEntry("", emptyList(), "prop1", singletonList("String"), false),
+                            nodeEntry("", emptyList(), "prop2", Arrays.asList("Integer", "Float"), false),
+                            nodeEntry("", emptyList(), "prop3", Arrays.asList("String", "Boolean"), false));
+        }
     }
 
     @Test
@@ -503,18 +563,22 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createRelationship(nodeId1, "Z", nodeId1, emptyList(), emptyList());
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        relEntry(":`R`", "prop1", singletonList("String"), true),
-                        relEntry(":`R`", "prop2", singletonList("Integer"), true),
-                        relEntry(":`X`", "prop1", singletonList("Boolean"), true),
-                        relEntry(":`Z`", null, null, false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            relEntry(":`R`", "prop1", singletonList("String"), true),
+                            relEntry(":`R`", "prop2", singletonList("Integer"), true),
+                            relEntry(":`X`", "prop1", singletonList("Boolean"), true),
+                            relEntry(":`Z`", null, null, false));
+        }
     }
 
     @Test
@@ -530,13 +594,17 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createRelationship(nodeId1, "R", nodeId1, singletonList("prop1"), singletonList(stringValue("Test2")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream)).contains(relEntry(":`R`", "prop1", singletonList("String"), true));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream)).contains(relEntry(":`R`", "prop1", singletonList("String"), true));
+        }
     }
 
     @Test
@@ -557,17 +625,21 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createRelationship(nodeId1, "R", nodeId1, emptyList(), emptyList());
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        relEntry(":`R`", "prop1", singletonList("String"), false),
-                        relEntry(":`R`", "prop2", singletonList("Integer"), false),
-                        relEntry(":`R`", "prop3", singletonList("Boolean"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            relEntry(":`R`", "prop1", singletonList("String"), false),
+                            relEntry(":`R`", "prop2", singletonList("Integer"), false),
+                            relEntry(":`R`", "prop3", singletonList("Boolean"), false));
+        }
     }
 
     @Test
@@ -595,17 +667,21 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createRelationship(nodeId1, "R", nodeId1, singletonList("prop1"), singletonList(stringValue("Test")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        relEntry(":`R`", "prop1", singletonList("String"), true),
-                        relEntry(":`R`", "prop2", Arrays.asList("Integer", "Float"), false),
-                        relEntry(":`R`", "prop3", Arrays.asList("String", "Boolean"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            relEntry(":`R`", "prop1", singletonList("String"), true),
+                            relEntry(":`R`", "prop2", Arrays.asList("Integer", "Float"), false),
+                            relEntry(":`R`", "prop3", Arrays.asList("String", "Boolean"), false));
+        }
     }
 
     @Test
@@ -634,17 +710,21 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
                 Arrays.asList(stringValue("Test"), Values.floatValue(1.5f), stringValue("Test")));
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(relsProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        relEntry(":`R`", "prop1", singletonList("String"), false),
-                        relEntry(":`R`", "prop2", Arrays.asList("Integer", "Float"), false),
-                        relEntry(":`R`", "prop3", Arrays.asList("String", "Boolean"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(relsProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            relEntry(":`R`", "prop1", singletonList("String"), false),
+                            relEntry(":`R`", "prop2", Arrays.asList("Integer", "Float"), false),
+                            relEntry(":`R`", "prop3", Arrays.asList("String", "Boolean"), false));
+        }
     }
 
     @Test
@@ -676,19 +756,23 @@ class BuiltInSchemaProceduresIT extends KernelIntegrationTest {
         createNode(singletonList("B"), emptyList(), emptyList());
 
         // When
-        RawIterator<AnyValue[], ProcedureException> stream = procs().procedureCallRead(
-                        procs().procedureGet(procedureName(nodesProcedureName)).id(),
-                        new AnyValue[0],
-                        ProcedureCallContext.EMPTY);
+        Procedures procs = procs();
+        try (var statement = kernelTransaction.acquireStatement()) {
 
-        // Then
-        assertThat(asList(stream))
-                .contains(
-                        nodeEntry(":`A`", singletonList("A"), "prop1", singletonList("String"), true),
-                        nodeEntry(":`A`", singletonList("A"), "prop2", singletonList("Integer"), false),
-                        nodeEntry(":`A`", singletonList("A"), "prop3", singletonList("Boolean"), false),
-                        nodeEntry(":`B`", singletonList("B"), "prop1", singletonList("String"), false),
-                        nodeEntry(":`B`", singletonList("B"), "prop2", singletonList("Integer"), false));
+            RawIterator<AnyValue[], ProcedureException> stream = procs.procedureCallRead(
+                    procs.procedureGet(procedureName(nodesProcedureName)).id(),
+                    new AnyValue[0],
+                    ProcedureCallContext.EMPTY);
+
+            // Then
+            assertThat(asList(stream))
+                    .contains(
+                            nodeEntry(":`A`", singletonList("A"), "prop1", singletonList("String"), true),
+                            nodeEntry(":`A`", singletonList("A"), "prop2", singletonList("Integer"), false),
+                            nodeEntry(":`A`", singletonList("A"), "prop3", singletonList("Boolean"), false),
+                            nodeEntry(":`B`", singletonList("B"), "prop1", singletonList("String"), false),
+                            nodeEntry(":`B`", singletonList("B"), "prop2", singletonList("Integer"), false));
+        }
     }
 
     private static AnyValue[] nodeEntry(
