@@ -19,6 +19,7 @@
  */
 package org.neo4j.fabric.eval
 
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext
 import org.neo4j.fabric.executor.Location
 import org.neo4j.kernel.database.DatabaseReference
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -33,6 +34,6 @@ trait CatalogManager {
     sessionDatabase: DatabaseReference,
     graph: Catalog.Graph,
     requireWritable: Boolean,
-    canRoute: Boolean
+    routingContext: RoutingContext
   ): Location
 }

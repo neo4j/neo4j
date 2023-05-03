@@ -21,6 +21,9 @@ package org.neo4j.bolt.protocol.common.message.request.connection;
 
 import java.util.Map;
 import java.util.Objects;
+import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.MapValue;
+import org.neo4j.values.virtual.MapValueBuilder;
 
 /**
  * Client configured routing information
@@ -60,12 +63,14 @@ public final class RoutingContext {
         return Objects.hash(serverRoutingEnabled, parameters);
     }
 
-    public boolean serverRoutingEnabled() {
-        return serverRoutingEnabled;
-    }
-
     public Map<String, String> parameters() {
         return parameters;
+    }
+
+    public MapValue parametersAsMapValue() {
+        var builder = new MapValueBuilder();
+        parameters.forEach((key, value) -> builder.add(key, Values.stringValue(value)));
+        return builder.build();
     }
 
     @Override

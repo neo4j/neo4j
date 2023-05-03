@@ -59,10 +59,9 @@ class LocationCacheTest {
         locationCache = new LocationCache(catalogManager, transactionInfo);
 
         // when
-        when(catalogManager.locationOf(
-                        nullable(DatabaseReference.class), eq(graph1), any(Boolean.class), any(Boolean.class)))
+        when(catalogManager.locationOf(nullable(DatabaseReference.class), eq(graph1), any(Boolean.class), any()))
                 .thenReturn(location1);
-        when(catalogManager.locationOf(nullable(DatabaseReference.class), eq(graph2), eq(true), any(Boolean.class)))
+        when(catalogManager.locationOf(nullable(DatabaseReference.class), eq(graph2), eq(true), any()))
                 .thenReturn(location2);
     }
 
@@ -70,11 +69,7 @@ class LocationCacheTest {
     void shouldHandleNonExistentGraph() {
         assertNull(locationCache.locationOf(graph0, false));
         verify(catalogManager, times(1))
-                .locationOf(
-                        nullable(DatabaseReference.class),
-                        any(Catalog.Graph.class),
-                        any(Boolean.class),
-                        any(Boolean.class));
+                .locationOf(nullable(DatabaseReference.class), any(Catalog.Graph.class), any(Boolean.class), any());
         assertEquals(0, locationCache.size());
     }
 
@@ -83,11 +78,7 @@ class LocationCacheTest {
         assertEquals(location1, locationCache.locationOf(graph1, false));
         assertEquals(location1, locationCache.locationOf(graph1, false));
         verify(catalogManager, times(1))
-                .locationOf(
-                        nullable(DatabaseReference.class),
-                        any(Catalog.Graph.class),
-                        any(Boolean.class),
-                        any(Boolean.class));
+                .locationOf(nullable(DatabaseReference.class), any(Catalog.Graph.class), any(Boolean.class), any());
         assertEquals(1, locationCache.size());
     }
 
@@ -97,11 +88,7 @@ class LocationCacheTest {
         assertEquals(location1, locationCache.locationOf(graph1, true));
         assertEquals(location1, locationCache.locationOf(graph1, false));
         verify(catalogManager, times(1))
-                .locationOf(
-                        nullable(DatabaseReference.class),
-                        any(Catalog.Graph.class),
-                        any(Boolean.class),
-                        any(Boolean.class));
+                .locationOf(nullable(DatabaseReference.class), any(Catalog.Graph.class), any(Boolean.class), any());
         assertEquals(1, locationCache.size());
     }
 
@@ -112,11 +99,7 @@ class LocationCacheTest {
         assertEquals(location2, locationCache.locationOf(graph2, true));
         assertEquals(location2, locationCache.locationOf(graph2, true));
         verify(catalogManager, times(2))
-                .locationOf(
-                        nullable(DatabaseReference.class),
-                        any(Catalog.Graph.class),
-                        any(Boolean.class),
-                        any(Boolean.class));
+                .locationOf(nullable(DatabaseReference.class), any(Catalog.Graph.class), any(Boolean.class), any());
         assertEquals(2, locationCache.size());
     }
 }

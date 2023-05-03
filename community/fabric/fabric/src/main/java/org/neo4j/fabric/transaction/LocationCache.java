@@ -43,7 +43,7 @@ public class LocationCache {
                         transactionInfo.getSessionDatabaseReference(),
                         graph,
                         requireWritable,
-                        transactionInfo.getRoutingContext().isServerRoutingEnabled()));
+                        transactionInfo.getRoutingContext()));
     }
 
     public int size() {
