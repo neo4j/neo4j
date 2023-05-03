@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import org.neo4j.internal.schema.SchemaValueType;
+import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueRepresentation;
 
 /**
  * An ordered set of {@link SchemaValueType}s, used to represent unions of types.
@@ -37,6 +39,16 @@ public class PropertyTypeSet extends TreeSet<SchemaValueType> {
         var set = new PropertyTypeSet();
         set.addAll(Arrays.asList(types));
         return set;
+    }
+
+    public boolean valueIsOfTypes(Value value) {
+        final ValueRepresentation valueRepresentation = value.valueRepresentation();
+        for (SchemaValueType valueType : this) {
+            if (valueType.isAssignable(valueRepresentation)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @Override

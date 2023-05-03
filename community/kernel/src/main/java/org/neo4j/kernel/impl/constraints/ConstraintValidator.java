@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageReader;
@@ -105,6 +106,35 @@ public interface ConstraintValidator {
             RelationshipScanCursor relCursor,
             PropertyCursor propertyCursor,
             RelationTypeSchemaDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
+
+    void validateNodePropertyTypeConstraint(
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            TypeConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
+
+    void validateNodePropertyTypeConstraint(
+            NodeLabelIndexCursor allNodes,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            TypeConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
+
+    void validateRelationshipPropertyTypeConstraint(
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor,
+            TypeConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException;
+
+    void validateRelationshipPropertyTypeConstraint(
+            RelationshipTypeIndexCursor allRelationships,
+            PropertyCursor propertyCursor,
+            TypeConstraintDescriptor descriptor,
             TokenNameLookup tokenNameLookup)
             throws CreateConstraintFailureException;
 }

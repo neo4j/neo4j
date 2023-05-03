@@ -227,4 +227,45 @@ public class StandardConstraintSemantics extends ConstraintSemantics {
             throws CreateConstraintFailureException {
         throw keyConstraintsNotAllowed(descriptor);
     }
+
+    @Override
+    public void validateNodePropertyTypeConstraint(
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            TypeConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw propertyTypeConstraintsNotAllowed(descriptor);
+    }
+
+    @Override
+    public void validateNodePropertyTypeConstraint(
+            NodeLabelIndexCursor allNodes,
+            NodeCursor nodeCursor,
+            PropertyCursor propertyCursor,
+            TypeConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw propertyTypeConstraintsNotAllowed(descriptor);
+    }
+
+    @Override
+    public void validateRelationshipPropertyTypeConstraint(
+            RelationshipScanCursor relationshipCursor,
+            PropertyCursor propertyCursor,
+            TypeConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw propertyTypeConstraintsNotAllowed(descriptor);
+    }
+
+    @Override
+    public void validateRelationshipPropertyTypeConstraint(
+            RelationshipTypeIndexCursor allRelationships,
+            PropertyCursor propertyCursor,
+            TypeConstraintDescriptor descriptor,
+            TokenNameLookup tokenNameLookup)
+            throws CreateConstraintFailureException {
+        throw propertyTypeConstraintsNotAllowed(descriptor);
+    }
 }

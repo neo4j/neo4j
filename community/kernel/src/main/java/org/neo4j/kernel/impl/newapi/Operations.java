@@ -64,6 +64,7 @@ import org.eclipse.collections.api.tuple.primitive.IntObjectPair;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.DbmsRuntimeRepository;
@@ -75,10 +76,14 @@ import org.neo4j.internal.kernel.api.EntityCursor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
+import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.internal.kernel.api.RelationshipTypeIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.Token;
@@ -111,6 +116,7 @@ import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.KeyConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.KernelVersion;
@@ -1871,26 +1877,49 @@ public class Operations implements Write, SchemaWrite {
         return constraint;
     }
 
-    private void enforceNodePropertyExistenceConstraint(LabelSchemaDescriptor schema) throws KernelException {
+    private void enforceNodePropertyConstraint(
+            LabelSchemaDescriptor schema,
+            NodeValidatorWithIndex nodeValidatorWithIndex,
+            NodeValidatorWithoutIndex nodeValidatorWithoutIndex)
+            throws KernelException {
         IndexDescriptor index = allStoreHolder.findUsableTokenIndex(NODE);
         if (index != IndexDescriptor.NO_INDEX) {
             try (var cursor = cursors.allocateFullAccessNodeLabelIndexCursor(ktx.cursorContext())) {
                 var session = allStoreHolder.tokenReadSession(index);
                 allStoreHolder.nodeLabelScan(
                         session, cursor, unconstrained(), new TokenPredicate(schema.getLabelId()), ktx.cursorContext());
-                constraintSemantics.validateNodePropertyExistenceConstraint(
-                        cursor, nodeCursor, propertyCursor, schema, token);
+                nodeValidatorWithIndex.validate(cursor, nodeCursor, propertyCursor, token);
             }
         } else {
             try (var cursor = cursors.allocateFullAccessNodeCursor(ktx.cursorContext())) {
                 allStoreHolder.allNodesScan(cursor);
-                constraintSemantics.validateNodePropertyExistenceConstraint(
+                nodeValidatorWithoutIndex.validate(
                         new FilteringNodeCursorWrapper(cursor, CursorPredicates.hasLabel(schema.getLabelId())),
                         propertyCursor,
-                        schema,
                         token);
             }
         }
+    }
+
+    private void enforceNodePropertyExistenceConstraint(LabelSchemaDescriptor schema) throws KernelException {
+        enforceNodePropertyConstraint(
+                schema,
+                (allNodes, nodeCursor, propertyCursor, tokenNameLookup) ->
+                        constraintSemantics.validateNodePropertyExistenceConstraint(
+                                allNodes, nodeCursor, propertyCursor, schema, tokenNameLookup),
+                (nodeCursor, propertyCursor, tokenNameLookup) ->
+                        constraintSemantics.validateNodePropertyExistenceConstraint(
+                                nodeCursor, propertyCursor, schema, tokenNameLookup));
+    }
+
+    private void enforceNodePropertyTypeConstraint(TypeConstraintDescriptor descriptor) throws KernelException {
+        enforceNodePropertyConstraint(
+                descriptor.schema().asLabelSchemaDescriptor(),
+                (allNodes, nodeCursor, propertyCursor, tokenNameLookup) ->
+                        constraintSemantics.validateNodePropertyTypeConstraint(
+                                allNodes, nodeCursor, propertyCursor, descriptor, tokenNameLookup),
+                (nodeCursor, propertyCursor, tokenNameLookup) -> constraintSemantics.validateNodePropertyTypeConstraint(
+                        nodeCursor, propertyCursor, descriptor, tokenNameLookup));
     }
 
     @Override
@@ -1906,7 +1935,10 @@ public class Operations implements Write, SchemaWrite {
         return constraint;
     }
 
-    private void enforceRelationshipPropertyExistenceConstraint(RelationTypeSchemaDescriptor schema)
+    private void enforceRelationshipPropertyConstraint(
+            RelationTypeSchemaDescriptor schema,
+            RelValidatorWithIndex relValidatorWithIndex,
+            RelValidatorWithoutIndex relValidatorWithoutIndex)
             throws KernelException {
         var index = allStoreHolder.findUsableTokenIndex(RELATIONSHIP);
         if (index != IndexDescriptor.NO_INDEX) {
@@ -1919,21 +1951,42 @@ public class Operations implements Write, SchemaWrite {
                         unconstrained(),
                         new TokenPredicate(schema.getRelTypeId()),
                         ktx.cursorContext());
-                constraintSemantics.validateRelationshipPropertyExistenceConstraint(
-                        fullAccessIndexCursor, propertyCursor, schema, token);
+                relValidatorWithIndex.validate(fullAccessIndexCursor, propertyCursor, token);
             }
         } else {
             // fallback to all relationship scan
             try (var fullAccessCursor = cursors.allocateFullAccessRelationshipScanCursor(ktx.cursorContext())) {
                 allStoreHolder.allRelationshipsScan(fullAccessCursor);
-                constraintSemantics.validateRelationshipPropertyExistenceConstraint(
+                relValidatorWithoutIndex.validate(
                         new FilteringRelationshipScanCursorWrapper(
                                 fullAccessCursor, CursorPredicates.hasType(schema.getRelTypeId())),
                         propertyCursor,
-                        schema,
                         token);
             }
         }
+    }
+
+    private void enforceRelationshipPropertyExistenceConstraint(RelationTypeSchemaDescriptor schema)
+            throws KernelException {
+        enforceRelationshipPropertyConstraint(
+                schema,
+                (relationships, propertyCursor, tokenNameLookup) ->
+                        constraintSemantics.validateRelationshipPropertyExistenceConstraint(
+                                relationships, propertyCursor, schema, tokenNameLookup),
+                (relationships, propertyCursor, tokenNameLookup) ->
+                        constraintSemantics.validateRelationshipPropertyExistenceConstraint(
+                                relationships, propertyCursor, schema, tokenNameLookup));
+    }
+
+    private void enforceRelationshipPropertyTypeConstraint(TypeConstraintDescriptor descriptor) throws KernelException {
+        enforceRelationshipPropertyConstraint(
+                descriptor.schema().asRelationshipTypeSchemaDescriptor(),
+                (relationships, propertyCursor, tokenNameLookup) ->
+                        constraintSemantics.validateRelationshipPropertyTypeConstraint(
+                                relationships, propertyCursor, descriptor, tokenNameLookup),
+                (relationships, propertyCursor, tokenNameLookup) ->
+                        constraintSemantics.validateRelationshipPropertyTypeConstraint(
+                                relationships, propertyCursor, descriptor, tokenNameLookup));
     }
 
     @Override
@@ -1950,7 +2003,14 @@ public class Operations implements Write, SchemaWrite {
         }
         ConstraintDescriptor constraint = lockAndValidatePropertyTypeConstraint(schema, name, allowedPropertyTypes);
 
-        // FIXME PTC validate existing data
+        TypeConstraintDescriptor descriptor = constraint.asPropertyTypeConstraint();
+
+        if (descriptor.schema().isRelationshipTypeSchemaDescriptor()) {
+            enforceRelationshipPropertyTypeConstraint(descriptor);
+        } else {
+            enforceNodePropertyTypeConstraint(descriptor);
+        }
+
         ktx.txState().constraintDoAdd(constraint);
         return constraint;
     }
@@ -2193,5 +2253,39 @@ public class Operations implements Write, SchemaWrite {
         String[] propertyNames = resolveTokenNames(token::propertyKeyName, propertyIds);
 
         return SchemaNameUtil.generateName(schemaDescriptorSupplier, entityTokenNames, propertyNames);
+    }
+
+    @FunctionalInterface
+    private interface NodeValidatorWithIndex {
+        void validate(
+                NodeLabelIndexCursor allNodes,
+                NodeCursor nodeCursor,
+                PropertyCursor propertyCursor,
+                TokenNameLookup tokenNameLookup)
+                throws CreateConstraintFailureException;
+    }
+
+    @FunctionalInterface
+    private interface NodeValidatorWithoutIndex {
+        void validate(NodeCursor nodeCursor, PropertyCursor propertyCursor, TokenNameLookup tokenNameLookup)
+                throws CreateConstraintFailureException;
+    }
+
+    @FunctionalInterface
+    private interface RelValidatorWithIndex {
+        void validate(
+                RelationshipTypeIndexCursor relationships,
+                PropertyCursor propertyCursor,
+                TokenNameLookup tokenNameLookup)
+                throws CreateConstraintFailureException;
+    }
+
+    @FunctionalInterface
+    private interface RelValidatorWithoutIndex {
+        void validate(
+                RelationshipScanCursor relationshipCursor,
+                PropertyCursor propertyCursor,
+                TokenNameLookup tokenNameLookup)
+                throws CreateConstraintFailureException;
     }
 }

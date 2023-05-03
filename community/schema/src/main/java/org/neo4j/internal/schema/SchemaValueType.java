@@ -73,6 +73,10 @@ public enum SchemaValueType {
         return valueRepresentations.contains(value.valueRepresentation());
     }
 
+    public boolean isAssignable(ValueRepresentation valueRepresentation) {
+        return valueRepresentations.contains(valueRepresentation);
+    }
+
     public String userDescription() {
         return userDescription;
     }
