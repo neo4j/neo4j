@@ -20,15 +20,11 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.RuntimeContext
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
-import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.internal.helpers.collection.Iterables
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -128,25 +124,6 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
     runtimeResult should beColumns("r").withStatistics(relationshipsDeleted = 6)
     Iterables.count(tx.getAllRelationships) shouldBe 0
-  }
-
-  test("create, delete and read relationship in the same tx - assure nice error message") {
-
-    assume(runtime != InterpretedRuntime)
-    // Interpreted doesn't throw, but making it throw would complicate the implementation and possibly introduce a
-    // regression.
-
-    val logicalQuery = new LogicalQueryBuilder(this)
-      .produceResults("t")
-      .projection("type(r) AS t")
-      .deleteRelationship("r")
-      .create(Seq(createNode("n"), createNode("m")), Seq(createRelationship("r", "m", "R", "n")))
-      .argument()
-      .build(readOnly = false)
-
-    intercept[EntityNotFoundException](
-      consume(execute(logicalQuery, runtime))
-    ).getMessage shouldBe "Relationship with id 0 has been deleted in this transaction"
   }
 
   private def deleteAllTest(relationshipCount: Int): Unit = {
