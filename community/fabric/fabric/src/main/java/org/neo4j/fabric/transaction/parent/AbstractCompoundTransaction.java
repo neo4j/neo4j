@@ -20,6 +20,8 @@
 package org.neo4j.fabric.transaction.parent;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionRollbackFailed;
+import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTerminationFailed;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -189,7 +191,7 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
                 closeContextsAndRemoveTransaction();
             }
 
-            throwIfNonEmpty(allFailures, this::commitFailedError);
+            throwIfNonEmpty(allFailures, TransactionCommitFailed);
         } finally {
             exclusiveLock.unlock();
         }
@@ -234,7 +236,7 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
             closeContextsAndRemoveTransaction();
         }
 
-        throwIfNonEmpty(allFailures, this::rollbackFailedError);
+        throwIfNonEmpty(allFailures, TransactionRollbackFailed);
     }
 
     private void doRollbackAndIgnoreErrors(Function<Child, Mono<Void>> operation) {
@@ -289,7 +291,7 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
         } catch (Exception e) {
             allFailures.add(new ErrorRecord("Failed to terminate composite transaction", terminationFailedError()));
         }
-        throwIfNonEmpty(allFailures, this::terminationFailedError);
+        throwIfNonEmpty(allFailures, TransactionTerminationFailed);
     }
 
     public boolean isOpen() {
@@ -329,18 +331,18 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
         return action.flatMap(v -> Mono.<Throwable>empty()).onErrorResume(Mono::just);
     }
 
-    private void throwIfNonEmpty(List<ErrorRecord> failures, Supplier<FabricException> genericException) {
+    private void throwIfNonEmpty(List<ErrorRecord> failures, Status defaultStatusCode) {
         if (!failures.isEmpty()) {
-            var exception = genericException.get();
-            if (failures.size() == 1) {
-                // Nothing is logged if there is just one error, because it will be logged by Bolt
-                // and the log would contain two lines reporting the same thing without any additional info.
-                throw Exceptions.transform(exception.status(), failures.get(0).error);
-            } else {
-                failures.forEach(failure -> exception.addSuppressed(failure.error));
-                failures.forEach(failure -> errorReporter.report(failure.message, failure.error, exception.status()));
-                throw exception;
+            // The main exception is not logged, because it will be logged by Bolt
+            // and the log would contain two lines reporting the same thing without any additional info.
+            var mainException = Exceptions.transform(defaultStatusCode, failures.get(0).error);
+            for (int i = 1; i < failures.size(); i++) {
+                var errorRecord = failures.get(i);
+                mainException.addSuppressed(errorRecord.error);
+                errorReporter.report(errorRecord.message, errorRecord.error, defaultStatusCode);
             }
+
+            throw mainException;
         }
     }
 
@@ -369,15 +371,12 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
     }
 
     private FabricException rollbackFailedError() {
-        return new FabricException(
-                Status.Transaction.TransactionRollbackFailed, "Failed to rollback composite transaction %d", getId());
+        return new FabricException(TransactionRollbackFailed, "Failed to rollback composite transaction %d", getId());
     }
 
     private FabricException terminationFailedError() {
         return new FabricException(
-                Status.Transaction.TransactionTerminationFailed,
-                "Failed to terminate composite transaction %d",
-                getId());
+                TransactionTerminationFailed, "Failed to terminate composite transaction %d", getId());
     }
 
     protected abstract boolean isUninitialized();
