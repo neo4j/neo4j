@@ -54,6 +54,7 @@ import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.internal.nativeimpl.NativeAccess;
 import org.neo4j.internal.nativeimpl.NativeAccessProvider;
+import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.util.VisibleForTesting;
@@ -103,6 +104,8 @@ public enum SystemDiagnostics implements DiagnosticsProvider {
             logger.log("Process id: " + ProcessHandle.current().pid());
             logger.log("Byte order: " + ByteOrder.nativeOrder());
             logger.log("Local timezone: " + getLocalTimeZone());
+            logger.log("Memory page size: " + UnsafeUtil.pageSize());
+            logger.log("Unaligned memory access allowed: " + UnsafeUtil.allowUnalignedMemoryAccess);
         }
 
         private String getLocalTimeZone() {
