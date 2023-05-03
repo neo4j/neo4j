@@ -82,6 +82,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
@@ -517,6 +518,11 @@ public class SchemaImpl implements Schema {
             for (int i = 0; i < entityTokenIds.length; i++) {
                 labels[i] = label(tokenRead.labelGetName(entityTokenIds[i]));
             }
+            if (constraint.isNodePropertyTypeConstraint()) {
+                return new NodePropertyTypeConstraintDefinition(
+                        actions, constraint, labels[0], tokenRead.propertyKeyGetName(schemaDescriptor.getPropertyId()));
+            }
+
             String[] propertyKeys = Arrays.stream(schemaDescriptor.getPropertyIds())
                     .mapToObj(tokenRead::propertyKeyGetName)
                     .toArray(String[]::new);
@@ -534,6 +540,12 @@ public class SchemaImpl implements Schema {
             RelationshipType relationshipType = withName(tokenRead.relationshipTypeGetName(descriptor.getRelTypeId()));
             if (constraint.isRelationshipPropertyExistenceConstraint()) {
                 return new RelationshipPropertyExistenceConstraintDefinition(
+                        actions,
+                        constraint,
+                        relationshipType,
+                        tokenRead.propertyKeyGetName(descriptor.getPropertyId()));
+            } else if (constraint.isRelationshipPropertyTypeConstraint()) {
+                return new RelationshipPropertyTypeConstraintDefinition(
                         actions,
                         constraint,
                         relationshipType,
@@ -744,7 +756,7 @@ public class SchemaImpl implements Schema {
                 SchemaDescriptorCreator createSchemaDescriptor,
                 ConstraintDefinitionCreator createConstraintDefinition) {
             assertConstraintableIndexType("Property uniqueness", indexType);
-            try {
+            return createConstraintWithErrorHandling((transaction) -> {
                 TokenWrite tokenWrite = transaction.tokenWrite();
                 SchemaDescriptor schema = createSchemaDescriptor.create(tokenWrite, indexDefinition);
                 IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
@@ -753,20 +765,7 @@ public class SchemaImpl implements Schema {
                         .withIndexConfig(indexConfig);
                 ConstraintDescriptor constraint = transaction.schemaWrite().uniquePropertyConstraintCreate(prototype);
                 return createConstraintDefinition.create(this, constraint, indexDefinition);
-            } catch (AlreadyConstrainedException
-                    | CreateConstraintFailureException
-                    | AlreadyIndexedException
-                    | RepeatedSchemaComponentException e) {
-                throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
-            } catch (IllegalTokenNameException e) {
-                throw new IllegalArgumentException(e);
-            } catch (TokenCapacityExceededKernelException e) {
-                throw new IllegalStateException(e);
-            } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
-                throw new ConstraintViolationException(e.getMessage(), e);
-            } catch (KernelException e) {
-                throw new TransactionFailureException("Unknown error trying to create token ids", e);
-            }
+            });
         }
 
         private static void assertConstraintableIndexType(String constraintType, IndexType indexType) {
@@ -832,7 +831,7 @@ public class SchemaImpl implements Schema {
                 IndexConfig indexConfig,
                 SchemaDescriptorCreator schemaDescriptorCreator,
                 ConstraintDefinitionCreator constraintDefinitionCreator) {
-            try {
+            return createConstraintWithErrorHandling((transaction) -> {
                 TokenWrite tokenWrite = transaction.tokenWrite();
                 SchemaDescriptor schema = schemaDescriptorCreator.create(tokenWrite, indexDefinition);
                 IndexPrototype prototype = IndexPrototype.uniqueForSchema(schema)
@@ -841,26 +840,13 @@ public class SchemaImpl implements Schema {
                         .withIndexConfig(indexConfig);
                 ConstraintDescriptor constraint = transaction.schemaWrite().keyConstraintCreate(prototype);
                 return constraintDefinitionCreator.create(this, constraint, indexDefinition);
-            } catch (AlreadyConstrainedException
-                    | CreateConstraintFailureException
-                    | AlreadyIndexedException
-                    | RepeatedSchemaComponentException e) {
-                throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
-            } catch (IllegalTokenNameException e) {
-                throw new IllegalArgumentException(e);
-            } catch (TokenCapacityExceededKernelException e) {
-                throw new IllegalStateException(e);
-            } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
-                throw new ConstraintViolationException(e.getMessage(), e);
-            } catch (KernelException e) {
-                throw new TransactionFailureException("Unknown error trying to create token ids", e);
-            }
+            });
         }
 
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint(
                 String name, Label label, String... propertyKeys) {
-            try {
+            return createConstraintWithErrorHandling((transaction) -> {
                 TokenWrite tokenWrite = transaction.tokenWrite();
                 int labelId = tokenWrite.labelGetOrCreateForName(label.name());
                 int[] propertyKeyIds = getOrCreatePropertyKeyIds(tokenWrite, propertyKeys);
@@ -868,25 +854,13 @@ public class SchemaImpl implements Schema {
                 ConstraintDescriptor constraint =
                         transaction.schemaWrite().nodePropertyExistenceConstraintCreate(schema, name);
                 return new NodePropertyExistenceConstraintDefinition(this, constraint, label, propertyKeys);
-            } catch (AlreadyConstrainedException
-                    | CreateConstraintFailureException
-                    | RepeatedSchemaComponentException e) {
-                throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
-            } catch (IllegalTokenNameException e) {
-                throw new IllegalArgumentException(e);
-            } catch (TokenCapacityExceededKernelException e) {
-                throw new IllegalStateException(e);
-            } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
-                throw new ConstraintViolationException(e.getMessage(), e);
-            } catch (KernelException e) {
-                throw new TransactionFailureException("Unknown error trying to create token ids", e);
-            }
+            });
         }
 
         @Override
         public ConstraintDefinition createPropertyExistenceConstraint(
                 String name, RelationshipType type, String propertyKey) {
-            try {
+            return createConstraintWithErrorHandling((transaction) -> {
                 TokenWrite tokenWrite = transaction.tokenWrite();
                 int typeId = tokenWrite.relationshipTypeGetOrCreateForName(type.name());
                 int[] propertyKeyId = getOrCreatePropertyKeyIds(tokenWrite, propertyKey);
@@ -894,17 +868,35 @@ public class SchemaImpl implements Schema {
                 ConstraintDescriptor constraint =
                         transaction.schemaWrite().relationshipPropertyExistenceConstraintCreate(schema, name);
                 return new RelationshipPropertyExistenceConstraintDefinition(this, constraint, type, propertyKey);
-            } catch (AlreadyConstrainedException
-                    | CreateConstraintFailureException
-                    | RepeatedSchemaComponentException e) {
-                throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
-            } catch (IllegalTokenNameException e) {
-                throw new IllegalArgumentException(e);
-            } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
-                throw new ConstraintViolationException(e.getMessage(), e);
-            } catch (KernelException e) {
-                throw new TransactionFailureException("Unknown error trying to create token ids", e);
-            }
+            });
+        }
+
+        @Override
+        public ConstraintDefinition createPropertyTypeConstraint(
+                String name, Label label, String propertyKey, PropertyTypeSet allowedTypes) {
+            return createConstraintWithErrorHandling((transaction) -> {
+                TokenWrite tokenWrite = transaction.tokenWrite();
+                int labelId = tokenWrite.labelGetOrCreateForName(label.name());
+                int[] propertyKeyId = getOrCreatePropertyKeyIds(tokenWrite, propertyKey);
+                LabelSchemaDescriptor schema = forLabel(labelId, propertyKeyId);
+                ConstraintDescriptor constraint =
+                        transaction.schemaWrite().propertyTypeConstraintCreate(schema, name, allowedTypes);
+                return new NodePropertyTypeConstraintDefinition(this, constraint, label, propertyKey);
+            });
+        }
+
+        @Override
+        public ConstraintDefinition createPropertyTypeConstraint(
+                String name, RelationshipType type, String propertyKey, PropertyTypeSet allowedTypes) {
+            return createConstraintWithErrorHandling((transaction) -> {
+                TokenWrite tokenWrite = transaction.tokenWrite();
+                int typeId = tokenWrite.relationshipTypeGetOrCreateForName(type.name());
+                int[] propertyKeyId = getOrCreatePropertyKeyIds(tokenWrite, propertyKey);
+                RelationTypeSchemaDescriptor schema = forRelType(typeId, propertyKeyId);
+                ConstraintDescriptor constraint =
+                        transaction.schemaWrite().propertyTypeConstraintCreate(schema, name, allowedTypes);
+                return new RelationshipPropertyTypeConstraintDefinition(this, constraint, type, propertyKey);
+            });
         }
 
         @Override
@@ -931,6 +923,30 @@ public class SchemaImpl implements Schema {
         @Override
         public void assertInOpenTransaction() {
             transaction.assertOpen();
+        }
+
+        @FunctionalInterface
+        private interface Creator {
+            ConstraintDefinition createConstraint(KernelTransaction transaction) throws KernelException;
+        }
+
+        private ConstraintDefinition createConstraintWithErrorHandling(Creator creator) {
+            try {
+                return creator.createConstraint(transaction);
+            } catch (AlreadyConstrainedException
+                    | CreateConstraintFailureException
+                    | AlreadyIndexedException
+                    | RepeatedSchemaComponentException e) {
+                throw new ConstraintViolationException(e.getUserMessage(transaction.tokenRead()), e);
+            } catch (IllegalTokenNameException e) {
+                throw new IllegalArgumentException(e);
+            } catch (TokenCapacityExceededKernelException e) {
+                throw new IllegalStateException(e);
+            } catch (InvalidTransactionTypeKernelException | SchemaKernelException e) {
+                throw new ConstraintViolationException(e.getMessage(), e);
+            } catch (KernelException e) {
+                throw new TransactionFailureException("Unknown error trying to create token ids", e);
+            }
         }
     }
 }

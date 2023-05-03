@@ -29,6 +29,7 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
 /**
  * Implementations are used to configure {@link IndexCreatorImpl} and {@link BaseNodeConstraintCreator} for re-use
@@ -64,6 +65,12 @@ public interface InternalSchemaActions {
     ConstraintDefinition createPropertyExistenceConstraint(String name, Label label, String... propertyKey);
 
     ConstraintDefinition createPropertyExistenceConstraint(String name, RelationshipType type, String propertyKey);
+
+    ConstraintDefinition createPropertyTypeConstraint(
+            String name, Label label, String propertyKey, PropertyTypeSet allowedTypes);
+
+    ConstraintDefinition createPropertyTypeConstraint(
+            String name, RelationshipType type, String propertyKey, PropertyTypeSet allowedTypes);
 
     void dropConstraint(ConstraintDescriptor constraint);
 

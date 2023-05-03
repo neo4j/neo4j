@@ -29,6 +29,7 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
 public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstraintCreator {
     private final String propertyKey;
@@ -63,6 +64,12 @@ public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstr
     @Override
     public ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey) {
         return assertPropertyIsUnique(propertyKey);
+    }
+
+    @Override
+    public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyTypeSet allowedTypes) {
+        throw new UnsupportedOperationException(
+                "You cannot create a property type constraint together with other constraints.");
     }
 
     @Override

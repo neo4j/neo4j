@@ -28,6 +28,7 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
 public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator implements ConstraintCreator {
     protected final RelationshipType type;
@@ -61,6 +62,12 @@ public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator
     @Override
     public ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey) {
         return new RelationshipKeyConstraintCreator(actions, name, type, List.of(propertyKey), indexType, indexConfig);
+    }
+
+    // FIXME PTC Create a public type abstraction and expose on API when ready
+    public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyTypeSet allowedTypes) {
+        return new RelationshipPropertyTypeConstraintCreator(
+                actions, name, type, propertyKey, indexType, indexConfig, allowedTypes);
     }
 
     @Override

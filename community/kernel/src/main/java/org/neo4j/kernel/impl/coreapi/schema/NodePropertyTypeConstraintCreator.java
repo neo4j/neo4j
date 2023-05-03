@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
 
-import java.util.List;
 import java.util.Map;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -31,79 +30,80 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
-public class NodePropertyExistenceConstraintCreator extends BaseNodeConstraintCreator {
-    private final List<String> propertyKeys;
+public class NodePropertyTypeConstraintCreator extends BaseNodeConstraintCreator {
+    private final String propertyKey;
+    private final PropertyTypeSet allowedTypes;
 
-    NodePropertyExistenceConstraintCreator(
+    NodePropertyTypeConstraintCreator(
             InternalSchemaActions actions,
             String name,
             Label label,
-            List<String> propertyKeys,
+            String propertyKey,
             IndexType indexType,
-            IndexConfig indexConfig) {
+            IndexConfig indexConfig,
+            PropertyTypeSet allowedTypes) {
         super(actions, name, label, indexType, indexConfig);
-        this.propertyKeys = propertyKeys;
+        this.propertyKey = propertyKey;
+        this.allowedTypes = allowedTypes;
     }
 
     @Override
     public ConstraintCreator assertPropertyIsUnique(String propertyKey) {
-        List<String> keys = List.of(propertyKey);
-        if (propertyKeys.equals(keys)) {
-            return new NodeKeyConstraintCreator(actions, name, label, propertyKeys, indexType, indexConfig);
-        }
-        throw new UnsupportedOperationException(
-                "You cannot create a constraint on two different sets of property keys: " + propertyKeys + " vs. "
-                        + keys + ".");
-    }
-
-    @Override
-    public ConstraintCreator assertPropertyExists(String propertyKey) {
-        throw new UnsupportedOperationException("You can only create one property existence constraint at a time.");
-    }
-
-    @Override
-    public ConstraintCreator assertPropertyIsNodeKey(String propertyKey) {
-        return assertPropertyIsUnique(propertyKey);
-    }
-
-    @Override
-    public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyTypeSet allowedTypes) {
         throw new UnsupportedOperationException(
                 "You cannot create a property type constraint together with other constraints.");
     }
 
     @Override
+    public ConstraintCreator assertPropertyExists(String propertyKey) {
+        throw new UnsupportedOperationException(
+                "You cannot create a property type constraint together with other constraints.");
+    }
+
+    @Override
+    public ConstraintCreator assertPropertyIsNodeKey(String propertyKey) {
+        throw new UnsupportedOperationException(
+                "You cannot create a property type constraint together with other constraints.");
+    }
+
+    @Override
+    public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyTypeSet allowedTypes) {
+        throw new UnsupportedOperationException("You can only create one property type constraint at a time.");
+    }
+
+    @Override
     public ConstraintCreator withName(String name) {
-        return new NodePropertyExistenceConstraintCreator(actions, name, label, propertyKeys, indexType, indexConfig);
+        return new NodePropertyTypeConstraintCreator(
+                actions, name, label, propertyKey, indexType, indexConfig, allowedTypes);
     }
 
     @Override
     public ConstraintCreator withIndexType(IndexType indexType) {
-        return new NodePropertyExistenceConstraintCreator(actions, name, label, propertyKeys, indexType, indexConfig);
+        return new NodePropertyTypeConstraintCreator(
+                actions, name, label, propertyKey, indexType, indexConfig, allowedTypes);
     }
 
     @Override
     public ConstraintCreator withIndexConfiguration(Map<IndexSetting, Object> indexConfiguration) {
-        return new NodePropertyExistenceConstraintCreator(
+        return new NodePropertyTypeConstraintCreator(
                 actions,
                 name,
                 label,
-                propertyKeys,
+                propertyKey,
                 indexType,
-                toIndexConfigFromIndexSettingObjectMap(indexConfiguration));
+                toIndexConfigFromIndexSettingObjectMap(indexConfiguration),
+                allowedTypes);
     }
 
     @Override
     public ConstraintDefinition create() {
         if (indexType != null) {
-            throw new IllegalArgumentException(
-                    "Node property existence constraints cannot be created with an index type. "
-                            + "Was given index type " + indexType + ".");
+            throw new IllegalArgumentException("Node property type constraints cannot be created with an index type. "
+                    + "Was given index type " + indexType + ".");
         }
         if (indexConfig != null) {
             throw new IllegalArgumentException(
-                    "Node property existence constraints cannot be created with an index configuration.");
+                    "Node property type constraints cannot be created with an index configuration.");
         }
-        return actions.createPropertyExistenceConstraint(name, label, propertyKeys.toArray(new String[0]));
+        return actions.createPropertyTypeConstraint(name, label, propertyKey, allowedTypes);
     }
 }

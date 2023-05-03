@@ -20,9 +20,7 @@
 package org.neo4j.kernel.impl.coreapi.schema;
 
 import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
-import static org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl.copyAndAdd;
 
-import java.util.List;
 import java.util.Map;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -32,68 +30,81 @@ import org.neo4j.graphdb.schema.IndexType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
-public class RelationshipKeyConstraintCreator extends BaseRelationshipConstraintCreator {
-    private final List<String> propertyKeys;
+public class RelationshipPropertyTypeConstraintCreator extends BaseRelationshipConstraintCreator {
+    private final String propertyKey;
+    private final PropertyTypeSet allowedTypes;
 
-    RelationshipKeyConstraintCreator(
+    RelationshipPropertyTypeConstraintCreator(
             InternalSchemaActions actions,
             String name,
             RelationshipType type,
-            List<String> propertyKeys,
+            String propertyKey,
             IndexType indexType,
-            IndexConfig indexConfig) {
+            IndexConfig indexConfig,
+            PropertyTypeSet allowedTypes) {
         super(actions, name, type, indexType, indexConfig);
-        this.propertyKeys = propertyKeys;
+        this.propertyKey = propertyKey;
+        this.allowedTypes = allowedTypes;
     }
 
     @Override
     public ConstraintCreator assertPropertyIsUnique(String propertyKey) {
-        throw new UnsupportedOperationException("You can only create one unique constraint at a time.");
-    }
-
-    @Override
-    public ConstraintCreator assertPropertyExists(String propertyKey) {
-        throw new UnsupportedOperationException("You can only create one property existence constraint at a time.");
-    }
-
-    @Override
-    public ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey) {
-        return new RelationshipKeyConstraintCreator(
-                actions, name, type, copyAndAdd(propertyKeys, propertyKey), indexType, indexConfig);
-    }
-
-    @Override
-    public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyTypeSet allowedTypes) {
         throw new UnsupportedOperationException(
                 "You cannot create a property type constraint together with other constraints.");
     }
 
     @Override
-    public ConstraintCreator withName(String name) {
-        return new RelationshipKeyConstraintCreator(actions, name, type, propertyKeys, indexType, indexConfig);
+    public ConstraintCreator assertPropertyExists(String propertyKey) {
+        throw new UnsupportedOperationException(
+                "You cannot create a property type constraint together with other constraints.");
     }
 
     @Override
-    public ConstraintCreator withIndexType(IndexType indexType) {
-        return new RelationshipKeyConstraintCreator(actions, name, type, propertyKeys, indexType, indexConfig);
+    public ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey) {
+        throw new UnsupportedOperationException(
+                "You cannot create a property type constraint together with other constraints.");
     }
 
     @Override
-    public ConstraintCreator withIndexConfiguration(Map<IndexSetting, Object> indexConfiguration) {
-        return new RelationshipKeyConstraintCreator(
-                actions,
-                name,
-                type,
-                propertyKeys,
-                indexType,
-                toIndexConfigFromIndexSettingObjectMap(indexConfiguration));
+    public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyTypeSet allowedTypes) {
+        throw new UnsupportedOperationException("You can only create one property type constraint at a time.");
     }
 
     @Override
     public ConstraintDefinition create() {
-        assertInUnterminatedTransaction();
-        IndexDefinitionImpl index = new IndexDefinitionImpl(
-                actions, null, new RelationshipType[] {type}, propertyKeys.toArray(new String[0]), true);
-        return actions.createRelationshipKeyConstraint(index, name, indexType, indexConfig);
+        if (indexType != null) {
+            throw new IllegalArgumentException(
+                    "Relationship property type constraints cannot be created with an index type. "
+                            + "Was given index type " + indexType + ".");
+        }
+        if (indexConfig != null) {
+            throw new IllegalArgumentException(
+                    "Relationship property type constraints cannot be created with an index configuration.");
+        }
+        return actions.createPropertyTypeConstraint(name, type, propertyKey, allowedTypes);
+    }
+
+    @Override
+    public ConstraintCreator withName(String name) {
+        return new RelationshipPropertyTypeConstraintCreator(
+                actions, name, type, propertyKey, indexType, indexConfig, allowedTypes);
+    }
+
+    @Override
+    public ConstraintCreator withIndexType(IndexType indexType) {
+        return new RelationshipPropertyTypeConstraintCreator(
+                actions, name, type, propertyKey, indexType, indexConfig, allowedTypes);
+    }
+
+    @Override
+    public ConstraintCreator withIndexConfiguration(Map<IndexSetting, Object> indexConfiguration) {
+        return new RelationshipPropertyTypeConstraintCreator(
+                actions,
+                name,
+                type,
+                propertyKey,
+                indexType,
+                toIndexConfigFromIndexSettingObjectMap(indexConfiguration),
+                allowedTypes);
     }
 }

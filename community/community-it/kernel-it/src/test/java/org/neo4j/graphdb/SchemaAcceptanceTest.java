@@ -72,6 +72,8 @@ import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
+import org.neo4j.internal.schema.SchemaValueType;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -81,6 +83,8 @@ import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsExc
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.IndexWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.NoSuchConstraintException;
+import org.neo4j.kernel.impl.coreapi.schema.BaseNodeConstraintCreator;
+import org.neo4j.kernel.impl.coreapi.schema.BaseRelationshipConstraintCreator;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.IndexEntryTestUtil;
@@ -138,6 +142,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         monitors.addMonitorListener(trappingMonitor);
         builder.setMonitors(monitors);
         builder.setConfig(GraphDatabaseInternalSettings.rel_unique_constraints, true);
+        builder.setConfig(GraphDatabaseInternalSettings.type_constraints, true);
     }
 
     @BeforeEach
@@ -1191,6 +1196,32 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator =
                     tx.schema().constraintFor(relType).assertPropertyExists(propertyKey);
+            ConstraintViolationException exception =
+                    assertThrows(ConstraintViolationException.class, constraintCreator::create);
+            assertThat(exception).hasMessageContaining("Enterprise Edition");
+            tx.commit();
+        }
+    }
+
+    @Test
+    void nodePropertyTypeConstraintsMustNotBeAvailableInCommunityEdition() {
+        try (Transaction tx = db.beginTx()) {
+            ConstraintCreator constraintCreator = ((BaseNodeConstraintCreator)
+                            tx.schema().constraintFor(label))
+                    .assertPropertyHasType(propertyKey, PropertyTypeSet.of(SchemaValueType.LIST_INTEGER));
+            ConstraintViolationException exception =
+                    assertThrows(ConstraintViolationException.class, constraintCreator::create);
+            assertThat(exception).hasMessageContaining("Enterprise Edition");
+            tx.commit();
+        }
+    }
+
+    @Test
+    void relationshipPropertyTypeConstraintsMustNotBeAvailableInCommunityEdition() {
+        try (Transaction tx = db.beginTx()) {
+            ConstraintCreator constraintCreator = ((BaseRelationshipConstraintCreator)
+                            tx.schema().constraintFor(relType))
+                    .assertPropertyHasType(propertyKey, PropertyTypeSet.of(SchemaValueType.LIST_LOCAL_TIME));
             ConstraintViolationException exception =
                     assertThrows(ConstraintViolationException.class, constraintCreator::create);
             assertThat(exception).hasMessageContaining("Enterprise Edition");
