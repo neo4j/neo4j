@@ -186,6 +186,28 @@ abstract class CartesianProductTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x", "y", "z").withNoRows()
   }
 
+  test("cartesian product with aggregation on RHS") {
+    // given
+    val nodes = given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x", "ys")
+      .cartesianProduct()
+      .|.aggregation(Seq.empty, Seq("count(y) AS ys"))
+      .|.allNodeScan("y")
+      .allNodeScan("x")
+      .build()
+
+    val runtimeResult = execute(logicalQuery, runtime)
+
+    // then
+    val expected = nodes.map(x => Array[Any](x, sizeHint))
+    runtimeResult should beColumns("x", "ys").withRows(expected)
+  }
+
   test("cartesian product on empty rhs") {
     // given
     val nodes = given {

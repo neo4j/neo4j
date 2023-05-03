@@ -377,11 +377,12 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
         case (Some(left), Some(right)) if comingFrom eq left =>
           planStack.push((nullable, current))
+          val lhsSlots = allocations.get(left.id)
           if (argumentRowIdSlotForCartesianProductNeeded(current)) {
             val previousArgument = getArgument()
-            // We put a new argument on the argument stack, but in contrast to Apply, we create a copy of the previous argument, because
-            // the RHS does not need any slots from the LHS.
-            val newArgument = previousArgument.slotConfiguration.copy().newArgument(current.id)
+            // We put a new argument on the argument stack, by creating a copy of the incoming LHS slot configuration,
+            // because although the RHS does not need any slots from the LHS, an argument slot needs to be present.
+            val newArgument = lhsSlots.newArgument(current.id)
             argumentStack.push(SlotsAndArgument(
               newArgument,
               newArgument.size(),
@@ -389,7 +390,6 @@ class SingleQuerySlotAllocator private[physicalplanning] (
               previousArgument.trailPlan
             ))
           }
-          val lhsSlots = allocations.get(left.id)
           allocateExpressionsTwoChild(current, lhsSlots, semanticTable, comingFromLeft = true)
 
           populate(right, nullable)
