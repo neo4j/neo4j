@@ -56,6 +56,7 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
     private final StringBuilder builder;
     private final EntityMode entityMode;
     private final Counter counter;
+    private final int maxLength;
 
     public PrettyPrinter() {
         this(EntityMode.FULL);
@@ -72,9 +73,17 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
     public PrettyPrinter(String quoteMark, EntityMode entityMode, int maxLength) {
         this.quoteMark = quoteMark;
         this.entityMode = entityMode;
+        this.maxLength = maxLength;
         this.counter = new Counter(maxLength);
-        builder = new StringBuilder(64);
+        this.builder = new StringBuilder(64);
+        this.stack.push(new ValueWriter(builder, quoteMark, counter));
+    }
+
+    public void reset() {
+        stack.clear();
         stack.push(new ValueWriter(builder, quoteMark, counter));
+        builder.setLength(0);
+        counter.setCount(maxLength);
     }
 
     @Override
@@ -511,6 +520,10 @@ public class PrettyPrinter implements AnyValueWriter<RuntimeException> {
 
         Counter(int count) {
             this.count = count;
+        }
+
+        void setCount(int n) {
+            count = n;
         }
 
         void decrement(int n) {

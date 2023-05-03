@@ -666,6 +666,13 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .dynamic()
             .build();
 
+    @Description("Log the annotation data as a JSON strings instead of a cypher map.\n"
+            + "This only have effect when the query log is in JSON format.")
+    public static final Setting<Boolean> log_queries_annotation_data_as_json = newBuilder(
+                    "db.logs.query.annotation_data_as_json_enabled", BOOL, false)
+            .dynamic()
+            .build();
+
     @Description("Path to the logging configuration for debug, query, http and security logs.")
     public static final Setting<Path> server_logging_config_path = newBuilder(
                     "server.logs.config", PATH, Path.of(DEFAULT_CONFIG_DIR_NAME, "server-logs.xml"))
