@@ -446,7 +446,7 @@ public final class Values {
             return utf8Value(((String) value).getBytes(StandardCharsets.UTF_8));
         }
         if (value instanceof Object[]) {
-            return arrayValue((Object[]) value);
+            return arrayValue((Object[]) value, true);
         }
         if (value instanceof Boolean) {
             return booleanValue((Boolean) value);
@@ -518,9 +518,9 @@ public final class Values {
         return legacy;
     }
 
-    private static Value arrayValue(Object[] value) {
+    public static Value arrayValue(Object[] value, boolean copyDefensively) {
         if (value instanceof String[]) {
-            return stringArray(copy(value, new String[value.length]));
+            return stringArray(copyDefensively ? copy(value, new String[value.length]) : (String[]) value);
         }
         if (value instanceof Byte[]) {
             return byteArray(copy(value, new byte[value.length]));
@@ -547,26 +547,28 @@ public final class Values {
             return shortArray(copy(value, new short[value.length]));
         }
         if (value instanceof PointValue[]) {
-            return pointArray(copy(value, new PointValue[value.length]));
+            return pointArray(copyDefensively ? copy(value, new PointValue[value.length]) : (PointValue[]) value);
         }
         if (value instanceof Point[]) {
             // no need to copy here, since the pointArray(...) method will copy into a PointValue[]
             return pointArray((Point[]) value);
         }
         if (value instanceof ZonedDateTime[]) {
-            return dateTimeArray(copy(value, new ZonedDateTime[value.length]));
+            return dateTimeArray(
+                    copyDefensively ? copy(value, new ZonedDateTime[value.length]) : (ZonedDateTime[]) value);
         }
         if (value instanceof LocalDateTime[]) {
-            return localDateTimeArray(copy(value, new LocalDateTime[value.length]));
+            return localDateTimeArray(
+                    copyDefensively ? copy(value, new LocalDateTime[value.length]) : (LocalDateTime[]) value);
         }
         if (value instanceof LocalTime[]) {
-            return localTimeArray(copy(value, new LocalTime[value.length]));
+            return localTimeArray(copyDefensively ? copy(value, new LocalTime[value.length]) : (LocalTime[]) value);
         }
         if (value instanceof OffsetTime[]) {
-            return timeArray(copy(value, new OffsetTime[value.length]));
+            return timeArray(copyDefensively ? copy(value, new OffsetTime[value.length]) : (OffsetTime[]) value);
         }
         if (value instanceof LocalDate[]) {
-            return dateArray(copy(value, new LocalDate[value.length]));
+            return dateArray(copyDefensively ? copy(value, new LocalDate[value.length]) : (LocalDate[]) value);
         }
         if (value instanceof TemporalAmount[]) {
             // no need to copy here, since the durationArray(...) method will perform copying as appropriate
