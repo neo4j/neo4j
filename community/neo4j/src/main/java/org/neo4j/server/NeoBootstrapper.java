@@ -155,7 +155,7 @@ public abstract class NeoBootstrapper implements Bootstrapper {
         boolean startAllowed = checkLicenseAgreement(homeDir, config, daemonMode);
 
         // Log any messages written before logging was configured.
-        log.info(validationSummary.message(true));
+        log.info(validationSummary.message(false));
         log.info(validationSummary.closingStatement());
         startupLog.replayInto(log);
         config.setLogger(log);

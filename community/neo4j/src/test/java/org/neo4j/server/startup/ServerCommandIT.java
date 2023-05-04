@@ -70,6 +70,7 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
     }
 
     @Test
+    @DisabledOnOs(OS.WINDOWS)
     void startShouldBeAllowedWithWarningsOnInvalidServerLog4jConfig() throws IOException {
         Path log4jConfig = config.get(GraphDatabaseSettings.server_logging_config_path);
         FileSystemUtils.writeString(fs, log4jConfig, "<Configuration></Cunfigoratzion>", EmptyMemoryTracker.INSTANCE);
@@ -78,6 +79,19 @@ abstract class ServerCommandIT extends ServerProcessTestBase {
         assertThat(err.toString())
                 .contains(
                         "Warning at 1:18: The element type \"Configuration\" must be terminated by the matching end-tag \"</Configuration>\".");
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    void startShouldBeAllowedWithWarningsOnInvalidServerLog4jConfigOnWindows() throws IOException {
+        assumeThat(isCurrentlyRunningAsWindowsAdmin()).isTrue();
+        addConf(BootloaderSettings.windows_service_name, "neo4j-" + currentTimeMillis());
+        try {
+            assertThat(execute("windows-service", "install")).isEqualTo(EXIT_CODE_OK);
+            startShouldBeAllowedWithWarningsOnInvalidServerLog4jConfig();
+        } finally {
+            assertThat(execute("windows-service", "uninstall")).isEqualTo(EXIT_CODE_OK);
+        }
     }
 
     @DisabledOnOs(OS.WINDOWS)

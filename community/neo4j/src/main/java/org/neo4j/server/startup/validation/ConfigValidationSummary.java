@@ -40,7 +40,7 @@ public class ConfigValidationSummary {
     public void print(PrintStream out, boolean verbose) {
         for (var event : events) {
             event.print(out, verbose);
-            out.println("");
+            out.println();
         }
     }
 

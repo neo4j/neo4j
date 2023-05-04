@@ -49,7 +49,7 @@ class ConfigValidationHelperTest {
         summary.print(out, false);
         summary.printClosingStatement(out);
         assertThat(output.toString())
-                .isEqualTo(
+                .isEqualToNormalizingNewlines(
                         """
                         Validating Neo4j
                         No issues found.
@@ -76,7 +76,7 @@ class ConfigValidationHelperTest {
         summary.print(out, false);
         summary.printClosingStatement(out);
         assertThat(output.toString())
-                .isEqualTo(
+                .isEqualToNormalizingNewlines(
                         """
                         Validating Neo4j
                         1 issue found.
@@ -104,7 +104,7 @@ class ConfigValidationHelperTest {
         summary.printClosingStatement(out);
 
         assertThat(output.toString())
-                .isEqualTo(
+                .isEqualToNormalizingNewlines(
                         """
                                 Validating Neo4j
                                 1 issue found.
@@ -136,7 +136,7 @@ class ConfigValidationHelperTest {
         summary.print(out, false);
         summary.printClosingStatement(out);
         assertThat(output.toString())
-                .isEqualTo(
+                .isEqualToNormalizingNewlines(
                         """
                 Error when validating Neo4j: exception
 
