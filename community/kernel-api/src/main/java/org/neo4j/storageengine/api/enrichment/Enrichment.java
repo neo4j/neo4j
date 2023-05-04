@@ -238,9 +238,19 @@ public abstract sealed class Enrichment implements AutoCloseable {
         long changesSize = channel.getInt();
         long valuesSize = channel.getInt();
         long blocksSizes = entitiesSize + detailsSize + changesSize + valuesSize;
+        //
+        // // Skip past data
+        // channel.position(channel.position() + blocksSizes);
 
-        // Skip past data
-        channel.position(channel.position() + blocksSizes);
+        // would be nice to be able to position directly at the end of the chunk rather than read them
+        // not sure how that would work for enveloped logs though that might span across log files
+        final var bytes = new byte[WriteEnrichmentChannel.CHUNK_SIZE];
+        var remaining = (int) blocksSizes;
+        while (remaining > 0) {
+            final var toSkip = Math.min(remaining, bytes.length);
+            channel.get(bytes, toSkip);
+            remaining -= toSkip;
+        }
 
         return metadata;
     }
