@@ -24,6 +24,7 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
+import org.neo4j.driver.AuthToken;
 import org.neo4j.driver.BaseSession;
 import org.neo4j.driver.BookmarkManager;
 import org.neo4j.driver.Driver;
@@ -70,6 +71,11 @@ public class FakeDriver implements Driver {
     public <T extends BaseSession> T session(Class<T> aClass, SessionConfig sessionConfig) {
         sessionConfigs.add(sessionConfig);
         return (T) new FakeSession();
+    }
+
+    @Override
+    public <T extends BaseSession> T session(Class<T> aClass, SessionConfig sessionConfig, AuthToken authToken) {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -126,6 +132,16 @@ public class FakeDriver implements Driver {
     @Override
     public CompletionStage<Void> verifyConnectivityAsync() {
         return null;
+    }
+
+    @Override
+    public boolean verifyAuthentication(AuthToken authToken) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean supportsSessionAuth() {
+        return false;
     }
 
     @Override
