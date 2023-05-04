@@ -48,6 +48,7 @@ import org.neo4j.bolt.protocol.common.connector.connection.authentication.Authen
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
+import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.bolt.protocol.io.pipeline.PipelineContext;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.error.AuthenticationException;
@@ -368,6 +369,7 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                     transaction.set(newTransaction);
                     return newTransaction;
                 });
+        this.withAnswer(Connection::routingContext, invocation -> new RoutingContext(false, Map.of()));
         this.withAnswer(Connection::transaction, invocation -> Optional.ofNullable(transaction.get()));
         this.withAnswer(
                 connection -> {
