@@ -82,4 +82,43 @@ Feature: MiscAcceptance
       | 'channel::5' | 'channel::6' | 'beneficiary::6' | 'metastate::7' | 'channel_state::6' |
     And no side effects
 
+  Scenario: GitHub Issue #13169
+    Given an empty graph
+    When executing query:
+      """
+      CALL {
+        MERGE ()
+      }
+      RETURN null AS n0
+      UNION ALL
+      MATCH ()
+      MATCH ()<-[:((!A&B)&(C|D))]-()
+      RETURN null AS n0
+      """
+    Then the result should be, in order:
+      | n0   |
+      | null |
+    And the side effects should be:
+      | +nodes      | 1 |
 
+  Scenario: GitHub Issue #13169 variant
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:B]->(), ()-[:C]->()
+      """
+    When executing query:
+      """
+      CALL {
+        MERGE ()
+      }
+      RETURN null AS n0
+      UNION ALL
+      MATCH ()
+      MATCH ()<-[:((!A&B)&(C|D))]-()
+      RETURN null AS n0
+      """
+    Then the result should be, in order:
+      | n0   |
+      | null |
+    And no side effects
