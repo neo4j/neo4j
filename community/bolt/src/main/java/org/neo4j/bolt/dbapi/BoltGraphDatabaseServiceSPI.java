@@ -22,7 +22,6 @@ package org.neo4j.bolt.dbapi;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -35,11 +34,12 @@ import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
  * A database representation as seen and used by Bolt.
  */
 public interface BoltGraphDatabaseServiceSPI {
+
     BoltTransaction beginTransaction(
             KernelTransaction.Type type,
             LoginContext loginContext,
             ClientConnectionInfo clientInfo,
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration txTimeout,
             AccessMode accessMode,
             Map<String, Object> txMetadata,
@@ -47,6 +47,4 @@ public interface BoltGraphDatabaseServiceSPI {
             QueryExecutionConfiguration queryExecutionConfiguration);
 
     DatabaseReference getDatabaseReference();
-
-    void freeTransaction();
 }

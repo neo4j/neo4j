@@ -245,7 +245,7 @@ public abstract class AbstractCypherResource {
         LoginContext loginContext = getLoginContextFromHttpServletRequest(request);
         long customTransactionTimeout = getTransactionTimeout(headers, log);
         var isReadOnlyTransaction = getAccessMode(headers);
-        var bookmarks = getBookmarks(transactionFacade.bookmarkParser(), headers);
+        var bookmarks = getBookmarks(headers);
 
         if (isReadOnlyTransaction.isPresent()) {
             return transactionFacade.newTransactionHandle(

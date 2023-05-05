@@ -19,12 +19,9 @@
  */
 package org.neo4j.bolt.protocol.common.message.decoder.connection;
 
-import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.message.decoder.MultiParameterMessageDecoderTest;
 import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
@@ -60,15 +57,12 @@ public class LegacyRouteMessageDecoderTest implements MultiParameterMessageDecod
         var buf = Mockito.spy(PackstreamBuf.allocUnpooled());
         Mockito.doReturn(Type.LIST).when(buf).peekType();
 
-        var bookmarkParser = Mockito.mock(BookmarkParser.class);
-        Mockito.doReturn(List.<Bookmark>of()).when(bookmarkParser).parseBookmarks(Mockito.any());
-
         Mockito.doReturn(routingContext).when(reader).readMap();
         Mockito.doReturn(VirtualValues.EMPTY_LIST).when(reader).readList();
         Mockito.doReturn(Values.stringValue("neo5j")).when(reader).readValue();
 
         var connection = ConnectionMockFactory.newFactory()
-                .withConnector(connector -> connector.withBookmarkParser(bookmarkParser))
+                .withConnector(connector -> {})
                 .withValueReader(reader)
                 .build();
 

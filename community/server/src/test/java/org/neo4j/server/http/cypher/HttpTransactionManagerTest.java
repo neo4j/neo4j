@@ -33,7 +33,6 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.Test;
 import org.mockito.Answers;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.dbms.api.DatabaseManagementService;
@@ -58,7 +57,6 @@ class HttpTransactionManagerTest {
         JobScheduler jobScheduler = mock(JobScheduler.class);
         AssertableLogProvider logProvider = new AssertableLogProvider(true);
         var transactionManager = mock(TransactionManager.class);
-        var boltSPI = mock(BoltGraphDatabaseManagementServiceSPI.class);
         var authManager = mock(AuthManager.class);
 
         new HttpTransactionManager(
@@ -69,7 +67,6 @@ class HttpTransactionManagerTest {
                 Duration.ofMinutes(1),
                 logProvider,
                 transactionManager,
-                boltSPI,
                 authManager,
                 false);
 
@@ -89,7 +86,6 @@ class HttpTransactionManagerTest {
         JobScheduler jobScheduler = mock(JobScheduler.class);
         AssertableLogProvider logProvider = new AssertableLogProvider(true);
         var transactionManager = mock(TransactionManager.class);
-        var boltSPI = mock(BoltGraphDatabaseManagementServiceSPI.class);
         var authManager = mock(AuthManager.class);
 
         var manager = new HttpTransactionManager(
@@ -100,7 +96,6 @@ class HttpTransactionManagerTest {
                 Duration.ofMinutes(1),
                 logProvider,
                 transactionManager,
-                boltSPI,
                 authManager,
                 false);
 
@@ -171,7 +166,6 @@ class HttpTransactionManagerTest {
             DatabaseManagementService managementService, MemoryPool memoryPool) {
         JobScheduler jobScheduler = mock(JobScheduler.class);
         var transactionManager = mock(TransactionManager.class);
-        var boltSPI = mock(BoltGraphDatabaseManagementServiceSPI.class);
         var authManager = mock(AuthManager.class);
         AssertableLogProvider logProvider = new AssertableLogProvider(true);
         var defaultDatabase = "neo4j";
@@ -193,7 +187,6 @@ class HttpTransactionManagerTest {
                 Duration.ofMinutes(1),
                 logProvider,
                 transactionManager,
-                boltSPI,
                 authManager,
                 false);
     }

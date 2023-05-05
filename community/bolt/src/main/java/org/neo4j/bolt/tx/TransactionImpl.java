@@ -33,8 +33,6 @@ import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltTransaction;
 import org.neo4j.bolt.event.CopyOnWriteEventPublisher;
 import org.neo4j.bolt.event.EventPublisher;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.v40.bookmark.BookmarkWithDatabaseId;
 import org.neo4j.bolt.tx.error.TransactionCloseException;
 import org.neo4j.bolt.tx.error.TransactionCompletionException;
 import org.neo4j.bolt.tx.error.TransactionException;
@@ -150,7 +148,7 @@ public class TransactionImpl implements Transaction {
     }
 
     @Override
-    public Bookmark commit() throws TransactionException {
+    public String commit() throws TransactionException {
         var updatedValue = this.state.compareAndExchange(State.OPEN, State.COMMITTED);
         if (updatedValue != State.OPEN) {
             throw new TransactionCompletionException(
@@ -166,7 +164,7 @@ public class TransactionImpl implements Transaction {
             throw new TransactionCompletionException("Failed to commit transaction \"" + this.id + "\"", ex);
         }
 
-        var bookmark = this.transaction.getBookmarkMetadata().toBookmark(BookmarkWithDatabaseId::new);
+        var bookmark = this.transaction.getBookmark();
         this.eventPublisher.dispatch(l -> l.onCommit(this, bookmark));
         return bookmark;
     }

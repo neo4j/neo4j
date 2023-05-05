@@ -28,8 +28,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.dbapi.BoltTransaction;
-import org.neo4j.bolt.dbapi.BookmarkMetadata;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.tx.error.TransactionCloseException;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.bolt.tx.error.statement.StatementException;
@@ -45,19 +43,15 @@ class TransactionImplTest {
     private DatabaseReference databaseReference;
     private Clock clock;
     private BoltTransaction boltTransaction;
-    private BookmarkMetadata bookmarkMetadata;
-    private Bookmark bookmark;
+    private final String bookmark = "some-bookmark";
 
     @BeforeEach
     void prepare() {
         this.databaseReference = Mockito.mock(DatabaseReference.class);
         this.clock = FakeClock.fixed(Instant.EPOCH, ZoneOffset.UTC);
         this.boltTransaction = Mockito.mock(BoltTransaction.class, Mockito.RETURNS_MOCKS);
-        this.bookmarkMetadata = Mockito.mock(BookmarkMetadata.class);
-        this.bookmark = Mockito.mock(Bookmark.class);
 
-        Mockito.doReturn(this.bookmarkMetadata).when(this.boltTransaction).getBookmarkMetadata();
-        Mockito.doReturn(this.bookmark).when(this.bookmarkMetadata).toBookmark(Mockito.any());
+        Mockito.doReturn(this.bookmark).when(this.boltTransaction).getBookmark();
     }
 
     @Test
@@ -132,8 +126,7 @@ class TransactionImplTest {
         var bookmark = transaction.commit();
 
         Mockito.verify(this.boltTransaction).commit();
-        Mockito.verify(this.boltTransaction).getBookmarkMetadata();
-        Mockito.verify(this.bookmarkMetadata).toBookmark(Mockito.notNull());
+        Mockito.verify(this.boltTransaction).getBookmark();
 
         Assertions.assertThat(bookmark).isSameAs(this.bookmark);
 

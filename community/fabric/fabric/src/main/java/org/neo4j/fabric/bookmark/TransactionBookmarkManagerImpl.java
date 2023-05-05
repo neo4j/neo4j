@@ -22,44 +22,41 @@ package org.neo4j.fabric.bookmark;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.fabric.bolt.FabricBookmark;
-import org.neo4j.fabric.bolt.FabricBookmarkParser;
-import org.neo4j.fabric.executor.FabricException;
+import org.neo4j.fabric.bolt.QueryRouterBookmark;
 import org.neo4j.fabric.executor.Location;
-import org.neo4j.kernel.api.exceptions.Status;
 
 public class TransactionBookmarkManagerImpl implements TransactionBookmarkManager {
-    private final FabricBookmarkParser fabricBookmarkParser = new FabricBookmarkParser();
-    private final FabricBookmark submittedBookmark;
+    private final QueryRouterBookmark submittedBookmark;
 
     // must be taken when updating the final bookmark
     private final Object finalBookmarkLock = new Object();
-    private volatile FabricBookmark finalBookmark;
+    private volatile QueryRouterBookmark finalBookmark;
 
-    public TransactionBookmarkManagerImpl(List<Bookmark> bookmarksSubmittedByClient) {
-        var fabricBookmarks = convert(bookmarksSubmittedByClient);
-        this.submittedBookmark = FabricBookmark.merge(fabricBookmarks);
-        this.finalBookmark = new FabricBookmark(
-                new ArrayList<>(submittedBookmark.getInternalGraphStates()),
-                new ArrayList<>(submittedBookmark.getExternalGraphStates()));
+    public TransactionBookmarkManagerImpl(List<QueryRouterBookmark> bookmarksSubmittedByClient) {
+        this.submittedBookmark = merge(bookmarksSubmittedByClient);
+        this.finalBookmark = new QueryRouterBookmark(
+                new ArrayList<>(submittedBookmark.internalGraphStates()),
+                new ArrayList<>(submittedBookmark.externalGraphStates()));
     }
 
     @Override
     public Optional<LocalBookmark> getBookmarkForLocal(Location.Local location) {
-        return submittedBookmark.getInternalGraphStates().stream()
+        return submittedBookmark.internalGraphStates().stream()
                 .filter(egs -> egs.graphUuid().equals(location.getUuid()))
-                .map(FabricBookmark.InternalGraphState::transactionId)
+                .map(QueryRouterBookmark.InternalGraphState::transactionId)
                 .map(LocalBookmark::new)
                 .findAny();
     }
 
     @Override
     public Optional<LocalBookmark> getBookmarkForLocalSystemDatabase() {
-        return submittedBookmark.getInternalGraphStates().stream()
+        return submittedBookmark.internalGraphStates().stream()
                 .filter(internalGraphState -> internalGraphState
                         .graphUuid()
                         .equals(NAMED_SYSTEM_DATABASE_ID.databaseId().uuid()))
@@ -67,32 +64,19 @@ public class TransactionBookmarkManagerImpl implements TransactionBookmarkManage
                 .findFirst();
     }
 
-    private List<FabricBookmark> convert(List<Bookmark> bookmarks) {
-        return bookmarks.stream()
-                .map(bookmark -> {
-                    if (bookmark instanceof FabricBookmark) {
-                        return (FabricBookmark) bookmark;
-                    }
-
-                    throw new FabricException(
-                            Status.Transaction.InvalidBookmark,
-                            "Bookmark for unexpected database encountered: " + bookmark);
-                })
-                .collect(Collectors.toList());
-    }
-
     @Override
     public List<RemoteBookmark> getBookmarksForRemote(Location.Remote location) {
         if (location instanceof Location.Remote.External) {
-            return submittedBookmark.getExternalGraphStates().stream()
+            return submittedBookmark.externalGraphStates().stream()
                     .filter(egs -> egs.graphUuid().equals(location.getUuid()))
-                    .map(FabricBookmark.ExternalGraphState::bookmarks)
+                    .map(QueryRouterBookmark.ExternalGraphState::bookmarks)
                     .findAny()
                     .orElse(List.of());
         }
 
         // The inter-cluster remote needs the same bookmark data that was submitted to the this DBMS
-        return List.of(new RemoteBookmark(submittedBookmark.serialize()));
+        var serializedBookmark = BookmarkFormat.serialize(submittedBookmark);
+        return List.of(new RemoteBookmark(serializedBookmark));
     }
 
     @Override
@@ -103,12 +87,13 @@ public class TransactionBookmarkManagerImpl implements TransactionBookmarkManage
 
         synchronized (finalBookmarkLock) {
             if (location instanceof Location.Remote.External) {
-                var externalGraphState = new FabricBookmark.ExternalGraphState(location.getUuid(), List.of(bookmark));
-                var bookmarkUpdate = new FabricBookmark(List.of(), List.of(externalGraphState));
-                finalBookmark = FabricBookmark.merge(List.of(finalBookmark, bookmarkUpdate));
+                var externalGraphState =
+                        new QueryRouterBookmark.ExternalGraphState(location.getUuid(), List.of(bookmark));
+                var bookmarkUpdate = new QueryRouterBookmark(List.of(), List.of(externalGraphState));
+                finalBookmark = merge(List.of(finalBookmark, bookmarkUpdate));
             } else {
-                var fabricBookmark = fabricBookmarkParser.parse(bookmark.serializedState());
-                finalBookmark = FabricBookmark.merge(List.of(finalBookmark, fabricBookmark));
+                var parsedBookmark = BookmarkFormat.parse(bookmark.serializedState());
+                finalBookmark = merge(List.of(finalBookmark, parsedBookmark));
             }
         }
     }
@@ -117,14 +102,52 @@ public class TransactionBookmarkManagerImpl implements TransactionBookmarkManage
     public void localTransactionCommitted(Location.Local location, LocalBookmark bookmark) {
         synchronized (finalBookmarkLock) {
             var internalGraphState =
-                    new FabricBookmark.InternalGraphState(location.getUuid(), bookmark.transactionId());
-            var bookmarkUpdate = new FabricBookmark(List.of(internalGraphState), List.of());
-            finalBookmark = FabricBookmark.merge(List.of(finalBookmark, bookmarkUpdate));
+                    new QueryRouterBookmark.InternalGraphState(location.getUuid(), bookmark.transactionId());
+            var bookmarkUpdate = new QueryRouterBookmark(List.of(internalGraphState), List.of());
+            finalBookmark = merge(List.of(finalBookmark, bookmarkUpdate));
         }
     }
 
     @Override
-    public FabricBookmark constructFinalBookmark() {
+    public QueryRouterBookmark constructFinalBookmark() {
         return finalBookmark;
+    }
+
+    private static QueryRouterBookmark merge(List<QueryRouterBookmark> queryRouterBookmarks) {
+        List<QueryRouterBookmark.InternalGraphState> mergedInternalGraphStates =
+                mergeInternalGraphStates(queryRouterBookmarks);
+        List<QueryRouterBookmark.ExternalGraphState> mergedExternalGraphStates =
+                mergeExternalGraphStates(queryRouterBookmarks);
+
+        return new QueryRouterBookmark(mergedInternalGraphStates, mergedExternalGraphStates);
+    }
+
+    private static List<QueryRouterBookmark.InternalGraphState> mergeInternalGraphStates(
+            List<QueryRouterBookmark> queryRouterBookmarks) {
+        Map<UUID, Long> internalGraphTxIds = new HashMap<>();
+
+        queryRouterBookmarks.stream()
+                .flatMap(fabricBookmark -> fabricBookmark.internalGraphStates().stream())
+                .forEach(internalGraphState -> internalGraphTxIds.merge(
+                        internalGraphState.graphUuid(), internalGraphState.transactionId(), Math::max));
+
+        return internalGraphTxIds.entrySet().stream()
+                .map(entry -> new QueryRouterBookmark.InternalGraphState(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+    }
+
+    private static List<QueryRouterBookmark.ExternalGraphState> mergeExternalGraphStates(
+            List<QueryRouterBookmark> queryRouterBookmarks) {
+        Map<UUID, List<RemoteBookmark>> externalGraphStates = new HashMap<>();
+
+        queryRouterBookmarks.stream()
+                .flatMap(fabricBookmark -> fabricBookmark.externalGraphStates().stream())
+                .forEach(externalGraphState -> externalGraphStates
+                        .computeIfAbsent(externalGraphState.graphUuid(), key -> new ArrayList<>())
+                        .addAll(externalGraphState.bookmarks()));
+
+        return externalGraphStates.entrySet().stream()
+                .map(entry -> new QueryRouterBookmark.ExternalGraphState(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
     }
 }

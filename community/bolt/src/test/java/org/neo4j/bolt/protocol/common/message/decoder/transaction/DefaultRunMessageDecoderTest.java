@@ -90,7 +90,9 @@ public class DefaultRunMessageDecoderTest extends AbstractRunMessageDecoderTest<
         Assertions.assertThat(msg).isNotNull();
         Assertions.assertThat(msg.statement()).isEqualTo("RETURN $n");
         Assertions.assertThat(msg.params().size()).isEqualTo(2);
-        Assertions.assertThat(msg.bookmarks()).isNotNull().isEmpty();
+        Assertions.assertThat(msg.bookmarks())
+                .isNotNull()
+                .containsExactly("neo4j:mock:bookmark1", "neo4j:mock:bookmark2");
         Assertions.assertThat(msg.transactionTimeout()).isEqualTo(Duration.ofMillis(42));
         Assertions.assertThat(msg.getAccessMode()).isEqualTo(AccessMode.WRITE);
         Assertions.assertThat(msg.transactionMetadata())

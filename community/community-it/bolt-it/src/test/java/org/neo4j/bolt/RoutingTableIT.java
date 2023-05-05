@@ -27,12 +27,10 @@ import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.neo4j.bolt.protocol.v40.bookmark.BookmarkWithDatabaseId;
 import org.neo4j.bolt.test.annotation.BoltTestExtension;
 import org.neo4j.bolt.test.annotation.connection.initializer.Authenticated;
 import org.neo4j.bolt.test.annotation.test.ProtocolTest;
 import org.neo4j.bolt.test.annotation.wire.selector.ExcludeWire;
-import org.neo4j.bolt.test.util.ServerUtil;
 import org.neo4j.bolt.testing.annotation.Version;
 import org.neo4j.bolt.testing.assertions.BoltConnectionAssertions;
 import org.neo4j.bolt.testing.client.TransportConnection;
@@ -147,10 +145,7 @@ public class RoutingTableIT {
     @ProtocolTest
     void shouldRespondToRouteMessageWithBookmark(BoltWire wire, @Authenticated TransportConnection connection)
             throws IOException {
-        var lastClosedTransactionId = ServerUtil.getLastClosedTransactionId(this.server);
-        var routeBookmark = new BookmarkWithDatabaseId(lastClosedTransactionId, ServerUtil.getDatabaseId(this.server));
-
-        connection.send(wire.route(null, List.of(routeBookmark.toString()), null));
+        connection.send(wire.route(null, List.of("test-bookmark"), null));
 
         assertThat(connection).receivesSuccess(metadata -> {
             Assertions.assertThat(metadata.containsKey("rt")).isTrue();

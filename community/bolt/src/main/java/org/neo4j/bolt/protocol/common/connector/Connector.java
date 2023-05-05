@@ -23,7 +23,6 @@ import io.netty.channel.Channel;
 import java.net.SocketAddress;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
@@ -115,13 +114,6 @@ public interface Connector extends Lifecycle {
      * @see ConnectionHintProvider
      */
     ConnectionHintProvider connectionHintProvider();
-
-    /**
-     * Retrieves the bookmarks parser which shall handle the decoding of bookmarks within this connector.
-     *
-     * @return a bookmarks parser.
-     */
-    BookmarkParser bookmarkParser();
 
     /**
      * Retrieves the transaction manager which shall manage the transactions within this connector.

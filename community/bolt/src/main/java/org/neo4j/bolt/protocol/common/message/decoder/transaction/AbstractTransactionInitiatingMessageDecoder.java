@@ -20,11 +20,10 @@
 package org.neo4j.bolt.protocol.common.message.decoder.transaction;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
-import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.decoder.MessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.util.NotificationsConfigMetadataReader;
@@ -40,7 +39,9 @@ import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.util.PackstreamConversions;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 
 public abstract class AbstractTransactionInitiatingMessageDecoder<M extends AbstractTransactionInitiatingMessage>
@@ -62,14 +63,33 @@ public abstract class AbstractTransactionInitiatingMessageDecoder<M extends Abst
                         FIELD_ACCESS_MODE, "Expecting access mode value to be 'r' or 'w'"));
     }
 
-    protected List<Bookmark> readBookmarks(Connection ctx, MapValue meta) throws PackstreamReaderException {
+    protected List<String> readBookmarks(MapValue meta) throws PackstreamReaderException {
         var listValue = PackstreamConversions.asNullableListValue(FIELD_BOOKMARKS, meta.get(FIELD_BOOKMARKS));
         if (listValue == null) {
             return List.of();
         }
 
-        var parser = ctx.connector().bookmarkParser();
-        return parser.parseBookmarks(listValue);
+        return convertBookmarks(listValue);
+    }
+
+    public static List<String> convertBookmarks(ListValue listValue) throws IllegalStructArgumentException {
+        List<String> bookmarks = new ArrayList<>();
+        for (var bookmark : listValue) {
+            if (bookmark != Values.NO_VALUE) {
+                var bookmarkString = toBookmarkString(bookmark);
+                bookmarks.add(bookmarkString);
+            }
+        }
+
+        return bookmarks;
+    }
+
+    private static String toBookmarkString(AnyValue bookmark) throws IllegalStructArgumentException {
+        if (bookmark instanceof TextValue bookmarkString) {
+            return bookmarkString.stringValue();
+        }
+
+        throw new IllegalStructArgumentException(FIELD_BOOKMARKS, "Expected list of strings");
     }
 
     protected NotificationsConfig readNotificationsConfig(MapValue metadata) throws IllegalStructArgumentException {

@@ -21,10 +21,8 @@ package org.neo4j.fabric.bolt;
 
 import static java.lang.String.format;
 
-import java.util.Optional;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
-import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.fabric.FabricDatabaseManager;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
@@ -36,7 +34,6 @@ import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.memory.MemoryTracker;
 
 public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseManagementServiceSPI {
-    private final FabricBookmarkParser fabricBookmarkParser = new FabricBookmarkParser();
     private final FabricExecutor fabricExecutor;
     private final FabricConfig config;
     private final TransactionManager transactionManager;
@@ -74,10 +71,5 @@ public class BoltFabricDatabaseManagementService implements BoltGraphDatabaseMan
         var databaseReference = fabricDatabaseManager.getDatabaseReference(databaseName);
         return new BoltFabricDatabaseService(
                 databaseReference, fabricExecutor, config, transactionManager, transactionIdTracker, memoryTracker);
-    }
-
-    @Override
-    public Optional<CustomBookmarkFormatParser> getCustomBookmarkFormatParser() {
-        return Optional.of(fabricBookmarkParser);
     }
 }

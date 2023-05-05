@@ -30,7 +30,6 @@ import io.netty.handler.ssl.SslContext;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
@@ -80,7 +79,6 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             AuthConfigProvider authConfigProvider,
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintProvider connectionHintProvider,
-            BookmarkParser bookmarkParser,
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
@@ -99,7 +97,6 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 authConfigProvider,
                 defaultDatabaseResolver,
                 connectionHintProvider,
-                bookmarkParser,
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
@@ -142,7 +139,6 @@ public class SocketNettyConnector extends AbstractNettyConnector {
             AuthConfigProvider authConfigProvider,
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintProvider connectionHintProvider,
-            BookmarkParser bookmarkParser,
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
@@ -170,7 +166,6 @@ public class SocketNettyConnector extends AbstractNettyConnector {
                 authConfigProvider,
                 defaultDatabaseResolver,
                 connectionHintProvider,
-                bookmarkParser,
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,

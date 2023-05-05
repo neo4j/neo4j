@@ -26,8 +26,6 @@ import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.Optional;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
@@ -48,7 +46,6 @@ public class HttpTransactionManager {
     private final DatabaseManagementService managementService;
     private final JobScheduler jobScheduler;
     private final TransactionManager transactionManager;
-    private final BoltGraphDatabaseManagementServiceSPI boltSPI;
     private final InternalLogProvider userLogProvider;
     private final AuthManager authManager;
     private final Clock clock;
@@ -62,13 +59,11 @@ public class HttpTransactionManager {
             Duration transactionTimeout,
             InternalLogProvider userLogProvider,
             TransactionManager transactionManager,
-            BoltGraphDatabaseManagementServiceSPI boltSPI,
             AuthManager authManager,
             boolean routingEnabled) {
         this.managementService = managementService;
         this.jobScheduler = jobScheduler;
         this.transactionManager = transactionManager;
-        this.boltSPI = boltSPI;
         this.userLogProvider = userLogProvider;
         this.authManager = authManager;
         this.clock = clock;
@@ -103,15 +98,8 @@ public class HttpTransactionManager {
         var readByDefault = databaseAPI.mode() != TopologyGraphDbmsModel.HostedOnMode.SINGLE && !routingEnabled;
 
         memoryTracker.allocateHeap(TransactionFacade.SHALLOW_SIZE);
-        var bookmarkParser = boltSPI.getCustomBookmarkFormatParser().orElse(CustomBookmarkFormatParser.DEFAULT);
         return new TransactionFacade(
-                databaseName,
-                transactionRegistry,
-                transactionManager,
-                userLogProvider,
-                authManager,
-                readByDefault,
-                bookmarkParser);
+                databaseName, transactionRegistry, transactionManager, userLogProvider, authManager, readByDefault);
     }
 
     private void scheduleTransactionTimeout(Duration timeout) {

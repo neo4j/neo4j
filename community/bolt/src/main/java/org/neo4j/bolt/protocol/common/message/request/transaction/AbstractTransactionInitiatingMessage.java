@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
@@ -31,7 +30,7 @@ import org.neo4j.bolt.tx.TransactionType;
 
 public abstract sealed class AbstractTransactionInitiatingMessage implements RequestMessage
         permits BeginMessage, RunMessage {
-    private final List<Bookmark> bookmarks;
+    private final List<String> bookmarks;
     private final Duration txTimeout;
     private final AccessMode accessMode;
     private final Map<String, Object> txMetadata;
@@ -44,7 +43,7 @@ public abstract sealed class AbstractTransactionInitiatingMessage implements Req
     }
 
     protected AbstractTransactionInitiatingMessage(
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration txTimeout,
             AccessMode accessMode,
             Map<String, Object> txMetadata,
@@ -60,7 +59,7 @@ public abstract sealed class AbstractTransactionInitiatingMessage implements Req
         this.notificationsConfig = notificationsConfig;
     }
 
-    public List<Bookmark> bookmarks() {
+    public List<String> bookmarks() {
         return bookmarks;
     }
 

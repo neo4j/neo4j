@@ -29,7 +29,6 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.ServerChannel;
 import java.net.SocketAddress;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.AbstractConnector;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
@@ -66,7 +65,6 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
             AuthConfigProvider authConfigProvider,
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintProvider connectionHintProvider,
-            BookmarkParser bookmarkParser,
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
@@ -84,7 +82,6 @@ public abstract class AbstractNettyConnector extends AbstractConnector {
                 authConfigProvider,
                 defaultDatabaseResolver,
                 connectionHintProvider,
-                bookmarkParser,
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,

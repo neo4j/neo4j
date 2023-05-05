@@ -32,7 +32,8 @@ import org.neo4j.bolt.testing.client.TransportConnection;
 import org.neo4j.bolt.testing.messages.BoltWire;
 import org.neo4j.bolt.transport.Neo4jWithSocket;
 import org.neo4j.bolt.transport.Neo4jWithSocketExtension;
-import org.neo4j.fabric.bolt.FabricBookmark;
+import org.neo4j.fabric.bolt.QueryRouterBookmark;
+import org.neo4j.fabric.bookmark.BookmarkFormat;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.testdirectory.EphemeralTestDirectoryExtension;
 
@@ -53,14 +54,10 @@ public class BookmarkIT {
 
         // bookmark is expected to advance once the auto-commit transaction is committed
         var lastClosedTransactionId = ServerUtil.getLastClosedTransactionId(this.server);
-        var expectedBookmark = new FabricBookmark(
-                        List.of(new FabricBookmark.InternalGraphState(
-                                ServerUtil.getDatabaseId(this.server)
-                                        .databaseId()
-                                        .uuid(),
-                                lastClosedTransactionId + 1)),
-                        List.of())
-                .serialize();
+        var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
+                List.of(new QueryRouterBookmark.InternalGraphState(
+                        ServerUtil.getDatabaseId(this.server).databaseId().uuid(), lastClosedTransactionId + 1)),
+                List.of()));
 
         connection.send(wire.run("CREATE ()"));
         connection.send(wire.pull());
@@ -74,14 +71,10 @@ public class BookmarkIT {
             BoltWire wire, @Authenticated TransportConnection connection) throws IOException {
         // bookmark is expected to advance once the auto-commit transaction is committed
         var lastClosedTransactionId = ServerUtil.getLastClosedTransactionId(this.server);
-        var expectedBookmark = new FabricBookmark(
-                        List.of(new FabricBookmark.InternalGraphState(
-                                ServerUtil.getDatabaseId(this.server)
-                                        .databaseId()
-                                        .uuid(),
-                                lastClosedTransactionId + 1)),
-                        List.of())
-                .serialize();
+        var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
+                List.of(new QueryRouterBookmark.InternalGraphState(
+                        ServerUtil.getDatabaseId(this.server).databaseId().uuid(), lastClosedTransactionId + 1)),
+                List.of()));
 
         connection.send(wire.begin());
         assertThat(connection).receivesSuccess();

@@ -21,9 +21,9 @@ package org.neo4j.bolt.protocol.common.message.decoder.connection;
 
 import java.util.Collections;
 import java.util.List;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.decoder.MessageDecoder;
+import org.neo4j.bolt.protocol.common.message.decoder.transaction.AbstractTransactionInitiatingMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.util.TransactionInitiatingMetadataParser;
 import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
@@ -55,7 +55,7 @@ public final class DefaultRouteMessageDecoder implements MessageDecoder<RouteMes
         var valueReader = ctx.valueReader(buffer);
         var routingContext = valueReader.readMap();
 
-        var bookmarkList = this.readBookmarks(ctx, buffer, valueReader);
+        var bookmarkList = this.readBookmarks(buffer, valueReader);
         var meta = valueReader.readMap();
 
         var databaseName = TransactionInitiatingMetadataParser.readDatabaseName(meta);
@@ -64,13 +64,12 @@ public final class DefaultRouteMessageDecoder implements MessageDecoder<RouteMes
         return new RouteMessage(routingContext, bookmarkList, databaseName, impersonatedUser);
     }
 
-    protected List<Bookmark> readBookmarks(
-            Connection ctx, PackstreamBuf buffer, PackstreamValueReader<Connection> valueReader)
+    protected List<String> readBookmarks(PackstreamBuf buffer, PackstreamValueReader<Connection> valueReader)
             throws PackstreamReaderException {
         if (buffer.peekType() == Type.NONE) {
             return Collections.emptyList();
         }
 
-        return ctx.connector().bookmarkParser().parseBookmarks(valueReader.readList());
+        return AbstractTransactionInitiatingMessageDecoder.convertBookmarks(valueReader.readList());
     }
 }

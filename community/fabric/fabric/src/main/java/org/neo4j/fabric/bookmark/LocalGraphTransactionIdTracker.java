@@ -22,8 +22,6 @@ package org.neo4j.fabric.bookmark;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.UUID;
 import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -49,19 +47,6 @@ public class LocalGraphTransactionIdTracker {
 
     public void awaitSystemGraphUpToDate(long transactionId) {
         awaitGraphUpToDate(NAMED_SYSTEM_DATABASE_ID, transactionId);
-    }
-
-    /**
-     * Unlike {@link #awaitSystemGraphUpToDate(long)}, the caller does not know which graph is System one
-     * and this method will find it in the the submitted Graph UUID to transaction Id map.
-     */
-    public void awaitSystemGraphUpToDate(Map<UUID, Long> graphUuid2TxIdMapping) {
-        Long systemDbTxId =
-                graphUuid2TxIdMapping.get(NAMED_SYSTEM_DATABASE_ID.databaseId().uuid());
-
-        if (systemDbTxId != null) {
-            awaitSystemGraphUpToDate(systemDbTxId);
-        }
     }
 
     public void awaitGraphUpToDate(Location.Local location, long transactionId) {

@@ -28,10 +28,9 @@ import java.util.Optional;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
 import org.neo4j.bolt.dbapi.BoltQueryExecution;
 import org.neo4j.bolt.dbapi.BoltTransaction;
-import org.neo4j.bolt.dbapi.BookmarkMetadata;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
+import org.neo4j.fabric.bookmark.BookmarkFormat;
 import org.neo4j.fabric.bookmark.LocalGraphTransactionIdTracker;
 import org.neo4j.fabric.bookmark.TransactionBookmarkManagerImpl;
 import org.neo4j.fabric.bootstrap.TestOverrides;
@@ -84,7 +83,7 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
             KernelTransaction.Type type,
             LoginContext loginContext,
             ClientConnectionInfo clientInfo,
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration txTimeout,
             AccessMode accessMode,
             Map<String, Object> txMetadata,
@@ -107,7 +106,8 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
                 TestOverrides.routingContext(routingContext),
                 queryExecutionConfiguration);
 
-        var transactionBookmarkManager = new TransactionBookmarkManagerImpl(bookmarks);
+        var parsedBookmarks = BookmarkFormat.parse(bookmarks);
+        var transactionBookmarkManager = new TransactionBookmarkManagerImpl(parsedBookmarks);
         // regardless of what we do, System graph must be always up to date
         transactionBookmarkManager
                 .getBookmarkForLocalSystemDatabase()
@@ -121,11 +121,6 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
     @Override
     public DatabaseReference getDatabaseReference() {
         return databaseReference;
-    }
-
-    @Override
-    public void freeTransaction() {
-        memoryTracker.releaseHeap(BOLT_TRANSACTION_SHALLOW_SIZE);
     }
 
     public class BoltTransactionImpl implements BoltTransaction {
@@ -165,8 +160,10 @@ public class BoltFabricDatabaseService implements BoltGraphDatabaseServiceSPI {
         }
 
         @Override
-        public BookmarkMetadata getBookmarkMetadata() {
-            return fabricTransaction.getBookmarkManager().constructFinalBookmark();
+        public String getBookmark() {
+            QueryRouterBookmark bookmark =
+                    fabricTransaction.getBookmarkManager().constructFinalBookmark();
+            return BookmarkFormat.serialize(bookmark);
         }
 
         @Override

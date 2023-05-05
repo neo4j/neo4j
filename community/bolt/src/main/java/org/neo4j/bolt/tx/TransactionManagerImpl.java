@@ -28,7 +28,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseServiceSPI;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.tx.error.DatabaseUnavailableTransactionCreationException;
@@ -69,7 +68,7 @@ public class TransactionManagerImpl implements TransactionManager {
             TransactionOwner owner,
             String databaseName,
             AccessMode mode,
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration timeout,
             Map<String, Object> metadata,
             NotificationConfiguration notificationsConfig)

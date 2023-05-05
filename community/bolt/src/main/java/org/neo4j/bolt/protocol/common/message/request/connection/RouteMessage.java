@@ -21,7 +21,6 @@ package org.neo4j.bolt.protocol.common.message.request.connection;
 
 import java.util.List;
 import java.util.Objects;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.values.virtual.MapValue;
 
@@ -30,12 +29,11 @@ public final class RouteMessage implements RequestMessage {
     public static final byte SIGNATURE = 0x66;
 
     private final MapValue requestContext;
-    private final List<Bookmark> bookmarks;
+    private final List<String> bookmarks;
     private final String databaseName;
     private final String impersonatedUser;
 
-    public RouteMessage(
-            MapValue requestContext, List<Bookmark> bookmarks, String databaseName, String impersonatedUser) {
+    public RouteMessage(MapValue requestContext, List<String> bookmarks, String databaseName, String impersonatedUser) {
         this.requestContext = requestContext;
         this.bookmarks = bookmarks;
         this.databaseName = databaseName;
@@ -50,7 +48,7 @@ public final class RouteMessage implements RequestMessage {
         return requestContext;
     }
 
-    public List<Bookmark> getBookmarks() {
+    public List<String> getBookmarks() {
         return bookmarks;
     }
 

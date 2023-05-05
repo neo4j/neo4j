@@ -17,12 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.common.bookmark;
+package org.neo4j.fabric.bolt;
 
 import java.util.List;
-import org.neo4j.bolt.protocol.error.bookmark.BookmarkParserException;
-import org.neo4j.values.virtual.ListValue;
+import java.util.UUID;
+import org.neo4j.fabric.bookmark.RemoteBookmark;
 
-public interface BookmarkParser {
-    List<Bookmark> parseBookmarks(ListValue bookmarks) throws BookmarkParserException;
+public record QueryRouterBookmark(
+        List<InternalGraphState> internalGraphStates, List<ExternalGraphState> externalGraphStates) {
+
+    /**
+     * State of a graph that is located in current DBMS.
+     */
+    public record InternalGraphState(UUID graphUuid, long transactionId) {}
+
+    /**
+     * State of a graph that is located in another DBMS.
+     */
+    public record ExternalGraphState(UUID graphUuid, List<RemoteBookmark> bookmarks) {}
 }

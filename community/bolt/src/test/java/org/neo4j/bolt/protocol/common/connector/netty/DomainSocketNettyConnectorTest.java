@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.EpollConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.KqueueConnectorTransport;
@@ -109,7 +108,6 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                 authConfigProvider,
                 defaultDatabaseResolver,
                 connectionHintProvider,
-                Mockito.mock(BookmarkParser.class),
                 Mockito.mock(TransactionManager.class),
                 512,
                 0,
@@ -172,7 +170,6 @@ class DomainSocketNettyConnectorTest extends AbstractNettyConnectorTest<DomainSo
                         authConfigProvider,
                         defaultDatabaseResolver,
                         connectionHintProvider,
-                        Mockito.mock(BookmarkParser.class),
                         Mockito.mock(TransactionManager.class),
                         512,
                         0,

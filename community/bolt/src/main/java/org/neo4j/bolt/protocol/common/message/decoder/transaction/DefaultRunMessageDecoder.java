@@ -69,7 +69,7 @@ public class DefaultRunMessageDecoder extends AbstractTransactionInitiatingMessa
         }
 
         try {
-            var bookmarks = this.readBookmarks(ctx, metadata);
+            var bookmarks = this.readBookmarks(metadata);
             var txTimeout = this.readTimeout(metadata);
             var accessMode = this.readAccessMode(metadata);
             var txMetadata = this.readMetadata(metadata);

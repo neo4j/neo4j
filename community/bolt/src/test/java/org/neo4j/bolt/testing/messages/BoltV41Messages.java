@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v41.BoltProtocolV41;
@@ -73,7 +72,7 @@ public class BoltV41Messages extends AbstractBoltMessages {
 
     @Override
     public RequestMessage begin(
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration txTimeout,
             AccessMode mode,
             Map<String, Object> txMetadata,

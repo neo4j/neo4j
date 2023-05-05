@@ -23,9 +23,9 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.List;
 import java.util.Optional;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.message.decoder.MessageDecoder;
+import org.neo4j.bolt.protocol.common.message.decoder.transaction.AbstractTransactionInitiatingMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.request.connection.RouteMessage;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
@@ -56,9 +56,9 @@ public final class LegacyRouteMessageDecoder implements MessageDecoder<RouteMess
         var valueReader = connection.valueReader(buffer);
         var routingContext = valueReader.readMap();
 
-        var bookmarkList = List.<Bookmark>of();
+        var bookmarkList = List.<String>of();
         if (buffer.peekType() != Type.NONE) {
-            bookmarkList = connection.connector().bookmarkParser().parseBookmarks(valueReader.readList());
+            bookmarkList = AbstractTransactionInitiatingMessageDecoder.convertBookmarks(valueReader.readList());
         }
 
         var databaseName = Optional.of(valueReader.readValue())

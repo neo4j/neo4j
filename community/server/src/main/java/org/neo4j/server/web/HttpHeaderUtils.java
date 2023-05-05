@@ -33,8 +33,6 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
-import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.logging.InternalLog;
@@ -109,7 +107,7 @@ public class HttpHeaderUtils {
         }
     }
 
-    public static List<Bookmark> getBookmarks(CustomBookmarkFormatParser bookmarkFormatParser, HttpHeaders headers) {
+    public static List<String> getBookmarks(HttpHeaders headers) {
         String headerValue = headers.getHeaderString(BOOKMARKS_HEADER);
 
         if (headerValue == null || headerValue.length() == 0) {
@@ -117,8 +115,7 @@ public class HttpHeaderUtils {
         }
 
         try {
-            var stringList = Arrays.asList(MAPPER.readValue(headerValue, String[].class));
-            return bookmarkFormatParser.parse(stringList);
+            return Arrays.asList(MAPPER.readValue(headerValue, String[].class));
         } catch (IllegalStateException ex) {
             throw new IllegalArgumentException("Only Fabric bookmarks are supported.", ex);
         } catch (IllegalArgumentException | JsonProcessingException ex) {

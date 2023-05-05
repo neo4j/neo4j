@@ -23,7 +23,6 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.tx.error.TransactionException;
@@ -64,7 +63,7 @@ public interface TransactionManager {
             TransactionOwner owner,
             String databaseName,
             AccessMode mode,
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration timeout,
             Map<String, Object> metadata,
             NotificationConfiguration notificationsConfig)

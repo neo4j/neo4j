@@ -60,7 +60,7 @@ public class DefaultBeginMessageDecoder extends AbstractTransactionInitiatingMes
             throw new IllegalStructArgumentException("metadata", ex);
         }
 
-        var bookmarks = this.readBookmarks(ctx, metadata);
+        var bookmarks = this.readBookmarks(metadata);
         try {
             var timeout = this.readTimeout(metadata);
             var accessMode = this.readAccessMode(metadata);

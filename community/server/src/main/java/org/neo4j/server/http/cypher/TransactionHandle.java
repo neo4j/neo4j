@@ -27,7 +27,6 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.tx.TransactionOwner;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
@@ -83,8 +82,8 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
     private LoginContext loginContext;
     MemoryTracker memoryTracker;
     AuthManager authManager;
-    private final List<Bookmark> inputBookmarks;
-    private String encodedBookmark;
+    private final List<String> inputBookmarks;
+    private String outputBookmark;
 
     TransactionHandle(
             String databaseName,
@@ -99,7 +98,7 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
             MemoryTracker memoryTracker,
             AuthManager authManager,
             boolean readByDefault,
-            List<Bookmark> bookmarks) {
+            List<String> bookmarks) {
         this.databaseName = databaseName;
         this.registry = registry;
         this.uriScheme = uriScheme;
@@ -164,7 +163,7 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
 
     void commit() throws TransactionException {
         try {
-            encodedBookmark = this.transaction.commit().serialize();
+            outputBookmark = this.transaction.commit();
         } finally {
             registry.forget(id);
             this.transaction.close();
@@ -226,10 +225,10 @@ public class TransactionHandle implements TransactionTerminationHandle, Transact
     }
 
     public String getOutputBookmark() {
-        return encodedBookmark;
+        return outputBookmark;
     }
 
-    public void setOutputBookmark(String encodedBookmark) {
-        this.encodedBookmark = encodedBookmark;
+    public void setOutputBookmark(String outputBookmark) {
+        this.outputBookmark = outputBookmark;
     }
 }

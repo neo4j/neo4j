@@ -27,43 +27,65 @@ import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import org.neo4j.fabric.bolt.FabricBookmark;
+import org.neo4j.fabric.bolt.QueryRouterBookmark;
 import org.neo4j.fabric.executor.FabricException;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.io.PackstreamBuf;
 
-public class BookmarkStateSerializer {
-    public static String serialize(FabricBookmark fabricBookmark) {
+public class BookmarkFormat {
+
+    // This prefix comes from the ancient times when this bookmark format was called "Fabric bookmark"
+    // It had a status of an extension and the prefix was used to distinguish it from other formats.
+    private static final String PREFIX = "FB:";
+
+    public static List<QueryRouterBookmark> parse(List<String> customBookmarks) {
+        return customBookmarks.stream().map(BookmarkFormat::parse).collect(Collectors.toList());
+    }
+
+    public static QueryRouterBookmark parse(String bookmarkString) {
+        var content = bookmarkString.substring(PREFIX.length());
+
+        if (content.isEmpty()) {
+            return new QueryRouterBookmark(List.of(), List.of());
+        }
+
+        return BookmarkFormat.deserialize(content);
+    }
+
+    public static String serialize(QueryRouterBookmark queryRouterBookmark) {
         try {
-            var packer = new Packer(fabricBookmark);
+            var packer = new Packer(queryRouterBookmark);
             var p = packer.pack();
-            return p;
+            return PREFIX + p;
         } catch (IOException exception) {
             // if this fails, it means a bug
             throw new IllegalStateException("Failed to serialize bookmark", exception);
         }
     }
 
-    public static FabricBookmark deserialize(String serializedBookmark) {
+    private static QueryRouterBookmark deserialize(String serializedBookmark) {
         try {
             var unpacker = new Unpacker(serializedBookmark);
             return unpacker.unpack();
-        } catch (IOException exception) {
-            throw new FabricException(InvalidBookmark, "Failed to deserialize bookmark", exception);
+        } catch (Exception exception) {
+            throw new FabricException(
+                    InvalidBookmark,
+                    "Parsing of supplied bookmarks failed with message: " + exception.getMessage(),
+                    exception);
         }
     }
 
     private static class Packer {
         final PackstreamBuf buf = PackstreamBuf.allocUnpooled();
-        final FabricBookmark fabricBookmark;
+        final QueryRouterBookmark queryRouterBookmark;
 
-        Packer(FabricBookmark fabricBookmark) {
-            this.fabricBookmark = fabricBookmark;
+        Packer(QueryRouterBookmark queryRouterBookmark) {
+            this.queryRouterBookmark = queryRouterBookmark;
         }
 
         String pack() throws IOException {
-            packInternalGraphs(fabricBookmark.getInternalGraphStates());
-            packExternalGraphs(fabricBookmark.getExternalGraphStates());
+            packInternalGraphs(queryRouterBookmark.internalGraphStates());
+            packExternalGraphs(queryRouterBookmark.externalGraphStates());
 
             var heap = new byte[this.buf.getTarget().readableBytes()];
             buf.getTarget().readBytes(heap);
@@ -71,20 +93,20 @@ public class BookmarkStateSerializer {
             return Base64.getEncoder().encodeToString(heap);
         }
 
-        void packInternalGraphs(List<FabricBookmark.InternalGraphState> internalGraphStates) {
+        void packInternalGraphs(List<QueryRouterBookmark.InternalGraphState> internalGraphStates) {
             buf.writeList(internalGraphStates, this::packInternalGraph);
         }
 
-        void packInternalGraph(PackstreamBuf buf, FabricBookmark.InternalGraphState internalGraphState) {
+        void packInternalGraph(PackstreamBuf buf, QueryRouterBookmark.InternalGraphState internalGraphState) {
             packUuid(buf, internalGraphState.graphUuid());
             buf.writeInt(internalGraphState.transactionId());
         }
 
-        void packExternalGraphs(List<FabricBookmark.ExternalGraphState> externalGraphStates) {
+        void packExternalGraphs(List<QueryRouterBookmark.ExternalGraphState> externalGraphStates) {
             buf.writeList(externalGraphStates, this::packExternalGraph);
         }
 
-        void packExternalGraph(PackstreamBuf buf, FabricBookmark.ExternalGraphState externalGraphState) {
+        void packExternalGraph(PackstreamBuf buf, QueryRouterBookmark.ExternalGraphState externalGraphState) {
             packUuid(buf, externalGraphState.graphUuid());
             buf.writeList(externalGraphState.bookmarks(), (b, bookmark) -> b.writeString(bookmark.serializedState()));
         }
@@ -104,39 +126,39 @@ public class BookmarkStateSerializer {
             buf = PackstreamBuf.wrap(Unpooled.wrappedBuffer(bytes));
         }
 
-        FabricBookmark unpack() throws IOException {
+        QueryRouterBookmark unpack() throws IOException {
             try {
                 var internalGraphs = unpackInternalGraphs();
                 var externalGraphs = unpackExternalGraphs();
 
-                return new FabricBookmark(internalGraphs, externalGraphs);
+                return new QueryRouterBookmark(internalGraphs, externalGraphs);
             } catch (PackstreamReaderException ex) {
                 throw new IOException(ex);
             }
         }
 
-        List<FabricBookmark.InternalGraphState> unpackInternalGraphs() throws IOException {
+        List<QueryRouterBookmark.InternalGraphState> unpackInternalGraphs() throws IOException {
             return buf.readList(this::unpackInternalGraph);
         }
 
-        FabricBookmark.InternalGraphState unpackInternalGraph(PackstreamBuf buf) throws PackstreamReaderException {
+        QueryRouterBookmark.InternalGraphState unpackInternalGraph(PackstreamBuf buf) throws PackstreamReaderException {
             UUID graphUuid = unpackUuid(buf);
             long txId = buf.readInt();
 
-            return new FabricBookmark.InternalGraphState(graphUuid, txId);
+            return new QueryRouterBookmark.InternalGraphState(graphUuid, txId);
         }
 
-        List<FabricBookmark.ExternalGraphState> unpackExternalGraphs() throws IOException {
+        List<QueryRouterBookmark.ExternalGraphState> unpackExternalGraphs() throws IOException {
             return buf.readList(this::unpackExternalGraph);
         }
 
-        FabricBookmark.ExternalGraphState unpackExternalGraph(PackstreamBuf buf) throws PackstreamReaderException {
+        QueryRouterBookmark.ExternalGraphState unpackExternalGraph(PackstreamBuf buf) throws PackstreamReaderException {
             UUID graphUuid = unpackUuid(buf);
             var remoteBookmarks = buf.readList(PackstreamBuf::readString).stream()
                     .map(RemoteBookmark::new)
                     .collect(Collectors.toList());
 
-            return new FabricBookmark.ExternalGraphState(graphUuid, remoteBookmarks);
+            return new QueryRouterBookmark.ExternalGraphState(graphUuid, remoteBookmarks);
         }
 
         UUID unpackUuid(PackstreamBuf buf) throws PackstreamReaderException {

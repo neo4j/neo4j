@@ -48,5 +48,5 @@ public interface BoltTransaction extends BoltQueryExecutor, AutoCloseable {
 
     Optional<Status> getReasonIfTerminated();
 
-    BookmarkMetadata getBookmarkMetadata();
+    String getBookmark();
 }

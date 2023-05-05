@@ -35,7 +35,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
 import org.neo4j.bolt.protocol.common.connector.transport.NioConnectorTransport;
 import org.neo4j.bolt.tx.TransactionManager;
@@ -96,7 +95,6 @@ class SocketNettyConnectorTest extends AbstractNettyConnectorTest<SocketNettyCon
                 authConfigProvider,
                 defaultDatabaseResolver,
                 connectionHintProvider,
-                Mockito.mock(BookmarkParser.class),
                 Mockito.mock(TransactionManager.class),
                 512,
                 0,

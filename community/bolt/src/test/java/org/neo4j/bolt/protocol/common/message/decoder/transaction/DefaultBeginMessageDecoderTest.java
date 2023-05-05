@@ -84,7 +84,8 @@ public class DefaultBeginMessageDecoderTest extends AbstractBeginMessageDecoderT
         var msg = this.getDecoder().read(connection, buf, new StructHeader(1, (short) 0x42));
 
         Assertions.assertThat(msg).isNotNull();
-        Assertions.assertThat(msg.bookmarks()).isEmpty();
+        Assertions.assertThat(msg.bookmarks())
+                .containsExactlyInAnyOrder("neo4j:mock:bookmark1", "neo4j:mock:bookmark2");
         Assertions.assertThat(msg.transactionTimeout()).isEqualByComparingTo(Duration.ofMillis(42));
         Assertions.assertThat(msg.getAccessMode()).isEqualTo(AccessMode.WRITE);
         Assertions.assertThat(msg.transactionMetadata())

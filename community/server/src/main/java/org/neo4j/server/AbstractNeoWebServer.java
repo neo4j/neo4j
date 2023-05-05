@@ -35,7 +35,6 @@ import java.util.regex.Pattern;
 import javax.ws.rs.ext.MessageBodyWriter;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
@@ -98,7 +97,6 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
     private final Dependencies globalDependencies;
     private final Config config;
     private final TransactionManager transactionManager;
-    private final BoltGraphDatabaseManagementServiceSPI boltSPI;
     private final LifeSupport life = new LifeSupport();
     private final boolean httpEnabled;
     private final boolean httpsEnabled;
@@ -164,7 +162,6 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
 
         this.authWhitelist = parseAuthWhitelist(config);
         authManagerSupplier = globalDependencies.provideDependency(AuthManager.class);
-        boltSPI = globalDependencies.resolveDependency(BoltGraphDatabaseManagementServiceSPI.class);
         sslPolicyFactorySupplier = globalDependencies.provideDependency(SslPolicyLoader.class);
         connectorPortRegister = globalDependencies.resolveDependency(ConnectorPortRegister.class);
         httpTransactionManager = createHttpTransactionManager();
@@ -212,7 +209,6 @@ public abstract class AbstractNeoWebServer extends LifecycleAdapter implements N
                 transactionTimeout,
                 userLogProvider,
                 transactionManager,
-                boltSPI,
                 authManagerSupplier.get(),
                 routingEnabled);
     }

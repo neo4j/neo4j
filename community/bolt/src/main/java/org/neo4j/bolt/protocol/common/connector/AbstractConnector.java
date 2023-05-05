@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.listener.ConnectorListener;
@@ -50,7 +49,6 @@ public abstract class AbstractConnector implements Connector {
     private final AuthConfigProvider authConfigProvider;
     private final DefaultDatabaseResolver defaultDatabaseResolver;
     private final ConnectionHintProvider connectionHintProvider;
-    private final BookmarkParser bookmarkParser;
     private final TransactionManager transactionManager;
 
     private final RoutingService routingService;
@@ -73,7 +71,6 @@ public abstract class AbstractConnector implements Connector {
             AuthConfigProvider authConfigProvider,
             DefaultDatabaseResolver defaultDatabaseResolver,
             ConnectionHintProvider connectionHintProvider,
-            BookmarkParser bookmarkParser,
             TransactionManager transactionManager,
             int streamingBufferSize,
             int streamingFlushThreshold,
@@ -88,7 +85,6 @@ public abstract class AbstractConnector implements Connector {
         this.authConfigProvider = authConfigProvider;
         this.defaultDatabaseResolver = defaultDatabaseResolver;
         this.connectionHintProvider = connectionHintProvider;
-        this.bookmarkParser = bookmarkParser;
         this.transactionManager = transactionManager;
 
         this.routingService = routingService;
@@ -142,11 +138,6 @@ public abstract class AbstractConnector implements Connector {
     @Override
     public ConnectionHintProvider connectionHintProvider() {
         return this.connectionHintProvider;
-    }
-
-    @Override
-    public BookmarkParser bookmarkParser() {
-        return this.bookmarkParser;
     }
 
     @Override

@@ -75,7 +75,6 @@ import org.neo4j.kernel.api.impl.fulltext.FulltextAdapter;
 import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -190,13 +189,7 @@ public class DatabaseManagementServiceFactory {
                 new TransactionManagerImpl(boltGraphDatabaseManagementServiceSPI, globalModule.getGlobalClock());
         globalDependencies.satisfyDependency(transactionManager);
 
-        var boltServer = createBoltServer(
-                globalModule,
-                edition,
-                boltGraphDatabaseManagementServiceSPI,
-                transactionManager,
-                databaseContextProvider.databaseIdRepository(),
-                routingService);
+        var boltServer = createBoltServer(globalModule, edition, transactionManager, routingService);
 
         globalLife.add(boltServer);
         globalDependencies.satisfyDependency(boltServer);
@@ -412,9 +405,7 @@ public class DatabaseManagementServiceFactory {
     private static BoltServer createBoltServer(
             GlobalModule globalModule,
             AbstractEditionModule edition,
-            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             TransactionManager transactionManager,
-            DatabaseIdRepository databaseIdRepository,
             RoutingService routingService) {
 
         // Must be called before loading any Netty classes in order to override the factory
@@ -423,11 +414,9 @@ public class DatabaseManagementServiceFactory {
 
         return new BoltServer(
                 globalModule.getDbmsInfo(),
-                boltGraphDatabaseManagementServiceSPI,
                 globalModule.getJobScheduler(),
                 globalModule.getConnectorPortRegister(),
                 edition.getConnectionTracker(),
-                databaseIdRepository,
                 transactionManager,
                 globalModule.getGlobalConfig(),
                 globalModule.getGlobalClock(),

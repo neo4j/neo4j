@@ -31,7 +31,6 @@ import java.util.Optional;
 import java.util.concurrent.Future;
 import java.util.function.Consumer;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.authentication.AuthenticationFlag;
@@ -332,7 +331,7 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
             TransactionType type,
             String databaseName,
             AccessMode mode,
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration timeout,
             Map<String, Object> metadata,
             NotificationsConfig transactionNotificationsConfig)

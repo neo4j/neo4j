@@ -56,7 +56,8 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.bolt.tx.TransactionManager;
-import org.neo4j.fabric.bolt.FabricBookmark;
+import org.neo4j.fabric.bolt.QueryRouterBookmark;
+import org.neo4j.fabric.bookmark.BookmarkFormat;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -1122,15 +1123,14 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
     void shouldFailForUnreachableBookmark() {
         var lastClosedTransactionId = getLastClosedTransactionId();
 
-        var expectedBookmark = new FabricBookmark(
-                        List.of(new FabricBookmark.InternalGraphState(
-                                resolveDependency(Database.class)
-                                        .getNamedDatabaseId()
-                                        .databaseId()
-                                        .uuid(),
-                                lastClosedTransactionId + 1)),
-                        List.of())
-                .serialize();
+        var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
+                List.of(new QueryRouterBookmark.InternalGraphState(
+                        resolveDependency(Database.class)
+                                .getNamedDatabaseId()
+                                .databaseId()
+                                .uuid(),
+                        lastClosedTransactionId + 1)),
+                List.of()));
 
         Response begin = POST(
                 TX_ENDPOINT,
@@ -1175,15 +1175,14 @@ public class TransactionIT extends AbstractRestFunctionalTestBase {
     public void shouldWaitForUpdatedBookmark() {
         var lastClosedTransactionId = getLastClosedTransactionId();
 
-        var expectedBookmark = new FabricBookmark(
-                        List.of(new FabricBookmark.InternalGraphState(
-                                resolveDependency(Database.class)
-                                        .getNamedDatabaseId()
-                                        .databaseId()
-                                        .uuid(),
-                                lastClosedTransactionId + 1)),
-                        List.of())
-                .serialize();
+        var expectedBookmark = BookmarkFormat.serialize(new QueryRouterBookmark(
+                List.of(new QueryRouterBookmark.InternalGraphState(
+                        resolveDependency(Database.class)
+                                .getNamedDatabaseId()
+                                .databaseId()
+                                .uuid(),
+                        lastClosedTransactionId + 1)),
+                List.of()));
 
         var begin = POST(
                 transactionCommitUri(),

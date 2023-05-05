@@ -19,8 +19,6 @@
  */
 package org.neo4j.bolt.dbapi;
 
-import java.util.Optional;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.dbms.api.DatabaseNotFoundException;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.memory.MemoryTracker;
@@ -31,13 +29,4 @@ import org.neo4j.memory.MemoryTracker;
 public interface BoltGraphDatabaseManagementServiceSPI {
     BoltGraphDatabaseServiceSPI database(String databaseName, MemoryTracker memoryTracker)
             throws UnavailableException, DatabaseNotFoundException;
-
-    /**
-     * The state-carrying part of a bookmark consists of a long representing a transaction ID, if a transaction state cannot be represented as a single long, a
-     * custom format can be used for bookmarks. This method returns a parsing part of the custom bookmark logic. The serialization part is represented by
-     * {@link BookmarkMetadata#toBookmark(java.util.function.BiFunction)} and {@link Bookmark#attachTo(ResponseHandler)}
-     */
-    default Optional<CustomBookmarkFormatParser> getCustomBookmarkFormatParser() {
-        return Optional.empty();
-    }
 }

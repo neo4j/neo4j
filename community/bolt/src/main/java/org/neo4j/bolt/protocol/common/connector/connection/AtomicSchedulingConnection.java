@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connection.Job;
 import org.neo4j.bolt.protocol.common.connector.Connector;
 import org.neo4j.bolt.protocol.common.connector.connection.listener.ConnectionListener;
@@ -372,7 +371,7 @@ public class AtomicSchedulingConnection extends AbstractConnection {
             TransactionType type,
             String databaseName,
             AccessMode mode,
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration timeout,
             Map<String, Object> metadata,
             NotificationsConfig transactionNotificationsConfig)

@@ -21,7 +21,6 @@ package org.neo4j.bolt.protocol.common.fsm.state;
 
 import static org.neo4j.util.Preconditions.checkState;
 
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.fsm.State;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineContext;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
@@ -148,14 +147,14 @@ public abstract class AbstractStreamingState extends AbstractState {
     protected void commit(StateMachineContext ctx, Transaction tx) throws TransactionException {
         var responseHandler = ctx.connectionState().getResponseHandler();
 
-        Bookmark bookmark;
+        String bookmark;
         try {
             bookmark = tx.commit();
         } finally {
             ctx.connection().closeTransaction();
         }
 
-        bookmark.attachTo(responseHandler);
+        responseHandler.onBookmark(bookmark);
     }
 
     protected void rollback(StateMachineContext ctx, Transaction tx) throws TransactionException {

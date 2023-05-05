@@ -36,11 +36,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import javax.net.ssl.SSLException;
-import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
 import org.neo4j.bolt.protocol.BoltProtocolRegistry;
 import org.neo4j.bolt.protocol.common.BoltProtocol;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.connection.BoltConnectionMetricsMonitor;
 import org.neo4j.bolt.protocol.common.connection.ConnectionHintProvider;
 import org.neo4j.bolt.protocol.common.connector.Connector;
@@ -58,7 +55,6 @@ import org.neo4j.bolt.protocol.common.connector.listener.ResponseMetricsConnecto
 import org.neo4j.bolt.protocol.common.connector.netty.DomainSocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.netty.SocketNettyConnector;
 import org.neo4j.bolt.protocol.common.connector.transport.ConnectorTransport;
-import org.neo4j.bolt.protocol.v40.bookmark.BookmarkParserV40;
 import org.neo4j.bolt.security.Authentication;
 import org.neo4j.bolt.security.basic.BasicAuthentication;
 import org.neo4j.bolt.transport.BoltMemoryPool;
@@ -79,7 +75,6 @@ import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.function.Suppliers;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -119,7 +114,6 @@ public class BoltServer extends LifecycleAdapter {
     private final SslPolicyLoader sslPolicyLoader;
     private final BoltProtocolRegistry protocolRegistry;
     private final AuthConfigProvider authConfigProvider;
-    private final BookmarkParser bookmarkParser;
     private final TransactionManager transactionManager;
     private final RoutingService routingService;
     private final InternalLog log;
@@ -132,11 +126,9 @@ public class BoltServer extends LifecycleAdapter {
 
     public BoltServer(
             DbmsInfo dbmsInfo,
-            BoltGraphDatabaseManagementServiceSPI boltGraphDatabaseManagementServiceSPI,
             JobScheduler jobScheduler,
             ConnectorPortRegister connectorPortRegister,
             NetworkConnectionTracker connectionTracker,
-            DatabaseIdRepository databaseIdRepository,
             TransactionManager transactionManager,
             Config config,
             SystemNanoClock clock,
@@ -178,11 +170,6 @@ public class BoltServer extends LifecycleAdapter {
         this.sslPolicyLoader = dependencyResolver.resolveDependency(SslPolicyLoader.class);
         this.authConfigProvider = dependencyResolver.resolveDependency(AuthConfigProvider.class);
         this.log = logService.getInternalLog(BoltServer.class);
-
-        var customBookmarkParser = boltGraphDatabaseManagementServiceSPI
-                .getCustomBookmarkFormatParser()
-                .orElse(CustomBookmarkFormatParser.DEFAULT);
-        this.bookmarkParser = new BookmarkParserV40(databaseIdRepository, customBookmarkParser);
 
         this.protocolRegistry = BoltProtocolRegistry.builder()
                 .register(BoltProtocol.available(clock, logService))
@@ -478,7 +465,6 @@ public class BoltServer extends LifecycleAdapter {
                 authConfigProvider,
                 defaultDatabaseResolver,
                 connectionHintProvider,
-                bookmarkParser,
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,
@@ -514,7 +500,6 @@ public class BoltServer extends LifecycleAdapter {
                 authConfigProvider,
                 defaultDatabaseResolver,
                 connectionHintProvider,
-                bookmarkParser,
                 transactionManager,
                 streamingBufferSize,
                 streamingFlushThreshold,

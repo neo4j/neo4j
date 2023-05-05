@@ -68,7 +68,6 @@ import org.neo4j.bolt.tx.TransactionType;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.bolt.tx.error.statement.StatementExecutionException;
 import org.neo4j.exceptions.SyntaxException;
-import org.neo4j.fabric.bolt.FabricBookmark;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -98,7 +97,6 @@ class InvocationTest {
     private final TransactionManager transactionManager = mock(TransactionManager.class);
     private final Transaction transaction = mock(Transaction.class);
     private org.neo4j.bolt.tx.statement.Statement statement;
-    private final FabricBookmark bookmark = mock(FabricBookmark.class);
     private final InternalLogProvider logProvider = mock(InternalLogProvider.class);
     private final InternalTransaction internalTransaction = mock(InternalTransaction.class);
     private final TransactionRegistry registry = mock(TransactionRegistry.class);
@@ -124,10 +122,8 @@ class InvocationTest {
                         nullable(NotificationConfiguration.class)))
                 .thenReturn(transaction);
 
-        when(bookmark.serialize()).thenReturn(SERIALIZED_BOOKMARK);
-
         when(transaction.run(anyString(), Mockito.eq(MapValue.EMPTY))).thenReturn(statement);
-        when(transaction.commit()).thenReturn(bookmark);
+        when(transaction.commit()).thenReturn(SERIALIZED_BOOKMARK);
     }
 
     @Test

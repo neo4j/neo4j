@@ -20,7 +20,6 @@
 package org.neo4j.bolt.tx;
 
 import java.util.Optional;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.tx.error.TransactionCloseException;
 import org.neo4j.bolt.tx.error.TransactionException;
 import org.neo4j.bolt.tx.error.statement.StatementException;
@@ -101,7 +100,7 @@ public interface Transaction {
      *
      * @return a bookmark.
      */
-    Bookmark commit() throws TransactionException;
+    String commit() throws TransactionException;
 
     /**
      * Discards the state of this transaction.
@@ -133,7 +132,7 @@ public interface Transaction {
 
     interface Listener {
 
-        default void onCommit(Transaction transaction, Bookmark bookmark) {}
+        default void onCommit(Transaction transaction, String bookmark) {}
 
         default void onRollback(Transaction transaction) {}
 

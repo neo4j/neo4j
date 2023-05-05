@@ -21,7 +21,7 @@ package org.neo4j.fabric.bookmark;
 
 import java.util.List;
 import java.util.Optional;
-import org.neo4j.fabric.bolt.FabricBookmark;
+import org.neo4j.fabric.bolt.QueryRouterBookmark;
 import org.neo4j.fabric.executor.Location;
 
 /**
@@ -58,5 +58,5 @@ public interface TransactionBookmarkManager {
     /**
      * Constructs a bookmark that will hold the information collected by this bookmark manager.
      */
-    FabricBookmark constructFinalBookmark();
+    QueryRouterBookmark constructFinalBookmark();
 }

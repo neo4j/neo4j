@@ -20,8 +20,6 @@
 package org.neo4j.server.http.cypher;
 
 import java.util.List;
-import org.neo4j.bolt.dbapi.CustomBookmarkFormatParser;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -62,23 +60,19 @@ class TransactionFacade {
     private final AuthManager authManager;
     private final boolean readByDefault;
 
-    private CustomBookmarkFormatParser bookmarkFormatParser;
-
     TransactionFacade(
             String databaseName,
             TransactionRegistry registry,
             TransactionManager transactionManager,
             InternalLogProvider logProvider,
             AuthManager authManager,
-            boolean readByDefault,
-            CustomBookmarkFormatParser bookmarkFormatParser) {
+            boolean readByDefault) {
         this.databaseName = databaseName;
         this.registry = registry;
         this.transactionManager = transactionManager;
         this.logProvider = logProvider;
         this.authManager = authManager;
         this.readByDefault = readByDefault;
-        this.bookmarkFormatParser = bookmarkFormatParser;
     }
 
     TransactionHandle newTransactionHandle(
@@ -88,7 +82,7 @@ class TransactionFacade {
             ClientConnectionInfo clientConnectionInfo,
             MemoryTracker memoryTracker,
             long customTransactionTimeout,
-            List<Bookmark> bookmarks) {
+            List<String> bookmarks) {
         memoryTracker.allocateHeap(TransactionHandle.SHALLOW_SIZE);
 
         return new TransactionHandle(
@@ -116,7 +110,7 @@ class TransactionFacade {
             long customTransactionTimeout,
             SystemNanoClock clock,
             boolean isReadOnlyTransaction,
-            List<Bookmark> bookmarks) {
+            List<String> bookmarks) {
         memoryTracker.allocateHeap(TransactionHandle.SHALLOW_SIZE);
 
         return new TransactionHandle(
@@ -142,9 +136,5 @@ class TransactionFacade {
 
     TransactionHandle terminate(long txId, LoginContext loginContext) throws TransactionLifecycleException {
         return registry.terminate(txId, loginContext);
-    }
-
-    CustomBookmarkFormatParser bookmarkParser() {
-        return bookmarkFormatParser;
     }
 }

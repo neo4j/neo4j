@@ -20,23 +20,25 @@
 package org.neo4j.bolt.protocol.common.message.decoder.transaction;
 
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
-import org.neo4j.bolt.protocol.common.bookmark.BookmarkParser;
 import org.neo4j.bolt.protocol.common.message.decoder.MessageDecoder;
 import org.neo4j.bolt.protocol.common.message.decoder.NonEmptyMessageDecoderTest;
 import org.neo4j.bolt.protocol.common.message.request.transaction.BeginMessage;
-import org.neo4j.bolt.protocol.error.bookmark.MalformedBookmarkException;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
 import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
+import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValueBuilder;
 import org.neo4j.values.virtual.VirtualValues;
@@ -44,32 +46,33 @@ import org.neo4j.values.virtual.VirtualValues;
 public abstract class AbstractBeginMessageDecoderTest<D extends MessageDecoder<BeginMessage>>
         implements NonEmptyMessageDecoderTest<D> {
 
-    @Test
-    protected void shouldFailWithBookmarkParserExceptionWhenParsingFails() throws PackstreamReaderException {
+    @MethodSource("invalidBookmarks")
+    @ParameterizedTest
+    protected void shouldFailWithBookmarkParserExceptionWhenParsingFails(AnyValue bookmarkValue)
+            throws PackstreamReaderException {
         var buf = PackstreamBuf.allocUnpooled();
         var reader = Mockito.mock(PackstreamValueReader.class);
 
         var meta = new MapValueBuilder();
-        meta.add(
-                "bookmarks",
-                VirtualValues.list(
-                        Values.stringValue("neo4j:mock:bookmark1"), Values.stringValue("neo4j:mock:bookmark2")));
+        meta.add("bookmarks", bookmarkValue);
 
         Mockito.doReturn(meta.build()).when(reader).readMap();
-
-        var bookmarkParser = mock(BookmarkParser.class);
-        doThrow(new MalformedBookmarkException("Something went wrong! :("))
-                .when(bookmarkParser)
-                .parseBookmarks(any());
-
         var connection = ConnectionMockFactory.newFactory()
-                .withConnector(factory -> factory.withBookmarkParser(bookmarkParser))
+                .withConnector(factory -> {})
                 .withValueReader(reader)
                 .build();
 
-        assertThatExceptionOfType(MalformedBookmarkException.class)
+        assertThatExceptionOfType(IllegalStructArgumentException.class)
                 .isThrownBy(() -> this.getDecoder().read(connection, buf, new StructHeader(1, (short) 0x42)))
-                .withMessage("Something went wrong! :(");
+                .withMessageContaining("Illegal value for field \"bookmarks\":");
+    }
+
+    public static Stream<Arguments> invalidBookmarks() {
+        List<Arguments> args = new ArrayList<>();
+        args.add(Arguments.arguments(Values.stringValue("neo4j:mock:bookmark1")));
+        args.add(Arguments.arguments(
+                VirtualValues.list(Values.stringValue("neo4j:mock:bookmark1"), Values.intValue(123))));
+        return args.stream();
     }
 
     @Test

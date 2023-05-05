@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.common.bookmark.Bookmark;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.AccessMode;
 import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
@@ -126,7 +125,7 @@ public interface BoltMessages {
     }
 
     default RequestMessage begin(
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration txTimeout,
             AccessMode mode,
             Map<String, Object> txMetadata,
@@ -135,7 +134,7 @@ public interface BoltMessages {
     }
 
     default RequestMessage begin(
-            List<Bookmark> bookmarks,
+            List<String> bookmarks,
             Duration txTimeout,
             AccessMode mode,
             Map<String, Object> txMetadata,
