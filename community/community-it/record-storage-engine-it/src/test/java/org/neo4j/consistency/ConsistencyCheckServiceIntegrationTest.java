@@ -19,10 +19,8 @@
  */
 package org.neo4j.consistency;
 
-import static java.lang.String.format;
 import static java.nio.file.Files.exists;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -43,6 +41,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -197,27 +196,63 @@ public class ConsistencyCheckServiceIntegrationTest {
                 .isFalse();
     }
 
-    @Test
-    void shouldFailIfTheStoreInNotConsistent() throws Exception {
-        // given
-        breakNodeStore();
-        Date timestamp = new Date();
-        Path logsDir = testDirectory.homePath();
-        Config configuration = Config.newBuilder()
-                .set(settings())
-                .set(GraphDatabaseSettings.logs_directory, logsDir)
-                .build();
+    @Nested
+    class ShouldFailIfTheStoreIsInconsistent {
+        Path logsDir;
+        Config config;
+        Path reportFile;
+        ConsistencyCheckService consistencyCheckService;
 
-        // when
-        ConsistencyCheckService.Result result =
-                consistencyCheckService().with(configuration).with(timestamp).runFullConsistencyCheck();
+        @BeforeEach
+        void makeInconsistent() throws KernelException {
+            breakNodeStore();
+            logsDir = testDirectory.homePath();
+            config = Config.newBuilder()
+                    .set(settings())
+                    .set(GraphDatabaseSettings.logs_directory, logsDir)
+                    .build();
+            consistencyCheckService = consistencyCheckService().with(config);
+        }
 
-        // then
-        assertFalse(result.isSuccessful());
-        String reportFile =
-                format("inconsistencies-%s.report", new SimpleDateFormat("yyyy-MM-dd.HH.mm.ss").format(timestamp));
-        assertEquals(logsDir.resolve(reportFile), result.reportFile());
-        assertTrue(exists(result.reportFile()), "Inconsistency report file not generated");
+        @AfterEach
+        void assertions() throws ConsistencyCheckIncompleteException {
+            final var result = consistencyCheckService.runFullConsistencyCheck();
+            assertThat(result.isSuccessful())
+                    .as("inconsistent database should have failing result")
+                    .isFalse();
+            assertThat(result.reportFile())
+                    .as("expected report file path")
+                    .isEqualTo(reportFile)
+                    .as("report created")
+                    .exists()
+                    .isRegularFile();
+        }
+
+        Path defaultLogFileName(Date date) {
+            return Path.of(
+                    "inconsistencies-%s.report".formatted(new SimpleDateFormat("yyyy-MM-dd.HH.mm.ss").format(date)));
+        }
+
+        @Test
+        void defaultReportFile() {
+            final var date = new Date();
+            reportFile = logsDir.resolve(defaultLogFileName(date));
+            consistencyCheckService = consistencyCheckService.with(date);
+        }
+
+        @Test
+        void providedReportDirectory() {
+            final var date = new Date();
+            final var otherDirectory = testDirectory.directory("other");
+            reportFile = otherDirectory.resolve(defaultLogFileName(date));
+            consistencyCheckService = consistencyCheckService.with(date).with(otherDirectory);
+        }
+
+        @Test
+        void providedReportFile() {
+            reportFile = testDirectory.file("consistency-check.report");
+            consistencyCheckService = consistencyCheckService.with(reportFile);
+        }
     }
 
     @Test

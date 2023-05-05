@@ -42,6 +42,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.commons.io.FilenameUtils;
 import org.neo4j.annotations.documented.ReporterFactory;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -714,7 +715,9 @@ public class ConsistencyCheckService {
         final var path = Objects.requireNonNullElse(reportPath, defaultReportDir(config))
                 .toAbsolutePath()
                 .normalize();
-        return path.getFileName().endsWith(".report") ? path : path.resolve(defaultLogFileName(timestamp));
+        return FilenameUtils.isExtension(path.toString(), "report")
+                ? path
+                : path.resolve(defaultLogFileName(timestamp));
     }
 
     private static Path defaultReportDir(Config config) {
