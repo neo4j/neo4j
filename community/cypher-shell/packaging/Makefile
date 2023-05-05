@@ -94,5 +94,5 @@ rpm-test: $(RPM) ## Test RPM package (requires Docker)
 debian-test: $(DEB) ## Test Debian package (requires Docker)
 	rm -rf $(DEB_TEST)
 	bin/test-debian-package $(DEB) $(DEB_TEST)
-.PHONY: rpm-test
+.PHONY: debian-test
 
