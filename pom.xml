@@ -136,22 +136,22 @@
     <metrics.version>4.2.18</metrics.version>
     <scala.target.vm>17</scala.target.vm>
     <jersey.version>2.34</jersey.version>
-    <junit.version>5.9.2</junit.version>
-    <junit.platform.version>1.9.2</junit.platform.version>
-    <mockito.version>5.2.0</mockito.version>
+    <junit.version>5.9.3</junit.version>
+    <junit.platform.version>1.9.3</junit.platform.version>
+    <mockito.version>5.3.1</mockito.version>
     <opencypher.version>1.0.0-M21</opencypher.version>
     <caffeine.version>3.1.6</caffeine.version>
     <required.maven.version>3.8.2</required.maven.version>
-    <jackson.version>2.14.2</jackson.version>
-    <jackson-databind.version>2.14.2</jackson-databind.version>
-    <amazon-sdk.version>1.12.444</amazon-sdk.version>
+    <jackson.version>2.15.0</jackson.version>
+    <jackson-databind.version>2.15.0</jackson-databind.version>
+    <amazon-sdk.version>1.12.463</amazon-sdk.version>
     <guava.version>31.1-jre</guava.version>
     <awaitility.version>4.2.0</awaitility.version>
     <log4j.version>2.20.0</log4j.version>
     <slf4j.version>2.0.7</slf4j.version>
     <neo4j-java-driver.version>5.8.0</neo4j-java-driver.version>
     <eclipse-collections.version>11.1.0</eclipse-collections.version>
-    <picocli.version>4.7.1</picocli.version>
+    <picocli.version>4.7.3</picocli.version>
     <jakarta.activation-api.version>1.2.2</jakarta.activation-api.version>
     <jakarta.ws.rs-api.version>2.1.6</jakarta.ws.rs-api.version>
   </properties>
@@ -1430,7 +1430,7 @@
       <dependency>
         <groupId>com.github.luben</groupId>
         <artifactId>zstd-jni</artifactId>
-        <version>1.5.5-1</version>
+        <version>1.5.5-2</version>
       </dependency>
 
       <!--
