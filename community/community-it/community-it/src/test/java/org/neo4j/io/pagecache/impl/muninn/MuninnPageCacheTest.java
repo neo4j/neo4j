@@ -456,24 +456,31 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             int iterations = 14;
             for (int i = 0; i < iterations; i++) {
                 writeInitialDataTo(file("a" + i), reservedBytes);
-                try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
-                        PagedFile pagedFile = map(pageCache, file("a" + i), 8 + reservedBytes)) {
-                    try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
-                        assertEquals(i * 3 + 1, defaultPageCacheTracer.openedCursors());
-                        assertEquals(i * 3, defaultPageCacheTracer.closedCursors());
-
+                try (PagedFile pagedFile = map(pageCache, file("a" + i), 8 + reservedBytes)) {
+                    try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
+                            PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
+                        assertEquals(1, cursorContext.getCursorTracer().openedCursors());
+                        assertEquals(0, cursorContext.getCursorTracer().closedCursors());
                         assertTrue(cursor.next());
                         cursor.putLong(0L);
                     }
-                    try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
-                        assertEquals(i * 3 + 2, defaultPageCacheTracer.openedCursors());
-                        assertEquals(i * 3 + 1, defaultPageCacheTracer.closedCursors());
+                    assertEquals(i * 3 + 1, defaultPageCacheTracer.openedCursors());
+                    assertEquals(i * 3 + 1, defaultPageCacheTracer.closedCursors());
+                    try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
+                            PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
+                        assertEquals(1, cursorContext.getCursorTracer().openedCursors());
+                        assertEquals(0, cursorContext.getCursorTracer().closedCursors());
                     }
-                    try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
+                    assertEquals(i * 3 + 2, defaultPageCacheTracer.openedCursors());
+                    assertEquals(i * 3 + 2, defaultPageCacheTracer.closedCursors());
+                    try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
+                            PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
                         assertTrue(cursor.next());
-                        assertEquals(i * 3 + 3, defaultPageCacheTracer.openedCursors());
-                        assertEquals(i * 3 + 2, defaultPageCacheTracer.closedCursors());
+                        assertEquals(1, cursorContext.getCursorTracer().openedCursors());
+                        assertEquals(0, cursorContext.getCursorTracer().closedCursors());
                     }
+                    assertEquals(i * 3 + 3, defaultPageCacheTracer.openedCursors());
+                    assertEquals(i * 3 + 3, defaultPageCacheTracer.closedCursors());
                     pagedFile.setDeleteOnClose(true);
                 }
             }
@@ -491,28 +498,37 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
             int iterations = 14;
             for (int i = 0; i < iterations; i++) {
                 writeInitialDataTo(file("a" + i), reservedBytes);
-                try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
-                        PagedFile pagedFile = map(pageCache, file("a" + i), 8 + reservedBytes)) {
-                    try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
+                try (PagedFile pagedFile = map(pageCache, file("a" + i), 8 + reservedBytes)) {
+                    try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
+                            PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
                         cursor.openLinkedCursor(1);
-                        assertEquals(i * 7 + 2, defaultPageCacheTracer.openedCursors());
-                        assertEquals(i * 7, defaultPageCacheTracer.closedCursors());
+                        assertEquals(2, cursorContext.getCursorTracer().openedCursors());
+                        assertEquals(0, cursorContext.getCursorTracer().closedCursors());
 
                         assertTrue(cursor.next());
                         cursor.putLong(0L);
                     }
-                    try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
+                    assertEquals(i * 7 + 2, defaultPageCacheTracer.openedCursors());
+                    assertEquals(i * 7 + 2, defaultPageCacheTracer.closedCursors());
+                    try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
+                            PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
                         cursor.openLinkedCursor(1);
-                        assertEquals(i * 7 + 4, defaultPageCacheTracer.openedCursors());
-                        assertEquals(i * 7 + 2, defaultPageCacheTracer.closedCursors());
+                        assertEquals(2, cursorContext.getCursorTracer().openedCursors());
+                        assertEquals(0, cursorContext.getCursorTracer().closedCursors());
                     }
-                    try (PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
+                    assertEquals(i * 7 + 4, defaultPageCacheTracer.openedCursors());
+                    assertEquals(i * 7 + 4, defaultPageCacheTracer.closedCursors());
+                    try (var cursorContext = contextFactory.create("countOpenedAndClosedCursors");
+                            PageCursor cursor = pagedFile.io(0, PF_SHARED_WRITE_LOCK, cursorContext)) {
                         assertTrue(cursor.next());
                         cursor.openLinkedCursor(1).close();
                         cursor.openLinkedCursor(1);
-                        assertEquals(i * 7 + 7, defaultPageCacheTracer.openedCursors());
-                        assertEquals(i * 7 + 5, defaultPageCacheTracer.closedCursors());
+
+                        assertEquals(3, cursorContext.getCursorTracer().openedCursors());
+                        assertEquals(1, cursorContext.getCursorTracer().closedCursors());
                     }
+                    assertEquals(i * 7 + 7, defaultPageCacheTracer.openedCursors());
+                    assertEquals(i * 7 + 7, defaultPageCacheTracer.closedCursors());
                     pagedFile.setDeleteOnClose(true);
                 }
             }

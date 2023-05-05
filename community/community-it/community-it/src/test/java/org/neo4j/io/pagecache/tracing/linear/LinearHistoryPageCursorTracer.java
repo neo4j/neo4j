@@ -161,6 +161,16 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer {
     public void closeCursor() {}
 
     @Override
+    public long openedCursors() {
+        return 0;
+    }
+
+    @Override
+    public long closedCursors() {
+        return 0;
+    }
+
+    @Override
     public void merge(CursorStatisticSnapshot statisticSnapshot) {}
 
     @Override

@@ -291,12 +291,6 @@ public interface PageCacheTracer extends PageCacheCounters {
         public void limitIO(long millis) {}
 
         @Override
-        public void closeCursor() {}
-
-        @Override
-        public void openCursor() {}
-
-        @Override
         public void pagesCopied(long copiesCreated) {}
 
         @Override
@@ -307,6 +301,12 @@ public interface PageCacheTracer extends PageCacheCounters {
 
         @Override
         public void bytesTruncated(long bytesTruncated) {}
+
+        @Override
+        public void openedCursors(long openedCursors) {}
+
+        @Override
+        public void closedCursors(long closedCursors) {}
 
         @Override
         public String toString() {
@@ -483,16 +483,6 @@ public interface PageCacheTracer extends PageCacheCounters {
     void limitIO(long millis);
 
     /**
-     * Page cache cursor closed
-     */
-    void closeCursor();
-
-    /**
-     * Page cache cursor opened
-     */
-    void openCursor();
-
-    /**
      * report number of loaded page old snapshots
      */
     void snapshotsLoaded(long snapshotsLoaded);
@@ -516,4 +506,14 @@ public interface PageCacheTracer extends PageCacheCounters {
      * report number of truncated bytes
      */
     void bytesTruncated(long bytesTruncated);
+
+    /**
+     * report number of opened page cache cursors.
+     */
+    void openedCursors(long openedCursors);
+
+    /**
+     * report number of closed page cache cursors.
+     */
+    void closedCursors(long closedCursors);
 }

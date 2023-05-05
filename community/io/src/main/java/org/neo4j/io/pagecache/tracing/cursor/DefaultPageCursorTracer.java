@@ -70,6 +70,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     private long snapshotsLoaded;
     private long copiesCreated;
     private long chainsPatched;
+    private long openedCursors;
+    private long closedCursors;
 
     private final DefaultPinEvent pinTracingEvent = new DefaultPinEvent();
     private final PageFaultEvictionEvent evictionEvent = new PageFaultEvictionEvent();
@@ -93,12 +95,22 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
 
     @Override
     public void openCursor() {
-        pageCacheTracer.openCursor();
+        openedCursors += 1;
+    }
+
+    @Override
+    public long openedCursors() {
+        return openedCursors;
     }
 
     @Override
     public void closeCursor() {
-        pageCacheTracer.closeCursor();
+        closedCursors += 1;
+    }
+
+    @Override
+    public long closedCursors() {
+        return closedCursors;
     }
 
     @Override
@@ -120,6 +132,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         this.merges += statisticSnapshot.merges();
         this.snapshotsLoaded += statisticSnapshot.snapshotsLoaded();
         this.copiesCreated += statisticSnapshot.copiedPages();
+        this.openedCursors += statisticSnapshot.openedCursors();
+        this.closedCursors += statisticSnapshot.closedCursors();
         this.chainsPatched += statisticSnapshot.chainsPatched();
     }
 
@@ -195,6 +209,12 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         if (chainsPatched > 0) {
             pageCacheTracer.chainsPatched(chainsPatched);
         }
+        if (openedCursors > 0) {
+            pageCacheTracer.openedCursors(openedCursors);
+        }
+        if (closedCursors > 0) {
+            pageCacheTracer.closedCursors(closedCursors);
+        }
         reset();
     }
 
@@ -249,6 +269,8 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         merges = 0;
         snapshotsLoaded = 0;
         copiesCreated = 0;
+        openedCursors = 0;
+        closedCursors = 0;
         chainsPatched = 0;
     }
 

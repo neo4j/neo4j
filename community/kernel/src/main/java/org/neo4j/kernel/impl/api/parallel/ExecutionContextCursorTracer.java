@@ -62,6 +62,8 @@ public class ExecutionContextCursorTracer extends DefaultPageCursorTracer {
                 super.merges(),
                 super.snapshotsLoaded(),
                 super.copiedPages(),
+                super.openedCursors(),
+                super.closedCursors(),
                 super.chainsPatched());
         reset();
         return snapshot;

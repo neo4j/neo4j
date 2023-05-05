@@ -280,11 +280,6 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public void closeCursor() {
-        delegate.closeCursor();
-    }
-
-    @Override
     public void pagesCopied(long copiesCreated) {
         delegate.pagesCopied(copiesCreated);
     }
@@ -305,8 +300,13 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public void openCursor() {
-        delegate.openCursor();
+    public void openedCursors(long openedCursors) {
+        delegate.openedCursors(openedCursors);
+    }
+
+    @Override
+    public void closedCursors(long closedCursors) {
+        delegate.closedCursors(closedCursors);
     }
 
     @Override

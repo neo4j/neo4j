@@ -221,6 +221,16 @@ public class RecordingPageCursorTracer extends RecordingTracer implements PageCu
     public void closeCursor() {}
 
     @Override
+    public long openedCursors() {
+        return 0;
+    }
+
+    @Override
+    public long closedCursors() {
+        return 0;
+    }
+
+    @Override
     public void pageCopied(long pageRef, long version) {}
 
     @Override

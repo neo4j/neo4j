@@ -51,14 +51,22 @@ class DefaultPageCursorTracerTest {
         assertEquals(0, cacheTracer.closedCursors());
         assertEquals(0, cacheTracer.openedCursors());
 
-        cacheTracer.openCursor();
-        cacheTracer.openCursor();
-        cacheTracer.openCursor();
-        cacheTracer.openCursor();
+        pageCursorTracer.openCursor();
+        pageCursorTracer.openCursor();
+        pageCursorTracer.openCursor();
+        pageCursorTracer.openCursor();
 
-        cacheTracer.closeCursor();
-        cacheTracer.closeCursor();
-        cacheTracer.closeCursor();
+        pageCursorTracer.closeCursor();
+        pageCursorTracer.closeCursor();
+        pageCursorTracer.closeCursor();
+
+        assertEquals(3, pageCursorTracer.closedCursors());
+        assertEquals(4, pageCursorTracer.openedCursors());
+
+        assertEquals(0, cacheTracer.closedCursors());
+        assertEquals(0, cacheTracer.openedCursors());
+
+        pageCursorTracer.close();
 
         assertEquals(3, cacheTracer.closedCursors());
         assertEquals(4, cacheTracer.openedCursors());

@@ -326,9 +326,6 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     public void limitIO(long millis) {}
 
     @Override
-    public void closeCursor() {}
-
-    @Override
     public void pagesCopied(long copiesCreated) {}
 
     @Override
@@ -341,7 +338,10 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     public void bytesTruncated(long bytesTruncated) {}
 
     @Override
-    public void openCursor() {}
+    public void openedCursors(long openedCursors) {}
+
+    @Override
+    public void closedCursors(long closedCursors) {}
 
     private void evicted(long filePageId, PageSwapper swapper) {
         record(new Evict(swapper, filePageId));

@@ -153,6 +153,16 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
         public void closeCursor() {}
 
         @Override
+        public long openedCursors() {
+            return 0;
+        }
+
+        @Override
+        public long closedCursors() {
+            return 0;
+        }
+
+        @Override
         public void merge(CursorStatisticSnapshot statisticSnapshot) {}
 
         @Override
@@ -205,6 +215,16 @@ public interface PageCursorTracer extends PageCursorCounters, Closeable {
      * Page cache cursor closed
      */
     void closeCursor();
+
+    /**
+     * Number of opened cursors
+     */
+    long openedCursors();
+
+    /**
+     * Number of closed cursors
+     */
+    long closedCursors();
 
     /**
      * Merge values collected by another tracer into current.

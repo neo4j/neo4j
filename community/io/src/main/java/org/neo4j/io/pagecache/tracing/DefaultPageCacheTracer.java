@@ -294,16 +294,6 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public void closeCursor() {
-        closedCursors.increment();
-    }
-
-    @Override
-    public void openCursor() {
-        openedCursors.increment();
-    }
-
-    @Override
     public void pagesCopied(long copiesCreated) {
         copiedPages.add(copiesCreated);
     }
@@ -321,6 +311,16 @@ public class DefaultPageCacheTracer implements PageCacheTracer {
     @Override
     public void bytesTruncated(long bytesTruncated) {
         this.bytesTruncated.add(bytesTruncated);
+    }
+
+    @Override
+    public void openedCursors(long openedCursors) {
+        this.openedCursors.add(openedCursors);
+    }
+
+    @Override
+    public void closedCursors(long closedCursors) {
+        this.closedCursors.add(closedCursors);
     }
 
     @Override

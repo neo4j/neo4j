@@ -309,12 +309,6 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
     public void limitIO(long millis) {}
 
     @Override
-    public void closeCursor() {}
-
-    @Override
-    public void openCursor() {}
-
-    @Override
     public void pagesCopied(long copiesCreated) {}
 
     @Override
@@ -325,4 +319,10 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
 
     @Override
     public void bytesTruncated(long bytesTruncated) {}
+
+    @Override
+    public void openedCursors(long openedCursors) {}
+
+    @Override
+    public void closedCursors(long closedCursors) {}
 }
