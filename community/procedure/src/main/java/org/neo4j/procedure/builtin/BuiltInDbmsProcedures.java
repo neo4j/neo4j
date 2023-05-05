@@ -71,6 +71,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Internal;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeNotAllowedException;
 import org.neo4j.storageengine.api.StoreIdProvider;
 
 @SuppressWarnings("unused")
@@ -228,7 +229,7 @@ public class BuiltInDbmsProcedures {
                     ProcedureCallFailed,
                     "This is an administration command and it should be executed against the system database: dbms.upgradeStatus");
         }
-        return Stream.of(new SystemGraphComponentStatusResult(systemGraphComponents.detect(transaction)));
+        return Stream.of(getAggregateUpgradeStatus(systemGraphComponents, resolver, transaction));
     }
 
     @Admin
@@ -241,14 +242,22 @@ public class BuiltInDbmsProcedures {
                     ProcedureCallFailed,
                     "This is an administration command and it should be executed against the system database: dbms.upgrade");
         }
+        UpgradeAllowedChecker checker = resolver.resolveDependency(UpgradeAllowedChecker.class);
+        try {
+            checker.isUpgradeAllowed();
+        } catch (UpgradeNotAllowedException e) {
+            log.info("Upgrade not currently possible", e);
+            return Stream.of(new SystemGraphComponentUpgradeResult(
+                    SystemGraphComponentStatusResult.CANNOT_UPGRADE_STATUS, e.getMessage()));
+        }
+
         SystemGraphComponents versions = systemGraphComponents;
         SystemGraphComponent.Status status = versions.detect(graph);
 
         // New components are not currently initialised in cluster deployment when new binaries are booted on top of an
         // existing database.
         // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to CURRENT must be
-        // supported
-        // as a workaround until it is fixed.
+        // supported as a workaround until it is fixed.
         var upgradableStatuses = List.of(REQUIRES_UPGRADE, UNINITIALIZED);
 
         if (upgradableStatuses.contains(status)) {
@@ -368,6 +377,24 @@ public class BuiltInDbmsProcedures {
         return config.get(GraphDatabaseSettings.db_timezone).getZoneId();
     }
 
+    /**
+     * Get the status result for the overall system graph components. Will check if an upgrade is currently
+     * permitted, and report not allowed in addition to the usual statuses.
+     */
+    public static SystemGraphComponentStatusResult getAggregateUpgradeStatus(
+            SystemGraphComponents systemGraphComponents, DependencyResolver resolver, Transaction transaction) {
+        UpgradeAllowedChecker checker = resolver.resolveDependency(UpgradeAllowedChecker.class);
+        try {
+            checker.isUpgradeAllowed();
+            return new SystemGraphComponentStatusResult(systemGraphComponents.detect(transaction));
+        } catch (UpgradeNotAllowedException e) {
+            return new SystemGraphComponentStatusResult(
+                    SystemGraphComponentStatusResult.CANNOT_UPGRADE_STATUS,
+                    e.getMessage(),
+                    SystemGraphComponentStatusResult.CANNOT_UPGRADE_RESOLUTION);
+        }
+    }
+
     public record SystemInfo(String id, String name, String creationDate) {}
 
     public static class StringResult {
@@ -386,15 +413,13 @@ public class BuiltInDbmsProcedures {
         }
     }
 
-    public static class SystemGraphComponentStatusResult {
-        public final String status;
-        public final String description;
-        public final String resolution;
+    public record SystemGraphComponentStatusResult(String status, String description, String resolution) {
+        public static final String CANNOT_UPGRADE_STATUS = "CANNOT_UPGRADE";
+        public static final String CANNOT_UPGRADE_RESOLUTION =
+                "Wait for upgraded versions to be observed, or upgrade other cluster members so all are on the same version.";
 
         SystemGraphComponentStatusResult(SystemGraphComponent.Status status) {
-            this.status = status.name();
-            this.description = status.description();
-            this.resolution = status.resolution();
+            this(status.name(), status.description(), status.resolution());
         }
     }
 
@@ -405,6 +430,28 @@ public class BuiltInDbmsProcedures {
         SystemGraphComponentUpgradeResult(String status, String upgradeResult) {
             this.status = status;
             this.upgradeResult = upgradeResult;
+        }
+    }
+
+    public interface UpgradeAllowedChecker {
+        void isUpgradeAllowed() throws UpgradeNotAllowedException;
+
+        class UpgradeNotAllowedException extends Exception {
+            public UpgradeNotAllowedException(String message) {
+                super(message);
+            }
+
+            public UpgradeNotAllowedException(String message, Throwable cause) {
+                super(message, cause);
+            }
+        }
+
+        class UpgradeAlwaysAllowed implements UpgradeAllowedChecker {
+
+            @Override
+            public void isUpgradeAllowed() {
+                // Do nothing
+            }
         }
     }
 }

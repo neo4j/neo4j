@@ -35,6 +35,8 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
+import static org.neo4j.procedure.builtin.BuiltInDbmsProcedures.SystemGraphComponentStatusResult.CANNOT_UPGRADE_RESOLUTION;
+import static org.neo4j.procedure.builtin.BuiltInDbmsProcedures.SystemGraphComponentStatusResult.CANNOT_UPGRADE_STATUS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -84,6 +86,9 @@ import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.Log;
+import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker;
+import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeAlwaysAllowed;
+import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeNotAllowedException;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.AnyValue;
@@ -380,6 +385,7 @@ class BuiltInProceduresTest {
         Config config = Config.defaults();
         setupFakeSystemComponents();
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
+        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
         when(callContext.isSystemDatabase()).thenReturn(true);
 
         var r = call("dbms.upgradeStatus").iterator();
@@ -392,6 +398,28 @@ class BuiltInProceduresTest {
         assertThat(status).contains(SystemGraphComponent.Status.REQUIRES_UPGRADE.name());
         assertThat(description).contains(SystemGraphComponent.Status.REQUIRES_UPGRADE.description());
         assertThat(resolution).contains(SystemGraphComponent.Status.REQUIRES_UPGRADE.resolution());
+    }
+
+    @Test
+    void givenUpgradeNotAllowed_whenCallUpgradeStatus_thenGetNotAllowed()
+            throws ProcedureException, IndexNotFoundKernelException {
+        Config config = Config.defaults();
+        setupFakeSystemComponents();
+        when(resolver.resolveDependency(Config.class)).thenReturn(config);
+        var message = "You will never succeed!";
+        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeNeverAllowed(message));
+        when(callContext.isSystemDatabase()).thenReturn(true);
+
+        var r = call("dbms.upgradeStatus").iterator();
+        assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
+        Object[] row = r.next();
+        String status = resultAsString(row, 0);
+        String description = resultAsString(row, 1);
+        String resolution = resultAsString(row, 2);
+        assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
+        assertThat(status).isEqualTo(CANNOT_UPGRADE_STATUS);
+        assertThat(description).contains(message);
+        assertThat(resolution).isEqualTo(CANNOT_UPGRADE_RESOLUTION);
     }
 
     @Test
@@ -409,10 +437,11 @@ class BuiltInProceduresTest {
     }
 
     @Test
-    void shouldUpgradeSystemGraph() throws ProcedureException, IndexNotFoundKernelException {
+    void givenUpgradeAllowed_shouldUpgradeSystemGraph() throws ProcedureException, IndexNotFoundKernelException {
         Config config = Config.defaults();
         setupFakeSystemComponents();
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
+        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
         when(callContext.isSystemDatabase()).thenReturn(true);
         when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
 
@@ -424,6 +453,28 @@ class BuiltInProceduresTest {
         assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
         assertThat(status).contains(SystemGraphComponent.Status.REQUIRES_UPGRADE.name());
         assertThat(result).contains("Failed: [component_D] Upgrade failed because this is a test");
+    }
+
+    @Test
+    void givenUpgradeNotAllowed_shouldNotUpgradeSystemGraph() throws ProcedureException, IndexNotFoundKernelException {
+        var failureMessage = "Don't want to";
+        Config config = Config.defaults();
+        setupFakeSystemComponents();
+        when(resolver.resolveDependency(Config.class)).thenReturn(config);
+        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(() -> {
+            throw new UpgradeNotAllowedException(failureMessage);
+        });
+        when(callContext.isSystemDatabase()).thenReturn(true);
+        when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
+
+        var r = call("dbms.upgrade").iterator();
+        assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
+        Object[] row = r.next();
+        String status = resultAsString(row, 0);
+        String result = resultAsString(row, 1);
+        assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
+        assertThat(status).contains("CANNOT_UPGRADE");
+        assertThat(result).contains(failureMessage);
     }
 
     private static Object[] record(Object... fields) {
@@ -535,5 +586,19 @@ class BuiltInProceduresTest {
         systemGraphComponentsBuilder.register(makeSystemComponentUpgradeSucceeds("component_C"));
         systemGraphComponentsBuilder.register(makeSystemComponentUpgradeFails("component_D"));
         systemGraphComponents = systemGraphComponentsBuilder.build();
+    }
+
+    static class UpgradeNeverAllowed implements UpgradeAllowedChecker {
+
+        private final String message;
+
+        public UpgradeNeverAllowed(String message) {
+            this.message = message;
+        }
+
+        @Override
+        public void isUpgradeAllowed() throws UpgradeNotAllowedException {
+            throw new UpgradeNotAllowedException(message);
+        }
     }
 }
