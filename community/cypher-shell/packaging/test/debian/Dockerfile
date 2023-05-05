@@ -1,4 +1,4 @@
-FROM debian:stretch-backports
+FROM debian:bullseye
 ENV DEBIAN_FRONTEND noninteractive
 
 COPY ${DEBFILE} /tmp/
