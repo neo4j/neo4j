@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.kernel.impl.transaction.log.files.ChannelNativeAccessor.EMPTY_ACCESSOR;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
@@ -113,7 +115,7 @@ class LogEntrySerializerDispatcherTest {
     @Test
     void parseStartEntry() throws IOException {
         // given
-        final LogEntryStart start = new LogEntryStart(version, 1, 2, 3, new byte[] {4}, position);
+        final LogEntryStart start = newStartEntry(version, 1, 2, 3, new byte[] {4}, position);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong(start.getTimeWritten());
@@ -136,7 +138,7 @@ class LogEntrySerializerDispatcherTest {
     @Test
     void parseCommitEntry() throws IOException {
         // given
-        final LogEntryCommit commit = new LogEntryCommit(LATEST_KERNEL_VERSION, 42, 21, -361070784);
+        final LogEntryCommit commit = newCommitEntry(LATEST_KERNEL_VERSION, 42, 21, -361070784);
         final InMemoryClosableChannel channel = new InMemoryClosableChannel();
 
         channel.putLong(commit.getTxId());

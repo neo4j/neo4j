@@ -36,6 +36,8 @@ import static org.neo4j.io.ByteUnit.KibiByte;
 import static org.neo4j.io.pagecache.tracing.PageCacheTracer.NULL;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_FORMAT_LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogFormat.CURRENT_LOG_FORMAT_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderWriter.writeLogHeader;
@@ -89,8 +91,6 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DetachedCheckpointAppender;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
@@ -176,10 +176,10 @@ class TransactionLogsRecoveryTest {
             LogPosition lastCommittedTxPosition = marker.newPosition();
             byte[] headerData = encodeLogIndex(1);
             writer.writeStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, previousChecksum, headerData);
-            lastCommittedTxStartEntry = new LogEntryStart(
-                    LATEST_KERNEL_VERSION, 2L, 3L, previousChecksum, headerData, lastCommittedTxPosition);
+            lastCommittedTxStartEntry =
+                    newStartEntry(LATEST_KERNEL_VERSION, 2L, 3L, previousChecksum, headerData, lastCommittedTxPosition);
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L);
-            lastCommittedTxCommitEntry = new LogEntryCommit(LATEST_KERNEL_VERSION, 4L, 5L, previousChecksum);
+            lastCommittedTxCommitEntry = newCommitEntry(LATEST_KERNEL_VERSION, 4L, 5L, previousChecksum);
 
             // check point pointing to the previously committed transaction
             var checkpointFile = logFiles.getCheckpointFile();
@@ -195,11 +195,11 @@ class TransactionLogsRecoveryTest {
             // tx committed after checkpoint
             channel.getCurrentLogPosition(marker);
             writer.writeStartEntry(LATEST_KERNEL_VERSION, 6L, 4L, previousChecksum, headerData);
-            expectedStartEntry = new LogEntryStart(
-                    LATEST_KERNEL_VERSION, 6L, 4L, previousChecksum, headerData, marker.newPosition());
+            expectedStartEntry =
+                    newStartEntry(LATEST_KERNEL_VERSION, 6L, 4L, previousChecksum, headerData, marker.newPosition());
 
             previousChecksum = writer.writeCommitEntry(LATEST_KERNEL_VERSION, 5L, 7L);
-            expectedCommitEntry = new LogEntryCommit(LATEST_KERNEL_VERSION, 5L, 7L, previousChecksum);
+            expectedCommitEntry = newCommitEntry(LATEST_KERNEL_VERSION, 5L, 7L, previousChecksum);
 
             return true;
         });
@@ -690,7 +690,7 @@ class TransactionLogsRecoveryTest {
                             UNKNOWN_LOG_SEGMENT_SIZE,
                             BASE_TX_CHECKSUM),
                     INSTANCE);
-            writableLogChannel.beginChecksum();
+            writableLogChannel.beginChecksumForWriting();
             LogEntryWriter<?> first = new LogEntryWriter<>(writableLogChannel, LatestVersions.BINARY_VERSIONS);
             visitor.visit(new DataWriters(first, writableLogChannel));
         }

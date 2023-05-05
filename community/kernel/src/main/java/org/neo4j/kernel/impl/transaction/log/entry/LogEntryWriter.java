@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntrySerializationSets.serializationSet;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_END;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.CHUNK_START;
@@ -64,7 +66,7 @@ public class LogEntryWriter<T extends WritableChannel> {
                 .select(TX_START)
                 .write(
                         channel,
-                        new LogEntryStart(
+                        newStartEntry(
                                 kernelVersion,
                                 timeWritten,
                                 latestCommittedTxWhenStarted,
@@ -105,7 +107,7 @@ public class LogEntryWriter<T extends WritableChannel> {
 
         return logEntrySerializationSet
                 .select(TX_COMMIT)
-                .write(channel, new LogEntryCommit(kernelVersion, transactionId, timeWritten, 0));
+                .write(channel, newCommitEntry(kernelVersion, transactionId, timeWritten, 0));
     }
 
     public void serialize(CommandBatch batch) throws IOException {

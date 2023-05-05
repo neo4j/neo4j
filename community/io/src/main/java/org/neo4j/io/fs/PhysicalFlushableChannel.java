@@ -236,7 +236,7 @@ public class PhysicalFlushableChannel implements FlushableChannel {
     }
 
     @Override
-    public void beginChecksum() {
+    public void beginChecksumForWriting() {
         if (DISABLE_WAL_CHECKSUM) {
             return;
         }

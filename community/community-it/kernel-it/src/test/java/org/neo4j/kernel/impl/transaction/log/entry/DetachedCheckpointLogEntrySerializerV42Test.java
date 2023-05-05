@@ -153,7 +153,7 @@ class DetachedCheckpointLogEntrySerializerV42Test {
             StoreId storeId,
             String reason)
             throws IOException {
-        channel.beginChecksum();
+        channel.beginChecksumForWriting();
         writeLogEntryHeader(kernelVersion, DETACHED_CHECK_POINT, channel);
         byte[] reasonBytes = reason.getBytes();
         short length = safeCastIntToShort(min(reasonBytes.length, MAX_DESCRIPTION_LENGTH));

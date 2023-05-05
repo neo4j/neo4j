@@ -64,7 +64,7 @@ class PhysicalFlushableChannelFuzzerTest {
 
             int numberOfEntries = random.intBetween(10, 100);
             for (int i = 0; i < numberOfEntries; i++) {
-                channel.beginChecksum();
+                channel.beginChecksumForWriting();
                 int size = randomInteractions(channel);
                 int channelChecksum = channel.putChecksum();
                 entries.add(new WrittenEntry(size, channelChecksum));

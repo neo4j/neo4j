@@ -49,7 +49,7 @@ public class LogCommandSerializationV5_8Test {
             final var enrichment = new Enrichment.Write(metadata(), dummyData(), dummyData(), dummyData(), dummyData());
 
             final var writer = channel.writer();
-            writer.beginChecksum();
+            writer.beginChecksumForWriting();
             serialization.writeEnrichmentCommand(writer, new RecordEnrichmentCommand(serialization, enrichment));
             final var afterEnrichment = writer.getCurrentLogPosition();
             writer.putChecksum();

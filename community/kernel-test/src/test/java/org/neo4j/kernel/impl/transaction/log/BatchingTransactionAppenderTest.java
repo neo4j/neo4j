@@ -40,6 +40,8 @@ import static org.neo4j.common.Subject.ANONYMOUS;
 import static org.neo4j.io.pagecache.context.CursorContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.transaction.log.LogIndexEncoding.encodeLogIndex;
 import static org.neo4j.kernel.impl.transaction.log.TestLogEntryReader.logEntryReader;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.storageengine.api.Commitment.NO_COMMITMENT;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
@@ -226,14 +228,14 @@ class BatchingTransactionAppenderTest {
         final long timeStarted = 12345;
         long latestCommittedTxWhenStarted = nextTxId - 5;
         long timeCommitted = timeStarted + 10;
-        LogEntryStart start = new LogEntryStart(
+        LogEntryStart start = newStartEntry(
                 LATEST_KERNEL_VERSION,
                 timeStarted,
                 latestCommittedTxWhenStarted,
                 0,
                 additionalHeader,
                 LogPosition.UNSPECIFIED);
-        LogEntryCommit commit = new LogEntryCommit(LATEST_KERNEL_VERSION, nextTxId, timeCommitted, BASE_TX_CHECKSUM);
+        LogEntryCommit commit = newCommitEntry(LATEST_KERNEL_VERSION, nextTxId, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
 
@@ -276,9 +278,9 @@ class BatchingTransactionAppenderTest {
         long timeCommitted = timeStarted + 10;
         when(transactionIdStore.getLastCommittedTransactionId()).thenReturn(latestCommittedTxWhenStarted);
 
-        LogEntryStart start = new LogEntryStart(
+        LogEntryStart start = newStartEntry(
                 LATEST_KERNEL_VERSION, 0L, latestCommittedTxWhenStarted, 0, additionalHeader, LogPosition.UNSPECIFIED);
-        LogEntryCommit commit = new LogEntryCommit(
+        LogEntryCommit commit = newCommitEntry(
                 LATEST_KERNEL_VERSION, latestCommittedTxWhenStarted + 2, timeCommitted, BASE_TX_CHECKSUM);
         CommittedTransactionRepresentation transaction =
                 new CommittedTransactionRepresentation(start, singleTestCommand(), commit);
@@ -403,9 +405,9 @@ class BatchingTransactionAppenderTest {
         var transactionCommitment = new TransactionCommitment(positionCache, transactionIdStore);
         var transactionIdGenerator = new IdStoreTransactionIdGenerator(transactionIdStore);
         var transaction = new CommittedTransactionRepresentation(
-                new LogEntryStart(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                newStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 singleTestCommand(),
-                new LogEntryCommit(LATEST_KERNEL_VERSION, 11, 1L, BASE_TX_CHECKSUM));
+                newCommitEntry(LATEST_KERNEL_VERSION, 11, 1L, BASE_TX_CHECKSUM));
         TransactionToApply batch = new TransactionToApply(
                 transaction, NULL_CONTEXT, StoreCursors.NULL, transactionCommitment, transactionIdGenerator);
         assertThrows(

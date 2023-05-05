@@ -89,7 +89,7 @@ public class RollbackLogEntrySerializerV5_7 extends LogEntrySerializer<LogEntryR
 
     @Override
     public int write(WritableChannel channel, LogEntryRollback logEntry) throws IOException {
-        channel.beginChecksum();
+        channel.beginChecksumForWriting();
         writeLogEntryHeader(logEntry.kernelVersion(), TX_ROLLBACK, channel);
         channel.putLong(logEntry.getTransactionId()).putLong(logEntry.getTimeWritten());
         return channel.putChecksum();

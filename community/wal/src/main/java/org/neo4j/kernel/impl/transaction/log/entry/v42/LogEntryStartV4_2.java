@@ -17,51 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_START;
+package org.neo4j.kernel.impl.transaction.log.entry.v42;
 
 import java.util.Arrays;
 import org.neo4j.kernel.KernelVersion;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 
-public class LogEntryStart extends AbstractVersionAwareLogEntry {
-    protected final long timeWritten;
-    protected final long lastCommittedTxWhenTransactionStarted;
-    protected final byte[] additionalHeader;
-    protected final LogPosition startPosition;
+public class LogEntryStartV4_2 extends LogEntryStart {
+    private final int previousChecksum;
 
-    protected LogEntryStart(
-            KernelVersion kernelVersion,
+    public LogEntryStartV4_2(
+            KernelVersion version,
             long timeWritten,
             long lastCommittedTxWhenTransactionStarted,
+            int previousChecksum,
             byte[] additionalHeader,
             LogPosition startPosition) {
-        super(kernelVersion, TX_START);
-        this.startPosition = startPosition;
-        this.timeWritten = timeWritten;
-        this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
-        this.additionalHeader = additionalHeader;
+        super(version, timeWritten, lastCommittedTxWhenTransactionStarted, additionalHeader, startPosition);
+        this.previousChecksum = previousChecksum;
     }
 
-    public LogPosition getStartPosition() {
-        return startPosition;
-    }
-
-    public long getTimeWritten() {
-        return timeWritten;
-    }
-
-    public long getLastCommittedTxWhenTransactionStarted() {
-        return lastCommittedTxWhenTransactionStarted;
-    }
-
-    public byte[] getAdditionalHeader() {
-        return additionalHeader;
-    }
-
+    @Override
     public int getPreviousChecksum() {
-        return 0;
+        return previousChecksum;
     }
 
     @Override
@@ -85,11 +64,11 @@ public class LogEntryStart extends AbstractVersionAwareLogEntry {
             return false;
         }
 
-        LogEntryStart start = (LogEntryStart) o;
+        LogEntryStartV4_2 start = (LogEntryStartV4_2) o;
 
         return lastCommittedTxWhenTransactionStarted == start.lastCommittedTxWhenTransactionStarted
                 && timeWritten == start.timeWritten
-                && kernelVersion() == start.kernelVersion()
+                && previousChecksum == start.previousChecksum
                 && Arrays.equals(additionalHeader, start.additionalHeader)
                 && startPosition.equals(start.startPosition);
     }
@@ -99,6 +78,7 @@ public class LogEntryStart extends AbstractVersionAwareLogEntry {
         int result = (int) (timeWritten ^ (timeWritten >>> 32));
         result = 31 * result
                 + (int) (lastCommittedTxWhenTransactionStarted ^ (lastCommittedTxWhenTransactionStarted >>> 32));
+        result = 31 * result + previousChecksum;
         result = 31 * result + (additionalHeader != null ? Arrays.hashCode(additionalHeader) : 0);
         result = 31 * result + startPosition.hashCode();
         return result;

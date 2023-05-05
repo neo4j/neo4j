@@ -145,7 +145,7 @@ class ChannelBuffer implements WritableChannel, ReadableChannel {
     }
 
     @Override
-    public void beginChecksum() {
+    public void beginChecksumForWriting() {
         // no-op
     }
 
@@ -153,6 +153,11 @@ class ChannelBuffer implements WritableChannel, ReadableChannel {
     public int putChecksum() throws IOException {
         // no-op
         return 0;
+    }
+
+    @Override
+    public void beginChecksum() {
+        // no-op
     }
 
     @Override

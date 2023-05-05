@@ -182,6 +182,9 @@ class StoreIdTest {
         }
 
         @Override
+        public void beginChecksum() {}
+
+        @Override
         public int getChecksum() {
             return BASE_TX_CHECKSUM;
         }
@@ -192,7 +195,7 @@ class StoreIdTest {
         }
 
         @Override
-        public void beginChecksum() {}
+        public void beginChecksumForWriting() {}
 
         @Override
         public int putChecksum() {

@@ -100,7 +100,7 @@ public class ChunkStartLogEntrySerializerV5_7 extends LogEntrySerializer<LogEntr
 
     @Override
     public int write(WritableChannel channel, LogEntryChunkStart logEntry) throws IOException {
-        channel.beginChecksum();
+        channel.beginChecksumForWriting();
         writeLogEntryHeader(logEntry.kernelVersion(), CHUNK_START, channel);
         LogPosition previousChunkStart = logEntry.getPreviousBatchLogPosition();
         channel.putLong(logEntry.getTimeWritten())

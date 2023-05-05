@@ -343,7 +343,7 @@ public class WriteEnrichmentChannel implements WritableChannel {
     }
 
     @Override
-    public void beginChecksum() {
+    public void beginChecksumForWriting() {
         // no-op
     }
 

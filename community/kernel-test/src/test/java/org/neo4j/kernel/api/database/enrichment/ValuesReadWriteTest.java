@@ -132,7 +132,7 @@ class ValuesReadWriteTest {
         }
 
         @Override
-        public void beginChecksum() {
+        public void beginChecksumForWriting() {
             // no-op
         }
 

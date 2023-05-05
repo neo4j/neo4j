@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
@@ -43,10 +45,10 @@ class TransactionPositionLocatorTest {
     private final long txId = 42;
     private final LogPosition startPosition = new LogPosition(1, 128);
 
-    private final LogEntryStart start = new LogEntryStart(LATEST_KERNEL_VERSION, 0, 0, 0, null, startPosition);
+    private final LogEntryStart start = newStartEntry(LATEST_KERNEL_VERSION, 0, 0, 0, null, startPosition);
     private final LogEntryCommand command = new LogEntryCommand(new TestCommand());
     private final LogEntryCommit commit =
-            new LogEntryCommit(LATEST_KERNEL_VERSION, txId, System.currentTimeMillis(), BASE_TX_CHECKSUM);
+            newCommitEntry(LATEST_KERNEL_VERSION, txId, System.currentTimeMillis(), BASE_TX_CHECKSUM);
 
     @Test
     void shouldFindTransactionLogPosition() throws IOException {

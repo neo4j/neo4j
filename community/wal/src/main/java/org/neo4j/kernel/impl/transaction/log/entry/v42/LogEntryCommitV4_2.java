@@ -17,38 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.entry;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryTypeCodes.TX_COMMIT;
+package org.neo4j.kernel.impl.transaction.log.entry.v42;
 
 import java.util.Objects;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 
-public class LogEntryCommit extends AbstractVersionAwareLogEntry {
-    protected final long txId;
-    protected final long timeWritten;
+public class LogEntryCommitV4_2 extends LogEntryCommit {
+    private final int checksum;
 
-    protected LogEntryCommit(KernelVersion kernelVersion, long txId, long timeWritten) {
-        super(kernelVersion, TX_COMMIT);
-        this.txId = txId;
-        this.timeWritten = timeWritten;
+    public LogEntryCommitV4_2(KernelVersion kernelVersion, long txId, long timeWritten, int checksum) {
+        super(kernelVersion, txId, timeWritten);
+        this.checksum = checksum;
     }
 
-    public long getTxId() {
-        return txId;
-    }
-
-    public long getTimeWritten() {
-        return timeWritten;
-    }
-
+    @Override
     public int getChecksum() {
-        return 0;
+        return checksum;
     }
 
     @Override
     public String toString() {
-        return "Commit[txId=" + getTxId() + ", " + timestamp(getTimeWritten()) + "]";
+        return "Commit[txId=" + getTxId() + ", " + timestamp(getTimeWritten()) + ", checksum=" + checksum + "]";
     }
 
     @Override
@@ -59,12 +49,12 @@ public class LogEntryCommit extends AbstractVersionAwareLogEntry {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        LogEntryCommit that = (LogEntryCommit) o;
-        return txId == that.txId && timeWritten == that.timeWritten;
+        LogEntryCommitV4_2 that = (LogEntryCommitV4_2) o;
+        return txId == that.txId && timeWritten == that.timeWritten && checksum == that.checksum;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(txId, timeWritten);
+        return Objects.hash(txId, timeWritten, checksum);
     }
 }

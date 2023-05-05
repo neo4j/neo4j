@@ -172,7 +172,7 @@ public class EnvelopeWriteChannel implements PhysicalLogChannel {
     }
 
     @Override
-    public void beginChecksum() {
+    public void beginChecksumForWriting() {
         // nothing
     }
 

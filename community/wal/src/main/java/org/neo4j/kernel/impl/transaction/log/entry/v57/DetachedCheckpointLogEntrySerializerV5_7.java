@@ -139,7 +139,7 @@ public class DetachedCheckpointLogEntrySerializerV5_7 extends LogEntrySerializer
 
     @Override
     public int write(WritableChannel channel, LogEntryDetachedCheckpointV5_0 logEntry) throws IOException {
-        channel.beginChecksum();
+        channel.beginChecksumForWriting();
         writeLogEntryHeader(logEntry.kernelVersion(), DETACHED_CHECK_POINT_V5_0, channel);
         byte[] storeIdBuffer = new byte[MAX_STORE_ID_LENGTH];
         StoreIdSerialization.serializeWithFixedSize(logEntry.getStoreId(), ByteBuffer.wrap(storeIdBuffer));

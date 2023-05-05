@@ -26,14 +26,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.internal.helpers.collection.Iterators.array;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.exhaust;
 import static org.neo4j.kernel.impl.transaction.log.GivenCommandBatchCursor.given;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newCommitEntry;
+import static org.neo4j.kernel.impl.transaction.log.entry.LogEntryFactory.newStartEntry;
 import static org.neo4j.storageengine.api.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.kernel.impl.transaction.CommittedCommandBatch;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryStart;
 import org.neo4j.kernel.impl.transaction.log.reverse.EagerlyReversedCommandBatchCursor;
 
 class EagerlyReversedCommandBatchCursorTest {
@@ -68,8 +68,8 @@ class EagerlyReversedCommandBatchCursorTest {
 
     private static CommittedTransactionRepresentation createTransaction(long txId) {
         return new CommittedTransactionRepresentation(
-                new LogEntryStart(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
+                newStartEntry(LATEST_KERNEL_VERSION, 1, 2, 3, EMPTY_BYTE_ARRAY, LogPosition.UNSPECIFIED),
                 emptyList(),
-                new LogEntryCommit(LATEST_KERNEL_VERSION, txId, 1L, BASE_TX_CHECKSUM));
+                newCommitEntry(LATEST_KERNEL_VERSION, txId, 1L, BASE_TX_CHECKSUM));
     }
 }

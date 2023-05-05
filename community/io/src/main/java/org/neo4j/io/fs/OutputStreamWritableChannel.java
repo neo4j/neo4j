@@ -117,7 +117,7 @@ public class OutputStreamWritableChannel implements FlushableChannel {
     }
 
     @Override
-    public void beginChecksum() {}
+    public void beginChecksumForWriting() {}
 
     @Override
     public int putChecksum() throws IOException {

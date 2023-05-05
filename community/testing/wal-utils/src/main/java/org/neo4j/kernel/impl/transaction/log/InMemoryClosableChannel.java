@@ -221,9 +221,13 @@ public class InMemoryClosableChannel
     }
 
     @Override
+    public void beginChecksumForWriting() {
+        writer.beginChecksumForWriting();
+    }
+
+    @Override
     public void beginChecksum() {
         reader.beginChecksum();
-        writer.beginChecksum();
     }
 
     @Override
@@ -547,7 +551,7 @@ public class InMemoryClosableChannel
         }
 
         @Override
-        public void beginChecksum() {
+        public void beginChecksumForWriting() {
             checksum.reset();
         }
 

@@ -376,7 +376,7 @@ class PhysicalFlushableChannelTest {
         int channelChecksum;
         try (var channel = new PhysicalFlushableLogChannel(
                 storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
-            channel.beginChecksum();
+            channel.beginChecksumForWriting();
             channel.put((byte) 10);
             channelChecksum = channel.putChecksum();
         }
@@ -405,7 +405,7 @@ class PhysicalFlushableChannelTest {
         try (var channel = new PhysicalFlushableLogChannel(
                 storeChannel, new HeapScopedBuffer(100, ByteOrder.LITTLE_ENDIAN, INSTANCE))) {
             channel.put((byte) 5);
-            channel.beginChecksum();
+            channel.beginChecksumForWriting();
             channel.put((byte) 10);
             channelChecksum = channel.putChecksum();
         }

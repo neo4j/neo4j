@@ -819,7 +819,7 @@ public class LogCommandSerializationV5_0Test {
     void enrichmentReadNotSupported() {
         try (var channel = new InMemoryClosableChannel()) {
             final var writer = channel.writer();
-            writer.beginChecksum();
+            writer.beginChecksumForWriting();
             writer.put(EnrichmentCommand.COMMAND_CODE);
             writer.putLong(13L);
             writer.putChecksum();
@@ -888,7 +888,7 @@ public class LogCommandSerializationV5_0Test {
             throws IOException {
         InMemoryClosableChannel originalChannel = new InMemoryClosableChannel();
 
-        originalChannel.beginChecksum();
+        originalChannel.beginChecksumForWriting();
         original.serialize(originalChannel);
         var originalChecksum = originalChannel.putChecksum();
 
@@ -898,7 +898,7 @@ public class LogCommandSerializationV5_0Test {
         assertThat(readOnce).isInstanceOf(type);
 
         var anotherChannel = new InMemoryClosableChannel();
-        anotherChannel.beginChecksum();
+        anotherChannel.beginChecksumForWriting();
         readOnce.serialize(anotherChannel);
         var anotherChecksum = anotherChannel.putChecksum();
 

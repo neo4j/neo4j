@@ -140,7 +140,7 @@ class ValueTypeTest {
         }
 
         @Override
-        public void beginChecksum() {}
+        public void beginChecksumForWriting() {}
 
         @Override
         public int putChecksum() {

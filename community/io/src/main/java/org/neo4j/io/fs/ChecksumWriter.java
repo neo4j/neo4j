@@ -33,10 +33,10 @@ public interface ChecksumWriter {
     /**
      * Begin a new checksum segment.
      */
-    void beginChecksum();
+    void beginChecksumForWriting();
 
     /**
-     * Calculate the checksum of the produced stream, since the last call to {@link #beginChecksum()}, and insert it at the end of the channel.
+     * Calculate the checksum of the produced stream, since the last call to {@link #beginChecksumForWriting()}, and insert it at the end of the channel.
      *
      * @return the calculated checksum.
      * @throws IOException I/O error from channel.
