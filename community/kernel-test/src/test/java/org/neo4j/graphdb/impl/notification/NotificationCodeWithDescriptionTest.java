@@ -189,7 +189,7 @@ class NotificationCodeWithDescriptionTest {
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The query used a deprecated procedure. ('oldName' is no longer supported)",
+                "The query used a deprecated procedure: `oldName`.",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -221,14 +221,29 @@ class NotificationCodeWithDescriptionTest {
 
     @Test
     void shouldConstructNotificationsFor_DEPRECATED_FUNCTION() {
-        Notification notification = DEPRECATED_FUNCTION.notification(InputPosition.empty);
+        String identifierDetail = NotificationDetail.deprecatedName("oldName", "newName");
+        Notification notification = DEPRECATED_FUNCTION.notification(InputPosition.empty, identifierDetail);
 
         verifyNotification(
                 notification,
                 "This feature is deprecated and will be removed in future versions.",
                 SeverityLevel.WARNING,
                 "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
-                "The query used a deprecated function. (%s)",
+                "The query used a deprecated function. ('oldName' has been replaced by 'newName')",
+                NotificationCategory.DEPRECATION);
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_DEPRECATED_FUNCTION_with_no_newName() {
+        String identifierDetail = NotificationDetail.deprecatedName("oldName", "");
+        Notification notification = DEPRECATED_FUNCTION.notification(InputPosition.empty, identifierDetail);
+
+        verifyNotification(
+                notification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                "The query used a deprecated function: `oldName`.",
                 NotificationCategory.DEPRECATION);
     }
 
@@ -635,8 +650,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            -73, -7, 78, -95, -12, 20, 119, -111, 125, 95, -100, -2, 11, 116, 16, -22, -59, 75, -128, -72, 58, 6, 99,
-            55, 111, -118, -122, 47, -18, -110, -60, -31
+            94, 17, 11, 62, -126, 99, -36, -39, 2, -23, 39, 52, 93, 120, -51, 115, 99, 99, 46, 72, -120, -70, -50, -124,
+            82, -119, 103, -69, -55, 81, 8, -116
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

@@ -48,8 +48,8 @@ public enum NotificationCodeWithDescription {
     INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY(
             Status.Statement.DynamicProperty,
             "Using a dynamic property makes it impossible to use an index lookup for this query (%s)"),
-    DEPRECATED_FUNCTION(Status.Statement.FeatureDeprecationWarning, "The query used a deprecated function. (%s)"),
-    DEPRECATED_PROCEDURE(Status.Statement.FeatureDeprecationWarning, "The query used a deprecated procedure. (%s)"),
+    DEPRECATED_FUNCTION(Status.Statement.FeatureDeprecationWarning, "The query used a deprecated function%s"),
+    DEPRECATED_PROCEDURE(Status.Statement.FeatureDeprecationWarning, "The query used a deprecated procedure%s"),
 
     DEPRECATED_RUNTIME_OPTION(
             Status.Statement.FeatureDeprecationWarning, "The query used a deprecated runtime option. (%s)"),

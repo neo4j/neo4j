@@ -30,9 +30,9 @@ public class NotificationDetail {
 
     public static String deprecatedName(final String oldName, final String newName) {
         if (newName == null || newName.trim().isEmpty()) {
-            return String.format("'%s' is no longer supported", oldName);
+            return String.format(": `%s`.", oldName);
         } else {
-            return String.format("'%s' has been replaced by '%s'", oldName, newName);
+            return String.format(". ('%s' has been replaced by '%s')", oldName, newName);
         }
     }
 
@@ -161,7 +161,7 @@ public class NotificationDetail {
     }
 
     public static String deprecatedField(final String procedure, final String field) {
-        return String.format("'%s' returned by '%s' is no longer supported.", field, procedure);
+        return String.format("'%s' returned by '%s' is deprecated.", field, procedure);
     }
 
     private static String createNotificationDetail(Set<String> elements, String singularTerm, String pluralTerm) {
