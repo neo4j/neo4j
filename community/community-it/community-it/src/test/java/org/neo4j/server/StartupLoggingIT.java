@@ -64,8 +64,8 @@ class StartupLoggingIT extends ExclusiveWebContainerTestBase {
                 testDirectory.homePath().resolve(LogConfig.USER_LOG),
                 EmptyMemoryTracker.INSTANCE);
         assertThat(captured)
-                .contains("Warning: Config file [nonexistent-file.conf] does not exist.")
                 .satisfies(containsAtLeastTheseLines(
+                        warn("Config file \\[nonexistent-file.conf\\] does not exist."),
                         info("Starting..."),
                         info(NEO4J_IS_STARTING_MESSAGE),
                         info("Remote interface available at " + uri),

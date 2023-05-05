@@ -186,11 +186,11 @@ public abstract class Bootloader implements AutoCloseable {
                 summary.printClosingStatement(environment.err());
             }
         } else {
-            // Print only closing statement if OK, otherwise print all issues.
+            // Don't print anything if all is well
             if (summary.result() != OK) {
                 summary.print(environment.err(), verbose);
+                summary.printClosingStatement(environment.out());
             }
-            summary.printClosingStatement(environment.out());
         }
 
         if (summary.result() == ERRORS) {

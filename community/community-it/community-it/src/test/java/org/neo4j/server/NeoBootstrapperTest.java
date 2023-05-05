@@ -22,6 +22,7 @@ package org.neo4j.server;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.Files.readAllLines;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -79,23 +80,18 @@ class NeoBootstrapperTest {
     }
 
     @Test
-    void shouldFailGracefullyWithFriendlyErrorMessageIfConfigurationValidationFails() throws IOException {
-
+    void shouldNotThrowNullPointerExceptionIfConfigurationValidationFails() throws IOException {
         // given
         neoBootstrapper = new CommunityBootstrapper();
 
         // when
-        assertThat(neoBootstrapper.start(dir, Map.of("initial.dbms.default_database", "$%^&*#)@!")))
-                .isEqualTo(NeoBootstrapper.INVALID_CONFIGURATION_ERROR_CODE);
+        assertThatThrownBy(() -> neoBootstrapper.start(dir, Map.of("initial.dbms.default_database", "$%^&*#)@!")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasNoSuppressedExceptions()
+                .rootCause()
+                .isInstanceOf(IllegalArgumentException.class);
 
-        // then friendly error message is printed
-        assertThat(suppress.getErrorVoice().toString())
-                .contains(
-                        "1 issue found.",
-                        "Error: Error evaluating value for setting 'initial.dbms.default_database'.",
-                        "Configuration file validation failed.");
-
-        // and no exceptions are thrown on stop and logs are written
+        // then no exceptions are thrown on stop and logs are written
         neoBootstrapper.stop();
         assertThat(suppress.getOutputVoice().lines()).last().asString().endsWith("Stopped.");
         neoBootstrapper = null;

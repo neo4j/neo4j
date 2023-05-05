@@ -33,7 +33,6 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.apache.commons.lang3.SystemUtils;
@@ -43,7 +42,6 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.HttpConnector;
 import org.neo4j.dbms.api.DatabaseManagementService;
-import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
@@ -59,8 +57,6 @@ import org.neo4j.server.logging.JULBridge;
 import org.neo4j.server.logging.JettyLogBridge;
 import org.neo4j.server.startup.Environment;
 import org.neo4j.server.startup.PidFileHelper;
-import org.neo4j.server.startup.validation.ConfigValidationHelper;
-import org.neo4j.server.startup.validation.ConfigValidationSummary;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.util.VisibleForTesting;
 import sun.misc.Signal;
@@ -121,30 +117,19 @@ public abstract class NeoBootstrapper implements Bootstrapper {
             boolean daemonMode) {
         addShutdownHook();
         installSignalHandlers();
+        SystemLogger.installErrorListener();
 
-        Supplier<Config> buildConfig = Suppliers.lazySingleton(() -> Config.newBuilder()
+        Config config = Config.newBuilder()
                 .commandExpansion(expandCommands)
                 .setDefaults(GraphDatabaseSettings.SERVER_DEFAULTS)
                 .fromFileNoThrow(configFile)
                 .setRaw(configOverrides)
                 .set(GraphDatabaseSettings.neo4j_home, homeDir.toAbsolutePath())
-                .build());
-
-        var validationHelper = new ConfigValidationHelper(configFile);
-        var validationSummary = validationHelper.validateAll(buildConfig);
-        if (validationSummary.result() == ConfigValidationSummary.ValidationResult.ERRORS) {
-            // Write summary to stderr and refuse to start if config doesn't pass validation
-            validationSummary.print(System.err, true);
-            validationSummary.printClosingStatement(System.err);
-            return INVALID_CONFIGURATION_ERROR_CODE;
-        }
-
-        Config config = buildConfig.get();
+                .build();
 
         pidFile = config.get(BootloaderSettings.pid_file);
         writePidSilently();
 
-        SystemLogger.installErrorListener();
         Log4jLogProvider userLogProvider = setupLogging(config, daemonMode);
         userLogFileStream = userLogProvider;
 
@@ -155,8 +140,6 @@ public abstract class NeoBootstrapper implements Bootstrapper {
         boolean startAllowed = checkLicenseAgreement(homeDir, config, daemonMode);
 
         // Log any messages written before logging was configured.
-        log.info(validationSummary.message(false));
-        log.info(validationSummary.closingStatement());
         startupLog.replayInto(log);
         config.setLogger(log);
 
