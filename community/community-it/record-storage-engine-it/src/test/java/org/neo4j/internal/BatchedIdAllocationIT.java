@@ -42,6 +42,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.internal.id.IdCapacityExceededException;
 import org.neo4j.internal.id.IdSequence;
 import org.neo4j.internal.id.IdValidator;
@@ -50,16 +51,24 @@ import org.neo4j.internal.recordstorage.id.BatchedTransactionIdSequenceProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.format.FormatFamily;
+import org.neo4j.test.TestDatabaseManagementServiceBuilder;
 import org.neo4j.test.extension.DbmsExtension;
+import org.neo4j.test.extension.ExtensionCallback;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.util.concurrent.Futures;
 
-@DbmsExtension
+@DbmsExtension(configurationCallback = "configure")
 class BatchedIdAllocationIT {
     @Inject
     private RecordStorageEngine storageEngine;
 
     private NeoStores neoStores;
+
+    @ExtensionCallback
+    void configure(TestDatabaseManagementServiceBuilder builder) {
+        builder.setConfig(GraphDatabaseSettings.db_format, FormatFamily.ALIGNED.name());
+    }
 
     @BeforeEach
     void setUp() {
