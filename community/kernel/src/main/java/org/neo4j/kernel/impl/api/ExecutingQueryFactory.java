@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
@@ -32,10 +33,13 @@ public class ExecutingQueryFactory {
     private static final AtomicLong lastQueryId = new AtomicLong();
     private final SystemNanoClock clock;
     private final AtomicReference<CpuClock> cpuClockRef;
+    private final LockTracer systemLockTracer;
 
-    public ExecutingQueryFactory(SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef) {
+    public ExecutingQueryFactory(
+            SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef, LockTracer systemLockTracer) {
         this.clock = clock;
         this.cpuClockRef = cpuClockRef;
+        this.systemLockTracer = systemLockTracer;
     }
 
     public ExecutingQuery createForStatement(StatementInfo statement, String queryText, MapValue queryParameters) {
@@ -68,6 +72,7 @@ public class ExecutingQueryFactory {
                 transactionMetaData,
                 thread.getId(),
                 thread.getName(),
+                systemLockTracer,
                 clock,
                 cpuClockRef.get());
     }

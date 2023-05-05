@@ -90,7 +90,8 @@ public class KernelStatement extends QueryStatement {
             NamedDatabaseId namedDatabaseId,
             Config config) {
         this.transaction = transaction;
-        this.queryRegistry = new StatementQueryRegistry(this, clockContext.systemClock(), cpuClockRef);
+        this.queryRegistry =
+                new StatementQueryRegistry(this, clockContext.systemClock(), cpuClockRef, systemLockTracer);
         this.systemLockTracer = systemLockTracer;
         this.traceStatements = config.get(trace_tx_statements);
         this.trackStatementClose = config.get(GraphDatabaseInternalSettings.track_tx_statement_close);
@@ -141,9 +142,11 @@ public class KernelStatement extends QueryStatement {
     }
 
     public LockTracer lockTracer() {
-        LockTracer tracer =
-                this.executingQuery().map(ExecutingQuery::lockTracer).orElse(null);
-        return tracer == null ? systemLockTracer : systemLockTracer.combine(tracer);
+        var currentQuery = executingQueryPlain();
+        if (currentQuery == null) {
+            return systemLockTracer;
+        }
+        return currentQuery.lockTracer();
     }
 
     @Override

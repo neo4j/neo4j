@@ -54,7 +54,7 @@ public class ExecutingQuery {
     private static final AtomicLongFieldUpdater<ExecutingQuery> WAIT_TIME =
             newUpdater(ExecutingQuery.class, "waitTimeNanos");
     private final long queryId;
-    private final LockTracer lockTracer = this::waitForLock;
+    private final LockTracer lockTracer;
     private final String executingUsername;
     private final String authenticatedUsername;
     private final ClientConnectionInfo clientConnection;
@@ -126,6 +126,7 @@ public class ExecutingQuery {
             Map<String, Object> transactionAnnotationData,
             long threadExecutingTheQueryId,
             String threadExecutingTheQueryName,
+            LockTracer systemLockTracer,
             SystemNanoClock clock,
             CpuClock cpuClock) {
         // Capture timestamps first
@@ -144,6 +145,7 @@ public class ExecutingQuery {
         this.threadExecutingTheQueryName = threadExecutingTheQueryName;
         this.clock = clock;
         this.cpuClock = cpuClock;
+        this.lockTracer = systemLockTracer.combine(this::waitForLock);
         this.memoryTracker = HeapHighWaterMarkTracker.ZERO;
     }
 
@@ -162,6 +164,7 @@ public class ExecutingQuery {
             LongSupplier faultsSupplier,
             long threadExecutingTheQueryId,
             String threadExecutingTheQueryName,
+            LockTracer systemLockTracer,
             SystemNanoClock clock,
             CpuClock cpuClock) {
         this(
@@ -174,6 +177,7 @@ public class ExecutingQuery {
                 transactionAnnotationData,
                 threadExecutingTheQueryId,
                 threadExecutingTheQueryName,
+                systemLockTracer,
                 clock,
                 cpuClock);
         onTransactionBound(new TransactionBinding(namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount, 1));

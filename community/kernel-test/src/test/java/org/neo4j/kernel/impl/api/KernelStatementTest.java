@@ -128,7 +128,7 @@ class KernelStatementTest {
 
     @Test
     void trackSequentialQueriesInStatement() {
-        var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef);
+        var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef, LockTracer.NONE);
         var transaction = mock(KernelTransactionImplementation.class, RETURNS_DEEP_STUBS);
         var statement = createStatement(transaction);
         statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
@@ -157,7 +157,7 @@ class KernelStatementTest {
     @Test
     void shouldKeepExecutingQueryUntilForceClosedOrReused() {
         // Given
-        var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef);
+        var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef, LockTracer.NONE);
         var transaction = mock(KernelTransactionImplementation.class, RETURNS_DEEP_STUBS);
         var statement = createStatement(transaction);
         statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);

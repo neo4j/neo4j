@@ -59,6 +59,7 @@ import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.monitoring.Monitors;
@@ -116,6 +117,7 @@ public abstract class FabricServicesBootstrap {
 
         var jobScheduler = resolve(JobScheduler.class);
         var monitors = resolve(Monitors.class);
+        var tracers = resolve(Tracers.class);
 
         var remoteExecutor = bootstrapRemoteStack();
         var serverConfig = dependencies.resolveDependency(Config.class);
@@ -160,7 +162,8 @@ public abstract class FabricServicesBootstrap {
                 TransactionManager.class);
 
         var cypherConfig = CypherConfiguration.fromConfig(config);
-        var statementLifecycles = new FabricStatementLifecycles(databaseManager, monitors, config, systemNanoClock);
+        var statementLifecycles = new FabricStatementLifecycles(
+                databaseManager, monitors, config, tracers.getLockTracer(), systemNanoClock);
         var monitoredExecutor = jobScheduler.monitoredJobExecutor(CYPHER_CACHE);
         var cacheFactory = new ExecutorBasedCaffeineCacheFactory(
                 job -> monitoredExecutor.execute(systemJob("Query plan cache maintenance"), job));
@@ -248,14 +251,7 @@ public abstract class FabricServicesBootstrap {
         }
     }
 
-    private static class ServiceBootstrapper {
-        private final LifeSupport lifeSupport;
-        private final Dependencies dependencies;
-
-        ServiceBootstrapper(LifeSupport lifeSupport, Dependencies dependencies) {
-            this.lifeSupport = lifeSupport;
-            this.dependencies = dependencies;
-        }
+    private record ServiceBootstrapper(LifeSupport lifeSupport, Dependencies dependencies) {
 
         <T> T registerService(T dependency, Class<T> dependencyType) {
             dependencies.satisfyDependency(dependency);

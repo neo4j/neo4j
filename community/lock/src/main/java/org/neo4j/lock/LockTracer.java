@@ -19,12 +19,16 @@
  */
 package org.neo4j.lock;
 
+@FunctionalInterface
 public interface LockTracer {
     LockWaitEvent waitForLock(LockType lockType, ResourceType resourceType, long transactionId, long... resourceIds);
 
     default LockTracer combine(LockTracer tracer) {
         if (tracer == NONE) {
             return this;
+        }
+        if (this == NONE) {
+            return tracer;
         }
         return new CombinedTracer(this, tracer);
     }

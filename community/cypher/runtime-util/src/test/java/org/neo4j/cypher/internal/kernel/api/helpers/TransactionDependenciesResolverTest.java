@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.QuerySnapshot;
 import org.neo4j.kernel.impl.api.TestKernelTransactionHandle;
 import org.neo4j.lock.ActiveLock;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.lock.ResourceTypes;
@@ -172,6 +173,7 @@ class TransactionDependenciesResolverTest {
                 () -> 2,
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
+                LockTracer.NONE,
                 Clocks.nanoClock(),
                 CpuClock.NOT_AVAILABLE);
     }

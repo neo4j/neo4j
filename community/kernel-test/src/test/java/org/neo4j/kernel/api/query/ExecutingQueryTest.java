@@ -41,6 +41,7 @@ import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.database.NamedDatabaseId;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.test.FakeCpuClock;
@@ -201,6 +202,7 @@ class ExecutingQueryTest {
                 () -> 1,
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
+                LockTracer.NONE,
                 clock,
                 FakeCpuClock.NOT_AVAILABLE);
 
@@ -229,6 +231,7 @@ class ExecutingQueryTest {
                 () -> 1,
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
+                LockTracer.NONE,
                 clock,
                 FakeCpuClock.NOT_AVAILABLE);
 
@@ -435,6 +438,7 @@ class ExecutingQueryTest {
                 page::faults,
                 Thread.currentThread().getId(),
                 Thread.currentThread().getName(),
+                LockTracer.NONE,
                 clock,
                 cpuClock);
     }

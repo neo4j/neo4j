@@ -32,6 +32,7 @@ import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.ExecutingQueryFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.HeapHighWaterMarkTracker;
 import org.neo4j.monitoring.Monitors;
 import org.neo4j.resources.CpuClock;
@@ -47,10 +48,12 @@ public class FabricStatementLifecycles {
             DatabaseContextProvider<? extends DatabaseContext> databaseContextProvider,
             Monitors dbmsMonitors,
             Config config,
+            LockTracer systemLockTracer,
             SystemNanoClock systemNanoClock) {
         this.databaseContextProvider = databaseContextProvider;
         this.dbmsMonitor = dbmsMonitors.newMonitor(QueryExecutionMonitor.class);
-        this.executingQueryFactory = new ExecutingQueryFactory(systemNanoClock, setupCpuClockAtomicReference(config));
+        this.executingQueryFactory =
+                new ExecutingQueryFactory(systemNanoClock, setupCpuClockAtomicReference(config), systemLockTracer);
     }
 
     private static AtomicReference<CpuClock> setupCpuClockAtomicReference(Config config) {

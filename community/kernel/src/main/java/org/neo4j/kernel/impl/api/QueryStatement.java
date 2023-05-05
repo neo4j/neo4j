@@ -19,14 +19,31 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Optional;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 
 public abstract class QueryStatement extends CloseableResourceManager implements StatementInfo {
+
+    private static final VarHandle EXECUTING_QUERY;
     private volatile ExecutingQuery executingQuery;
+
+    static {
+        try {
+            EXECUTING_QUERY =
+                    MethodHandles.lookup().findVarHandle(QueryStatement.class, "executingQuery", ExecutingQuery.class);
+        } catch (ReflectiveOperationException e) {
+            throw new ExceptionInInitializerError(e);
+        }
+    }
 
     protected Optional<ExecutingQuery> executingQuery() {
         return Optional.ofNullable(executingQuery);
+    }
+
+    protected ExecutingQuery executingQueryPlain() {
+        return (ExecutingQuery) EXECUTING_QUERY.get(this);
     }
 
     void clearQueryExecution() {

@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.kernel.api.QueryRegistry;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.values.virtual.MapValue;
@@ -32,9 +33,12 @@ public class StatementQueryRegistry implements QueryRegistry {
     private final ExecutingQueryFactory factory;
 
     public StatementQueryRegistry(
-            QueryStatement statement, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef) {
+            QueryStatement statement,
+            SystemNanoClock clock,
+            AtomicReference<CpuClock> cpuClockRef,
+            LockTracer systemLockTracer) {
         this.statement = statement;
-        this.factory = new ExecutingQueryFactory(clock, cpuClockRef);
+        this.factory = new ExecutingQueryFactory(clock, cpuClockRef, systemLockTracer);
     }
 
     @Override
