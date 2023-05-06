@@ -20,11 +20,9 @@
     <properties>
         <appassembler-maven-plugin.version>2.1.0</appassembler-maven-plugin.version>
         <assembly-suffix />
-        <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
         <executable-suffix />
         <jline.version>3.21.0</jline.version>
         <license-text.header>headers/GPL-3-header.txt</license-text.header>
-        <maven-assembly-plugin.version>3.3.0</maven-assembly-plugin.version>
         <moduleName>org.neo4j.shell</moduleName>
         <name-of-main-class>org.neo4j.shell.Main</name-of-main-class>
         <native-maven-plugin.version>0.9.9</native-maven-plugin.version>
@@ -239,7 +237,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>${maven-assembly-plugin.version}</version>
                 <configuration>
                     <encoding>UTF-8</encoding>
                     <appendAssemblyId>false</appendAssemblyId>
@@ -322,7 +319,6 @@
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
-                        <version>${exec-maven-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>compress-binary</id>
@@ -343,7 +339,6 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-assembly-plugin</artifactId>
-                        <version>${maven-assembly-plugin.version}</version>
                         <executions>
                             <execution>
                                 <id>assembly-native</id>
