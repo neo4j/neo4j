@@ -171,7 +171,58 @@ public enum ZippedStoreCommunity implements ZippedStore {
     REC_SF11_V50_EMPTY(
             "record-standard-1.1_V5.0_empty_community.zip",
             new DbStatistics(
-                    "record-standard-1.1", KernelVersion.V5_0, 4, COMMUNITY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
+                    "record-standard-1.1", KernelVersion.V5_0, 4, COMMUNITY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+    // 5.8 stores
+    REC_AF11_V58_ALL(
+            "record-aligned-1.1_V5.8_all_community.zip",
+            new DbStatistics(
+                    "record-aligned-1.1",
+                    KernelVersion.V5_8,
+                    19,
+                    COMMUNITY,
+                    2527,
+                    2513,
+                    14,
+                    2526,
+                    369,
+                    3616,
+                    3615,
+                    11648,
+                    22,
+                    2,
+                    0,
+                    4,
+                    0,
+                    22)),
+    REC_AF11_V58_EMPTY(
+            "record-aligned-1.1_V5.8_empty_community.zip",
+            new DbStatistics(
+                    "record-aligned-1.1", KernelVersion.V5_8, 4, COMMUNITY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
+    REC_SF11_V58_ALL(
+            "record-standard-1.1_V5.8_all_community.zip",
+            new DbStatistics(
+                    "record-standard-1.1",
+                    KernelVersion.V5_8,
+                    19,
+                    COMMUNITY,
+                    2437,
+                    2426,
+                    11,
+                    2436,
+                    358,
+                    3504,
+                    3503,
+                    11218,
+                    22,
+                    2,
+                    0,
+                    4,
+                    0,
+                    22)),
+    REC_SF11_V58_EMPTY(
+            "record-standard-1.1_V5.8_empty_community.zip",
+            new DbStatistics(
+                    "record-standard-1.1", KernelVersion.V5_8, 4, COMMUNITY, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0));
 
     private final String zipFileName;
     private final DbStatistics statistics;
