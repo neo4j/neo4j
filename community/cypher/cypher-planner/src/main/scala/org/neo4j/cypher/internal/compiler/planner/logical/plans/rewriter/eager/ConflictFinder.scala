@@ -474,6 +474,9 @@ object ConflictFinder {
     }
   }
 
+  /**
+   * Traverses the logical plan tree to find the path to the inner plan.
+   */
   private def parentsOfIn(
     innerPlan: LogicalPlan,
     outerPlan: LogicalPlan,
@@ -484,8 +487,7 @@ object ConflictFinder {
       case _ =>
         def recurse = plan => parentsOfIn(innerPlan, plan, acc :+ outerPlan)
         val maybeLhs = outerPlan.lhs.flatMap(recurse)
-        val maybeRhs = outerPlan.rhs.flatMap(recurse)
-        maybeLhs.orElse(maybeRhs)
+        maybeLhs.orElse(outerPlan.rhs.flatMap(recurse))
     }
   }
 }
