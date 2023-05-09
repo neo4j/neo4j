@@ -176,8 +176,8 @@ public class FabricKernelTransaction {
         return internalTransaction;
     }
 
-    public Long transactionId() {
-        return internalTransaction.kernelTransaction().getTransactionId();
+    public long transactionSequenceNumber() {
+        return internalTransaction.kernelTransaction().getTransactionSequenceNumber();
     }
 
     private class ContextClosingResultInterceptor implements StatementResult {

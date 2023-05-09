@@ -249,8 +249,9 @@ public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbT
         NamedDatabaseId namedDbId =
                 DatabaseIdFactory.from(sessionDatabaseReference.alias().name(), sessionDatabaseReference.id());
 
-        Long transactionId = kernelTransaction.transactionId();
-        return new ExecutingQuery.TransactionBinding(namedDbId, () -> 0L, () -> 0L, () -> 0L, transactionId);
+        Long transactionSequenceNumber = kernelTransaction.transactionSequenceNumber();
+        return new ExecutingQuery.TransactionBinding(
+                namedDbId, () -> 0L, () -> 0L, () -> 0L, transactionSequenceNumber);
     }
 
     public Procedures contextlessProcedures() {
