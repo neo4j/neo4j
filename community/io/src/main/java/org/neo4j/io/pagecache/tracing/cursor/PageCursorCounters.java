@@ -114,6 +114,4 @@ public interface PageCursorCounters {
     long snapshotsLoaded();
 
     long copiedPages();
-
-    long chainsPatched();
 }

@@ -169,7 +169,5 @@ public interface PageCacheCounters {
 
     long copiedPages();
 
-    long chainsPatched();
-
     long snapshotsLoaded();
 }

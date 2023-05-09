@@ -239,11 +239,6 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public long chainsPatched() {
-        return 0;
-    }
-
-    @Override
     public long snapshotsLoaded() {
         return 0;
     }
@@ -310,9 +305,6 @@ public final class LinearHistoryPageCacheTracer implements PageCacheTracer {
 
     @Override
     public void pagesCopied(long copiesCreated) {}
-
-    @Override
-    public void chainsPatched(long chainsPatched) {}
 
     @Override
     public void filesTruncated(long truncatedFiles) {}

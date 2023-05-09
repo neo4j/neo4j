@@ -250,11 +250,6 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
     }
 
     @Override
-    public long chainsPatched() {
-        return 0;
-    }
-
-    @Override
     public long snapshotsLoaded() {
         return 0;
     }
@@ -327,9 +322,6 @@ public class RecordingPageCacheTracer extends RecordingTracer implements PageCac
 
     @Override
     public void pagesCopied(long copiesCreated) {}
-
-    @Override
-    public void chainsPatched(long chainsPatched) {}
 
     @Override
     public void filesTruncated(long truncatedFiles) {}

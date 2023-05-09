@@ -132,11 +132,6 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer {
     }
 
     @Override
-    public long chainsPatched() {
-        return 0;
-    }
-
-    @Override
     public PinEvent beginPin(boolean writeLock, long filePageId, PageSwapper swapper) {
         return tracer.add(new HEvents.PinHEvent(tracer, writeLock, filePageId, swapper));
     }
@@ -175,7 +170,4 @@ public class LinearHistoryPageCursorTracer implements PageCursorTracer {
 
     @Override
     public void pageCopied(long pageRef, long version) {}
-
-    @Override
-    public void chainPatched(long pageId) {}
 }

@@ -45,12 +45,6 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
 
     @Override
     public void unpin() {
-        if (multiVersioned) {
-            // first we need to see if we need to update and remap snapshot,
-            // as part of that pinned page may change so this should be the first operation on unpin
-            // if cursor was already unpinned it will not have any state to update any chain.
-            updateChain();
-        }
         long pageRef = pinnedPageRef;
         if (pageRef != 0) {
             tracer.unpin(loadPlainCurrentPageId(), swapper);
@@ -198,18 +192,17 @@ final class MuninnWritePageCursor extends MuninnPageCursor {
         // after the reset() call, which means that if we throw, the cursor will
         // be closed and the page lock will be released.
         assertCursorOpenFileMappedAndGetIdOfLastPage();
-        if (multiVersioned && olderVersionRequired(versionContext)) {
-            versionStorage.loadWriteSnapshot(this, versionContext, pinEvent);
+        long headVersion = getLongAt(pointer, littleEndian);
+        if (multiVersioned && isOldHead(versionContext, headVersion)) {
+            versionStorage.createPageSnapshot(this, versionContext, headVersion, pinEvent);
         }
         if (!multiVersioned) {
             PageList.setLastModifiedTxId(pageRef, versionContext.committingTransactionId());
         }
     }
 
-    private boolean olderVersionRequired(VersionContext versionContext) {
-        long version = getLongAt(pointer, littleEndian);
-        // We in the same version as we already have, we do not need to move anywhere. Head is actual page.
-        return version != versionContext.committingTransactionId();
+    private boolean isOldHead(VersionContext versionContext, long headVersion) {
+        return headVersion != versionContext.committingTransactionId();
     }
 
     @Override

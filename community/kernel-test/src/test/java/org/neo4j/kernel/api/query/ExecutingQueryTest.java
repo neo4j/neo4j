@@ -571,11 +571,6 @@ class ExecutingQueryTest {
             return 0;
         }
 
-        @Override
-        public long chainsPatched() {
-            return 0;
-        }
-
         public void flushes(long increment) {
             flushes += increment;
         }

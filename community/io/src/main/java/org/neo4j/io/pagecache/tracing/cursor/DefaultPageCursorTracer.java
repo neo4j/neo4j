@@ -69,7 +69,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     private long merges;
     private long snapshotsLoaded;
     private long copiesCreated;
-    private long chainsPatched;
     private long openedCursors;
     private long closedCursors;
 
@@ -134,17 +133,11 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         this.copiesCreated += statisticSnapshot.copiedPages();
         this.openedCursors += statisticSnapshot.openedCursors();
         this.closedCursors += statisticSnapshot.closedCursors();
-        this.chainsPatched += statisticSnapshot.chainsPatched();
     }
 
     @Override
     public void pageCopied(long pageRef, long version) {
         copiesCreated++;
-    }
-
-    @Override
-    public void chainPatched(long pageId) {
-        chainsPatched++;
     }
 
     // When updating reporting here please check if that affects any reporting on additional available tracers
@@ -205,9 +198,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         }
         if (copiesCreated > 0) {
             pageCacheTracer.pagesCopied(copiesCreated);
-        }
-        if (chainsPatched > 0) {
-            pageCacheTracer.chainsPatched(chainsPatched);
         }
         if (openedCursors > 0) {
             pageCacheTracer.openedCursors(openedCursors);
@@ -271,7 +261,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
         copiesCreated = 0;
         openedCursors = 0;
         closedCursors = 0;
-        chainsPatched = 0;
     }
 
     @Override
@@ -362,11 +351,6 @@ public class DefaultPageCursorTracer implements PageCursorTracer {
     @Override
     public long copiedPages() {
         return copiesCreated;
-    }
-
-    @Override
-    public long chainsPatched() {
-        return chainsPatched;
     }
 
     @Override

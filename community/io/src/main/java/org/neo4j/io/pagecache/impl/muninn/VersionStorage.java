@@ -32,15 +32,13 @@ public interface VersionStorage extends AutoCloseable {
         public void loadReadSnapshot(MuninnPageCursor pageCursor, VersionContext versionContext, PinEvent pinEvent) {}
 
         @Override
-        public void loadWriteSnapshot(MuninnPageCursor pageCursor, VersionContext versionContext, PinEvent pinEvent) {}
+        public void createPageSnapshot(
+                MuninnPageCursor pageCursor, VersionContext versionContext, long chainHeadVersion, PinEvent pinEvent) {}
 
         @Override
         public long size() {
             return 0;
         }
-
-        @Override
-        public void patchSnapshotChain(MuninnPageCursor pageCursor) {}
 
         @Override
         public VersionStorageAccessor accessor() {
@@ -61,22 +59,16 @@ public interface VersionStorage extends AutoCloseable {
     void loadReadSnapshot(MuninnPageCursor pageCursor, VersionContext versionContext, PinEvent pinEvent);
 
     /**
-     * Load write version snapshot to provided page cursor. If any page copies will be required as part of that
-     * version storage will be able to do that. As part of that work cursor may be repointed to newly created page or
-     * to previously existing page in version storage.
-     * @param pageCursor user supplied cursor to write snapshot page updates
+     * Create version snapshot of the page provided by page cursor. Newly created version will be offloaded to version storage
+     * and stored as the next page version in a version chain.
+     *
+     * @param pageCursor     user supplied cursor to write snapshot page updates
      * @param versionContext version context with information about ongoing version changes
-     * @param pinEvent tracing event
+     * @param chainHeadVersion    page chain head version
+     * @param pinEvent       tracing event
      */
-    void loadWriteSnapshot(MuninnPageCursor pageCursor, VersionContext versionContext, PinEvent pinEvent);
-
-    /**
-     * Update chain version when write is complete to particular snapshot.
-     * As result of snapshot patching any update that was written to particular snapshot will be propagated to
-     * the all versions up to the head of chain of snapshot.
-     * @param pageCursor user supplied write cursor.
-     */
-    void patchSnapshotChain(MuninnPageCursor pageCursor);
+    void createPageSnapshot(
+            MuninnPageCursor pageCursor, VersionContext versionContext, long chainHeadVersion, PinEvent pinEvent);
 
     /**
      * @return accessor that can allocate pages in version storage and provide PageCursor access to them

@@ -165,11 +165,6 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     }
 
     @Override
-    public long chainsPatched() {
-        return delegate.chainsPatched();
-    }
-
-    @Override
     public long snapshotsLoaded() {
         return delegate.snapshotsLoaded();
     }
@@ -282,11 +277,6 @@ public class DelegatingPageCacheTracer implements PageCacheTracer {
     @Override
     public void pagesCopied(long copiesCreated) {
         delegate.pagesCopied(copiesCreated);
-    }
-
-    @Override
-    public void chainsPatched(long chainsPatched) {
-        delegate.chainsPatched(chainsPatched);
     }
 
     @Override

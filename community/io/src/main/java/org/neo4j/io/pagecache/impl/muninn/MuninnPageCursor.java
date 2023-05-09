@@ -1066,14 +1066,6 @@ public abstract class MuninnPageCursor extends PageCursor {
 
     abstract long lockStamp();
 
-    protected void updateChain() {
-        // we need to update chain only when writer was remapped to a writer in a snapshot version
-        // if not there is nothing to update and no remapping of writer should happen.
-        if (versionState != null) {
-            versionStorage.patchSnapshotChain(this);
-        }
-    }
-
     public void unmapSnapshot() {
         var remappedState = resetSnapshot();
         if (remappedState != null) {
