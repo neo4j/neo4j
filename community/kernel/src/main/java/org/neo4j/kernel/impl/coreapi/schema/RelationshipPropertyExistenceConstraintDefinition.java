@@ -36,6 +36,7 @@ public class RelationshipPropertyExistenceConstraintDefinition extends Relations
 
     @Override
     public ConstraintType getConstraintType() {
+        assertInUnterminatedTransaction();
         return ConstraintType.RELATIONSHIP_PROPERTY_EXISTENCE;
     }
 

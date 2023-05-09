@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import static org.neo4j.graphdb.schema.IndexSettingUtil.toIndexConfigFromIndexSettingObjectMap;
 
+import java.util.List;
 import java.util.Map;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintCreator;
@@ -46,6 +47,22 @@ public class RelationshipPropertyExistenceCreator extends BaseRelationshipConstr
     @Override
     public ConstraintCreator assertPropertyExists(String propertyKey) {
         throw new UnsupportedOperationException("You can only create one property existence constraint at a time.");
+    }
+
+    @Override
+    public ConstraintCreator assertPropertyIsUnique(String propertyKey) {
+        if (this.propertyKey.equals(propertyKey)) {
+            return new RelationshipKeyConstraintCreator(
+                    actions, name, type, List.of(propertyKey), indexType, indexConfig);
+        }
+        throw new UnsupportedOperationException(
+                "You cannot create a constraint on two different sets of property keys: [" + this.propertyKey
+                        + "] vs. [" + propertyKey + "].");
+    }
+
+    @Override
+    public ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey) {
+        return assertPropertyIsUnique(propertyKey);
     }
 
     @Override
