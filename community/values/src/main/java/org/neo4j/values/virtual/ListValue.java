@@ -556,7 +556,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         @Override
         public long estimatedHeapUsage()
         {
-            int s = 0;
+            long s = 0;
             for ( ListValue list : lists )
             {
                 s += list.estimatedHeapUsage();

@@ -21,6 +21,11 @@ package org.neo4j.values.virtual;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+
+import org.neo4j.values.AnyValue;
+
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -97,5 +102,19 @@ class ConcatListTest
         assertEquals(expected, concat);
         assertEquals(expected.hashCode(), concat.hashCode());
         assertArrayEquals(expected.asArray(), concat.asArray());
+    }
+
+    @Test
+    void heapUsageShouldNotOverflow()
+    {
+        // Given
+        var array = new AnyValue[8192];
+        Arrays.fill(array, stringValue( "foo" ));
+        ListValue list = list( array );
+        for ( int i = 0; i < 4000; i++ )
+        {
+            assertThat(list.estimatedHeapUsage()).isGreaterThan( 0 );
+            list = concat(list, list( array ));
+        }
     }
 }
