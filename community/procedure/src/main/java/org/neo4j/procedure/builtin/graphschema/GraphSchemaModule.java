@@ -166,12 +166,14 @@ final class GraphSchemaModule extends SimpleModule {
         }
     }
 
+    @JsonPropertyOrder({"id", "labels", "properties"})
     private abstract static class NodeObjectTypeMixin {
 
         @JsonProperty("$id")
         abstract String id();
     }
 
+    @JsonPropertyOrder({"id", "value"})
     private abstract static class TokenMixin {
 
         @JsonProperty("$id")
@@ -199,6 +201,7 @@ final class GraphSchemaModule extends SimpleModule {
         }
     }
 
+    @JsonPropertyOrder({"id", "type", "from", "to", "properties"})
     private abstract static class RelationshipObjectTypeMixin {
 
         @JsonProperty("$id")

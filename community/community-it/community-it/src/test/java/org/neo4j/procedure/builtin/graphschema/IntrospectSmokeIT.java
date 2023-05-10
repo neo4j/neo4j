@@ -23,19 +23,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.stream.Stream;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.test.TestDatabaseManagementServiceBuilder;
-import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.testdirectory.TestDirectoryExtension;
-import org.neo4j.test.utils.TestDirectory;
 import org.neo4j.util.FeatureToggles;
 
-@TestDirectoryExtension
 class IntrospectSmokeIT {
 
     public static final String EXPECTED_FULL_RESULT =
@@ -103,24 +100,25 @@ class IntrospectSmokeIT {
 		        "token" : "```WEIRD_TYPE`"
 		      } ],
 		      "nodeObjectTypes" : [ {
+		        "$id" : "n:A1",
 		        "labels" : [ {
 		          "$ref" : "#nl:A1"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:A1"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:A2",
 		        "labels" : [ {
 		          "$ref" : "#nl:A2"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:A2"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:A",
 		        "labels" : [ {
 		          "$ref" : "#nl:A"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:A"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:Actor:Person",
 		        "labels" : [ {
 		          "$ref" : "#nl:Actor"
 		        }, {
@@ -169,63 +167,63 @@ class IntrospectSmokeIT {
 		            "type" : "point"
 		          },
 		          "nullable" : true
-		        } ],
-		        "$id" : "n:Actor:Person"
+		        } ]
 		      }, {
+		        "$id" : "n:B1",
 		        "labels" : [ {
 		          "$ref" : "#nl:B1"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:B1"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:B2",
 		        "labels" : [ {
 		          "$ref" : "#nl:B2"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:B2"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:B",
 		        "labels" : [ {
 		          "$ref" : "#nl:B"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:B"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:Book",
 		        "labels" : [ {
 		          "$ref" : "#nl:Book"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:Book"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:L `2:L1",
 		        "labels" : [ {
 		          "$ref" : "#nl:L `2"
 		        }, {
 		          "$ref" : "#nl:L1"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:L `2:L1"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:L1:L2",
 		        "labels" : [ {
 		          "$ref" : "#nl:L1"
 		        }, {
 		          "$ref" : "#nl:L2"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:L1:L2"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:L2:L3",
 		        "labels" : [ {
 		          "$ref" : "#nl:L2"
 		        }, {
 		          "$ref" : "#nl:L3"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:L2:L3"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:Person",
 		        "labels" : [ {
 		          "$ref" : "#nl:Person"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:Person"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:SomeNode",
 		        "labels" : [ {
 		          "$ref" : "#nl:SomeNode"
 		        } ],
@@ -235,16 +233,16 @@ class IntrospectSmokeIT {
 		            "type" : "integer"
 		          },
 		          "nullable" : false
-		        } ],
-		        "$id" : "n:SomeNode"
+		        } ]
 		      }, {
+		        "$id" : "n:Unrelated",
 		        "labels" : [ {
 		          "$ref" : "#nl:Unrelated"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:Unrelated"
+		        "properties" : [ ]
 		      } ],
 		      "relationshipObjectTypes" : [ {
+		        "$id" : "r:A_TYPE",
 		        "type" : {
 		          "$ref" : "#rt:A_TYPE"
 		        },
@@ -260,9 +258,9 @@ class IntrospectSmokeIT {
 		            "type" : "string"
 		          },
 		          "nullable" : false
-		        } ],
-		        "$id" : "r:A_TYPE"
+		        } ]
 		      }, {
+		        "$id" : "r:A_TYPE_1",
 		        "type" : {
 		          "$ref" : "#rt:A_TYPE"
 		        },
@@ -278,9 +276,9 @@ class IntrospectSmokeIT {
 		            "type" : "string"
 		          },
 		          "nullable" : false
-		        } ],
-		        "$id" : "r:A_TYPE_1"
+		        } ]
 		      }, {
+		        "$id" : "r:RELATED_TO",
 		        "type" : {
 		          "$ref" : "#rt:RELATED_TO"
 		        },
@@ -302,9 +300,9 @@ class IntrospectSmokeIT {
 		            "type" : "datetime"
 		          },
 		          "nullable" : false
-		        } ],
-		        "$id" : "r:RELATED_TO"
+		        } ]
 		      }, {
+		        "$id" : "r:RELATED_TO_1",
 		        "type" : {
 		          "$ref" : "#rt:RELATED_TO"
 		        },
@@ -320,9 +318,9 @@ class IntrospectSmokeIT {
 		            "type" : "datetime"
 		          },
 		          "nullable" : false
-		        } ],
-		        "$id" : "r:RELATED_TO_1"
+		        } ]
 		      }, {
+		        "$id" : "r:REVIEWED",
 		        "type" : {
 		          "$ref" : "#rt:REVIEWED"
 		        },
@@ -332,9 +330,9 @@ class IntrospectSmokeIT {
 		        "to" : {
 		          "$ref" : "#n:Book"
 		        },
-		        "properties" : [ ],
-		        "$id" : "r:REVIEWED"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "r:`WEIRD_TYPE",
 		        "type" : {
 		          "$ref" : "#rt:`WEIRD_TYPE"
 		        },
@@ -344,8 +342,7 @@ class IntrospectSmokeIT {
 		        "to" : {
 		          "$ref" : "#n:B"
 		        },
-		        "properties" : [ ],
-		        "$id" : "r:`WEIRD_TYPE"
+		        "properties" : [ ]
 		      } ]
 		    }
 		  }
@@ -415,24 +412,25 @@ class IntrospectSmokeIT {
 		        "token" : "```WEIRD_TYPE`"
 		      } ],
 		      "nodeObjectTypes" : [ {
+		        "$id" : "n:A1",
 		        "labels" : [ {
 		          "$ref" : "#nl:A1"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:A1"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:A2",
 		        "labels" : [ {
 		          "$ref" : "#nl:A2"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:A2"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:A",
 		        "labels" : [ {
 		          "$ref" : "#nl:A"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:A"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:Actor:Person",
 		        "labels" : [ {
 		          "$ref" : "#nl:Actor"
 		        }, {
@@ -481,63 +479,63 @@ class IntrospectSmokeIT {
 		            "type" : "point"
 		          },
 		          "nullable" : true
-		        } ],
-		        "$id" : "n:Actor:Person"
+		        } ]
 		      }, {
+		        "$id" : "n:B1",
 		        "labels" : [ {
 		          "$ref" : "#nl:B1"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:B1"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:B2",
 		        "labels" : [ {
 		          "$ref" : "#nl:B2"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:B2"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:B",
 		        "labels" : [ {
 		          "$ref" : "#nl:B"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:B"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:Book",
 		        "labels" : [ {
 		          "$ref" : "#nl:Book"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:Book"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:L `2:L1",
 		        "labels" : [ {
 		          "$ref" : "#nl:L `2"
 		        }, {
 		          "$ref" : "#nl:L1"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:L `2:L1"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:L1:L2",
 		        "labels" : [ {
 		          "$ref" : "#nl:L1"
 		        }, {
 		          "$ref" : "#nl:L2"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:L1:L2"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:L2:L3",
 		        "labels" : [ {
 		          "$ref" : "#nl:L2"
 		        }, {
 		          "$ref" : "#nl:L3"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:L2:L3"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:Person",
 		        "labels" : [ {
 		          "$ref" : "#nl:Person"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:Person"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "n:SomeNode",
 		        "labels" : [ {
 		          "$ref" : "#nl:SomeNode"
 		        } ],
@@ -547,16 +545,16 @@ class IntrospectSmokeIT {
 		            "type" : "integer"
 		          },
 		          "nullable" : false
-		        } ],
-		        "$id" : "n:SomeNode"
+		        } ]
 		      }, {
+		        "$id" : "n:Unrelated",
 		        "labels" : [ {
 		          "$ref" : "#nl:Unrelated"
 		        } ],
-		        "properties" : [ ],
-		        "$id" : "n:Unrelated"
+		        "properties" : [ ]
 		      } ],
 		      "relationshipObjectTypes" : [ {
+		        "$id" : "r:A_TYPE",
 		        "type" : {
 		          "$ref" : "#rt:A_TYPE"
 		        },
@@ -572,9 +570,9 @@ class IntrospectSmokeIT {
 		            "type" : "string"
 		          },
 		          "nullable" : false
-		        } ],
-		        "$id" : "r:A_TYPE"
+		        } ]
 		      }, {
+		        "$id" : "r:RELATED_TO",
 		        "type" : {
 		          "$ref" : "#rt:RELATED_TO"
 		        },
@@ -596,9 +594,9 @@ class IntrospectSmokeIT {
 		            "type" : "datetime"
 		          },
 		          "nullable" : false
-		        } ],
-		        "$id" : "r:RELATED_TO"
+		        } ]
 		      }, {
+		        "$id" : "r:RELATED_TO_1",
 		        "type" : {
 		          "$ref" : "#rt:RELATED_TO"
 		        },
@@ -614,9 +612,9 @@ class IntrospectSmokeIT {
 		            "type" : "datetime"
 		          },
 		          "nullable" : false
-		        } ],
-		        "$id" : "r:RELATED_TO_1"
+		        } ]
 		      }, {
+		        "$id" : "r:REVIEWED",
 		        "type" : {
 		          "$ref" : "#rt:REVIEWED"
 		        },
@@ -626,9 +624,9 @@ class IntrospectSmokeIT {
 		        "to" : {
 		          "$ref" : "#n:Book"
 		        },
-		        "properties" : [ ],
-		        "$id" : "r:REVIEWED"
+		        "properties" : [ ]
 		      }, {
+		        "$id" : "r:`WEIRD_TYPE",
 		        "type" : {
 		          "$ref" : "#rt:`WEIRD_TYPE"
 		        },
@@ -638,27 +636,26 @@ class IntrospectSmokeIT {
 		        "to" : {
 		          "$ref" : "#n:B"
 		        },
-		        "properties" : [ ],
-		        "$id" : "r:`WEIRD_TYPE"
+		        "properties" : [ ]
 		      } ]
 		    }
 		  }
 		}""";
 
-    static {
-        FeatureToggles.set(Introspect.class, "enabled", true);
-    }
-
     private static final String DATABASE_NAME = "neo4j";
 
-    @Inject
-    private TestDirectory testDirectory;
+    private static DatabaseManagementService managementService;
 
-    private DatabaseManagementService managementService;
+    @BeforeAll
+    static void setUp() {
 
-    @BeforeEach
-    void setUp() {
-        managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath()).build();
+        synchronized (IntrospectSmokeIT.class) {
+            FeatureToggles.set(Introspect.class, "enabled", true);
+            managementService = new TestDatabaseManagementServiceBuilder()
+                    .useLazyProcedures(false)
+                    .impermanent()
+                    .build();
+        }
 
         var database = managementService.database(DATABASE_NAME);
         database.executeTransactionally("MATCH (n) DETACH DELETE n");
@@ -688,9 +685,14 @@ class IntrospectSmokeIT {
                 + "CREATE (:A2) -[:A_TYPE {x: 'hallo'}]-> (:B2)\n");
     }
 
-    @AfterEach
-    void tearDown() {
+    @AfterAll
+    static void tearDown() {
         managementService.shutdown();
+    }
+
+    static boolean procedureWasLoadedSuccessfully() {
+
+        return FeatureToggles.flag(Introspect.class, "enabled", false);
     }
 
     static Stream<Arguments> smokeTest() {
@@ -699,6 +701,9 @@ class IntrospectSmokeIT {
 
     @ParameterizedTest(name = "sample only: {1}")
     @MethodSource
+    @EnabledIf(
+            value = "procedureWasLoadedSuccessfully",
+            disabledReason = "Something went wrong while toggling the feature flag during this test")
     void smokeTest(String expected, boolean sampleOnly) {
         var result = managementService
                 .database(DATABASE_NAME)
