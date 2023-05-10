@@ -26,7 +26,11 @@ import org.neo4j.memory.MemoryTracker;
  */
 public interface MemoryAllocator {
     static MemoryAllocator createAllocator(long expectedMemory, MemoryTracker memoryTracker) {
-        return new GrabAllocator(expectedMemory, memoryTracker);
+        return createAllocator(expectedMemory, null, memoryTracker);
+    }
+
+    static MemoryAllocator createAllocator(long expectedMemory, Long grabSize, MemoryTracker memoryTracker) {
+        return new GrabAllocator(expectedMemory, grabSize, memoryTracker);
     }
 
     /**

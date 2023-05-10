@@ -111,7 +111,10 @@ public class ConfiguringPageCacheFactory {
         var memoryPool = memoryPools.pool(PAGE_CACHE, pageCacheMaxMemory, false, null);
         var memoryTracker = memoryPool.getPoolMemoryTracker();
         var swapperFactory = createAndConfigureSwapperFactory(fs, pageCacheTracer, memoryTracker, log);
-        MemoryAllocator memoryAllocator = buildMemoryAllocator(pageCacheMaxMemory, memoryTracker);
+        MemoryAllocator memoryAllocator = buildMemoryAllocator(
+                pageCacheMaxMemory,
+                config.get(GraphDatabaseInternalSettings.page_cache_allocation_grab_size),
+                memoryTracker);
         var bufferFactory = new ConfigurableIOBufferFactory(config, memoryTracker);
         MuninnPageCache.Configuration configuration = MuninnPageCache.config(memoryAllocator)
                 .memoryTracker(memoryTracker)
@@ -125,8 +128,9 @@ public class ConfiguringPageCacheFactory {
         return new MuninnPageCache(swapperFactory, scheduler, configuration);
     }
 
-    private static MemoryAllocator buildMemoryAllocator(long pageCacheMaxMemory, MemoryTracker memoryTracker) {
-        return createAllocator(pageCacheMaxMemory, memoryTracker);
+    private static MemoryAllocator buildMemoryAllocator(
+            long pageCacheMaxMemory, Long grabSize, MemoryTracker memoryTracker) {
+        return createAllocator(pageCacheMaxMemory, grabSize, memoryTracker);
     }
 
     private long getPageCacheMaxMemory(Config config) {

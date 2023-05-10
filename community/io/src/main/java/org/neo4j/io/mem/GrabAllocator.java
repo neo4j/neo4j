@@ -19,18 +19,23 @@
  */
 package org.neo4j.io.mem;
 
+import static org.neo4j.io.ByteUnit.gibiBytes;
 import static org.neo4j.io.ByteUnit.kibiBytes;
-import static org.neo4j.util.FeatureToggles.getInteger;
 
 import java.lang.ref.Cleaner;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.memory.MemoryTracker;
+import org.neo4j.util.Preconditions;
 
 /**
- * This memory allocator is allocating memory in large segments, called "grabs", and the memory returned by the memory
- * manager is page aligned, and plays well with transparent huge pages and other operating system optimisations.
+ * This memory allocator allocates native memory in large segments, called "grabs". It returns portions of those segments applying requested alignment.
  */
 public final class GrabAllocator implements MemoryAllocator {
+
+    private static final long BASE_GRAB_SIZE = kibiBytes(512);
+    private static final long MAX_GRAB_SIZE = gibiBytes(1);
+    private static final long BASE_MEMORY_SIZE = gibiBytes(100);
+
     private static final Cleaner globalCleaner = globalCleaner();
 
     private final Grabs grabs;
@@ -41,12 +46,33 @@ public final class GrabAllocator implements MemoryAllocator {
      * given alignment size.
      *
      * @param expectedMaxMemory The maximum amount of memory that this memory manager is expected to allocate. The
-     * actual amount of memory used can end up greater than this value, if some of it gets wasted on alignment padding.
-     * @param memoryTracker memory usage tracker
+     *                          actual amount of memory used can end up greater than this value, if some of it gets wasted on alignment padding.
+     * @param memoryTracker     memory usage tracker
      */
-    GrabAllocator(long expectedMaxMemory, MemoryTracker memoryTracker) {
-        this.grabs = new Grabs(expectedMaxMemory, memoryTracker);
+    GrabAllocator(long expectedMaxMemory, Long grabSize, MemoryTracker memoryTracker) {
+        Preconditions.requirePositive(expectedMaxMemory);
+        this.grabs = new Grabs(expectedMaxMemory, calculateGrabSize(grabSize, expectedMaxMemory), memoryTracker);
         this.cleanable = globalCleaner.register(this, new GrabsDeallocator(grabs));
+    }
+
+    /**
+     * Here we calculate allocation grab size, if it is not provided.
+     * Grab size affects two things:
+     * 1. Heap size used to record grabs:
+     *      Each {@link Grab} takes 40 bytes (with compressed oops).
+     *      At grab size 512KiB and 100GiB of expected max memory it will take 204800 grabs, or 7MiB of heap, to record all allocated memory.
+     * 2. Amount of memory wasted for alignment:
+     *      Expected alignment is 4K or 8K.
+     *      With grab size 512KiB and alignment 4K average waste is about 0.78% or 0.78GiB of 100GiB expected max memory.
+     * We take 512KiB grab as a base size and add another 512KiB for every 100GiB of expected max memory.
+     * This way heap usage is kept around 7MiB and alignment waste is kept around 1GiB.
+     */
+    static long calculateGrabSize(Long grabSize, long expectedMaxMemory) {
+        if (grabSize != null) {
+            Preconditions.requirePositive(grabSize);
+            return grabSize;
+        }
+        return Math.min(BASE_GRAB_SIZE + (expectedMaxMemory / BASE_MEMORY_SIZE) * BASE_GRAB_SIZE, MAX_GRAB_SIZE);
     }
 
     @Override
@@ -73,23 +99,20 @@ public final class GrabAllocator implements MemoryAllocator {
         public final Grab next;
         private final long address;
         private final long limit;
-        private final MemoryTracker memoryTracker;
         private long nextPointer;
 
         Grab(Grab next, long size, MemoryTracker memoryTracker) {
             this.next = next;
             this.address = UnsafeUtil.allocateMemory(size, memoryTracker);
             this.limit = address + size;
-            this.memoryTracker = memoryTracker;
             nextPointer = address;
         }
 
-        Grab(Grab next, long address, long limit, long nextPointer, MemoryTracker memoryTracker) {
+        Grab(Grab next, long address, long limit, long nextPointer) {
             this.next = next;
             this.address = address;
             this.limit = limit;
             this.nextPointer = nextPointer;
-            this.memoryTracker = memoryTracker;
         }
 
         private static long nextAligned(long pointer, long alignment) {
@@ -109,7 +132,7 @@ public final class GrabAllocator implements MemoryAllocator {
             return allocation;
         }
 
-        void free() {
+        void free(MemoryTracker memoryTracker) {
             UnsafeUtil.free(address, limit - address, memoryTracker);
         }
 
@@ -118,7 +141,7 @@ public final class GrabAllocator implements MemoryAllocator {
         }
 
         Grab setNext(Grab grab) {
-            return new Grab(grab, address, limit, nextPointer, memoryTracker);
+            return new Grab(grab, address, limit, nextPointer);
         }
 
         @Override
@@ -131,17 +154,14 @@ public final class GrabAllocator implements MemoryAllocator {
     }
 
     private static final class Grabs {
-        /**
-         * The amount of memory, in bytes, to grab in each Grab.
-         */
-        private static final long GRAB_SIZE = getInteger(GrabAllocator.class, "GRAB_SIZE", (int) kibiBytes(512));
-
+        private final long grabSize;
         private final MemoryTracker memoryTracker;
         private long expectedMaxMemory;
         private Grab head;
 
-        Grabs(long expectedMaxMemory, MemoryTracker memoryTracker) {
+        Grabs(long expectedMaxMemory, long grabSize, MemoryTracker memoryTracker) {
             this.expectedMaxMemory = expectedMaxMemory;
+            this.grabSize = grabSize;
             this.memoryTracker = memoryTracker;
         }
 
@@ -168,7 +188,7 @@ public final class GrabAllocator implements MemoryAllocator {
             Grab current = head;
 
             while (current != null) {
-                current.free();
+                current.free(memoryTracker);
                 current = current.next;
             }
             head = null;
@@ -178,36 +198,18 @@ public final class GrabAllocator implements MemoryAllocator {
             if (alignment <= 0) {
                 throw new IllegalArgumentException("Invalid alignment: " + alignment + ". Alignment must be positive.");
             }
-            long grabSize = Math.min(GRAB_SIZE, expectedMaxMemory);
-            long maxAllocationSize = bytes + alignment - 1;
-            if (maxAllocationSize > GRAB_SIZE) {
+            long sizeWithAlignment = bytes + alignment - 1;
+            if (sizeWithAlignment > grabSize) {
                 // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
-                grabSize = bytes;
                 Grab nextGrab = head == null ? null : head.next;
-                Grab allocationGrab = new Grab(nextGrab, grabSize, memoryTracker);
-                if (!allocationGrab.canAllocate(bytes, alignment)) {
-                    allocationGrab.free();
-                    grabSize = maxAllocationSize;
-                    allocationGrab = new Grab(nextGrab, grabSize, memoryTracker);
-                }
+                Grab allocationGrab = new Grab(nextGrab, sizeWithAlignment, memoryTracker);
                 long allocation = allocationGrab.allocate(bytes, alignment);
                 head = head == null ? allocationGrab : head.setNext(allocationGrab);
-                expectedMaxMemory -= bytes;
+                expectedMaxMemory -= sizeWithAlignment;
                 return allocation;
             }
 
             if (head == null || !head.canAllocate(bytes, alignment)) {
-                if (grabSize < maxAllocationSize) {
-                    grabSize = bytes;
-                    Grab grab = new Grab(head, grabSize, memoryTracker);
-                    if (grab.canAllocate(bytes, alignment)) {
-                        expectedMaxMemory -= grabSize;
-                        head = grab;
-                        return head.allocate(bytes, alignment);
-                    }
-                    grab.free();
-                    grabSize = maxAllocationSize;
-                }
                 head = new Grab(head, grabSize, memoryTracker);
                 expectedMaxMemory -= grabSize;
             }

@@ -1107,4 +1107,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Boolean> close_allocator_on_shutdown = newBuilder(
                     "internal.dbms.page_cache_close_allocator_on_shutdown", BOOL, false)
             .build();
+
+    @Internal
+    @Description(
+            "Size of the memory block used to allocate page cache memory. Default value calculated based on page cache size.")
+    public static final Setting<Long> page_cache_allocation_grab_size = newBuilder(
+                    "internal.dbms.page_cache_allocator_block_size", BYTES, null)
+            .addConstraint(min(1L))
+            .build();
 }

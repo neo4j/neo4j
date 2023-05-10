@@ -520,7 +520,7 @@ public class MuninnPageCache implements PageCache {
                 configuration.memoryAllocator,
                 new SwapperSet(),
                 victimPage,
-                UnsafeUtil.pageSize());
+                getBufferAlignment(cachePageSize));
         this.scheduler = jobScheduler;
         this.clock = configuration.clock;
         this.faultLockStriping = configuration.faultLockStriping;
@@ -532,6 +532,14 @@ public class MuninnPageCache implements PageCache {
 
         // Expose the total number of pages
         pageCacheTracer.maxPages(maxPages, cachePageSize);
+    }
+
+    /**
+     * If memory page size is larger than cache page size, alignment by memory page produces too much memory waste.
+     * Therefore, we use cache page size as upper bound for alignment.
+     */
+    private static int getBufferAlignment(int cachePageSize) {
+        return Math.min(UnsafeUtil.pageSize(), cachePageSize);
     }
 
     private static int calculatePagesToKeepFree(int maxPages) {

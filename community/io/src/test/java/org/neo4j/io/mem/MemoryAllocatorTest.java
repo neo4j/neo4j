@@ -23,9 +23,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.io.ByteUnit.MebiByte;
+import static org.neo4j.io.ByteUnit.gibiBytes;
+import static org.neo4j.io.ByteUnit.kibiBytes;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.internal.unsafe.UnsafeUtil;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.pagecache.PageCache;
@@ -118,7 +122,7 @@ class MemoryAllocatorTest {
 
     @Test
     void allocatingMustIncreaseMemoryUsedAndDecreaseAvailableMemory() {
-        MemoryAllocator mman = createAllocator(ONE_PAGE);
+        MemoryAllocator mman = createAllocator(ONE_PAGE, ONE_PAGE);
         // We haven't allocated anything, so usedMemory should be zero, and the available memory should be the
         // initial capacity.
         assertThat(mman.usedMemory()).isEqualTo(0L);
@@ -200,6 +204,25 @@ class MemoryAllocatorTest {
         UnsafeUtil.getLong(address + ONE_PAGE - Long.BYTES); // End of allocation.
     }
 
+    @ParameterizedTest
+    @ValueSource(longs = {1L, 1024L, 512 * 1024L, 5 * 512 * 1024L})
+    void canAllocateWithCustomGrabSize(long grabSize) {
+        var mman = createAllocator(ONE_PAGE, grabSize);
+        long address = mman.allocateAligned(ONE_PAGE, 3);
+        assertThat(address).isNotEqualTo(0L);
+
+        // This must not throw any bad access exceptions.
+        UnsafeUtil.getLong(address); // Start of allocation.
+        UnsafeUtil.getLong(address + ONE_PAGE - Long.BYTES); // End of allocation.
+    }
+
+    @Test
+    void grabSizeCalculus() {
+        assertThat(GrabAllocator.calculateGrabSize(null, 0)).isEqualTo(kibiBytes(512));
+        assertThat(GrabAllocator.calculateGrabSize(null, gibiBytes(150))).isEqualTo(kibiBytes(1024));
+        assertThat(GrabAllocator.calculateGrabSize(null, Long.MAX_VALUE)).isEqualTo(gibiBytes(1));
+    }
+
     private void closeAllocator() {
         if (allocator != null) {
             allocator.close();
@@ -210,6 +233,12 @@ class MemoryAllocatorTest {
     private MemoryAllocator createAllocator(long expectedMaxMemory) {
         closeAllocator();
         allocator = MemoryAllocator.createAllocator(expectedMaxMemory, new LocalMemoryTracker());
+        return allocator;
+    }
+
+    private MemoryAllocator createAllocator(long expectedMaxMemory, Long grabSize) {
+        closeAllocator();
+        allocator = MemoryAllocator.createAllocator(expectedMaxMemory, grabSize, new LocalMemoryTracker());
         return allocator;
     }
 }
