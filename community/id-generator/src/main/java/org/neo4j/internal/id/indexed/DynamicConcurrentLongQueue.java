@@ -79,13 +79,13 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
     }
 
     @Override
-    public long takeInRange(long maxBoundary) {
+    public long takeInRange(long minBoundary, long maxBoundary) {
         Chunk chunk;
         Chunk next;
         do {
             chunk = head.get();
             next = chunk.next.get();
-            var candidate = chunk.takeInRange(maxBoundary);
+            var candidate = chunk.takeInRange(minBoundary, maxBoundary);
             if (candidate >= 0 && candidate < maxBoundary) {
                 return candidate;
             } else if (candidate > maxBoundary) {
@@ -157,7 +157,7 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
             return true;
         }
 
-        long takeInRange(long maxBoundary) {
+        long takeInRange(long minBoundary, long maxBoundary) {
             int currentReadSeq;
             int currentWriteSeq;
             long value;
@@ -168,7 +168,7 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
                     return -1;
                 }
                 value = array.get(currentReadSeq);
-                if (value >= maxBoundary) {
+                if (value >= maxBoundary || value < minBoundary) {
                     return Long.MAX_VALUE;
                 }
             } while (!readSeq.compareAndSet(currentReadSeq, currentReadSeq + 1));

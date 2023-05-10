@@ -163,13 +163,16 @@ class IdCache {
         assert singleSlotted;
         long[] ids = null;
         int position = 0;
-        long idPageBoundary = Long.MAX_VALUE;
+        long idPageLowerBoundary = Long.MIN_VALUE;
+        long idPageUpperBoundary = Long.MAX_VALUE;
         for (ConcurrentLongQueue queue : queues) {
             long id;
-            while ((id = queue.takeInRange(idPageBoundary)) < idPageBoundary && position < idsPerPage) {
+            while (position < idsPerPage
+                    && (id = queue.takeInRange(idPageLowerBoundary, idPageUpperBoundary)) < idPageUpperBoundary) {
                 if (ids == null) {
                     ids = new long[idsPerPage];
-                    idPageBoundary = ((id / idsPerPage) + 1) * idsPerPage;
+                    idPageLowerBoundary = (id / idsPerPage) * idsPerPage;
+                    idPageUpperBoundary = idPageLowerBoundary + idsPerPage;
                 }
                 ids[position++] = id;
             }

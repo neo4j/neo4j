@@ -72,7 +72,7 @@ class SpmcLongQueue implements ConcurrentLongQueue {
     }
 
     @Override
-    public long takeInRange(long maxBoundary) {
+    public long takeInRange(long minBoundary, long maxBoundary) {
         long currentReadSeq;
         long currentWriteSeq;
         long value;
@@ -83,7 +83,7 @@ class SpmcLongQueue implements ConcurrentLongQueue {
                 return Long.MAX_VALUE;
             }
             value = array.get(idx(currentReadSeq));
-            if (value >= maxBoundary) {
+            if (value >= maxBoundary || value < minBoundary) {
                 return Long.MAX_VALUE;
             }
         } while (!readSeq.compareAndSet(currentReadSeq, currentReadSeq + 1));

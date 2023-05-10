@@ -20,9 +20,13 @@
 package org.neo4j.internal.id.indexed;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.LARGE_CACHE_CAPACITY;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_MONITOR;
+import static org.neo4j.internal.id.indexed.IndexedIdGenerator.SMALL_CACHE_CAPACITY;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.internal.id.IdSlotDistribution;
 
 class IdCacheTest {
@@ -63,5 +67,46 @@ class IdCacheTest {
         assertThat(cache.slotsByAvailableSpace()).isEqualTo(new IdSlotDistribution.Slot[] {
             new IdSlotDistribution.Slot(8, 1), new IdSlotDistribution.Slot(7, 2), new IdSlotDistribution.Slot(2, 4)
         });
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {LARGE_CACHE_CAPACITY, SMALL_CACHE_CAPACITY})
+    void drainRangeShouldNotLooseIds(int capacity) {
+        IdCache cache = new IdCache(IdSlotDistribution.SINGLE_IDS.slots(capacity));
+        PendingIdQueue toOffer = new PendingIdQueue(cache.slotsByAvailableSpace());
+        var half = capacity / 2;
+        var rangeSize = capacity / 5;
+        for (int i = 0; i < half; i++) {
+            toOffer.offer(i + 1000, 1);
+        }
+        for (int i = 0; i < capacity - half; i++) {
+            toOffer.offer(i, 1);
+        }
+        cache.offer(toOffer, NO_MONITOR);
+        int drained = 0;
+        long[] ids;
+        do {
+            ids = cache.drainRange(rangeSize);
+            assertIdsInSameRange(ids, rangeSize);
+            drained += ids.length;
+        } while (ids.length != 0);
+        assertThat(drained).isEqualTo(capacity);
+    }
+
+    private void assertIdsInSameRange(long[] ids, int rangeSize) {
+        if (ids.length == 0) {
+            return;
+        }
+        long min = Long.MAX_VALUE;
+        long max = Long.MIN_VALUE;
+        for (long id : ids) {
+            if (id > max) {
+                max = id;
+            }
+            if (id < min) {
+                min = id;
+            }
+        }
+        assertThat(max / rangeSize).isEqualTo(min / rangeSize);
     }
 }
