@@ -71,7 +71,7 @@ public class SocketConnection extends AbstractTransportConnection {
         }
 
         this.socket = this.createSocket();
-        this.socket.setSoTimeout((int) MINUTES.toMillis(5000));
+        this.socket.setSoTimeout((int) MINUTES.toMillis(1));
         this.socket.connect(new InetSocketAddress(address.getHost(), address.getPort()));
 
         this.in = this.socket.getInputStream();
