@@ -35,7 +35,6 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenSet;
 import org.neo4j.internal.kernel.api.security.AccessMode;
-import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.Degrees;
@@ -53,7 +52,7 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     boolean checkHasChanges;
     boolean hasChanges;
     private LongIterator addedNodes;
-    StorageNodeCursor storeCursor;
+    final StorageNodeCursor storeCursor;
     private final StorageNodeCursor securityStoreNodeCursor;
     private final StorageRelationshipTraversalCursor securityStoreRelationshipCursor;
     private long currentAddedInTx = NO_ID;
@@ -427,6 +426,10 @@ class DefaultNodeCursor extends TraceableCursor<DefaultNodeCursor> implements No
     }
 
     void release() {
-        IOUtils.closeAllUnchecked(storeCursor, securityStoreNodeCursor, securityStoreRelationshipCursor);
+        try (securityStoreRelationshipCursor;
+                securityStoreNodeCursor;
+                storeCursor) {
+            // A concise and low-cost way of closing all these cursors w/o the overhead of, say IOUtils.closeAll
+        }
     }
 }
