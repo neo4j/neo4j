@@ -65,6 +65,10 @@ public abstract class PropertySelection {
         return keysOnly;
     }
 
+    public abstract int lowestKey();
+
+    public abstract int highestKey();
+
     @Override
     public String toString() {
         return String.format("Property%sSelection", keysOnly ? "Key" : "");
@@ -159,6 +163,16 @@ public abstract class PropertySelection {
         }
 
         @Override
+        public int lowestKey() {
+            return key;
+        }
+
+        @Override
+        public int highestKey() {
+            return key;
+        }
+
+        @Override
         public String toString() {
             return super.toString() + "[" + key + "]";
         }
@@ -200,6 +214,16 @@ public abstract class PropertySelection {
         }
 
         @Override
+        public int lowestKey() {
+            return keys[0];
+        }
+
+        @Override
+        public int highestKey() {
+            return keys[keys.length - 1];
+        }
+
+        @Override
         public String toString() {
             return super.toString() + "[" + Arrays.toString(keys) + "]";
         }
@@ -228,6 +252,16 @@ public abstract class PropertySelection {
             @Override
             public boolean test(int key) {
                 return true;
+            }
+
+            @Override
+            public int lowestKey() {
+                return ANY_PROPERTY_KEY;
+            }
+
+            @Override
+            public int highestKey() {
+                return ANY_PROPERTY_KEY;
             }
 
             @Override
