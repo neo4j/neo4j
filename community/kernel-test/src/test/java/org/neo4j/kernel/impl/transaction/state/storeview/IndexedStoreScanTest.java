@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 
 class IndexedStoreScanTest {
     @Test
@@ -56,7 +56,7 @@ class IndexedStoreScanTest {
         inOrder.verify(client).initialize(NoLeaseClient.INSTANCE, 0, INSTANCE, config);
         inOrder.verify(client)
                 .acquireShared(
-                        LockTracer.NONE, ResourceTypes.LABEL, index.schema().lockingKeys());
+                        LockTracer.NONE, ResourceType.LABEL, index.schema().lockingKeys());
         inOrder.verify(delegate).run(NO_EXTERNAL_UPDATES);
         inOrder.verify(client).close();
     }

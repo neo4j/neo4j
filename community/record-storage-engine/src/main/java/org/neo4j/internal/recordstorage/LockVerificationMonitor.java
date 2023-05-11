@@ -26,11 +26,11 @@ import static org.neo4j.internal.recordstorage.RecordCursorTypes.RELATIONSHIP_CU
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.SCHEMA_CURSOR;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
-import static org.neo4j.lock.ResourceTypes.NODE;
-import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
-import static org.neo4j.lock.ResourceTypes.SCHEMA_NAME;
+import static org.neo4j.lock.ResourceType.NODE;
+import static org.neo4j.lock.ResourceType.NODE_RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP_GROUP;
+import static org.neo4j.lock.ResourceType.SCHEMA_NAME;
 import static org.neo4j.util.Preconditions.checkState;
 
 import java.util.Objects;

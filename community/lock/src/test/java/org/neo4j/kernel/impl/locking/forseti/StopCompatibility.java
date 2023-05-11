@@ -28,8 +28,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.neo4j.lock.ResourceTypes.NODE;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
+import static org.neo4j.lock.ResourceType.NODE;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,7 +54,6 @@ import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Race;
 import org.neo4j.test.extension.actors.Actor;
@@ -91,7 +90,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
             client.initialize(LeaseService.NoLeaseClient.INSTANCE, 0, EmptyMemoryTracker.INSTANCE, Config.defaults());
             for (int i = 0; i < 100; i++) {
                 client.acquireExclusive(LockTracer.NONE, RELATIONSHIP, i);
-                client.acquireShared(LockTracer.NONE, ResourceTypes.NODE, i);
+                client.acquireShared(LockTracer.NONE, ResourceType.NODE, i);
             }
             l1.release();
             client.close();

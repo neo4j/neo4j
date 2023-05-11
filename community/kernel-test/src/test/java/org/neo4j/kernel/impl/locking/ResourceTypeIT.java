@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Test;
  * This is an *IT integration test because it uses a large amount of memory.
  * Approximately 1.2 GBs goes into the map we use to check for collisions.
  */
-class ResourceTypesIT {
+class ResourceTypeIT {
     @Test
     void indexEntryHashing() {
         int collisions = 0;

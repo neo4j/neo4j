@@ -22,7 +22,7 @@ package org.neo4j.internal.recordstorage;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
 import static org.neo4j.lock.LockType.SHARED;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP;
 
 import java.util.ArrayList;
 import java.util.HashMap;

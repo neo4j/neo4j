@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.test.OtherThreadExecutor;
@@ -69,7 +69,7 @@ class ForsetiLockManagerTest {
     @BeforeEach
     void setUp() {
         config = Config.defaults(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true);
-        manager = new ForsetiLockManager(config, Clocks.nanoClock(), ResourceTypes.values());
+        manager = new ForsetiLockManager(config, Clocks.nanoClock(), ResourceType.values());
     }
 
     @AfterEach
@@ -94,9 +94,9 @@ class ForsetiLockManagerTest {
                         config); // Note same TX_ID
 
                 if (random.nextBoolean()) {
-                    client.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0);
+                    client.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, 0);
                 } else {
-                    client.acquireShared(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0);
+                    client.acquireShared(LockTracer.NONE, ResourceType.RELATIONSHIP, 0);
                 }
             }
         }));
@@ -113,11 +113,11 @@ class ForsetiLockManagerTest {
             client2.initialize(LeaseService.NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, config);
 
             // When
-            client2.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0);
+            client2.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, 0);
             client2.prepareForCommit();
 
             // Then (1 waiting for 2), 2 committing
-            assertThatThrownBy(() -> client1.acquireShared(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0))
+            assertThatThrownBy(() -> client1.acquireShared(LockTracer.NONE, ResourceType.RELATIONSHIP, 0))
                     .isInstanceOf(DeadlockDetectedException.class)
                     .hasMessageContaining("committing on the same thread");
         }
@@ -138,23 +138,23 @@ class ForsetiLockManagerTest {
             client4.initialize(LeaseService.NoLeaseClient.INSTANCE, 4, EmptyMemoryTracker.INSTANCE, config);
 
             // When
-            client4.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0);
+            client4.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, 0);
             executor1.executeDontWait(() -> {
-                client3.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1);
-                client3.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 0);
+                client3.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, 1);
+                client3.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, 0);
                 return null;
             });
             executor1.waitUntilWaiting(details -> details.isAt(ForsetiClient.class, "acquireExclusive"));
             executor2.executeDontWait(() -> {
-                client2.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 2);
-                client2.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1);
+                client2.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, 2);
+                client2.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, 1);
                 return null;
             });
             executor2.waitUntilWaiting(details -> details.isAt(ForsetiClient.class, "acquireExclusive"));
 
             client4.prepareForCommit();
             // Then (1 waiting for 2 waiting for 3 waiting for 4), 4 committing
-            assertThatThrownBy(() -> client1.acquireShared(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 2))
+            assertThatThrownBy(() -> client1.acquireShared(LockTracer.NONE, ResourceType.RELATIONSHIP, 2))
                     .isInstanceOf(DeadlockDetectedException.class)
                     .hasMessageContaining("committing on the same thread");
         }
@@ -207,9 +207,9 @@ class ForsetiLockManagerTest {
                             config);
                     long id = random.nextLong(10);
                     if (random.nextBoolean()) {
-                        client.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, id);
+                        client.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, id);
                     } else {
-                        client.acquireShared(LockTracer.NONE, ResourceTypes.RELATIONSHIP, id);
+                        client.acquireShared(LockTracer.NONE, ResourceType.RELATIONSHIP, id);
                     }
                     Thread.sleep(1);
                 } catch (Exception ignored) {
@@ -237,8 +237,8 @@ class ForsetiLockManagerTest {
             client.initialize(LeaseService.NoLeaseClient.INSTANCE, 1, memoryTracker, config);
 
             // Take some locks to make the client track some memory
-            client.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
-            client.acquireShared(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 1);
+            client.acquireExclusive(LockTracer.NONE, ResourceType.NODE, 1);
+            client.acquireShared(LockTracer.NONE, ResourceType.RELATIONSHIP, 1);
 
             executor.executeDontWait(
                     () -> { // Mimic an external transaction terminate
@@ -269,7 +269,7 @@ class ForsetiLockManagerTest {
                 long id = random.nextLong(10);
                 if (random.nextBoolean()) {
                     try {
-                        client.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, id);
+                        client.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, id);
                         exclusiveLocks.compute(id, (key, count) -> count == null ? 1 : count + 1);
                     } catch (DeadlockDetectedException e) {
                         // Never okay if we get here for a single-threaded test
@@ -287,17 +287,17 @@ class ForsetiLockManagerTest {
                         assertThat(deadlocks++).isLessThanOrEqualTo(100);
                     }
                 } else {
-                    client.acquireShared(LockTracer.NONE, ResourceTypes.RELATIONSHIP, id);
+                    client.acquireShared(LockTracer.NONE, ResourceType.RELATIONSHIP, id);
                     sharedLocks.compute(id, (key, count) -> count == null ? 1 : count + 1);
                 }
             } else {
                 if (sharedLocks.isEmpty() || !exclusiveLocks.isEmpty() && random.nextBoolean()) {
                     Long toRemove = random.among(exclusiveLocks.keySet().toArray(new Long[0]));
-                    client.releaseExclusive(ResourceTypes.RELATIONSHIP, toRemove);
+                    client.releaseExclusive(ResourceType.RELATIONSHIP, toRemove);
                     exclusiveLocks.compute(toRemove, (key, count) -> count == 1 ? null : count - 1);
                 } else {
                     Long toRemove = random.among(sharedLocks.keySet().toArray(new Long[0]));
-                    client.releaseShared(ResourceTypes.RELATIONSHIP, toRemove);
+                    client.releaseShared(ResourceType.RELATIONSHIP, toRemove);
                     sharedLocks.compute(toRemove, (key, count) -> count == 1 ? null : count - 1);
                 }
             }

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.locking.forseti;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceType.NODE;
 
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;

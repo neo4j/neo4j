@@ -22,10 +22,10 @@ package org.neo4j.internal.recordstorage;
 import static org.neo4j.internal.recordstorage.LockVerificationMonitor.assertRecordsEquals;
 import static org.neo4j.internal.recordstorage.LockVerificationMonitor.assertSchemaLocked;
 import static org.neo4j.lock.LockType.EXCLUSIVE;
-import static org.neo4j.lock.ResourceTypes.NODE;
-import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
+import static org.neo4j.lock.ResourceType.NODE;
+import static org.neo4j.lock.ResourceType.NODE_RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP_GROUP;
 
 import java.util.Collection;
 import org.neo4j.internal.recordstorage.LockVerificationMonitor.NeoStoresLoader;

@@ -27,6 +27,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.lock.LockType.SHARED;
+import static org.neo4j.lock.ResourceType.NODE;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP;
 import static org.neo4j.values.virtual.VirtualValues.EMPTY_MAP;
 
 import java.time.ZonedDateTime;
@@ -91,7 +93,7 @@ class ExecutingQueryTest {
         assertEquals("running", query.snapshot().status());
 
         // when
-        try (LockWaitEvent ignored = lock("NODE", 17)) {
+        try (LockWaitEvent ignored = lock(NODE, 17)) {
             // then
             assertEquals("waiting", query.snapshot().status());
         }
@@ -132,7 +134,7 @@ class ExecutingQueryTest {
 
         // when
         clock.forward(10, TimeUnit.SECONDS);
-        try (LockWaitEvent ignored = lock("NODE", 17)) {
+        try (LockWaitEvent ignored = lock(NODE, 17)) {
             clock.forward(5, TimeUnit.SECONDS);
 
             // then
@@ -153,7 +155,7 @@ class ExecutingQueryTest {
 
         // when
         clock.forward(2, TimeUnit.SECONDS);
-        try (LockWaitEvent ignored = lock("RELATIONSHIP", 612)) {
+        try (LockWaitEvent ignored = lock(RELATIONSHIP, 612)) {
             clock.forward(1, TimeUnit.SECONDS);
 
             // then
@@ -382,27 +384,8 @@ class ExecutingQueryTest {
         assertThat(query.pageFaultsOfClosedTransactionCommits()).isEqualTo(4);
     }
 
-    private LockWaitEvent lock(String resourceType, long resourceId) {
-        return query.lockTracer().waitForLock(SHARED, resourceType(resourceType), 10, resourceId);
-    }
-
-    static ResourceType resourceType(String name) {
-        return new ResourceType() {
-            @Override
-            public String toString() {
-                return name();
-            }
-
-            @Override
-            public int typeId() {
-                throw new UnsupportedOperationException("not used");
-            }
-
-            @Override
-            public String name() {
-                return name;
-            }
-        };
+    private LockWaitEvent lock(ResourceType resourceType, long resourceId) {
+        return query.lockTracer().waitForLock(SHARED, resourceType, 10, resourceId);
     }
 
     @SuppressWarnings("SameParameterValue")

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking.forseti;
 
-import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceType.NODE;
 
 import java.util.Arrays;
 import java.util.List;

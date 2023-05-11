@@ -82,7 +82,7 @@ import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.SecurityLogHelper;
@@ -285,13 +285,13 @@ abstract class OperationsTest {
                 node, IntSets.immutable.of(3), IntSets.immutable.of(1), IntObjectMaps.immutable.of(1, intValue(10)));
 
         // then
-        verify(locks).acquireExclusive(any(), eq(ResourceTypes.NODE), eq(1L));
-        verify(locks).acquireShared(any(), eq(ResourceTypes.LABEL), eq(1L));
-        verify(locks).acquireShared(any(), eq(ResourceTypes.LABEL), eq(3L));
+        verify(locks).acquireExclusive(any(), eq(ResourceType.NODE), eq(1L));
+        verify(locks).acquireShared(any(), eq(ResourceType.LABEL), eq(1L));
+        verify(locks).acquireShared(any(), eq(ResourceType.LABEL), eq(3L));
         verify(locks)
                 .acquireShared(
-                        any(), eq(ResourceTypes.LABEL), eq(SchemaDescriptorImplementation.TOKEN_INDEX_LOCKING_ID));
-        verify(locks).acquireShared(any(), eq(ResourceTypes.LABEL), eq(1L), eq(2L));
+                        any(), eq(ResourceType.LABEL), eq(SchemaDescriptorImplementation.TOKEN_INDEX_LOCKING_ID));
+        verify(locks).acquireShared(any(), eq(ResourceType.LABEL), eq(1L), eq(2L));
         verify(storageLocks).acquireNodeLabelChangeLock(any(), eq(node), eq(1));
         verify(storageLocks).acquireNodeLabelChangeLock(any(), eq(node), eq(3));
     }
@@ -308,8 +308,8 @@ abstract class OperationsTest {
         operations.relationshipApplyChanges(relationship, IntObjectMaps.immutable.of(1, intValue(10)));
 
         // then
-        verify(locks).acquireExclusive(any(), eq(ResourceTypes.RELATIONSHIP), eq(1L));
-        verify(locks).acquireShared(any(), eq(ResourceTypes.RELATIONSHIP_TYPE), eq((long) type));
+        verify(locks).acquireExclusive(any(), eq(ResourceType.RELATIONSHIP), eq(1L));
+        verify(locks).acquireShared(any(), eq(ResourceType.RELATIONSHIP_TYPE), eq((long) type));
     }
 
     protected String runForSecurityLevel(Executable executable, AccessMode mode, boolean shoudldBeAuthorized)

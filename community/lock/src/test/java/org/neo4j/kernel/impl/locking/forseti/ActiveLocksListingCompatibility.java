@@ -24,9 +24,9 @@ import static java.util.stream.Collectors.toSet;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.lock.ResourceTypes.LABEL;
-import static org.neo4j.lock.ResourceTypes.NODE;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
+import static org.neo4j.lock.ResourceType.LABEL;
+import static org.neo4j.lock.ResourceType.NODE;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP;
 
 import java.util.HashSet;
 import java.util.stream.Stream;

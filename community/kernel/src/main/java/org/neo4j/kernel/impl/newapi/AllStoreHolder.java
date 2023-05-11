@@ -88,7 +88,7 @@ import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CountsDelta;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -584,7 +584,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public Iterator<IndexDescriptor> indexesGetForLabel(int labelId) {
-        acquireSharedLock(ResourceTypes.LABEL, labelId);
+        acquireSharedLock(ResourceType.LABEL, labelId);
         performCheckBeforeOperation();
         return lockIndexes(indexesGetForLabel(storageReader, labelId));
     }
@@ -605,7 +605,7 @@ public abstract class AllStoreHolder extends Read {
 
     @Override
     public Iterator<IndexDescriptor> indexesGetForRelationshipType(int relationshipType) {
-        acquireSharedLock(ResourceTypes.RELATIONSHIP_TYPE, relationshipType);
+        acquireSharedLock(ResourceType.RELATIONSHIP_TYPE, relationshipType);
         performCheckBeforeOperation();
         return lockIndexes(indexesGetForRelationshipType(storageReader, relationshipType));
     }
@@ -810,7 +810,7 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForLabel(int labelId) {
         performCheckBeforeOperation();
-        acquireSharedLock(ResourceTypes.LABEL, labelId);
+        acquireSharedLock(ResourceType.LABEL, labelId);
         return constraintsGetForLabel(storageReader, labelId);
     }
 
@@ -852,7 +852,7 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public Iterator<ConstraintDescriptor> constraintsGetForRelationshipType(int typeId) {
         performCheckBeforeOperation();
-        acquireSharedLock(ResourceTypes.RELATIONSHIP_TYPE, typeId);
+        acquireSharedLock(ResourceType.RELATIONSHIP_TYPE, typeId);
         return constraintsGetForRelationshipType(storageReader, typeId);
     }
 

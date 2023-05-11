@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.locking.forseti;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceType.NODE;
 
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 abstract class CloseCompatibility extends LockCompatibilityTestSupport {
@@ -44,7 +44,7 @@ abstract class CloseCompatibility extends LockCompatibilityTestSupport {
         // GIVEN a lock manager and working clients
         try (Client client = locks.newClient()) {
             client.initialize(NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults());
-            client.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 0);
+            client.acquireExclusive(LockTracer.NONE, ResourceType.NODE, 0);
         }
 
         // WHEN
@@ -104,8 +104,8 @@ abstract class CloseCompatibility extends LockCompatibilityTestSupport {
 
     @Test
     void releaseTryLocksOnClose() {
-        assertTrue(clientA.trySharedLock(ResourceTypes.NODE, 1L));
-        assertTrue(clientB.tryExclusiveLock(ResourceTypes.NODE, 2L));
+        assertTrue(clientA.trySharedLock(ResourceType.NODE, 1L));
+        assertTrue(clientB.tryExclusiveLock(ResourceType.NODE, 2L));
 
         clientA.close();
         clientB.close();

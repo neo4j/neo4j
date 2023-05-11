@@ -63,7 +63,6 @@ import org.neo4j.kernel.impl.index.schema.TokenScan;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
 import org.neo4j.storageengine.api.RelationshipSelection;
@@ -657,13 +656,13 @@ abstract class Read
     @Override
     public void acquireSharedRelationshipTypeLock(long... ids) {
         performCheckBeforeOperation();
-        acquireSharedLock(ResourceTypes.RELATIONSHIP_TYPE, ids);
+        acquireSharedLock(ResourceType.RELATIONSHIP_TYPE, ids);
     }
 
     @Override
     public void acquireSharedLabelLock(long... ids) {
         performCheckBeforeOperation();
-        acquireSharedLock(ResourceTypes.LABEL, ids);
+        acquireSharedLock(ResourceType.LABEL, ids);
     }
 
     @Override
@@ -681,13 +680,13 @@ abstract class Read
     @Override
     public void releaseSharedLabelLock(long... ids) {
         performCheckBeforeOperation();
-        releaseSharedLock(ResourceTypes.LABEL, ids);
+        releaseSharedLock(ResourceType.LABEL, ids);
     }
 
     @Override
     public void releaseSharedRelationshipTypeLock(long... ids) {
         performCheckBeforeOperation();
-        releaseSharedLock(ResourceTypes.RELATIONSHIP_TYPE, ids);
+        releaseSharedLock(ResourceType.RELATIONSHIP_TYPE, ids);
     }
 
     <T extends SchemaDescriptorSupplier> T acquireSharedSchemaLock(T schemaLike) {

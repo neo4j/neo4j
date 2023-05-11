@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo
 import org.neo4j.kernel.internal.GraphDatabaseAPI
 import org.neo4j.lock.ActiveLock
 import org.neo4j.lock.LockType
-import org.neo4j.lock.ResourceTypes
+import org.neo4j.lock.ResourceType
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.StringValue
 import org.neo4j.values.storable.Values
@@ -159,7 +159,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(txHandle2.getMetaData).thenReturn(util.Collections.emptyMap())
     when(txHandle2.getStatusDetails).thenReturn("")
     when(txHandle2.activeLocks()).thenAnswer(_ =>
-      List[ActiveLock](new ActiveLock(ResourceTypes.LABEL, LockType.SHARED, 1L, 0L)).asJava.stream()
+      List[ActiveLock](new ActiveLock(ResourceType.LABEL, LockType.SHARED, 1L, 0L)).asJava.stream()
     )
     when(txHandle2.transactionInitialisationTrace()).thenReturn(TransactionInitializationTrace.NONE)
     when(txHandle2.terminationMark).thenReturn(util.Optional.empty())
@@ -189,7 +189,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(querySnapshot2.status()).thenReturn("running")
     when(querySnapshot2.activeLockCount()).thenReturn(1L)
     when(querySnapshot2.waitingLocks()).thenReturn(List[ActiveLock](
-      new ActiveLock(ResourceTypes.INDEX_ENTRY, LockType.EXCLUSIVE, 0L, 1L)
+      new ActiveLock(ResourceType.INDEX_ENTRY, LockType.EXCLUSIVE, 0L, 1L)
     ).asJava)
     when(querySnapshot2.elapsedTimeMicros()).thenReturn(90L)
     when(querySnapshot2.cpuTimeMicros()).thenReturn(util.OptionalLong.of(83L))
@@ -228,8 +228,8 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     when(txHandle3.getStatusDetails).thenReturn("I'm a status detail string")
     when(txHandle3.activeLocks()).thenAnswer(_ =>
       List[ActiveLock](
-        new ActiveLock(ResourceTypes.INDEX_ENTRY, LockType.EXCLUSIVE, 0L, 1L),
-        new ActiveLock(ResourceTypes.NODE, LockType.SHARED, 0L, 2L)
+        new ActiveLock(ResourceType.INDEX_ENTRY, LockType.EXCLUSIVE, 0L, 1L),
+        new ActiveLock(ResourceType.NODE, LockType.SHARED, 0L, 2L)
       ).asJava.stream()
     )
     when(txHandle3.transactionInitialisationTrace()).thenReturn(TransactionInitializationTrace.NONE)

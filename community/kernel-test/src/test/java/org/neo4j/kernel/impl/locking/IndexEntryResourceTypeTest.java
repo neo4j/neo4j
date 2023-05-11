@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery.ExactPredicate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-public class IndexEntryResourceTypesTest {
+public class IndexEntryResourceTypeTest {
     private static final int labelId = 1;
     private static final int propertyId = 2;
     private static final Value value = Values.of("value");

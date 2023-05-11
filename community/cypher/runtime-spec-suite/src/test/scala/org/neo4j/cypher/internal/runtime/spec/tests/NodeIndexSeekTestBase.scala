@@ -39,8 +39,8 @@ import org.neo4j.internal.schema.IndexQuery.IndexQueryType.RANGE
 import org.neo4j.kernel.impl.util.ValueUtils.asValue
 import org.neo4j.lock.LockType.EXCLUSIVE
 import org.neo4j.lock.LockType.SHARED
-import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
-import org.neo4j.lock.ResourceTypes.LABEL
+import org.neo4j.lock.ResourceType.INDEX_ENTRY
+import org.neo4j.lock.ResourceType.LABEL
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.BooleanValue
 import org.neo4j.values.storable.Value

@@ -91,7 +91,6 @@ import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
@@ -142,7 +141,7 @@ class QueryExecutionLocksIT {
         LockOperationRecord operationRecord = lockOperationRecords.get(0);
         assertTrue(operationRecord.acquisition);
         assertFalse(operationRecord.exclusive);
-        assertEquals(ResourceTypes.LABEL, operationRecord.resourceType);
+        assertEquals(ResourceType.LABEL, operationRecord.resourceType);
     }
 
     @Test
@@ -168,7 +167,7 @@ class QueryExecutionLocksIT {
         LockOperationRecord operationRecord = lockOperationRecords.get(0);
         assertTrue(operationRecord.acquisition);
         assertFalse(operationRecord.exclusive);
-        assertEquals(ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType);
+        assertEquals(ResourceType.RELATIONSHIP_TYPE, operationRecord.resourceType);
     }
 
     @Test
@@ -194,7 +193,7 @@ class QueryExecutionLocksIT {
         LockOperationRecord operationRecord = lockOperationRecords.get(0);
         assertTrue(operationRecord.acquisition);
         assertFalse(operationRecord.exclusive);
-        assertEquals(ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType);
+        assertEquals(ResourceType.RELATIONSHIP_TYPE, operationRecord.resourceType);
     }
 
     @Test
@@ -220,7 +219,7 @@ class QueryExecutionLocksIT {
         LockOperationRecord operationRecord = lockOperationRecords.get(0);
         assertTrue(operationRecord.acquisition);
         assertFalse(operationRecord.exclusive);
-        assertEquals(ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType);
+        assertEquals(ResourceType.RELATIONSHIP_TYPE, operationRecord.resourceType);
     }
 
     @Test
@@ -246,7 +245,7 @@ class QueryExecutionLocksIT {
         LockOperationRecord operationRecord = lockOperationRecords.get(0);
         assertTrue(operationRecord.acquisition);
         assertFalse(operationRecord.exclusive);
-        assertEquals(ResourceTypes.RELATIONSHIP_TYPE, operationRecord.resourceType);
+        assertEquals(ResourceType.RELATIONSHIP_TYPE, operationRecord.resourceType);
     }
 
     @Test
@@ -273,17 +272,17 @@ class QueryExecutionLocksIT {
         LockOperationRecord operationRecord = lockOperationRecords.get(0);
         assertTrue(operationRecord.acquisition);
         assertFalse(operationRecord.exclusive);
-        assertEquals(ResourceTypes.LABEL, operationRecord.resourceType);
+        assertEquals(ResourceType.LABEL, operationRecord.resourceType);
 
         LockOperationRecord operationRecord1 = lockOperationRecords.get(1);
         assertFalse(operationRecord1.acquisition);
         assertFalse(operationRecord1.exclusive);
-        assertEquals(ResourceTypes.LABEL, operationRecord1.resourceType);
+        assertEquals(ResourceType.LABEL, operationRecord1.resourceType);
 
         LockOperationRecord operationRecord2 = lockOperationRecords.get(2);
         assertTrue(operationRecord2.acquisition);
         assertFalse(operationRecord2.exclusive);
-        assertEquals(ResourceTypes.LABEL, operationRecord2.resourceType);
+        assertEquals(ResourceType.LABEL, operationRecord2.resourceType);
     }
 
     @Test
@@ -546,7 +545,7 @@ class QueryExecutionLocksIT {
             return lookupLockOperationRecords;
         }
 
-        private void record(boolean exclusive, boolean acquisition, ResourceTypes type, long... ids) {
+        private void record(boolean exclusive, boolean acquisition, ResourceType type, long... ids) {
             if (acquisition) {
                 for (LockOperationListener listener : listeners) {
                     listener.lockAcquired(transaction, exclusive, type, ids);
@@ -566,73 +565,73 @@ class QueryExecutionLocksIT {
 
         @Override
         public void acquireExclusiveNodeLock(long... ids) {
-            record(true, true, ResourceTypes.NODE, ids);
+            record(true, true, ResourceType.NODE, ids);
             delegate.acquireExclusiveNodeLock(ids);
         }
 
         @Override
         public void acquireExclusiveRelationshipLock(long... ids) {
-            record(true, true, ResourceTypes.RELATIONSHIP, ids);
+            record(true, true, ResourceType.RELATIONSHIP, ids);
             delegate.acquireExclusiveRelationshipLock(ids);
         }
 
         @Override
         public void releaseExclusiveNodeLock(long... ids) {
-            record(true, false, ResourceTypes.NODE, ids);
+            record(true, false, ResourceType.NODE, ids);
             delegate.releaseExclusiveNodeLock(ids);
         }
 
         @Override
         public void releaseExclusiveRelationshipLock(long... ids) {
-            record(true, false, ResourceTypes.RELATIONSHIP, ids);
+            record(true, false, ResourceType.RELATIONSHIP, ids);
             delegate.releaseExclusiveRelationshipLock(ids);
         }
 
         @Override
         public void acquireSharedNodeLock(long... ids) {
-            record(false, true, ResourceTypes.NODE, ids);
+            record(false, true, ResourceType.NODE, ids);
             delegate.acquireSharedNodeLock(ids);
         }
 
         @Override
         public void acquireSharedRelationshipLock(long... ids) {
-            record(false, true, ResourceTypes.RELATIONSHIP, ids);
+            record(false, true, ResourceType.RELATIONSHIP, ids);
             delegate.acquireSharedRelationshipLock(ids);
         }
 
         @Override
         public void acquireSharedLabelLock(long... ids) {
-            record(false, true, ResourceTypes.LABEL, ids);
+            record(false, true, ResourceType.LABEL, ids);
             delegate.acquireSharedLabelLock(ids);
         }
 
         @Override
         public void acquireSharedRelationshipTypeLock(long... ids) {
-            record(false, true, ResourceTypes.RELATIONSHIP_TYPE, ids);
+            record(false, true, ResourceType.RELATIONSHIP_TYPE, ids);
             delegate.acquireSharedRelationshipTypeLock(ids);
         }
 
         @Override
         public void releaseSharedNodeLock(long... ids) {
-            record(false, false, ResourceTypes.NODE, ids);
+            record(false, false, ResourceType.NODE, ids);
             delegate.releaseSharedNodeLock(ids);
         }
 
         @Override
         public void releaseSharedRelationshipLock(long... ids) {
-            record(false, false, ResourceTypes.RELATIONSHIP, ids);
+            record(false, false, ResourceType.RELATIONSHIP, ids);
             delegate.releaseSharedRelationshipLock(ids);
         }
 
         @Override
         public void releaseSharedLabelLock(long... ids) {
-            record(false, false, ResourceTypes.LABEL, ids);
+            record(false, false, ResourceType.LABEL, ids);
             delegate.releaseSharedLabelLock(ids);
         }
 
         @Override
         public void releaseSharedRelationshipTypeLock(long... ids) {
-            record(false, false, ResourceTypes.RELATIONSHIP_TYPE, ids);
+            record(false, false, ResourceType.RELATIONSHIP_TYPE, ids);
             delegate.releaseSharedRelationshipTypeLock(ids);
         }
 

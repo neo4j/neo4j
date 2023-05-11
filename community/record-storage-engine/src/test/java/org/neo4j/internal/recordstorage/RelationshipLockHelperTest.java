@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.RandomSupport;
 import org.neo4j.test.extension.Inject;
@@ -172,14 +172,14 @@ class RelationshipLockHelperTest {
         when(relRecords.getOrLoad(Mockito.anyLong(), Mockito.any()))
                 .thenAnswer(invocation -> proxies.get(invocation.getArgument(0)));
         TrackingResourceLocker locks =
-                new TrackingResourceLocker(random, NO_MONITOR).withStrictAssertionsOn(ResourceTypes.RELATIONSHIP);
+                new TrackingResourceLocker(random, NO_MONITOR).withStrictAssertionsOn(ResourceType.RELATIONSHIP);
 
         // When
         RelationshipLockHelper.lockRelationshipsInOrder(
                 idsAsBatch(idsToDelete), NULL_REFERENCE.longValue(), relRecords, locks, EmptyMemoryTracker.INSTANCE);
 
         // Then
-        assertThat(locks.getExclusiveLocks(ResourceTypes.RELATIONSHIP).toSortedArray())
+        assertThat(locks.getExclusiveLocks(ResourceType.RELATIONSHIP).toSortedArray())
                 .containsExactly(expectedLocks.toSet().toSortedArray());
     }
 
@@ -203,7 +203,7 @@ class RelationshipLockHelperTest {
                 .thenAnswer(invocation -> proxies.get(invocation.getArgument(0)));
 
         TrackingResourceLocker locks =
-                new TrackingResourceLocker(random, NO_MONITOR).withStrictAssertionsOn(ResourceTypes.RELATIONSHIP);
+                new TrackingResourceLocker(random, NO_MONITOR).withStrictAssertionsOn(ResourceType.RELATIONSHIP);
 
         RelationshipLockHelper.lockRelationshipsInOrder(
                 idsAsBatch(idsToDelete), 2, relRecords, locks, EmptyMemoryTracker.INSTANCE);
@@ -211,10 +211,10 @@ class RelationshipLockHelperTest {
         List<ActiveLock> activeLocks = locks.activeLocks().collect(Collectors.toList());
         assertThat(activeLocks)
                 .hasSize(4)
-                .contains(new ActiveLock(ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 1))
-                .contains(new ActiveLock(ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 2))
-                .contains(new ActiveLock(ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 5))
-                .contains(new ActiveLock(ResourceTypes.RELATIONSHIP, LockType.EXCLUSIVE, -1, 7));
+                .contains(new ActiveLock(ResourceType.RELATIONSHIP, LockType.EXCLUSIVE, -1, 1))
+                .contains(new ActiveLock(ResourceType.RELATIONSHIP, LockType.EXCLUSIVE, -1, 2))
+                .contains(new ActiveLock(ResourceType.RELATIONSHIP, LockType.EXCLUSIVE, -1, 5))
+                .contains(new ActiveLock(ResourceType.RELATIONSHIP, LockType.EXCLUSIVE, -1, 7));
     }
 
     @ParameterizedTest
@@ -247,7 +247,7 @@ class RelationshipLockHelperTest {
                         chain.get(0).getId(), nodeId, relRecords, locks, LockTracer.NONE);
 
         // Then
-        long[] actualLocks = locks.getExclusiveLocks(ResourceTypes.RELATIONSHIP).toArray();
+        long[] actualLocks = locks.getExclusiveLocks(ResourceType.RELATIONSHIP).toArray();
         int expectedSize = 1;
         assertThat(entrypoint).isNotNull();
         assertThat(actualLocks).contains(entrypoint.getKey());

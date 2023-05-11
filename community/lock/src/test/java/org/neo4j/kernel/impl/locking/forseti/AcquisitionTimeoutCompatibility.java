@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -69,9 +69,9 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
 
     @Test
     void terminateSharedLockAcquisition() throws InterruptedException {
-        client.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
+        client.acquireExclusive(LockTracer.NONE, ResourceType.NODE, 1);
         Future<Boolean> sharedLockAcquisition = threadB.submit(() -> {
-            client2.acquireShared(LockTracer.NONE, ResourceTypes.NODE, 1);
+            client2.acquireShared(LockTracer.NONE, ResourceType.NODE, 1);
             return true;
         });
 
@@ -84,9 +84,9 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
 
     @Test
     void terminateExclusiveLockAcquisitionForExclusivelyLockedResource() throws InterruptedException {
-        client.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
+        client.acquireExclusive(LockTracer.NONE, ResourceType.NODE, 1);
         Future<Boolean> exclusiveLockAcquisition = threadB.submit(() -> {
-            client2.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
+            client2.acquireExclusive(LockTracer.NONE, ResourceType.NODE, 1);
             return true;
         });
 
@@ -99,9 +99,9 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
 
     @Test
     void terminateExclusiveLockAcquisitionForSharedLockedResource() throws InterruptedException {
-        client.acquireShared(LockTracer.NONE, ResourceTypes.NODE, 1);
+        client.acquireShared(LockTracer.NONE, ResourceType.NODE, 1);
         Future<Boolean> exclusiveLockAcquisition = threadB.submit(() -> {
-            client2.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
+            client2.acquireExclusive(LockTracer.NONE, ResourceType.NODE, 1);
             return true;
         });
 
@@ -114,10 +114,10 @@ abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupp
 
     @Test
     void terminateExclusiveLockAcquisitionForSharedLockedResourceWithSharedLockHeld() throws InterruptedException {
-        client.acquireShared(LockTracer.NONE, ResourceTypes.NODE, 1);
-        client2.acquireShared(LockTracer.NONE, ResourceTypes.NODE, 1);
+        client.acquireShared(LockTracer.NONE, ResourceType.NODE, 1);
+        client2.acquireShared(LockTracer.NONE, ResourceType.NODE, 1);
         Future<Boolean> exclusiveLockAcquisition = threadB.submit(() -> {
-            client2.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
+            client2.acquireExclusive(LockTracer.NONE, ResourceType.NODE, 1);
             return true;
         });
 

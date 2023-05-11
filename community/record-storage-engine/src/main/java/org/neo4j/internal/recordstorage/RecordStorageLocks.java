@@ -21,51 +21,51 @@ package org.neo4j.internal.recordstorage;
 
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceLocker;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 /**
- * Record storage specific locking. (See also  {@link ResourceTypes}
+ * Record storage specific locking. (See also  {@link ResourceType}
  *
  * To avoid deadlocks, they should be taken in the following order
  * <dl>
- *     <dt>{@link ResourceTypes#LABEL} or {@link ResourceTypes#RELATIONSHIP_TYPE} - Token id</dt>
+ *     <dt>{@link ResourceType#LABEL} or {@link ResourceType#RELATIONSHIP_TYPE} - Token id</dt>
  *     <dd>Schema locks, will lock indexes and constraints on the particular label or relationship type.</dd>
  *
- *     <dt>{@link ResourceTypes#SCHEMA_NAME} - Schema name (XXH64 hashed)</dt>
+ *     <dt>{@link ResourceType#SCHEMA_NAME} - Schema name (XXH64 hashed)</dt>
  *     <dd>
  *         Lock a schema name to avoid duplicates. Note, collisions are possible since we hash the string, but this only affect concurrency and not correctness.
  *     </dd>
  *
- *     <dt>{@link ResourceTypes#NODE_RELATIONSHIP_GROUP_DELETE} - Node id</dt>
+ *     <dt>{@link ResourceType#NODE_RELATIONSHIP_GROUP_DELETE} - Node id</dt>
  *     <dd>
  *         Lock taken on a node during the transaction creation phase to prevent deletion of said node and/or relationship group.
- *         This is different from the {@link ResourceTypes#NODE} to allow concurrent label and property changes together with relationship modifications.
+ *         This is different from the {@link ResourceType#NODE} to allow concurrent label and property changes together with relationship modifications.
  *     </dd>
  *
- *     <dt>{@link ResourceTypes#NODE} - Node id</dt>
+ *     <dt>{@link ResourceType#NODE} - Node id</dt>
  *     <dd>
  *         Lock on a node, used to prevent concurrent updates to the node records, i.e. add/remove label, set property, add/remove relationship.
  *         Note that changing relationships will only require a lock on the node if the head of the relationship chain/relationship group chain
  *         must be updated, since that is the only data part of the node record.
  *     </dd>
  *
- *     <dt>{@link ResourceTypes#DEGREES} - Node id</dt>
+ *     <dt>{@link ResourceType#DEGREES} - Node id</dt>
  *     <dd>
  *         Used to lock nodes to avoid concurrent label changes with relationship addition/deletion. This would otherwise lead to inconsistent count store.
  *     </dd>
  *
- *     <dt>{@link ResourceTypes#RELATIONSHIP_DELETE} - Relationship id</dt>
+ *     <dt>{@link ResourceType#RELATIONSHIP_DELETE} - Relationship id</dt>
  *     <dd>Lock a relationship for exclusive access during deletion.</dd>
  *
- *     <dt>{@link ResourceTypes#RELATIONSHIP_GROUP} - Node id</dt>
+ *     <dt>{@link ResourceType#RELATIONSHIP_GROUP} - Node id</dt>
  *     <dd>
  *         Lock the full relationship group chain for a given node(dense). This will not lock the node in contrast to
- *         {@link ResourceTypes#NODE_RELATIONSHIP_GROUP_DELETE}.
+ *         {@link ResourceType#NODE_RELATIONSHIP_GROUP_DELETE}.
  *     </dd>
  *
- *     <dt>{@link ResourceTypes#RELATIONSHIP} - Relationship id</dt>
+ *     <dt>{@link ResourceType#RELATIONSHIP} - Relationship id</dt>
  *     <dd>Lock on a relationship, or more specifically a relationship record, to prevent concurrent updates.</dd>
  * </dl>
  */
@@ -78,50 +78,50 @@ class RecordStorageLocks implements StorageLocks {
 
     @Override
     public void acquireExclusiveNodeLock(LockTracer lockTracer, long... ids) {
-        locker.acquireExclusive(lockTracer, ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids);
-        locker.acquireExclusive(lockTracer, ResourceTypes.NODE, ids);
+        locker.acquireExclusive(lockTracer, ResourceType.NODE_RELATIONSHIP_GROUP_DELETE, ids);
+        locker.acquireExclusive(lockTracer, ResourceType.NODE, ids);
     }
 
     @Override
     public void releaseExclusiveNodeLock(long... ids) {
-        locker.releaseExclusive(ResourceTypes.NODE, ids);
-        locker.releaseExclusive(ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids);
+        locker.releaseExclusive(ResourceType.NODE, ids);
+        locker.releaseExclusive(ResourceType.NODE_RELATIONSHIP_GROUP_DELETE, ids);
     }
 
     @Override
     public void acquireSharedNodeLock(LockTracer lockTracer, long... ids) {
-        locker.acquireShared(lockTracer, ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids);
-        locker.acquireShared(lockTracer, ResourceTypes.NODE, ids);
+        locker.acquireShared(lockTracer, ResourceType.NODE_RELATIONSHIP_GROUP_DELETE, ids);
+        locker.acquireShared(lockTracer, ResourceType.NODE, ids);
     }
 
     @Override
     public void releaseSharedNodeLock(long... ids) {
-        locker.releaseShared(ResourceTypes.NODE, ids);
-        locker.releaseShared(ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, ids);
+        locker.releaseShared(ResourceType.NODE, ids);
+        locker.releaseShared(ResourceType.NODE_RELATIONSHIP_GROUP_DELETE, ids);
     }
 
     @Override
     public void acquireExclusiveRelationshipLock(LockTracer lockTracer, long... ids) {
-        locker.acquireExclusive(lockTracer, ResourceTypes.RELATIONSHIP_DELETE, ids);
-        locker.acquireExclusive(lockTracer, ResourceTypes.RELATIONSHIP, ids);
+        locker.acquireExclusive(lockTracer, ResourceType.RELATIONSHIP_DELETE, ids);
+        locker.acquireExclusive(lockTracer, ResourceType.RELATIONSHIP, ids);
     }
 
     @Override
     public void releaseExclusiveRelationshipLock(long... ids) {
-        locker.releaseExclusive(ResourceTypes.RELATIONSHIP, ids);
-        locker.releaseExclusive(ResourceTypes.RELATIONSHIP_DELETE, ids);
+        locker.releaseExclusive(ResourceType.RELATIONSHIP, ids);
+        locker.releaseExclusive(ResourceType.RELATIONSHIP_DELETE, ids);
     }
 
     @Override
     public void acquireSharedRelationshipLock(LockTracer lockTracer, long... ids) {
-        locker.acquireShared(lockTracer, ResourceTypes.RELATIONSHIP_DELETE, ids);
-        locker.acquireShared(lockTracer, ResourceTypes.RELATIONSHIP, ids);
+        locker.acquireShared(lockTracer, ResourceType.RELATIONSHIP_DELETE, ids);
+        locker.acquireShared(lockTracer, ResourceType.RELATIONSHIP, ids);
     }
 
     @Override
     public void releaseSharedRelationshipLock(long... ids) {
-        locker.releaseShared(ResourceTypes.RELATIONSHIP, ids);
-        locker.releaseShared(ResourceTypes.RELATIONSHIP_DELETE, ids);
+        locker.releaseShared(ResourceType.RELATIONSHIP, ids);
+        locker.releaseShared(ResourceType.RELATIONSHIP_DELETE, ids);
     }
 
     @Override
@@ -144,15 +144,15 @@ class RecordStorageLocks implements StorageLocks {
             boolean sourceNodeAddedInTx,
             boolean targetNodeAddedInTx) {
         lockGroupAndDegrees(locker, lockTracer, sourceNode, targetNode, sourceNodeAddedInTx, targetNodeAddedInTx);
-        locker.acquireExclusive(lockTracer, ResourceTypes.RELATIONSHIP_DELETE, relationship);
+        locker.acquireExclusive(lockTracer, ResourceType.RELATIONSHIP_DELETE, relationship);
     }
 
     @Override
     public void acquireNodeDeletionLock(ReadableTransactionState txState, LockTracer lockTracer, long node) {
         if (!txState.nodeIsAddedInThisTx(node)) {
-            locker.acquireExclusive(lockTracer, ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, node);
-            locker.acquireExclusive(lockTracer, ResourceTypes.NODE, node);
-            locker.acquireExclusive(lockTracer, ResourceTypes.DEGREES, node);
+            locker.acquireExclusive(lockTracer, ResourceType.NODE_RELATIONSHIP_GROUP_DELETE, node);
+            locker.acquireExclusive(lockTracer, ResourceType.NODE, node);
+            locker.acquireExclusive(lockTracer, ResourceType.DEGREES, node);
             // Note. We also take RELATIONSHIP_GROUP lock in TransactionRecordState.nodeDelete if we need to clean up
             // any left over empty groups.
         }
@@ -171,7 +171,7 @@ class RecordStorageLocks implements StorageLocks {
         // T2: Go into commit and fully complete commit, i.e. before T1. N now has 6 relationships
         // T1: Complete the commit
         // --> N has 6 relationships, but counts store says that it has 5
-        locker.acquireExclusive(lockTracer, ResourceTypes.DEGREES, node);
+        locker.acquireExclusive(lockTracer, ResourceType.DEGREES, node);
     }
 
     private static void lockGroupAndDegrees(
@@ -194,8 +194,8 @@ class RecordStorageLocks implements StorageLocks {
     private static void lockGroupAndDegrees(
             ResourceLocker locker, LockTracer lockTracer, long node, boolean nodeAddedInTx) {
         if (!nodeAddedInTx) {
-            locker.acquireShared(lockTracer, ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, node);
-            locker.acquireShared(lockTracer, ResourceTypes.DEGREES, node);
+            locker.acquireShared(lockTracer, ResourceType.NODE_RELATIONSHIP_GROUP_DELETE, node);
+            locker.acquireShared(lockTracer, ResourceType.DEGREES, node);
         }
     }
 }

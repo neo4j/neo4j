@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
@@ -82,7 +81,7 @@ class ForsetiFalseDeadlockTest {
     @Test
     void shouldManageToTakeSortedLocksWithoutFalseDeadlocks() throws Throwable {
         Config config = Config.defaults(GraphDatabaseInternalSettings.lock_manager_verbose_deadlocks, true);
-        ForsetiLockManager manager = new ForsetiLockManager(config, Clocks.nanoClock(), ResourceTypes.values());
+        ForsetiLockManager manager = new ForsetiLockManager(config, Clocks.nanoClock(), ResourceType.values());
         AtomicInteger txCount = new AtomicInteger();
         AtomicInteger numDeadlocks = new AtomicInteger();
         Race race = new Race().withEndCondition(() -> txCount.get() > 10000);
@@ -97,9 +96,9 @@ class ForsetiFalseDeadlockTest {
                 // Lock two "relationships" always in order -> impossible to get a loop -> no deadlocks
                 long min = Math.min(prevRel, nextRel);
                 long max = Math.max(prevRel, nextRel);
-                client.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, min);
+                client.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, min);
                 if (prevRel != nextRel) {
-                    client.acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, max);
+                    client.acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, max);
                 }
                 Thread.sleep(1);
             } catch (DeadlockDetectedException e) {
@@ -275,17 +274,7 @@ class ForsetiFalseDeadlockTest {
         }
 
         ResourceType createResourceType() {
-            return new ResourceType() {
-                @Override
-                public int typeId() {
-                    return 0;
-                }
-
-                @Override
-                public String name() {
-                    return "MyTestResource";
-                }
-            };
+            return ResourceType.NODE;
         }
 
         void acquireAX(Locks.Client client, ResourceType resourceType) {

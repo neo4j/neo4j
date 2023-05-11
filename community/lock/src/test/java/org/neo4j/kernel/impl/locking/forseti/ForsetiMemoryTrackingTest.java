@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceType.NODE;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -43,7 +43,7 @@ import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryGroup;
@@ -74,7 +74,7 @@ class ForsetiMemoryTrackingTest {
     void setUp() {
         memoryPool = new MemoryPools().pool(MemoryGroup.TRANSACTION, 0L, null);
         memoryTracker = new LocalMemoryTracker(memoryPool);
-        forsetiLockManager = new ForsetiLockManager(Config.defaults(), Clocks.nanoClock(), ResourceTypes.values());
+        forsetiLockManager = new ForsetiLockManager(Config.defaults(), Clocks.nanoClock(), ResourceType.values());
     }
 
     @AfterEach
@@ -571,7 +571,7 @@ class ForsetiMemoryTrackingTest {
                 var future1 = executor1.executeDontWait(() -> {
                     try (var client = lockManager.newClient()) {
                         client.initialize(LeaseService.NoLeaseClient.INSTANCE, 1, memoryTracker1, Config.defaults());
-                        client.acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 1);
+                        client.acquireExclusive(LockTracer.NONE, ResourceType.NODE, 1);
                     } catch (MemoryLimitExceededException mlee) {
                         message.set("Observed exception: " + Exceptions.stringify(mlee));
                     }

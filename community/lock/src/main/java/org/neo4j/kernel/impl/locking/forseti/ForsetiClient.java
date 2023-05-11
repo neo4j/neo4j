@@ -54,7 +54,6 @@ import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.LockWaitEvent;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.HeapEstimator;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.memory.ScopedMemoryTracker;
@@ -625,7 +624,7 @@ public class ForsetiClient implements Locks.Client {
         // threads
         List<ActiveLock> locks = new ArrayList<>();
         for (int typeId = 0; typeId < lockMaps.length; typeId++) {
-            ResourceType resourceType = ResourceTypes.fromId(typeId);
+            ResourceType resourceType = ResourceType.fromId(typeId);
             ConcurrentMap<Long, ForsetiLockManager.Lock> lockMap = lockMaps[typeId];
             if (lockMap != null) {
                 lockMap.forEach((resourceId, lock) -> {

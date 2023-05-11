@@ -96,7 +96,7 @@ import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.FormattedLogFormat;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageLocks;
@@ -233,7 +233,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.nodeAddLabel(123L, 456);
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 123L);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.NODE, 123L);
         order.verify(txState).nodeDoAddLabel(456, 123L);
     }
 
@@ -249,7 +249,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.nodeAddLabel(123, 456);
 
         // then
-        verify(locks, never()).acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 123);
+        verify(locks, never()).acquireExclusive(LockTracer.NONE, ResourceType.NODE, 123);
     }
 
     @Test
@@ -263,7 +263,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.nodeAddLabel(123, labelId);
 
         // then
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, labelId);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, labelId);
         order.verify(txState).nodeDoAddLabel(labelId, 123);
     }
 
@@ -282,7 +282,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.nodeSetProperty(123, propertyKeyId, value);
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 123);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.NODE, 123);
         order.verify(txState).nodeDoAddProperty(123, propertyKeyId, value);
     }
 
@@ -305,9 +305,9 @@ public class PlainOperationsTest extends OperationsTest {
         operations.nodeSetProperty(123, propertyKeyId, value);
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 123);
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, relatedLabelId);
-        order.verify(locks, never()).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, unrelatedLabelId);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.NODE, 123);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, relatedLabelId);
+        order.verify(locks, never()).acquireShared(LockTracer.NONE, ResourceType.LABEL, unrelatedLabelId);
         order.verify(txState).nodeDoAddProperty(123, propertyKeyId, value);
     }
 
@@ -325,7 +325,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.relationshipSetProperty(123, propertyKeyId, value);
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, 123);
         order.verify(txState)
                 .relationshipDoReplaceProperty(
                         eq(123L), anyInt(), anyLong(), anyLong(), eq(propertyKeyId), eq(NO_VALUE), eq(value));
@@ -345,7 +345,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.nodeSetProperty(123, propertyKeyId, value);
 
         // then
-        verify(locks, never()).acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 123);
+        verify(locks, never()).acquireExclusive(LockTracer.NONE, ResourceType.NODE, 123);
         verify(txState).nodeDoAddProperty(123, propertyKeyId, value);
     }
 
@@ -362,7 +362,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.relationshipSetProperty(123, propertyKeyId, value);
 
         // then
-        verify(locks, never()).acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP, 123);
+        verify(locks, never()).acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP, 123);
         order.verify(txState)
                 .relationshipDoReplaceProperty(
                         eq(123L), anyInt(), anyLong(), anyLong(), eq(propertyKeyId), eq(NO_VALUE), eq(value));
@@ -393,7 +393,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.nodeDelete(123);
 
         // THEN
-        verify(locks, never()).acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, 123);
+        verify(locks, never()).acquireExclusive(LockTracer.NONE, ResourceType.NODE, 123);
         verify(txState).nodeDoDelete(123);
     }
 
@@ -403,7 +403,7 @@ public class PlainOperationsTest extends OperationsTest {
         allStoreHolder.constraintsGetForSchema(schema);
 
         // THEN
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, schema.getLabelId());
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, schema.getLabelId());
         order.verify(storageReader).constraintsGetForSchema(schema);
     }
 
@@ -433,7 +433,7 @@ public class PlainOperationsTest extends OperationsTest {
         allStoreHolder.constraintsGetForLabel(42);
 
         // THEN
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, 42);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, 42);
         order.verify(storageReader).constraintsGetForLabel(42);
     }
 
@@ -443,7 +443,7 @@ public class PlainOperationsTest extends OperationsTest {
         allStoreHolder.constraintsGetForRelationshipType(42);
 
         // THEN
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, 42);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.RELATIONSHIP_TYPE, 42);
         order.verify(storageReader).constraintsGetForRelationshipType(42);
     }
 
@@ -473,7 +473,7 @@ public class PlainOperationsTest extends OperationsTest {
         allStoreHolder.constraintExists(ConstraintDescriptorFactory.uniqueForSchema(schema));
 
         // THEN
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, 123);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, 123);
         order.verify(storageReader).constraintExists(any());
     }
 
@@ -496,8 +496,8 @@ public class PlainOperationsTest extends OperationsTest {
         assertThat(Iterators.count(result)).isEqualTo(2L);
         assertThat(asList(result)).isEmpty();
         order.verify(storageReader).constraintsGetAll();
-        order.verify(locks, atLeastOnce()).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, labelId);
-        order.verify(locks, atLeastOnce()).acquireShared(LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId);
+        order.verify(locks, atLeastOnce()).acquireShared(LockTracer.NONE, ResourceType.LABEL, labelId);
+        order.verify(locks, atLeastOnce()).acquireShared(LockTracer.NONE, ResourceType.RELATIONSHIP_TYPE, relTypeId);
     }
 
     @Test
@@ -535,7 +535,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.indexDrop(index);
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.LABEL, 0);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.LABEL, 0);
         order.verify(txState).indexDoDrop(index);
     }
 
@@ -557,7 +557,7 @@ public class PlainOperationsTest extends OperationsTest {
 
         // then
         long indexNameLock = ResourceIds.schemaNameResourceId(indexName);
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.SCHEMA_NAME, indexNameLock);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.SCHEMA_NAME, indexNameLock);
         order.verify(txState).indexDoDrop(index);
     }
 
@@ -580,7 +580,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.uniquePropertyConstraintCreate(prototype);
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.LABEL, schema.getLabelId());
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.LABEL, schema.getLabelId());
         order.verify(txState).constraintDoAdd(ConstraintDescriptorFactory.uniqueForSchema(schema), constraintIndex);
     }
 
@@ -604,9 +604,9 @@ public class PlainOperationsTest extends OperationsTest {
         }
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.LABEL, labelId);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.LABEL, labelId);
         order.verify(storageReader).constraintsGetForSchema(schema);
-        order.verify(locks).releaseExclusive(ResourceTypes.LABEL, labelId);
+        order.verify(locks).releaseExclusive(ResourceType.LABEL, labelId);
     }
 
     @Test
@@ -629,9 +629,9 @@ public class PlainOperationsTest extends OperationsTest {
         }
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.LABEL, labelId);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.LABEL, labelId);
         order.verify(storageReader).constraintsGetForSchema(schema);
-        order.verify(locks).releaseExclusive(ResourceTypes.LABEL, labelId);
+        order.verify(locks).releaseExclusive(ResourceType.LABEL, labelId);
     }
 
     @Test
@@ -653,9 +653,9 @@ public class PlainOperationsTest extends OperationsTest {
         }
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.LABEL, labelId);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.LABEL, labelId);
         order.verify(storageReader).constraintsGetForSchema(schema);
-        order.verify(locks).releaseExclusive(ResourceTypes.LABEL, labelId);
+        order.verify(locks).releaseExclusive(ResourceType.LABEL, labelId);
     }
 
     @Test
@@ -676,9 +676,9 @@ public class PlainOperationsTest extends OperationsTest {
                 .isInstanceOf(AlreadyConstrainedException.class);
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP_TYPE, relTypeId);
         order.verify(storageReader).constraintsGetForSchema(descriptor);
-        order.verify(locks).releaseExclusive(ResourceTypes.RELATIONSHIP_TYPE, relTypeId);
+        order.verify(locks).releaseExclusive(ResourceType.RELATIONSHIP_TYPE, relTypeId);
     }
 
     @Test
@@ -702,9 +702,9 @@ public class PlainOperationsTest extends OperationsTest {
         }
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.RELATIONSHIP_TYPE, relTypeId);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.RELATIONSHIP_TYPE, relTypeId);
         order.verify(storageReader).constraintsGetForSchema(descriptor);
-        order.verify(locks).releaseExclusive(ResourceTypes.RELATIONSHIP_TYPE, relTypeId);
+        order.verify(locks).releaseExclusive(ResourceType.RELATIONSHIP_TYPE, relTypeId);
     }
 
     @Test
@@ -721,7 +721,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.constraintDrop(constraint);
 
         // then
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.LABEL, schema.getLabelId());
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.LABEL, schema.getLabelId());
         order.verify(txState).constraintDoDrop(constraint);
         order.verify(txState).indexDoDrop(index);
     }
@@ -742,7 +742,7 @@ public class PlainOperationsTest extends OperationsTest {
 
         // then
         long nameLock = ResourceIds.schemaNameResourceId("constraint");
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.SCHEMA_NAME, nameLock);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.SCHEMA_NAME, nameLock);
         order.verify(txState).constraintDoDrop(constraint);
         order.verify(txState).indexDoDrop(index);
     }
@@ -760,7 +760,7 @@ public class PlainOperationsTest extends OperationsTest {
         operations.nodeDetachDelete(nodeId);
 
         order.verify(storageLocks).acquireNodeDeletionLock(txState, LockTracer.NONE, nodeId);
-        order.verify(locks, never()).releaseExclusive(ResourceTypes.NODE, nodeId);
+        order.verify(locks, never()).releaseExclusive(ResourceType.NODE, nodeId);
         order.verify(txState).nodeDoDelete(nodeId);
     }
 
@@ -777,8 +777,8 @@ public class PlainOperationsTest extends OperationsTest {
         operations.nodeDetachDelete(nodeId);
 
         order.verify(storageLocks).acquireNodeDeletionLock(txState, LockTracer.NONE, nodeId);
-        order.verify(locks, never()).releaseExclusive(ResourceTypes.NODE, nodeId);
-        order.verify(locks, never()).releaseExclusive(ResourceTypes.NODE, 2L);
+        order.verify(locks, never()).releaseExclusive(ResourceType.NODE, nodeId);
+        order.verify(locks, never()).releaseExclusive(ResourceType.NODE, 2L);
         order.verify(txState).nodeDoDelete(nodeId);
     }
 
@@ -799,8 +799,8 @@ public class PlainOperationsTest extends OperationsTest {
         // then
         InOrder order = inOrder(locks, creationContext, storageLocks);
         order.verify(storageLocks).acquireNodeDeletionLock(txState, LockTracer.NONE, nodeId);
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2);
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, TOKEN_INDEX_RESOURCE_ID);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, labelId1, labelId2);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, TOKEN_INDEX_RESOURCE_ID);
         order.verifyNoMoreInteractions();
     }
 
@@ -824,8 +824,8 @@ public class PlainOperationsTest extends OperationsTest {
         // then
         InOrder order = inOrder(locks, creationContext, storageLocks);
         order.verify(storageLocks).acquireNodeDeletionLock(txState, LockTracer.NONE, nodeId);
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2);
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, TOKEN_INDEX_RESOURCE_ID);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, labelId1, labelId2);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, TOKEN_INDEX_RESOURCE_ID);
         order.verifyNoMoreInteractions();
     }
 
@@ -842,9 +842,9 @@ public class PlainOperationsTest extends OperationsTest {
 
         // then
         InOrder order = inOrder(locks);
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, nodeId);
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, labelId);
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, TOKEN_INDEX_RESOURCE_ID);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.NODE, nodeId);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, labelId);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, TOKEN_INDEX_RESOURCE_ID);
         order.verifyNoMoreInteractions();
     }
 
@@ -868,8 +868,8 @@ public class PlainOperationsTest extends OperationsTest {
 
         // then
         InOrder order = inOrder(locks);
-        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceTypes.NODE, nodeId);
-        order.verify(locks).acquireShared(LockTracer.NONE, ResourceTypes.LABEL, labelId1, labelId2);
+        order.verify(locks).acquireExclusive(LockTracer.NONE, ResourceType.NODE, nodeId);
+        order.verify(locks).acquireShared(LockTracer.NONE, ResourceType.LABEL, labelId1, labelId2);
         order.verifyNoMoreInteractions();
     }
 

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
-import static org.neo4j.lock.ResourceTypes.INDEX_ENTRY;
+import static org.neo4j.lock.ResourceType.INDEX_ENTRY;
 
 import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;

@@ -28,9 +28,9 @@ import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.lock.LockType.EXCLUSIVE
 import org.neo4j.lock.LockType.SHARED
-import org.neo4j.lock.ResourceTypes.INDEX_ENTRY
-import org.neo4j.lock.ResourceTypes.LABEL
-import org.neo4j.lock.ResourceTypes.NODE
+import org.neo4j.lock.ResourceType.INDEX_ENTRY
+import org.neo4j.lock.ResourceType.LABEL
+import org.neo4j.lock.ResourceType.NODE
 
 abstract class SetNodePropertyTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],

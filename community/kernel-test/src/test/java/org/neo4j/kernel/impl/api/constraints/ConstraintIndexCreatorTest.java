@@ -72,7 +72,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -196,10 +196,10 @@ class ConstraintIndexCreatorTest {
         creator.createUniquenessConstraintIndex(transaction, constraint, prototype, x -> {});
 
         // then
-        verify(transaction.lockClient()).releaseExclusive(ResourceTypes.LABEL, schema.getLabelId());
+        verify(transaction.lockClient()).releaseExclusive(ResourceType.LABEL, schema.getLabelId());
 
         verify(transaction.lockClient())
-                .acquireExclusive(transaction.lockTracer(), ResourceTypes.LABEL, schema.getLabelId());
+                .acquireExclusive(transaction.lockTracer(), ResourceType.LABEL, schema.getLabelId());
     }
 
     @Test

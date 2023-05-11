@@ -28,9 +28,9 @@ import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.Relations
 import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.deleteGroup;
 import static org.neo4j.internal.recordstorage.RelationshipGroupGetter.groupIsEmpty;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
-import static org.neo4j.lock.ResourceTypes.NODE;
-import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
+import static org.neo4j.lock.ResourceType.NODE;
+import static org.neo4j.lock.ResourceType.NODE_RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP_GROUP;
 
 import org.neo4j.internal.counts.Updater;
 import org.neo4j.internal.recordstorage.RecordAccess.RecordProxy;

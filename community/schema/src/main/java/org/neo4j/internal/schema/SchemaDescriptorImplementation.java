@@ -33,7 +33,6 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.token.api.TokenConstants;
 
 public final class SchemaDescriptorImplementation
@@ -237,7 +236,7 @@ public final class SchemaDescriptorImplementation
 
     @Override
     public ResourceType keyType() {
-        return entityType == EntityType.NODE ? ResourceTypes.LABEL : ResourceTypes.RELATIONSHIP_TYPE;
+        return entityType == EntityType.NODE ? ResourceType.LABEL : ResourceType.RELATIONSHIP_TYPE;
     }
 
     @Override

@@ -40,8 +40,8 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP;
 import static org.neo4j.kernel.impl.locking.ResourceIds.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
-import static org.neo4j.lock.ResourceTypes.INDEX_ENTRY;
-import static org.neo4j.lock.ResourceTypes.SCHEMA_NAME;
+import static org.neo4j.lock.ResourceType.INDEX_ENTRY;
+import static org.neo4j.lock.ResourceType.SCHEMA_NAME;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 import java.util.Arrays;
@@ -146,7 +146,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.ResourceType;
-import org.neo4j.lock.ResourceTypes;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.PropertySelection;
@@ -259,8 +258,8 @@ public class Operations implements Write, SchemaWrite {
             lockingIds[i] = labels[i];
         }
         Arrays.sort(lockingIds); // Sort to ensure labels are locked and assigned in order.
-        ktx.lockClient().acquireShared(ktx.lockTracer(), ResourceTypes.LABEL, lockingIds);
-        sharedTokenSchemaLock(ResourceTypes.LABEL);
+        ktx.lockClient().acquireShared(ktx.lockTracer(), ResourceType.LABEL, lockingIds);
+        sharedTokenSchemaLock(ResourceType.LABEL);
 
         TransactionState txState = ktx.txState();
         long nodeId = commandCreationContext.reserveNode();
@@ -320,8 +319,8 @@ public class Operations implements Write, SchemaWrite {
                         ktx.securityContext(), token::relationshipTypeGetName, relationshipType);
         ktx.assertOpen();
 
-        sharedSchemaLock(ResourceTypes.RELATIONSHIP_TYPE, relationshipType);
-        sharedTokenSchemaLock(ResourceTypes.RELATIONSHIP_TYPE);
+        sharedSchemaLock(ResourceType.RELATIONSHIP_TYPE, relationshipType);
+        sharedTokenSchemaLock(ResourceType.RELATIONSHIP_TYPE);
         TransactionState txState = ktx.txState();
         var sourceNodeAddedInTx = txState.nodeIsAddedInThisTx(sourceNode);
         var targetNodeAddedInTx =
@@ -365,8 +364,8 @@ public class Operations implements Write, SchemaWrite {
         if (!relationshipCursor.next()) {
             return false;
         }
-        sharedSchemaLock(ResourceTypes.RELATIONSHIP_TYPE, relationshipCursor.type());
-        sharedTokenSchemaLock(ResourceTypes.RELATIONSHIP_TYPE);
+        sharedSchemaLock(ResourceType.RELATIONSHIP_TYPE, relationshipCursor.type());
+        sharedTokenSchemaLock(ResourceType.RELATIONSHIP_TYPE);
         var sourceNode = relationshipCursor.sourceNodeReference();
         var targetNode = relationshipCursor.targetNodeReference();
         boolean sourceNodeAddedInTx = txState.nodeIsAddedInThisTx(sourceNode);
@@ -394,8 +393,8 @@ public class Operations implements Write, SchemaWrite {
     @Override
     public boolean nodeAddLabel(long node, int nodeLabel)
             throws EntityNotFoundException, ConstraintValidationException {
-        sharedSchemaLock(ResourceTypes.LABEL, nodeLabel);
-        sharedTokenSchemaLock(ResourceTypes.LABEL);
+        sharedSchemaLock(ResourceType.LABEL, nodeLabel);
+        sharedTokenSchemaLock(ResourceType.LABEL);
         acquireExclusiveNodeLock(node);
         storageLocks.acquireNodeLabelChangeLock(ktx.lockTracer(), node, nodeLabel);
 
@@ -525,7 +524,7 @@ public class Operations implements Write, SchemaWrite {
         allStoreHolder.singleNode(node, nodeCursor);
         if (nodeCursor.next()) {
             acquireSharedNodeLabelLocks();
-            sharedTokenSchemaLock(ResourceTypes.LABEL);
+            sharedTokenSchemaLock(ResourceType.LABEL);
 
             ktx.securityAuthorizationHandler()
                     .assertAllowsDeleteNode(ktx.securityContext(), token::labelGetName, nodeCursor::labels);
@@ -542,7 +541,7 @@ public class Operations implements Write, SchemaWrite {
      */
     private long[] acquireSharedNodeLabelLocks() {
         long[] labels = nodeCursor.labels().all();
-        ktx.lockClient().acquireShared(ktx.lockTracer(), ResourceTypes.LABEL, labels);
+        ktx.lockClient().acquireShared(ktx.lockTracer(), ResourceType.LABEL, labels);
         return labels;
     }
 
@@ -551,7 +550,7 @@ public class Operations implements Write, SchemaWrite {
      */
     private int acquireSharedRelationshipTypeLock() {
         int relType = relationshipCursor.type();
-        ktx.lockClient().acquireShared(ktx.lockTracer(), ResourceTypes.RELATIONSHIP_TYPE, relType);
+        ktx.lockClient().acquireShared(ktx.lockTracer(), ResourceType.RELATIONSHIP_TYPE, relType);
         return relType;
     }
 
@@ -764,8 +763,8 @@ public class Operations implements Write, SchemaWrite {
                     .assertAllowsRemoveLabel(ktx.securityContext(), token::labelGetName, labelId);
         }
 
-        sharedSchemaLock(ResourceTypes.LABEL, labelId);
-        sharedTokenSchemaLock(ResourceTypes.LABEL);
+        sharedSchemaLock(ResourceType.LABEL, labelId);
+        sharedTokenSchemaLock(ResourceType.LABEL);
         ktx.txState().nodeDoRemoveLabel(labelId, node);
         if (storageReader.hasRelatedSchema(labelId, NODE)) {
             int[] existingPropertyKeyIds = loadSortedNodePropertyKeyList();
@@ -840,14 +839,14 @@ public class Operations implements Write, SchemaWrite {
         // lock
         if (!addedLabels.isEmpty() || !removedLabels.isEmpty()) {
             addedLabels.forEach(addedLabelId -> {
-                sharedSchemaLock(ResourceTypes.LABEL, addedLabelId);
+                sharedSchemaLock(ResourceType.LABEL, addedLabelId);
                 storageLocks.acquireNodeLabelChangeLock(ktx.lockTracer(), node, addedLabelId);
             });
             removedLabels.forEach(removedLabelId -> {
-                sharedSchemaLock(ResourceTypes.LABEL, removedLabelId);
+                sharedSchemaLock(ResourceType.LABEL, removedLabelId);
                 storageLocks.acquireNodeLabelChangeLock(ktx.lockTracer(), node, removedLabelId);
             });
-            sharedTokenSchemaLock(ResourceTypes.LABEL);
+            sharedTokenSchemaLock(ResourceType.LABEL);
         }
         acquireExclusiveNodeLock(node);
         singleNode(node);
@@ -2093,13 +2092,13 @@ public class Operations implements Write, SchemaWrite {
 
     private void acquireExclusiveNodeLock(long node) {
         if (!ktx.hasTxStateWithChanges() || !ktx.txState().nodeIsAddedInThisTx(node)) {
-            ktx.lockClient().acquireExclusive(ktx.lockTracer(), ResourceTypes.NODE, node);
+            ktx.lockClient().acquireExclusive(ktx.lockTracer(), ResourceType.NODE, node);
         }
     }
 
     private void acquireExclusiveRelationshipLock(long relationshipId) {
         if (!ktx.hasTxStateWithChanges() || !ktx.txState().relationshipIsAddedInThisTx(relationshipId)) {
-            ktx.lockClient().acquireExclusive(ktx.lockTracer(), ResourceTypes.RELATIONSHIP, relationshipId);
+            ktx.lockClient().acquireExclusive(ktx.lockTracer(), ResourceType.RELATIONSHIP, relationshipId);
         }
     }
 
@@ -2107,7 +2106,7 @@ public class Operations implements Write, SchemaWrite {
         ktx.lockClient().acquireShared(ktx.lockTracer(), type, tokenId);
     }
 
-    private void sharedTokenSchemaLock(ResourceTypes rt) {
+    private void sharedTokenSchemaLock(ResourceType rt) {
         // this guards label or relationship type token indexes from being dropped during write operations
         sharedSchemaLock(rt, SchemaDescriptorImplementation.TOKEN_INDEX_LOCKING_ID);
     }

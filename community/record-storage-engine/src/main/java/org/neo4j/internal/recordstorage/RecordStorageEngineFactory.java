@@ -124,7 +124,7 @@ import org.neo4j.kernel.impl.transaction.log.EmptyLogTailMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockService;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -734,7 +734,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
         if ("multiversion".equals(config.get(db_format))) {
             return Locks.NO_LOCKS;
         }
-        return new ForsetiLockManager(config, clock, ResourceTypes.values());
+        return new ForsetiLockManager(config, clock, ResourceType.values());
     }
 
     @Override

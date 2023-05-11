@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.lang.String.format;
-import static org.neo4j.lock.ResourceTypes.NODE;
+import static org.neo4j.lock.ResourceType.NODE;
 
 import java.util.ArrayList;
 import java.util.List;

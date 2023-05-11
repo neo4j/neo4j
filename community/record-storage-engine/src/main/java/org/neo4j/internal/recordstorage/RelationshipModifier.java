@@ -29,10 +29,10 @@ import static org.neo4j.internal.recordstorage.RelationshipLockHelper.lockRelati
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 import static org.neo4j.kernel.impl.store.record.Record.isNull;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.ALWAYS;
-import static org.neo4j.lock.ResourceTypes.NODE;
-import static org.neo4j.lock.ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP;
-import static org.neo4j.lock.ResourceTypes.RELATIONSHIP_GROUP;
+import static org.neo4j.lock.ResourceType.NODE;
+import static org.neo4j.lock.ResourceType.NODE_RELATIONSHIP_GROUP_DELETE;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP;
+import static org.neo4j.lock.ResourceType.RELATIONSHIP_GROUP;
 
 import java.util.function.Predicate;
 import org.eclipse.collections.api.list.primitive.MutableLongList;

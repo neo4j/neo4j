@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 
 interface UpgradeLocker {
     Lock acquireWriteLock(KernelTransaction tx);
@@ -33,7 +33,7 @@ interface UpgradeLocker {
 
     UpgradeLocker DEFAULT = new UpgradeLocker() {
         private static final long ID = Long.MAX_VALUE;
-        private final ResourceTypes type = ResourceTypes.NODE;
+        private final ResourceType type = ResourceType.NODE;
 
         @Override
         public Lock acquireWriteLock(KernelTransaction tx) {

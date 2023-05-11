@@ -21,28 +21,11 @@ package org.neo4j.cypher.internal.runtime.spec.matcher
 
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.plans.Prober
-import org.neo4j.cypher.internal.runtime.spec.AnyRowsMatcher
-import org.neo4j.cypher.internal.runtime.spec.Ascending
-import org.neo4j.cypher.internal.runtime.spec.CustomRowsMatcher
-import org.neo4j.cypher.internal.runtime.spec.Descending
-import org.neo4j.cypher.internal.runtime.spec.DisallowValues
-import org.neo4j.cypher.internal.runtime.spec.EqualInAnyOrder
-import org.neo4j.cypher.internal.runtime.spec.EqualInOrder
-import org.neo4j.cypher.internal.runtime.spec.EqualInPartialOrder
-import org.neo4j.cypher.internal.runtime.spec.GroupBy
-import org.neo4j.cypher.internal.runtime.spec.NoRowsMatcher
-import org.neo4j.cypher.internal.runtime.spec.RecordingRuntimeResult
-import org.neo4j.cypher.internal.runtime.spec.RowCount
-import org.neo4j.cypher.internal.runtime.spec.RowOrderMatcher
-import org.neo4j.cypher.internal.runtime.spec.RowsDontMatch
-import org.neo4j.cypher.internal.runtime.spec.RowsMatch
-import org.neo4j.cypher.internal.runtime.spec.RowsMatcher
-import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSupport
+import org.neo4j.cypher.internal.runtime.spec._
 import org.neo4j.graphdb.QueryStatistics
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.lock.LockType
 import org.neo4j.lock.ResourceType
-import org.neo4j.lock.ResourceTypes
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.ListValue
 import org.scalactic.Equality
@@ -160,13 +143,13 @@ trait RuntimeResultMatchers[CONTEXT <: RuntimeContext] {
     }
 
     def withLockedNodes(nodeIds: Set[Long], onlyCheckContains: Boolean = false): RuntimeResultMatcher = {
-      maybeLockedNodes = Some(new LockResourceMatcher(nodeIds, ResourceTypes.NODE, onlyCheckContains))
+      maybeLockedNodes = Some(new LockResourceMatcher(nodeIds, ResourceType.NODE, onlyCheckContains))
       this
     }
 
     def withLockedRelationships(relationshipId: Set[Long], onlyCheckContains: Boolean = false): RuntimeResultMatcher = {
       maybeLockedRelationships =
-        Some(new LockResourceMatcher(relationshipId, ResourceTypes.RELATIONSHIP, onlyCheckContains))
+        Some(new LockResourceMatcher(relationshipId, ResourceType.RELATIONSHIP, onlyCheckContains))
       this
     }
 

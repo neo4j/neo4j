@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TransactionImpl;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
-import org.neo4j.lock.ResourceTypes;
+import org.neo4j.lock.ResourceType;
 import org.neo4j.test.extension.ImpermanentDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.Threading;
@@ -155,9 +155,9 @@ class DetachDeleteIT {
                 Locks.Client locksClient = getLocksClient(ignore);
                 // The try-lock should fail because the detach-delete should already be holding an exclusive lock on
                 // that node.
-                assertFalse(locksClient.tryExclusiveLock(ResourceTypes.NODE_RELATIONSHIP_GROUP_DELETE, otherNodeId));
+                assertFalse(locksClient.tryExclusiveLock(ResourceType.NODE_RELATIONSHIP_GROUP_DELETE, otherNodeId));
                 // The detach-delete should also hold an exclusive lock on the associated relationship.
-                assertFalse(locksClient.trySharedLock(ResourceTypes.RELATIONSHIP, otherRelId.get()));
+                assertFalse(locksClient.trySharedLock(ResourceType.RELATIONSHIP, otherRelId.get()));
             } finally {
                 sequencer.release(Phases.LOCK_VERIFICATION_FINISHED);
             }

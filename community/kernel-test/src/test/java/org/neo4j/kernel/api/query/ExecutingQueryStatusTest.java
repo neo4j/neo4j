@@ -76,7 +76,7 @@ class ExecutingQueryStatusTest {
         long[] resourceIds = {17};
         long userTransactionId = 7;
         WaitingOnLock status =
-                new WaitingOnLock(EXCLUSIVE, resourceType("NODE"), userTransactionId, resourceIds, clock.nanos());
+                new WaitingOnLock(EXCLUSIVE, ResourceType.NODE, userTransactionId, resourceIds, clock.nanos());
         clock.forward(17, TimeUnit.MILLISECONDS);
 
         // when
@@ -91,24 +91,5 @@ class ExecutingQueryStatusTest {
         expected.put("resourceIds", resourceIds);
         expected.put("transactionId", userTransactionId);
         assertEquals(expected, statusMap);
-    }
-
-    private static ResourceType resourceType(String name) {
-        return new ResourceType() {
-            @Override
-            public String toString() {
-                return name();
-            }
-
-            @Override
-            public int typeId() {
-                throw new UnsupportedOperationException("not used");
-            }
-
-            @Override
-            public String name() {
-                return name;
-            }
-        };
     }
 }
