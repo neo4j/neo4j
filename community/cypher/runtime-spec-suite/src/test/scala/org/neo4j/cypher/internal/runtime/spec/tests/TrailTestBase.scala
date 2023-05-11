@@ -1777,6 +1777,268 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
 
   }
 
+  test("handle limit with trail as argument") {
+    given(complexGraph())
+
+    val plan = new LogicalQueryBuilder(this)
+      .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2", "iteration")
+      .apply()
+      .|.valueHashJoin("left = right")
+      .|.|.projection("[start, middle, end, a, b, r1, c, d, r2] AS right")
+      .|.|.distinct(
+        "a AS a",
+        "middle AS middle",
+        "b AS b",
+        "r1 AS r1",
+        "end AS end",
+        "start AS start",
+        "d AS d",
+        "r2 AS r2",
+        "c AS c"
+      )
+      .|.|.union()
+      .|.|.|.optional("end")
+      .|.|.|.filter("end:LOOP")
+      .|.|.|.apply(fromSubquery = false)
+      .|.|.|.|.trail(TrailParameters(
+        0,
+        Unlimited,
+        "middle",
+        "end",
+        "c_inner",
+        "d_inner",
+        Set(("c_inner", "c"), ("d_inner", "d")),
+        Set(("r2_inner", "r2")),
+        Set("r2_inner"),
+        Set(),
+        Set("r1"),
+        false
+      ))
+      .|.|.|.|.|.filter("r2_inner IS NOT NULL")
+      .|.|.|.|.|.optional("middle")
+      .|.|.|.|.|.filter("true")
+      .|.|.|.|.|.filter("d_inner:LOOP")
+      .|.|.|.|.|.nodeHashJoin("d_inner")
+      .|.|.|.|.|.|.limit(9223372036854775807L) // We used to fail here
+      .|.|.|.|.|.|.allNodeScan("d_inner")
+      .|.|.|.|.|.filterExpression(isRepeatTrailUnique("r2_inner"))
+      .|.|.|.|.|.expandAll("(c_inner)-[r2_inner]->(d_inner)")
+      .|.|.|.|.|.argument("middle", "c_inner")
+      .|.|.|.|.argument("middle")
+      .|.|.|.filter("true")
+      .|.|.|.sort(Seq(Ascending("foo")))
+      .|.|.|.projection("start.foo AS foo")
+      .|.|.|.filter("middle:MIDDLE AND middle:LOOP")
+      .|.|.|.trail(TrailParameters(
+        0,
+        Unlimited,
+        "firstMiddle",
+        "middle",
+        "a_inner",
+        "b_inner",
+        Set(("a_inner", "a"), ("b_inner", "b")),
+        Set(("r1_inner", "r1")),
+        Set("r1_inner"),
+        Set(),
+        Set(),
+        false
+      ))
+      .|.|.|.|.filter("b_inner:MIDDLE")
+      .|.|.|.|.nodeHashJoin("b_inner")
+      .|.|.|.|.|.allNodeScan("b_inner")
+      .|.|.|.|.limit(9223372036854775807L)
+      .|.|.|.|.filterExpression(isRepeatTrailUnique("r1_inner"))
+      .|.|.|.|.expandAll("(a_inner)-[r1_inner]->(b_inner)")
+      .|.|.|.|.optional("start")
+      .|.|.|.|.filter("true")
+      .|.|.|.|.argument("firstMiddle", "a_inner")
+      .|.|.|.trail(TrailParameters(
+        1,
+        Limited(1),
+        "start",
+        "firstMiddle",
+        "anon_start_inner",
+        "anon_end_inner",
+        Set(),
+        Set(),
+        Set("anon_r_inner"),
+        Set(),
+        Set(),
+        false
+      ))
+      .|.|.|.|.nodeHashJoin("anon_end_inner")
+      .|.|.|.|.|.filter("anon_end_inner:MIDDLE")
+      .|.|.|.|.|.filter("true")
+      .|.|.|.|.|.allNodeScan("anon_end_inner")
+      .|.|.|.|.filter("true")
+      .|.|.|.|.filterExpression(isRepeatTrailUnique("anon_r_inner"))
+      .|.|.|.|.expandAll("(anon_start_inner)-[anon_r_inner]->(anon_end_inner)")
+      .|.|.|.|.argument("start", "anon_start_inner")
+      .|.|.|.filter("true")
+      .|.|.|.nodeByLabelScan("start", "START", IndexOrderNone)
+      .|.|.filter("end:LOOP")
+      .|.|.apply(fromSubquery = false)
+      .|.|.|.filter("true")
+      .|.|.|.trail(TrailParameters(
+        0,
+        Unlimited,
+        "middle",
+        "end",
+        "c_inner",
+        "d_inner",
+        Set(("c_inner", "c"), ("d_inner", "d")),
+        Set(("r2_inner", "r2")),
+        Set("r2_inner"),
+        Set(),
+        Set("r1"),
+        false
+      ))
+      .|.|.|.|.filter("d_inner:LOOP")
+      .|.|.|.|.nodeHashJoin("d_inner")
+      .|.|.|.|.|.allNodeScan("d_inner")
+      .|.|.|.|.filterExpression(isRepeatTrailUnique("r2_inner"))
+      .|.|.|.|.filter("true")
+      .|.|.|.|.expandAll("(c_inner)-[r2_inner]->(d_inner)")
+      .|.|.|.|.argument("middle", "c_inner")
+      .|.|.|.filter("true")
+      .|.|.|.argument("middle")
+      .|.|.sort(Seq(Ascending("foo")))
+      .|.|.filter("true")
+      .|.|.projection("start.foo AS foo")
+      .|.|.filter("true")
+      .|.|.filter("middle:MIDDLE AND middle:LOOP")
+      .|.|.trail(TrailParameters(
+        0,
+        Unlimited,
+        "firstMiddle",
+        "middle",
+        "a_inner",
+        "b_inner",
+        Set(("a_inner", "a"), ("b_inner", "b")),
+        Set(("r1_inner", "r1")),
+        Set("r1_inner"),
+        Set(),
+        Set(),
+        false
+      ))
+      .|.|.|.filter("b_inner:MIDDLE")
+      .|.|.|.nodeHashJoin("b_inner")
+      .|.|.|.|.allNodeScan("b_inner")
+      .|.|.|.filterExpression(isRepeatTrailUnique("r1_inner"))
+      .|.|.|.filter("true")
+      .|.|.|.expandAll("(a_inner)-[r1_inner]->(b_inner)")
+      .|.|.|.filter("true")
+      .|.|.|.argument("firstMiddle", "a_inner")
+      .|.|.trail(TrailParameters(
+        1,
+        Limited(1),
+        "start",
+        "firstMiddle",
+        "anon_start_inner",
+        "anon_end_inner",
+        Set(),
+        Set(),
+        Set("anon_r_inner"),
+        Set(),
+        Set(),
+        false
+      ))
+      .|.|.|.nodeHashJoin("anon_end_inner")
+      .|.|.|.|.filter("true")
+      .|.|.|.|.filter("anon_end_inner:MIDDLE")
+      .|.|.|.|.allNodeScan("anon_end_inner")
+      .|.|.|.filterExpression(isRepeatTrailUnique("anon_r_inner"))
+      .|.|.|.expandAll("(anon_start_inner)-[anon_r_inner]->(anon_end_inner)")
+      .|.|.|.filter("true")
+      .|.|.|.argument("start", "anon_start_inner")
+      .|.|.filter("true")
+      .|.|.nodeByLabelScan("start", "START", IndexOrderNone)
+      .|.projection("[start, middle, end, a, b, r1, c, d, r2] AS left")
+      .|.filter("end:LOOP")
+      .|.apply(fromSubquery = false)
+      .|.|.trail(TrailParameters(
+        0,
+        Unlimited,
+        "middle",
+        "end",
+        "c_inner",
+        "d_inner",
+        Set(("c_inner", "c"), ("d_inner", "d")),
+        Set(("r2_inner", "r2")),
+        Set("r2_inner"),
+        Set(),
+        Set("r1"),
+        false
+      ))
+      .|.|.|.filter("true")
+      .|.|.|.limit(9223372036854775807L)
+      .|.|.|.filter("d_inner:LOOP")
+      .|.|.|.nodeHashJoin("d_inner")
+      .|.|.|.|.allNodeScan("d_inner")
+      .|.|.|.filterExpression(isRepeatTrailUnique("r2_inner"))
+      .|.|.|.filter("true")
+      .|.|.|.expandAll("(c_inner)-[r2_inner]->(d_inner)")
+      .|.|.|.filter("true")
+      .|.|.|.argument("middle", "c_inner")
+      .|.|.argument("middle")
+      .|.limit(9223372036854775807L)
+      .|.sort(Seq(Ascending("foo")))
+      .|.filter("true")
+      .|.projection("start.foo AS foo")
+      .|.filter("middle:MIDDLE AND middle:LOOP")
+      .|.trail(TrailParameters(
+        0,
+        Unlimited,
+        "firstMiddle",
+        "middle",
+        "a_inner",
+        "b_inner",
+        Set(("a_inner", "a"), ("b_inner", "b")),
+        Set(("r1_inner", "r1")),
+        Set("r1_inner"),
+        Set(),
+        Set(),
+        false
+      ))
+      .|.|.filter("true")
+      .|.|.filter("b_inner:MIDDLE")
+      .|.|.nodeHashJoin("b_inner")
+      .|.|.|.allNodeScan("b_inner")
+      .|.|.filterExpression(isRepeatTrailUnique("r1_inner"))
+      .|.|.expandAll("(a_inner)-[r1_inner]->(b_inner)")
+      .|.|.argument("firstMiddle", "a_inner")
+      .|.filter("true")
+      .|.trail(TrailParameters(
+        1,
+        Limited(1),
+        "start",
+        "firstMiddle",
+        "anon_start_inner",
+        "anon_end_inner",
+        Set(),
+        Set(),
+        Set("anon_r_inner"),
+        Set(),
+        Set(),
+        false
+      ))
+      .|.|.nodeHashJoin("anon_end_inner")
+      .|.|.|.filter("true")
+      .|.|.|.filter("anon_end_inner:MIDDLE")
+      .|.|.|.allNodeScan("anon_end_inner")
+      .|.|.filter("true")
+      .|.|.filterExpression(isRepeatTrailUnique("anon_r_inner"))
+      .|.|.expandAll("(anon_start_inner)-[anon_r_inner]->(anon_end_inner)")
+      .|.|.argument("start", "anon_start_inner")
+      .|.nodeByLabelScan("start", "START", IndexOrderNone)
+      .unwind("range(1, 4) AS iteration")
+      .argument()
+      .build()
+
+    // Then there should be no exceptions
+    execute(plan, runtime).awaitAll()
+  }
+
   protected def listOf(values: AnyRef*): util.List[AnyRef] = TrailTestBase.listOf(values: _*)
 
   //  (n0:START)                                                  (n6:LOOP)
