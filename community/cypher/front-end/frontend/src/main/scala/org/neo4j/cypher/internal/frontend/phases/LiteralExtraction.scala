@@ -20,7 +20,6 @@ import org.neo4j.cypher.internal.ast.AdministrationCommand
 import org.neo4j.cypher.internal.ast.SchemaCommand
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
@@ -45,7 +44,7 @@ case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy)
     val (extractParameters, extractedParameters) = statement match {
       case _: AdministrationCommand => sensitiveLiteralReplacement(statement)
       case _: SchemaCommand         => Rewriter.noop -> Map.empty[AutoExtractedParameter, Expression]
-      case _                        => literalReplacement(statement, literalExtraction, in.semantics())
+      case _                        => literalReplacement(statement, literalExtraction)
     }
     val rewrittenStatement = statement.endoRewrite(extractParameters)
     in.withStatement(rewrittenStatement).withParams(extractedParameters)
@@ -59,8 +58,7 @@ case class LiteralExtraction(literalExtraction: LiteralExtractionStrategy)
 case object LiteralExtraction extends StepSequencer.Step with ParsePipelineTransformerFactory {
 
   override def preConditions: Set[StepSequencer.Condition] = Set(
-    BaseContains[Statement],
-    BaseContains[SemanticState]
+    BaseContains[Statement]
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(LiteralsExtracted)

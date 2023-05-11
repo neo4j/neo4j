@@ -18,7 +18,6 @@ package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.rewriting.rewriters.Forced
@@ -30,6 +29,10 @@ import org.neo4j.cypher.internal.util.OpenCypherExceptionFactory
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.bottomUp
 import org.neo4j.cypher.internal.util.symbols.CTAny
+import org.neo4j.cypher.internal.util.symbols.CTFloat
+import org.neo4j.cypher.internal.util.symbols.CTInteger
+import org.neo4j.cypher.internal.util.symbols.CTList
+import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupport {
@@ -38,7 +41,7 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
     assertRewrite(
       "RETURN x STARTS WITH 'Pattern' as X",
       "RETURN x STARTS WITH $`  AUTOSTRING0` as X",
-      Map("  AUTOSTRING0" -> "Pattern")
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(7)) -> "Pattern")
     )
   }
 
@@ -47,18 +50,38 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
   }
 
   test("should extract literals in return clause") {
-    assertRewrite("RETURN 1 as result", "RETURN $`  AUTOINT0` as result", Map("  AUTOINT0" -> 1))
-    assertRewrite("RETURN 1.1 as result", "RETURN $`  AUTODOUBLE0` as result", Map("  AUTODOUBLE0" -> 1.1))
-    assertRewrite("RETURN 'apa' as result", "RETURN $`  AUTOSTRING0` as result", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("RETURN \"apa\" as result", "RETURN $`  AUTOSTRING0` as result", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("RETURN [1, 2, 3] as result", "RETURN $`  AUTOLIST0` as result", Map("  AUTOLIST0" -> Seq(1, 2, 3)))
+    assertRewrite(
+      "RETURN 1 as result",
+      "RETURN $`  AUTOINT0` as result",
+      Map(autoParameter("  AUTOINT0", CTInteger) -> 1)
+    )
+    assertRewrite(
+      "RETURN 1.1 as result",
+      "RETURN $`  AUTODOUBLE0` as result",
+      Map(autoParameter("  AUTODOUBLE0", CTFloat) -> 1.1)
+    )
+    assertRewrite(
+      "RETURN 'apa' as result",
+      "RETURN $`  AUTOSTRING0` as result",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(3)) -> "apa")
+    )
+    assertRewrite(
+      "RETURN \"apa\" as result",
+      "RETURN $`  AUTOSTRING0` as result",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(3)) -> "apa")
+    )
+    assertRewrite(
+      "RETURN [1, 2, 3] as result",
+      "RETURN $`  AUTOLIST0` as result",
+      Map(autoParameter("  AUTOLIST0", CTList(CTAny), Some(3)) -> Seq(1, 2, 3))
+    )
   }
 
   test("should extract literals in call clause") {
     assertRewrite(
       "CALL  { RETURN 1 as result } RETURN result",
       "CALL { RETURN $`  AUTOINT0` as result } RETURN result",
-      Map("  AUTOINT0" -> 1)
+      Map(autoParameter("  AUTOINT0", CTInteger) -> 1)
     )
   }
 
@@ -92,14 +115,26 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
   }
 
   test("should extract literals in match clause") {
-    assertRewrite("MATCH ({a:1})", "MATCH ({a:$`  AUTOINT0`})", Map("  AUTOINT0" -> 1))
-    assertRewrite("MATCH ({a:1.1})", "MATCH ({a:$`  AUTODOUBLE0`})", Map("  AUTODOUBLE0" -> 1.1))
-    assertRewrite("MATCH ({a:'apa'})", "MATCH ({a:$`  AUTOSTRING0`})", Map("  AUTOSTRING0" -> "apa"))
-    assertRewrite("MATCH ({a:\"apa\"})", "MATCH ({a:$`  AUTOSTRING0`})", Map("  AUTOSTRING0" -> "apa"))
+    assertRewrite("MATCH ({a:1})", "MATCH ({a:$`  AUTOINT0`})", Map(autoParameter("  AUTOINT0", CTInteger) -> 1))
+    assertRewrite(
+      "MATCH ({a:1.1})",
+      "MATCH ({a:$`  AUTODOUBLE0`})",
+      Map(autoParameter("  AUTODOUBLE0", CTFloat) -> 1.1)
+    )
+    assertRewrite(
+      "MATCH ({a:'apa'})",
+      "MATCH ({a:$`  AUTOSTRING0`})",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(3)) -> "apa")
+    )
+    assertRewrite(
+      "MATCH ({a:\"apa\"})",
+      "MATCH ({a:$`  AUTOSTRING0`})",
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(3)) -> "apa")
+    )
     assertRewrite(
       "MATCH (n) WHERE ID(n) IN [1, 2, 3]",
       "MATCH (n) WHERE ID(n) IN $`  AUTOLIST0`",
-      Map("  AUTOLIST0" -> Seq(1, 2, 3))
+      Map(autoParameter("  AUTOLIST0", CTList(CTAny), Some(3)) -> Seq(1, 2, 3))
     )
   }
 
@@ -112,7 +147,7 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
     assertRewrite(
       s"RETURN 0 as x SKIP 1 LIMIT 2",
       s"RETURN $$`  AUTOINT0` as x SKIP 1 LIMIT 2",
-      Map("  AUTOINT0" -> 0)
+      Map(autoParameter("  AUTOINT0", CTInteger) -> 0)
     )
   }
 
@@ -121,10 +156,10 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
       "create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'})",
       "create (a {a:$`  AUTOINT0`, b:$`  AUTOSTRING1`, c:$`  AUTOINT2`, d:$`  AUTOSTRING3`})",
       Map(
-        "  AUTOINT0" -> 0,
-        "  AUTOSTRING1" -> "name 0",
-        "  AUTOINT2" -> 10000000,
-        "  AUTOSTRING3" -> "a very long string 0"
+        autoParameter("  AUTOINT0", CTInteger) -> 0,
+        autoParameter("  AUTOSTRING1", CTString, Some(6)) -> "name 0",
+        autoParameter("  AUTOINT2", CTInteger) -> 10000000,
+        autoParameter("  AUTOSTRING3", CTString, Some(20)) -> "a very long string 0"
       )
     )
   }
@@ -133,7 +168,11 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
     assertRewrite(
       s"MERGE (n {a:'apa'}) ON CREATE SET n.foo = 'apa' ON MATCH SET n.foo = 'apa'",
       s"MERGE (n {a:$$`  AUTOSTRING0`}) ON CREATE SET n.foo = $$`  AUTOSTRING1` ON MATCH SET n.foo = $$`  AUTOSTRING2`",
-      Map("  AUTOSTRING0" -> "apa", "  AUTOSTRING1" -> "apa", "  AUTOSTRING2" -> "apa")
+      Map(
+        autoParameter("  AUTOSTRING0", CTString, Some(3)) -> "apa",
+        autoParameter("  AUTOSTRING1", CTString, Some(3)) -> "apa",
+        autoParameter("  AUTOSTRING2", CTString, Some(3)) -> "apa"
+      )
     )
   }
 
@@ -142,15 +181,15 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
       s"create (a {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (b {a:0, b:'name 0', c:10000000, d:'a very long string 0'}) create (a)-[:KNOWS {since: 0}]->(b)",
       s"create (a {a:$$`  AUTOINT0`, b:$$`  AUTOSTRING1`, c:$$`  AUTOINT2`, d:$$`  AUTOSTRING3`}) create (b {a:$$`  AUTOINT4`, b:$$`  AUTOSTRING5`, c:$$`  AUTOINT6`, d:$$`  AUTOSTRING7`}) create (a)-[:KNOWS {since: $$`  AUTOINT8`}]->(b)",
       Map(
-        "  AUTOINT0" -> 0,
-        "  AUTOSTRING1" -> "name 0",
-        "  AUTOINT2" -> 10000000,
-        "  AUTOSTRING3" -> "a very long string 0",
-        "  AUTOINT4" -> 0,
-        "  AUTOSTRING5" -> "name 0",
-        "  AUTOINT6" -> 10000000,
-        "  AUTOSTRING7" -> "a very long string 0",
-        "  AUTOINT8" -> 0
+        autoParameter("  AUTOINT0", CTInteger) -> 0,
+        autoParameter("  AUTOSTRING1", CTString, Some(6)) -> "name 0",
+        autoParameter("  AUTOINT2", CTInteger) -> 10000000,
+        autoParameter("  AUTOSTRING3", CTString, Some(20)) -> "a very long string 0",
+        autoParameter("  AUTOINT4", CTInteger) -> 0,
+        autoParameter("  AUTOSTRING5", CTString, Some(6)) -> "name 0",
+        autoParameter("  AUTOINT6", CTInteger) -> 10000000,
+        autoParameter("  AUTOSTRING7", CTString, Some(20)) -> "a very long string 0",
+        autoParameter("  AUTOINT8", CTInteger) -> 0
       )
     )
   }
@@ -159,7 +198,7 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
     assertRewrite(
       "CREATE (a:Person {name:'Jakub', age:$age })",
       "CREATE (a:Person {name: $`  AUTOSTRING0`, age:$age })",
-      Map("  AUTOSTRING0" -> "Jakub"),
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(5)) -> "Jakub"),
       extractLiterals = Forced
     )
   }
@@ -177,20 +216,20 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
     assertRewrite(
       "CREATE (a:Person {name: 'Jakub', age: $age })",
       "CREATE (a:Person {name: $`  AUTOSTRING0`, age: $age })",
-      Map("  AUTOSTRING0" -> "Jakub"),
+      Map(autoParameter("  AUTOSTRING0", CTString, Some(5)) -> "Jakub"),
       Forced
     )
   }
 
   test("should extract from procedure calls") {
-    assertRewrite("CALL foo(12)", "CALL foo($`  AUTOINT0`)", Map("  AUTOINT0" -> 12))
+    assertRewrite("CALL foo(12)", "CALL foo($`  AUTOINT0`)", Map(autoParameter("  AUTOINT0", CTInteger) -> 12))
   }
 
   test("should extract from UNWIND") {
     assertRewrite(
       "UNWIND [1, 2, 3] AS list RETURN list",
       "UNWIND $`  AUTOLIST0` AS list RETURN list",
-      Map("  AUTOLIST0" -> Vector(1, 2, 3))
+      Map(autoParameter("  AUTOLIST0", CTList(CTAny), Some(3)) -> Vector(1, 2, 3))
     )
   }
 
@@ -199,9 +238,35 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
       "MATCH (n) WHERE 10 < n.prop < 20 RETURN n",
       "MATCH (n) WHERE $`  AUTOINT0` < n.prop < $`  AUTOINT1` RETURN n",
       Map(
-        "  AUTOINT0" -> 10,
-        "  AUTOINT1" -> 20
+        autoParameter("  AUTOINT0", CTInteger) -> 10,
+        autoParameter("  AUTOINT1", CTInteger) -> 20
       )
+    )
+  }
+
+  test("should preserve type information for lists of strings") {
+    assertRewrite(
+      "MATCH ({a:['a', 'b']})",
+      "MATCH ({a:$`  AUTOLIST0`})",
+      Map(autoParameter("  AUTOLIST0", CTList(CTString), Some(2)) -> Seq("a", "b"))
+    )
+  }
+
+  test("should not preserve type information for lists of other types") {
+    assertRewrite(
+      "MATCH ({a:['a', 1]})",
+      "MATCH ({a:$`  AUTOLIST0`})",
+      Map(autoParameter("  AUTOLIST0", CTList(CTAny), Some(2)) -> Seq("a", 1))
+    )
+    assertRewrite(
+      "MATCH ({a:[1, 2]})",
+      "MATCH ({a:$`  AUTOLIST0`})",
+      Map(autoParameter("  AUTOLIST0", CTList(CTAny), Some(2)) -> Seq(1, 2))
+    )
+    assertRewrite(
+      "MATCH ({a:[]})",
+      "MATCH ({a:$`  AUTOLIST0`})",
+      Map(autoParameter("  AUTOLIST0", CTList(CTAny), Some(0)) -> Seq())
     )
   }
 
@@ -212,19 +277,16 @@ class LiteralReplacementTest extends CypherFunSuite with AstConstructionTestSupp
   private def assertRewrite(
     originalQuery: String,
     expectedQuery: String,
-    replacements: Map[String, Any],
+    replacements: Map[AutoExtractedParameter, Any],
     extractLiterals: LiteralExtractionStrategy = Forced
   ): Unit = {
     val exceptionFactory = OpenCypherExceptionFactory(None)
     val original = JavaCCParser.parse(originalQuery, exceptionFactory)
     val expected = JavaCCParser.parse(expectedQuery, exceptionFactory)
 
-    val (rewriter, replacedParameters) = literalReplacement(original, extractLiterals, SemanticState.clean)
+    val (rewriter, actuallyReplacedLiterals) = literalReplacement(original, extractLiterals)
     val expectedReplacedLiterals = replacements.map {
       case (n, v) => n -> literal(v)
-    }
-    val actuallyReplacedLiterals = replacedParameters.map {
-      case (p, e) => p.name -> e
     }
 
     val result = original.endoRewrite(rewriter).endoRewrite(removeAutoExtracted())

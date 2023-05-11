@@ -529,7 +529,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     typ: CypherType,
     sizeHint: Option[Int] = None,
     position: InputPosition = pos
-  ): Parameter =
+  ): AutoExtractedParameter =
     AutoExtractedParameter(
       key,
       typ,

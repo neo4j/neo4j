@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.ast.Skip
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.Unwind
 import org.neo4j.cypher.internal.ast.With
-import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.DoubleLiteral
@@ -58,7 +57,6 @@ import org.neo4j.cypher.internal.util.symbols.CTInteger
 import org.neo4j.cypher.internal.util.symbols.CTList
 import org.neo4j.cypher.internal.util.symbols.CTString
 import org.neo4j.cypher.internal.util.symbols.CypherType
-import org.neo4j.cypher.internal.util.symbols.TypeSpec.cypherTypeForTypeSpec
 
 object literalReplacement {
 
@@ -72,7 +70,7 @@ object literalReplacement {
     })
   }
 
-  private def literalMatcher(state: SemanticState)
+  private val literalMatcher
     : PartialFunction[Any, LiteralReplacements => Foldable.FoldingBehavior[LiteralReplacements]] = {
     case _: Match |
       _: Create |
@@ -91,9 +89,9 @@ object literalReplacement {
       _: CountedSelector =>
       acc => SkipChildren(acc)
     case n: NodePattern =>
-      acc => SkipChildren(n.properties.folder.treeFold(acc)(literalMatcher(state)))
+      acc => SkipChildren(n.properties.folder.treeFold(acc)(literalMatcher))
     case r: RelationshipPattern =>
-      acc => SkipChildren(r.properties.folder.treeFold(acc)(literalMatcher(state)))
+      acc => SkipChildren(r.properties.folder.treeFold(acc)(literalMatcher))
     case ContainerIndex(_, _: StringLiteral) =>
       acc => SkipChildren(acc)
     case l: StringLiteral =>
@@ -126,8 +124,7 @@ object literalReplacement {
           // NOTE: we need to preserve inner type for Strings since that allows us to use the text index, for other types
           //       we would end up with the same plan anyway so there is no need to keep the inner type.
           val cypherType = {
-            if (cypherTypeForTypeSpec(state.expressionType(l).actual).invariant == CTList(CTString).invariant)
-              CTList(CTString)
+            if (l.expressions.nonEmpty && l.expressions.forall(_.isInstanceOf[StringLiteral])) CTList(CTString)
             else CTList(CTAny)
           }
           SkipChildren(acc + (l -> createParameter(
@@ -147,9 +144,9 @@ object literalReplacement {
   ): AutoExtractedParameter =
     AutoExtractedParameter(name, typ, sizeHint)(l.position)
 
-  private def doIt(term: ASTNode, state: SemanticState) = {
+  private def doIt(term: ASTNode) = {
     val replaceableLiterals: LiteralReplacements =
-      term.folder.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher(state))
+      term.folder.treeFold(IdentityMap.empty: LiteralReplacements)(literalMatcher)
 
     val extractedParams = replaceableLiterals.map {
       case (e, parameter) => parameter -> e
@@ -160,21 +157,20 @@ object literalReplacement {
 
   def apply(
     term: ASTNode,
-    paramExtraction: LiteralExtractionStrategy,
-    state: SemanticState
+    paramExtraction: LiteralExtractionStrategy
   ): (Rewriter, Map[AutoExtractedParameter, Expression]) =
     paramExtraction match {
       case Never =>
         Rewriter.noop -> Map.empty
       case Forced =>
-        doIt(term, state)
+        doIt(term)
       case IfNoParameter =>
         val containsParameter: Boolean = term.folder.treeExists {
           case _: Parameter => true
         }
 
         if (containsParameter) Rewriter.noop -> Map.empty
-        else doIt(term, state)
+        else doIt(term)
     }
 }
 
