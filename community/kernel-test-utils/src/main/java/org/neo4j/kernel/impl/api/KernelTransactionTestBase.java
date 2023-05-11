@@ -65,6 +65,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.version.DefaultVersionStorageTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionTimeout;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdRepository;
 import org.neo4j.kernel.database.DatabaseTracers;
@@ -125,6 +126,8 @@ class KernelTransactionTestBase {
     protected final Pool<KernelTransactionImplementation> txPool = mock(Pool.class);
     protected final Locks.Client locksClient = mock(Locks.Client.class);
     protected CollectionsFactory collectionsFactory;
+
+    private final ProcedureView procedureView = mock(ProcedureView.class);
 
     protected final Config config = Config.defaults();
     private final TransactionTimeout defaultTransactionTimeoutMillis =
@@ -188,7 +191,8 @@ class KernelTransactionTestBase {
                 securityContext,
                 transactionTimeout,
                 userTransactionId,
-                EMBEDDED_CONNECTION);
+                EMBEDDED_CONNECTION,
+                procedureView);
     }
 
     KernelTransactionImplementation newNotInitializedTransaction() {
@@ -222,7 +226,6 @@ class KernelTransactionTestBase {
         return new KernelTransactionImplementation(
                 config,
                 mock(DatabaseTransactionEventListeners.class),
-                null,
                 null,
                 commitProcess,
                 transactionMonitor,

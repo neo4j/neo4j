@@ -98,7 +98,7 @@ import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.database.enrichment.TxEnrichmentVisitor;
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
@@ -236,7 +236,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile ClientConnectionInfo clientInfo;
     private volatile Map<String, Object> userMetaData;
     private volatile String statusDetails;
-    private final AllStoreHolder allStoreHolder;
+    private final AllStoreHolder.ForTransactionScope allStoreHolder;
     private final Operations operations;
     private InternalTransaction internalTransaction;
     private volatile TraceProvider traceProvider;
@@ -245,6 +245,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final LocalConfig config;
     private volatile long transactionHeapBytesLimit;
     private final ExecutionContextFactory executionContextFactory;
+    private ProcedureView procedureView;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
@@ -272,7 +273,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             Config externalConfig,
             DatabaseTransactionEventListeners eventListeners,
             ConstraintIndexCreator constraintIndexCreator,
-            GlobalProcedures globalProcedures,
             TransactionCommitProcess commitProcess,
             TransactionMonitor transactionMonitor,
             Pool<KernelTransactionImplementation> pool,
@@ -356,7 +356,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 this,
                 storageLocks,
                 cursors,
-                globalProcedures,
                 schemaState,
                 indexingService,
                 indexStatisticsStore,
@@ -374,7 +373,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 indexStatisticsStore,
                 tracers,
                 leaseService,
-                globalProcedures,
                 dependencies,
                 securityAuthorizationHandler,
                 elementIdMapper);
@@ -413,7 +411,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             SecurityContext frozenSecurityContext,
             TransactionTimeout transactionTimeout,
             long transactionSequenceNumber,
-            ClientConnectionInfo clientInfo) {
+            ClientConnectionInfo clientInfo,
+            ProcedureView procedureView) {
         assert transactionMemoryPool.usedHeap() == 0;
         assert transactionMemoryPool.usedNative() == 0;
         assert !failedCleanup : "This transaction should not be reused since it did not close properly";
@@ -450,6 +449,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.initializationTrace = traceProvider.getTraceInfo();
         this.transactionMemoryPool.setLimit(transactionHeapBytesLimit);
         this.innerTransactionHandler = new InnerTransactionHandlerImpl(kernelTransactions);
+        this.procedureView = procedureView;
+        this.allStoreHolder.initialize(procedureView);
         this.closing = false;
         this.closed = false;
         return this;
@@ -467,11 +468,15 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             IndexStatisticsStore indexStatisticsStore,
             DatabaseTracers tracers,
             LeaseService leaseService,
-            GlobalProcedures globalProcedures,
             Dependencies dependencies,
             SecurityAuthorizationHandler securityAuthorizationHandler,
             ElementIdMapper elementIdMapper) {
-        return (securityContext, transactionId, transactionCursorContext, clockContextSupplier, assertOpen) -> {
+        return (securityContext,
+                transactionId,
+                transactionCursorContext,
+                clockContextSupplier,
+                assertOpen,
+                procedureView) -> {
             var executionContextCursorTracer = new ExecutionContextCursorTracer(
                     PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
             var executionContextCursorContext = contextFactory.create(executionContextCursorTracer);
@@ -506,7 +511,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     schemaState,
                     indexingService,
                     indexStatisticsStore,
-                    globalProcedures,
                     dependencies,
                     storageEngine.createStorageLocks(executionContextLockClient),
                     executionContextLockClient,
@@ -514,7 +518,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     elementIdMapper,
                     assertOpen,
                     clockContextSupplier,
-                    List.of(executionContextStorageReader, executionContextLockClient));
+                    List.of(executionContextStorageReader, executionContextLockClient),
+                    procedureView);
         };
     }
 
@@ -630,7 +635,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     private boolean isOriginalTx() {
                         return transactionSequenceNumberWhenCreated == transactionSequenceNumber;
                     }
-                });
+                },
+                this.procedureView);
     }
 
     @Override
@@ -1254,6 +1260,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 error = Exceptions.chain(error, e);
             }
             try {
+                allStoreHolder.close();
+            } catch (RuntimeException | Error e) {
+                error = Exceptions.chain(error, e);
+            }
+            procedureView = null;
+            try {
                 operations.release();
             } catch (RuntimeException | Error e) {
                 error = Exceptions.chain(error, e);
@@ -1648,7 +1660,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 long transactionId,
                 CursorContext transactionCursorContext,
                 Supplier<ClockContext> clockContextSupplier,
-                ExtendedAssertOpen assertOpen);
+                ExtendedAssertOpen assertOpen,
+                ProcedureView procedureView);
     }
 
     private interface CommandDecorator extends Decorator {

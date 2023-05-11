@@ -45,7 +45,7 @@ import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.KernelVersionProvider;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.InternalTransactionCommitProcess;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -111,7 +111,6 @@ public final class KernelTransactionFactory {
                 Config.defaults(),
                 mock(DatabaseTransactionEventListeners.class),
                 mock(ConstraintIndexCreator.class),
-                mock(GlobalProcedures.class),
                 mock(InternalTransactionCommitProcess.class),
                 mock(TransactionMonitor.class),
                 mock(Pool.class),
@@ -155,7 +154,8 @@ public final class KernelTransactionFactory {
                         LoginContext.IdLookup.EMPTY, DEFAULT_DATABASE_NAME, CommunitySecurityLog.NULL_LOG),
                 NO_TIMEOUT,
                 1L,
-                EMBEDDED_CONNECTION);
+                EMBEDDED_CONNECTION,
+                mock(ProcedureView.class));
 
         return new Instances(transaction);
     }

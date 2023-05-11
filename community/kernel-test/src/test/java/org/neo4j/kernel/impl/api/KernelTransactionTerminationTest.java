@@ -60,7 +60,7 @@ import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -266,7 +266,6 @@ class KernelTransactionTerminationTest {
                     Config.defaults(),
                     mock(DatabaseTransactionEventListeners.class),
                     mock(ConstraintIndexCreator.class),
-                    mock(GlobalProcedures.class),
                     mock(TransactionCommitProcess.class),
                     monitor,
                     mock(Pool.class),
@@ -319,7 +318,8 @@ class KernelTransactionTerminationTest {
         }
 
         TestKernelTransaction initialize() {
-            initialize(42, Type.IMPLICIT, AUTH_DISABLED, NO_TIMEOUT, 1L, EMBEDDED_CONNECTION);
+            initialize(
+                    42, Type.IMPLICIT, AUTH_DISABLED, NO_TIMEOUT, 1L, EMBEDDED_CONNECTION, mock(ProcedureView.class));
             monitor.reset();
             return this;
         }

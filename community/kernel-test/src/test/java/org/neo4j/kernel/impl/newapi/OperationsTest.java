@@ -68,7 +68,7 @@ import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
@@ -110,7 +110,7 @@ abstract class OperationsTest {
     protected FullAccessPropertyCursor propertyCursor;
     protected DefaultRelationshipScanCursor relationshipCursor;
     protected TransactionState txState;
-    protected AllStoreHolder allStoreHolder;
+    protected AllStoreHolder.ForTransactionScope allStoreHolder;
     protected final LabelSchemaDescriptor schema = SchemaDescriptors.forLabel(123, 456);
     protected StorageReader storageReader;
     protected StorageSchemaReader storageReaderSnapshot;
@@ -173,12 +173,12 @@ abstract class OperationsTest {
                 transaction,
                 storageLocks,
                 cursors,
-                mock(GlobalProcedures.class),
                 mock(SchemaState.class),
                 indexingService,
                 mock(IndexStatisticsStore.class),
                 dependencies,
                 INSTANCE);
+        allStoreHolder.initialize(mock(ProcedureView.class));
         constraintIndexCreator = mock(ConstraintIndexCreator.class);
         creationContext = mock(CommandCreationContext.class);
         IndexingProvidersService indexingProvidersService = mock(IndexingProvidersService.class);

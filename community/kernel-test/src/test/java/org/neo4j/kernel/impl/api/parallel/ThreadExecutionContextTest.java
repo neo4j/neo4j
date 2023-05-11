@@ -33,7 +33,7 @@ import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -71,7 +71,6 @@ class ThreadExecutionContextTest {
                 mock(SchemaState.class),
                 mock(IndexingService.class),
                 mock(IndexStatisticsStore.class),
-                mock(GlobalProcedures.class),
                 mock(Dependencies.class),
                 mock(StorageLocks.class),
                 mock(Locks.Client.class),
@@ -79,7 +78,8 @@ class ThreadExecutionContextTest {
                 mock(ElementIdMapper.class),
                 mock(ExtendedAssertOpen.class),
                 mock(Supplier.class),
-                List.of(storageReader, lockClient))) {
+                List.of(storageReader, lockClient),
+                mock(ProcedureView.class))) {
             executionContext.complete();
         }
 

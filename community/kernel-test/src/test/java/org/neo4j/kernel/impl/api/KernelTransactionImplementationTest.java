@@ -96,6 +96,7 @@ import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.database.enrichment.TxEnrichmentVisitor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.WriteOnReadOnlyAccessDbException;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.database.DatabaseIdFactory;
@@ -440,7 +441,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
                     SecurityContext.AUTH_DISABLED,
                     DEFAULT_TX_TIMEOUT,
                     1L,
-                    EMBEDDED_CONNECTION);
+                    EMBEDDED_CONNECTION,
+                    mock(ProcedureView.class));
             transaction.txState().nodeDoCreate(1L);
             // WHEN committing it at a later point
             clock.forward(5, MILLISECONDS);
@@ -704,7 +706,8 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
                 mock(SecurityContext.class),
                 DEFAULT_TX_TIMEOUT,
                 1L,
-                EMBEDDED_CONNECTION);
+                EMBEDDED_CONNECTION,
+                mock(ProcedureView.class));
         assertEquals("KernelTransaction[lease:" + leaseId + "]", transaction.toString());
     }
 
@@ -725,7 +728,13 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
         });
         var transaction = newNotInitializedTransaction(leaseService);
         transaction.initialize(
-                0, Type.IMPLICIT, mock(SecurityContext.class), DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
+                0,
+                Type.IMPLICIT,
+                mock(SecurityContext.class),
+                DEFAULT_TX_TIMEOUT,
+                1L,
+                EMBEDDED_CONNECTION,
+                mock(ProcedureView.class));
 
         // when / then
         assertThrows(LeaseException.class, transaction::txState);
@@ -741,7 +750,13 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
         var transaction = newNotInitializedTransaction(config, fooDb);
         transaction.initialize(
-                0, Type.IMPLICIT, mock(SecurityContext.class), DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
+                0,
+                Type.IMPLICIT,
+                mock(SecurityContext.class),
+                DEFAULT_TX_TIMEOUT,
+                1L,
+                EMBEDDED_CONNECTION,
+                mock(ProcedureView.class));
 
         // when / then
         var rte = assertThrows(RuntimeException.class, transaction::txState);
@@ -755,7 +770,13 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
         var transaction = newNotInitializedTransaction(config);
         transaction.initialize(
-                0, Type.IMPLICIT, mock(SecurityContext.class), DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
+                0,
+                Type.IMPLICIT,
+                mock(SecurityContext.class),
+                DEFAULT_TX_TIMEOUT,
+                1L,
+                EMBEDDED_CONNECTION,
+                mock(ProcedureView.class));
 
         verify(config, times(3)).addListener(any(), any());
 
@@ -778,7 +799,13 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
             // Increase limit and try again
             config.setDynamic(memory_transaction_max_size, mebiBytes(4), "test");
             transaction.initialize(
-                    5L, Type.IMPLICIT, SecurityContext.AUTH_DISABLED, DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
+                    5L,
+                    Type.IMPLICIT,
+                    SecurityContext.AUTH_DISABLED,
+                    DEFAULT_TX_TIMEOUT,
+                    1L,
+                    EMBEDDED_CONNECTION,
+                    mock(ProcedureView.class));
 
             transaction.memoryTracker().allocateHeap(mebiBytes(3));
         }
@@ -867,7 +894,13 @@ class KernelTransactionImplementationTest extends KernelTransactionTestBase {
 
         try (KernelTransactionImplementation transaction = newTransaction(AnonymousContext.write())) {
             transaction.initialize(
-                    5L, txType, SecurityContext.AUTH_DISABLED, DEFAULT_TX_TIMEOUT, 1L, EMBEDDED_CONNECTION);
+                    5L,
+                    txType,
+                    SecurityContext.AUTH_DISABLED,
+                    DEFAULT_TX_TIMEOUT,
+                    1L,
+                    EMBEDDED_CONNECTION,
+                    mock(ProcedureView.class));
             assertThat(((TxState) transaction.txState()).enrichmentMode()).isEqualTo(mode);
             if (createNode) {
                 transaction.dataWrite().nodeCreate();

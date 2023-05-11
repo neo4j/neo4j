@@ -56,6 +56,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.TransactionTimeout;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseTracers;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -258,6 +259,7 @@ public class KernelTransactions extends LifecycleAdapter
             ClientConnectionInfo clientInfo,
             TransactionTimeout timeout) {
         assertCurrentThreadIsNotBlockingNewTransactions();
+        ProcedureView procedureView = globalProcedures.getCurrentView();
         SecurityContext securityContext =
                 loginContext.authorize(tokenHoldersIdLookup, namedDatabaseId.name(), securityLog);
         try {
@@ -274,7 +276,8 @@ public class KernelTransactions extends LifecycleAdapter
                         securityContext,
                         timeout,
                         transactionIdSequence.next(),
-                        clientInfo);
+                        clientInfo,
+                        procedureView);
                 return tx;
             } finally {
                 newTransactionsLock.readLock().unlock();
@@ -515,7 +518,6 @@ public class KernelTransactions extends LifecycleAdapter
                     config,
                     eventListeners,
                     constraintIndexCreator,
-                    globalProcedures,
                     transactionCommitProcess,
                     transactionMonitor,
                     txPool,

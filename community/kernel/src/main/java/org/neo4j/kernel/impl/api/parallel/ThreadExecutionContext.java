@@ -38,7 +38,7 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.SchemaState;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.ExecutionContext;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.CloseableResourceManager;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
@@ -86,7 +86,6 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             SchemaState schemaState,
             IndexingService indexingService,
             IndexStatisticsStore indexStatisticsStore,
-            GlobalProcedures globalProcedures,
             Dependencies databaseDependencies,
             StorageLocks storageLocks,
             Client lockClient,
@@ -94,7 +93,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
             ElementIdMapper elementIdMapper,
             ExtendedAssertOpen assertOpen,
             Supplier<ClockContext> clockContextSupplier,
-            List<AutoCloseable> otherResources) {
+            List<AutoCloseable> otherResources,
+            ProcedureView procedureView) {
         this.cursors = cursors;
         this.context = context;
         this.overridableSecurityContext = overridableSecurityContext;
@@ -114,7 +114,6 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 schemaState,
                 indexingService,
                 indexStatisticsStore,
-                globalProcedures,
                 databaseDependencies,
                 cursors,
                 storageCursors,
@@ -125,7 +124,8 @@ public class ThreadExecutionContext implements ExecutionContext, AutoCloseable {
                 overridableSecurityContext,
                 assertOpen,
                 securityAuthorizationHandler,
-                clockContextSupplier);
+                clockContextSupplier,
+                procedureView);
     }
 
     @Override

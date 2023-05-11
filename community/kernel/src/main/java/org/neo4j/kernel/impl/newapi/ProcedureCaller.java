@@ -38,7 +38,7 @@ import org.neo4j.kernel.api.AssertOpen;
 import org.neo4j.kernel.api.ExecutionContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.procedure.Context;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.parallel.ExecutionContextProcedureTransaction;
@@ -52,12 +52,12 @@ import org.neo4j.values.ValueMapper;
 
 public abstract class ProcedureCaller {
 
-    final GlobalProcedures globalProcedures;
+    final ProcedureView procedureView;
     private final DependencyResolver databaseDependencies;
 
-    private ProcedureCaller(GlobalProcedures globalProcedures, DependencyResolver databaseDependencies) {
-        this.globalProcedures = globalProcedures;
+    private ProcedureCaller(DependencyResolver databaseDependencies, ProcedureView procedureView) {
         this.databaseDependencies = databaseDependencies;
+        this.procedureView = procedureView;
     }
 
     public AnyValue callFunction(int id, AnyValue[] input) throws ProcedureException {
@@ -76,14 +76,13 @@ public abstract class ProcedureCaller {
                 : securityContext().withMode(new RestrictedAccessMode(mode, AccessMode.Static.READ));
 
         try (var ignore = overrideSecurityContext(securityContext)) {
-            return globalProcedures.callFunction(
-                    prepareContext(securityContext, ProcedureCallContext.EMPTY), id, input);
+            return procedureView.callFunction(prepareContext(securityContext, ProcedureCallContext.EMPTY), id, input);
         }
     }
 
     public AnyValue callBuiltInFunction(int id, AnyValue[] input) throws ProcedureException {
         performCheckBeforeOperation();
-        return globalProcedures.callFunction(prepareContext(securityContext(), ProcedureCallContext.EMPTY), id, input);
+        return procedureView.callFunction(prepareContext(securityContext(), ProcedureCallContext.EMPTY), id, input);
     }
 
     AccessMode checkAggregationFunctionAccessMode(int functionId) {
@@ -104,7 +103,7 @@ public abstract class ProcedureCaller {
                 : securityContext().withMode(new RestrictedAccessMode(mode, AccessMode.Static.READ));
 
         try (var ignore = overrideSecurityContext(securityContext)) {
-            UserAggregationReducer aggregator = globalProcedures.createAggregationFunction(
+            UserAggregationReducer aggregator = procedureView.createAggregationFunction(
                     prepareContext(securityContext, ProcedureCallContext.EMPTY), functionId);
             return new UserAggregationReducer() {
                 @Override
@@ -142,7 +141,7 @@ public abstract class ProcedureCaller {
     public UserAggregationReducer createBuiltInAggregationFunction(int id) throws ProcedureException {
         performCheckBeforeOperation();
 
-        return globalProcedures.createAggregationFunction(
+        return procedureView.createAggregationFunction(
                 prepareContext(securityContext(), ProcedureCallContext.EMPTY), id);
     }
 
@@ -227,9 +226,8 @@ public abstract class ProcedureCaller {
         private final KernelTransaction ktx;
 
         public ForTransactionScope(
-                KernelTransaction ktx, GlobalProcedures globalProcedures, DependencyResolver databaseDependencies) {
-            super(globalProcedures, databaseDependencies);
-
+                KernelTransaction ktx, DependencyResolver databaseDependencies, ProcedureView procedureView) {
+            super(databaseDependencies, procedureView);
             this.ktx = ktx;
         }
 
@@ -264,7 +262,7 @@ public abstract class ProcedureCaller {
         @Override
         RawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
                 throws ProcedureException {
-            return globalProcedures.callProcedure(ctx, id, input, ktx.resourceMonitor());
+            return procedureView.callProcedure(ctx, id, input, ktx.resourceMonitor());
         }
 
         @Override
@@ -299,13 +297,13 @@ public abstract class ProcedureCaller {
 
         ForThreadExecutionContextScope(
                 ExecutionContext executionContext,
-                GlobalProcedures globalProcedures,
                 DependencyResolver databaseDependencies,
                 OverridableSecurityContext overridableSecurityContext,
                 AssertOpen assertOpen,
                 SecurityAuthorizationHandler securityAuthorizationHandler,
-                Supplier<ClockContext> clockContextSupplier) {
-            super(globalProcedures, databaseDependencies);
+                Supplier<ClockContext> clockContextSupplier,
+                ProcedureView procedureView) {
+            super(databaseDependencies, procedureView);
 
             this.executionContext = executionContext;
             this.overridableSecurityContext = overridableSecurityContext;
@@ -329,7 +327,7 @@ public abstract class ProcedureCaller {
                 // That is actually a quite expensive operation to do for every update call of an aggregation function.
                 // Since only read operations are currently supported during parallel execution,
                 // the expensive access mode restricting is not needed for execution context API.
-                return globalProcedures.createAggregationFunction(
+                return procedureView.createAggregationFunction(
                         prepareContext(securityContext(), ProcedureCallContext.EMPTY), id);
             }
         }
@@ -337,7 +335,7 @@ public abstract class ProcedureCaller {
         @Override
         RawIterator<AnyValue[], ProcedureException> doCallProcedure(Context ctx, int id, AnyValue[] input)
                 throws ProcedureException {
-            return globalProcedures.callProcedure(ctx, id, input, executionContext);
+            return procedureView.callProcedure(ctx, id, input, executionContext);
         }
 
         @Override

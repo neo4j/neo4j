@@ -75,7 +75,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUsageStats;
 import org.neo4j.kernel.api.index.TokenIndexReader;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.api.procedure.GlobalProcedures;
+import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.IndexReaderCache;
@@ -119,7 +119,6 @@ public abstract class AllStoreHolder extends Read {
     private final SchemaState schemaState;
     private final IndexingService indexingService;
     private final IndexStatisticsStore indexStatisticsStore;
-    private final GlobalProcedures globalProcedures;
     private final MemoryTracker memoryTracker;
     private final IndexReaderCache<ValueIndexReader> valueIndexReaderCache;
     private final IndexReaderCache<TokenIndexReader> tokenIndexReaderCache;
@@ -130,7 +129,6 @@ public abstract class AllStoreHolder extends Read {
             SchemaState schemaState,
             IndexingService indexingService,
             IndexStatisticsStore indexStatisticsStore,
-            GlobalProcedures globalProcedures,
             MemoryTracker memoryTracker,
             DefaultPooledCursors cursors,
             StoreCursors storageCursors,
@@ -145,7 +143,6 @@ public abstract class AllStoreHolder extends Read {
         this.indexingService = indexingService;
         this.indexStatisticsStore = indexStatisticsStore;
         this.memoryTracker = memoryTracker;
-        this.globalProcedures = globalProcedures;
     }
 
     @Override
@@ -902,9 +899,12 @@ public abstract class AllStoreHolder extends Read {
     }
 
     public void release() {
+        // Note: This only clears the caches, and does in fact not close the objects
         valueIndexReaderCache.close();
         tokenIndexReaderCache.close();
     }
+
+    abstract ProcedureCaller getProcedureCaller();
 
     @Override
     public MemoryTracker memoryTracker() {
@@ -919,89 +919,88 @@ public abstract class AllStoreHolder extends Read {
     @Override
     public RawIterator<AnyValue[], ProcedureException> procedureCallRead(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return procedureCaller().callProcedure(id, arguments, AccessMode.Static.READ, context);
+        return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.READ, context);
     }
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> procedureCallWrite(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return procedureCaller().callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
+        return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.TOKEN_WRITE, context);
     }
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> procedureCallSchema(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return procedureCaller().callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
+        return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.SCHEMA, context);
     }
 
     @Override
     public RawIterator<AnyValue[], ProcedureException> procedureCallDbms(
             int id, AnyValue[] arguments, ProcedureCallContext context) throws ProcedureException {
-        return procedureCaller().callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
+        return getProcedureCaller().callProcedure(id, arguments, AccessMode.Static.ACCESS, context);
     }
 
     @Override
     public AnyValue functionCall(int id, AnyValue[] arguments) throws ProcedureException {
-        return procedureCaller().callFunction(id, arguments);
+        return getProcedureCaller().callFunction(id, arguments);
     }
 
     @Override
     public AnyValue builtInFunctionCall(int id, AnyValue[] arguments) throws ProcedureException {
-        return procedureCaller().callBuiltInFunction(id, arguments);
+        return getProcedureCaller().callBuiltInFunction(id, arguments);
     }
 
     @Override
     public UserAggregationReducer aggregationFunction(int id) throws ProcedureException {
-        return procedureCaller().createAggregationFunction(id);
+        return getProcedureCaller().createAggregationFunction(id);
     }
 
     @Override
     public UserAggregationReducer builtInAggregationFunction(int id) throws ProcedureException {
-        return procedureCaller().createBuiltInAggregationFunction(id);
+        return getProcedureCaller().createBuiltInAggregationFunction(id);
     }
 
     @Override
     public UserFunctionHandle functionGet(QualifiedName name) {
         performCheckBeforeOperation();
-        return globalProcedures.function(name);
+        return getProcedureCaller().procedureView.function(name);
     }
 
     @Override
     public Stream<UserFunctionSignature> functionGetAll() {
         performCheckBeforeOperation();
-        return globalProcedures.getAllNonAggregatingFunctions();
+        return getProcedureCaller().procedureView.getAllNonAggregatingFunctions();
     }
 
     @Override
     public ProcedureHandle procedureGet(QualifiedName name) throws ProcedureException {
         performCheckBeforeOperation();
-        return globalProcedures.procedure(name);
+        return getProcedureCaller().procedureView.procedure(name);
     }
 
     @Override
     public Set<ProcedureSignature> proceduresGetAll() {
         performCheckBeforeOperation();
-        return globalProcedures.getAllProcedures();
+        return getProcedureCaller().procedureView.getAllProcedures();
     }
 
     @Override
     public UserFunctionHandle aggregationFunctionGet(QualifiedName name) {
         performCheckBeforeOperation();
-        return globalProcedures.aggregationFunction(name);
+        return getProcedureCaller().procedureView.aggregationFunction(name);
     }
 
     @Override
     public Stream<UserFunctionSignature> aggregationFunctionGetAll() {
         performCheckBeforeOperation();
-        return globalProcedures.getAllAggregatingFunctions();
+        return getProcedureCaller().procedureView.getAllAggregatingFunctions();
     }
-
-    abstract ProcedureCaller procedureCaller();
 
     public static class ForTransactionScope extends AllStoreHolder {
 
         private final KernelTransactionImplementation ktx;
-        private final ProcedureCaller procedureCaller;
+        private final Dependencies databaseDependencies;
+        private ProcedureCaller.ForTransactionScope procedureCaller;
 
         public ForTransactionScope(
                 StorageReader storageReader,
@@ -1009,7 +1008,6 @@ public abstract class AllStoreHolder extends Read {
                 KernelTransactionImplementation ktx,
                 StorageLocks storageLocks,
                 DefaultPooledCursors cursors,
-                GlobalProcedures globalProcedures,
                 SchemaState schemaState,
                 IndexingService indexingService,
                 IndexStatisticsStore indexStatisticsStore,
@@ -1021,7 +1019,6 @@ public abstract class AllStoreHolder extends Read {
                     schemaState,
                     indexingService,
                     indexStatisticsStore,
-                    globalProcedures,
                     memoryTracker,
                     cursors,
                     ktx.storeCursors(),
@@ -1029,7 +1026,11 @@ public abstract class AllStoreHolder extends Read {
                     ktx.lockTracer());
 
             this.ktx = ktx;
-            this.procedureCaller = new ProcedureCaller.ForTransactionScope(ktx, globalProcedures, databaseDependencies);
+            this.databaseDependencies = databaseDependencies;
+        }
+
+        public void initialize(ProcedureView procedureView) {
+            this.procedureCaller = new ProcedureCaller.ForTransactionScope(ktx, databaseDependencies, procedureView);
         }
 
         @Override
@@ -1066,8 +1067,12 @@ public abstract class AllStoreHolder extends Read {
             return ktx.cursorContext();
         }
 
+        public void close() {
+            procedureCaller = null;
+        }
+
         @Override
-        ProcedureCaller procedureCaller() {
+        ProcedureCaller getProcedureCaller() {
             return procedureCaller;
         }
     }
@@ -1078,7 +1083,7 @@ public abstract class AllStoreHolder extends Read {
         private final CursorContext cursorContext;
         private final Locks.Client lockClient;
         private final AssertOpen assertOpen;
-        private final ProcedureCaller procedureCaller;
+        private final ProcedureCaller.ForThreadExecutionContextScope procedureCaller;
 
         public ForThreadExecutionContextScope(
                 ThreadExecutionContext executionContext,
@@ -1086,7 +1091,6 @@ public abstract class AllStoreHolder extends Read {
                 SchemaState schemaState,
                 IndexingService indexingService,
                 IndexStatisticsStore indexStatisticsStore,
-                GlobalProcedures globalProcedures,
                 Dependencies databaseDependencies,
                 DefaultPooledCursors cursors,
                 StoreCursors storageCursors,
@@ -1097,14 +1101,14 @@ public abstract class AllStoreHolder extends Read {
                 OverridableSecurityContext overridableSecurityContext,
                 AssertOpen assertOpen,
                 SecurityAuthorizationHandler securityAuthorizationHandler,
-                Supplier<ClockContext> clockContextSupplier) {
+                Supplier<ClockContext> clockContextSupplier,
+                ProcedureView procedureView) {
             super(
                     storageReader,
                     executionContext.tokenRead(),
                     schemaState,
                     indexingService,
                     indexStatisticsStore,
-                    globalProcedures,
                     executionContext.memoryTracker(),
                     cursors,
                     storageCursors,
@@ -1116,12 +1120,12 @@ public abstract class AllStoreHolder extends Read {
             this.assertOpen = assertOpen;
             this.procedureCaller = new ProcedureCaller.ForThreadExecutionContextScope(
                     executionContext,
-                    globalProcedures,
                     databaseDependencies,
                     overridableSecurityContext,
                     assertOpen,
                     securityAuthorizationHandler,
-                    clockContextSupplier);
+                    clockContextSupplier,
+                    procedureView);
         }
 
         @Override
@@ -1189,7 +1193,7 @@ public abstract class AllStoreHolder extends Read {
         }
 
         @Override
-        ProcedureCaller procedureCaller() {
+        ProcedureCaller getProcedureCaller() {
             return procedureCaller;
         }
     }
