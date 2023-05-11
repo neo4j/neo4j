@@ -353,15 +353,32 @@ class SettingTest {
 
     @Test
     void testHttpsURI() {
-        var setting = (SettingImpl<URI>) setting("setting", SettingValueParsers.HTTPS_URI);
+        var setting = (SettingImpl<URI>) setting("setting", SettingValueParsers.HTTPS_URI(true));
         assertEquals(URI.create("https://www.example.com/path"), setting.parse("https://www.example.com/path"));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"http://www.example.com", "neo4js://database", "/path/to/../something/"})
     void testHttpsURIWithInvalidUris(String uri) {
-        var setting = (SettingImpl<URI>) setting("setting", SettingValueParsers.HTTPS_URI);
+        var setting = (SettingImpl<URI>) setting("setting", SettingValueParsers.HTTPS_URI(true));
         var exception = assertThrows(IllegalArgumentException.class, () -> setting.parse(uri));
+        assertEquals(String.format("'%s' does not have required scheme 'https'", uri), exception.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "http://localhost/endpoint",
+                "http://127.0.0.1/endpoint",
+                "http://[::1]/endpoint",
+                "http://[0:0:0:0:0:0:0:1]/endpoint"
+            })
+    void testHttpURIExemptionForLocalhostURIs(String uri) {
+        var setting = (SettingImpl<URI>) setting("setting", SettingValueParsers.HTTPS_URI(true));
+        assertEquals(URI.create(uri), setting.parse(uri));
+
+        var invalidSetting = (SettingImpl<URI>) setting("setting", SettingValueParsers.HTTPS_URI(false));
+        var exception = assertThrows(IllegalArgumentException.class, () -> invalidSetting.parse(uri));
         assertEquals(String.format("'%s' does not have required scheme 'https'", uri), exception.getMessage());
     }
 

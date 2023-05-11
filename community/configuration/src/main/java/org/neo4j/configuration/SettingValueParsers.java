@@ -620,26 +620,34 @@ public final class SettingValueParsers {
         }
     };
 
-    public static final SettingValueParser<URI> HTTPS_URI = new SettingValueParser<>() {
-        @Override
-        public java.net.URI parse(String value) {
-            java.net.URI uri = URI.parse(value);
-            if (uri.getScheme() == null || !uri.getScheme().equalsIgnoreCase("https")) {
-                throw new IllegalArgumentException(format("'%s' does not have required scheme 'https'", value));
+    public static SettingValueParser<URI> HTTPS_URI(boolean allowHTTPonLocalhost) {
+        return new SettingValueParser<>() {
+            @Override
+            public java.net.URI parse(String value) {
+                java.net.URI uri = URI.parse(value);
+                var localhostValues = List.of("localhost", "127.0.0.1", "[::1]", "[0:0:0:0:0:0:0:1]");
+                var isLocalhost = uri.getHost() != null && localhostValues.contains(uri.getHost());
+                var isHttps = uri.getScheme() != null && uri.getScheme().equalsIgnoreCase("https");
+
+                if (isHttps || allowHTTPonLocalhost && isLocalhost) {
+                    return uri;
+                } else {
+                    throw new IllegalArgumentException(format("'%s' does not have required scheme 'https'", value));
+                }
             }
-            return uri;
-        }
 
-        @Override
-        public String getDescription() {
-            return "a URI with the https:// schema";
-        }
+            @Override
+            public String getDescription() {
+                var localhostAddendum = allowHTTPonLocalhost ? " or a http URI for localhost" : "";
+                return "a URI with the https:// schema" + localhostAddendum;
+            }
 
-        @Override
-        public Class<java.net.URI> getType() {
-            return URI.getType();
-        }
-    };
+            @Override
+            public Class<java.net.URI> getType() {
+                return URI.getType();
+            }
+        };
+    }
 
     public static final SettingValueParser<URI> NORMALIZED_RELATIVE_URI = new SettingValueParser<>() {
         @Override
