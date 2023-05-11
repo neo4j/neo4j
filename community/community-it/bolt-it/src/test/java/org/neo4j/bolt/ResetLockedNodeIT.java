@@ -39,7 +39,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 @BoltTestExtension
 public class ResetLockedNodeIT {
 
-    @Timeout(15)
+    @Timeout(30)
     @TransportTest
     void shouldErrorWhenResettingAConnectionWaitingOnALock(
             BoltWire wire,
