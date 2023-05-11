@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
-case class QueryConstant(offset: Int, inner: Expression) extends Expression {
+case class RuntimeConstant(offset: Int, inner: Expression) extends Expression {
 
   override def apply(row: ReadableRow, state: QueryState): AnyValue = {
     val variables = state.expressionVariables

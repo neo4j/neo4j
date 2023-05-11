@@ -426,7 +426,7 @@ case class CommunityExpressionConverter(
         commands.expressions.CollectAll(self.toCommandExpression(id, e.arguments.head))
       case e: DefaultValueLiteral => commands.expressions.Literal(e.value)
       case e: RuntimeConstant =>
-        commands.expressions.QueryConstant(
+        commands.expressions.RuntimeConstant(
           ExpressionVariable.cast(e.variable).offset,
           self.toCommandExpression(id, e.inner)
         )
