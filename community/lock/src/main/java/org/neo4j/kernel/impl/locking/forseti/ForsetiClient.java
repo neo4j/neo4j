@@ -330,10 +330,7 @@ public class ForsetiClient implements Locks.Client {
                 while ((existingLock = lockMap.putIfAbsent(resourceId, myExclusiveLock)) != null) {
                     assertValid(waitStartNano, resourceType, resourceId);
 
-                    // If this is a shared lock:
-                    // Given a grace period of tries (to try and not starve readers), grab an update lock and wait
-                    // for it to convert to an exclusive lock.
-                    if (tries > 50 && existingLock instanceof SharedLock sharedLock) {
+                    if (existingLock instanceof SharedLock sharedLock) {
                         // Then we should upgrade that lock
                         if (tryUpgradeSharedToExclusive(
                                 tracer, waitEvent, resourceType, lockMap, resourceId, sharedLock, waitStartNano)) {
