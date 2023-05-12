@@ -55,6 +55,8 @@ import picocli.CommandLine.Parameters;
 public class UploadCommand extends AbstractAdminCommand {
     private static final long CRC32_BUFFER_SIZE = ByteUnit.mebiBytes(4);
     private static final String DEV_MODE_VAR_NAME = "P2C_DEV_MODE";
+    private static final String ENV_NEO4J_USERNAME = "NEO4J_USERNAME";
+    private static final String ENV_NEO4J_PASSWORD = "NEO4J_PASSWORD";
     private final Copier copier;
     private final PushToCloudConsole cons;
 
@@ -83,18 +85,20 @@ public class UploadCommand extends AbstractAdminCommand {
 
     @Option(
             names = "--to-user",
-            defaultValue = "${NEO4J_USERNAME}",
+            defaultValue = "${" + ENV_NEO4J_USERNAME + "}",
             description =
                     "Username of the target database to push this database to. Prompt will ask for a username if not provided. "
-                            + "Alternatively, the NEO4J_USERNAME environment variable can be used.")
+                            + "Alternatively, the " + ENV_NEO4J_USERNAME + " environment variable can be used.")
     private String username;
 
+    private static final String TO_PASSWORD = "--to-password";
+
     @Option(
-            names = "--to-password",
-            defaultValue = "${NEO4J_PASSWORD}",
+            names = TO_PASSWORD,
+            defaultValue = "${" + ENV_NEO4J_PASSWORD + "}",
             description =
                     "Password of the target database to push this database to. Prompt will ask for a password if not provided. "
-                            + "Alternatively, the NEO4J_PASSWORD environment variable can be used.")
+                            + "Alternatively, the " + ENV_NEO4J_PASSWORD + " environment variable can be used.")
     private String password;
 
     @Option(
@@ -183,8 +187,9 @@ public class UploadCommand extends AbstractAdminCommand {
             char[] pass;
             if (isBlank(password)) {
                 if ((pass = cons.readPassword("Neo4j aura password for %s:", username)).length == 0) {
-                    throw new CommandFailedException(
-                            "Please supply a password, either by '--to-password' parameter, 'NEO4J_PASSWORD' environment variable, or prompt");
+                    throw new CommandFailedException(format(
+                            "Please supply a password, either by '%s' parameter, '%s' environment variable, or prompt",
+                            TO_PASSWORD, ENV_NEO4J_PASSWORD));
                 }
             } else {
                 pass = password.toCharArray();

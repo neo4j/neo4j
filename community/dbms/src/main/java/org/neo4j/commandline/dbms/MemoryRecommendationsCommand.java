@@ -21,6 +21,7 @@ package org.neo4j.commandline.dbms;
 
 import static java.lang.String.format;
 import static java.util.Locale.ROOT;
+import static org.neo4j.commandline.dbms.MemoryRecommendationsCommand.MEMORY;
 import static org.neo4j.configuration.BootloaderSettings.additional_jvm;
 import static org.neo4j.configuration.BootloaderSettings.initial_heap_size;
 import static org.neo4j.configuration.BootloaderSettings.max_heap_size;
@@ -64,12 +65,13 @@ import picocli.CommandLine.Option;
 @Command(
         name = "memory-recommendation",
         header = "Print Neo4j heap and pagecache memory settings recommendations.",
-        description =
-                "Print heuristic memory setting recommendations for the Neo4j JVM heap and pagecache. The "
-                        + "heuristic is based on the total memory of the system the command is running on, or on the amount of "
-                        + "memory specified with the --memory argument. The heuristic assumes that the system is dedicated to "
-                        + "running Neo4j. If this is not the case, then use the --memory argument to specify how much memory "
-                        + "can be expected to be dedicated to Neo4j. The output is formatted such that it can be copy-pasted into the neo4j.conf file.")
+        description = "Print heuristic memory setting recommendations for the Neo4j JVM heap and pagecache. "
+                + "The heuristic is based on the total memory of the system the command is running on, or on the "
+                + "amount of memory specified with the " + MEMORY + " argument. "
+                + "The heuristic assumes that the system is dedicated to running Neo4j. "
+                + "If this is not the case, then use the " + MEMORY + " argument to specify how much memory can be "
+                + "expected to be dedicated to Neo4j. "
+                + "The output is formatted such that it can be copy-pasted into the neo4j.conf file.")
 public class MemoryRecommendationsCommand extends AbstractAdminCommand {
     // Fields: {System Memory in GiBs; OS memory reserve in GiBs; JVM Heap memory in GiBs}.
     // And the page cache gets what's left, though always at least 100 MiB.
@@ -93,8 +95,10 @@ public class MemoryRecommendationsCommand extends AbstractAdminCommand {
         new Bracket(1024.0, 30, 31),
     };
 
+    static final String MEMORY = "--memory";
+
     @Option(
-            names = "--memory",
+            names = MEMORY,
             paramLabel = "<size>",
             converter = Converters.ByteUnitConverter.class,
             description =

@@ -72,6 +72,7 @@ import picocli.CommandLine.Parameters;
         subcommands = {ImportCommand.Full.class, ImportCommand.Incremental.class, CommandLine.HelpCommand.class})
 @SuppressWarnings("FieldMayBeFinal")
 public class ImportCommand {
+
     /**
      * Arguments and logic shared between Full and Incremental import commands.
      */
@@ -142,16 +143,18 @@ public class ImportCommand {
                 description = "If unspecified columns should be ignored during the import.")
         private boolean ignoreExtraColumns;
 
+        private static final String MULTILINE_FIELDS = "--multiline-fields";
+
         @Option(
-                names = "--multiline-fields",
+                names = MULTILINE_FIELDS,
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
                 fallbackValue = "true",
                 description =
                         "Whether or not fields from an input source can span multiple lines, i.e. contain newline characters. "
-                                + "Setting --multiline-fields=true can severely degrade the performance of the importer. "
-                                + "Therefore, use it with care, especially with large imports.")
+                                + "Setting " + MULTILINE_FIELDS + "=true can severely degrade the performance of "
+                                + "the importer. Therefore, use it with care, especially with large imports.")
         private boolean multilineFields = DEFAULT_CSV_CONFIG.multilineFields();
 
         @Option(
@@ -247,16 +250,20 @@ public class ImportCommand {
                                 + "value. For optimal performance, this value should not be greater than the number of available processors.")
         private int threads = DEFAULT_IMPORTER_CONFIG.maxNumberOfWorkerThreads();
 
+        private static final String BAD_TOLERANCE_OPTION = "--bad-tolerance";
+
         @Option(
-                names = "--bad-tolerance",
+                names = BAD_TOLERANCE_OPTION,
                 paramLabel = "<num>",
                 description =
                         "Number of bad entries before the import is considered failed. This tolerance threshold is about relationships referring to "
                                 + "missing nodes. Format errors in input data are still treated as errors.")
         private long badTolerance = 1000;
 
+        public static final String SKIP_BAD_ENTRIES_LOGGING = "--skip-bad-entries-logging";
+
         @Option(
-                names = "--skip-bad-entries-logging",
+                names = SKIP_BAD_ENTRIES_LOGGING,
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
                 paramLabel = "true|false",
@@ -273,7 +280,8 @@ public class ImportCommand {
                 description =
                         "Whether or not to skip importing relationships that refer to missing node IDs, i.e. either start or end node ID/group referring "
                                 + "to a node that was not specified by the node input data. Skipped relationships will be logged, containing at most the number of entities "
-                                + "specified by --bad-tolerance, unless otherwise specified by the --skip-bad-entries-logging option.")
+                                + "specified by " + BAD_TOLERANCE_OPTION + ", unless otherwise specified by the "
+                                + SKIP_BAD_ENTRIES_LOGGING + " option.")
         private boolean skipBadRelationships;
 
         @Option(
@@ -296,7 +304,8 @@ public class ImportCommand {
                 description =
                         "Whether or not to skip importing nodes that have the same ID/group. In the event of multiple nodes within the same group having "
                                 + "the same ID, the first encountered will be imported, whereas consecutive such nodes will be skipped. Skipped nodes will be logged, "
-                                + "containing at most the number of entities specified by --bad-tolerance, unless otherwise specified by the --skip-bad-entries-logging option.")
+                                + "containing at most the number of entities specified by " + BAD_TOLERANCE_OPTION
+                                + ", unless otherwise specified by the " + SKIP_BAD_ENTRIES_LOGGING + " option.")
         private boolean skipDuplicateNodes;
 
         @Option(
