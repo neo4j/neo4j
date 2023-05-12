@@ -45,10 +45,8 @@ class PendingIdQueueTest {
     void shouldAcceptIdsOfVariousSizes(int slotSize) {
         // given
         int[] slotSizes = {1, 2, 4, 8};
-        PendingIdQueue cache = new PendingIdQueue(
-                slotSizes,
-                IdCache.buildSlotIndexBySize(slotSizes),
-                diminishingSlotDistribution(slotSizes).slots(128));
+        PendingIdQueue cache =
+                new PendingIdQueue(diminishingSlotDistribution(slotSizes).slots(128));
 
         // when
         int id = random.nextInt(1_000);

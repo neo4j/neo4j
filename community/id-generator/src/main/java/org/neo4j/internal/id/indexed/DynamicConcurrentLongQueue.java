@@ -21,7 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import static java.lang.Math.max;
 
-import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.atomic.AtomicReference;
@@ -46,20 +45,15 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
     public boolean offer(long v) {
         var chunk = tail.get();
         if (!chunk.offer(v)) {
-            synchronized (this) {
-                chunk = tail.get();
-                if (!chunk.offer(v)) {
-                    if (numChunks.get() >= maxNumChunks) {
-                        return false;
-                    }
-
-                    var next = new Chunk(chunkSize);
-                    chunk.next.set(next);
-                    tail.set(next);
-                    numChunks.incrementAndGet();
-                    return next.offer(v);
-                }
+            if (numChunks.get() >= maxNumChunks) {
+                return false;
             }
+
+            var next = new Chunk(chunkSize);
+            chunk.next.set(next);
+            tail.set(next);
+            numChunks.incrementAndGet();
+            return next.offer(v);
         }
         return true;
     }
@@ -149,21 +143,17 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
         private final AtomicReference<Chunk> next = new AtomicReference<>();
 
         Chunk(int capacity) {
-            var internalArray = new long[capacity];
-            Arrays.fill(internalArray, -1);
-            this.array = new AtomicLongArray(internalArray);
+            this.array = new AtomicLongArray(capacity);
             this.capacity = capacity;
         }
 
         boolean offer(long v) {
-            int currentWriteSeq;
-            do {
-                currentWriteSeq = writeSeq.get();
-                if (currentWriteSeq == capacity) {
-                    return false;
-                }
-            } while (!writeSeq.compareAndSet(currentWriteSeq, currentWriteSeq + 1));
+            var currentWriteSeq = writeSeq.get();
+            if (currentWriteSeq == capacity) {
+                return false;
+            }
             array.set(currentWriteSeq, v);
+            writeSeq.incrementAndGet();
             return true;
         }
 
@@ -196,8 +186,7 @@ class DynamicConcurrentLongQueue implements ConcurrentLongQueue {
                     return defaultValue;
                 }
                 value = array.get(currentReadSeq);
-                // value == -1 means the slot has been allocated, but it hasn't been set yet
-            } while (value == -1 || !readSeq.compareAndSet(currentReadSeq, currentReadSeq + 1));
+            } while (!readSeq.compareAndSet(currentReadSeq, currentReadSeq + 1));
             return value;
         }
 

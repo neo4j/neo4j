@@ -21,6 +21,7 @@ package org.neo4j.internal.id.indexed;
 
 import static java.lang.Integer.min;
 
+import java.util.Arrays;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
@@ -36,14 +37,17 @@ class PendingIdQueue {
     private final int[] slotSizes;
     private final int[] slotIndexBySize;
 
-    PendingIdQueue(int[] slotSizes, int[] slotIndexBySize, IdSlotDistribution.Slot... slots) {
-        this.slotSizes = slotSizes;
-        this.slotIndexBySize = slotIndexBySize;
+    PendingIdQueue(IdSlotDistribution.Slot... slots) {
         this.slots = slots;
         this.queues = new MutableLongList[slots.length];
+        this.slotSizes = new int[slots.length];
+        this.slotIndexBySize = new int[slots[slots.length - 1].slotSize()];
         for (int i = 0; i < slots.length; i++) {
             queues[i] = LongLists.mutable.empty();
+            slotSizes[i] = slots[i].slotSize();
+            Arrays.fill(slotIndexBySize, i == 0 ? 0 : slotSizes[i - 1] - 1, slotSizes[i] - 1, i - 1);
         }
+        slotIndexBySize[slotIndexBySize.length - 1] = slots.length - 1;
     }
 
     private boolean cache(int slotIndex, long startId) {

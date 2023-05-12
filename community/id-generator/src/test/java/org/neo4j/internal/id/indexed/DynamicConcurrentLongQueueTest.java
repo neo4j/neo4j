@@ -120,20 +120,16 @@ class DynamicConcurrentLongQueueTest {
     void shouldOfferAndTakeParallel() {
         // given
         var queue = new DynamicConcurrentLongQueue(4, 100);
-        var offerThreads = 2;
-        var itemsPerThread = 200;
-        var items = itemsPerThread * offerThreads;
+        var items = 400;
 
         // when
         var taken = new ConcurrentLinkedDeque<Long>();
         var takenCount = new AtomicInteger();
         var race = new Race().withEndCondition(() -> takenCount.get() >= items);
-        race.addContestants(
-                offerThreads,
-                c -> () -> {
-                    var startItem = c * itemsPerThread;
-                    for (var i = 0; i < itemsPerThread; i++) {
-                        assertThat(queue.offer(startItem + i)).isTrue();
+        race.addContestant(
+                () -> {
+                    for (long i = 0; i < items; i++) {
+                        assertThat(queue.offer(i)).isTrue();
                     }
                     assertThat(queue.size()).isGreaterThanOrEqualTo(0);
                 },
@@ -153,7 +149,7 @@ class DynamicConcurrentLongQueueTest {
         taken.forEach(all::add);
         all.sortThis();
         var iterator = all.longIterator();
-        for (var i = 0; i < items; i++) {
+        for (long i = 0; i < items; i++) {
             assertThat(iterator.hasNext()).isTrue();
             assertThat(iterator.next()).isEqualTo(i);
         }

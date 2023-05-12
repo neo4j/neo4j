@@ -59,7 +59,7 @@ class IdCache {
             // grows and shrinks in increments of chunk size to avoid permanently occupying a large amount of memory.
             var queue = capacity > DYNAMIC_CHUNK_SIZE
                     ? new DynamicConcurrentLongQueue(DYNAMIC_CHUNK_SIZE, capacity / DYNAMIC_CHUNK_SIZE)
-                    : new MpmcLongQueue(capacity);
+                    : new SpmcLongQueue(capacity);
             queues[slotIndex] = queue;
         }
         singleSlotted = isSingleSlotted();
