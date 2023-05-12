@@ -234,15 +234,13 @@ public class ForsetiClient implements Locks.Client {
                     }
 
                     // Someone holds shared lock on this entity, try and get in on that action
-                    else if (existingLock instanceof SharedLock) {
-                        if (((SharedLock) existingLock).acquire(this)) {
+                    else if (existingLock instanceof SharedLock sharedLock) {
+                        if (sharedLock.acquire(this)) {
                             // Success!
                             break;
                         }
-                    }
-
-                    // Someone holds an exclusive lock on this entity
-                    else if (existingLock instanceof ExclusiveLock) {
+                    } else if (existingLock instanceof ExclusiveLock) {
+                        // Someone holds an exclusive lock on this entity
                         // We need to wait, just let the loop run.
                     } else {
                         throw new UnsupportedOperationException("Unknown lock type: " + existingLock);
@@ -443,14 +441,14 @@ public class ForsetiClient implements Locks.Client {
                         // Success!
                         break;
                     }
-                } else if (existingLock instanceof SharedLock) {
+                } else if (existingLock instanceof SharedLock sharedLock) {
                     // Note that there is a "safe" race here where someone may be releasing the last reference to a lock
                     // and thus removing that lock instance (making it unacquirable). In this case, we allow retrying,
                     // even though this is a try-lock call.
-                    if (((SharedLock) existingLock).acquire(this)) {
+                    if (sharedLock.acquire(this)) {
                         // Success!
                         break;
-                    } else if (((SharedLock) existingLock).isUpdateLock()) {
+                    } else if (sharedLock.isUpdateLock()) {
                         memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
                         return false;
                     }
@@ -696,7 +694,7 @@ public class ForsetiClient implements Locks.Client {
         if (lock instanceof ExclusiveLock) {
             lockMap.remove(resourceId);
             memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
-        } else if (lock instanceof SharedLock && ((SharedLock) lock).release(this)) {
+        } else if (lock instanceof SharedLock sharedLock && sharedLock.release(this)) {
             // We were the last to hold this lock
             lockMap.remove(resourceId);
             memoryTracker.releaseHeap(CONCURRENT_NODE_SIZE);
