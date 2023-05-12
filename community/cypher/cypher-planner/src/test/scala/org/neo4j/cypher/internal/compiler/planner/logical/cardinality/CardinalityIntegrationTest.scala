@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
@@ -56,7 +55,6 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
       .setRelationshipCardinality("()-[:S]->()", 48)
       .setRelationshipCardinality("(:B)-[:S]->()", 12)
       .setRelationshipCardinality("(:B)-[:R]->()", 15)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val expectedCardinality = 35 * 40 * 40 * 15 / math.pow(200, 3) * math.pow(.99, 6)

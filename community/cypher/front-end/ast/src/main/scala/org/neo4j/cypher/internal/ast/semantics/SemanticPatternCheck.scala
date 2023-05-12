@@ -282,11 +282,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
           checkValidJuxtaposition(factors)
 
       case q @ QuantifiedPath(pattern, quantifier, _, _) =>
-        def checkFeatureFlag: SemanticCheck =
-          whenState(!_.features.contains(SemanticFeature.QuantifiedPathPatterns)) {
-            error("Quantified path patterns are not yet supported.", q.position)
-          }
-
         def checkContainedPatterns: SemanticCheck =
           pattern.folder.treeFold(SemanticCheck.success) {
             case quant: QuantifiedPath => acc =>
@@ -328,8 +323,7 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
             )
           }
 
-        checkFeatureFlag chain
-          checkContext(ctx, "Quantified path patterns", element.position) chain
+        checkContext(ctx, "Quantified path patterns", element.position) chain
           checkContainedPatterns chain
           checkRelCount chain
           checkQuantifier(quantifier) chain

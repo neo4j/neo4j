@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
@@ -108,7 +107,7 @@ trait PlannerQueryRewriterTest {
     val astOriginal = parser.parse(query.replace("\r\n", "\n"), exceptionFactory)
     val ast = rewriteAST(astOriginal, exceptionFactory, anonymousVariableNameGenerator)
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
-    val result = SemanticChecker.check(ast, SemanticState.clean.withFeature(SemanticFeature.QuantifiedPathPatterns))
+    val result = SemanticChecker.check(ast, SemanticState.clean)
     onError(result.errors)
     val table = SemanticTable(
       types = result.state.typeTable,

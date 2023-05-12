@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.AssertIsNode
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -72,7 +71,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     .setRelationshipCardinality("()-[]->(:User)", 10)
     .setRelationshipCardinality("(:User)-[:R]->()", 10)
     .setRelationshipCardinality("(:N)-[:R]->()", 10)
-    .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
     .build()
 
   test("should use correctly Namespaced variables") {
@@ -80,7 +78,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setAllNodesCardinality(10)
       .setAllRelationshipsCardinality(10)
       .enableDeduplicateNames(enable = false)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val query = "MATCH (a)((n)-[r]->())*(b) RETURN n, r"
@@ -955,7 +952,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("()-[:REL]->()", 5000)
       .setRelationshipCardinality("(:A)-[:REL]->()", 10)
       .addNodeIndex("A", Seq("prop"), 0.5, 0.5)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val q = "MATCH (n) ((x)<-[r1:REL]-(a:A WHERE a.prop > 100 AND a.prop < 123)-[r2:REL]->(y))+ (m) RETURN *"
@@ -995,7 +991,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("()-[]->(:A)", 500)
       .setRelationshipCardinality("(:A)-[]->(:A)", 500)
       .addNodeIndex("A", Seq("prop"), 0.5, 0.5)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val q = "MATCH ((a:A WHERE a.prop > 0)<--())+ RETURN *"
@@ -1034,7 +1029,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:A)-[]->()", 500)
       .setRelationshipCardinality("(:A)-[]->(:A)", 500)
       .addNodeIndex("A", Seq("prop"), 0.5, 0.5)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val q = "MATCH (()<--(a:A WHERE a.prop > 0))+ RETURN *"
@@ -1075,7 +1069,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:B)-[:R]->()", 2)
       .setRelationshipCardinality("()-[:R]->(:C)", 500)
       .setRelationshipCardinality("()-[:R]->()", 500)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val query = "MATCH (b:B) ( (x)-[r:R]->(y) ){3} (c:C) RETURN *"
@@ -1142,7 +1135,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:X)-[:REL]->(:Q)", 10)
       .setRelationshipCardinality("(:X)-[:REL]->(:P)", 10)
       .setRelationshipCardinality("(:M)-[:REL]->(:Q)", 10)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val query =
@@ -1239,7 +1231,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("()-[]->(:B)", 10)
       .setRelationshipCardinality("(:A)-[]->(:B)", 10)
       .setRelationshipCardinality("(:B)-[]->(:B)", 10)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     // This first MATCH expands to: (:A) | (:A)-->(:B) | (:A)-->(:B)-->(:B) | etc – all nodes have at least one label
@@ -1291,7 +1282,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:A)-[]->(:B)", 10)
       .setRelationshipCardinality("(:B)-[]->(:A)", 10)
       .setRelationshipCardinality("(:B)-[]->(:B)", 10)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val query = "MATCH (start:A)((a:A)-[r]->(b:B))*(end:B) CREATE (c:C) RETURN *"
@@ -1340,7 +1330,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setRelationshipCardinality("(:A)-[]->(:B)", 10)
       .setRelationshipCardinality("(:B)-[]->(:A)", 10)
       .setRelationshipCardinality("(:B)-[]->(:B)", 10)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .build()
 
     val query = "MATCH (x:C) OPTIONAL MATCH (start:A)((a:A)-[r]->(b:B))*(end:B) DELETE x"
@@ -1782,7 +1771,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setLabelCardinality("A", 10)
       .setRelationshipCardinality("(:A)-[]->()", 10)
       .setRelationshipCardinality("(:A)-[]->(:A)", 5)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .enableDeduplicateNames(enable = false)
       .build()
     val query = "MATCH p=(()-[y]->(z))+ RETURN p"
@@ -1831,7 +1819,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .setLabelCardinality("A", 10)
       .setRelationshipCardinality("(:A)-[]->()", 10)
       .setRelationshipCardinality("(:A)-[]->(:A)", 5)
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .enableDeduplicateNames(enable = false)
       .build()
     val query = "MATCH p=(()-[]->(z))+ RETURN p"

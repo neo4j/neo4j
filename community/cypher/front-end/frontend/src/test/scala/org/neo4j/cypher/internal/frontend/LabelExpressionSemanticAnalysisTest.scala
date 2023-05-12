@@ -788,16 +788,15 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   // All GPM
   test("MATCH ()-[r:A&B]->*() RETURN r") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH (n:(A&B)|C)-[]->+() RETURN n") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH p = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN p") {
     runSemanticAnalysisWithSemanticFeatures(
-      SemanticFeature.QuantifiedPathPatterns,
       SemanticFeature.GpmShortestPath
     ).errors shouldBe empty
   }
@@ -808,12 +807,11 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
   }
 
   test("MATCH (n)-[r*]-(m) MATCH (n)-[]->+() RETURN m,n,r") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH p = shortestPath(()-[*1..5]-()) MATCH q = SHORTEST 2 PATHS ()-[]-{1,5}() RETURN nodes(p), nodes(q)") {
     runSemanticAnalysisWithSemanticFeatures(
-      SemanticFeature.QuantifiedPathPatterns,
       SemanticFeature.GpmShortestPath
     ).errors shouldBe empty
   }
@@ -830,11 +828,11 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   // GPM and non-GPM in unrelated features
   test("MATCH (m)-[]->+(n:R) RETURN m, n") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH ((a:A:B)-[]->(b) WHERE a.p < b.p)+ RETURN count(*)") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   test("MATCH p = SHORTEST 2 PATHS (m)-[*0..5]-(n) RETURN p") {
@@ -879,7 +877,7 @@ class OtherLabelExpressionSemanticAnalysisTest extends NameBasedSemanticAnalysis
 
   // Mixing pre-GPM label expression with QPP does not raise SyntaxError
   test("MATCH ({p: 1})-->() ((:R:T)--()){1,2} ()-->(m) RETURN m.p as mp") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.QuantifiedPathPatterns).errors shouldBe empty
+    runSemanticAnalysis().errors shouldBe empty
   }
 
   // Mixing colon (not as conjunction) and IS keyword should be allowed as they are both part of GQL

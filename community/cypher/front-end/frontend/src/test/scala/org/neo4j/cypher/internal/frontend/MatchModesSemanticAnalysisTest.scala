@@ -30,7 +30,6 @@ class MatchModesSemanticAnalysisTest extends CypherFunSuite with SemanticAnalysi
 
   def errorsFromSemanticAnalysis: Seq[SemanticErrorDef] = {
     runSemanticAnalysisWithSemanticFeatures(
-      SemanticFeature.QuantifiedPathPatterns,
       SemanticFeature.GpmShortestPath,
       SemanticFeature.MatchModes
     ).errors

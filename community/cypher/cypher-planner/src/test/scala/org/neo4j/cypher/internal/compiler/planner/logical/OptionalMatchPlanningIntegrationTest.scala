@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.apache.commons.io.FileUtils
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.graphcounts.GraphCountsJson
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy.ComparingProvidedAttributesOnly
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
@@ -1058,7 +1057,6 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
 
   test("should solve OPTIONAL MATCH containing QPP, followed by DISTINCT") {
     val planner = plannerBuilder()
-      .addSemanticFeature(SemanticFeature.QuantifiedPathPatterns)
       .setAllNodesCardinality(100)
       .setAllRelationshipsCardinality(40)
       .build()

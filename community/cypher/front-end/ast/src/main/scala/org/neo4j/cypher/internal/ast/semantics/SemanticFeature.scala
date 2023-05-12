@@ -43,10 +43,6 @@ object SemanticFeature {
 
   case object ExpressionsInViewInvocations extends SemanticFeature
 
-  case object QuantifiedPathPatterns extends SemanticFeature with FeatureToString {
-    override def name: String = "Quantified path patterns"
-  }
-
   case object GpmShortestPath extends SemanticFeature with FeatureToString {
     override def name: String = "Shortest path as defined for GQL"
   }
@@ -60,7 +56,6 @@ object SemanticFeature {
     MultipleGraphs,
     UseGraphSelector,
     ExpressionsInViewInvocations,
-    QuantifiedPathPatterns,
     ShowSetting,
     GpmShortestPath,
     MatchModes

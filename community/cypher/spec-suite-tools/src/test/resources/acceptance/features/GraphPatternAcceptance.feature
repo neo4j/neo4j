@@ -33,7 +33,6 @@ Feature: GraphPatternAcceptance
     """
   Then a SyntaxError should be raised at compile time: VariableAlreadyBound
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: Subpath variable cannot appear more than once in a graph pattern
     Given an empty graph
     When executing query:
@@ -43,7 +42,6 @@ Feature: GraphPatternAcceptance
       """
     Then a SyntaxError should be raised at compile time: VariableAlreadyBound
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: The same subpath variable can only be used within one path pattern in a graph pattern
     When executing query:
     """
@@ -52,7 +50,6 @@ Feature: GraphPatternAcceptance
     """
     Then a SyntaxError should be raised at compile time: VariableAlreadyBound
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: The same subpath variable can only be used once within a path pattern
     When executing query:
     """
@@ -61,7 +58,6 @@ Feature: GraphPatternAcceptance
     """
     Then a SyntaxError should be raised at compile time: VariableAlreadyBound
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: A group variable may only appear in a single quantified sub path pattern in a graph pattern - grouped variable, singleton variable
     When executing query:
     """
@@ -70,7 +66,6 @@ Feature: GraphPatternAcceptance
     """
     Then a SyntaxError should be raised at compile time: VariableAlreadyBound
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: A group variable may only appear in a single quantified sub path pattern in a graph pattern - grouped variable, grouped variable (QPP)
     When executing query:
     """
@@ -79,7 +74,6 @@ Feature: GraphPatternAcceptance
     """
     Then a SyntaxError should be raised at compile time: VariableAlreadyBound
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: A group variable may only appear in a single quantified sub path pattern in a graph pattern - grouped variable, grouped variable (quantified relationship)
     When executing query:
     """
@@ -88,7 +82,6 @@ Feature: GraphPatternAcceptance
     """
     Then a SyntaxError should be raised at compile time: VariableAlreadyBound
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: A group variable may only appear in a single quantified sub path pattern in a graph pattern - grouped variable, grouped variable (var-length relationship)
     When executing query:
     """
@@ -137,7 +130,6 @@ Feature: GraphPatternAcceptance
       | (:D) | (:B) | (:B) | (:C) |
       | (:D) | (:B) | (:B) | (:E) |
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: Minimum node count for each top level path pattern in a graph pattern should be 1
     When executing query:
     """
@@ -161,7 +153,6 @@ Feature: GraphPatternAcceptance
       | a    | b    | c    | f    | n    | q    | r    | x    | z    |
       | (:A) | (:B) | (:C) | [:S] | (:D) | [:R] | [:U] | (:E) | (:F) |
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: Node variable can be repeated in a path pattern inside a QPP
     Given having executed:
       """
@@ -191,7 +182,6 @@ Feature: GraphPatternAcceptance
     Then the result should be, in any order:
       | a    | b    | c    | f    | n    | r    | x    | z    |
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: Element variable can be repeated in a path pattern inside a QPP
     Given having executed:
       """
@@ -206,7 +196,6 @@ Feature: GraphPatternAcceptance
     Then the result should be, in any order:
       | a    | b    | c    | d    | f    | r    |
 
-  @EnableSemanticFeature(QuantifiedPathPatterns)
   Scenario: Group variable cannot be repeated across graph pattern
     When executing query:
     """

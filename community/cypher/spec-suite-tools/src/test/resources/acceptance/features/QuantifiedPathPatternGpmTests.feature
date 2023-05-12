@@ -20,7 +20,6 @@
 
 #encoding: utf-8
 
-@EnableSemanticFeature(QuantifiedPathPatterns)
 Feature: QuantifiedPathPatternGpmTests
 
   # The scenarios in this feature represent examples from the document "Testing GPM" with

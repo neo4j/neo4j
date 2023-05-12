@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.ast.ProjectingUnionDistinct
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.Union.UnionMapping
 import org.neo4j.cypher.internal.ast.Where
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -347,8 +346,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         assertRewritten(
           q.replace("\r\n", "\n"),
           rewritten,
-          semanticTableExpressions,
-          SemanticFeature.QuantifiedPathPatterns
+          semanticTableExpressions
         )
       }
     case TestCaseWithStatement(q, rewritten, semanticTableExpressions) =>
@@ -356,8 +354,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
         assertRewritten(
           q.replace("\r\n", "\n"),
           rewritten,
-          semanticTableExpressions,
-          SemanticFeature.QuantifiedPathPatterns
+          semanticTableExpressions
         )
       }
   }

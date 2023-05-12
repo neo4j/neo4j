@@ -20,11 +20,7 @@
 package cypher.features.acceptance
 
 import cypher.features.TestConfig
-import org.neo4j.configuration.GraphDatabaseInternalSettings
-import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.graphdb.config.Setting
-
-import scala.jdk.CollectionConverters.SetHasAsJava
 
 class InterpretedAcceptanceTests extends BaseAcceptanceTest {
 
@@ -39,15 +35,6 @@ class InterpretedAcceptanceTests extends BaseAcceptanceTest {
   override val useBolt: Boolean = false
 
   def featureDependentSettings(featureName: String): collection.Map[Setting[_], Object] = featureName match {
-    case "QuantifiedPathPatternAcceptance" =>
-      enableSemanticFeatures(Set(
-        SemanticFeature.QuantifiedPathPatterns
-      ))
     case _ => Map.empty
   }
-
-  private def enableSemanticFeatures(features: Set[SemanticFeature]): Map[Setting[_], Object] = Map[Setting[_], Object](
-    GraphDatabaseInternalSettings.cypher_enable_extra_semantic_features ->
-      features.map(_.productPrefix).asJava
-  )
 }

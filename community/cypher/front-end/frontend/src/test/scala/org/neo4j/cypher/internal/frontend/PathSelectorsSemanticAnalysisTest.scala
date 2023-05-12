@@ -61,9 +61,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
   // Testing the semantic feature
   allSelectiveSelectors.foreach { selector =>
     test(s"MATCH path = $selector ((a)-->(b))+ RETURN count(*)") {
-      val result = runSemanticAnalysisWithSemanticFeatures(
-        SemanticFeature.QuantifiedPathPatterns
-      )
+      val result = runSemanticAnalysis()
       result.errorMessages shouldBe Seq(
         s"Path selectors such as `$selector` are not supported yet"
       )
@@ -71,9 +69,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
   }
 
   test(s"MATCH path = ((a)-->(b))+ RETURN count(*)") {
-    val result = runSemanticAnalysisWithSemanticFeatures(
-      SemanticFeature.QuantifiedPathPatterns
-    )
+    val result = runSemanticAnalysis()
     result.errorMessages shouldBe empty
   }
 
@@ -82,8 +78,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
     Seq("+", "").foreach { quantifier =>
       test(s"MATCH ($selector (a)-[r]->(b))$quantifier RETURN count(*)") {
         val result = runSemanticAnalysisWithSemanticFeatures(
-          SemanticFeature.GpmShortestPath,
-          SemanticFeature.QuantifiedPathPatterns
+          SemanticFeature.GpmShortestPath
         )
         val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
         result.errorMessages shouldBe Seq(
@@ -94,8 +89,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
       if (quantifier == "+") {
         test(s"MATCH (() ($selector (a)-[r]->(b))$quantifier ()--()) RETURN count(*)") {
           val result = runSemanticAnalysisWithSemanticFeatures(
-            SemanticFeature.GpmShortestPath,
-            SemanticFeature.QuantifiedPathPatterns
+            SemanticFeature.GpmShortestPath
           )
           result.errorMessages shouldBe Seq(
             s"Path selectors such as `$selector` are not supported within quantified path patterns."
@@ -115,7 +109,6 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
       test(s"MATCH ((a)-[r]-(b WHERE $operation { MATCH $selector ((c)-[q]-(d))+ RETURN q } ))+ RETURN 1") {
         val result =
           runSemanticAnalysisWithSemanticFeatures(
-            SemanticFeature.QuantifiedPathPatterns,
             SemanticFeature.GpmShortestPath
           )
         result.errorMessages shouldBe empty
@@ -131,8 +124,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
             |RETURN count(*)""".stripMargin) {
       val result =
         runSemanticAnalysisWithSemanticFeatures(
-          SemanticFeature.GpmShortestPath,
-          SemanticFeature.QuantifiedPathPatterns
+          SemanticFeature.GpmShortestPath
         )
       result.errorMessages shouldBe Seq(
         "Multiple path patterns cannot be used in the same clause in combination with a selective path selector."
@@ -144,8 +136,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
             |RETURN count(*)""".stripMargin) {
       val result =
         runSemanticAnalysisWithSemanticFeatures(
-          SemanticFeature.GpmShortestPath,
-          SemanticFeature.QuantifiedPathPatterns
+          SemanticFeature.GpmShortestPath
         )
       result.errorMessages shouldBe Seq(
         "Multiple path patterns cannot be used in the same clause in combination with a selective path selector."
@@ -162,8 +153,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
               |RETURN count(*)""".stripMargin) {
         val result =
           runSemanticAnalysisWithSemanticFeatures(
-            SemanticFeature.GpmShortestPath,
-            SemanticFeature.QuantifiedPathPatterns
+            SemanticFeature.GpmShortestPath
           )
         result.errorMessages shouldBe empty
       }
@@ -188,7 +178,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
   selectors.filter(_.shortest).map(_.syntax).foreach { selector =>
     test(s"MATCH $selector ((a)-[r]->(b))+ ((c)-[s]->(d))+ RETURN count(*)") {
       val result =
-        runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath, SemanticFeature.QuantifiedPathPatterns)
+        runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
       result.errorMessages shouldBe empty
     }
   }
@@ -196,7 +186,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
   (selectors.filter(!_.shortest).map(_.syntax) :+ "").foreach { selector =>
     test(s"MATCH $selector ((a)-[r]->(b))+ ((c)-[s]->(d))+ RETURN count(*)") {
       val result =
-        runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath, SemanticFeature.QuantifiedPathPatterns)
+        runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
       result.errorMessages shouldBe empty
     }
   }
@@ -219,7 +209,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
   ).foreach { case (selector, kind) =>
     test(s"MATCH $selector ((a)-[]->(b))+ RETURN a") {
       val result =
-        runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath, SemanticFeature.QuantifiedPathPatterns)
+        runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
       result.errorMessages shouldBe Seq(
         s"The $kind count needs to be greater than 0."
       )
@@ -228,7 +218,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
 
   test(s"MATCH SHORTEST 2 PATH GROUPS ((a)-[r]->(b))+ RETURN count(*)") {
     val result =
-      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath, SemanticFeature.QuantifiedPathPatterns)
+      runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
     result.errorMessages shouldBe Seq(
       "The path selector `SHORTEST 2 PATH GROUPS` with a group count greater than 1 is not supported yet."
     )
@@ -238,13 +228,9 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
 
   selectors.foreach { selector =>
     test(s"MATCH path = ${selector.syntax} ((a)-[r]->+(b) WHERE a.prop = b.prop) RETURN 1") {
-      val result =
-        runSemanticAnalysisWithSemanticFeatures(
-          SemanticFeature.QuantifiedPathPatterns
-        )
+      val result = runSemanticAnalysis()
       val resultWithFeatureEnabled =
         runSemanticAnalysisWithSemanticFeatures(
-          SemanticFeature.QuantifiedPathPatterns,
           SemanticFeature.GpmShortestPath
         )
       if (selector.selective) {
@@ -264,7 +250,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
   selectors.foreach { selector =>
     test(s"MATCH ${selector.syntax} ((a) WHERE c.prop) RETURN 1") {
       val result =
-        runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath, SemanticFeature.QuantifiedPathPatterns)
+        runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath)
       result.errorMessages shouldBe Seq(
         "Variable `c` not defined"
       )
