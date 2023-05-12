@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.BestPlans
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.util.attribution.Attributes
 
 import scala.language.implicitConversions
 
@@ -50,7 +49,7 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(), tailPlanner: T
         context.withModifiedPlannerState(_.withLimitSelectivityConfig(limitSelectivityConfigs.head))
       )
       (plans, context) <- planRemainingParts(plans, query, context, limitSelectivityConfigs)
-      (plans, context) <- unnestEager(
+      (plans, context) <- (
         plans,
         context.withModifiedPlannerState(_.withLimitSelectivityConfig(LimitSelectivityConfig.default))
       )
@@ -89,22 +88,6 @@ case class PlanSingleQuery(headPlanner: HeadPlanner = PlanHead(), tailPlanner: T
             .withLastSolvedPlannerQuery(prevPlannerQuery))
         )
     }
-  }
-
-  private def unnestEager(plans: BestPlans, context: LogicalPlanningContext): StepResult = {
-    val unnest = EagerAnalyzer.unnestEager(
-      context.staticComponents.planningAttributes.solveds,
-      context.staticComponents.planningAttributes.cardinalities,
-      context.staticComponents.planningAttributes.providedOrders,
-      Attributes(
-        context.staticComponents.idGen,
-        context.staticComponents.planningAttributes.leveragedOrders,
-        context.staticComponents.planningAttributes.labelAndRelTypeInfos
-      )
-    )
-
-    val unnestedPlans = plans.map(_.endoRewrite(unnest))
-    (unnestedPlans, context)
   }
 }
 

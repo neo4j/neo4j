@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.UnnestingRewriter
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.Predicate
@@ -31,25 +30,14 @@ import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
 import org.neo4j.cypher.internal.ir.UpdateGraph.SolvedPredicatesOfOneLeafPlan
-import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
-import org.neo4j.cypher.internal.logical.plans.Eager
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.NodeLogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.logical.plans.RelationshipLogicalLeafPlan
-import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.util.NonEmptyList
-import org.neo4j.cypher.internal.util.Rewriter
-import org.neo4j.cypher.internal.util.attribution.Attributes
-import org.neo4j.cypher.internal.util.bottomUp
-import org.neo4j.cypher.internal.util.helpers.fixedPoint
 import org.neo4j.exceptions.InternalException
 
 import scala.annotation.tailrec
@@ -63,44 +51,6 @@ object EagerAnalyzer {
     } else {
       NoopEagerAnalyzer
     }
-  }
-
-  case class unnestEager(
-    override val solveds: Solveds,
-    override val cardinalities: Cardinalities,
-    override val providedOrders: ProvidedOrders,
-    override val attributes: Attributes[LogicalPlan]
-  ) extends Rewriter with UnnestingRewriter {
-
-    /*
-    Based on unnestApply (which references a paper)
-
-    This rewriter does _not_ adhere to the contract of moving from a valid
-    plan to a valid plan, but it is crucial to get eager plans placed correctly.
-
-    Glossary:
-      Ax : Apply
-      L,R: Arbitrary operator, named Left and Right
-      E : Eager
-      Up : UpdatingPlan
-     */
-
-    private val instance: Rewriter = fixedPoint(bottomUp(Rewriter.lift {
-
-      // L Ax (E R) => E Ax (L R), don't unnest when coming from a subquery
-      case apply @ Apply(lhs, eager: Eager, false) =>
-        unnestRightUnary(apply, lhs, eager)
-
-      // MERGE is an updating plan that cannot be moved on top of apply since
-      // it is closely tied to its source plan
-      case apply @ Apply(_, _: Merge, _) => apply
-
-      // L Ax (Up R) => Up Ax (L R), don't unnest when coming from a subquery
-      case apply @ Apply(lhs, updatingPlan: UpdatingPlan, fromSubquery) if !fromSubquery =>
-        unnestRightUnary(apply, lhs, updatingPlan)
-    }))
-
-    override def apply(input: AnyRef): AnyRef = instance.apply(input)
   }
 }
 

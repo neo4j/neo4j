@@ -23,9 +23,7 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
-import org.neo4j.cypher.internal.compiler.planner.logical.EagerAnalyzer.unnestEager
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
@@ -393,22 +391,6 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .build()
 
     rewrite(input) should equal(input)
-  }
-
-  test("should unnest Create and multiply cardinality") {
-    val inputBuilder = new LogicalPlanBuilder()
-      .produceResults("n", "m").withCardinality(100).withProvidedOrder(po_n)
-      .apply().withCardinality(100).withProvidedOrder(po_n)
-      .|.create(createNode("m")).withCardinality(1)
-      .|.argument("n").withCardinality(1)
-      .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
-
-    inputBuilder shouldRewriteToPlanWithAttributes (
-      new LogicalPlanBuilder()
-        .produceResults("n", "m").withCardinality(100).withProvidedOrder(po_n)
-        .create(createNode("m")).withCardinality(100).withProvidedOrder(po_n)
-        .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
-    )
   }
 
   test("should unnest ForeachApply and multiply cardinality") {
@@ -779,8 +761,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     idGen: IdGen
   ): LogicalPlan = {
     val solveds = new StubSolveds
-    val unnest = unnestEager(solveds, cardinalities, providedOrders, Attributes(idGen))
-      .andThen(unnestApply(solveds, cardinalities, providedOrders, Attributes(idGen)))
+    val unnest = unnestApply(solveds, cardinalities, providedOrders, Attributes(idGen))
 
     p.endoRewrite(unnest)
   }
