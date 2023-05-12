@@ -43,8 +43,10 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.runtime.ast.ConstantExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
+import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
 import org.neo4j.cypher.internal.runtime.expressionVariableAllocation.Result
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.attribution.IdGen
@@ -83,7 +85,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
 
     // then
     nSlots should be(1)
-    newPlan should be(projectPlan(withExpressionVariables(expr, ExpressionVariable(0, "x"))))
+    newPlan should be(projectPlan(withExpressionVariables(expr, TemporaryExpressionVariable(0, "x"))))
   }
 
   test("should un-cache cached properties") {
@@ -105,7 +107,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(1)
     newPlan should be(projectPlan(withExpressionVariables(
       exprParser.parse("[ x IN [1,2,3] WHERE x.foo > 0 | x.foo + 1]"),
-      ExpressionVariable(0, "x")
+      TemporaryExpressionVariable(0, "x")
     )))
   }
 
@@ -122,9 +124,9 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     // then
     nSlots should be(1)
     newPlan should be(projectPlan(
-      withExpressionVariables(exprX, ExpressionVariable(0, "x")),
-      withExpressionVariables(exprY, ExpressionVariable(0, "y")),
-      withExpressionVariables(exprZ, ExpressionVariable(0, "z"))
+      withExpressionVariables(exprX, TemporaryExpressionVariable(0, "x")),
+      withExpressionVariables(exprY, TemporaryExpressionVariable(0, "y")),
+      withExpressionVariables(exprZ, TemporaryExpressionVariable(0, "z"))
     ))
   }
 
@@ -140,8 +142,8 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(1)
     newPlan should be(projectPlan(withExpressionVariables(
       expr,
-      ExpressionVariable(0, "x"),
-      ExpressionVariable(0, "y")
+      TemporaryExpressionVariable(0, "x"),
+      TemporaryExpressionVariable(0, "y")
     )))
   }
 
@@ -157,8 +159,8 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(2)
     newPlan should be(projectPlan(withExpressionVariables(
       expr,
-      ExpressionVariable(0, "x"),
-      ExpressionVariable(1, "y")
+      TemporaryExpressionVariable(0, "x"),
+      TemporaryExpressionVariable(1, "y")
     )))
   }
 
@@ -174,9 +176,9 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(2)
     newPlan should be(projectPlan(withExpressionVariables(
       expr,
-      ExpressionVariable(0, "x"),
-      ExpressionVariable(1, "y"),
-      ExpressionVariable(1, "z")
+      TemporaryExpressionVariable(0, "x"),
+      TemporaryExpressionVariable(1, "y"),
+      TemporaryExpressionVariable(1, "z")
     )))
   }
 
@@ -194,10 +196,10 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     // then
     nSlots should be(1)
     newPlan should be(Selection(
-      List(withExpressionVariables(exprZ, ExpressionVariable(0, "z"))),
+      List(withExpressionVariables(exprZ, TemporaryExpressionVariable(0, "z"))),
       Selection(
-        List(withExpressionVariables(exprY, ExpressionVariable(0, "y"))),
-        Selection(List(withExpressionVariables(exprX, ExpressionVariable(0, "x"))), Argument())
+        List(withExpressionVariables(exprY, TemporaryExpressionVariable(0, "y"))),
+        Selection(List(withExpressionVariables(exprX, TemporaryExpressionVariable(0, "x"))), Argument())
       )
     ))
   }
@@ -240,11 +242,11 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(3)
     newPlan should be(projectPlan(withExpressionVariables(
       outerExpression,
-      ExpressionVariable(0, "y"),
-      ExpressionVariable(1, "acc"),
-      ExpressionVariable(2, "x")
+      TemporaryExpressionVariable(0, "y"),
+      TemporaryExpressionVariable(1, "acc"),
+      TemporaryExpressionVariable(2, "x")
     )))
-    availableExpressionVars(nestedPlan.id) should be(Seq(ExpressionVariable(0, "y")))
+    availableExpressionVars(nestedPlan.id) should be(Seq(TemporaryExpressionVariable(0, "y")))
   }
 
   test("should replace expressions in nested-nested plans") {
@@ -267,15 +269,15 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(4)
     newPlan should be(projectPlan(withExpressionVariables(
       outerExpression,
-      ExpressionVariable(0, "y"),
-      ExpressionVariable(1, "yNested"),
-      ExpressionVariable(2, "acc"),
-      ExpressionVariable(3, "x")
+      TemporaryExpressionVariable(0, "y"),
+      TemporaryExpressionVariable(1, "yNested"),
+      TemporaryExpressionVariable(2, "acc"),
+      TemporaryExpressionVariable(3, "x")
     )))
 
-    availableExpressionVars(nestedPlan.id) should be(Seq(ExpressionVariable(0, "y")))
+    availableExpressionVars(nestedPlan.id) should be(Seq(TemporaryExpressionVariable(0, "y")))
     availableExpressionVars(nestedNestedPlan.id) should contain theSameElementsAs
-      Seq(ExpressionVariable(0, "y"), ExpressionVariable(1, "yNested"))
+      Seq(TemporaryExpressionVariable(0, "y"), TemporaryExpressionVariable(1, "yNested"))
   }
 
   test("nested plan with no available expression variables") {
@@ -291,7 +293,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(1)
     newPlan should be(projectPlan(
       nestedPlanExpression,
-      withExpressionVariables(listComprehension, ExpressionVariable(0, "x"))
+      withExpressionVariables(listComprehension, TemporaryExpressionVariable(0, "x"))
     ))
     availableExpressionVars(nestedPlanExpression.plan.id) should be(Seq.empty)
   }
@@ -308,8 +310,8 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(2)
     newPlan should be(projectPlan(withExpressionVariables(
       expr,
-      ExpressionVariable(0, "acc"),
-      ExpressionVariable(1, "x")
+      TemporaryExpressionVariable(0, "acc"),
+      TemporaryExpressionVariable(1, "x")
     )))
   }
 
@@ -323,7 +325,7 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
 
     // then
     nSlots should be(1)
-    newPlan should be(projectPlan(withExpressionVariables(expr, ExpressionVariable(0, "x"))))
+    newPlan should be(projectPlan(withExpressionVariables(expr, TemporaryExpressionVariable(0, "x"))))
   }
 
   test("should replace var-length expression variables") {
@@ -337,12 +339,17 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
 
     // then
     nSlots should be(4)
-    val tempNode = ExpressionVariable(0, "tempNode")
-    val tempEdge = ExpressionVariable(1, "tempEdge")
+    val tempNode = TemporaryExpressionVariable(0, "tempNode")
+    val tempEdge = TemporaryExpressionVariable(1, "tempEdge")
     newPlan should be(varLengthPlan(
       tempNode,
       tempEdge,
-      withExpressionVariables(nodePred, tempNode, ExpressionVariable(2, "acc"), ExpressionVariable(3, "z")),
+      withExpressionVariables(
+        nodePred,
+        tempNode,
+        TemporaryExpressionVariable(2, "acc"),
+        TemporaryExpressionVariable(3, "z")
+      ),
       withExpressionVariables(edgePred, tempEdge)
     ))
   }
@@ -358,12 +365,17 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
 
     // then
     nSlots should be(4)
-    val tempNode = ExpressionVariable(0, "tempNode")
-    val tempEdge = ExpressionVariable(1, "tempEdge")
+    val tempNode = TemporaryExpressionVariable(0, "tempNode")
+    val tempEdge = TemporaryExpressionVariable(1, "tempEdge")
     newPlan should be(pruningVarLengthPlan(
       tempNode,
       tempEdge,
-      withExpressionVariables(nodePred, tempNode, ExpressionVariable(2, "acc"), ExpressionVariable(3, "z")),
+      withExpressionVariables(
+        nodePred,
+        tempNode,
+        TemporaryExpressionVariable(2, "acc"),
+        TemporaryExpressionVariable(3, "z")
+      ),
       withExpressionVariables(edgePred, tempEdge)
     ))
   }
@@ -380,10 +392,33 @@ class ExpressionVariableAllocationTest extends CypherFunSuite with AstConstructi
     nSlots should be(2)
     newPlan should be(Selection(
       List(
-        RuntimeConstant(ExpressionVariable(0, "A"), trueLiteral),
-        RuntimeConstant(ExpressionVariable(1, "B"), falseLiteral)
+        RuntimeConstant(ConstantExpressionVariable(0, "A"), trueLiteral),
+        RuntimeConstant(ConstantExpressionVariable(1, "B"), falseLiteral)
       ),
       Argument()
+    ))
+  }
+
+  test("should handle a combination of constants and temporary variables") {
+    // given
+    val expr1 = exprParser.parse("[ x IN [1,2,3] | x + 1]")
+    val expr2 = RuntimeConstant(varFor("A"), trueLiteral)
+    val expr3 = exprParser.parse("[ y IN [1,2,3] | y + 1]")
+    val expr4 = RuntimeConstant(varFor("B"), falseLiteral)
+    val expr5 = exprParser.parse("[ z IN [1,2,3] | z + 1]")
+    val plan = projectPlan(expr1, expr2, expr3, expr4, expr5)
+
+    // when
+    val Result(newPlan, nSlots, _) = expressionVariableAllocation.allocate(plan)
+
+    // then
+    nSlots should be(3)
+    newPlan should be(projectPlan(
+      withExpressionVariables(expr1, TemporaryExpressionVariable(2, "x")),
+      withExpressionVariables(expr2, ConstantExpressionVariable(1, "A")),
+      withExpressionVariables(expr3, TemporaryExpressionVariable(2, "y")),
+      withExpressionVariables(expr4, ConstantExpressionVariable(0, "B")),
+      withExpressionVariables(expr5, TemporaryExpressionVariable(2, "z"))
     ))
   }
 

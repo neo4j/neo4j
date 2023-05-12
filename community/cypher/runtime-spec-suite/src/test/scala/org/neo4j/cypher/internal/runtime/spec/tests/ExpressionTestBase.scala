@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.expressions.HasALabel
 import org.neo4j.cypher.internal.expressions.HasALabelOrType
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
 import org.neo4j.cypher.internal.runtime.spec.Edition
 import org.neo4j.cypher.internal.runtime.spec.LogicalQueryBuilder
 import org.neo4j.cypher.internal.runtime.spec.RuntimeTestSuite
@@ -1144,5 +1145,24 @@ trait ExpressionWithTxStateChangesTests[CONTEXT <: RuntimeContext] {
 
     // then
     runtimeResult should beColumns("hasLabel").withRows(singleColumn(Seq(false)))
+  }
+
+  test("combining scoped expression and runtime constant") {
+    // given
+    val size = 1024
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .filterExpression(and(
+        allInList(varFor("a1"), listOf(varFor("x")), trueLiteral),
+        RuntimeConstant(varFor("foo"), trueLiteral)
+      ))
+      .input(variables = Seq("x"))
+      .build()
+    val runtimeResult = execute(logicalQuery, runtime, inputValues((1 to size).map(i => Array[Any](i)): _*))
+
+    // then
+    runtimeResult should beColumns("x").withRows(rowCount(size))
   }
 }

@@ -725,8 +725,8 @@ case class CommunityExpressionConverter(
 
   private def variable(e: internal.expressions.LogicalVariable): VariableCommand =
     e match {
-      case ExpressionVariable(offset, name) => commands.expressions.ExpressionVariable(offset, name)
-      case x                                => commands.expressions.Variable(x.name)
+      case e: ExpressionVariable => commands.expressions.ExpressionVariable(e.offset, e.name)
+      case x                     => commands.expressions.Variable(x.name)
     }
 
   private def inequalityExpression(

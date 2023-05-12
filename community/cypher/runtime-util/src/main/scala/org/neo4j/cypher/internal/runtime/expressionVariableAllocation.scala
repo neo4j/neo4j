@@ -30,8 +30,10 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.logical.plans.PruningVarExpand
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.runtime.ast.ConstantExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.ExpressionVariable
 import org.neo4j.cypher.internal.runtime.ast.RuntimeConstant
+import org.neo4j.cypher.internal.runtime.ast.TemporaryExpressionVariable
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildrenNewAccForSiblings
@@ -63,6 +65,11 @@ object expressionVariableAllocation {
 
     val globalMapping = mutable.Map[String, ExpressionVariable]()
     val availableExpressionVars = new AvailableExpressionVariables
+    // We reserve the first number of slots for runtime constants
+    val numberOfConstantVariables = input.folder.treeCount {
+      case _: RuntimeConstant => true
+    }
+    var constantCounter = 0
 
     def allocateVariables(
       outerVars: List[ExpressionVariable],
@@ -70,11 +77,17 @@ object expressionVariableAllocation {
     ): List[ExpressionVariable] = {
       var innerVars = outerVars
       for (variable <- variables) {
-        val nextVariable = ExpressionVariable(innerVars.length, variable.name)
+        val nextVariable = TemporaryExpressionVariable(numberOfConstantVariables + innerVars.length, variable.name)
         globalMapping += variable.name -> nextVariable
         innerVars = nextVariable :: innerVars
       }
       innerVars
+    }
+
+    def allocateConstant(variable: LogicalVariable): Unit = {
+      val nextVariable = ConstantExpressionVariable(constantCounter, variable.name)
+      constantCounter += 1
+      globalMapping += variable.name -> nextVariable
     }
 
     // Note: we use the treeFold to keep track of the expression variables in scope
@@ -115,8 +128,8 @@ object expressionVariableAllocation {
 
       case x: RuntimeConstant =>
         outerVars => {
-          val innerVars = allocateVariables(outerVars, Seq(x.variable))
-          TraverseChildren(innerVars)
+          allocateConstant(x.variable)
+          TraverseChildren(outerVars)
         }
     }
 
