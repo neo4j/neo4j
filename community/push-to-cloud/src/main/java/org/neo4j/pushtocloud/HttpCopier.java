@@ -22,6 +22,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.neo4j.cli.CommandFailedException;
+import org.neo4j.cli.ExecutionContext;
+import org.neo4j.internal.helpers.progress.ProgressListener;
+import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.time.Clocks;
+import org.neo4j.time.SystemNanoClock;
 
 import java.io.BufferedInputStream;
 import java.io.Closeable;
@@ -37,12 +43,6 @@ import java.util.Base64;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.cli.CommandFailedException;
-import org.neo4j.cli.ExecutionContext;
-import org.neo4j.internal.helpers.progress.ProgressListener;
-import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.SystemNanoClock;
 import static java.lang.Long.min;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_ACCEPTED;
@@ -199,11 +199,13 @@ public class HttpCopier implements PushToCloudCommand.Copier
     public void copy( boolean verbose, String consoleURL, String boltUri, PushToCloudCommand.Source source, boolean deleteSourceAfterImport,
                       String bearerToken )
     {
+        String version = getClass().getPackage().getImplementationVersion();
+        String bearerTokenHeader = "Bearer " + bearerToken;
         try
         {
-            String bearerTokenHeader = "Bearer " + bearerToken;
             long crc32Sum = source.crc32Sum();
-            URL signedURL = retryOnUnavailable( () -> initiateCopy( verbose, safeUrl( consoleURL + "/import" ), crc32Sum, source.size(), bearerTokenHeader ) );
+            URL signedURL = retryOnUnavailable( () -> initiateCopy( verbose, safeUrl( consoleURL + "/import" ),
+                    crc32Sum, source.size(), bearerTokenHeader, version ) );
             URL uploadLocation = retryOnUnavailable( () -> initiateResumableUpload( verbose, signedURL ) );
             long sourceLength = ctx.fs().getFileSize( source.path() );
 
@@ -489,7 +491,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
     /**
      * Communication with Neo4j's cloud console, resulting in some signed URI to do the actual upload to.
      */
-    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, long size, String bearerToken ) throws IOException
+    private URL initiateCopy( boolean verbose, URL importURL, long crc32Sum, long size, String bearerToken, String version ) throws IOException
     {
         HttpURLConnection connection = (HttpURLConnection) importURL.openConnection();
         try ( Closeable c = connection::disconnect )
@@ -499,6 +501,7 @@ public class HttpCopier implements PushToCloudCommand.Copier
             connection.setRequestProperty( "Content-Type", "application/json" );
             connection.setRequestProperty( "Authorization", bearerToken );
             connection.setRequestProperty( "Accept", "application/json" );
+            connection.setRequestProperty( "Neo4j-Version", version );
             connection.setDoOutput( true );
 
             try ( OutputStream postData = connection.getOutputStream() )
