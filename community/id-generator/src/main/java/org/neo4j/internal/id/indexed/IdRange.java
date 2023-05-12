@@ -51,10 +51,8 @@ class IdRange {
 
     static final int BITSET_AND_MASK = BITSET_SIZE - 1;
     static final int BITSET_SHIFT = log2floor(BITSET_SIZE);
-    static final byte ADDITION_COMMIT = 1 << BITSET_COMMIT;
-    static final byte ADDITION_REUSE = 1 << BITSET_REUSE;
-    static final byte ADDITION_RESERVED = 1 << BITSET_RESERVED;
-    static final byte ADDITION_ALL = ADDITION_COMMIT | ADDITION_REUSE | ADDITION_RESERVED;
+    private static final byte ADDITION_MARKER = 0b111;
+    private static final byte CLEAR_ADDITION_MARKER = 0b011;
 
     private long generation;
     private byte addition;
@@ -110,13 +108,9 @@ class IdRange {
         }
     }
 
-    void clear(long generation, boolean allAdditions) {
-        clear(generation, allAdditions ? ADDITION_ALL : 0);
-    }
-
-    void clear(long generation, byte addition) {
+    void clear(long generation, boolean addition) {
         this.generation = generation;
-        this.addition = addition;
+        this.addition = (byte) (addition ? ADDITION_MARKER : 0);
         fill(bitSets[BITSET_COMMIT], 0);
         fill(bitSets[BITSET_REUSE], 0);
         fill(bitSets[BITSET_RESERVED], 0);
@@ -124,6 +118,14 @@ class IdRange {
 
     private static boolean isAddition(byte addition, int bitSet) {
         return (addition & (1 << bitSet)) != 0;
+    }
+
+    void clear(long generation) {
+        this.generation = generation;
+        this.addition = CLEAR_ADDITION_MARKER;
+        fill(bitSets[BITSET_COMMIT], 0);
+        fill(bitSets[BITSET_REUSE], 0);
+        fill(bitSets[BITSET_RESERVED], 0);
     }
 
     long getGeneration() {

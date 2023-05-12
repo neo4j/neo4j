@@ -28,7 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
 
 /**
- * Multi Producer Multiple Consumers FIFO queue.
+ * Single Producer Multiple Consumers FIFO queue.
  */
 class MpmcLongQueue implements ConcurrentLongQueue {
     private static final long EMPTY_VALUE = -1;

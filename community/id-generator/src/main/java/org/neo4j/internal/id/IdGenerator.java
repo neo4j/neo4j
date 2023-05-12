@@ -247,7 +247,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
 
         void markReserved(long id, int numberOfIds);
 
-        void markUncached(long id, int numberOfIds);
+        void markUnreserved(long id, int numberOfIds);
 
         @Override
         void close();
@@ -255,7 +255,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         class Delegate implements ContextualMarker {
             private final ContextualMarker actual;
 
-            public Delegate(ContextualMarker actual) {
+            Delegate(ContextualMarker actual) {
                 this.actual = actual;
             }
 
@@ -270,8 +270,8 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
             }
 
             @Override
-            public void markUncached(long id, int numberOfIds) {
-                actual.markUncached(id, numberOfIds);
+            public void markUnreserved(long id, int numberOfIds) {
+                actual.markUnreserved(id, numberOfIds);
             }
 
             @Override
@@ -419,7 +419,7 @@ public interface IdGenerator extends IdSequence, Closeable, ConsistencyCheckable
         public void markReserved(long id, int numberOfIds) {}
 
         @Override
-        public void markUncached(long id, int numberOfIds) {}
+        public void markUnreserved(long id, int numberOfIds) {}
 
         @Override
         public void close() {}

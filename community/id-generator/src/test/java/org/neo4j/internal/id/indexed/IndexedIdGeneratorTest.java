@@ -31,11 +31,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -237,9 +234,9 @@ class IndexedIdGeneratorTest {
         idGenerator.maintenance(NULL_CONTEXT);
 
         // then
-        assertThat(idGenerator.nextConsecutiveIdRange(4, true, NULL_CONTEXT)).isEqualTo(2);
+        assertThat(idGenerator.nextConsecutiveIdRange(4, true, NULL_CONTEXT)).isEqualTo(0);
         assertThat(idGenerator.nextConsecutiveIdRange(4, true, NULL_CONTEXT)).isEqualTo(6);
-        assertThat(idGenerator.nextConsecutiveIdRange(2, true, NULL_CONTEXT)).isEqualTo(0);
+        assertThat(idGenerator.nextConsecutiveIdRange(2, true, NULL_CONTEXT)).isEqualTo(4);
     }
 
     @Test
@@ -811,8 +808,7 @@ class IndexedIdGeneratorTest {
         }
         try (var marker = idGenerator.contextualMarker(NULL_CONTEXT)) {
             marker.markFree(allocatedHighId);
-            // IDs marked as free can go directly to cache w/o getting marked as free
-            verify(monitor, never()).markedAsFree(allocatedHighId, 1);
+            verify(monitor).markedAsFree(allocatedHighId, 1);
         }
 
         idGenerator.maintenance(NULL_CONTEXT);
@@ -1149,13 +1145,19 @@ class IndexedIdGeneratorTest {
     void shouldPrioritizeFreelistOnConcurrentAllocation() throws Exception {
         // given
         Barrier.Control barrier = new Barrier.Control();
+        AtomicInteger numReserved = new AtomicInteger();
         AtomicInteger numCached = new AtomicInteger();
         AtomicBoolean enabled = new AtomicBoolean(true);
         IndexedIdGenerator.Monitor monitor = new IndexedIdGenerator.Monitor.Adapter() {
             @Override
+            public void markedAsReserved(long markedId, int numberOfIds) {
+                numReserved.incrementAndGet();
+            }
+
+            @Override
             public void cached(long cachedId, int numberOfIds) {
                 int cached = numCached.incrementAndGet();
-                if (cached == IndexedIdGenerator.SMALL_CACHE_CAPACITY && enabled.get()) {
+                if (cached == numReserved.get() && enabled.get()) {
                     enabled.set(false);
                     barrier.reached();
                 }
@@ -1258,8 +1260,7 @@ class IndexedIdGeneratorTest {
         // then
         long postId = idGenerator.nextConsecutiveIdRange(8, true, NULL_CONTEXT);
         assertThat(id).isEqualTo(128);
-        // the skipped ID ends up in the cache and will therefore be handed out here
-        assertThat(postId).isEqualTo(64 + 32 + 16);
+        assertThat(postId).isEqualTo(128 + 32);
     }
 
     private void assertOperationPermittedInReadOnlyMode(Function<IndexedIdGenerator, Executable> operation)
@@ -1384,7 +1385,6 @@ class IndexedIdGeneratorTest {
         markUsed(id);
         markDeleted(id);
         markFree(id);
-        idGenerator.clearCache(NULL_CONTEXT);
 
         // when
         try (var t2 = new OtherThreadExecutor("T2")) {
@@ -1394,71 +1394,6 @@ class IndexedIdGeneratorTest {
             assertThat(id2).isGreaterThan(id);
             barrier.release();
             assertThat(nextIdFuture.get()).isEqualTo(id);
-        }
-    }
-
-    @Test
-    void shouldPlaceFreedIdDirectlyInCacheWhenFreedFitsInCache() throws IOException {
-        // given
-        var monitor = mock(IndexedIdGenerator.Monitor.class);
-        var slotSizes = new int[] {1, 2, 4, 8};
-        open(Config.defaults(), monitor, false, IdSlotDistribution.evenSlotDistribution(IDS_PER_ENTRY, slotSizes));
-        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-        for (var size : slotSizes) {
-            var id = idGenerator.nextConsecutiveIdRange(size, true, NULL_CONTEXT);
-            markUsed(id, size);
-            markDeleted(id, size);
-
-            // when
-            markFree(id, size);
-
-            // then
-            verify(monitor, never()).markedAsFree(anyLong(), anyInt());
-            var cachedId = idGenerator.nextConsecutiveIdRange(size, true, NULL_CONTEXT);
-            assertThat(cachedId).isEqualTo(id);
-        }
-    }
-
-    @Test
-    void shouldMarkAsFreeWhenCannotFitInCache() throws IOException {
-        // given
-        var monitor = mock(IndexedIdGenerator.Monitor.class);
-        var slotSizes = new int[] {1, 2, 4, 8};
-        open(Config.defaults(), monitor, false, IdSlotDistribution.evenSlotDistribution(IDS_PER_ENTRY, slotSizes));
-        idGenerator.start(NO_FREE_IDS, NULL_CONTEXT);
-        long[] initialCacheFillingIds = new long[10_000];
-        for (int i = 0; i < initialCacheFillingIds.length; i++) {
-            initialCacheFillingIds[i] = idGenerator.nextId(NULL_CONTEXT);
-        }
-        long[] testableIds = new long[slotSizes.length];
-        for (int i = 0; i < testableIds.length; i++) {
-            testableIds[i] = idGenerator.nextConsecutiveIdRange(slotSizes[i], true, NULL_CONTEXT);
-        }
-        try (var marker = idGenerator.transactionalMarker(NULL_CONTEXT)) {
-            for (var id : initialCacheFillingIds) {
-                marker.markUsed(id);
-                marker.markDeleted(id);
-            }
-        }
-        try (var marker = idGenerator.contextualMarker(NULL_CONTEXT)) {
-            for (var id : initialCacheFillingIds) {
-                marker.markFree(id);
-            }
-        }
-        idGenerator.maintenance(NULL_CONTEXT);
-
-        reset(monitor);
-        for (var i = 0; i < slotSizes.length; i++) {
-            var size = slotSizes[i];
-            var id = testableIds[i];
-            markUsed(id, size);
-            markDeleted(id, size);
-
-            // when
-            markFree(id, size);
-
-            // then
-            verify(monitor).markedAsFree(id, size);
         }
     }
 

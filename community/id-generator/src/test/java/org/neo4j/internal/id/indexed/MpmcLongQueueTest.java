@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import static java.lang.Integer.numberOfLeadingZeros;
 import static java.util.Arrays.stream;
 import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -83,10 +84,10 @@ class MpmcLongQueueTest {
     @Test
     void randomizedConcurrent() throws Exception {
         // given
-        final int producers = Math.max(2, Runtime.getRuntime().availableProcessors() / 2);
+        final int producers = Math.max(2, Runtime.getRuntime().availableProcessors());
         final int consumers = producers;
         final int itemsPerConsumer = 10000;
-        final MpmcLongQueue queue = new MpmcLongQueue(256);
+        final MpmcLongQueue queue = new MpmcLongQueue(1 << (32 - numberOfLeadingZeros(consumers * itemsPerConsumer)));
         final long[][] inputs = new long[producers][];
         for (int i = 0; i < producers; i++) {
             var input = range(i * itemsPerConsumer, (i + 1) * itemsPerConsumer).toArray();

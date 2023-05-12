@@ -21,7 +21,6 @@ package org.neo4j.internal.id.indexed;
 
 import static org.neo4j.internal.id.IdValidator.hasReservedIdInRange;
 import static org.neo4j.internal.id.IdValidator.isReservedId;
-import static org.neo4j.internal.id.indexed.IdRange.ADDITION_REUSE;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_COMMIT;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_RESERVED;
 import static org.neo4j.internal.id.indexed.IdRange.BITSET_REUSE;
@@ -178,13 +177,10 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     }
 
     @Override
-    public void markUncached(long id, int numberOfIds) {
+    public void markUnreserved(long id, int numberOfIds) {
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
-            // Mark free:1, reserved:0
-            prepareRange(id, ADDITION_REUSE);
-            var idOffset = idOffset(id);
-            value.setBits(BITSET_REUSE, idOffset, numberOfIds);
-            value.setBits(BITSET_RESERVED, idOffset, numberOfIds);
+            prepareRange(id, false);
+            value.setBits(BITSET_RESERVED, idOffset(id), numberOfIds);
             writer.merge(key, value, merger);
             monitor.markedAsUnreserved(id);
         }
@@ -221,7 +217,7 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
         bridgeGapBetweenHighestWrittenIdAndThisId(id, numberOfIds, true);
         if (!hasReservedIdInRange(id, id + numberOfIds)) {
             key.setIdRangeIdx(idRangeIndex(id));
-            value.clear(generation, ADDITION_REUSE);
+            value.clear(generation);
             var idOffset = idOffset(id);
             value.setBits(BITSET_REUSE, idOffset, numberOfIds);
             value.setBits(BITSET_RESERVED, idOffset, numberOfIds);
@@ -233,11 +229,6 @@ class IdRangeMarker implements IdGenerator.TransactionalMarker, IdGenerator.Cont
     }
 
     private void prepareRange(long id, boolean addition) {
-        key.setIdRangeIdx(idRangeIndex(id));
-        value.clear(generation, addition);
-    }
-
-    private void prepareRange(long id, byte addition) {
         key.setIdRangeIdx(idRangeIndex(id));
         value.clear(generation, addition);
     }

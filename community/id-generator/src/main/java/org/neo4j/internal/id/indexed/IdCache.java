@@ -19,7 +19,6 @@
  */
 package org.neo4j.internal.id.indexed;
 
-import static java.lang.Integer.min;
 import static org.apache.commons.lang3.ArrayUtils.EMPTY_LONG_ARRAY;
 import static org.neo4j.internal.id.indexed.FreeIdScanner.MAX_SLOT_SIZE;
 import static org.neo4j.internal.id.indexed.IndexedIdGenerator.NO_ID;
@@ -27,6 +26,7 @@ import static org.neo4j.util.Preconditions.checkArgument;
 
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.eclipse.collections.api.list.primitive.LongList;
 import org.neo4j.internal.id.IdGenerator;
 import org.neo4j.internal.id.IdSlotDistribution;
 import org.neo4j.io.pagecache.context.CursorContext;
@@ -43,7 +43,6 @@ class IdCache {
     private final AtomicInteger size = new AtomicInteger();
     private final int singleIdSlotIndex;
     private final boolean singleSlotted;
-    private final int[] slotIndexBySize;
 
     IdCache(IdSlotDistribution.Slot... slots) {
         this.queues = new ConcurrentLongQueue[slots.length];
@@ -65,16 +64,6 @@ class IdCache {
         }
         singleSlotted = isSingleSlotted();
         singleIdSlotIndex = findSingleSlotIndex(slotSizes);
-        this.slotIndexBySize = buildSlotIndexBySize(slotSizes);
-    }
-
-    static int[] buildSlotIndexBySize(int[] slotSizes) {
-        int[] slotIndexBySize = new int[slotSizes[slotSizes.length - 1]];
-        for (int i = 0; i < slotSizes.length; i++) {
-            Arrays.fill(slotIndexBySize, i == 0 ? 0 : slotSizes[i - 1] - 1, slotSizes[i] - 1, i - 1);
-        }
-        slotIndexBySize[slotIndexBySize.length - 1] = slotSizes.length - 1;
-        return slotIndexBySize;
     }
 
     private boolean isSingleSlotted() {
@@ -95,28 +84,21 @@ class IdCache {
         throw new IllegalArgumentException("Must have a slot for single IDs");
     }
 
-    private int largestSlotIndex(int slotSize) {
-        return slotIndexBySize[min(slotSize, slotIndexBySize.length) - 1];
-    }
-
-    int offer(long id, int numberOfIds, IndexedIdGenerator.Monitor monitor) {
-        int slotIndex = largestSlotIndex(numberOfIds);
-        int acceptedSlots = 0;
-        while (numberOfIds > 0 && slotIndex >= 0) {
-            boolean added = queues[slotIndex].offer(id);
-            if (added) {
-                int slotSize = slotSizes[slotIndex];
-                acceptedSlots += slotSize;
-                numberOfIds -= slotSize;
-                slotIndex = numberOfIds > 0 ? largestSlotIndex(numberOfIds) : -1;
+    void offer(PendingIdQueue pendingItemsToCache, IndexedIdGenerator.Monitor monitor) {
+        for (int i = 0; i < slotSizes.length; i++) {
+            int slotIndex = i;
+            LongList source = pendingItemsToCache.queues[slotIndex];
+            ConcurrentLongQueue target = queues[slotIndex];
+            source.forEach(id -> {
+                if (!target.offer(id)) {
+                    throw new IllegalStateException(
+                            "This really should not happen, we knew the max available space there were for caching ids"
+                                    + " and now the cache claims to have less than that?");
+                }
                 size.incrementAndGet();
-                monitor.cached(id, slotSize);
-                id += slotSize;
-            } else {
-                slotIndex--;
-            }
+                monitor.cached(id, slotSizes[slotIndex]);
+            });
         }
-        return acceptedSlots;
     }
 
     long takeOrDefault(long defaultValue) {
@@ -127,27 +109,19 @@ class IdCache {
         return id;
     }
 
-    long takeOrDefault(
-            long defaultValue, int numberOfIds, IndexedIdGenerator.Monitor monitor, IdRangeConsumer wasteNotifier) {
+    long takeOrDefault(long defaultValue, int numberOfIds, IdRangeConsumer wasteNotifier) {
         long id = defaultValue;
         for (int slotIndex = lowestSlotIndexCapableOf(numberOfIds);
                 id == defaultValue && slotIndex < slotSizes.length;
                 slotIndex++) {
             id = queues[slotIndex].takeOrDefault(defaultValue);
             if (id != NO_ID && slotSizes[slotIndex] != numberOfIds) {
-                var wastedId = id + numberOfIds;
-                var wastedNumberOfIds = slotSizes[slotIndex] - numberOfIds;
-                // We allocated an ID from a slot that was larger than was requested.
-                // Try to cache the waste into other appropriate slots first.
-                var accepted = offer(wastedId, wastedNumberOfIds, monitor);
-                if (accepted < wastedNumberOfIds) {
-                    // Some (or all) of this waste couldn't be (re)cached. These IDs are currently either marked as
-                    // free/reserved or marked only as deleted (if they got into the cache via the cache short-cut),
-                    // but they're no longer cached. If we do nothing then these additional IDs will remain unusable
-                    // until restart. Tell the ID scanner about the these so that it can sort those properly up
-                    // the next time it does scan work.
-                    wasteNotifier.accept(wastedId + accepted, wastedNumberOfIds - accepted);
-                }
+                int waste = slotSizes[slotIndex] - numberOfIds;
+                // We allocated an ID from a slot that was larger than was requested, leaving some of these IDs marked
+                // as reserved,
+                // but no longer cached. If we do nothing then these additional IDs will remain unusable until restart.
+                // Tell the ID scanner about the remainder so that it can pick it up the next time it does scan work.
+                wasteNotifier.accept(id + numberOfIds, waste);
             }
         }
         if (id != defaultValue) {
@@ -234,7 +208,7 @@ class IdCache {
 
     @Override
     public String toString() {
-        StringBuilder builder = new StringBuilder("IdCache{size:" + size + ", availableSpace:");
+        StringBuilder builder = new StringBuilder("IdCache{availableSpace:" + size + ", ");
         for (int i = 0; i < slotSizes.length; i++) {
             builder.append(slotSizes[i])
                     .append(":")
