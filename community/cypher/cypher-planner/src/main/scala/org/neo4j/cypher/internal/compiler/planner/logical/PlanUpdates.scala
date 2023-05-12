@@ -347,7 +347,7 @@ case object PlanUpdates extends UpdatesPlanner {
     val read = mergeRead(innerContext)
     // If we are MERGEing on relationships, we need to lock nodes before matching again. Otherwise, we are done
     val nodesToLock = matchGraph.patternNodes intersect matchGraph.argumentIds
-    producer.planApply(
+    producer.planMergeApply(
       source,
       producer.planMerge(
         read,

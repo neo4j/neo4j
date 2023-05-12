@@ -860,6 +860,17 @@ case class LogicalPlanProducer(
     annotate(plan, solved, providedOrder, context)
   }
 
+  def planMergeApply(left: LogicalPlan, right: Merge, context: LogicalPlanningContext): LogicalPlan = {
+    val lhsSolved = solveds.get(left.id).asSinglePlannerQuery
+    val rhsSolved = solveds.get(right.id).asSinglePlannerQuery
+    val solved =
+      lhsSolved.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(rhsSolved.queryGraph.mutatingPatterns)))
+
+    val plan = Apply(left, right)
+    val providedOrder = providedOrderOfApply(left, right, context.settings.executionModel)
+    annotate(plan, solved, providedOrder, context)
+  }
+
   def planSubquery(
     left: LogicalPlan,
     right: LogicalPlan,
@@ -2481,7 +2492,8 @@ case class LogicalPlanProducer(
   }
 
   def planCreate(inner: LogicalPlan, pattern: CreatePattern, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern: CreatePattern, rewrittenInner) =
       SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = plans.Create(rewrittenInner, rewrittenPattern.commands)
@@ -2557,7 +2569,8 @@ case class LogicalPlanProducer(
   }
 
   def planDeleteNode(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(delete)))
     val (rewrittenDelete, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, delete, context)
     val plan =
       if (delete.forced) {
@@ -2574,7 +2587,8 @@ case class LogicalPlanProducer(
     delete: DeleteExpression,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(delete)))
     val (rewrittenDelete, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, delete, context)
     val plan = DeleteRelationship(rewrittenInner, rewrittenDelete.expression)
     val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
@@ -2583,7 +2597,8 @@ case class LogicalPlanProducer(
 
   def planDeletePath(inner: LogicalPlan, delete: DeleteExpression, context: LogicalPlanningContext): LogicalPlan = {
     // `delete.expression` can only be a PathExpression, ListSubqueryExpressionSolver not needed
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(delete)))
 
     val plan =
       if (delete.forced) {
@@ -2600,7 +2615,8 @@ case class LogicalPlanProducer(
     delete: DeleteExpression,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(delete))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(delete)))
     val (rewrittenDelete, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, delete, context)
     val plan =
       if (delete.forced) {
@@ -2613,7 +2629,8 @@ case class LogicalPlanProducer(
   }
 
   def planSetLabel(inner: LogicalPlan, pattern: SetLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val plan = SetLabels(inner, pattern.idName, pattern.labels.toSet)
     val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
@@ -2624,7 +2641,8 @@ case class LogicalPlanProducer(
     pattern: SetNodePropertyPattern,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = SetNodeProperty(
       rewrittenInner,
@@ -2641,7 +2659,8 @@ case class LogicalPlanProducer(
     pattern: SetNodePropertiesPattern,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = SetNodeProperties(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.items)
     val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
@@ -2653,7 +2672,8 @@ case class LogicalPlanProducer(
     pattern: SetNodePropertiesFromMapPattern,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = SetNodePropertiesFromMap(
       rewrittenInner,
@@ -2670,7 +2690,8 @@ case class LogicalPlanProducer(
     pattern: SetRelationshipPropertyPattern,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = SetRelationshipProperty(
       rewrittenInner,
@@ -2687,7 +2708,8 @@ case class LogicalPlanProducer(
     pattern: SetRelationshipPropertiesPattern,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = SetRelationshipProperties(rewrittenInner, rewrittenPattern.idName, rewrittenPattern.items)
     val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
@@ -2699,7 +2721,8 @@ case class LogicalPlanProducer(
     pattern: SetRelationshipPropertiesFromMapPattern,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = SetRelationshipPropertiesFromMap(
       rewrittenInner,
@@ -2716,7 +2739,8 @@ case class LogicalPlanProducer(
     pattern: SetPropertiesFromMapPattern,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = SetPropertiesFromMap(
       rewrittenInner,
@@ -2729,7 +2753,8 @@ case class LogicalPlanProducer(
   }
 
   def planSetProperty(inner: LogicalPlan, pattern: SetPropertyPattern, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = SetProperty(
       rewrittenInner,
@@ -2746,7 +2771,8 @@ case class LogicalPlanProducer(
     pattern: SetPropertiesPattern,
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenPattern, rewrittenInner) = SubqueryExpressionSolver.ForMappable().solve(inner, pattern, context)
     val plan = SetProperties(rewrittenInner, rewrittenPattern.entityExpression, rewrittenPattern.items)
     val providedOrder = providedOrderOfUpdate(plan, rewrittenInner, context.settings.executionModel)
@@ -2754,7 +2780,8 @@ case class LogicalPlanProducer(
   }
 
   def planRemoveLabel(inner: LogicalPlan, pattern: RemoveLabelPattern, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val plan = RemoveLabels(inner, pattern.idName, pattern.labels.toSet)
     val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
     annotate(plan, solved, providedOrder, context)
@@ -2767,7 +2794,8 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext,
     expression: Expression
   ): LogicalPlan = {
-    val solved = solveds.get(left.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(left.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenExpression, rewrittenLeft) = SubqueryExpressionSolver.ForSingle.solve(left, expression, context)
     val plan = ForeachApply(rewrittenLeft, innerUpdates, pattern.variable, rewrittenExpression)
     val providedOrder = providedOrderOfApply(rewrittenLeft, innerUpdates, context.settings.executionModel)
@@ -2781,7 +2809,8 @@ case class LogicalPlanProducer(
     expression: Expression,
     mutations: collection.Seq[SimpleMutatingPattern]
   ): LogicalPlan = {
-    val solved = solveds.get(inner.id).asSinglePlannerQuery.amendQueryGraph(_.addMutatingPatterns(pattern))
+    val solved =
+      solveds.get(inner.id).asSinglePlannerQuery.updateTailOrSelf(_.amendQueryGraph(_.addMutatingPatterns(pattern)))
     val (rewrittenExpression, rewrittenLeft) = SubqueryExpressionSolver.ForSingle.solve(inner, expression, context)
     val plan = Foreach(rewrittenLeft, pattern.variable, rewrittenExpression, mutations)
     val providedOrder = providedOrderOfUpdate(plan, inner, context.settings.executionModel)
