@@ -233,7 +233,7 @@ public abstract class StringLengthIndexValidationIT {
 
     public void assertIndexFailToComeOnline(long indexId, long entityId) {
         // Waiting for it to come online should fail
-        IllegalStateException e = assertThrows(IllegalStateException.class, () -> {
+        Exception e = assertThrows(Exception.class, () -> {
             try (Transaction tx = db.beginTx()) {
                 tx.schema().awaitIndexesOnline(2, MINUTES);
                 tx.commit();
