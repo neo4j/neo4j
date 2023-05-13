@@ -261,7 +261,9 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
     void shouldWriteAndDeletePidFile() {
         // When
         int resultCode = NeoBootstrapper.start(
-                bootstrapper, "--home-dir", testDirectory.homePath().toString());
+                bootstrapper,
+                withConnectorsOnRandomPortsConfig(
+                        "--home-dir", testDirectory.homePath().toString()));
 
         // Then
         assertEquals(NeoBootstrapper.OK, resultCode);
@@ -281,12 +283,11 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         Path log4jConfig = testDirectory.file("user-logs.xml");
         FileSystemUtils.writeString(testDirectory.getFileSystem(), log4jConfig, "<Configuration><", INSTANCE);
 
-        String[] args = new String[] {
-            "--home-dir",
-            testDirectory.homePath().toString(),
-            "-c",
-            configOption(GraphDatabaseSettings.user_logging_config_path, log4jConfig)
-        };
+        String[] args = withConnectorsOnRandomPortsConfig(
+                "--home-dir",
+                testDirectory.homePath().toString(),
+                "-c",
+                configOption(GraphDatabaseSettings.user_logging_config_path, log4jConfig));
 
         int resultCode = NeoBootstrapper.start(bootstrapper, args);
         assertThat(resultCode).isEqualTo(NeoBootstrapper.INVALID_CONFIGURATION_ERROR_CODE);
@@ -297,7 +298,9 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
     @Test
     void signalParentProcessInNonConsoleMode() {
         int resultCode = NeoBootstrapper.start(
-                bootstrapper, "--home-dir", testDirectory.homePath().toString());
+                bootstrapper,
+                withConnectorsOnRandomPortsConfig(
+                        "--home-dir", testDirectory.homePath().toString()));
         assertThat(resultCode).isEqualTo(NeoBootstrapper.OK);
         assertThat(suppressOutput.getErrorVoice().toString()).contains(String.valueOf(Environment.FULLY_FLEDGED));
     }
@@ -305,7 +308,9 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
     @Test
     void dontSignalParentProcessInConsoleMode() {
         int resultCode = NeoBootstrapper.start(
-                bootstrapper, "--home-dir", testDirectory.homePath().toString(), "--console-mode");
+                bootstrapper,
+                withConnectorsOnRandomPortsConfig(
+                        "--home-dir", testDirectory.homePath().toString(), "--console-mode"));
         assertThat(resultCode).isEqualTo(NeoBootstrapper.OK);
         assertThat(suppressOutput.getErrorVoice().toString()).doesNotContain(String.valueOf(Environment.FULLY_FLEDGED));
     }
@@ -332,12 +337,14 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
 
         int resultCode = NeoBootstrapper.start(
                 bootstrapper,
-                "--home-dir",
-                testDirectory.homePath().toString(),
-                "--console-mode",
-                "-c",
-                configOption(
-                        server_logging_config_path, xmlConfig.toAbsolutePath().toString()));
+                withConnectorsOnRandomPortsConfig(
+                        "--home-dir",
+                        testDirectory.homePath().toString(),
+                        "--console-mode",
+                        "-c",
+                        configOption(
+                                server_logging_config_path,
+                                xmlConfig.toAbsolutePath().toString())));
         assertThat(resultCode).isEqualTo(NeoBootstrapper.OK);
         assertTrue(suppressOutput.getOutputVoice().containsMessage("[ System diagnostics ]"));
         assertTrue(suppressOutput.getOutputVoice().containsMessage("[ System memory information ]"));
@@ -345,7 +352,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
 
     protected abstract DatabaseManagementService newEmbeddedDbms(Path homeDir);
 
-    protected static Map<String, String> connectorsOnRandomPortsConfig() {
+    protected Map<String, String> connectorsOnRandomPortsConfig() {
         return stringMap(
                 HttpConnector.listen_address.name(), "localhost:0",
                 HttpConnector.advertised_address.name(), ":0",
@@ -359,11 +366,11 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
                 BoltConnector.enabled.name(), SettingValueParsers.TRUE);
     }
 
-    static String configOption(Setting<?> setting, String value) {
+    protected static String configOption(Setting<?> setting, String value) {
         return setting.name() + "=" + value;
     }
 
-    static String configOption(Setting<Boolean> setting, boolean value) {
+    protected static String configOption(Setting<Boolean> setting, boolean value) {
         return setting.name() + "=" + (value ? SettingValueParsers.TRUE : FALSE);
     }
 
@@ -371,7 +378,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveWebContainerTestBase {
         return setting.name() + "=" + FileSystemUtils.pathToString(value);
     }
 
-    protected static String[] withConnectorsOnRandomPortsConfig(String... otherConfigs) {
+    protected String[] withConnectorsOnRandomPortsConfig(String... otherConfigs) {
         Stream<String> configs = Stream.of(otherConfigs);
 
         Stream<String> connectorsConfig = connectorsOnRandomPortsConfig().entrySet().stream()
