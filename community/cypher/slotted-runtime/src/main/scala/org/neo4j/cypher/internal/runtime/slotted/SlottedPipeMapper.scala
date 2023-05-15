@@ -74,6 +74,7 @@ import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
+import org.neo4j.cypher.internal.logical.plans.FindShortestPaths
 import org.neo4j.cypher.internal.logical.plans.Foreach
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.logical.plans.InjectCompilationError
@@ -260,6 +261,7 @@ import org.neo4j.cypher.internal.runtime.slotted.pipes.OrderedUnionSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.ProduceResultSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.RollUpApplySlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SelectOrSemiApplySlottedPipe
+import org.neo4j.cypher.internal.runtime.slotted.pipes.ShortestPathSlottedPipe
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetLabelsOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetNodePropertiesOperation
 import org.neo4j.cypher.internal.runtime.slotted.pipes.SlottedSetNodePropertyFromMapOperation
@@ -289,6 +291,7 @@ import org.neo4j.cypher.internal.util.symbols.CTNode
 import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InternalException
+import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
 
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -971,6 +974,83 @@ class SlottedPipeMapper(
           nodePredicates = nodeSlottedPredicates,
           relationshipPredicates = relSlottedPredicates
         )(id = id)
+
+      case FindShortestPaths(
+          _,
+          shortestPathPattern,
+          perStepNodePredicates,
+          perStepRelPredicates,
+          pathPredicates,
+          withFallBack,
+          disallowSameNode
+        ) =>
+        val rel = shortestPathPattern.expr.element match {
+          case internal.expressions.RelationshipChain(_, relationshipPattern, _) =>
+            relationshipPattern
+          case _ =>
+            throw new IllegalStateException("This should be caught during semantic checking")
+        }
+
+        val single = shortestPathPattern.expr.single
+
+        val patternRelationship = shortestPathPattern.rel
+
+        val (sourceNodeName, targetNodeName) = patternRelationship.nodes
+
+        if (disallowSameNode && sourceNodeName == targetNodeName) {
+          throw new ShortestPathCommonEndNodesForbiddenException
+        }
+
+        val pathName = shortestPathPattern.name.get // Should always be given anonymous name
+        val relsName = rel.variable.get.name // Should always be given anonymous name
+
+        val sourceSlot = slots(sourceNodeName)
+        val targetSlot = slots(targetNodeName)
+        val pathOffset = slots.getReferenceOffsetFor(pathName)
+        val relsOffset = slots.getReferenceOffsetFor(relsName)
+
+        val (allowZeroLength, maxDepth) = rel.length match {
+          case Some(Some(internal.expressions.Range(lower, max))) =>
+            (lower.exists(_.value == 0L), max.map(_.value.toInt))
+          case None => (false, Some(1)) // non-varlength case
+          case _    => (false, None)
+        }
+
+        val perStepNodeSlottedPredicates = perStepNodePredicates.map(nodePred =>
+          SlottedVariablePredicate(
+            expressionSlotForPredicate(nodePred),
+            expressionConverters.toCommandExpression(id, nodePred.predicate)
+          )
+        )
+
+        val perStepRelSlottedPredicates = perStepRelPredicates.map(relPred =>
+          SlottedVariablePredicate(
+            expressionSlotForPredicate(relPred),
+            expressionConverters.toCommandExpression(id, relPred.predicate)
+          )
+        )
+
+        val pathCommandPredicates =
+          pathPredicates.map(expressionConverters.toCommandExpression(id, _)).map(_.rewriteAsPredicate(identity))
+
+        ShortestPathSlottedPipe(
+          source,
+          sourceSlot,
+          targetSlot,
+          pathOffset,
+          relsOffset,
+          RelationshipTypes(patternRelationship.types.toArray),
+          patternRelationship.dir,
+          perStepNodeSlottedPredicates,
+          perStepRelSlottedPredicates,
+          pathCommandPredicates,
+          returnOneShortestPathOnly = single,
+          disallowSameNode = disallowSameNode,
+          allowZeroLength = allowZeroLength,
+          maxDepth = maxDepth,
+          needOnlyOnePath = single && !withFallBack,
+          slots = slots
+        )(id)
 
       case Optional(inner, symbols) =>
         val nullableSlots = symbolsToSlots(inner.availableSymbols -- symbols, slots)

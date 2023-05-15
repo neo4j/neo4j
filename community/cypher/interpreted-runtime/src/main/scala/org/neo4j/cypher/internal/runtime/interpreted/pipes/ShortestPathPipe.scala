@@ -38,7 +38,7 @@ case class ShortestPathPipe(
   sourceNodeName: String,
   targetNodeName: String,
   pathName: String,
-  relsNameOpt: Option[String],
+  relsName: String,
   types: RelationshipTypes,
   direction: SemanticDirection,
   filteringStep: VarLengthPredicate,
@@ -89,12 +89,12 @@ case class ShortestPathPipe(
                 if (
                   filteringStep.filterNode(row, state)(sourceNode) && filteringStep.filterNode(row, state)(targetNode)
                 ) {
-                  if (sourceNode == targetNode && !allowZeroLength && disallowSameNode) {
-                    throw new ShortestPathCommonEndNodesForbiddenException
-
-                  } else if (sourceNode == targetNode && !allowZeroLength) {
-                    ClosingIterator.empty
-
+                  if (sourceNode == targetNode && !allowZeroLength) {
+                    if (disallowSameNode) {
+                      throw new ShortestPathCommonEndNodesForbiddenException
+                    } else {
+                      ClosingIterator.empty
+                    }
                   } else {
 
                     val (nodePredicate, relationshipPredicate) =
@@ -112,7 +112,7 @@ case class ShortestPathPipe(
                     val outputRows = ClosingIterator.asClosingIterator(shortestPaths).map {
                       path: VirtualPathValue =>
                         val rels = VirtualValues.list(path.relationshipIds().map(VirtualValues.relationship): _*)
-                        rowFactory.copyWith(row, pathName, path, relsNameOpt.get, rels)
+                        rowFactory.copyWith(row, pathName, path, relsName, rels)
 
                     }.filter {
                       r => pathPredicate.isTrue(r, state)

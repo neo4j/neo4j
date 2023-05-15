@@ -1204,7 +1204,7 @@ case class InterpretedPipeMapper(
           sourceNodeName,
           targetNodeName,
           pathName,
-          rel.variable.map(_.name),
+          rel.variable.get.name,
           RelationshipTypes(patternRelationship.types.toArray),
           patternRelationship.dir,
           filteringStep,
@@ -1496,6 +1496,7 @@ case class InterpretedPipeMapper(
         new VarLengthPredicate {
           override def filterNode(row: CypherRow, state: QueryState)(node: VirtualNodeValue): Boolean =
             nodeCommands.forall(nodeCommand => nodeCommand(row, state, node))
+
           override def filterRelationship(row: CypherRow, state: QueryState)(rel: VirtualRelationshipValue): Boolean =
             relCommands.forall(relCommand => relCommand(row, state, rel))
         }

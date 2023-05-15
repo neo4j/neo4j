@@ -51,7 +51,7 @@ class ShortestPathPipeTest extends CypherFunSuite {
       "start",
       "end",
       "p",
-      Some("rs"),
+      "rs",
       RelationshipTypes(Array.empty[String]),
       SemanticDirection.OUTGOING,
       VarLengthPredicate.NONE,
