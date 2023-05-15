@@ -209,6 +209,9 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](
           if (runtime != SchemaCommandRuntime && requestedRuntime != CypherRuntimeOption.default) {
             logger.log(RuntimeUnsupportedNotification(e.getMessage))
           }
+        case e: RuntimeUnsupportedException =>
+          // this is an explicit failure that we shouldn't try to fallback from
+          throw e
         case e: Exception =>
           lastException = e
           // That is unexpected. Let's log, but continue trying other runtimes
