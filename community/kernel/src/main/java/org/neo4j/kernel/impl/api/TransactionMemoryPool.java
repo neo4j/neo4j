@@ -32,6 +32,7 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.memory.DelegatingMemoryPool;
 import org.neo4j.memory.EmptyMemoryTracker;
+import org.neo4j.memory.ExecutionContextMemoryTracker;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryGroup;
 import org.neo4j.memory.MemoryLimitExceededException;
@@ -47,6 +48,10 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
     private final LogProvider logProvider;
     private final Set<LocalMemoryTracker> memoryTrackers = ConcurrentHashMap.newKeySet();
     private final LocalMemoryTracker transactionTracker;
+
+    // NOTE: This should be enough to handle eager initialization of cursor pools.
+    //       If we instead made those initializations lazy we could reduce this number.
+    static final long DEFAULT_EXECUTION_CONTEXT_MEMORY_TRACKER_INITIAL_CREDIT = 8192;
 
     public TransactionMemoryPool(
             ScopedMemoryPool delegate, Config config, BooleanSupplier openCheck, LogProvider logProvider) {
@@ -78,6 +83,14 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
             var memoryTracker = createMemoryTracer();
             memoryTrackers.add(memoryTracker);
             return memoryTracker;
+        } else {
+            return EmptyMemoryTracker.INSTANCE;
+        }
+    }
+
+    public MemoryTracker getExecutionContextPoolMemoryTracker(long grabSize, long maxGrabSize, long initialCredit) {
+        if (config.get(memory_tracking)) {
+            return createExecutionContextMemoryTracker(grabSize, maxGrabSize, initialCredit);
         } else {
             return EmptyMemoryTracker.INSTANCE;
         }
@@ -127,6 +140,18 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
                 memoryLeakLogger(logProvider.getLog(getClass())));
     }
 
+    private ExecutionContextMemoryTracker createExecutionContextMemoryTracker(
+            long grabSize, long maxGrabSize, long initialCredit) {
+        return new ExecutionContextMemoryTracker(
+                this,
+                LocalMemoryTracker.NO_LIMIT,
+                grabSize,
+                maxGrabSize,
+                initialCredit,
+                memory_transaction_max_size.name(),
+                openCheck);
+    }
+
     private static LocalMemoryTracker.Monitor memoryLeakLogger(Log log) {
         return leakedNativeMemoryBytes -> log.warn(
                 "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has "
@@ -147,7 +172,6 @@ public class TransactionMemoryPool extends DelegatingMemoryPool implements Scope
 
             memoryTrackers.clear();
         }
-
         assert usedNative() == 0
                 : "Potential direct memory leak. Expecting all allocated direct memory to be released, but still has "
                         + usedNative();

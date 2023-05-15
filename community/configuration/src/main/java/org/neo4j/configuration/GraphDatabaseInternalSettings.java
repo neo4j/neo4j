@@ -341,6 +341,12 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     }
 
     @Internal
+    @Description("Track memory allocations for queries executed with the parallel runtime")
+    public static final Setting<Boolean> enable_parallel_runtime_memory_tracking = newBuilder(
+                    "internal.cypher.enable_parallel_runtime_memory_tracking", BOOL, true)
+            .build();
+
+    @Internal
     @Description(
             "The worker management determines how the Cypher parallel runtime will distribute query execution work between multiple threads.")
     public static final Setting<CypherWorkerManagement> cypher_worker_management = newBuilder(
@@ -820,6 +826,21 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Long> initial_transaction_heap_grab_size = newBuilder(
                     "internal.dbms.initial_transaction_heap_grab_size", BYTES, mebiBytes(2))
             .build();
+
+    @Internal
+    @Description("Chunk size for heap memory reservation per worker from the transaction memory pool")
+    public static final Setting<Long> initial_transaction_heap_grab_size_per_worker = newBuilder(
+                    "internal.dbms.initial_transaction_heap_grab_size_per_worker", BYTES, kibiBytes(128))
+            .build();
+
+    @Internal
+    @Description("Chunk size for maximum heap memory reservation per worker from the transaction memory pool")
+    public static final Setting<Long> max_transaction_heap_grab_size_per_worker = newBuilder(
+                    "internal.dbms.max_transaction_heap_grab_size_per_worker",
+                    BYTES,
+                    initial_transaction_heap_grab_size.defaultValue())
+            .build(); // TODO: Add constraint and default value based on actual initial_transaction_heap_grab_size
+    // setting
 
     @Internal
     @Description(

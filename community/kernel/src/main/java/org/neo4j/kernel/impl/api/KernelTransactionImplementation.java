@@ -30,6 +30,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.transaction_sampling
 import static org.neo4j.configuration.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionCommitFailed;
 import static org.neo4j.kernel.impl.api.LeaseService.NO_LEASE;
+import static org.neo4j.kernel.impl.api.TransactionMemoryPool.DEFAULT_EXECUTION_CONTEXT_MEMORY_TRACKER_INITIAL_CREDIT;
 import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace.NONE;
 
@@ -488,7 +489,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     PageCacheTracer.NULL, ExecutionContextCursorTracer.TRANSACTION_EXECUTION_TAG);
             var executionContextCursorContext = contextFactory.create(executionContextCursorTracer);
             StorageReader executionContextStorageReader = storageEngine.newReader();
-            MemoryTracker executionContextMemoryTracker = transactionMemoryPool.getPoolMemoryTracker();
+            var grabSize = config.get(GraphDatabaseInternalSettings.initial_transaction_heap_grab_size_per_worker);
+            var maxGrabSize = config.get(GraphDatabaseInternalSettings.max_transaction_heap_grab_size_per_worker);
+            MemoryTracker executionContextMemoryTracker = transactionMemoryPool.getExecutionContextPoolMemoryTracker(
+                    grabSize, maxGrabSize, DEFAULT_EXECUTION_CONTEXT_MEMORY_TRACKER_INITIAL_CREDIT);
             StoreCursors executionContextStoreCursors =
                     storageEngine.createStorageCursors(executionContextCursorContext);
             DefaultPooledCursors executionContextPooledCursors = new DefaultPooledCursors(

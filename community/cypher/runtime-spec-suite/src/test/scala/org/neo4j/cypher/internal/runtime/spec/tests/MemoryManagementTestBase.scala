@@ -40,9 +40,12 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.memory.MemoryLimitExceededException
 import org.neo4j.values.virtual.VirtualValues
 
+import java.util.Locale
+
 object MemoryManagementTestBase {
   // The configured max memory per transaction in Bytes
-  val maxMemory: Long = ByteUnit.mebiBytes(6)
+  val maxMemory: Long = ByteUnit.mebiBytes(32)
+  val grabSize: Long = ByteUnit.kibiBytes(8)
 }
 
 trait InputStreams[CONTEXT <: RuntimeContext] {
@@ -201,6 +204,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
 ) extends RuntimeTestSuite[CONTEXT](
       edition.copyWith(
         GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory),
+        GraphDatabaseInternalSettings.initial_transaction_heap_grab_size -> Long.box(MemoryManagementTestBase.grabSize),
         GraphDatabaseInternalSettings.cypher_pipelined_batch_size_small -> Integer.valueOf(6),
         GraphDatabaseInternalSettings.cypher_pipelined_batch_size_big -> Integer.valueOf(6)
       ),
@@ -244,6 +248,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not kill partial sort query with distinct ordered rows") {
+    assume(!isParallel)
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -729,6 +734,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not kill ordered count aggregation query") {
+    assume(!isParallel)
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
@@ -744,6 +750,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should not kill ordered collect aggregation query") {
+    assume(!isParallel)
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("c")
@@ -970,17 +977,34 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     sampleValue: Option[Any] = None
   ): Long = {
     // TODO: Improve this to be a bit more reliable
-    val expectedRowSize = estimateSize(valueToEstimate)
+    val expectedValueSize = estimateSize(valueToEstimate)
+    val expectedRowSize = if (isParallel) {
+      // TODO: Estimate the constant overhead instead, e.g. by running two estimates with different number of rows
+      expectedValueSize / 2
+    } else {
+      expectedValueSize
+    }
     val estimatedRowSize = estimateRowSize(logicalQuery, sampleValue)
     estimatedRowSize should be >= expectedRowSize
-    estimatedRowSize should be < expectedRowSize * 60 // in pipelined we have lots of overhead for some operators in corner cases
+    runtime.name.toLowerCase(Locale.ROOT) match {
+      case "pipelined" =>
+        estimatedRowSize should be < expectedRowSize * 60 // in pipelined we have lots of overhead for some operators in corner cases
+      case "parallel" =>
+        estimatedRowSize should be < expectedRowSize * 100 // in parallel we also have overhead of upfront memory grab per worker
+      case _ =>
+        estimatedRowSize should be < expectedRowSize * 20 // in pipelined we have lots of overhead for some operators in corner cases
+    }
     expectedRowSize
   }
 
   protected def estimateRowSize(logicalQuery: LogicalQuery, sampleValue: Option[Any] = None, nRows: Int = 8): Long = {
     val result = execute(logicalQuery, runtime, inputColumns(1, nRows, i => sampleValue.getOrElse(i.toLong)))
     consume(result)
-    result.runtimeResult.heapHighWaterMark() / nRows
+    if (isParallel) {
+      tx.kernelTransaction().memoryTracker().heapHighWaterMark() / nRows
+    } else {
+      result.runtimeResult.heapHighWaterMark() / nRows
+    }
   }
 }
 

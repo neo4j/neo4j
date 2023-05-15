@@ -80,6 +80,7 @@ import java.time.chrono.ChronoLocalDateTime
 import java.time.chrono.ChronoZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util
+import java.util.Locale
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Random
@@ -87,7 +88,7 @@ import scala.util.Using
 
 object RuntimeTestSuite {
   val ANY_VALUE_ORDERING: Ordering[AnyValue] = Ordering.comparatorToOrdering(AnyValues.COMPARATOR)
-  def isParallel(runtime: CypherRuntime[_]): Boolean = runtime.name.toLowerCase == "parallel"
+  def isParallel(runtime: CypherRuntime[_]): Boolean = runtime.name.toLowerCase(Locale.ROOT) == "parallel"
 }
 
 /**

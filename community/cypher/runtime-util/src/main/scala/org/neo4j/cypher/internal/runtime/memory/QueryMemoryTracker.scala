@@ -27,10 +27,15 @@ import org.neo4j.cypher.internal.runtime.GrowingArray
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.MemoryTrackerPerOperator
 import org.neo4j.cypher.internal.runtime.memory.TrackingQueryMemoryTracker.OperatorMemoryTracker
 import org.neo4j.memory.EmptyMemoryTracker
+import org.neo4j.memory.ExecutionContextMemoryTrackerProvider
 import org.neo4j.memory.HeapHighWaterMarkTracker
 import org.neo4j.memory.HeapMemoryTracker
+import org.neo4j.memory.IsClosedScopedMemoryTracker
 import org.neo4j.memory.LocalMemoryTracker
 import org.neo4j.memory.MemoryTracker
+
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.LongAdder
 
 /**
  * Tracks the heap high water mark for one Cypher query.
@@ -151,4 +156,146 @@ case object NoOpQueryMemoryTracker extends QueryMemoryTracker {
 
   override private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker =
     EmptyMemoryTracker.INSTANCE
+}
+
+/**
+ * Tracks the heap high water mark for one Cypher query running with the parallel runtime.
+ */
+class ParallelTrackingQueryMemoryTracker extends QueryMemoryTracker {
+  override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
+
+  override def allocateHeap(bytes: Long): Unit = ???
+
+  override def releaseHeap(bytes: Long): Unit = ???
+
+  override def newMemoryTrackerForOperatorProvider(transactionMemoryTracker: MemoryTracker)
+    : MemoryTrackerForOperatorProvider = new WorkerThreadDelegatingMemoryTracker(transactionMemoryTracker)
+
+  override def heapHighWaterMarkOfOperator(operatorId: Int): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
+
+  override private[memory] def memoryTrackerForOperator(operatorId: Int): HeapMemoryTracker = ???
+}
+
+class WorkerThreadDelegatingMemoryTracker(val transactionMemoryTracker: MemoryTracker)
+    extends MemoryTracker with MemoryTrackerForOperatorProvider {
+
+  override def usedNativeMemory(): Long = {
+    delegateMemoryTracker.usedNativeMemory()
+  }
+
+  override def estimatedHeapMemory(): Long = {
+    delegateMemoryTracker.estimatedHeapMemory()
+  }
+
+  override def allocateNative(bytes: Long): Unit = {
+    delegateMemoryTracker.allocateNative(bytes)
+  }
+
+  override def releaseNative(bytes: Long): Unit = {
+    delegateMemoryTracker.releaseNative(bytes)
+  }
+
+  override def allocateHeap(bytes: Long): Unit = {
+    delegateMemoryTracker.allocateHeap(bytes)
+  }
+
+  override def releaseHeap(bytes: Long): Unit = {
+    delegateMemoryTracker.releaseHeap(bytes)
+  }
+
+  override def heapHighWaterMark(): Long = {
+    delegateMemoryTracker.heapHighWaterMark()
+  }
+
+  override def reset(): Unit = {
+    delegateMemoryTracker.reset()
+  }
+
+  override def getScopedMemoryTracker: MemoryTracker = {
+    new ConcurrentScopedMemoryTracker(this)
+  }
+
+  private def delegateMemoryTracker: MemoryTracker = {
+    Thread.currentThread() match {
+      case workerThread: ExecutionContextMemoryTrackerProvider =>
+        workerThread.executionContextMemoryTracker()
+      case _ =>
+        require(transactionMemoryTracker != null, "transactionMemoryTracker should not be null")
+        transactionMemoryTracker
+    }
+  }
+
+  override def memoryTrackerForOperator(operatorId: Int): MemoryTracker = {
+    // NOTE: We currently do not support tracking query heap usage high water mark per operator
+    this
+  }
+}
+
+class ConcurrentScopedMemoryTracker(delegate: MemoryTracker) extends IsClosedScopedMemoryTracker {
+  private[this] val trackedNative: LongAdder = new LongAdder
+  private[this] val trackedHeap: LongAdder = new LongAdder
+  private[this] val _isClosed: AtomicBoolean = new AtomicBoolean(false)
+
+  override def usedNativeMemory: Long = trackedNative.sum()
+  override def estimatedHeapMemory: Long = trackedHeap.sum()
+
+  override def allocateNative(bytes: Long): Unit = {
+    throwIfClosed()
+    delegate.allocateNative(bytes)
+    trackedNative.add(bytes)
+  }
+
+  override def releaseNative(bytes: Long): Unit = {
+    throwIfClosed()
+    delegate.releaseNative(bytes)
+    trackedNative.add(-bytes)
+  }
+
+  override def allocateHeap(bytes: Long): Unit = {
+    throwIfClosed()
+    delegate.allocateHeap(bytes)
+    trackedHeap.add(bytes)
+  }
+
+  override def releaseHeap(bytes: Long): Unit = {
+    throwIfClosed()
+    delegate.releaseHeap(bytes)
+    trackedHeap.add(-bytes)
+  }
+
+  private def throwIfClosed(): Unit = {
+    if (isClosed) throw new IllegalStateException("Should not use a closed ScopedMemoryTracker")
+  }
+  override def heapHighWaterMark = throw new UnsupportedOperationException
+
+  override def reset(): Unit = {
+    val nativeUsage = trackedNative.sumThenReset()
+    // NOTE: Native memory usage is often zero, so avoid call when we can since it synchronizes directly with
+    //       the transaction memory pool.
+    if (nativeUsage != 0L) {
+      delegate.releaseNative(nativeUsage)
+    }
+    val heapUsage = trackedHeap.sumThenReset()
+    if (heapUsage != 0L) {
+      delegate.releaseHeap(heapUsage)
+    }
+  }
+
+  override def close(): Unit = {
+    // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
+    if (
+      !delegate.isInstanceOf[IsClosedScopedMemoryTracker] || !(delegate.asInstanceOf[
+        IsClosedScopedMemoryTracker
+      ]).isClosed
+    ) {
+      reset()
+    }
+    _isClosed.set(true)
+  }
+
+  override def getScopedMemoryTracker: MemoryTracker = {
+    new ConcurrentScopedMemoryTracker(this)
+  }
+
+  override def isClosed: Boolean = _isClosed.get()
 }

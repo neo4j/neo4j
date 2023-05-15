@@ -59,15 +59,31 @@ public class HeapTrackingArrayList<E> implements List<E>, AutoCloseable {
      * @return a new heap tracking array list with initial size 1
      */
     public static <T> HeapTrackingArrayList<T> newArrayList(MemoryTracker memoryTracker) {
-        return newArrayList(1, memoryTracker);
+        return newArrayListWithInitialTrackedSize(1, memoryTracker, 0L);
+    }
+
+    /**
+     * @return a new heap tracking array list with initial size 1 and the specified initial tracked memory size
+     */
+    public static <T> HeapTrackingArrayList<T> newArrayListWithInitialTrackedSize(
+            MemoryTracker memoryTracker, long initialTrackedSize) {
+        return newArrayListWithInitialTrackedSize(1, memoryTracker, initialTrackedSize);
     }
 
     /**
      * @return a new heap tracking array list with the specified initial size
      */
     public static <T> HeapTrackingArrayList<T> newArrayList(int initialSize, MemoryTracker memoryTracker) {
+        return newArrayListWithInitialTrackedSize(1, memoryTracker, 0L);
+    }
+
+    /**
+     * @return a new heap tracking array list with the specified initial size and initial tracked memory size
+     */
+    public static <T> HeapTrackingArrayList<T> newArrayListWithInitialTrackedSize(
+            int initialSize, MemoryTracker memoryTracker, long initialTrackedSize) {
         requireNonNegative(initialSize);
-        long trackedSize = shallowSizeOfObjectArray(initialSize);
+        long trackedSize = shallowSizeOfObjectArray(initialSize) + initialTrackedSize;
         memoryTracker.allocateHeap(SHALLOW_SIZE + trackedSize);
         return new HeapTrackingArrayList<>(initialSize, memoryTracker, trackedSize);
     }

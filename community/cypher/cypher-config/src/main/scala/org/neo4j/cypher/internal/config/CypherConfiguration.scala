@@ -98,7 +98,18 @@ class CypherConfiguration private (val config: Config) {
 
   val operatorFusionOverPipelineLimit: Int =
     config.get(GraphDatabaseInternalSettings.cypher_pipelined_operator_fusion_over_pipeline_limit).intValue()
-  val memoryTrackingController: MemoryTrackingController = MEMORY_TRACKING_ENABLED_CONTROLLER
+
+  val memoryTrackingController: MemoryTrackingController =
+    if (
+      runtime == CypherRuntimeOption.parallel && !config.get(
+        GraphDatabaseInternalSettings.enable_parallel_runtime_memory_tracking
+      )
+    ) {
+      MEMORY_TRACKING_DISABLED_CONTROLLER
+    } else {
+      MEMORY_TRACKING_ENABLED_CONTROLLER
+    }
+
   val enableMonitors: Boolean = config.get(GraphDatabaseInternalSettings.cypher_enable_runtime_monitors)
 
   val enableExtraSemanticFeatures: Set[String] =

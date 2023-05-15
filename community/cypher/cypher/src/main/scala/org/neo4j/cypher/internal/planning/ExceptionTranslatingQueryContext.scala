@@ -85,8 +85,7 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
 
   override def resources: ResourceManager = inner.resources
 
-  override def transactionalContext =
-    new ExceptionTranslatingTransactionalContext(inner.transactionalContext)
+  override def transactionalContext: QueryTransactionalContext = ExceptionTranslatingTransactionalContext
 
   override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue =
     translateException(tokenNameLookup, inner.getLabelsForNode(node, nodeCursor))
@@ -542,8 +541,8 @@ class ExceptionTranslatingReadQueryContext(val inner: ReadQueryContext) extends 
       translateException(tokenNameLookup, inner.releaseExclusiveLock(obj))
   }
 
-  class ExceptionTranslatingTransactionalContext(inner: QueryTransactionalContext)
-      extends DelegatingQueryTransactionalContext(inner) {
+  private object ExceptionTranslatingTransactionalContext
+      extends DelegatingQueryTransactionalContext(inner.transactionalContext) {
     override def close(): Unit = translateException(tokenNameLookup, super.close())
 
     override def rollback(): Unit = translateException(tokenNameLookup, super.rollback())

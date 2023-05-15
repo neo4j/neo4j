@@ -45,6 +45,10 @@ case object MEMORY_TRACKING_ENABLED_CONTROLLER extends MemoryTrackingController 
   override def memoryTracking: MemoryTracking = MEMORY_TRACKING
 }
 
+case object MEMORY_TRACKING_DISABLED_CONTROLLER extends MemoryTrackingController {
+  override def memoryTracking: MemoryTracking = NO_TRACKING
+}
+
 case class CUSTOM_MEMORY_TRACKING_CONTROLLER(decorator: MemoryTrackerDecorator) extends MemoryTrackingController {
   override def memoryTracking: MemoryTracking = CUSTOM_MEMORY_TRACKING(decorator)
 }

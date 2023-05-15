@@ -468,9 +468,8 @@ public class CachingExpandInto extends DefaultCloseListenable {
             this.secondNode = secondNode;
             this.expandDirection = expandDirection;
             this.innerMemoryTracker = new ScopedMemoryTracker(outerMemoryTracker);
-            this.connections = HeapTrackingArrayList.newArrayList(innerMemoryTracker);
-            innerMemoryTracker.allocateHeap(
-                    EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
+            this.connections = HeapTrackingArrayList.newArrayListWithInitialTrackedSize(
+                    innerMemoryTracker, EXPAND_INTO_SELECTION_CURSOR_SHALLOW_SIZE + SCOPED_MEMORY_TRACKER_SHALLOW_SIZE);
         }
 
         @Override

@@ -24,11 +24,11 @@ package org.neo4j.memory;
  * Can be useful for collections when the items are tracked, to avoid iterating over all
  * of the elements and releasing them individual.
  */
-public class ScopedMemoryTracker implements MemoryTracker {
+public class ScopedMemoryTracker implements IsClosedScopedMemoryTracker {
     private final MemoryTracker delegate;
     private long trackedNative;
     private long trackedHeap;
-    boolean isClosed;
+    private boolean isClosed;
 
     public ScopedMemoryTracker(MemoryTracker delegate) {
         this.delegate = delegate;
@@ -94,7 +94,8 @@ public class ScopedMemoryTracker implements MemoryTracker {
     @Override
     public void close() {
         // On a parent ScopedMemoryTracker, only release memory if that parent was not already closed.
-        if (!(delegate instanceof ScopedMemoryTracker) || !((ScopedMemoryTracker) delegate).isClosed) {
+        if (!(delegate instanceof IsClosedScopedMemoryTracker)
+                || !((IsClosedScopedMemoryTracker) delegate).isClosed()) {
             delegate.releaseNative(trackedNative);
             delegate.releaseHeap(trackedHeap);
         }
@@ -106,5 +107,10 @@ public class ScopedMemoryTracker implements MemoryTracker {
     @Override
     public MemoryTracker getScopedMemoryTracker() {
         return new ScopedMemoryTracker(this);
+    }
+
+    @Override
+    public boolean isClosed() {
+        return isClosed;
     }
 }

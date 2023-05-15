@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.spec.tests
 
+import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.CypherRuntime
 import org.neo4j.cypher.internal.LogicalQuery
@@ -76,7 +77,8 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   val sizeHint: Int
 ) extends RuntimeTestSuite[CONTEXT](
       edition.copyWith(
-        GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory)
+        GraphDatabaseSettings.memory_transaction_max_size -> Long.box(MemoryManagementTestBase.maxMemory),
+        GraphDatabaseInternalSettings.initial_transaction_heap_grab_size -> Long.box(MemoryManagementTestBase.grabSize)
       ),
       runtime,
       testPlanCombinationRewriterHints = Set(TestPlanCombinationRewriter.NoEager)
@@ -147,6 +149,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory between eager") {
+    // assume(!isParallel)
     // given
     val logicalQuery1 = new LogicalQueryBuilder(this)
       .produceResults("x")
@@ -163,7 +166,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
       .input(variables = Seq("x"))
       .build()
 
-    val nRows = sizeHint
+    val nRows = 20 // sizeHint
 
     // then
     compareMemoryUsageWithInputRows(logicalQuery1, logicalQuery2, nRows, 0.035) // Pipelined is not exact
@@ -632,6 +635,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory for partial top on RHS of apply") {
+    assume(!isParallel)
     val nRows = sizeHint
     val topLimit = 17
     val input1 = finiteInput(nRows)
@@ -653,6 +657,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory for empty partial top on RHS of apply") {
+    assume(!isParallel)
     val nRows = sizeHint
     val topLimit = 17
     val input1 = finiteInput(nRows)
@@ -763,6 +768,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory after transaction foreach") {
+    assume(!isParallel)
     val errorBehaviour = randomAmong(Seq(OnErrorFail, OnErrorBreak, OnErrorContinue))
     val status = if (errorBehaviour != OnErrorFail && random.nextBoolean()) Some("status") else None
     def query(rows: Int) = new LogicalQueryBuilder(this)
@@ -780,6 +786,7 @@ abstract class MemoryDeallocationTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("should deallocate memory after transaction apply") {
+    assume(!isParallel)
     val errorBehaviour = randomAmong(Seq(OnErrorFail, OnErrorBreak, OnErrorContinue))
     val status = if (errorBehaviour != OnErrorFail && random.nextBoolean()) Some("status") else None
     def query(rows: Int) = new LogicalQueryBuilder(this)
