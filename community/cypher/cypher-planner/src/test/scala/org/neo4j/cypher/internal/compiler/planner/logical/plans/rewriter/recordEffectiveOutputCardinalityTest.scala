@@ -25,11 +25,15 @@ import org.neo4j.cypher.internal.compiler.ExecutionModel.BatchedSingleThreaded
 import org.neo4j.cypher.internal.compiler.ExecutionModel.Volcano
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.MAX_VAR_LENGTH
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.util.UpperBound.Limited
+import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPlanningAttributesTestSupport
@@ -316,6 +320,95 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     (plan, cardinalities).should(haveSamePlanAndEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
   }
 
+  test("Should multiply RHS cardinality of Trail") {
+    val lhsCardinality = 10
+    val expandCardinality = 2
+    val upperBound = 5
+
+    // GIVEN
+    val trailParameters = TrailParameters(
+      min = 0,
+      max = Limited(upperBound),
+      start = "u",
+      end = "v",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    val initial = new LogicalPlanBuilder(false)
+      .trail(trailParameters).withCardinality(20)
+      .|.expandAll("(n)-[r]->(m)").withCardinality(expandCardinality)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("u").withCardinality(lhsCardinality)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    val rowsFedBackToRHS = expandCardinality * (upperBound - 1)
+    val expectedRHS = lhsCardinality + rowsFedBackToRHS
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .trail(trailParameters).withEffectiveCardinality(20)
+      .|.expandAll("(n)-[r]->(m)").withEffectiveCardinality(expandCardinality * expectedRHS)
+      .|.argument("n").withEffectiveCardinality(expectedRHS)
+      .allNodeScan("u").withEffectiveCardinality(lhsCardinality)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSamePlanAndEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiply RHS cardinality of Trail with no upper bound") {
+    val lhsCardinality = 10
+    val expandCardinality = 2
+
+    // GIVEN
+    val trailParameters = TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "u",
+      end = "v",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    val initial = new LogicalPlanBuilder(false)
+      .trail(trailParameters).withCardinality(20)
+      .|.expandAll("(n)-[r]->(m)").withCardinality(expandCardinality)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("u").withCardinality(lhsCardinality)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    val rowsFedBackToRHS = expandCardinality * (MAX_VAR_LENGTH - 1)
+    val expectedRHS = lhsCardinality + rowsFedBackToRHS
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .trail(trailParameters).withEffectiveCardinality(20)
+      .|.expandAll("(n)-[r]->(m)").withEffectiveCardinality(expandCardinality * expectedRHS)
+      .|.argument("n").withEffectiveCardinality(expectedRHS)
+      .allNodeScan("u").withEffectiveCardinality(lhsCardinality)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSamePlanAndEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
   test("Should multiply RHS cardinality of nested instances of Apply") {
     // GIVEN
     val initial = new LogicalPlanBuilder(false)
@@ -365,6 +458,161 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
       .|.expandAll("(n)-->(m)").withEffectiveCardinality(10)
       .|.allNodeScan("m").withEffectiveCardinality(50)
       .allNodeScan("n").withEffectiveCardinality(5)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSamePlanAndEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiply RHS cardinality of Trail and apply WorkReduction to LHS if there is a Limit") {
+    val lhsCardinality = 15
+    val expandCardinality = 2
+    val upperBound = 5
+    val limitCount = 16
+    val reductionFactor = 1 / 3.0
+
+    // GIVEN
+    val trailParameters = TrailParameters(
+      min = 1,
+      max = Limited(upperBound),
+      start = "u",
+      end = "v",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    val initial = new LogicalPlanBuilder(false)
+      .limit(limitCount).withCardinality(limitCount)
+      .trail(trailParameters).withCardinality(limitCount / reductionFactor)
+      .|.expandAll("(n)-[r]->(m)").withCardinality(expandCardinality)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("u").withCardinality(lhsCardinality)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    val expectedLHS = lhsCardinality * reductionFactor
+    val rowsFedBackToRHS = expandCardinality * (upperBound - 1)
+    val expectedRHS = expectedLHS + rowsFedBackToRHS
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(limitCount).withEffectiveCardinality(limitCount)
+      .trail(trailParameters).withEffectiveCardinality(limitCount)
+      .|.expandAll("(n)-[r]->(m)").withEffectiveCardinality(expandCardinality * expectedRHS)
+      .|.argument("n").withEffectiveCardinality(expectedRHS)
+      .allNodeScan("u").withEffectiveCardinality(expectedLHS)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSamePlanAndEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiply RHS cardinality of Trail and apply WorkReduction to RHS if there is a Limit") {
+    val lhsCardinality = 1
+    val expandCardinality = 9
+    val upperBound = 5
+    val limitCount = 16
+    val reductionFactor = 1 / 3.0
+
+    // GIVEN
+    val trailParameters = TrailParameters(
+      min = 1,
+      max = Limited(upperBound),
+      start = "u",
+      end = "v",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    val initial = new LogicalPlanBuilder(false)
+      .limit(limitCount).withCardinality(limitCount)
+      .trail(trailParameters).withCardinality(limitCount / reductionFactor)
+      .|.expandAll("(n)-[r]->(m)").withCardinality(expandCardinality)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("u").withCardinality(lhsCardinality)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    val expectedLHS = 1.0
+    val rowsFedBackToRHS = expandCardinality * (upperBound - 1) * reductionFactor
+    val expectedRHS = (expectedLHS + rowsFedBackToRHS) * reductionFactor
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(limitCount).withEffectiveCardinality(limitCount)
+      .trail(trailParameters).withEffectiveCardinality(limitCount)
+      .|.expandAll("(n)-[r]->(m)").withEffectiveCardinality(expandCardinality * expectedRHS)
+      .|.argument("n").withEffectiveCardinality(expectedRHS)
+      .allNodeScan("u").withEffectiveCardinality(1)
+
+    val expectedPlan = expected.build()
+    val expectedCards = expected.effectiveCardinalities
+
+    (plan, cardinalities).should(haveSamePlanAndEffectiveCardinalitiesAs((expectedPlan, expectedCards)))
+  }
+
+  test("Should multiply RHS cardinality of Trail and apply WorkReduction to both LHS and RHS if there is a Limit") {
+    val lhsCardinality = 2
+    val expandCardinality = 9
+    val upperBound = 5
+    val limitCount = 16
+
+    val reductionFactor = 1 / 3.0
+    //  Cannot apply whole reduction, since we only have 2 rows.
+    val lhsReductionFactor = 1.0 / lhsCardinality
+    // Remaining reduction factor, so that lhsReductionFactor * rhsReductionFactor = reductionFactor
+    val rhsReductionFactor = lhsCardinality * reductionFactor
+
+    // GIVEN
+    val trailParameters = TrailParameters(
+      min = 1,
+      max = Limited(upperBound),
+      start = "u",
+      end = "v",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("r", "r")),
+      innerRelationships = Set("r"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    val initial = new LogicalPlanBuilder(false)
+      .limit(limitCount).withCardinality(limitCount)
+      .trail(trailParameters).withCardinality(limitCount / reductionFactor)
+      .|.expandAll("(n)-[r]->(m)").withCardinality(expandCardinality)
+      .|.argument("n").withCardinality(1)
+      .allNodeScan("u").withCardinality(lhsCardinality)
+
+    // WHEN
+    val (plan, cardinalities) = rewrite(initial, Volcano)
+
+    val expectedLHS = lhsCardinality * lhsReductionFactor
+    val rowsFedBackToRHS = expandCardinality * (upperBound - 1) * rhsReductionFactor
+    val expectedRHS = (expectedLHS + rowsFedBackToRHS) * rhsReductionFactor
+    // THEN
+    val expected = new LogicalPlanBuilder(false)
+      .limit(limitCount).withEffectiveCardinality(limitCount)
+      .trail(trailParameters).withEffectiveCardinality(limitCount)
+      .|.expandAll("(n)-[r]->(m)").withEffectiveCardinality(expandCardinality * expectedRHS)
+      .|.argument("n").withEffectiveCardinality(expectedRHS)
+      .allNodeScan("u").withEffectiveCardinality(1)
 
     val expectedPlan = expected.build()
     val expectedCards = expected.effectiveCardinalities

@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.ExecutionModel
-import org.neo4j.cypher.internal.compiler.ExecutionModel.SelectedBatchSize
-import org.neo4j.cypher.internal.compiler.ExecutionModel.VolcanoBatchSize
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
+import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.Trail
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -70,21 +70,40 @@ case class recordEffectiveOutputCardinality(
           p.lhs.foreach { lhs => workReductions += (lhs.id -> theseEffectiveCardinalities.lhsReduction) }
           p.rhs.foreach { rhs => workReductions += (rhs.id -> theseEffectiveCardinalities.rhsReduction) }
 
-          def findRHSMultipliers(left: LogicalPlan, right: LogicalPlan, batchSize: SelectedBatchSize): Unit = {
-            // The RHS is executed for each chunk of LHS rows
+          def calculateRhsInvocations(
+            lhsEffectiveCardinality: Cardinality,
+            rhsEffectiveCardinality: Cardinality
+          ): Cardinality = {
+            p match {
+              case _: CartesianProduct =>
+                // The RHS is executed for each chunk of LHS rows
+                effectiveBatchSize.numBatchesFor(lhsEffectiveCardinality)
+              case t: Trail =>
+                val repetitions = NodeConnectionMultiplierCalculator.qppRangeForEstimations(t.repetition).end
+                val repetitionsFedBackToRHS = Cardinality(repetitions - 1)
+                lhsEffectiveCardinality + rhsEffectiveCardinality * repetitionsFedBackToRHS
+              case _: ApplyPlan =>
+                // The RHS is executed for each LHS row
+                lhsEffectiveCardinality
+              case _ => throw new IllegalStateException()
+            }
+          }
+
+          def findRHSMultipliers(): Unit = {
+            val left = p.lhs.get
+            val right = p.rhs.get
+
             val lhsEffective = theseEffectiveCardinalities.lhsReduction.calculate(cardinalities.get(left.id))
-            val rhsInvocations = batchSize.numBatchesFor(lhsEffective)
+            val rhsEffective = theseEffectiveCardinalities.rhsReduction.calculate(cardinalities.get(right.id))
+            val rhsInvocations = calculateRhsInvocations(lhsEffective, rhsEffective)
             // If nested, we want to multiply the new multiplier with any previous multiplier
             val rhsMultiplier = rhsInvocations * rhsMultipliers(right.id)
             right.flatten.foreach { c => rhsMultipliers(c.id) = rhsMultiplier }
           }
 
           p match {
-            case CartesianProduct(left, right, _) =>
-              findRHSMultipliers(left, right, effectiveBatchSize)
-            case a: ApplyPlan =>
-              findRHSMultipliers(a.left, a.right, VolcanoBatchSize)
-            case _ =>
+            case _: CartesianProduct | _: ApplyPlan => findRHSMultipliers()
+            case _                                  =>
           }
 
           effectiveCardinalities.set(

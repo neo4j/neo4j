@@ -650,6 +650,10 @@ object CardinalityCostModel {
       // ForeachApply is an ApplyPlan, but only yields LHS rows, therefore we match this before matching ApplyPlan
       (parentWorkReduction, WorkReduction.NoReduction)
 
+    case t: Trail =>
+      // Trail is an ApplyPlan, but nestedLoopChildrenWorkReduction makes some assumptions that don't hold for Trail
+      trailChildrenWorkReduction(t, parentWorkReduction, cardinalities)
+
     case a: ApplyPlan =>
       nestedLoopChildrenWorkReduction(a, parentWorkReduction, VolcanoBatchSize, cardinalities)
 
@@ -758,6 +762,41 @@ object CardinalityCostModel {
 
     val lhsFraction = (lhsProducedRows / lhsCardinality).getOrElse(Selectivity.ONE)
     val rhsFraction = (rhsProducedRowsPerExecution / rhsCardinality).getOrElse(Selectivity.ONE)
+
+    (parentWorkReduction.withFraction(lhsFraction), parentWorkReduction.withFraction(rhsFraction))
+  }
+
+  /**
+   * Given an parent WorkReduction, calculate how this reduction applies to the LHS and RHS.
+   * 
+   * This is essentially a much simplified version of [[nestedLoopChildrenWorkReduction]] with [[VolcanoBatchSize]].
+   * It differs from [[nestedLoopChildrenWorkReduction]] in the fact that here
+   * `lhsReduction * rhsReduction = parentReduction` always holds,
+   * which is not true in [[nestedLoopChildrenWorkReduction]] if the RHS cardinality is < 1.0.
+   * 
+   * [[nestedLoopChildrenWorkReduction]] also assumes that `lhsCardinality * rhsCardinality = parentCardinality`, 
+   * which is not true for Trail.
+   */
+  private def trailChildrenWorkReduction(
+    plan: Trail,
+    parentWorkReduction: WorkReduction,
+    cardinalities: Cardinalities
+  ): (WorkReduction, WorkReduction) = {
+    // number of rows available from lhs plan
+    val lhsCardinality: Cardinality = cardinalities.get(plan.left.id)
+
+    // apply reduction to LHS
+    val rhsNeededExecutions: Cardinality = parentWorkReduction.calculate(lhsCardinality)
+
+    // round up
+    val lhsProducedRows: Cardinality = rhsNeededExecutions.ceil
+
+    // Calculate LHS reduction with rounding taken into account
+    val lhsFraction = (lhsProducedRows / lhsCardinality).getOrElse(Selectivity.ONE)
+
+    // Apply remaining reduction to RHS
+    val rhsFraction =
+      Selectivity.of(parentWorkReduction.fraction.factor / lhsFraction.factor).getOrElse(Selectivity.ONE)
 
     (parentWorkReduction.withFraction(lhsFraction), parentWorkReduction.withFraction(rhsFraction))
   }
