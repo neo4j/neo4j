@@ -44,7 +44,7 @@ public interface FabricTransaction {
 
     StatementResult execute(Function<FabricExecutionContext, StatementResult> runLogic);
 
-    void markForTermination(Status reason);
+    boolean markForTermination(Status reason);
 
     default Optional<Status> getReasonIfTerminated() {
         return getTerminationMark().map(TerminationMark::getReason);

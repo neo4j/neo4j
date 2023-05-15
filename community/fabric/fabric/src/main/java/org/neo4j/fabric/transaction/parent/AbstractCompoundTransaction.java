@@ -248,13 +248,13 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
     }
 
     @Override
-    public void markForTermination(Status reason) {
+    public boolean markForTermination(Status reason) {
         // While state is open, take the lock by polling.
         // We do this to re-check state, which could be set by another thread committing or rolling back.
         while (true) {
             try {
                 if (state != State.OPEN) {
-                    return;
+                    return false;
                 } else {
                     if (exclusiveLock.tryLock(100, java.util.concurrent.TimeUnit.MILLISECONDS)) {
                         break;
@@ -267,7 +267,7 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
 
         try {
             if (state != State.OPEN) {
-                return;
+                return false;
             }
 
             terminationMark = new TerminationMark(reason, clock.nanos());
@@ -277,6 +277,8 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
         } finally {
             exclusiveLock.unlock();
         }
+
+        return true;
     }
 
     private void terminateChildren(Status reason) {

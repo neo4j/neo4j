@@ -106,8 +106,7 @@ public class FabricTransactionMonitor extends TransactionMonitor {
 
         @Override
         public boolean markForTermination(Status reason) {
-            fabricTransaction.markForTermination(reason);
-            return true;
+            return fabricTransaction.markForTermination(reason);
         }
 
         @Override
