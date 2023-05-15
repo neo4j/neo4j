@@ -362,7 +362,8 @@ case class CypherPlanner(
       simpleExpressionEvaluator,
       params,
       transactionalContextWrapper.cancellationChecker,
-      options.materializedEntitiesMode
+      options.materializedEntitiesMode,
+      options.queryOptions.eagerAnalyzer
     )
 
     // Prepare query for caching

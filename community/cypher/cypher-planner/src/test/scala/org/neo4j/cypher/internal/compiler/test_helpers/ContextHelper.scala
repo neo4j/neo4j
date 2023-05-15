@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -64,7 +65,8 @@ object ContextHelper extends MockitoSugar {
     params: MapValue = MapValue.EMPTY,
     executionModel: ExecutionModel = ExecutionModel.default,
     cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled,
-    materializedEntitiesMode: Boolean = false
+    materializedEntitiesMode: Boolean = false,
+    eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default
   ): PlannerContext = {
     new PlannerContext(
       cypherExceptionFactory,
@@ -82,7 +84,8 @@ object ContextHelper extends MockitoSugar {
       params,
       executionModel,
       cancellationChecker,
-      materializedEntitiesMode
+      materializedEntitiesMode,
+      eagerAnalyzer
     )
   }
 

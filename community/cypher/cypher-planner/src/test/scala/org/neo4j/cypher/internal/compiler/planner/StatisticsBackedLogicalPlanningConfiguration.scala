@@ -928,7 +928,8 @@ class StatisticsBackedLogicalPlanningConfiguration(
       config = plannerConfiguration,
       logicalPlanIdGen = idGen,
       debugOptions = options.debug,
-      executionModel = options.executionModel
+      executionModel = options.executionModel,
+      eagerAnalyzer = plannerConfiguration.eagerAnalyzer()
     )
     val state = InitialState(queryString, None, IDPPlannerName, new AnonymousVariableNameGenerator)
     val parsingConfig = {

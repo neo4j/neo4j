@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.frontend.phases.BaseContext
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.frontend.phases.Monitors
 import org.neo4j.cypher.internal.options.CypherDebugOptions
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.CypherExceptionFactory
@@ -90,7 +91,8 @@ class PlannerContext(
   val params: MapValue,
   val executionModel: ExecutionModel,
   cancellationChecker: CancellationChecker,
-  val materializedEntitiesMode: Boolean
+  val materializedEntitiesMode: Boolean,
+  val eagerAnalyzer: CypherEagerAnalyzerOption
 ) extends BaseContextImpl(cypherExceptionFactory, tracer, notificationLogger, monitors, cancellationChecker)
 
 object PlannerContext {
@@ -113,7 +115,8 @@ object PlannerContext {
     evaluator: ExpressionEvaluator,
     params: MapValue,
     cancellationChecker: CancellationChecker,
-    materializedEntitiesMode: Boolean
+    materializedEntitiesMode: Boolean,
+    eagerAnalyzer: CypherEagerAnalyzerOption
   ): PlannerContext = {
     val exceptionFactory = Neo4jCypherExceptionFactory(queryText, offset)
 
@@ -135,7 +138,8 @@ object PlannerContext {
       params,
       executionModel,
       cancellationChecker,
-      materializedEntitiesMode
+      materializedEntitiesMode,
+      eagerAnalyzer
     )
   }
 }

@@ -72,7 +72,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         fuseSelections,
         unnestApply(solveds, cardinalities, providedOrders, otherAttributes.withAlso(effectiveCardinalities)),
         unnestCartesianProduct,
-        if (context.config.eagerAnalyzer() == CypherEagerAnalyzerOption.lp) identity
+        if (context.eagerAnalyzer == CypherEagerAnalyzerOption.lp) identity
         else cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
         simplifyPredicates,
         unnestOptional,

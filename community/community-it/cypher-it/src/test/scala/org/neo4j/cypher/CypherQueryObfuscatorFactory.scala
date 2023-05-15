@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.frontend.phases.InitialState
 import org.neo4j.cypher.internal.frontend.phases.ObfuscationMetadataCollection
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.spi.PlanContext
 import org.neo4j.cypher.internal.spi.procsHelpers.asCypherProcedureSignature
@@ -93,7 +94,8 @@ class CypherQueryObfuscatorFactory {
       null,
       null,
       CancellationChecker.NeverCancelled,
-      false
+      false,
+      CypherEagerAnalyzerOption.default
     )
 
   private object PlanContextWithProceduresRegistry extends PlanContext {
