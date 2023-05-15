@@ -16,15 +16,9 @@
  */
 package org.neo4j.export;
 
-interface PushToCloudConsole {
-    String readLine(String fmt, Object... args);
-
-    char[] readPassword(String fmt, Object... args);
-
-    boolean readDevMode(String devModeEnvVar);
-
-    static PushToCloudConsole realConsole() {
-        return new PushToCloudConsole() {
+interface PushToCloudCLI {
+    static PushToCloudCLI realConsole() {
+        return new PushToCloudCLI() {
             @Override
             public String readLine(String fmt, Object... args) {
                 return System.console().readLine(fmt, args);
@@ -42,8 +36,8 @@ interface PushToCloudConsole {
         };
     }
 
-    static PushToCloudConsole fakeConsole(String username, String password, boolean devMode) {
-        return new PushToCloudConsole() {
+    static PushToCloudCLI fakeCLI(String username, String password, boolean devMode) {
+        return new PushToCloudCLI() {
             @Override
             public String readLine(String fmt, Object... args) {
                 return username;
@@ -60,4 +54,10 @@ interface PushToCloudConsole {
             }
         };
     }
+
+    String readLine(String fmt, Object... args);
+
+    char[] readPassword(String fmt, Object... args);
+
+    boolean readDevMode(String devModeEnvVar);
 }

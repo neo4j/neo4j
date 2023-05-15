@@ -23,9 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.CRC32;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipException;
@@ -57,8 +54,7 @@ public class UploadCommand extends AbstractAdminCommand {
     private static final String DEV_MODE_VAR_NAME = "P2C_DEV_MODE";
     private static final String ENV_NEO4J_USERNAME = "NEO4J_USERNAME";
     private static final String ENV_NEO4J_PASSWORD = "NEO4J_PASSWORD";
-    private final Copier copier;
-    private final PushToCloudConsole cons;
+    private final PushToCloudCLI pushToCloudCLI;
 
     @Parameters(
             paramLabel = "<database>",
@@ -118,10 +114,23 @@ public class UploadCommand extends AbstractAdminCommand {
             showDefaultValue = CommandLine.Help.Visibility.ALWAYS)
     private String to;
 
-    public UploadCommand(ExecutionContext ctx, Copier copier, PushToCloudConsole cons) {
+    private final org.neo4j.export.AuraClient.AuraClientBuilder clientBuilder;
+
+    private final AuraURLFactory auraURLFactory;
+
+    private final UploadURLFactory uploadURLFactory;
+
+    public UploadCommand(
+            ExecutionContext ctx,
+            org.neo4j.export.AuraClient.AuraClientBuilder clientBuilder,
+            AuraURLFactory auraURLFactory,
+            UploadURLFactory uploadURLFactory,
+            PushToCloudCLI pushToCloudCLI) {
         super(ctx);
-        this.copier = copier;
-        this.cons = cons;
+        this.clientBuilder = clientBuilder;
+        this.pushToCloudCLI = pushToCloudCLI;
+        this.auraURLFactory = auraURLFactory;
+        this.uploadURLFactory = uploadURLFactory;
     }
 
     public static long readSizeFromDumpMetaData(ExecutionContext ctx, Path dump) {
@@ -180,13 +189,13 @@ public class UploadCommand extends AbstractAdminCommand {
             }
 
             if (isBlank(username)) {
-                if (isBlank(username = cons.readLine("%s", "Neo4j aura username (default: neo4j):"))) {
+                if (isBlank(username = pushToCloudCLI.readLine("%s", "Neo4j aura username (default: neo4j):"))) {
                     username = "neo4j";
                 }
             }
             char[] pass;
             if (isBlank(password)) {
-                if ((pass = cons.readPassword("Neo4j aura password for %s:", username)).length == 0) {
+                if ((pass = pushToCloudCLI.readPassword("Neo4j aura password for %s:", username)).length == 0) {
                     throw new CommandFailedException(format(
                             "Please supply a password, either by '%s' parameter, '%s' environment variable, or prompt",
                             TO_PASSWORD, ENV_NEO4J_PASSWORD));
@@ -195,13 +204,22 @@ public class UploadCommand extends AbstractAdminCommand {
                 pass = password.toCharArray();
             }
 
-            boolean devMode = cons.readDevMode(DEV_MODE_VAR_NAME);
+            boolean devMode = pushToCloudCLI.readDevMode(DEV_MODE_VAR_NAME);
 
-            String consoleURL = buildConsoleURI(boltURI, devMode);
-            String bearerToken = copier.authenticate(verbose, consoleURL, username, pass, overwrite);
+            String consoleURL = auraURLFactory.buildConsoleURI(boltURI, devMode);
+
+            AuraClient auraClient = clientBuilder
+                    .withConsoleURL(consoleURL)
+                    .withUserName(username)
+                    .withPassword(pass)
+                    .withConsent(overwrite)
+                    .withBoltURI(boltURI)
+                    .withDefaults()
+                    .build();
 
             Uploader uploader = makeDumpUploader(dumpDirectory, database.name());
-            uploader.process(consoleURL, bearerToken);
+
+            uploader.process(auraClient);
         } catch (Exception e) {
             throw new CommandFailedException(e.getMessage());
         }
@@ -210,134 +228,6 @@ public class UploadCommand extends AbstractAdminCommand {
     private void verbose(String format, Object... args) {
         if (verbose) {
             ctx.out().printf(format, args);
-        }
-    }
-
-    String buildConsoleURI(String boltURI, boolean devMode) throws CommandFailedException {
-        UrlMatcher matchers[] = devMode
-                ? new UrlMatcher[] {new DevMatcher(), new ProdMatcher(), new PrivMatcher()}
-                : new UrlMatcher[] {new ProdMatcher()};
-
-        return Arrays.stream(matchers)
-                .filter(m -> m.match(boltURI))
-                .findFirst()
-                .orElseThrow(
-                        () -> new CommandFailedException(
-                                "Invalid Bolt URI '" + boltURI
-                                        + "'. Please note push-to-cloud does not currently support private link bolt connections. Please raise a Support ticket if you need to use push-to-cloud and you have public traffic disabled."))
-                .consoleUrl();
-    }
-
-    abstract static class UrlMatcher {
-        // A boltURI looks something like this:
-        //
-        //   bolt+routing://mydbid-myenvironment.databases.neo4j.io
-        //                  <─┬──><──────┬─────>
-        //                    │          └──────── environment
-        //                    └─────────────────── database id
-        //
-        // When running in a dev environment it can also be of the form
-        // bolt+routing://mydbid-myenv.databases.neo4j-myenv.io
-        // Constructing a console URI takes elements from the bolt URI and places them inside this URI:
-        //
-        //   https://console<environment>.neo4j.io/v1/databases/<database id>
-        //
-        // Examples:
-        //
-        //   bolt+routing://rogue.databases.neo4j.io  --> https://console.neo4j.io/v1/databases/rogue
-        //   bolt+routing://rogue-mattias.databases.neo4j.io  --> https://console-mattias.neo4j.io/v1/databases/rogue
-        //   bolt+routing://rogue-myenv.databases.neo4j-myenv.io  -->
-        // https://console-myenv.neo4j-myenv.io/v1/databases/rogue
-        //
-        // When PrivateLink is enabled, the URL scheme is a little different:
-        //
-        //   bolt+routing://mydbid.myenv-orch-0003.neo4j.io"
-        //                  <─┬──> <─┬─>
-        //                    │      └──────────── environment
-        //                    └─────────────────── database id
-
-        protected Matcher matcher;
-        protected String url;
-
-        protected abstract Pattern pattern();
-
-        public abstract String consoleUrl();
-
-        public boolean match(String url) {
-            this.url = url;
-            matcher = pattern().matcher(url);
-            return matcher.matches();
-        }
-    }
-
-    static class ProdMatcher extends UrlMatcher {
-        @Override
-        protected Pattern pattern() {
-            return Pattern.compile(
-                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j.io$");
-        }
-
-        @Override
-        public String consoleUrl() {
-            String databaseId = matcher.group(1);
-            String environment = matcher.group(2);
-
-            return String.format(
-                    "https://console%s.neo4j.io/v1/databases/%s", environment == null ? "" : environment, databaseId);
-        }
-    }
-
-    static class DevMatcher extends UrlMatcher {
-        @Override
-        protected Pattern pattern() {
-            return Pattern.compile(
-                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([^-]+)(-(.+))?.databases.neo4j(-(.+))?.io$");
-        }
-
-        @Override
-        public String consoleUrl() {
-            String databaseId = matcher.group(1);
-            String environment = matcher.group(2);
-            String domain = "";
-
-            if (environment == null) {
-                throw new CommandFailedException(
-                        "Expected to find an environment running in dev mode in bolt URI: " + url);
-            }
-            if (matcher.groupCount() == 5) {
-                domain = matcher.group(4);
-            }
-
-            return String.format("https://console%s.neo4j%s.io/v1/databases/%s", environment, domain, databaseId);
-        }
-    }
-
-    static class PrivMatcher extends UrlMatcher {
-        @Override
-        protected Pattern pattern() {
-            return Pattern.compile(
-                    "(?:bolt(?:\\+routing)?|neo4j(?:\\+s|\\+ssc)?)://([a-zA-Z0-9]+)\\.(\\S+)-orch-(\\d+).neo4j(-\\S+)?.io$");
-        }
-
-        @Override
-        public String consoleUrl() {
-            String databaseId = matcher.group(1);
-            String environment = matcher.group(2);
-            String domain = "";
-
-            switch (environment) {
-                case "production" -> environment = "";
-                case "staging", "prestaging" -> environment = "-" + environment;
-                default -> {
-                    environment = "-" + environment;
-                    if (matcher.group(4) == null) {
-                        throw new CommandFailedException("Invalid Bolt URI '" + url + "'");
-                    }
-                    domain = matcher.group(4);
-                }
-            }
-
-            return String.format("https://console%s.neo4j%s.io/v1/databases/%s", environment, domain, databaseId);
         }
     }
 
@@ -368,52 +258,6 @@ public class UploadCommand extends AbstractAdminCommand {
         return sizeInBytes;
     }
 
-    public interface Copier {
-        /**
-         * Authenticates user by name and password.
-         *
-         * @param verbose          whether or not to print verbose debug messages/statuses.
-         * @param consoleURL       console URI to target.
-         * @param username         the username.
-         * @param password         the password.
-         * @param consentConfirmed user confirmed to overwrite existing database.
-         * @return a bearer token to pass into {@link #copy(boolean, String, String, Source, boolean, String)} later on.
-         * @throws CommandFailedException on authentication failure or some other unexpected failure.
-         */
-        String authenticate(
-                boolean verbose, String consoleURL, String username, char[] password, boolean consentConfirmed)
-                throws CommandFailedException;
-
-        /**
-         * Copies the given dump to the console URI.
-         *
-         * @param verbose                 whether or not to print verbose debug messages/statuses.
-         * @param consoleURL              console URI to target.
-         * @param boltUri                 bolt URI to target database.
-         * @param source                  dump to copy to the target.
-         * @param deleteSourceAfterImport delete the dump after successful import
-         * @param bearerToken             token from successful {@link #authenticate(boolean, String, String, char[], boolean)} call.
-         * @throws CommandFailedException on copy failure or some other unexpected failure.
-         */
-        void copy(
-                boolean verbose,
-                String consoleURL,
-                String boltUri,
-                Source source,
-                boolean deleteSourceAfterImport,
-                String bearerToken)
-                throws CommandFailedException;
-
-        /**
-         * @param verbose     whether or not to print verbose debug messages/statuses
-         * @param consoleURL  console URI to target.
-         * @param size        database size
-         * @param bearerToken token from successful {@link #authenticate(boolean, String, String, char[], boolean)} call.
-         * @throws CommandFailedException if the database won't fit on the aura instance
-         */
-        void checkSize(boolean verbose, String consoleURL, long size, String bearerToken) throws CommandFailedException;
-    }
-
     abstract static class Uploader {
         protected final Source source;
 
@@ -425,7 +269,7 @@ public class UploadCommand extends AbstractAdminCommand {
             return source.size();
         }
 
-        abstract void process(String consoleURL, String bearerToken);
+        abstract void process(AuraClient auraClient);
     }
 
     public record Source(FileSystemAbstraction fs, Path path, long size) {
@@ -451,14 +295,43 @@ public class UploadCommand extends AbstractAdminCommand {
         }
 
         @Override
-        void process(String consoleURL, String bearerToken) {
+        void process(AuraClient auraClient) {
             // Check size of dump (reading actual database size from dump header)
-            verbose("Checking database size %s fits at %s\n", sizeText(size()), consoleURL);
-            copier.checkSize(verbose, consoleURL, size(), bearerToken);
+            verbose("Checking database size %s fits at %s\n", sizeText(size()), auraClient.getConsoleURL());
+
+            String bearerToken = auraClient.authenticate(verbose);
+            auraClient.checkSize(verbose, size(), bearerToken);
 
             // Upload dumpFile
-            verbose("Uploading data of %s to %s\n", sizeText(size()), consoleURL);
-            copier.copy(verbose, consoleURL, boltURI, source, false, bearerToken);
+            verbose("Uploading data of %s to %s\n", sizeText(size()), auraClient.getConsoleURL());
+
+            String version = getClass().getPackage().getImplementationVersion();
+            long crc32Sum;
+            try {
+                crc32Sum = source.crc32Sum();
+
+            } catch (IOException e) {
+                throw new CommandFailedException("Failed to calculate CRC32 checksum of dump file", e);
+            }
+
+            AuraResponse.SignedURIBody signedURIBody =
+                    auraClient.initatePresignedUpload(crc32Sum, size(), bearerToken, version);
+            SignedUpload signedUpload = uploadURLFactory.fromAuraResponse(signedURIBody, ctx, boltURI);
+            signedUpload.copy(verbose, source);
+
+            try {
+                ctx.out().println("Triggering import");
+                auraClient.triggerImportProtocol(verbose, source.path(), crc32Sum, bearerToken);
+                verbose("Polling status\n");
+                auraClient.doStatusPolling(verbose, bearerToken, source.size());
+            } catch (IOException e) {
+                throw new CommandFailedException("Failed to trigger import, please contact Aura support", e);
+            } catch (InterruptedException e) {
+                throw new CommandFailedException("Command interrupted", e);
+            }
+
+            ctx.out().println("Dump successfully uploaded to Aura");
+            ctx.out().println(String.format("Your dump at %s can now be deleted.", source.path()));
         }
     }
 }

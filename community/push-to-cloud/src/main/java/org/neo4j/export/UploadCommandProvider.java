@@ -27,7 +27,12 @@ import org.neo4j.cli.ExecutionContext;
 public class UploadCommandProvider implements CommandProvider {
     @Override
     public UploadCommand createCommand(ExecutionContext ctx) {
-        return new UploadCommand(ctx, new HttpCopier(ctx), PushToCloudConsole.realConsole());
+        return new UploadCommand(
+                ctx,
+                new org.neo4j.export.AuraClient.AuraClientBuilder(ctx),
+                new AuraURLFactory(),
+                new SignedUploadURLFactory(),
+                PushToCloudCLI.realConsole());
     }
 
     @Override
