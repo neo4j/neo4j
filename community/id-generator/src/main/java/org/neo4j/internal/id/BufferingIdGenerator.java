@@ -100,6 +100,14 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
         };
     }
 
+    @Override
+    public synchronized void clearCache(CursorContext cursorContext) {
+        if (!bufferedDeletedIds.isEmpty()) {
+            newFreeBuffer();
+        }
+        delegate.clearCache(cursorContext);
+    }
+
     public void releaseRanges() {
         if (!rangeCache.isEmpty()) {
             rangeCache.forEach(pageIdRange -> delegate.releasePageRange(pageIdRange, NULL_CONTEXT));

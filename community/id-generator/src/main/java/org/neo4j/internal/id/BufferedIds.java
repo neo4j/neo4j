@@ -29,6 +29,8 @@ public interface BufferedIds extends Closeable {
 
     void read(BufferedIdVisitor visitor) throws IOException;
 
+    void clear();
+
     @Override
     void close() throws IOException;
 

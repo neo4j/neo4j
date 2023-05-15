@@ -20,6 +20,8 @@
 package org.neo4j.internal.id;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 import static org.neo4j.test.Race.throwing;
 
@@ -43,6 +45,7 @@ import org.neo4j.collection.trackable.HeapTrackingLongArrayList;
 import org.neo4j.internal.id.BufferingIdGeneratorFactory.IdBuffer;
 import org.neo4j.internal.id.IdController.TransactionSnapshot;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.DelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.Race;
 import org.neo4j.test.RandomSupport;
@@ -70,6 +73,10 @@ class DiskBufferedIdsTest {
     @BeforeEach
     void start() throws IOException {
         basePath = directory.file("buffer");
+        openBuffer(fs);
+    }
+
+    private void openBuffer(FileSystemAbstraction fs) throws IOException {
         buffer = new DiskBufferedIds(fs, basePath, INSTANCE, (int) ByteUnit.kibiBytes(500));
     }
 
@@ -247,6 +254,69 @@ class DiskBufferedIdsTest {
         assertThat(segment.intValue()).isEqualTo(positions.length);
     }
 
+    @Test
+    void shouldClear() throws IOException {
+        // given
+        int numWrites = random.nextInt(100, 200);
+        for (int i = 0; i < numWrites; i++) {
+            buffer.write(randomSnapshot(random.randomValues()), randomBuffers(random.randomValues()));
+        }
+        buffer.read(new VisitorAdapter() {
+            private final MutableInt reads = new MutableInt(random.nextInt(0, 100));
+
+            @Override
+            public boolean startChunk(TransactionSnapshot snapshot) {
+                return reads.decrementAndGet() > 0;
+            }
+        });
+
+        // when
+        buffer.clear();
+
+        // then
+        verifyReadStateAfterClear();
+    }
+
+    @Test
+    void shouldTryToHandleClearFailure() throws IOException {
+        // given
+        stop();
+        var failingFs = new FailingFileSystemAbstraction(fs);
+        openBuffer(failingFs);
+        int startSegmentId = buffer.writerSegmentId();
+        while (buffer.writerSegmentId() - startSegmentId < 2) {
+            buffer.write(randomSnapshot(random.randomValues()), randomBuffers(random.randomValues()));
+        }
+        buffer.read(new VisitorAdapter() {
+            private int numChunksRead;
+
+            @Override
+            public boolean startChunk(TransactionSnapshot snapshot) {
+                return numChunksRead++ == 0;
+            }
+        });
+
+        // when
+        assertThatThrownBy(() -> buffer.clear()).isInstanceOf(UncheckedIOException.class);
+
+        // then
+        verifyReadStateAfterClear();
+    }
+
+    private void verifyReadStateAfterClear() throws IOException {
+        buffer.read(new VerifyingReader(() -> fail("Unexpected data")));
+
+        // and when
+        var snapshotAfterClear = randomSnapshot(random.randomValues());
+        var bufferAfterClear = randomBuffers(random.randomValues());
+        buffer.write(snapshotAfterClear, copy(bufferAfterClear));
+
+        // then
+        var source = List.of(Pair.of(snapshotAfterClear, bufferAfterClear)).iterator();
+        buffer.read(new VerifyingReader(() -> source.hasNext() ? source.next() : null));
+        assertThat(source.hasNext()).isFalse();
+    }
+
     private int numberOfSegments() {
         try {
             return fs.listFiles(basePath.getParent(), entry -> entry.getFileName()
@@ -346,11 +416,11 @@ class DiskBufferedIdsTest {
             assertThat(snapshot.lastCommittedTransactionId())
                     .isEqualTo(expected.getLeft().lastCommittedTransactionId());
             var expectedBuffers = expected.getRight().iterator();
-            for (var buffer1 : buffers) {
+            for (var buffer : buffers) {
                 var expectedBuffer = expectedBuffers.next();
-                assertThat(buffer1.idTypeOrdinal()).isEqualTo(expectedBuffer.idTypeOrdinal());
+                assertThat(buffer.idTypeOrdinal()).isEqualTo(expectedBuffer.idTypeOrdinal());
                 var expectedIdIterator = expectedBuffer.ids().iterator();
-                var idIterator = buffer1.ids().iterator();
+                var idIterator = buffer.ids().iterator();
                 while (idIterator.hasNext()) {
                     assertThat(expectedIdIterator.hasNext()).isTrue();
                     assertThat(idIterator.next()).isEqualTo(expectedIdIterator.next());
@@ -377,5 +447,22 @@ class DiskBufferedIdsTest {
 
         @Override
         public void endChunk() {}
+    }
+
+    private static class FailingFileSystemAbstraction extends DelegatingFileSystemAbstraction {
+        private boolean hasFailed;
+
+        FailingFileSystemAbstraction(FileSystemAbstraction delegate) {
+            super(delegate);
+        }
+
+        @Override
+        public void deleteFile(Path fileName) throws IOException {
+            if (!hasFailed) {
+                hasFailed = true;
+                throw new IOException("Intentionally failing");
+            }
+            super.deleteFile(fileName);
+        }
     }
 }

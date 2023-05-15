@@ -66,6 +66,11 @@ class HeapBufferedIds implements BufferedIds {
     }
 
     @Override
+    public void clear() {
+        queue.clear();
+    }
+
+    @Override
     public void close() throws IOException {}
 
     private record Entry(
