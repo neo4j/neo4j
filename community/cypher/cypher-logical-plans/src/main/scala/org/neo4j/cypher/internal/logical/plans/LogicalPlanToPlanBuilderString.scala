@@ -1134,8 +1134,7 @@ object LogicalPlanToPlanBuilderString {
           format.toString,
           fieldTerminatorStr
         ).mkString(", ")
-      case Apply(_, _, fromSubquery) => s"fromSubquery = $fromSubquery"
-      case Eager(_, reasons)         => reasons.map(eagernessReasonStr).mkString("ListSet(", ", ", ")")
+      case Eager(_, reasons) => reasons.map(eagernessReasonStr).mkString("ListSet(", ", ", ")")
       case TransactionForeach(_, _, batchSize, onErrorBehaviour, maybeReportAs) =>
         val params =
           Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.toSeq
@@ -1144,7 +1143,6 @@ object LogicalPlanToPlanBuilderString {
         val params =
           Seq(expressionStringifier(batchSize), onErrorBehaviour.toString) ++ maybeReportAs.toSeq
         params.mkString(", ")
-      case CartesianProduct(_, _, fromSubquery) => s"fromSubquery = $fromSubquery"
       case SimulatedNodeScan(idName, numberOfRows) =>
         s"${wrapInQuotations(idName)}, $numberOfRows"
       case SimulatedExpand(_, from, rel, to, factor) =>

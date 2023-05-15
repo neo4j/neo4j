@@ -84,7 +84,7 @@ class AllRelationshipsScanPlanningIntegrationTest extends CypherFunSuite
     ) should equal(
       planner.planBuilder()
         .produceResults("n", "r")
-        .apply(fromSubquery = true)
+        .apply()
         .|.allRelationshipsScan("(a)-[r]-(b)", "n")
         .allNodeScan("n")
         .build()
@@ -106,7 +106,7 @@ class AllRelationshipsScanPlanningIntegrationTest extends CypherFunSuite
     ) should equal(
       planner.planBuilder()
         .produceResults("n", "r")
-        .apply(fromSubquery = true)
+        .apply()
         .|.allRelationshipsScan("(a)-[r]->(b)", "n")
         .allNodeScan("n")
         .build()
@@ -128,7 +128,7 @@ class AllRelationshipsScanPlanningIntegrationTest extends CypherFunSuite
     ) should equal(
       planner.planBuilder()
         .produceResults("n", "r")
-        .apply(fromSubquery = true)
+        .apply()
         .|.allRelationshipsScan("(a)<-[r]-(b)", "n")
         .allNodeScan("n")
         .build()

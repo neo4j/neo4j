@@ -259,7 +259,7 @@ class MergeRelationshipPlanningIntegrationTest extends CypherFunSuite with Logic
     val plan = cfg.plan("WITH [b IN [1]] AS ignored MERGE (a)-[b:REL]->(c)<-[d:REL]-(e)").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
-      .apply(fromSubquery = false)
+      .apply()
       .|.merge(
         Seq(createNode("a"), createNode("c"), createNode("e")),
         Seq(createRelationship("b", "a", "REL", "c", OUTGOING), createRelationship("d", "c", "REL", "e", INCOMING)),

@@ -480,7 +480,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
-      .apply(fromSubquery = true)
+      .apply()
       .|.limit(2)
       .|.shortestPath(
         "(a)-[rs*1..]-(b)",
@@ -490,7 +490,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       )
       .|.argument("a", "b")
       .filter("elementId(a) < elementId(b)")
-      .cartesianProduct(fromSubquery = false)
+      .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
       .build()
@@ -537,7 +537,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     }
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
-      .apply(fromSubquery = false)
+      .apply()
       .|.top(Seq(Ascending("length(p)")), 2)
       .|.projection("length(p) AS `length(p)`")
       .|.shortestPath(
@@ -550,7 +550,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       )
       .|.argument("a", "b")
       .filter("elementId(a) < elementId(b)")
-      .cartesianProduct(fromSubquery = false)
+      .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
       .build()
@@ -590,7 +590,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
       .projection("nodes(p) AS nodes")
-      .apply(fromSubquery = true)
+      .apply()
       .|.top(Seq(Ascending("length(p)")), 2)
       .|.projection("length(p) AS `length(p)`")
       .|.shortestPath(
@@ -603,7 +603,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       )
       .|.argument("a", "b")
       .filter("elementId(a) < elementId(b)")
-      .cartesianProduct(fromSubquery = false)
+      .cartesianProduct()
       .|.allNodeScan("b")
       .allNodeScan("a")
       .build()

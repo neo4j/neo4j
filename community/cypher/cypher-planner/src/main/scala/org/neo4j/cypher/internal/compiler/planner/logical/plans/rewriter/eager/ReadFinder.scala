@@ -839,10 +839,10 @@ object ReadFinder {
        */
       case Aggregation(_, _, _) |
         AntiSemiApply(_, _) |
-        Apply(_, _, _) |
+        Apply(_, _) |
         BidirectionalRepeatTrail(_, _, _, _, _, _, _, _, _, _, _, _, _) |
         CacheProperties(_, _) |
-        CartesianProduct(_, _, _) |
+        CartesianProduct(_, _) |
         plans.DeleteExpression(_, _) |
         DeleteNode(_, _) |
         DeletePath(_, _) |

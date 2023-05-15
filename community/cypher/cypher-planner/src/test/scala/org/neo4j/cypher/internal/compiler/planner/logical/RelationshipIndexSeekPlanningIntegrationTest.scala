@@ -117,7 +117,7 @@ class RelationshipIndexSeekPlanningIntegrationTest extends CypherFunSuite
         planner.planBuilder()
           .produceResults("n", "r")
           .filter("b.prop = n.prop")
-          .apply(fromSubquery = true)
+          .apply()
           .|.relationshipIndexOperator(
             s"(a)-[r:REL($indexStr)]-(b)",
             argumentIds = Set("n"),

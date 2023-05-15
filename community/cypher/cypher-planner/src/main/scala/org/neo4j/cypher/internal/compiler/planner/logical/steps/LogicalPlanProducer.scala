@@ -901,9 +901,9 @@ case class LogicalPlanProducer(
             )
           case None =>
             if (!correlated && solvedRight.readOnly) {
-              CartesianProduct(left, right, fromSubquery = true)
+              CartesianProduct(left, right)
             } else {
-              Apply(left, right, fromSubquery = true)
+              Apply(left, right)
             }
         }
       } else {

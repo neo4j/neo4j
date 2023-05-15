@@ -57,8 +57,7 @@ case object unnestOptional extends Rewriter {
         Optional(
           e @ Expand(_: Argument, _, _, _, _, _, _),
           _
-        ),
-        _
+        )
       ) =>
       optionalExpand(e, lhs)(None)(SameId(apply.id))
 
@@ -67,8 +66,7 @@ case object unnestOptional extends Rewriter {
         Optional(
           Selection(predicate, e @ Expand(_: Argument, _, _, _, _, _, _)),
           _
-        ),
-        _
+        )
       ) =>
       optionalExpand(e, lhs)(Some(predicate))(SameId(apply.id))
   })

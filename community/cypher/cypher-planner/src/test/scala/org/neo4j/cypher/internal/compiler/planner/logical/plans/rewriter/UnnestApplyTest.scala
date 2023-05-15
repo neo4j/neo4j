@@ -393,26 +393,6 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     rewrite(input) should equal(input)
   }
 
-  test("should unnest ForeachApply and multiply cardinality") {
-    val inputBuilder = new LogicalPlanBuilder()
-      .produceResults("n").withCardinality(100)
-      .apply().withCardinality(100)
-      .|.foreachApply("n", "[1, 2, 3]").withCardinality(1)
-      .|.|.setProperty("n", "prop", "5").withCardinality(1)
-      .|.|.argument("n").withCardinality(1)
-      .|.argument("n").withCardinality(1)
-      .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
-
-    inputBuilder shouldRewriteToPlanWithAttributes (
-      new LogicalPlanBuilder()
-        .produceResults("n").withCardinality(100)
-        .foreachApply("n", "[1, 2, 3]").withCardinality(100) // Writing plans do not keep provided order
-        .|.setProperty("n", "prop", "5").withCardinality(1)
-        .|.argument("n").withCardinality(1)
-        .nodeByLabelScan("n", "N").withCardinality(100).withProvidedOrder(po_n)
-    )
-  }
-
   test("should unnest nested Apply with Expand on LHS") {
     val inputBuilder = new LogicalPlanBuilder()
       .produceResults("n", "m").withCardinality(1000).withProvidedOrder(po_n)
@@ -513,22 +493,28 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     rewrite(input) should equal(input)
   }
 
-  test("should not remove apply with argument on LHS when fromSubquery is true") {
+  test("should remove apply with argument on LHS, even when RHS has updates") {
     val input = new LogicalPlanBuilder()
       .produceResults("n")
-      .apply(fromSubquery = true)
+      .apply()
       .|.setLabels("n", "Label")
       .|.allNodeScan("n")
       .argument()
       .build()
 
-    rewrite(input) should equal(input)
+    val expected = new LogicalPlanBuilder()
+      .produceResults("n")
+      .setLabels("n", "Label")
+      .allNodeScan("n")
+      .build()
+
+    rewrite(input) should equal(expected)
   }
 
-  test("should remove apply with argument on RHS when fromSubquery is true") {
+  test("should remove apply with argument on RHS") {
     val input = new LogicalPlanBuilder()
       .produceResults("n")
-      .apply(fromSubquery = true)
+      .apply()
       .|.argument("n")
       .allNodeScan("n")
       .build()
@@ -541,70 +527,10 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     rewrite(input) should equal(expected)
   }
 
-  test("should unnest nested applies such that fromSubquery is preserved from parent-Apply") {
+  test("should not unnest updating plan") {
     val input = new LogicalPlanBuilder()
-      .produceResults("n")
-      .apply(fromSubquery = true)
-      .|.apply()
-      .|.|.argument("m")
-      .|.allNodeScan("m")
-      .allNodeScan("n")
-      .build()
-
-    val expected = new LogicalPlanBuilder()
-      .produceResults("n")
-      .apply(fromSubquery = true)
-      .|.allNodeScan("m")
-      .allNodeScan("n")
-      .build()
-
-    rewrite(input) should equal(expected)
-  }
-
-  test("should unnest nested applies such that fromSubquery is preserved from child-Apply") {
-    val input = new LogicalPlanBuilder()
-      .produceResults("n")
+      .produceResults("n", "m")
       .apply()
-      .|.apply(fromSubquery = true)
-      .|.|.allNodeScan("m")
-      .|.argument("m")
-      .allNodeScan("n")
-      .build()
-
-    val expected = new LogicalPlanBuilder()
-      .produceResults("n")
-      .apply(fromSubquery = true)
-      .|.allNodeScan("m")
-      .allNodeScan("n")
-      .build()
-
-    rewrite(input) should equal(expected)
-  }
-
-  test("should unnest UnnestableUnaryPlan when fromSubquery is true") {
-    val input = new LogicalPlanBuilder()
-      .produceResults("n", "m")
-      .apply(fromSubquery = true)
-      .|.expand("(n)-->(m)")
-      .|.allNodeScan("m")
-      .allNodeScan("n")
-      .build()
-
-    val expected = new LogicalPlanBuilder()
-      .produceResults("n", "m")
-      .expand("(n)-->(m)")
-      .apply(fromSubquery = true)
-      .|.allNodeScan("m")
-      .allNodeScan("n")
-      .build()
-
-    rewrite(input) should equal(expected)
-  }
-
-  test("should not unnest non-UnnestableUnaryPlan when fromSubquery is true") {
-    val input = new LogicalPlanBuilder()
-      .produceResults("n", "m")
-      .apply(fromSubquery = true)
       .|.setLabels("m", "Label")
       .|.allNodeScan("m")
       .allNodeScan("n")
@@ -613,11 +539,11 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     rewrite(input) should equal(input)
   }
 
-  test("should unnest nested applies with RHS unnestableUnaryPlan and RHS argument when fromSubquery is true") {
+  test("should unnest nested applies") {
     val input = new LogicalPlanBuilder()
       .produceResults("n", "m", "o")
       .apply()
-      .|.apply(fromSubquery = true)
+      .|.apply()
       .|.|.expand("(n)-->(m)")
       .|.|.argument("n")
       .|.filter("n.prop = 42")
@@ -635,10 +561,10 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     rewrite(input) should equal(expected)
   }
 
-  test("should not unnest ForeachApply when fromSubquery is true") {
+  test("should not unnest ForeachApply") {
     val input = new LogicalPlanBuilder()
       .produceResults("n")
-      .apply(fromSubquery = true)
+      .apply()
       .|.foreachApply("n", "[1, 2, 3]")
       .|.|.setProperty("n", "prop", "5")
       .|.|.argument("n")
@@ -649,80 +575,26 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
     rewrite(input) should equal(input)
   }
 
-  test("should unnest OptionalExpand when fromSubquery is true") {
+  test("should not unnest nested Apply with updates") {
     val input = new LogicalPlanBuilder()
-      .produceResults("n", "m")
-      .apply(fromSubquery = true)
-      .|.optionalExpandAll("(n)-->(m)")
+      .produceResults("n")
+      .apply()
+      .|.apply()
+      .|.|.setProperty("m", "prop", "5")
+      .|.|.argument("m")
+      .|.filter("m.prop > 0")
+      .|.expand("(n)--(m)")
       .|.argument("n")
       .nodeByLabelScan("n", "N")
-      .build()
-
-    val expected = new LogicalPlanBuilder()
-      .produceResults("n", "m")
-      .optionalExpandAll("(n)-->(m)")
-      .nodeByLabelScan("n", "N")
-      .build()
-
-    rewrite(input) should equal(expected)
-  }
-
-  test("should not unnest Apply with projection on RHS when fromSubquery is true") {
-    val input = new LogicalPlanBuilder()
-      .produceResults("x", "n")
-      .apply(fromSubquery = true)
-      .|.setProperty("n", "prop", "1")
-      .|.allNodeScan("n", "x")
-      .projection("5 AS x")
-      .argument()
       .build()
 
     rewrite(input) should equal(input)
   }
 
-  test("should unnest apply on apply on optional such that fromSubquery is preserved") {
+  test("should not unnest Apply with projection on LHS when RHS has updates") {
     val input = new LogicalPlanBuilder()
       .produceResults("x", "n")
       .apply()
-      .|.apply(fromSubquery = true)
-      .|.|.optional("n")
-      .|.|.expand("(n)-->(m)")
-      .|.|.argument("n")
-      .|.argument("n")
-      .allNodeScan("n")
-      .build()
-
-    val expected = new LogicalPlanBuilder()
-      .produceResults("x", "n")
-      .apply(fromSubquery = true)
-      .|.optional("n")
-      .|.expand("(n)-->(m)")
-      .|.argument("n")
-      .allNodeScan("n")
-      .build()
-
-    rewrite(input) should equal(expected)
-  }
-
-  test("should not unnest nested SemiApply with Expand on LHS when fromSubquery is true") {
-    val input = new LogicalPlanBuilder()
-      .produceResults("n", "m")
-      .apply(fromSubquery = true)
-      .|.semiApply()
-      .|.|.limit(1)
-      .|.|.argument("n")
-      .|.expand("(m)--(n)")
-      .|.argument("n")
-      .nodeByLabelScan("n", "N")
-      .build()
-
-    rewrite(input) should equal(input)
-  }
-
-  test("should not unnest Apply with LHS projection and argument when fromSubquery is true") {
-    val input = new LogicalPlanBuilder()
-      .produceResults("x", "n")
-      .apply(fromSubquery = true)
       .|.setProperty("n", "prop", "1")
       .|.allNodeScan("n", "x")
       .projection("5 AS x")

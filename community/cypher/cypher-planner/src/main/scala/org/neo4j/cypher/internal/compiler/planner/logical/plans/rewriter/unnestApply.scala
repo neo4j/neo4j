@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.ApplyPlan
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
-import org.neo4j.cypher.internal.logical.plans.ForeachApply
-import org.neo4j.cypher.internal.logical.plans.LogicalBinaryPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalUnaryPlan
@@ -65,35 +63,29 @@ case class unnestApply(
     EXP: Expand
     OEX: Optional Expand
     CN : CreateNode
-    FE : Foreach
     UP : Unary Plan
     BP : Binary Plan
    */
 
   private val instance: Rewriter = topDown(Rewriter.lift {
     // Arg Ax R => R
-    case RemovableApply(arg: Argument, rhs, _) =>
+    case Apply(arg: Argument, rhs) =>
       assertArgumentHasCardinality1(arg)
       rhs
 
     // L Ax Arg => L
-    case RemovableApply(lhs, _: Argument, _) =>
+    case Apply(lhs, _: Argument) =>
       lhs
-
-    // L Ax (Arg FE R) => L FE R
-    case apply @ RemovableApply(lhs, foreach @ ForeachApply(arg: Argument, _, _, _), _) =>
-      assertArgumentHasCardinality1(arg)
-      unnestRightBinaryLeft(apply, lhs, foreach)
 
     // L Ax (σ R) => σ(L Ax R)
     // L Ax (π R) => π(L Ax R)
     // L Ax (EXP R) => EXP( L Ax R ) (for single step pattern relationships)
     // L Ax (EXP R) => EXP( L Ax R ) (for varlength pattern relationships)
-    case apply @ Apply(lhs, UnnestableUnaryPlan(p), _) =>
+    case apply @ Apply(lhs, UnnestableUnaryPlan(p)) =>
       unnestRightUnary(apply, lhs, p)
 
     // L Ax ((σ L2) Ax R) => (σ L) Ax (L2 Ax R) iff σ does not have dependencies on L2
-    case original @ Apply(lhs, Apply(sel @ Selection(predicate, lhs2), rhs, isSubquery1), isSubquery2)
+    case original @ Apply(lhs, Apply(sel @ Selection(predicate, lhs2), rhs))
       if predicate.exprs.forall(lhs.satisfiesExpressionDependencies) =>
       val maybeSelectivity = cardinalities(sel.id) / cardinalities(lhs2.id)
       val selectionLHS = Selection(predicate, lhs)(attributes.copy(sel.id))
@@ -101,19 +93,19 @@ case class unnestApply(
       cardinalities.set(selectionLHS.id, maybeSelectivity.fold(cardinalities(sel.id))(cardinalities(lhs.id) * _))
       providedOrders.copy(lhs.id, selectionLHS.id)
 
-      val apply2 = Apply(lhs2, rhs, isSubquery1)(attributes.copy(lhs.id))
+      val apply2 = Apply(lhs2, rhs)(attributes.copy(lhs.id))
       solveds.copy(original.id, apply2.id)
       cardinalities.set(apply2.id, cardinalities(lhs2.id) * cardinalities(rhs.id))
       providedOrders.copy(lhs2.id, apply2.id)
 
-      Apply(selectionLHS, apply2, isSubquery2)(SameId(original.id))
+      Apply(selectionLHS, apply2)(SameId(original.id))
 
     // L Ax (OEX Arg) => OEX (L Ax Arg)
-    case apply @ Apply(lhs, oex @ OptionalExpand(_: Argument, _, _, _, _, _, _, _), _) =>
+    case apply @ Apply(lhs, oex @ OptionalExpand(_: Argument, _, _, _, _, _, _, _)) =>
       unnestRightUnary(apply, lhs, oex)
 
     // π (Arg) Ax R => π (R) // if R is leaf and R is not using columns from π
-    case apply @ RemovableApply(projection @ Projection(Argument(_), _, projections), rhsLeaf: LogicalLeafPlan, _)
+    case apply @ Apply(projection @ Projection(Argument(_), _, projections), rhsLeaf: LogicalLeafPlan)
       if !projections.keys.exists(rhsLeaf.usedVariables.contains) =>
       val rhsCopy = rhsLeaf.withoutArgumentIds(projections.keySet)
       val res = projection.copy(rhsCopy, projection.discardSymbols, projections)(attributes.copy(projection.id))
@@ -123,15 +115,16 @@ case class unnestApply(
       res
 
     // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree
-    case apply @ Apply(lhs1, Apply(lhs2, rhs2, fromSubquery2), fromSubquery1) if isUnnestableUnaryPlanTree(lhs2) =>
-      val res = Apply(putOnTopOf(lhs1, lhs2), rhs2, fromSubquery1 || fromSubquery2)(attributes.copy(apply.id))
+    case apply @ Apply(lhs1, Apply(lhs2, rhs2)) if !apply.hasUpdatingRhs && isUnnestableUnaryPlanTree(lhs2) =>
+      val res = Apply(putOnTopOf(lhs1, lhs2), rhs2)(attributes.copy(apply.id))
       solveds.copy(apply.id, res.id)
       cardinalities.set(res.id, cardinalities(apply.id))
       providedOrders.copy(apply.id, res.id)
       res
 
-    // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree && Ax.fromSubquery = false
-    case apply @ RemovableApply(lhs1, innerApplyPlan @ ApplyPlan(lhs2, _), _) if isUnnestableUnaryPlanTree(lhs2) =>
+    // L Ax (L2 Ax R) => (L2 (L)) Ax R iff L2 isUnnestableUnaryPlanTree
+    case apply @ Apply(lhs1, innerApplyPlan @ ApplyPlan(lhs2, _))
+      if !apply.hasUpdatingRhs && isUnnestableUnaryPlanTree(lhs2) =>
       val res = innerApplyPlan.withLhs(putOnTopOf(lhs1, lhs2))(attributes.copy(apply.id))
       solveds.copy(apply.id, res.id)
       cardinalities.set(res.id, cardinalities(apply.id))
@@ -180,19 +173,6 @@ object UnnestableUnaryPlan {
   }
 }
 
-object RemovableApply {
-
-  /**
-   * An 'Apply' is removable if 'fromSubquery' is false.
-   * When 'fromSubquery' is true, the 'Apply' can only be _replaced_ with another 'Apply' that preserves that 'fromSubquery' is true.
-   */
-  def unapply(v: Apply): Option[(LogicalPlan, LogicalPlan, Boolean)] = v match {
-    case Apply(lhs, rhs, fromSubquery) if !fromSubquery => Some((lhs, rhs, fromSubquery))
-    case Apply(lhs, rhs: Argument, fromSubquery)        => Some((lhs, rhs, fromSubquery))
-    case _                                              => None
-  }
-}
-
 trait UnnestingRewriter {
   def solveds: Solveds
   def cardinalities: Cardinalities
@@ -210,15 +190,6 @@ trait UnnestingRewriter {
     solveds.copy(apply.id, res.id)
     cardinalities.set(res.id, cardinalities(lhs.id) * cardinalities(rhs.id))
     providedOrders.copy(apply.id, res.id)
-    res
-  }
-
-  // L Ax (_ BP R) => L BP R
-  protected def unnestRightBinaryLeft(apply: Apply, lhs: LogicalPlan, rhs: LogicalBinaryPlan): LogicalPlan = {
-    val res = rhs.withLhs(lhs)(attributes.copy(rhs.id))
-    solveds.copy(apply.id, res.id)
-    cardinalities.copy(apply.id, res.id)
-    providedOrders.copy(rhs.id, res.id)
     res
   }
 

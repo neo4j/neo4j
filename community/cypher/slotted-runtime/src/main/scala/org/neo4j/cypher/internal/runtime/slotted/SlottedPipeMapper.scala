@@ -1407,7 +1407,7 @@ class SlottedPipeMapper(
     finalizeSlotConfiguration(slots)
 
     val pipe = plan match {
-      case Apply(_, _, _) =>
+      case Apply(_, _) =>
         ApplySlottedPipe(lhs, rhs)(id)
 
       case RollUpApply(_, rhsPlan, collectionName, identifierToCollect) =>

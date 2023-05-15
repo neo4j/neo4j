@@ -413,7 +413,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
       planner.planBuilder()
         .produceResults("a", "b", "c", "d", "dummy", "dummy2", "r")
         // we could improve on this to recognise that the RHS will be empty and therefore the cartesian product will be empty as well
-        .cartesianProduct(fromSubquery = true)
+        .cartesianProduct()
         .|.projection("2 AS dummy2")
         .|.projection("1 AS dummy")
         .|.projection("NULL AS a", "NULL AS anon_1", "NULL AS b", "NULL AS r")

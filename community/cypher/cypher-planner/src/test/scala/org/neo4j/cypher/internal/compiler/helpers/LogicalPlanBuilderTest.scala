@@ -197,8 +197,7 @@ class LogicalPlanBuilderTest extends CypherFunSuite with AstConstructionTestSupp
                 HasLabelsOrTypes(Variable("v"), Seq(LabelOrRelTypeName("V")))
               )),
               _
-            ),
-            _
+            )
           ),
           _
         ) =>

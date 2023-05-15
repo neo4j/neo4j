@@ -71,8 +71,7 @@ class LogicalPlanTreeRendererTest extends CypherFunSuite {
 
     val innerApply = Apply(
       cp,
-      cp,
-      fromSubquery = true
+      cp
     )
 
     val plan = ProduceResult(

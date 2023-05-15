@@ -116,8 +116,7 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
             DeletePlan(m),
             _,
             _
-          ),
-          _
+          )
         ) if n == m => Some(n)
       case TransactionApply(
           NodeLeafPlan(n),
@@ -128,8 +127,7 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
         ) if n == m => Some(n)
       case Apply(
           NodeLeafPlan(n),
-          DeletePlan(m),
-          _
+          DeletePlan(m)
         ) if n == m => Some(n)
       case _ => None
     }

@@ -873,7 +873,7 @@ class IndexPlanningIntegrationTest
     val plan = planner.plan(query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
       .eager(ListSet(EagernessReason.Unknown))
-      .apply(fromSubquery = true)
+      .apply()
       .|.setNodeProperty("n", "prop", "c")
       .|.eager()
       .|.filter("n.prop IS NULL")
@@ -1009,7 +1009,7 @@ class IndexPlanningIntegrationTest
     val plan = planner.plan(query).stripProduceResults
     plan shouldEqual planner.subPlanBuilder()
       .eager(ListSet(EagernessReason.Unknown))
-      .apply(fromSubquery = true)
+      .apply()
       .|.setRelationshipProperty("r", "prop", "c")
       .|.eager()
       .|.filter("r.prop IS NULL")

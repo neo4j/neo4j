@@ -465,16 +465,6 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   )
 
   testPlan(
-    "apply with non-default argument",
-    new TestPlanBuilder()
-      .produceResults("x", "y")
-      .apply(fromSubquery = true)
-      .|.allNodeScan("y", "x")
-      .allNodeScan("x")
-      .build()
-  )
-
-  testPlan(
     "semiApply",
     new TestPlanBuilder()
       .produceResults("x", "y")
@@ -689,8 +679,6 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
     "cartesianProduct",
     new TestPlanBuilder()
       .produceResults("x", "y")
-      .cartesianProduct(true)
-      .|.allNodeScan("z")
       .cartesianProduct()
       .|.allNodeScan("y", "x")
       .allNodeScan("x")

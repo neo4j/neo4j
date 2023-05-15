@@ -326,8 +326,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
               )
             ),
             _
-          ),
-          _
+          )
         ) =>
         args should equal(Set("r", "a1"))
         val predicate = equals(varFor("a1"), varFor("a2"))
@@ -353,8 +352,7 @@ abstract class OptionalMatchPlanningIntegrationTest(queryGraphSolverSetup: Query
               SimplePatternLength
             ),
             _
-          ),
-          _
+          )
         ) =>
         args should equal(Set("r"))
       case plan => throw new IllegalArgumentException(s"Unexpected plan: $plan")

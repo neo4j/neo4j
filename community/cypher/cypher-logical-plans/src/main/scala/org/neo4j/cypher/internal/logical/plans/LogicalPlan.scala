@@ -686,7 +686,7 @@ case class AntiConditionalApply(override val left: LogicalPlan, override val rig
  * }
  * }}}
  */
-case class Apply(override val left: LogicalPlan, override val right: LogicalPlan, fromSubquery: Boolean = false)(
+case class Apply(override val left: LogicalPlan, override val right: LogicalPlan)(
   implicit idGen: IdGen
 ) extends LogicalBinaryPlan(idGen) with ApplyPlan {
 
@@ -955,8 +955,7 @@ case class CacheProperties(override val source: LogicalPlan, properties: Set[Log
  */
 case class CartesianProduct(
   override val left: LogicalPlan,
-  override val right: LogicalPlan,
-  fromSubquery: Boolean = false
+  override val right: LogicalPlan
 )(implicit idGen: IdGen) extends LogicalBinaryPlan(idGen) {
 
   override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalBinaryPlan = copy(left = newLHS)(idGen)

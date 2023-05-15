@@ -194,7 +194,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("n", "r")
         .filter("b.prop = cacheN[n.prop]")
-        .apply(fromSubquery = true)
+        .apply()
         .|.relationshipIndexOperator("(a)-[r:REL(prop)]-(b)", argumentIds = Set("n"), indexType = IndexType.RANGE)
         .cacheProperties("cacheNFromStore[n.prop]")
         .allNodeScan("n")
@@ -219,7 +219,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("n", "r")
         .filter("b.prop = n.prop")
-        .apply(fromSubquery = true)
+        .apply()
         .|.relationshipIndexOperator(
           "(a)-[r:REL(prop CONTAINS 'test')]-(b)",
           argumentIds = Set("n"),
@@ -249,7 +249,7 @@ class RelationshipIndexScanPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("n", "r")
         .filter("b.prop = n.prop")
-        .apply(fromSubquery = true)
+        .apply()
         .|.relationshipIndexOperator(
           "(a)-[r:REL(prop ENDS WITH 'test')]-(b)",
           argumentIds = Set("n"),

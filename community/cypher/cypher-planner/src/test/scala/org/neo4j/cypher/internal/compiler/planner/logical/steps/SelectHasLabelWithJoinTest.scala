@@ -122,8 +122,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
     plan._1 should beLike {
       case Apply(
           NodeByLabelScan("n", _, _, _),
-          Optional(Expand(NodeByLabelScan("m", _, args, _), _, _, _, _, _, _), _),
-          _
+          Optional(Expand(NodeByLabelScan("m", _, args, _), _, _, _, _, _, _), _)
         ) if args == Set("n") => ()
     }
   }
@@ -145,7 +144,7 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       } getLogicalPlanFor query
 
     plan._1 should beLike {
-      case Apply(NodeByLabelScan("n", _, _, _), Optional(Selection(_, Argument(args)), _), _) if args == Set("n") => ()
+      case Apply(NodeByLabelScan("n", _, _, _), Optional(Selection(_, Argument(args)), _)) if args == Set("n") => ()
     }
   }
 

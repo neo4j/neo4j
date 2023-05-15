@@ -413,7 +413,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("n1", "n2", "prop")
         .projection("cacheN[n1.prop] AS prop")
-        .cartesianProduct(fromSubquery = false)
+        .cartesianProduct()
         .|.allNodeScan("n2")
         .cacheProperties("cacheNFromStore[n1.prop]")
         .allNodeScan("n1")
@@ -459,7 +459,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("sum")
-        .apply(fromSubquery = true)
+        .apply()
         .|.aggregation(Seq(), Seq("sum(y2.prop) AS sum"))
         .|.projection("y AS y2")
         .|.filter("y.value > x")
@@ -487,7 +487,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("n1", "prop", "prop2")
         .projection("n2.prop AS prop2")
-        .apply(fromSubquery = true)
+        .apply()
         .|.create(
           createNodeWithProperties("n2", Seq(), "{prop: n1.x}"),
           createRelationship("anon_0", "n1", "LIKES", "n2", OUTGOING)

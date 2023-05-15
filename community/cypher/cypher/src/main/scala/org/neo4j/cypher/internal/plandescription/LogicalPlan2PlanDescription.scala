@@ -2206,7 +2206,7 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case CartesianProduct(_, _, _) =>
+      case CartesianProduct(_, _) =>
         PlanDescriptionImpl(id, "CartesianProduct", children, Seq.empty, variables, withRawCardinalities)
 
       case NodeHashJoin(nodes, _, _) =>
