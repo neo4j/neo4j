@@ -250,8 +250,9 @@ public class RandomValues {
         return excluding(among, t -> ArrayUtils.contains(exclude, t));
     }
 
-    public static ValueType[] excluding(ValueType[] among, Predicate<ValueType> exclude) {
-        return Arrays.stream(among).filter(exclude.negate()).toArray(ValueType[]::new);
+    public static <T> T[] excluding(T[] among, Predicate<T> exclude) {
+        return Arrays.stream(among).filter(exclude.negate()).toArray(length ->
+                (T[]) Array.newInstance(among.getClass().getComponentType(), length));
     }
 
     public static ValueType[] typesOfGroup(ValueGroup valueGroup) {
@@ -676,6 +677,8 @@ public class RandomValues {
 
     private TextValue nextTextValue(int minLength, int maxLength, CodePointFactory codePointFactory) {
         // todo should we generate UTF8StringValue or StringValue? Or maybe both? Randomly?
+        //  If we change this to generate other string values (like UTF16 strings for example)
+        //  we need to also update the ValueType -> ValueRepresentation mapping in ValueType.
         int length = intBetween(minLength, maxLength);
         UTF8StringValueBuilder builder = new UTF8StringValueBuilder(length > 0 ? ceilingPowerOfTwo(length) : 0);
 

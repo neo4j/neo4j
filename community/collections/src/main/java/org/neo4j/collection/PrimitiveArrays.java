@@ -223,6 +223,19 @@ public final class PrimitiveArrays {
         return intPair(uniqueInLeft, uniqueInRight);
     }
 
+    public static boolean sortedContains(final int[] array, final int key) {
+        return Arrays.binarySearch(array, key) >= 0;
+    }
+
+    public static boolean contains(int[] list, int value) {
+        for (int x : list) {
+            if (value == x) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static long intPair(int left, int right) {
         return (((long) left) << Integer.SIZE) | right;
     }

@@ -75,7 +75,7 @@ public abstract class KernelIntegrationTest {
     protected DependencyResolver dependencyResolver;
     private DatabaseManagementService managementService;
 
-    protected TokenWrite tokenWriteInNewTransaction() {
+    public TokenWrite tokenWriteInNewTransaction() {
         beginTransaction(AnonymousContext.writeToken());
         return kernelTransaction.tokenWrite();
     }
@@ -85,7 +85,7 @@ public abstract class KernelIntegrationTest {
         return kernelTransaction.dataWrite();
     }
 
-    protected SchemaWrite schemaWriteInNewTransaction() throws KernelException {
+    public SchemaWrite schemaWriteInNewTransaction() throws KernelException {
         beginTransaction(AUTH_DISABLED);
         return kernelTransaction.schemaWrite();
     }
@@ -120,7 +120,7 @@ public abstract class KernelIntegrationTest {
         };
     }
 
-    protected long commit() {
+    public long commit() {
         transaction.commit();
         long txId = kernelTransaction.getTransactionId();
         transaction = null;
