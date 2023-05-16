@@ -120,9 +120,7 @@ object ExpressionTypeInfo {
 }
 
 final case class ExpressionTypeInfo private (specified: TypeSpec, expected: Option[TypeSpec] = None) {
-  lazy val actualUnCoerced: TypeSpec = expected.fold(specified)(specified intersect)
   lazy val actual: TypeSpec = expected.fold(specified)(specified intersectOrCoerce)
-  lazy val wasCoerced: Boolean = actualUnCoerced != actual
 
   def expect(types: TypeSpec): ExpressionTypeInfo = ExpressionTypeInfo(specified, Some(types))
 }
