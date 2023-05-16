@@ -22,6 +22,7 @@ package org.neo4j.dbms.database;
 import static org.neo4j.dbms.database.ComponentVersion.DBMS_RUNTIME_COMPONENT;
 
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -33,17 +34,24 @@ public class DbmsRuntimeSystemGraphComponent extends AbstractVersionComponent<Db
     public static final Label OLD_COMPONENT_LABEL = Label.label("DbmsRuntime");
     public static final String OLD_PROPERTY_NAME = "version";
 
+    private final DbmsRuntimeVersion fallbackVersion;
+
     public DbmsRuntimeSystemGraphComponent(Config config) {
         super(
                 DBMS_RUNTIME_COMPONENT,
                 DbmsRuntimeVersion.getLatestVersion(config),
                 config,
                 DbmsRuntimeVersion::fromVersionNumber);
+
+        final var semanticFallbackVersion = DbmsRuntimeVersion.V5_0;
+        this.fallbackVersion = config.get(GraphDatabaseInternalSettings.fallback_to_latest_runtime_version)
+                ? latestVersion
+                : semanticFallbackVersion;
     }
 
     @Override
     DbmsRuntimeVersion getFallbackVersion() {
-        return DbmsRuntimeVersion.V5_0;
+        return fallbackVersion;
     }
 
     @Override

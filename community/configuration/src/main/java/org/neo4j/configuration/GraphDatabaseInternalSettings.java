@@ -1086,6 +1086,13 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
             .build();
 
     @Internal
+    @Description("Just to be used in tests: A way to indicate to fallback to latest dbms runtime component version. "
+            + "Can be needed when purposefully not initializing the system graph, but testing newer features")
+    public static final Setting<Boolean> fallback_to_latest_runtime_version = newBuilder(
+                    "internal.dbms.fallback_to_latest_runtime_version", BOOL, false)
+            .build();
+
+    @Internal
     @Description("Just to be used in tests: A way to set the latest dbms runtime component version. "
             + "Can be useful for writing upgrade tests for coming versions")
     public static final Setting<Integer> latest_runtime_version =
