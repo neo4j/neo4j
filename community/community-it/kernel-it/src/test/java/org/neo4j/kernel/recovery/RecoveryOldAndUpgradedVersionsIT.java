@@ -27,6 +27,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.preallocate_logical_
 import static org.neo4j.kernel.recovery.RecoveryHelpers.getLatestCheckpoint;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.logsContainCheckpoint;
 import static org.neo4j.kernel.recovery.RecoveryHelpers.removeLastCheckpointRecordFromLastLogFile;
+import static org.neo4j.test.UpgradeTestUtil.assertKernelVersion;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -42,7 +43,6 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
 import org.neo4j.kernel.KernelVersion;
-import org.neo4j.kernel.KernelVersionProvider;
 import org.neo4j.kernel.ZippedStoreCommunity;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -204,12 +204,6 @@ class RecoveryOldAndUpgradedVersionsIT {
         // For a regular database where we have no logs at all we should pick the version that
         // dbmsRuntimeVersionComponent tells us that we are on.
         assertKernelVersion(db, KernelVersion.V5_0);
-    }
-
-    private void assertKernelVersion(GraphDatabaseAPI db, KernelVersion expectedVersion) {
-        KernelVersionProvider kernelVersionProvider =
-                db.getDependencyResolver().resolveDependency(KernelVersionProvider.class);
-        assertThat(kernelVersionProvider.kernelVersion()).isEqualTo(expectedVersion);
     }
 
     private void removeTransactionLogs(DatabaseLayout dbLayout) throws IOException {
