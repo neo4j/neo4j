@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.semantics.SemanticState.ScopeLocation
 import org.neo4j.cypher.internal.expressions.Expression
@@ -93,12 +94,29 @@ final case class Symbol(name: String,
     s"${definition.uniqueName}(${uses.map(_.uniqueName).mkString(",")}): ${types.toShortString}"
 }
 
-final case class ExpressionTypeInfo(specified: TypeSpec, expected: Option[TypeSpec] = None) {
+object ExpressionTypeInfo {
+
+  /**
+   * Cache ExpressionTypeInfos.
+   *
+   * By caching ExpressionTypeInfo we can reuse instances that e.g. simply express that an Expression is a Boolean.
+   * For large and complex queries this can significantly reduce memory consumption.
+   */
+  private val cache: Cache[(TypeSpec, Option[TypeSpec]), ExpressionTypeInfo] =
+    Caffeine.newBuilder()
+      .maximumSize(100)
+      .build()
+
+  def apply(specified: TypeSpec, expected: Option[TypeSpec] = None): ExpressionTypeInfo =
+    cache.get((specified, expected), _ => new ExpressionTypeInfo(specified, expected))
+}
+
+final case class ExpressionTypeInfo private (specified: TypeSpec, expected: Option[TypeSpec] = None) {
   lazy val actualUnCoerced: TypeSpec = expected.fold(specified)(specified intersect)
   lazy val actual: TypeSpec = expected.fold(specified)(specified intersectOrCoerce)
   lazy val wasCoerced: Boolean = actualUnCoerced != actual
 
-  def expect(types: TypeSpec): ExpressionTypeInfo = copy(expected = Some(types))
+  def expect(types: TypeSpec): ExpressionTypeInfo = ExpressionTypeInfo(specified, Some(types))
 }
 
 object Scope {
