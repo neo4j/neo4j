@@ -49,8 +49,10 @@ import org.neo4j.exceptions.CypherTypeException;
 import org.neo4j.exceptions.InvalidArgumentException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.api.StatementConstants;
+import org.neo4j.token.api.TokenConstants;
 import org.neo4j.util.CalledFromGeneratedCode;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.ElementIdMapper;
@@ -933,28 +935,40 @@ public final class CypherFunctions {
         }
     }
 
-    public static TextValue type(AnyValue item, DbAccess access, RelationshipScanCursor relCursor) {
+    public static AnyValue type(AnyValue item, DbAccess access, RelationshipScanCursor relCursor, Read read) {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (item instanceof RelationshipValue relationship) {
             return relationship.type();
         } else if (item instanceof VirtualRelationshipValue relationship) {
+
             int typeToken = relationship.relationshipTypeId(relationshipVisitor -> {
-                access.singleRelationship(relationshipVisitor.id(), relCursor);
-                relCursor.next();
-                relationshipVisitor.visit(
-                        relCursor.sourceNodeReference(), relCursor.targetNodeReference(), relCursor.type());
+                long relationshipId = relationshipVisitor.id();
+                access.singleRelationship(relationshipId, relCursor);
+
+                if (relCursor.next() || read.relationshipDeletedInTransaction(relationshipId)) {
+                    relationshipVisitor.visit(
+                            relCursor.sourceNodeReference(), relCursor.targetNodeReference(), relCursor.type());
+                }
             });
-            return Values.stringValue(access.relationshipTypeName(typeToken));
+
+            if (typeToken == TokenConstants.NO_TOKEN) {
+                return NO_VALUE;
+            } else {
+                return Values.stringValue(access.relationshipTypeName(typeToken));
+            }
         } else {
             throw new CypherTypeException("Invalid input for function 'type()': Expected a Relationship, got: " + item);
         }
     }
 
-    public static TextValue threadSafeType(AnyValue item, DbAccess access, RelationshipScanCursor relCursor) {
+    public static AnyValue threadSafeType(AnyValue item, DbAccess access, RelationshipScanCursor relCursor, Read read) {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if (item instanceof VirtualRelationshipValue relationship) {
-            access.singleRelationship(relationship.id(), relCursor);
-            relCursor.next();
+            long relationshipId = relationship.id();
+            access.singleRelationship(relationshipId, relCursor);
+            if (!relCursor.next() && !read.relationshipDeletedInTransaction(relationshipId)) {
+                return NO_VALUE;
+            }
             return Values.stringValue(access.relationshipTypeName(relCursor.type()));
         } else {
             throw new CypherTypeException("Invalid input for function 'type()': Expected a Relationship, got: " + item);

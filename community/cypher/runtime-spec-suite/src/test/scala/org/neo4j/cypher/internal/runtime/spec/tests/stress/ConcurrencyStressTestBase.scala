@@ -70,7 +70,7 @@ abstract class ConcurrencyStressTestBase[CONTEXT <: RuntimeContext](
     }
   }
 
-  private def concurrentDelete(
+  protected def concurrentDelete(
     ids: Seq[Long],
     threadCount: Int,
     latch: CountDownLatch

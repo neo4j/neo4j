@@ -366,7 +366,12 @@ case class MaterializedEntityTypeFunction(relExpression: Expression) extends Nul
   override def compute(value: AnyValue, ctx: ReadableRow, state: QueryState): AnyValue = {
     value match {
       case n: RelationshipValue => n.`type`()
-      case _                    => CypherFunctions.`type`(value, state.query, state.cursors.relationshipScanCursor)
+      case _ => CypherFunctions.`type`(
+          value,
+          state.query,
+          state.cursors.relationshipScanCursor,
+          state.query.transactionalContext.dataRead
+        )
     }
   }
 
