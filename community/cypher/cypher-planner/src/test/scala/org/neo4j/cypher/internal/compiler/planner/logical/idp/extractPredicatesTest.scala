@@ -38,7 +38,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("()-[*]->()") {
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(), "r", "n", "  UNNAMED2", false)
+      extractPredicates(Seq(), "r", "n", "  UNNAMED2", targetNodeIsBound = false, VarPatternLength.unlimited)
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -52,7 +52,14 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "n", "  UNNAMED0", false)
+      extractPredicates(
+        Seq(rewrittenPredicate),
+        "r",
+        "n",
+        "  UNNAMED0",
+        targetNodeIsBound = false,
+        VarPatternLength.unlimited
+      )
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(VariablePredicate(
@@ -69,7 +76,14 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "n", "  FRESHID15", true)
+      extractPredicates(
+        Seq(rewrittenPredicate),
+        "r",
+        "n",
+        "  FRESHID15",
+        targetNodeIsBound = true,
+        VarPatternLength.unlimited
+      )
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(VariablePredicate(
@@ -96,7 +110,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "x", "n", "m", false)
+      extractPredicates(Seq(rewrittenPredicate), "x", "n", "m", targetNodeIsBound = false, VarPatternLength.unlimited)
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), propLessThan("r", "prop", 4)))
@@ -138,7 +152,14 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenRelPredicate, rewrittenNodePredicate), "x", "n", "o", false)
+      extractPredicates(
+        Seq(rewrittenRelPredicate, rewrittenNodePredicate),
+        "x",
+        "n",
+        "o",
+        targetNodeIsBound = false,
+        VarPatternLength.unlimited
+      )
 
     nodePredicates shouldBe ListSet(VariablePredicate(varFor("m"), isNotNull(prop("m", "prop"))))
     relationshipPredicates shouldBe ListSet(VariablePredicate(varFor("r"), not(propLessThan("r", "prop", 4))))
@@ -160,7 +181,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m", false)
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m", targetNodeIsBound = false, VarPatternLength.unlimited)
 
     nodePredicates shouldBe ListSet(VariablePredicate(varFor("x"), equals(prop("x", "prop"), prop("n", "prop"))))
     relationshipPredicates shouldBe empty
@@ -181,7 +202,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m", false)
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m", targetNodeIsBound = false, VarPatternLength.unlimited)
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -203,7 +224,14 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "rel", "n", "m", false)
+      extractPredicates(
+        Seq(rewrittenPredicate),
+        "rel",
+        "n",
+        "m",
+        targetNodeIsBound = false,
+        VarPatternLength(1, Some(3))
+      )
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -224,7 +252,14 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "n", "  UNNAMED0", false)
+      extractPredicates(
+        Seq(rewrittenPredicate),
+        "r",
+        "n",
+        "  UNNAMED0",
+        targetNodeIsBound = false,
+        VarPatternLength.fixed(1)
+      )
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -245,7 +280,14 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "n", "  UNNAMED0", false)
+      extractPredicates(
+        Seq(rewrittenPredicate),
+        "r",
+        "n",
+        "  UNNAMED0",
+        targetNodeIsBound = false,
+        VarPatternLength.fixed(1)
+      )
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -266,7 +308,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m", false)
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m", targetNodeIsBound = false, VarPatternLength.fixed(1))
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -291,7 +333,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "a", "b", targetNodeIsBound = false)
+      extractPredicates(Seq(rewrittenPredicate), "r", "a", "b", targetNodeIsBound = false, VarPatternLength.unlimited)
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
@@ -328,7 +370,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(rewrittenPredicates, "r", "a", "b", targetNodeIsBound = false)
+      extractPredicates(rewrittenPredicates, "r", "a", "b", targetNodeIsBound = false, VarPatternLength.unlimited)
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe ListSet(
@@ -352,7 +394,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     )(pos)
 
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m", true)
+      extractPredicates(Seq(rewrittenPredicate), "r", "n", "m", targetNodeIsBound = true, VarPatternLength.fixed(1))
 
     nodePredicates shouldBe ListSet(VariablePredicate(varFor("x"), lessThan(prop("x", "prop"), prop("m", "prop"))))
     relationshipPredicates shouldBe empty
@@ -361,28 +403,18 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
 
   test("should mark uniqueness predicate as solved") {
     val (nodePredicates, relationshipPredicates, solvedPredicates) =
-      extractPredicates(Seq(unique(varFor("r")), unique(varFor("other_rel"))), "r", "n", "m", false)
-
-    nodePredicates shouldBe empty
-    relationshipPredicates shouldBe empty
-    solvedPredicates shouldBe ListSet(unique(varFor("r")))
-  }
-
-  // Extracting VarLengthBound predicates
-  test("should not extract VarLengthBound predicates if there is no var-length relationship solved") {
-    val (nodePredicates, relationshipPredicates, solvedPredicates) =
       extractPredicates(
-        Seq(varLengthLowerLimitPredicate("rel", 42), varLengthUpperLimitPredicate("rel", 42)),
-        "rel",
+        Seq(unique(varFor("r")), unique(varFor("other_rel"))),
+        "r",
         "n",
         "m",
         targetNodeIsBound = false,
-        maybeVarLength = None
+        VarPatternLength.unlimited
       )
 
     nodePredicates shouldBe empty
     relationshipPredicates shouldBe empty
-    solvedPredicates shouldBe empty
+    solvedPredicates shouldBe ListSet(unique(varFor("r")))
   }
 
   test("should extract VarLengthBound predicates on exact match") {
@@ -394,7 +426,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         "n",
         "m",
         targetNodeIsBound = false,
-        maybeVarLength = Some(VarPatternLength(42, Some(42)))
+        varLength = VarPatternLength(42, Some(42))
       )
 
     nodePredicates shouldBe empty
@@ -410,7 +442,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         "n",
         "m",
         targetNodeIsBound = false,
-        maybeVarLength = Some(VarPatternLength(42, Some(42)))
+        varLength = VarPatternLength(42, Some(42))
       )
 
     nodePredicates shouldBe empty
@@ -426,7 +458,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         "n",
         "m",
         targetNodeIsBound = false,
-        maybeVarLength = Some(VarPatternLength(40, Some(45)))
+        varLength = VarPatternLength(40, Some(45))
       )
 
     nodePredicates shouldBe empty
@@ -443,7 +475,7 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
         "n",
         "m",
         targetNodeIsBound = false,
-        maybeVarLength = Some(VarPatternLength(42, Some(45)))
+        varLength = VarPatternLength(42, Some(45))
       )
 
     nodePredicates shouldBe empty

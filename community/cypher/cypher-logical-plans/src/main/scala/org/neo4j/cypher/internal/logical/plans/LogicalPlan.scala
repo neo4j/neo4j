@@ -3092,8 +3092,8 @@ case class Top1WithTies(override val source: LogicalPlan, sortItems: Seq[ColumnO
  * @param nodeVariableGroupings             node variables to aggregate
  * @param relationshipVariableGroupings     relationship variables to aggregate
  * @param innerRelationships                all inner relationships, whether they get projected or not
- * @param previouslyBoundRelationships      all relationship variables of the same MATCH that are present in lhs
- * @param previouslyBoundRelationshipGroups all relationship group variables of the same MATCH that are present in lhs
+ * @param previouslyBoundRelationships      all relationship variables of the same MATCH that are present in lhs that are not provably disjoint
+ * @param previouslyBoundRelationshipGroups all relationship group variables of the same MATCH that are present in lhs that are not provably disjoint
  * @param reverseGroupVariableProjections   if `true` reverse the group variable lists
  */
 case class Trail(

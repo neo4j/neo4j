@@ -84,7 +84,6 @@ import org.neo4j.cypher.internal.ir.LoadCSVProjection
 import org.neo4j.cypher.internal.ir.MergeNodePattern
 import org.neo4j.cypher.internal.ir.MergeRelationshipPattern
 import org.neo4j.cypher.internal.ir.NodeBinding
-import org.neo4j.cypher.internal.ir.NodeConnection
 import org.neo4j.cypher.internal.ir.PassthroughAllHorizon
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -93,7 +92,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SetLabelPattern
 import org.neo4j.cypher.internal.ir.SetMutatingPattern
 import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
@@ -977,7 +975,7 @@ case class LogicalPlanProducer(
     source: LogicalPlan,
     from: String,
     to: String,
-    nodeConnection: NodeConnection,
+    patternRelationship: PatternRelationship,
     relationshipPredicates: ListSet[VariablePredicate],
     nodePredicates: ListSet[VariablePredicate],
     solvedPredicates: ListSet[Expression],
@@ -985,41 +983,14 @@ case class LogicalPlanProducer(
     context: LogicalPlanningContext
   ): LogicalPlan = {
 
-    val (pattern, solvedConnection) = nodeConnection match {
-      case qpp: QuantifiedPathPattern if qpp.isSimple =>
-        val innerPatternRelationship = qpp.patternRelationships.head
-        val innerNodes = Set(innerPatternRelationship.nodes._1, innerPatternRelationship.nodes._2)
+    val dir = patternRelationship.directionRelativeTo(from)
 
-        // It should be safe to mark 'qpp' as solved at this point.
-        // However, given how much information that could actually be contained in a QuantifiedPathPattern, it's safer to construct a "solved" by consciously
-        // extracting the specific elements that we _know_ are solved by the VarExpand.
-        val solvedQpp = QuantifiedPathPattern(
-          leftBinding = qpp.leftBinding,
-          rightBinding = qpp.rightBinding,
-          repetition = qpp.repetition,
-          patternRelationships = List(innerPatternRelationship),
-          patternNodes = innerNodes,
-          argumentIds = qpp.argumentIds,
-          selections = Selections.empty,
-          nodeVariableGroupings = Set.empty,
-          relationshipVariableGroupings = qpp.relationshipVariableGroupings
-        )
-
-        (simpleQuantifiedPathPatternToPatternRelationship(qpp), solvedQpp)
-
-      case _: QuantifiedPathPattern =>
-        throw new InternalException("Tried to solve a non-simple quantified path pattern with a VarExpand")
-      case pr: PatternRelationship => (pr, pr)
-    }
-
-    val dir = pattern.directionRelativeTo(from)
-
-    pattern.length match {
+    patternRelationship.length match {
       case l: VarPatternLength =>
-        val projectedDir = projectedDirection(pattern, from, dir)
+        val projectedDir = projectedDirection(patternRelationship, from, dir)
 
         val solved = solveds.get(source.id).asSinglePlannerQuery.amendQueryGraph(_
-          .addNodeConnection(solvedConnection)
+          .addPatternRelationship(patternRelationship)
           .addPredicates(solvedPredicates.toSeq: _*))
 
         val (rewrittenRelationshipPredicates, rewrittenNodePredicates, rewrittenSource) =
@@ -1030,9 +1001,9 @@ case class LogicalPlanProducer(
             from = from,
             dir = dir,
             projectedDir = projectedDir,
-            types = pattern.types,
+            types = patternRelationship.types,
             to = to,
-            relName = pattern.name,
+            relName = patternRelationship.name,
             length = l,
             mode = mode,
             nodePredicates = rewrittenNodePredicates.toSeq,

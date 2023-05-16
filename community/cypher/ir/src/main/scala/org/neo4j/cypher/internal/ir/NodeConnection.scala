@@ -168,15 +168,6 @@ final case class QuantifiedPathPattern(
 
   val groupings: Set[String] = nodeVariableGroupings.map(_.groupName) ++ relationshipVariableGroupings.map(_.groupName)
 
-  /**
-   * A "simple" quantified path pattern is defined as a pattern that could be rewritten to a [[PatternRelationship]] without a loss of information.
-   * @return true if this qpp is "simple"
-   */
-  def isSimple: Boolean =
-    nodeVariableGroupings.isEmpty &&
-      patternRelationships.size == 1 &&
-      selections.isEmpty
-
   lazy val asQueryGraph: QueryGraph =
     QueryGraph
       .empty

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.options.CypherEagerAnalyzerOption
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LabelAndRelTypeInfos
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.rewriting.rewriters.UniquenessRewriter
@@ -63,25 +64,44 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
     cardinalities: Cardinalities,
     effectiveCardinalities: EffectiveCardinalities,
     providedOrders: ProvidedOrders,
+    labelAndRelTypeInfos: LabelAndRelTypeInfos,
     otherAttributes: Attributes[LogicalPlan],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     readOnly: Boolean
   ): Rewriter =
     fixedPoint(context.cancellationChecker)(
       inSequence(context.cancellationChecker)(
+        TrailToVarExpandRewriter(
+          labelAndRelTypeInfos,
+          otherAttributes.withAlso(solveds, cardinalities, effectiveCardinalities, providedOrders)
+        ),
         fuseSelections,
-        unnestApply(solveds, cardinalities, providedOrders, otherAttributes.withAlso(effectiveCardinalities)),
+        unnestApply(
+          solveds,
+          cardinalities,
+          providedOrders,
+          otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos)
+        ),
         unnestCartesianProduct,
         if (context.eagerAnalyzer == CypherEagerAnalyzerOption.lp) identity
-        else cleanUpEager(solveds, otherAttributes.withAlso(cardinalities, effectiveCardinalities, providedOrders)),
+        else cleanUpEager(
+          solveds,
+          otherAttributes.withAlso(cardinalities, effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
+        ),
         simplifyPredicates,
         unnestOptional,
         predicateRemovalThroughJoins(
           solveds,
           cardinalities,
-          otherAttributes.withAlso(effectiveCardinalities, providedOrders)
+          otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos, providedOrders)
         ),
-        removeIdenticalPlans(otherAttributes.withAlso(cardinalities, effectiveCardinalities, solveds, providedOrders)),
+        removeIdenticalPlans(otherAttributes.withAlso(
+          cardinalities,
+          effectiveCardinalities,
+          labelAndRelTypeInfos,
+          solveds,
+          providedOrders
+        )),
         pruningVarExpander(anonymousVariableNameGenerator),
         // Only used on read-only queries, until rewriter is tested to work with cleanUpEager
         if (readOnly) bfsAggregationRemover else identity,
@@ -92,7 +112,7 @@ case object PlanRewriter extends LogicalPlanRewriter with StepSequencer.Step wit
         simplifySelections,
         limitNestedPlanExpressions(
           cardinalities,
-          otherAttributes.withAlso(effectiveCardinalities, solveds, providedOrders)
+          otherAttributes.withAlso(effectiveCardinalities, labelAndRelTypeInfos, solveds, providedOrders)
         ),
         combineHasLabels,
         truncateDatabaseDeeagerizer,
@@ -139,6 +159,7 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     cardinalities: Cardinalities,
     effectiveCardinalities: EffectiveCardinalities,
     providedOrders: ProvidedOrders,
+    labelAndRelTypeInfos: LabelAndRelTypeInfos,
     otherAttributes: Attributes[LogicalPlan],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     readOnly: Boolean
@@ -148,8 +169,7 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
     val idGen = context.logicalPlanIdGen
     val otherAttributes = Attributes[LogicalPlan](
       idGen,
-      from.planningAttributes.leveragedOrders,
-      from.planningAttributes.labelAndRelTypeInfos
+      from.planningAttributes.leveragedOrders
     )
     val rewritten = from.logicalPlan.endoRewrite(
       instance(
@@ -158,6 +178,7 @@ trait LogicalPlanRewriter extends Phase[PlannerContext, LogicalPlanState, Logica
         from.planningAttributes.cardinalities,
         from.planningAttributes.effectiveCardinalities,
         from.planningAttributes.providedOrders,
+        from.planningAttributes.labelAndRelTypeInfos,
         otherAttributes,
         from.anonymousVariableNameGenerator,
         from.query.readOnly

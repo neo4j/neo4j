@@ -62,6 +62,23 @@ import org.neo4j.cypher.internal.util.topDown
 
 import scala.collection.mutable
 
+/**
+ * Before
+ * EXPLAIN MATCH (n)-[r*]->(m) RETURN DISTINCT m
+ * .produceResults(m)
+ * .distinct(m)
+ * .varExpand((n)-[r*]->(m))
+ * .allNodeScan(n)
+ *
+ * After
+ * EXPLAIN MATCH (n)-[r*]->(m) RETURN DISTINCT m
+ * .produceResults(m)
+ * .distinct(m)
+ * .pruningVarExpand((n)-[r*]->(m))
+ * .allNodeScan(n)
+ *
+ * Should run after [[TrailToVarExpandRewriter]] in order to rewrite as many VarExpand as possible.
+ */
 case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) extends Rewriter {
 
   sealed private trait HorizonPlan {

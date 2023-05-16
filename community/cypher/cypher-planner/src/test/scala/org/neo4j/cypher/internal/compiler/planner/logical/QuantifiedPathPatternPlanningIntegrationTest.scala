@@ -61,6 +61,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     .setRelationshipCardinality("(:N)-[]->()", 10)
     .setRelationshipCardinality("(:N)-[]->(:N)", 10)
     .setRelationshipCardinality("(:N)-[]->(:NN)", 10)
+    .setRelationshipCardinality("()-[]->(:N)", 10)
     .setRelationshipCardinality("(:NN)-[]->()", 10)
     .setRelationshipCardinality("()-[]->(:NN)", 10)
     .setRelationshipCardinality("(:NN)-[]->(:N)", 10)
@@ -446,7 +447,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     plan should equal(
       planner.subPlanBuilder()
-        .filter("none(anon_22 IN anon_9 WHERE anon_22 IN anon_15)")
+        .filter(disjoint("anon_15", "anon_9", 24))
         .expand("(anon_1)-[anon_15*1..]-(anon_3)")
         .trail(`(u) ((n)-[]->(m))+`)
         .|.filterExpression(isRepeatTrailUnique("anon_5"))
@@ -478,7 +479,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     plan should equal(
       planner.subPlanBuilder()
-        .filter(disjoint("r", "r2", 18))
+        .filter(disjoint("r", "r2", 20))
         .nodeHashJoin("x")
         .|.expand("(v)-[r2*1..]-(x)", projectedDir = INCOMING)
         .|.nodeByLabelScan("v", "User")
@@ -822,7 +823,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     plan.folder.treeFindByClass[AssertIsNode] should be(None)
   }
 
-  test("should plan quantified relationship") {
+  test("should plan OUTGOING QPP in requested direction") {
     val query =
       s"""
          |MATCH (n)-[r]->+(m)
@@ -837,7 +838,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
-  test("should plan quantified relationship as VarExpand when starting on endNode") {
+  test("should plan OUTGOING QPP in reverse direction") {
     val query =
       s"""
          |MATCH (n:N)-[r]->+(nn:NN)
@@ -853,7 +854,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
-  test("should plan quantified relationship in other direction") {
+  test("should plan INCOMING QPP in requested direction") {
     val query =
       s"""
          |MATCH (n)<-[r]-+(m)
@@ -865,6 +866,52 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     plan shouldBe planner.subPlanBuilder()
       .expand("(n)<-[r*1..]-(m)", expandMode = ExpandAll, projectedDir = SemanticDirection.INCOMING)
       .allNodeScan("n")
+      .build()
+  }
+
+  test("should plan INCOMING QPP in reverse direction") {
+    val query =
+      s"""
+         |MATCH (n:N)<-[r]-+(nn:NN)
+         |RETURN *
+         |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .filter("n:N")
+      .expand("(nn)-[r*1..]->(n)", expandMode = ExpandAll, projectedDir = SemanticDirection.INCOMING)
+      .nodeByLabelScan("nn", "NN")
+      .build()
+  }
+
+  test("should plan BOTH QPP in requested direction") {
+    val query =
+      s"""
+         |MATCH (n)-[r]-+(m)
+         |RETURN n, m
+         |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .expandAll("(n)-[r*1..]-(m)")
+      .allNodeScan("n")
+      .build()
+  }
+
+  test("should plan BOTH QPP in reverse direction") {
+    val query =
+      s"""
+         |MATCH (n)-[r]-+(nn:NN)
+         |RETURN n, nn
+         |""".stripMargin
+
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldBe planner.subPlanBuilder()
+      .expand("(nn)-[r*1..]-(n)", expandMode = ExpandAll, projectedDir = SemanticDirection.INCOMING)
+      .nodeByLabelScan("nn", "NN")
       .build()
   }
 
@@ -1100,7 +1147,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
 
     val query =
       """
-        |MATCH (a:A) ((n:N)-[r1:REL]->(m:M)){3} (x:X) ((p:P)-[r2:REL]->(q:Q)){3} (b:B) 
+        |MATCH (a:A) ((n:N)-[r1:REL]->(m:M)){3} (x:X) ((p:P)-[r2:REL]->(q:Q)){3} (b:B)
         |RETURN *""".stripMargin
 
     val plan = planner.plan(query).stripProduceResults
@@ -1338,7 +1385,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should plan ExpandAll instead of Trail on quantified path pattern with single relationship and no inner node variables - kleene star"
+    "Should plan VarExpand instead of Trail on quantified path pattern with single relationship and no inner node variables - kleene star"
   ) {
     val query = "MATCH (a)(()-[r]->())*(b) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1350,7 +1397,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should plan ExpandAll instead of Trail on quantified path pattern with relationship and no inner node variables - kleene plus"
+    "Should plan VarExpand instead of Trail on quantified path pattern with relationship and no inner node variables - kleene plus"
   ) {
     val query = "MATCH (a)(()-[r]->())+(b) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1362,7 +1409,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should plan ExpandAll instead of Trail on quantified path pattern with relationship and no inner node variables - lower bound"
+    "Should plan VarExpand instead of Trail on quantified path pattern with relationship and no inner node variables - lower bound"
   ) {
     val query = "MATCH (a)(()-[r]->()){2,}(b) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1374,7 +1421,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should plan ExpandAll instead of Trail on quantified path pattern with relationship and no inner node variables - upper bound"
+    "Should plan VarExpand instead of Trail on quantified path pattern with relationship and no inner node variables - upper bound"
   ) {
     val query = "MATCH (a)(()-[r]->()){,2}(b) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1386,7 +1433,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should plan ExpandAll instead of Trail on quantified path pattern with relationship and no inner node variables - lower and upper bound"
+    "Should plan VarExpand instead of Trail on quantified path pattern with relationship and no inner node variables - lower and upper bound"
   ) {
     val query = "MATCH (a)(()-[r]->()){2,3}(b) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1398,7 +1445,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should not plan ExpandAll instead of Trail on quantified path patterns with relationship and a inner node variable - left inner variable"
+    "Should not plan VarExpand instead of Trail on quantified path patterns with relationship and a inner node variable - left inner variable"
   ) {
     val query = "MATCH (a)((b)-[r]->()){2,3}(c) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1428,7 +1475,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should not plan ExpandAll instead of Trail on quantified path patterns with relationship and a inner node variable - right inner variable"
+    "Should not plan VarExpand instead of Trail on quantified path patterns with relationship and a inner node variable - right inner variable"
   ) {
     val query = "MATCH (a)(()-[r]->(b)){2,3}(c) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1458,7 +1505,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should not plan ExpandAll on quantified path pattern with multiple relationships"
+    "Should not plan VarExpand on quantified path pattern with multiple relationships"
   ) {
     val query = "MATCH (a)(()-[r]->()-[]->(b)){2,3}(c) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1490,7 +1537,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should plan ExpandAll instead of Trail on quantified path pattern with relationship and no inner node variable - juxtaposed relationship"
+    "Should plan VarExpand instead of Trail on quantified path pattern with relationship and no inner node variable - juxtaposed relationship"
   ) {
     val query = "MATCH ()--(a)(()-[r]->()){2,3} RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1502,8 +1549,46 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
+  test("Should plan VarExpand instead of Trail on quantified path pattern with relationship type predicate") {
+    val query = "MATCH (a) ((b)-[r:R]->(c))+ (d) RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .expandAll("(a)-[r:R*1..]->(d)")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("Should plan Trail on quantified path pattern with multiple relationship type predicates") {
+    val query = "MATCH (a) ((b)-[r:R&T]->(c))+ (d) RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+    val `(a) ((b)-[r:R&T]->(c))+ (d)` =
+      TrailParameters(
+        min = 1,
+        max = UpperBound.Unlimited,
+        start = "a",
+        end = "d",
+        innerStart = "b",
+        innerEnd = "c",
+        groupNodes = Set.empty,
+        groupRelationships = Set(("r", "r")),
+        innerRelationships = Set("r"),
+        previouslyBoundRelationships = Set.empty,
+        previouslyBoundRelationshipGroups = Set.empty,
+        reverseGroupVariableProjections = false
+      )
+
+    plan shouldEqual planner.subPlanBuilder()
+      .trail(`(a) ((b)-[r:R&T]->(c))+ (d)`)
+      .|.filterExpressionOrString("r:R", "r:T", isRepeatTrailUnique("r"))
+      .|.expandAll("(b)-[r]->(c)")
+      .|.argument("b")
+      .allNodeScan("a")
+      .build()
+  }
+
   test(
-    "Should not plan ExpandAll instead of Trail on quantified path patterns with predicate"
+    "Should not plan VarExpand instead of Trail on quantified path patterns with predicate"
   ) {
     val query = "MATCH (a)(()-[r WHERE r.prop > 5]->()){2,3}(c) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1533,7 +1618,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
   }
 
   test(
-    "Should plan ExpandAll instead of Trail on Quantified path patterns with Relationship and no inner node variables - Relationship form Kleene plus"
+    "Should plan VarExpand instead of Trail on Quantified path patterns with Relationship and no inner node variables - Relationship form Kleene plus"
   ) {
     val query = "MATCH (a)-[r]->+(b) RETURN *"
     val plan = planner.plan(query).stripProduceResults
@@ -1544,12 +1629,61 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
+  test("Should plan VarExpand with relationship uniqueness predicate for QPP juxtaposed to relationship pattern") {
+    val query = "MATCH (a) ((b)-[r1]->(c))+ (d)-[r2]->(e) RETURN r1, r2"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .filter("not r2 IN r1")
+      .expandAll("(d)<-[r1*1..]-(a)")
+      .allRelationshipsScan("(d)-[r2]->(e)")
+      .build()
+  }
+
+  test("Should plan VarExpand with relationship uniqueness predicate for QPP juxtaposed to QPP") {
+    val query = "MATCH (a) ((b)-[r1]->(c))+ (d) ((e)-[r2]->(f))+ RETURN r1, r2"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .filter(disjoint("r1", "r2", 21))
+      .expandAll("(d)<-[r1*1..]-(a)")
+      .expandAll("(d)-[r2*1..]->(anon_0)")
+      .allNodeScan("d")
+      .build()
+  }
+
+  test("Should plan VarExpand with relationship uniqueness predicates, for a mix of QPPs and relationship patterns") {
+    val query = "MATCH (a) ((b)-[r1]->(c))+ (d) ((e)-[r2]->(f))+ (g)-[r3]-(h) RETURN r1, r2, r3"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .filter("not r3 IN r1", disjoint("r1", "r2", 20))
+      .expandAll("(d)<-[r1*1..]-(a)")
+      .filter("not r3 IN r2")
+      .expandAll("(g)<-[r2*1..]-(d)")
+      .allRelationshipsScan("(g)-[r3]-(h)")
+      .build()
+  }
+
+  test(
+    "Should plan VarExpand without relationship uniqueness predicates if provably disjoint, for a mix of QPPs and relationship patterns"
+  ) {
+    val query = "MATCH (a) ((b)-[r1:R]->(c))+ (d) ((e)-[r2:T]->(f))+ (g)-[r3:S]-(h) RETURN r1, r2, r3"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .expandAll("(d)<-[r1:R*1..]-(a)")
+      .expandAll("(g)<-[r2:T*1..]-(d)")
+      .relationshipTypeScan("(g)-[r3:S]-(h)")
+      .build()
+  }
+
   test("Should plan VarExpand for multiple qpp's") {
     val query = "MATCH (a) (()-[r1]->())+ (b) (()<-[r2]-())+ (c) RETURN *"
     val plan = planner.plan(query).stripProduceResults
 
     plan shouldEqual planner.subPlanBuilder()
-      .filter("none(anon_12 IN r1 WHERE anon_12 IN r2)")
+      .filter(disjoint("r1", "r2", 16))
       .expand("(b)<-[r1*1..]-(a)")
       .expand("(b)<-[r2*1..]-(c)", projectedDir = INCOMING)
       .allNodeScan("b")
@@ -1577,6 +1711,65 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .projection(project = Seq("1 AS 1"), discard = Set("anon_0", "r", "anon_1"))
       .expandAll("(anon_0)-[r*1..]->(anon_1)")
       .allNodeScan("anon_0")
+      .build()
+  }
+
+  test("Should plan VarExpand for named path if named path variable is not used") {
+    val query = "MATCH p=(a) ((b)-[r]->(c))+ (d) RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .expandAll("(a)-[r*1..]->(d)")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("Should not plan VarExpand for named path if named path variable is used") {
+    val query = "MATCH p=(a) ((b)-[r]->(c))+ (d) RETURN p"
+    val plan = planner.plan(query).stripProduceResults
+
+    val `(a) ((b)-[r]->(c))+ (d)` =
+      TrailParameters(
+        min = 1,
+        max = UpperBound.Unlimited,
+        start = "a",
+        end = "d",
+        innerStart = "b",
+        innerEnd = "c",
+        groupNodes = Set(("b", "b")),
+        groupRelationships = Set(("r", "r")),
+        innerRelationships = Set("r"),
+        previouslyBoundRelationships = Set(),
+        previouslyBoundRelationshipGroups = Set(),
+        reverseGroupVariableProjections = false
+      )
+    val path = PathExpression(NodePathStep(
+      varFor("a"),
+      RepeatPathStep(
+        List(NodeRelPair(varFor("b"), varFor("r"))),
+        varFor("d"),
+        NilPathStep()(pos)
+      )(pos)
+    )(pos))(pos)
+
+    plan shouldEqual planner.subPlanBuilder()
+      .projection(project = Map("p" -> path), discard = Set("a", "d", "b", "r"))
+      .trail(`(a) ((b)-[r]->(c))+ (d)`)
+      .|.filterExpression(isRepeatTrailUnique("r"))
+      .|.expandAll("(b)-[r]->(c)")
+      .|.argument("b")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test("Should plan PruningVarExpand for VarExpand QPP with DISTINCT endNode") {
+    val query = "MATCH (a) ((b)-[r]->(c))+ (d) RETURN DISTINCT d"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .distinct("d AS d")
+      .bfsPruningVarExpand("(a)-[*1..2147483647]->(d)")
+      .allNodeScan("a")
       .build()
   }
 

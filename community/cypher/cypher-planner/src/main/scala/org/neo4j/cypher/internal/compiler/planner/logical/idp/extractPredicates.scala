@@ -53,7 +53,7 @@ object extractPredicates {
     originalNodeName: String,
     targetNodeName: String,
     targetNodeIsBound: Boolean,
-    maybeVarLength: Option[VarPatternLength] = None
+    varLength: VarPatternLength
   ): (NodePredicates, RelationshipPredicates, SolvedPredicates) = {
 
     /*
@@ -128,7 +128,7 @@ object extractPredicates {
             Variable(`originalRelationshipName`),
             predicateLowerBound
           )
-        ) if predicateLowerBound <= maybeVarLength.map(_.min).getOrElse(Int.MinValue) =>
+        ) if predicateLowerBound <= varLength.min =>
         (n, e, s + p)
       case (
           (n, e, s),
@@ -136,7 +136,7 @@ object extractPredicates {
             Variable(`originalRelationshipName`),
             predicateUpperBound
           )
-        ) if predicateUpperBound >= maybeVarLength.flatMap(_.max).getOrElse(Int.MaxValue) =>
+        ) if predicateUpperBound >= varLength.max.getOrElse(Int.MaxValue) =>
         (n, e, s + p)
 
       case (acc, _) =>

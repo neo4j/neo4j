@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.CardinalityCostModel
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.LogicalPlanRewritten
 import org.neo4j.cypher.internal.compiler.planner.logical.steps.index.IndexCompatiblePredicatesProviderContext
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
@@ -36,7 +36,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
-import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Selection.LabelAndRelTypeInfo
 import org.neo4j.cypher.internal.macros.AssertMacros
@@ -59,10 +58,7 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
 
   override def phase: CompilationPhaseTracer.CompilationPhase = LOGICAL_PLANNING
 
-  override def preConditions: Set[StepSequencer.Condition] = Set(
-    // This rewriter operates on the LogicalPlan
-    CompilationContains[LogicalPlan]
-  )
+  override def preConditions: Set[StepSequencer.Condition] = Set(LogicalPlanRewritten)
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
     SelectionPredicatesSortedBySelectivity

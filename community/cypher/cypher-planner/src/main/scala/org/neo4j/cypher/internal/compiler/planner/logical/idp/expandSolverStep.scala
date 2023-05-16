@@ -271,46 +271,41 @@ object expandSolverStep {
       case rel: PatternRelationship =>
         produceExpandLogicalPlan(qg, rel, rel.name, sourcePlan, nodeId, availableSymbols, context)
       case qpp: QuantifiedPathPattern =>
-        if (qpp.isSimple) {
-          val name = qpp.relationshipVariableGroupings.head.groupName
-          produceExpandLogicalPlan(qg, qpp, name, sourcePlan, nodeId, availableSymbols, context)
-        } else {
-          produceTrailLogicalPlan(
-            qpp,
-            sourcePlan,
-            nodeId,
-            availableSymbols,
-            context,
-            qppInnerPlans,
-            qg.selections.flatPredicates
-          )
-        }
+        produceTrailLogicalPlan(
+          qpp,
+          sourcePlan,
+          nodeId,
+          availableSymbols,
+          context,
+          qppInnerPlans,
+          qg.selections.flatPredicates
+        )
     }
   }
 
   /**
-   * On top of the given source plan, plan  the given [[PatternRelationship]].
+   * On top of the given source plan, plan the given [[PatternRelationship]].
    *
    * @param qg             the [[QueryGraph]] that is currently being planned.
-   * @param patternRel the [[PatternRelationship]] to plan
+   * @param patternRel     the [[PatternRelationship]] to plan
    * @param sourcePlan     the plan to plan on top of
    * @param nodeId         the node to start the expansion from.
    */
   def produceExpandLogicalPlan(
     qg: QueryGraph,
-    nodeConnection: NodeConnection,
+    patternRelationship: PatternRelationship,
     patternName: String,
     sourcePlan: LogicalPlan,
     nodeId: String,
     availableSymbols: Set[String],
     context: LogicalPlanningContext
   ): LogicalPlan = {
-    val otherSide = nodeConnection.otherSide(nodeId)
+    val otherSide = patternRelationship.otherSide(nodeId)
     val overlapping = availableSymbols.contains(otherSide)
     val mode = if (overlapping) ExpandInto else ExpandAll
 
-    nodeConnection match {
-      case pr: PatternRelationship if pr.length == SimplePatternLength =>
+    patternRelationship match {
+      case pr @ PatternRelationship(_, _, _, _, SimplePatternLength) =>
         context.staticComponents.logicalPlanProducer.planSimpleExpand(
           sourcePlan,
           nodeId,
@@ -319,11 +314,7 @@ object expandSolverStep {
           mode,
           context
         )
-      case _ =>
-        val maybeVarLength = nodeConnection match {
-          case PatternRelationship(_, _, _, _, length: VarPatternLength) => Some(length)
-          case _                                                         => None
-        }
+      case PatternRelationship(_, _, _, _, varLength: VarPatternLength) =>
         val availablePredicates: collection.Seq[Expression] =
           qg.selections.predicatesGiven(availableSymbols + patternName + otherSide)
         val (
@@ -337,14 +328,14 @@ object expandSolverStep {
             originalNodeName = nodeId,
             targetNodeName = otherSide,
             targetNodeIsBound = mode.equals(ExpandInto),
-            maybeVarLength = maybeVarLength
+            varLength = varLength
           )
 
         context.staticComponents.logicalPlanProducer.planVarExpand(
           source = sourcePlan,
           from = nodeId,
           to = otherSide,
-          nodeConnection = nodeConnection,
+          patternRelationship = patternRelationship,
           nodePredicates = nodePredicates,
           relationshipPredicates = relationshipPredicates,
           solvedPredicates = solvedPredicates,

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransform
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.LabelAndRelTypeInfos
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.rewriting.rewriters.parameterRewriter
@@ -49,6 +50,7 @@ case object ParameterToDefaultRewriter extends LogicalPlanRewriter with StepSequ
     cardinalities: Cardinalities,
     effectiveCardinalities: EffectiveCardinalities,
     providedOrders: ProvidedOrders,
+    labelAndRelTypeInfos: LabelAndRelTypeInfos,
     otherAttributes: Attributes[LogicalPlan],
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
     readOnly: Boolean
