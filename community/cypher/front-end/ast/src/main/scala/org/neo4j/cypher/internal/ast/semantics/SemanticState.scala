@@ -16,7 +16,8 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
-import com.github.benmanes.caffeine.cache.{Cache, Caffeine}
+import com.github.benmanes.caffeine.cache.Cache
+import com.github.benmanes.caffeine.cache.Caffeine
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.ASTAnnotationMap.ASTAnnotationMap
 import org.neo4j.cypher.internal.ast.semantics.Scope.DeclarationsAndDependencies
@@ -119,7 +120,7 @@ object ExpressionTypeInfo {
     cache.get((specified, expected), _ => new ExpressionTypeInfo(specified, expected))
 }
 
-final case class ExpressionTypeInfo private (specified: TypeSpec, expected: Option[TypeSpec] = None) {
+final case class ExpressionTypeInfo private (specified: TypeSpec, expected: Option[TypeSpec]) {
   lazy val actual: TypeSpec = expected.fold(specified)(specified intersectOrCoerce)
 
   def expect(types: TypeSpec): ExpressionTypeInfo = ExpressionTypeInfo(specified, Some(types))
