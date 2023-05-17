@@ -51,6 +51,11 @@ public class ContinuousIdRange implements PageIdRange {
     }
 
     @Override
+    public long pageId() {
+        return rangeStart / rangeSize;
+    }
+
+    @Override
     public String toString() {
         return "ContinuousIdRange{" + "rangeStart="
                 + rangeStart + ", rangeSize="

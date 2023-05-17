@@ -41,6 +41,11 @@ public interface PageIdRange {
 
         @Override
         public void unallocate(IdGenerator.TransactionalMarker marker) {}
+
+        @Override
+        public long pageId() {
+            return -1;
+        }
     };
 
     /**
@@ -57,4 +62,9 @@ public interface PageIdRange {
      * Unallocate any ids that are still available in the range.
      */
     void unallocate(IdGenerator.TransactionalMarker marker);
+
+    /**
+     * Get id of the page that this range is covering.
+     */
+    long pageId();
 }

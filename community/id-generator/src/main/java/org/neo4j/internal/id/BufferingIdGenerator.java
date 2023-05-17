@@ -69,7 +69,7 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
 
     @Override
     public void releasePageRange(PageIdRange range, CursorContext cursorContext) {
-        if (rangeCache.size() < MAX_BUFFERED_RANGES) {
+        if (rangeCache.size() < MAX_BUFFERED_RANGES && range.hasNext()) {
             rangeCache.add(range);
         } else {
             delegate.releasePageRange(range, cursorContext);
@@ -102,10 +102,8 @@ class BufferingIdGenerator extends IdGenerator.Delegate {
 
     public void releaseRanges() {
         if (!rangeCache.isEmpty()) {
-            try (var marker = transactionalMarker(NULL_CONTEXT)) {
-                rangeCache.forEach(pageIdRange -> pageIdRange.unallocate(marker));
-                rangeCache.clear();
-            }
+            rangeCache.forEach(pageIdRange -> delegate.releasePageRange(pageIdRange, NULL_CONTEXT));
+            rangeCache.clear();
         }
     }
 

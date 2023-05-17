@@ -27,10 +27,12 @@ import org.neo4j.internal.id.IdGenerator;
  */
 public class ArrayBasedRange implements PageIdRange {
     private final long[] ids;
+    private final int idsPerPage;
     private int cursor = 0;
 
-    public ArrayBasedRange(long[] ids) {
+    public ArrayBasedRange(long[] ids, int idsPerPage) {
         this.ids = ids;
+        this.idsPerPage = idsPerPage;
     }
 
     @Override
@@ -48,6 +50,11 @@ public class ArrayBasedRange implements PageIdRange {
         while (hasNext()) {
             marker.markUnallocated(nextId());
         }
+    }
+
+    @Override
+    public long pageId() {
+        return ids[0] / idsPerPage;
     }
 
     @Override

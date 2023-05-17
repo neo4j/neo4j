@@ -83,13 +83,14 @@ public class BatchedTransactionIdSequenceProvider implements IdSequenceProvider 
         @Override
         public long nextId(CursorContext cursorContext) {
             if (!range.hasNext()) {
+                close(cursorContext);
                 range = idGenerator.nextPageRange(cursorContext, recordsPerPage);
             }
             return range.nextId();
         }
 
         public void close(CursorContext cursorContext) {
-            if (range == PageIdRange.EMPTY || !range.hasNext()) {
+            if (range == PageIdRange.EMPTY) {
                 return;
             }
             idGenerator.releasePageRange(range, cursorContext);

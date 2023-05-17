@@ -19,8 +19,10 @@
  */
 package org.neo4j.internal.id.indexed;
 
+import static java.util.Collections.emptySet;
 import static org.eclipse.collections.impl.block.factory.Comparators.naturalOrder;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.id.IdValidator.assertIdWithinMaxCapacity;
@@ -34,6 +36,8 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
@@ -76,6 +80,7 @@ import org.neo4j.util.Preconditions;
  * that is if the {@link #transactionalMarker(CursorContext)} is only used for applying committed data.
  */
 public class IndexedIdGenerator implements IdGenerator {
+
     public interface Monitor extends AutoCloseable {
         void opened(long highestWrittenId, long highId);
 
@@ -301,6 +306,8 @@ public class IndexedIdGenerator implements IdGenerator {
     private final boolean strictlyPrioritizeFreelist;
     private final int biggestSlotSize;
 
+    private final Set<Long> lockedPageRanges;
+
     public IndexedIdGenerator(
             PageCache pageCache,
             FileSystemAbstraction fileSystem,
@@ -334,6 +341,7 @@ public class IndexedIdGenerator implements IdGenerator {
                 .orElseThrow();
         this.maxId = maxId;
         this.monitor = monitor;
+        this.lockedPageRanges = isMultiVersioned(config) ? ConcurrentHashMap.newKeySet() : emptySet();
         this.defaultMerger = new IdRangeMerger(false, monitor);
         this.recoveryMerger = new IdRangeMerger(true, monitor);
 
@@ -461,7 +469,21 @@ public class IndexedIdGenerator implements IdGenerator {
         checkRefillCache(cursorContext);
         long[] reusedIds = cache.drainRange(idsPerPage);
         if (reusedIds.length > 0) {
-            return new ArrayBasedRange(reusedIds);
+            // we have some reuse ids available that we allocated from cache
+            // now we need to make sure that range is not yet used by any other concurrent allocator
+            // so we check if it's not yet locked before returning it, otherwise we mark those ids unallocated and
+            // fallback to new range
+            var range = new ArrayBasedRange(reusedIds, idsPerPage);
+            if (lockedPageRanges.add(range.pageId())) {
+                return range;
+            } else {
+                // we mark optimistically allocated range as unallocated and fallback to new ids
+                try (var marker = lockAndInstantiateMarker(false, cursorContext)) {
+                    for (long reusedId : reusedIds) {
+                        marker.markUnallocated(reusedId);
+                    }
+                }
+            }
         }
 
         long currentHighId;
@@ -472,19 +494,21 @@ public class IndexedIdGenerator implements IdGenerator {
         } while (!highId.weakCompareAndSetRelease(currentHighId, currentHighId + requestSize));
         assertIdWithinMaxCapacity(idType, currentHighId + idsPerPage, maxId);
         monitor.allocatedFromHigh(currentHighId, (int) requestSize);
-        if (hasReservedIdInRange(currentHighId, currentHighId + idsPerPage)) {
-            return rangeWithoutReservedId(idsPerPage, currentHighId);
-        }
-        return new ContinuousIdRange(currentHighId, (int) requestSize);
+        var pageIdRange = hasReservedIdInRange(currentHighId, currentHighId + idsPerPage)
+                ? rangeWithoutReservedId(idsPerPage, currentHighId)
+                : new ContinuousIdRange(currentHighId, (int) requestSize);
+        lockedPageRanges.add(pageIdRange.pageId());
+        return pageIdRange;
     }
 
     @Override
     public void releasePageRange(PageIdRange range, CursorContext context) {
-        try (var marker = transactionalMarker(context)) {
-            while (range.hasNext()) {
-                marker.markUnallocated(range.nextId());
+        if (range.hasNext()) {
+            try (var marker = transactionalMarker(context)) {
+                range.unallocate(marker);
             }
         }
+        lockedPageRanges.remove(range.pageId());
     }
 
     @Override
@@ -898,6 +922,10 @@ public class IndexedIdGenerator implements IdGenerator {
                 ids[i] = value;
             }
         }
-        return new ArrayBasedRange(ids);
+        return new ArrayBasedRange(ids, idsPerPage);
+    }
+
+    private static boolean isMultiVersioned(Config config) {
+        return "multiversion".equals(config.get(db_format));
     }
 }
