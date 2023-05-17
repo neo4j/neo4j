@@ -24,7 +24,9 @@ sealed trait GraphOrDatabaseScope extends Rewritable {
   override def dup(children: Seq[AnyRef]): GraphOrDatabaseScope.this.type = this
 }
 
-sealed trait DefaultScope
+sealed trait HomeScope
+
+sealed trait AllScope
 
 // Graph scopes
 
@@ -37,11 +39,11 @@ final case class NamedGraphScope(graph: DatabaseName)(val position: InputPositio
     this.copy(children.head.asInstanceOf[DatabaseName])(position).asInstanceOf[this.type]
 }
 
-final case class AllGraphsScope()(val position: InputPosition) extends GraphScope
+final case class AllGraphsScope()(val position: InputPosition) extends GraphScope with AllScope
 
-final case class DefaultGraphScope()(val position: InputPosition) extends GraphScope with DefaultScope
+final case class DefaultGraphScope()(val position: InputPosition) extends GraphScope with HomeScope
 
-final case class HomeGraphScope()(val position: InputPosition) extends GraphScope with DefaultScope
+final case class HomeGraphScope()(val position: InputPosition) extends GraphScope with HomeScope
 
 // Database scopes
 
@@ -58,15 +60,15 @@ final case class NamedDatabaseScope(database: DatabaseName)(val position: InputP
   override val showCommandName: String = "ShowDatabase"
 }
 
-final case class AllDatabasesScope()(val position: InputPosition) extends DatabaseScope {
+final case class AllDatabasesScope()(val position: InputPosition) extends DatabaseScope with AllScope {
   override val showCommandName: String = "ShowDatabases"
 }
 
-final case class DefaultDatabaseScope()(val position: InputPosition) extends DatabaseScope with DefaultScope {
+final case class DefaultDatabaseScope()(val position: InputPosition) extends DatabaseScope with HomeScope {
   override val showCommandName: String = "ShowDefaultDatabase"
 }
 
-final case class HomeDatabaseScope()(val position: InputPosition) extends DatabaseScope with DefaultScope {
+final case class HomeDatabaseScope()(val position: InputPosition) extends DatabaseScope with HomeScope {
   override val showCommandName: String = "ShowHomeDatabase"
 }
 
