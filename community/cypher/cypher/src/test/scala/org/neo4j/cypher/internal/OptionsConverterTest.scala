@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal
 import org.neo4j.configuration.Config
 import org.neo4j.configuration.GraphDatabaseInternalSettings
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues
 
@@ -56,6 +57,20 @@ class OptionsConverterTest extends CypherFunSuite {
     ).txLogEnrichment shouldBe Some("FULL")
   }
 
+  test("should throw exception if given invalid options for set") {
+    the[InvalidArgumentsException] thrownBy AlterDatabaseOptionsConverter.convert(
+      VirtualValues.map(Array("not an option"), Array(stringValue("Meh"))),
+      Some(config)
+    ) should have message "Could not alter database with unrecognised option(s): 'not an option'. Expected 'txLogEnrichment'."
+  }
+
+  test("should throw exception if given create-only options for set") {
+    the[InvalidArgumentsException] thrownBy AlterDatabaseOptionsConverter.convert(
+      VirtualValues.map(Array(ExistingDataOption.KEY), Array(stringValue("Use"))),
+      Some(config)
+    ) should have message "Could not alter database with 'CREATE DATABASE' option(s): 'existingData'. Expected 'txLogEnrichment'."
+  }
+
   test("alter should parse txLogEnrichment option value to uppercase regardless of input casing") {
     // behaviour is different from other options (they keep casing unchanged)
     AlterDatabaseOptionsConverter.convert(
@@ -66,5 +81,28 @@ class OptionsConverterTest extends CypherFunSuite {
       VirtualValues.map(Array("txLogEnrichment"), Array(stringValue("DiFf"))),
       Some(config)
     ).txLogEnrichment shouldBe Some("DIFF")
+  }
+
+  for (opt <- Seq("tXlOgEnRiChMeNt", "txLogEnrichment", "txlogenrichment")) {
+    test(s"alter should ignore casing of entry key for removal: $opt") {
+      AlterDatabaseOptionsConverter.validForRemoval(
+        Set("tXlOgEnRiChMeNt"),
+        config
+      ) shouldBe Set("txLogEnrichment")
+    }
+  }
+
+  test("should throw exception if given invalid options for removal") {
+    the[InvalidArgumentsException] thrownBy AlterDatabaseOptionsConverter.validForRemoval(
+      Set("not an option"),
+      config
+    ) should have message "Could not alter database remove with unrecognised option(s): 'not an option'. Expected 'txLogEnrichment'."
+  }
+
+  test("should throw exception if given create-only options for removal") {
+    the[InvalidArgumentsException] thrownBy AlterDatabaseOptionsConverter.validForRemoval(
+      Set(ExistingDataOption.KEY),
+      config
+    ) should have message "Could not alter database remove with 'CREATE DATABASE' option(s): 'existingData'. Expected 'txLogEnrichment'."
   }
 }

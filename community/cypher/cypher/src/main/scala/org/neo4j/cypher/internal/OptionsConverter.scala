@@ -326,34 +326,19 @@ object LogEnrichmentOption extends StringOptionValidator {
 case object AlterDatabaseOptionsConverter extends OptionsConverter[AlterDatabaseOptions] {
 
   // expectedKeys must be kept in sync with AlterDatabaseOptions below!
-  private val expectedKeys: Set[String] = Set(
-    LogEnrichmentOption.KEY
+  private val expectedKeys: Map[String, String] = Map(
+    LogEnrichmentOption.KEY.toLowerCase(Locale.ROOT) -> LogEnrichmentOption.KEY
   )
 
-  private val VISIBLE_PERMITTED_OPTIONS: String = expectedKeys.map(opt => s"'$opt'").mkString(", ")
+  private val VISIBLE_PERMITTED_OPTIONS: String = expectedKeys.values.map(opt => s"'$opt'").mkString(", ")
 
-  def validForRemoval(keys: Set[String], config: Config): Unit = {
+  def validForRemoval(keys: Set[String], config: Config): Set[String] = {
     if (keys.nonEmpty && !config.get(GraphDatabaseInternalSettings.change_data_capture)) {
       throw new UnsupportedOperationException("Removing options is not supported yet")
     }
-    val invalidKeys = keys
-      .map(_.toLowerCase(Locale.ROOT))
-      .diff(expectedKeys.map(_.toLowerCase(Locale.ROOT)))
-    if (invalidKeys.nonEmpty) {
-      val validForCreateDatabase =
-        invalidKeys.filter(CreateDatabaseOptionsConverter.expectedKeys.map(_.toLowerCase(Locale.ROOT)))
-      if (validForCreateDatabase.isEmpty) {
-        // keys are not even valid for CREATE DATABASE OPTIONS
-        throw new InvalidArgumentsException(
-          s"Could not remove unrecognised option(s): ${invalidKeys.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
-        )
-      } else {
-        // keys are valid in CREATE DATABASE OPTIONS, but not allowed to be removed through ALTER DATABASE REMOVE OPTION
-        throw new InvalidArgumentsException(
-          s"Could not remove 'CREATE DATABASE' option(s): ${validForCreateDatabase.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
-        )
-      }
-    }
+    val (validKeys, invalidKeys) = keys.partition(key => expectedKeys.contains(key.toLowerCase(Locale.ROOT)))
+    if (invalidKeys.nonEmpty) throwErrorForInvalidKeys(invalidKeys, s"$operation remove")
+    validKeys.map(key => expectedKeys(key.toLowerCase(Locale.ROOT)))
   }
 
   override def convert(optionsMap: MapValue, config: Option[Config]): AlterDatabaseOptions = {
@@ -361,29 +346,35 @@ case object AlterDatabaseOptionsConverter extends OptionsConverter[AlterDatabase
       throw new UnsupportedOperationException("Setting options in alter is not supported yet")
     }
     val invalidKeys = optionsMap.keySet().asScala.toSeq.filterNot(found =>
-      expectedKeys.exists(expected => found.equalsIgnoreCase(expected))
+      expectedKeys.contains(found.toLowerCase(Locale.ROOT))
     )
-    if (invalidKeys.nonEmpty) {
-      val validForCreateDatabase =
-        invalidKeys.filter(CreateDatabaseOptionsConverter.expectedKeys.map(_.toLowerCase(Locale.ROOT)))
-
-      if (validForCreateDatabase.isEmpty) {
-        // keys are not even valid for CREATE DATABASE OPTIONS
-        throw new InvalidArgumentsException(
-          s"Could not $operation with unrecognised option(s): ${invalidKeys.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
-        )
-      } else {
-        // keys are valid in CREATE DATABASE OPTIONS, but not allowed to be mutated through ALTER DATABASE SET OPTION
-        throw new InvalidArgumentsException(
-          s"Could not $operation with 'CREATE DATABASE' option(s): ${validForCreateDatabase.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
-        )
-      }
-    }
+    if (invalidKeys.nonEmpty) throwErrorForInvalidKeys(invalidKeys, operation)
 
     // Keys must be kept in sync with expectedKeys above!
     AlterDatabaseOptions(
       txLogEnrichment = LogEnrichmentOption.findIn(optionsMap)
     )
+  }
+
+  private def throwErrorForInvalidKeys(invalidKeys: Iterable[String], operation: String) = {
+    val validForCreateDatabase =
+      invalidKeys.filter(invalidKey =>
+        CreateDatabaseOptionsConverter.expectedKeys.map(_.toLowerCase(Locale.ROOT)).contains(
+          invalidKey.toLowerCase(Locale.ROOT)
+        )
+      )
+
+    if (validForCreateDatabase.isEmpty) {
+      // keys are not even valid for CREATE DATABASE OPTIONS
+      throw new InvalidArgumentsException(
+        s"Could not $operation with unrecognised option(s): ${invalidKeys.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
+      )
+    } else {
+      // keys are valid in CREATE DATABASE OPTIONS, but not allowed to be mutated through ALTER DATABASE SET OPTION
+      throw new InvalidArgumentsException(
+        s"Could not $operation with 'CREATE DATABASE' option(s): ${validForCreateDatabase.mkString("'", "', '", "'")}. Expected $VISIBLE_PERMITTED_OPTIONS."
+      )
+    }
   }
 
   implicit override def operation: String = "alter database"
