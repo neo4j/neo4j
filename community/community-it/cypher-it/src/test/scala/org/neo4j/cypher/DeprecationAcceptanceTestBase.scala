@@ -135,6 +135,26 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
     assertNotification(queries, true, DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE)
   }
 
+  test("do not deprecate using map on the RHS of a Set Clause") {
+    val query =
+      """
+        |WITH {id:1} as map
+        |CREATE (n:Test)
+        |SET n = map""".stripMargin
+
+    assertNoDeprecations(Seq(query))
+  }
+
+  test("do not deprecate using additive map on the RHS of a Set Clause") {
+    val query =
+      """
+        |WITH {id:1} as map
+        |CREATE (n:Test {prop:'val'})
+        |SET n += map""".stripMargin
+
+    assertNoDeprecations(Seq(query))
+  }
+
   test("deprecate fixed length relationships in shortestPath and allShortestPaths") {
     val queries = Seq(
       "MATCH (a), (b), allShortestPaths((a)-[r]->(b)) RETURN b",
