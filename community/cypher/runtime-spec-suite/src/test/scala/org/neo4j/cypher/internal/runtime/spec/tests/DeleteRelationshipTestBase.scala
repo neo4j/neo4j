@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.runtime.spec.tests
 
 import org.neo4j.cypher.internal.CypherRuntime
-import org.neo4j.cypher.internal.InterpretedRuntime
 import org.neo4j.cypher.internal.RuntimeContext
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
@@ -32,6 +31,9 @@ import org.neo4j.exceptions.EntityNotFoundException
 import org.neo4j.internal.helpers.collection.Iterables
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
   edition: Edition[CONTEXT],
@@ -132,10 +134,6 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
 
   test("create, delete and read relationship in the same tx - assure nice error message") {
 
-    assume(runtime != InterpretedRuntime)
-    // Interpreted doesn't throw, but making it throw would complicate the implementation and possibly introduce a
-    // regression.
-
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("t")
       .projection("type(r) AS t")
@@ -144,9 +142,18 @@ abstract class DeleteRelationshipTestBase[CONTEXT <: RuntimeContext](
       .argument()
       .build(readOnly = false)
 
-    intercept[EntityNotFoundException](
-      consume(execute(logicalQuery, runtime))
-    ).getMessage shouldBe "Relationship with id 0 has been deleted in this transaction"
+    // Same tx deletion of a relationship before reading its type isn't well defined and currently heavily implementation
+    // dependant. No runtime throws with Freki, and Legacy never throws. Here we ensure that we throw the correct
+    // type of exception if we do throw.
+
+    val expectedException = new EntityNotFoundException("Relationship with id 0 has been deleted in this transaction")
+
+    Try(consume(execute(logicalQuery, runtime))) match {
+      case Failure(exception) =>
+        exception.getClass shouldBe expectedException.getClass
+        exception.getMessage shouldBe expectedException.getMessage
+      case Success(_) =>
+    }
   }
 
   private def deleteAllTest(relationshipCount: Int): Unit = {
