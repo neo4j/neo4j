@@ -26,7 +26,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.kernel.database.NamedDatabaseId.NAMED_SYSTEM_DATABASE_ID;
-import static org.neo4j.kernel.database.NoOpSystemGraphInitializer.noOpSystemGraphInitializer;
 
 import java.io.IOException;
 import org.junit.jupiter.api.AfterEach;
@@ -97,7 +96,7 @@ class DatabaseFailureIT {
 
     private void startDatabaseServer() {
         managementService = new TestDatabaseManagementServiceBuilder(testDirectory.homePath())
-                .setExternalDependencies(noOpSystemGraphInitializer())
+                .noOpSystemGraphInitializer()
                 .build();
     }
 }

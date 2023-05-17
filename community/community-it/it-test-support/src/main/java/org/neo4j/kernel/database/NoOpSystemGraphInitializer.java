@@ -22,7 +22,7 @@ package org.neo4j.kernel.database;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.common.DependencyResolver;
 import org.neo4j.configuration.Config;
-import org.neo4j.configuration.GraphDatabaseSettings;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.dbms.database.SystemGraphInitializer;
 
 public final class NoOpSystemGraphInitializer {
@@ -32,16 +32,9 @@ public final class NoOpSystemGraphInitializer {
     /**
      * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
      * be possible to read {@link NamedDatabaseId} from system database.
-     * Assumes default database name is {@link GraphDatabaseSettings#DEFAULT_DATABASE_NAME}
-     * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
-     */
-    public static Dependencies noOpSystemGraphInitializer() {
-        return noOpSystemGraphInitializer(Config.defaults());
-    }
-
-    /**
-     * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
-     * be possible to read {@link NamedDatabaseId} from system database.
+     * <p>
+     * Note: this will also modify {@code config} by setting
+     * {@link GraphDatabaseInternalSettings#fallback_to_latest_runtime_version} to {@code true}.
      * @param config Used for default database name
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
      */
@@ -52,6 +45,9 @@ public final class NoOpSystemGraphInitializer {
     /**
      * Disable SystemGraphInitializer to avoid interfering with tests or changing backups. Injects {@link TestDatabaseIdRepository} as it will no longer
      * be possible to read {@link NamedDatabaseId} from system database.
+     * <p>
+     * Note: this will also modify {@code config} by setting
+     * {@link GraphDatabaseInternalSettings#fallback_to_latest_runtime_version} to {@code true}.
      * @param dependencies to include in returned {@link DependencyResolver}
      * @param config Used for default database name
      * @return Dependencies that can set as external dependencies in DatabaseManagementServiceBuilder
@@ -61,6 +57,7 @@ public final class NoOpSystemGraphInitializer {
     }
 
     private static Dependencies noOpSystemGraphInitializer(Dependencies dependencies, Config config) {
+        config.set(GraphDatabaseInternalSettings.fallback_to_latest_runtime_version, true);
         dependencies.satisfyDependencies(SystemGraphInitializer.NO_OP, new TestDatabaseIdRepository(config));
         return dependencies;
     }
