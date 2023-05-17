@@ -71,4 +71,20 @@ public class EmptyVersionContext implements VersionContext {
 
     @Override
     public void refreshVisibilityBoundaries() {}
+
+    @Override
+    public void invisibleChainHead(long headVersion) {}
+
+    @Override
+    public boolean obsoleteHeadObserved() {
+        return false;
+    }
+
+    @Override
+    public void resetObsoleteHeadState() {}
+
+    @Override
+    public long currentInvisibleChainHeadVersion() {
+        return Long.MIN_VALUE;
+    }
 }

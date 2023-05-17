@@ -21,6 +21,7 @@ package org.neo4j.internal.recordstorage;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.counts_store_max_cached_entries;
+import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.function.ThrowingAction.executeAll;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.ID;
 import static org.neo4j.internal.recordstorage.RecordStorageEngineFactory.NAME;
@@ -67,6 +68,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.recordstorage.Command.RecordEnrichmentCommand;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreIdUsage;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
+import org.neo4j.internal.recordstorage.validation.TransactionCommandValidator;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaState;
@@ -125,6 +127,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
@@ -405,6 +408,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     public RecordStorageCommandCreationContext newCommandCreationContext() {
         return new RecordStorageCommandCreationContext(
                 neoStores, tokenHolders, internalLogProvider, denseNodeThreshold, config);
+    }
+
+    @Override
+    public TransactionValidator createTransactionValidator(CursorContext cursorContext) {
+        if (!"multiversion".equals(config.get(db_format))) {
+            return TransactionValidator.EMPTY_VALIDATOR;
+        }
+        return new TransactionCommandValidator(neoStores, cursorContext);
     }
 
     @Override

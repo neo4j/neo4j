@@ -26,6 +26,7 @@ import static org.neo4j.internal.id.IdSlotDistribution.SINGLE_IDS;
 import static org.neo4j.internal.recordstorage.InconsistentDataReadException.CYCLE_DETECTION_THRESHOLD;
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.ANY_PAGE_SIZE;
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_CHAIN_FOLLOW;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
@@ -418,9 +419,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     /**
-     * DANGER: make sure to always close this cursor.
-     *
-     * Opens a {@link PageCursor} to this store, mainly for use in {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
+     * Opens a new {@link PageCursor} to this store, mainly for use in {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
      * The opened cursor will make use of the {@link PagedFile#PF_READ_AHEAD} flag for optimal scanning performance.
      */
     @Override
@@ -429,11 +428,21 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord, HEA
     }
 
     /**
-     * DANGER: make sure to always close this cursor.
+     * Opens a new {@link PageCursor} to this store.
+     * The opened cursor will make not have any additional flags set.
      */
     @Override
     public PageCursor openPageCursorForReading(long id, CursorContext cursorContext) {
         return openPageCursorForReading(id, 0, cursorContext);
+    }
+
+    /**
+     * Opens a new {@link PageCursor} to this store.
+     * The opened cursor will make use of the {@link PagedFile#PF_NO_CHAIN_FOLLOW} flag set and will not follow chain links regardless of the version context.
+     */
+    @Override
+    public PageCursor openPageCursorForReadingHeadOnly(long id, CursorContext cursorContext) {
+        return openPageCursorForReading(id, PF_NO_CHAIN_FOLLOW, cursorContext);
     }
 
     private PageCursor openPageCursorForReading(long id, int additionalCursorFlags, CursorContext cursorContext) {

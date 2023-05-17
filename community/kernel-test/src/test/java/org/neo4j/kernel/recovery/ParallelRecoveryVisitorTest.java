@@ -79,6 +79,7 @@ import org.neo4j.storageengine.api.enrichment.Enrichment;
 import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 import org.neo4j.test.Barrier;
 
 class ParallelRecoveryVisitorTest {
@@ -332,6 +333,11 @@ class ParallelRecoveryVisitorTest {
         @Override
         public CommandCreationContext newCommandCreationContext() {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public TransactionValidator createTransactionValidator(CursorContext cursorContext) {
+            return TransactionValidator.EMPTY_VALIDATOR;
         }
 
         @Override

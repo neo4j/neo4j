@@ -43,6 +43,7 @@ import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
@@ -64,6 +65,11 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
     CommandCreationContext newCommandCreationContext();
+
+    /**
+     * Create multi versioned stores transaction validator. Validator is noop in all other engines.
+     */
+    TransactionValidator createTransactionValidator(CursorContext cursorContext);
 
     StorageLocks createStorageLocks(ResourceLocker locker);
 

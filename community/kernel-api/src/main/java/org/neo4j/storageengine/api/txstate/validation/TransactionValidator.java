@@ -17,22 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.tags;
+package org.neo4j.storageengine.api.txstate.validation;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.util.Collection;
+import org.neo4j.storageengine.api.StorageCommand;
 
 /**
- * Annotation to mark mvcc related tests that pass due to some anomaly that should be fixed eventually.
+ * Transaction validator that is invoked as part of transaction commit preparation for write transactions
+ * Its invoked for when we already have a set of commands ready but commit process for the chunk was not yet started.
  */
-@Target({ElementType.TYPE, ElementType.METHOD})
-@Retention(RetentionPolicy.SOURCE)
-public @interface MultiVersionAnomaly {
+@FunctionalInterface
+public interface TransactionValidator {
+    TransactionValidator EMPTY_VALIDATOR = commands -> {};
 
-    /**
-     * Optional description of the anomaly.
-     */
-    String value() default "";
+    void validate(Collection<StorageCommand> commands);
 }

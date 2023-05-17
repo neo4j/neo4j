@@ -20,6 +20,7 @@
 package org.neo4j.io.pagecache.impl.muninn;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EAGER_FLUSH;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_CHAIN_FOLLOW;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_FAULT;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_TRANSIENT;
@@ -81,6 +82,7 @@ public abstract class MuninnPageCursor extends PageCursor {
     private final int pf_flags;
     protected final boolean eagerFlush;
     private final boolean noFault;
+    protected final boolean chainFollow;
     protected final boolean noGrow;
     private final boolean updateUsage;
     protected final boolean multiVersioned;
@@ -136,6 +138,7 @@ public abstract class MuninnPageCursor extends PageCursor {
         this.eagerFlush = isFlagRaised(pf_flags, PF_EAGER_FLUSH);
         this.updateUsage = !isFlagRaised(pf_flags, PF_TRANSIENT);
         this.noFault = isFlagRaised(pf_flags, PF_NO_FAULT);
+        this.chainFollow = !isFlagRaised(pf_flags, PF_NO_CHAIN_FOLLOW);
         this.noGrow = noFault || isFlagRaised(pf_flags, PagedFile.PF_NO_GROW);
         this.victimPage = victimPage;
         this.tracer = cursorContext.getCursorTracer();

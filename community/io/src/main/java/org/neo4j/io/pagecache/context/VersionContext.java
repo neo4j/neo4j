@@ -104,4 +104,26 @@ public interface VersionContext {
      * Refresh cursor context visibility boundaries
      */
     void refreshVisibilityBoundaries();
+
+    /**
+     * Set invisible chain head version
+     */
+    void invisibleChainHead(long headVersion);
+
+    /**
+     * Check if this context ever encountered chain where latest visible page is not in the head of the chains
+     */
+    boolean obsoleteHeadObserved();
+
+    /**
+     * Reset chain obsolete chain head state context
+     */
+    void resetObsoleteHeadState();
+
+    /**
+     * Return version of the chain had that is invisible to current context.
+     * If obsolete version was not encountered unspecified number if returned. To check
+     * if obsolete version was encountered {@link #obsoleteHeadObserved()} should be used.
+     */
+    long currentInvisibleChainHeadVersion();
 }

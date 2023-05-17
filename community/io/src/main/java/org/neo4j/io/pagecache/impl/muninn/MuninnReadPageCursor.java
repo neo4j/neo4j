@@ -75,16 +75,20 @@ final class MuninnReadPageCursor extends MuninnPageCursor {
     @Override
     protected void pinCursorToPage(PinEvent pinEvent, long pageRef, long filePageId, PageSwapper swapper) {
         init(pinEvent, pageRef);
-        if (multiVersioned && shouldLoadSnapshot()) {
-            versionStorage.loadReadSnapshot(this, versionContext, pinEvent);
+        long pagePointer = pointer;
+        long headVersion = getLongAt(pagePointer, littleEndian);
+        if (multiVersioned && shouldLoadSnapshot(headVersion)) {
+            if (chainFollow) {
+                versionStorage.loadReadSnapshot(this, versionContext, pinEvent);
+            }
+            versionContext.invisibleChainHead(headVersion);
         }
     }
 
-    private boolean shouldLoadSnapshot() {
-        long pagePointer = pointer;
-        long pageVersion = getLongAt(pagePointer, littleEndian);
-        return pageVersion > versionContext.highestClosed()
-                || isNotVisible(versionContext.notVisibleTransactionIds(), pageVersion);
+    private boolean shouldLoadSnapshot(long pageVersion) {
+        return pageVersion != versionContext.committingTransactionId()
+                && (pageVersion > versionContext.highestClosed()
+                        || isNotVisible(versionContext.notVisibleTransactionIds(), pageVersion));
     }
 
     @Override

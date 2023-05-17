@@ -2116,6 +2116,22 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
 
         @Override
         public void refreshVisibilityBoundaries() {}
+
+        @Override
+        public void invisibleChainHead(long headVersion) {}
+
+        @Override
+        public boolean obsoleteHeadObserved() {
+            return false;
+        }
+
+        @Override
+        public void resetObsoleteHeadState() {}
+
+        @Override
+        public long currentInvisibleChainHeadVersion() {
+            return Long.MIN_VALUE;
+        }
     }
 
     private static class InfoTracer extends DefaultPageCacheTracer {

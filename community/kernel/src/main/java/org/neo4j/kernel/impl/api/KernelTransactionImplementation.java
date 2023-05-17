@@ -1033,6 +1033,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 cursorContext,
                 transactionalCursors,
                 commandsTracker);
+        var transactionValidator = storageEngine.createTransactionValidator(cursorContext);
+        transactionValidator.validate(commands);
         return commandDecorator.transform(commands);
     }
 

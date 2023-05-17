@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.api.chunk;
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_transaction_chunk_size;
 
 import org.neo4j.configuration.Config;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.api.TransactionClockContext;
 import org.neo4j.kernel.impl.api.commit.TransactionCommitter;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
 import org.neo4j.memory.MemoryTracker;
 
@@ -64,8 +64,8 @@ public final class ChunkSink implements ChunkedTransactionSink {
                         lastTransactionIdWhenStarted,
                         false);
                 txState.reset();
-            } catch (KernelException ke) {
-                throw new RuntimeException("Fail to append transaction chunk.", ke);
+            } catch (Exception e) {
+                throw DefaultTransactionExceptionMapper.INSTANCE.mapException(e);
             }
         }
     }

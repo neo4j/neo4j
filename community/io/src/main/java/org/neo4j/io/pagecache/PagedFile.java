@@ -85,6 +85,11 @@ public interface PagedFile extends AutoCloseable {
     int PF_EAGER_FLUSH = 1 << 6;
 
     /**
+     * Do not follow links into version store and only read store page regardless versions context
+     */
+    int PF_NO_CHAIN_FOLLOW = 1 << 7;
+
+    /**
      * Initiate an IO interaction with the contents of the paged file.
      * <p>
      * The basic structure of an interaction looks like this:

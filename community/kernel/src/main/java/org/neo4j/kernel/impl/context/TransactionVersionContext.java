@@ -31,11 +31,13 @@ import org.neo4j.io.pagecache.context.VersionContext;
  * Or perform versioned data modification.
  */
 public class TransactionVersionContext implements VersionContext {
+    private static final long UNKNOWN_OBSOLETE_HEAD_VERSION = -1;
     private final TransactionIdSnapshotFactory transactionIdSnapshotFactory;
     private final OldestTransactionIdFactory oldestTransactionIdFactory;
     private long transactionId = BASE_TX_ID;
     private TransactionIdSnapshot transactionIds;
     private long oldestTransactionId = BASE_TX_ID;
+    private long updatedChainHeadVersion;
     private boolean dirty;
 
     public TransactionVersionContext(
@@ -85,6 +87,26 @@ public class TransactionVersionContext implements VersionContext {
     @Override
     public void refreshVisibilityBoundaries() {
         transactionIds = transactionIdSnapshotFactory.createSnapshot();
+    }
+
+    @Override
+    public void invisibleChainHead(long headVersion) {
+        updatedChainHeadVersion = headVersion;
+    }
+
+    @Override
+    public boolean obsoleteHeadObserved() {
+        return updatedChainHeadVersion > 0;
+    }
+
+    @Override
+    public void resetObsoleteHeadState() {
+        updatedChainHeadVersion = UNKNOWN_OBSOLETE_HEAD_VERSION;
+    }
+
+    @Override
+    public long currentInvisibleChainHeadVersion() {
+        return updatedChainHeadVersion;
     }
 
     @Override

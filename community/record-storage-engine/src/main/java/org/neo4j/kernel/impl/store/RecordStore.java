@@ -99,6 +99,16 @@ public interface RecordStore<RECORD extends AbstractBaseRecord> {
     PageCursor openPageCursorForReading(long id, CursorContext cursorContext);
 
     /**
+     * Opens a {@link PageCursor} on this store, capable of reading only multi versioned record chain heads.
+     * The caller is responsible for closing it when done with it.
+     *
+     * @param id cursor will initially be placed at the page containing this record id.
+     * @param cursorContext underlying page cursor context.
+     * @return PageCursor for reading head chain records and pages
+     */
+    PageCursor openPageCursorForReadingHeadOnly(long id, CursorContext cursorContext);
+
+    /**
      * Opens a {@link PageCursor} on this store, capable of reading records using
      * {@link #getRecordByCursor(long, AbstractBaseRecord, RecordLoad, PageCursor)}.
      * The caller is responsible for closing it when done with it.
