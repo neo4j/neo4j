@@ -61,7 +61,6 @@ case class WaitReconciliationExecutionPlan(
   name: String,
   normalExecutionEngine: ExecutionEngine,
   systemParams: MapValue,
-  queryHandler: QueryHandler,
   databaseNameParamKey: String,
   databaseNamespaceParamKey: String,
   timeoutInSeconds: Long,
@@ -136,7 +135,7 @@ case class WaitReconciliationExecutionPlan(
       val txParams = VirtualValues.map(Array(txIdParam), Array(Values.longValue(oldTxId)))
       val paramsWithTxId = updatedParams.updatedWith(txParams)
 
-      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, params)
+      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, new QueryHandler(), params)
       val execution = normalExecutionEngine.executeSubquery(
         query,
         paramsWithTxId,
@@ -172,16 +171,22 @@ case class SingleRowRuntimeResult(
   subscriber: QuerySubscriber,
   runtimeNotifications: Set[InternalNotification]
 ) extends RuntimeResult {
+
   import org.neo4j.cypher.internal.runtime.QueryStatistics
 
   private var cs = ConsumptionState.NOT_STARTED
   subscriber.onResult(cols.length)
 
   override def fieldNames(): Array[String] = cols
+
   override def queryStatistics(): QueryStatistics = QueryStatistics()
+
   override def heapHighWaterMark(): Long = HeapHighWaterMarkTracker.ALLOCATIONS_NOT_TRACKED
+
   override def consumptionState: RuntimeResult.ConsumptionState = cs
+
   override def close(): Unit = {}
+
   override def queryProfile(): QueryProfile = QueryProfile.NONE
 
   override def request(numberOfRecords: Long): Unit = if (numberOfRecords > 0 && cs != ConsumptionState.EXHAUSTED) {
@@ -191,7 +196,10 @@ case class SingleRowRuntimeResult(
     subscriber.onResultCompleted(queryStatistics())
     cs = ConsumptionState.EXHAUSTED
   }
+
   override def cancel(): Unit = cs = ConsumptionState.EXHAUSTED
+
   override def await(): Boolean = cs == ConsumptionState.NOT_STARTED
+
   override def notifications(): util.Set[InternalNotification] = runtimeNotifications.asJava
 }

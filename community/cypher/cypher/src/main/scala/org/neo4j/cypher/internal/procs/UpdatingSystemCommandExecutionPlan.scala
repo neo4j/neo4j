@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ExecutionEngine
 import org.neo4j.cypher.internal.ExecutionPlan
 import org.neo4j.cypher.internal.RuntimeName
 import org.neo4j.cypher.internal.SystemCommandRuntimeName
+import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.plandescription.Argument
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.runtime.ExecutionMode
@@ -35,6 +36,7 @@ import org.neo4j.graphdb.TransientFailureException
 import org.neo4j.graphdb.security.AuthorizationViolationException
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
+import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.impl.query.QuerySubscriber
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
@@ -140,11 +142,6 @@ case class UpdatingSystemCommandExecutionPlan(
 
 }
 
-// The main point of this class is to support the reactive results version of SystemCommandExecutionResult, but return no results in the outer system command
-class UpdatingSystemCommandExecutionResult(inner: InternalExecutionResult) extends SystemCommandExecutionResult(inner) {
-  override def fieldNames(): Array[String] = Array.empty
-}
-
 sealed trait QueryHandlerResult
 case object Continue extends QueryHandlerResult
 case object IgnoreResults extends QueryHandlerResult
@@ -169,9 +166,13 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
 
   def handleError(f: (Throwable, MapValue) => Throwable): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
 
-    override def onError(t: Throwable, p: MapValue): Throwable = t match {
-      case t: TransientFailureException => t
-      case _                            => f(t, p)
+    override def onError(t: Throwable, p: MapValue): Throwable = {
+      val mappedError = t match {
+        case t: TransientFailureException => t
+        case _                            => f(t, p)
+      }
+      checkOnlyWhenAssertionsAreEnabled(if (t.isInstanceOf[HasStatus]) mappedError.isInstanceOf[HasStatus] else true)
+      mappedError
     }
   }
 

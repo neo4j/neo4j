@@ -50,7 +50,6 @@ case class SystemCommandExecutionPlan(
   securityAuthorizationHandler: SecurityAuthorizationHandler,
   query: String,
   systemParams: MapValue,
-  queryHandler: QueryHandler = QueryHandler.handleError((t, _) => t),
   source: Option[ExecutionPlan] = None,
   checkCredentialsExpired: Boolean = true,
   parameterTransformer: ParameterTransformer = ParameterTransformer(),
@@ -75,7 +74,7 @@ case class SystemCommandExecutionPlan(
       val (updatedParams, notifications) =
         parameterTransformer.transform(tx, securityContext, systemParams, params)
 
-      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, queryHandler, updatedParams)
+      val systemSubscriber = new SystemCommandQuerySubscriber(ctx, subscriber, new QueryHandler(), updatedParams)
       val execution = normalExecutionEngine.executeSubquery(
         query,
         updatedParams,

@@ -52,6 +52,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DISPLAY_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP
+import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.ParameterNotFoundException
@@ -251,7 +252,9 @@ object AdministrationCommandRuntime {
       QueryHandler
         .handleNoResult(params =>
           Some(
-            new IllegalStateException(s"Failed to create the specified user '${runtimeStringValue(userName, params)}'.")
+            new CypherExecutionException(
+              s"Failed to create the specified user '${runtimeStringValue(userName, params)}'."
+            )
           )
         )
         .handleError((error, params) =>
@@ -266,7 +269,7 @@ object AdministrationCommandRuntime {
                 s"Failed to create the specified user '${runtimeStringValue(userName, params)}': $followerError",
                 error
               )
-            case _ => new IllegalStateException(
+            case _ => new CypherExecutionException(
                 s"Failed to create the specified user '${runtimeStringValue(userName, params)}'.",
                 error
               )
@@ -360,7 +363,7 @@ object AdministrationCommandRuntime {
               s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': $followerError",
               error
             )
-          case (error, p) => new IllegalStateException(
+          case (error, p) => new CypherExecutionException(
               s"Failed to alter the specified user '${runtimeStringValue(userName, p)}'.",
               error
             )
@@ -453,7 +456,7 @@ object AdministrationCommandRuntime {
                 error
               )
             case _ =>
-              new IllegalStateException(
+              new CypherExecutionException(
                 s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to '${runtimeStringValue(toName, p)}'.",
                 error
               )

@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
+import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.kernel.api.exceptions.Status
@@ -55,7 +56,7 @@ case class DropUserExecutionPlanner(
               s"Failed to delete the specified user '${runtimeStringValue(userName, p)}': $followerError",
               error
             )
-          case (error, p) => new IllegalStateException(
+          case (error, p) => new CypherExecutionException(
               s"Failed to delete the specified user '${runtimeStringValue(userName, p)}'.",
               error
             )

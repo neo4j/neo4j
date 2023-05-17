@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.cypher.internal.security.SecureHasher
 import org.neo4j.cypher.internal.security.SystemGraphCredential
+import org.neo4j.exceptions.CypherExecutionException
 import org.neo4j.exceptions.DatabaseAdministrationOnFollowerException
 import org.neo4j.exceptions.InvalidArgumentException
 import org.neo4j.exceptions.Neo4jException
@@ -88,7 +89,7 @@ case class SetOwnPasswordExecutionPlanner(
             )
           case (error: Neo4jException, _) => error
           case (error, p) =>
-            new IllegalStateException(s"User '${currentUser(p)}' failed to alter their own password.", error)
+            new CypherExecutionException(s"User '${currentUser(p)}' failed to alter their own password.", error)
         }
         .handleResult((_, value, p) => {
           val oldCredentials =
