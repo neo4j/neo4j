@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryGraphProducer
@@ -32,6 +33,8 @@ import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 
 class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer {
+
+  override val semanticFeatures: List[SemanticFeature] = List(SemanticFeature.GpmShortestPath)
 
   test("should ignore tail") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
@@ -341,6 +344,20 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val query = "MATCH (n)-[r]->(m) RETURN count(r) LIMIT 0"
     val (plannerQuery, _) = producePlannerQueryForPattern(query, appendReturn = false)
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a count for node count under shortest") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ALL SHORTEST (n:Label)", "n")
+
+    countStorePlanner(plannerQuery, context) should notBeCountPlan
+  }
+
+  test("should not plan a count for rel count under shortest") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ANY SHORTEST (:Label1)-[r]->()", "r")
 
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }

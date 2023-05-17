@@ -84,10 +84,11 @@ case object countStorePlanner {
           selections,
           Seq(),
           hints,
-          shortestPathPatterns,
-          _
+          shortestRelationshipPatterns,
+          _,
+          shortestPathPatterns
         )
-        if hints.isEmpty && shortestPathPatterns.isEmpty && quantifiedPathPatterns.isEmpty && query.queryGraph.readOnly && patternHasNoDependencies =>
+        if hints.isEmpty && shortestRelationshipPatterns.isEmpty && quantifiedPathPatterns.isEmpty && query.queryGraph.readOnly && patternHasNoDependencies && shortestPathPatterns.isEmpty =>
         checkForValidAggregations(
           query,
           columnName,

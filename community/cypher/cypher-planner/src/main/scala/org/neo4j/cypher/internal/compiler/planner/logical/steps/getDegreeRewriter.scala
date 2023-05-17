@@ -216,7 +216,8 @@ object QuerySolvableByGetDegree {
           IndexedSeq(),
           SetExtractor(),
           SetExtractor(),
-          IndexedSeq()
+          IndexedSeq(),
+          SetExtractor()
         ),
         InterestingOrder.empty,
         RegularQueryProjection(_, QueryPagination.empty, Selections.empty, _) | _: AggregatingQueryProjection,

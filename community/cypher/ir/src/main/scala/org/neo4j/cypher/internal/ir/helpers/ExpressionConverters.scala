@@ -24,12 +24,8 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.HasTypes
-import org.neo4j.cypher.internal.expressions.Range
 import org.neo4j.cypher.internal.expressions.Variable
-import org.neo4j.cypher.internal.ir.PatternLength
 import org.neo4j.cypher.internal.ir.Predicate
-import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 
@@ -70,18 +66,6 @@ object ExpressionConverters {
 
   implicit class IdExtractor(val exp: Expression) extends AnyVal {
     def idNames: Set[String] = exp.dependencies.map(id => id.name)
-  }
-
-  implicit class RangeConvertor(val length: Option[Option[Range]]) extends AnyVal {
-
-    def asPatternLength: PatternLength = length match {
-      case Some(Some(Range(Some(left), Some(right)))) => VarPatternLength(left.value.toInt, Some(right.value.toInt))
-      case Some(Some(Range(Some(left), None)))        => VarPatternLength(left.value.toInt, None)
-      case Some(Some(Range(None, Some(right))))       => VarPatternLength(1, Some(right.value.toInt))
-      case Some(Some(Range(None, None)))              => VarPatternLength.unlimited
-      case Some(None)                                 => VarPatternLength.unlimited
-      case None                                       => SimplePatternLength
-    }
   }
 
 }

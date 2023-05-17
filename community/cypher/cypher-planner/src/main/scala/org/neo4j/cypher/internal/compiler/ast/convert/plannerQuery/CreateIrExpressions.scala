@@ -30,9 +30,7 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
-import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
-import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
@@ -51,9 +49,7 @@ import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.ast.CountIRExpression
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternElementDestructor
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters.RelationshipChainDestructor
+import org.neo4j.cypher.internal.ir.converters.SimplePatternConverters
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
@@ -106,13 +102,9 @@ case class CreateIrExpressions(
     maybePredicate: Option[Expression],
     horizon: QueryHorizon
   ): PlannerQuery = {
-    val patternContent = pattern match {
+    val pathPattern = pattern match {
       case relationshipsPattern: RelationshipsPattern =>
-        relationshipsPattern.element.destructedRelationshipChain
-      case patternList: Pattern =>
-        patternList.destructed(anonymousVariableNameGenerator)
-      case patternElement: PatternElement =>
-        patternElement.destructed
+        SimplePatternConverters.convertSimplePattern(relationshipsPattern.element)
       case _ =>
         throw new IllegalArgumentException(s"Cannot get planner query, unexpected pattern: $pattern")
     }
@@ -133,7 +125,7 @@ case class CreateIrExpressions(
     val qg = QueryGraph(
       argumentIds = dependencies,
       selections = Selections.from(uniquePredicates ++ varLengthPredicates ++ extractedPredicates ++ maybePredicate)
-    ).addPatternContent(patternContent)
+    ).addPathPattern(pathPattern)
 
     val query = RegularSinglePlannerQuery(
       queryGraph = qg,

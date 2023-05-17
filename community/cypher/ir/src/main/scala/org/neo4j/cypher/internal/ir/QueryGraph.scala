@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.ir.ast.IRExpression
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters
 import org.neo4j.cypher.internal.util.Foldable.FoldableAny
 
 import scala.collection.mutable
@@ -42,6 +41,8 @@ import scala.runtime.ScalaRunTime
  * it contains no more information than the AST, but it contains data in a format that is easier
  * to consume by the planner. If you want to trace this back to the original query - one QueryGraph
  * represents all the MATCH, OPTIONAL MATCHes, and update clauses between two WITHs.
+ * @param shortestRelationshipPatterns shortest path patterns coming from shortestPath() or allShortestPaths(), made of a single var-length relationship and its endpoints.
+ * @param selectivePathPatterns path selector such as ANY k, SHORTEST k, or SHORTEST k GROUPS, applied to a path pattern introduced as part of Graph Pattern Matching.
  */
 case class QueryGraph(
   patternRelationships: Set[PatternRelationship] = Set.empty,
@@ -52,7 +53,8 @@ case class QueryGraph(
   optionalMatches: IndexedSeq[QueryGraph] = Vector.empty,
   hints: Set[Hint] = Set.empty,
   shortestRelationshipPatterns: Set[ShortestRelationshipPattern] = Set.empty,
-  mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty
+  mutatingPatterns: IndexedSeq[MutatingPattern] = IndexedSeq.empty,
+  selectivePathPatterns: Set[SelectivePathPattern] = Set.empty
   // !!! If you change anything here, make sure to update the equals, ++ and hashCode methods at the bottom of this class !!!
 ) extends UpdateGraph {
 
@@ -81,14 +83,27 @@ case class QueryGraph(
     copy(
       selections = f(selections),
       optionalMatches = optionalMatches.map(_.mapSelections(f)),
-      quantifiedPathPatterns = quantifiedPathPatterns.map(qpp => qpp.copy(selections = f(qpp.selections)))
+      quantifiedPathPatterns = quantifiedPathPatterns.map(qpp => qpp.copy(selections = f(qpp.selections))),
+      selectivePathPatterns = selectivePathPatterns.map(spp => spp.copy(selections = f(spp.selections)))
     )
 
-  def addPatternContent(patternContent: PatternConverters.DestructResult): QueryGraph = this
-    .addPatternNodes(patternContent.nodeIds: _*)
-    .addPatternRelationships(patternContent.rels.toSet)
-    .addQuantifiedPathPatterns(patternContent.quantifiedPathPatterns.toSet)
-    .addShortestRelationships(patternContent.shortestRelationships: _*)
+  def addPathPatterns(pathPatterns: PathPatterns): QueryGraph =
+    pathPatterns.pathPatterns.foldLeft(this) {
+      case (qg, pathPattern) => qg.addPathPattern(pathPattern)
+    }
+
+  def addPathPattern(pathPattern: PathPattern): QueryGraph =
+    pathPattern match {
+      case exhaustivePathPattern: ExhaustivePathPattern[_]   => addExhaustivePathPattern(exhaustivePathPattern)
+      case selectivePathPattern: SelectivePathPattern        => addSelectivePathPattern(selectivePathPattern)
+      case shortestRelationship: ShortestRelationshipPattern => addShortestRelationship(shortestRelationship)
+    }
+
+  private def addExhaustivePathPattern(pathPattern: ExhaustivePathPattern[_]): QueryGraph =
+    pathPattern match {
+      case ExhaustivePathPattern.SingleNode(name)             => addPatternNodes(name)
+      case ExhaustivePathPattern.NodeConnections(connections) => addNodeConnections(connections)
+    }
 
   def addPatternNodes(nodes: String*): QueryGraph =
     copy(patternNodes = patternNodes ++ nodes)
@@ -98,6 +113,18 @@ case class QueryGraph(
       patternNodes = patternNodes ++ rel.coveredNodeIds,
       patternRelationships = patternRelationships + rel
     )
+
+  def addNodeConnection(connection: NodeConnection): QueryGraph = {
+    connection match {
+      case patternRelationship: PatternRelationship => addPatternRelationship(patternRelationship)
+      case qpp: QuantifiedPathPattern               => addQuantifiedPathPattern(qpp)
+    }
+  }
+
+  def addNodeConnections(connections: Seq[NodeConnection]): QueryGraph =
+    connections.foldLeft(this) {
+      case (qg, connection) => qg.addNodeConnection(connection)
+    }
 
   def addPatternRelationships(rels: Set[PatternRelationship]): QueryGraph =
     rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRelationship(rel))
@@ -157,15 +184,22 @@ case class QueryGraph(
   }
 
   def allPatternRelationshipsRead: Set[PatternRelationship] =
-    patternRelationships ++ optionalMatches.flatMap(
-      _.allPatternRelationshipsRead
-    ) ++ shortestRelationshipPatterns.map(_.rel)
+    patternRelationships ++
+      optionalMatches.flatMap(_.allPatternRelationshipsRead) ++
+      shortestRelationshipPatterns.map(_.rel)
 
   def allPatternNodesRead: Set[String] =
     patternNodes ++ optionalMatches.flatMap(_.allPatternNodesRead)
 
   def addShortestRelationships(shortestRelationships: ShortestRelationshipPattern*): QueryGraph =
     shortestRelationships.foldLeft(this)((qg, p) => qg.addShortestRelationship(p))
+
+  /**
+   * Returns a copy of the query graph, with an additional selective path pattern added.
+   * Note that it does not add the end nodes or arguments or anything else to the query graph.
+   */
+  def addSelectivePathPattern(selectivePathPattern: SelectivePathPattern): QueryGraph =
+    copy(selectivePathPatterns = selectivePathPatterns.incl(selectivePathPattern))
 
   def addArgumentId(newId: String): QueryGraph = copy(argumentIds = argumentIds + newId)
 
@@ -343,8 +377,9 @@ case class QueryGraph(
           otherSelections,
           otherOptionalMatches,
           otherHints,
-          otherShortestPathPatterns,
-          otherMutatingPatterns
+          otherShortestRelationshipPatterns,
+          otherMutatingPatterns,
+          otherSelectivePathPatterns
         ) =>
         QueryGraph(
           selections = selections ++ otherSelections,
@@ -354,8 +389,9 @@ case class QueryGraph(
           optionalMatches = optionalMatches ++ otherOptionalMatches,
           argumentIds = argumentIds ++ otherArgumentIds,
           hints = hints ++ otherHints,
-          shortestRelationshipPatterns = shortestRelationshipPatterns ++ otherShortestPathPatterns,
-          mutatingPatterns = mutatingPatterns ++ otherMutatingPatterns
+          shortestRelationshipPatterns = shortestRelationshipPatterns ++ otherShortestRelationshipPatterns,
+          mutatingPatterns = mutatingPatterns ++ otherMutatingPatterns,
+          selectivePathPatterns = selectivePathPatterns ++ otherSelectivePathPatterns
         )
     }
   }
@@ -572,14 +608,11 @@ case class QueryGraph(
     addSetIfNonEmpty(quantifiedPathPatterns, "Quantified path patterns", (_: QuantifiedPathPattern).toString)
     addSetIfNonEmptyS(argumentIds, "Arguments")
     addSetIfNonEmpty(selections.flatPredicates, "Predicates", (e: Expression) => stringifier.apply(e))
-    addSetIfNonEmpty(
-      shortestRelationshipPatterns,
-      "Shortest relationships",
-      (_: ShortestRelationshipPattern).toString
-    )
+    addSetIfNonEmpty(shortestRelationshipPatterns, "Shortest relationships", (_: ShortestRelationshipPattern).toString)
     addSetIfNonEmpty(optionalMatches, "Optional Matches: ", (_: QueryGraph).toString)
     addSetIfNonEmpty(hints, "Hints", (_: Hint).toString)
     addSetIfNonEmpty(mutatingPatterns, "MutatingPatterns", (_: MutatingPattern).toString)
+    addSetIfNonEmpty(selectivePathPatterns, "SelectivePathPatterns", (_: SelectivePathPattern).toString)
 
     builder.append("}")
     builder.toString()
@@ -603,7 +636,8 @@ case class QueryGraph(
           otherOptionalMatches,
           otherHints,
           otherShortestRelationshipPatterns,
-          otherMutatingPatterns
+          otherMutatingPatterns,
+          otherSelectivePathPatterns
         ) =>
         if (this eq other) {
           true
@@ -616,7 +650,8 @@ case class QueryGraph(
           optionalMatches.toSet == otherOptionalMatches.toSet &&
           hints == otherHints &&
           shortestRelationshipPatterns == otherShortestRelationshipPatterns &&
-          mutatingPatterns == otherMutatingPatterns
+          mutatingPatterns == otherMutatingPatterns &&
+          selectivePathPatterns == otherSelectivePathPatterns
         }
       case _ =>
         false
@@ -626,7 +661,7 @@ case class QueryGraph(
   override lazy val hashCode: Int = this match {
     // The point of this "useless" match case is to catch your attention if you modified the fields of the QueryGraph.
     // Please remember to update the hash code.
-    case QueryGraph(_, _, _, _, _, _, _, _, _) =>
+    case QueryGraph(_, _, _, _, _, _, _, _, _, _) =>
       ScalaRunTime._hashCode((
         patternRelationships,
         quantifiedPathPatterns,
@@ -636,7 +671,8 @@ case class QueryGraph(
         optionalMatches.toSet,
         hints.groupBy(identity),
         shortestRelationshipPatterns,
-        mutatingPatterns
+        mutatingPatterns,
+        selectivePathPatterns
       ))
   }
 

@@ -32,8 +32,10 @@ import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
+import org.neo4j.cypher.internal.expressions.NodeRelPair
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
@@ -42,6 +44,7 @@ import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
 import org.neo4j.cypher.internal.ir.CreatePattern
 import org.neo4j.cypher.internal.ir.DistinctQueryProjection
+import org.neo4j.cypher.internal.ir.ExhaustivePathPattern
 import org.neo4j.cypher.internal.ir.NodeBinding
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -53,6 +56,7 @@ import org.neo4j.cypher.internal.ir.QueryPagination
 import org.neo4j.cypher.internal.ir.RegularQueryProjection
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.Selections
+import org.neo4j.cypher.internal.ir.SelectivePathPattern
 import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.UnionQuery
@@ -77,7 +81,10 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
 
-  override val semanticFeatures: List[SemanticFeature] = List(SemanticFeature.QuantifiedPathPatterns)
+  override val semanticFeatures: List[SemanticFeature] = List(
+    SemanticFeature.QuantifiedPathPatterns,
+    SemanticFeature.GpmShortestPath
+  )
   private val patternRel = PatternRelationship("r", ("a", "b"), OUTGOING, Seq.empty, SimplePatternLength)
   private val nProp = prop("n", "prop")
 
@@ -2251,6 +2258,114 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     query.tail shouldBe empty
+  }
+
+  test("should convert query with path selector") {
+    val query = buildSinglePlannerQuery(
+      """MATCH SHORTEST 1 GROUP (start)((a)-[r]->(b)){1,5}(end)
+        |RETURN 1 AS one""".stripMargin
+    )
+
+    val qpp: QuantifiedPathPattern =
+      QuantifiedPathPattern(
+        leftBinding = NodeBinding("a", "start"),
+        rightBinding = NodeBinding("b", "end"),
+        patternRelationships = List(PatternRelationship(
+          name = "r",
+          nodes = ("a", "b"),
+          dir = SemanticDirection.OUTGOING,
+          types = Nil,
+          length = SimplePatternLength
+        )),
+        patternNodes = Set("a", "b"),
+        argumentIds = Set.empty,
+        selections = Selections.empty,
+        repetition = Repetition(1, UpperBound.Limited(5)),
+        nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(name, name)),
+        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+      )
+
+    val shortestPathPattern =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(List(qpp)),
+        selections = Selections.from(unique(varFor("r"))),
+        selector = SelectivePathPattern.Selector.ShortestGroups(1)
+      )
+
+    val queryGraph =
+      QueryGraph
+        .empty
+        .addSelectivePathPattern(shortestPathPattern)
+
+    val projection = RegularQueryProjection(projections = Map("one" -> literalInt(1)), isTerminating = true)
+
+    query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
+  }
+
+  test("should convert query with path selector, path assignment, and predicates") {
+    val query = buildSinglePlannerQuery(
+      """MATCH p = ANY SHORTEST ((start:Start)((a)-[r:R]->(b))+(end) WHERE start.prop < end.prop)
+        |WHERE end.prop > 0
+        |RETURN p, start, r""".stripMargin
+    )
+
+    val qpp: QuantifiedPathPattern =
+      QuantifiedPathPattern(
+        leftBinding = NodeBinding("a", "start"),
+        rightBinding = NodeBinding("b", "end"),
+        patternRelationships = List(PatternRelationship(
+          name = "r",
+          nodes = ("a", "b"),
+          dir = SemanticDirection.OUTGOING,
+          types = List(relTypeName("R")),
+          length = SimplePatternLength
+        )),
+        patternNodes = Set("a", "b"),
+        argumentIds = Set.empty,
+        selections = Selections.empty,
+        repetition = Repetition(1, UpperBound.Unlimited),
+        nodeVariableGroupings = Set("a", "b").map(name => VariableGrouping(name, name)),
+        relationshipVariableGroupings = Set(VariableGrouping("r", "r"))
+      )
+
+    val shortestPathPattern =
+      SelectivePathPattern(
+        pathPattern = ExhaustivePathPattern.NodeConnections(List(qpp)),
+        selections = Selections.from(List(
+          andedPropertyInequalities(lessThan(prop("start", "prop"), prop("end", "prop"))),
+          hasLabels("start", "Start"),
+          unique(varFor("r"))
+        )),
+        selector = SelectivePathPattern.Selector.Shortest(1)
+      )
+
+    val queryGraph =
+      QueryGraph
+        .empty
+        .addPredicates(
+          andedPropertyInequalities(greaterThan(prop("end", "prop"), literalInt(0)))
+        )
+        .addSelectivePathPattern(shortestPathPattern)
+
+    val projection = RegularQueryProjection(
+      projections = Map(
+        "p" -> PathExpression(
+          step = NodePathStep(
+            node = varFor("start"),
+            next = RepeatPathStep(
+              variables = List(NodeRelPair(varFor("a"), varFor("r"))),
+              toNode = varFor("end"),
+              next = NilPathStep()(pos)
+            )(pos)
+          )(pos)
+        )(pos),
+        "start" -> varFor("start"),
+        "r" -> varFor("r")
+      ),
+      isTerminating = true
+    )
+
+    query shouldEqual RegularSinglePlannerQuery(queryGraph = queryGraph, horizon = projection)
   }
 
   private class TestCountdownCancellationChecker(var count: Int) extends CancellationChecker {

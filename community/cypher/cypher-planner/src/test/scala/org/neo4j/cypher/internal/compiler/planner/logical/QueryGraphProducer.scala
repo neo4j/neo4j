@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.Statement
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
+import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
 import org.neo4j.cypher.internal.compiler.SyntaxExceptionCreator
@@ -74,7 +75,8 @@ trait QueryGraphProducer {
     val cleanedStatement: Statement =
       ast.endoRewrite(inSequence(normalizeWithAndReturnClauses(exceptionFactory)))
     val onError = SyntaxExceptionCreator.throwOnError(exceptionFactory)
-    val SemanticCheckResult(semanticState, errors) = SemanticChecker.check(cleanedStatement)
+    val SemanticCheckResult(semanticState, errors) =
+      SemanticChecker.check(cleanedStatement, SemanticState.clean.withFeatures(semanticFeatures: _*))
     onError(errors)
 
     val ns = Namespace(List("my", "proc"))(pos)

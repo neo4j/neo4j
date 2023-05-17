@@ -114,8 +114,8 @@ import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnwindProjection
+import org.neo4j.cypher.internal.ir.converters.PatternConverters
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.ir.helpers.PatternConverters.PatternDestructor
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Asc
 import org.neo4j.cypher.internal.ir.ordering.ColumnOrder.Desc
@@ -470,10 +470,11 @@ object ClauseConverters {
     clause: Match,
     anonymousVariableNameGenerator: AnonymousVariableNameGenerator
   ): PlannerQueryBuilder = {
-    val patternContent = clause.pattern.destructed(anonymousVariableNameGenerator)
+    val converter = new PatternConverters(anonymousVariableNameGenerator)
+    val pathPatterns = converter.convertPattern(clause.pattern)
 
     def qppHasDependencyToPreviousClauses: Boolean = {
-      val qppDependencies = patternContent.quantifiedPathPatterns.flatMap(_.dependencies).toSet
+      val qppDependencies = pathPatterns.allQuantifiedPathPatterns.flatMap(_.dependencies).toSet
       val availableVars = acc.currentlyAvailableVariables
       qppDependencies.intersect(availableVars).nonEmpty
     }
@@ -496,7 +497,7 @@ object ClauseConverters {
           QueryGraph(
             selections = selections,
             hints = clause.hints.toSet
-          ).addPatternContent(patternContent)
+          ).addPathPatterns(pathPatterns)
         )
       }
     } else {
@@ -505,7 +506,7 @@ object ClauseConverters {
           qg
             .addSelections(selections)
             .addHints(clause.hints)
-            .addPatternContent(patternContent)
+            .addPathPatterns(pathPatterns)
       }
     }
   }
