@@ -239,7 +239,8 @@ object ReadFinder {
     readsUnknownRelProperties: Boolean = false,
     relationshipFilterExpressions: Map[LogicalVariable, Seq[Expression]] = Map.empty,
     referencedNodeVariables: Set[LogicalVariable] = Set.empty,
-    referencedRelationshipVariables: Set[LogicalVariable] = Set.empty
+    referencedRelationshipVariables: Set[LogicalVariable] = Set.empty,
+    callInTx: Boolean = false
   ) {
 
     def withNodePropertyRead(property: PropertyKeyName): PlanReads = {
@@ -258,6 +259,10 @@ object ReadFinder {
 
     def withLabelRead(label: LabelName): PlanReads = {
       copy(readLabels = readLabels :+ label)
+    }
+
+    def withCallInTx: PlanReads = {
+      copy(callInTx = true)
     }
 
     /**
@@ -831,6 +836,12 @@ object ReadFinder {
       case SetRelationshipProperty(_, relName, _, _) =>
         PlanReads().withReferencedRelationshipVariable(relName)
 
+      case TransactionApply(_, _, _, _, _) =>
+        PlanReads().withCallInTx
+
+      case TransactionForeach(_, _, _, _, _) =>
+        PlanReads().withCallInTx
+
       /*
         Be careful when adding something to this fall-through case.
         Any (new) plan that performs reads of nodes, relationships, labels, properties or types should not be in this list.
@@ -874,8 +885,6 @@ object ReadFinder {
         Skip(_, _) |
         SubqueryForeach(_, _) |
         Trail(_, _, _, _, _, _, _, _, _, _, _, _, _) |
-        TransactionApply(_, _, _, _, _) |
-        TransactionForeach(_, _, _, _, _) |
         Union(_, _) |
         UnwindCollection(_, _, _) |
         ValueHashJoin(_, _, _) =>
@@ -997,6 +1006,7 @@ object ReadFinder {
         val readsUnknownRelProperties = nestedReads.readRelProperties.plansReadingUnknownSymbols.nonEmpty
         val relationshipFilterExpressions = nestedReads.relationshipFilterExpressions.view.mapValues(_.expression)
         val referencedRelationshipVariables = nestedReads.possibleRelDeleteConflictPlans.keySet
+        val callInTx = nestedReads.callInTxPlans.nonEmpty
 
         AssertMacros.checkOnlyWhenAssertionsAreEnabled(
           nestedReads.productIterator.toSeq == Seq(
@@ -1006,7 +1016,8 @@ object ReadFinder {
             nestedReads.possibleNodeDeleteConflictPlans,
             nestedReads.readRelProperties,
             nestedReads.relationshipFilterExpressions,
-            nestedReads.possibleRelDeleteConflictPlans
+            nestedReads.possibleRelDeleteConflictPlans,
+            nestedReads.callInTxPlans
           ),
           "Make sure to edit this place when adding new fields to Reads"
         )
@@ -1028,7 +1039,8 @@ object ReadFinder {
               relationshipFilterExpressions.foldLeft(acc) {
                 case (acc, (variable, nfe)) => acc.withAddedRelationshipFilterExpression(variable, nfe)
               },
-            acc => referencedRelationshipVariables.foldLeft(acc)(_.withReferencedRelationshipVariable(_))
+            acc => referencedRelationshipVariables.foldLeft(acc)(_.withReferencedRelationshipVariable(_)),
+            acc => if (callInTx) acc.withCallInTx else acc
           ))(acc)
           TraverseChildren(nextAcc)
         }

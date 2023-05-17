@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.ir.EagernessReason
 import org.neo4j.cypher.internal.ir.EagernessReason.Conflict
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadRemoveConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.LabelReadSetConflict
@@ -73,8 +74,8 @@ object ConflictFinder {
   /**
    * Two plans that have a read/write conflict. The plans are in no particular order.
    *
-   * @param first  one of the two plans.
-   * @param second the other plan.
+   * @param first   one of the two plans.
+   * @param second  the other plan.
    * @param reasons the reasons of the conflict.
    */
   private[eager] case class ConflictingPlanPair(
@@ -290,6 +291,20 @@ object ConflictFinder {
     }
   }
 
+  private def callInTxConflict(
+    readsAndWrites: ReadsAndWrites,
+    wholePlan: LogicalPlan
+  ): Iterable[ConflictingPlanPair] = {
+    if (readsAndWrites.reads.callInTxPlans.nonEmpty) {
+      for {
+        updatingPlan <- wholePlan.folder.findAllByClass[UpdatingPlan].filterNot(isInTransactionalApply(_, wholePlan))
+        txPlan <- readsAndWrites.reads.callInTxPlans
+      } yield {
+        ConflictingPlanPair(Ref(txPlan), Ref(updatingPlan), Set(EagernessReason.WriteAfterCallInTransactions))
+      }
+    } else Iterable.empty
+  }
+
   // Conflicts between a MATCH and a DELETE
   sealed private trait DeleteConflictType
   private case object MatchDeleteConflict extends DeleteConflictType
@@ -425,6 +440,10 @@ object ConflictFinder {
       _.possibleRelDeleteConflictPlans,
       _.possibleRelationshipDeleteConflictPlanSnapshots(_)
     ).foreach(addConflict)
+
+    // Conflicts between a Updating Plan and a Call in Transaction.
+    // This will find conflicts between updating clauses before a CALL IN TX as well, but that is already disallowed by semantic analysis.
+    callInTxConflict(readsAndWrites, wholePlan).foreach(addConflict)
 
     map.map {
       case (SetExtractor(plan1, plan2), reasons) => ConflictingPlanPair(plan1, plan2, reasons)

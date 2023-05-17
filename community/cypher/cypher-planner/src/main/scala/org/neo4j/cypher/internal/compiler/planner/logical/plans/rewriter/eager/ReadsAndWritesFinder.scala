@@ -322,7 +322,8 @@ object ReadsAndWritesFinder {
     possibleNodeDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans] = Map.empty,
     readRelProperties: ReadingPlansProvider[PropertyKeyName] = ReadingPlansProvider(),
     relationshipFilterExpressions: Map[LogicalVariable, FilterExpressions] = Map.empty,
-    possibleRelDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans] = Map.empty
+    possibleRelDeleteConflictPlans: Map[LogicalVariable, PossibleDeleteConflictPlans] = Map.empty,
+    callInTxPlans: Set[LogicalPlan] = Set.empty
   ) {
 
     /**
@@ -367,6 +368,10 @@ object ReadsAndWritesFinder {
 
     def withLabelRead(label: LabelName, plan: LogicalPlan): Reads = {
       copy(readLabels = readLabels.withSymbolRead(label, plan))
+    }
+
+    def withCallInTx(plan: LogicalPlan): Reads = {
+      copy(callInTxPlans = callInTxPlans + plan)
     }
 
     /**
@@ -547,7 +552,8 @@ object ReadsAndWritesFinder {
             case (acc, variable) => acc.updatePlansThatReferenceRelationshipVariable(plan, variable)
           }
         },
-        acc => if (planReads.readsUnknownRelProperties) acc.withUnknownRelPropertiesRead(plan) else acc
+        acc => if (planReads.readsUnknownRelProperties) acc.withUnknownRelPropertiesRead(plan) else acc,
+        acc => if (planReads.callInTx) acc.withCallInTx(plan) else acc
       ))(this)
     }
 
