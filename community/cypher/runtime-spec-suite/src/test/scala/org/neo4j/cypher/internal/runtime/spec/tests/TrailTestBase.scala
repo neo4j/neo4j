@@ -1780,7 +1780,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
   test("handle limit with trail as argument") {
     given(complexGraph())
 
-    val plan = new LogicalQueryBuilder(this)
+    val plan0 = new LogicalQueryBuilder(this)
       .produceResults("start", "firstMiddle", "middle", "end", "a", "b", "r1", "c", "d", "r2", "iteration")
       .apply()
       .|.valueHashJoin("left = right")
@@ -1814,7 +1814,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
         Set("r1"),
         false
       ))
-      .|.|.|.|.|.filter("r2_inner IS NOT NULL")
+    val plan1 = plan0.|.|.|.|.|.filter("r2_inner IS NOT NULL")
       .|.|.|.|.|.optional("middle")
       .|.|.|.|.|.filter("true")
       .|.|.|.|.|.filter("d_inner:LOOP")
@@ -1866,7 +1866,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
         Set(),
         false
       ))
-      .|.|.|.|.nodeHashJoin("anon_end_inner")
+    val plan2 = plan1.|.|.|.|.nodeHashJoin("anon_end_inner")
       .|.|.|.|.|.filter("anon_end_inner:MIDDLE")
       .|.|.|.|.|.filter("true")
       .|.|.|.|.|.allNodeScan("anon_end_inner")
@@ -1921,7 +1921,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
         Set(),
         false
       ))
-      .|.|.|.filter("b_inner:MIDDLE")
+    val plan3 = plan2.|.|.|.filter("b_inner:MIDDLE")
       .|.|.|.nodeHashJoin("b_inner")
       .|.|.|.|.allNodeScan("b_inner")
       .|.|.|.filterExpression(isRepeatTrailUnique("r1_inner"))
@@ -2000,7 +2000,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
         Set(),
         false
       ))
-      .|.|.filter("true")
+    val plan = plan3.|.|.filter("true")
       .|.|.filter("b_inner:MIDDLE")
       .|.|.nodeHashJoin("b_inner")
       .|.|.|.allNodeScan("b_inner")
