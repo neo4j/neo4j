@@ -337,8 +337,7 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
             .build();
 
     @Description("Enables or disables tracking of how much time a query spends actively executing on the CPU. "
-            + "Calling `SHOW TRANSACTIONS` will display the time. "
-            + "This can also be logged in the query log by using `db.logs.query.time_logging_enabled`.")
+            + "Calling `SHOW TRANSACTIONS` will display the time.")
     public static final Setting<Boolean> track_query_cpu_time =
             newBuilder("db.track_query_cpu_time", BOOL, false).dynamic().build();
 
