@@ -73,7 +73,11 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
             ExecutingQuery parentQuery,
             MapValue queryParameters,
             QueryExecutionConfiguration queryExecutionConfiguration) {
-        return newContext(tx, queryText, queryParameters, queryExecutionConfiguration);
+        KernelStatement initialStatement =
+                (KernelStatement) tx.kernelTransaction().acquireStatement();
+        var executingQuery = initialStatement.queryRegistry().startAndBindExecutingQuery(queryText, queryParameters);
+        executingQuery.setParentTransaction(parentQuery.databaseId().get().name(), parentQuery.getOuterTransactionId());
+        return contextCreator.create(tx, initialStatement, executingQuery, queryExecutionConfiguration);
     }
 
     @Override

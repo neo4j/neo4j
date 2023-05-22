@@ -179,8 +179,13 @@ case class ShowTransactionsCommand(
           ) =
             if (querySnapshot.isPresent) {
               val query = querySnapshot.get
-              val queryTransactionId = TransactionId(dbName, query.transactionId).toString
-              val outerTransactionId = if (queryTransactionId == txId) EMPTY else queryTransactionId
+              val parentDbName = query.parentDbName();
+              val parentTransactionId = query.parentTransactionId();
+              val querySessionDbName = if (parentDbName != null) parentDbName else dbName
+              val querySessionTransactionId =
+                if (parentTransactionId > -1L) parentTransactionId else query.transactionId()
+              val querySessionTransaction = TransactionId(querySessionDbName, querySessionTransactionId).toString
+              val outerTransactionId = if (querySessionTransaction == txId) EMPTY else querySessionTransaction
               val parameters = query.obfuscatedQueryParameters().orElse(MapValue.EMPTY)
               val maybePlanner = query.planner
               val planner = if (maybePlanner == null) EMPTY else maybePlanner

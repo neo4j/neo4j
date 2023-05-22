@@ -49,6 +49,8 @@ public class QuerySnapshot {
     private final Optional<String> obfuscatedQueryText;
     private final Optional<MapValue> obfuscatedQueryParameters;
     private final long transactionId;
+    private final long parentTransactionId;
+    private final String parentDbName;
 
     QuerySnapshot(
             ExecutingQuery query,
@@ -66,7 +68,9 @@ public class QuerySnapshot {
             long allocatedBytes,
             Optional<String> obfuscatedQueryText,
             Optional<MapValue> obfuscatedQueryParameters,
-            long transactionId) {
+            long outerTransactionId,
+            String parentDbName,
+            long parentTransactionId) {
         this.query = query;
         this.compilerInfo = compilerInfo;
         this.pageHits = pageHits;
@@ -82,7 +86,9 @@ public class QuerySnapshot {
         this.allocatedBytes = allocatedBytes;
         this.obfuscatedQueryText = obfuscatedQueryText;
         this.obfuscatedQueryParameters = obfuscatedQueryParameters;
-        this.transactionId = transactionId;
+        this.transactionId = outerTransactionId;
+        this.parentDbName = parentDbName;
+        this.parentTransactionId = parentTransactionId;
     }
 
     public long internalQueryId() {
@@ -246,5 +252,13 @@ public class QuerySnapshot {
 
     public List<ActiveLock> waitingLocks() {
         return waitingLocks;
+    }
+
+    public String parentDbName() {
+        return parentDbName;
+    }
+
+    public long parentTransactionId() {
+        return parentTransactionId;
     }
 }

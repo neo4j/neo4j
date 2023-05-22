@@ -116,6 +116,16 @@ public class ExecutingQuery {
      */
     private long outerTransactionId = -1L;
 
+    /**
+     *  The database name of the parent transactions (for composite databases)
+     */
+    private String parentDbName;
+
+    /**
+     *  The transaction id of the parent transactions (for composite databases)
+     */
+    private long parentTransactionId = -1L;
+
     public ExecutingQuery(
             long queryId,
             ClientConnectionInfo clientConnection,
@@ -181,6 +191,15 @@ public class ExecutingQuery {
                 clock,
                 cpuClock);
         onTransactionBound(new TransactionBinding(namedDatabaseId, hitsSupplier, faultsSupplier, activeLockCount, 1));
+    }
+
+    public void setParentTransaction(String parentDbName, long parentTransactionId) {
+        this.parentTransactionId = parentTransactionId;
+        this.parentDbName = parentDbName;
+    }
+
+    public long getOuterTransactionId() {
+        return outerTransactionId;
     }
 
     public static class TransactionBinding {
@@ -393,7 +412,9 @@ public class ExecutingQuery {
                 memoryTracker.heapHighWaterMark(),
                 Optional.ofNullable(queryText),
                 Optional.ofNullable(queryParameters),
-                outerTransactionId);
+                outerTransactionId,
+                parentDbName,
+                parentTransactionId);
     }
 
     // basic methods

@@ -174,6 +174,7 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
     )
     when(querySnapshot2.resourceInformation()).thenReturn(util.Collections.emptyMap())
     when(querySnapshot2.transactionId()).thenReturn(2L)
+    when(querySnapshot2.parentTransactionId()).thenReturn(-1L)
     when(querySnapshot2.obfuscatedQueryParameters()).thenReturn(util.Optional.empty())
     when(querySnapshot2.planner()).thenReturn("COST")
     when(querySnapshot2.runtime()).thenReturn("PIPELINED")
