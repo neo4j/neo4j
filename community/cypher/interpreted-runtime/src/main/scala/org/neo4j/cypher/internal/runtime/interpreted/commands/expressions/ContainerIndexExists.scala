@@ -44,8 +44,6 @@ case class ContainerIndexExists(expression: Expression, index: Expression) exten
     )
   }
 
-  override def containsIsNull: Boolean = false
-
   override def rewrite(f: Expression => Expression): Expression =
     f(ContainerIndexExists(expression.rewrite(f), index.rewrite(f)))
 

@@ -25,13 +25,10 @@ import org.neo4j.cypher.internal.runtime.IsTrueValue
 import org.neo4j.cypher.internal.runtime.ReadableRow
 import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.Equality
 import org.neo4j.values.storable.Value
-import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.utils.ValueBooleanLogic
 
 sealed abstract class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
@@ -51,8 +48,6 @@ sealed abstract class ComparablePredicate(val left: Expression, val right: Expre
   def sign: String
 
   override def toString: String = left.toString() + " " + sign + " " + right.toString()
-
-  override def containsIsNull = false
 
   override def arguments: Seq[Expression] = Seq(left, right)
 
@@ -85,11 +80,6 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
   }
 
   override def toString = s"$a == $b"
-
-  override def containsIsNull: Boolean = (a, b) match {
-    case (Variable(_), Literal(NO_VALUE)) => true
-    case _                                => false
-  }
 
   override def rewrite(f: Expression => Expression): Expression = f(Equals(a.rewrite(f), b.rewrite(f)))
 

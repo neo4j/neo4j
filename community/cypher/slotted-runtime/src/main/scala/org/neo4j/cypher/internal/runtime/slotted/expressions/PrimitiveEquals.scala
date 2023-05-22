@@ -33,7 +33,6 @@ case class PrimitiveEquals(a: Expression, b: Expression) extends Predicate with 
     val value2 = b(ctx, state)
     IsMatchResult(value1 == value2)
   }
-  override def containsIsNull: Boolean = false
 
   override def rewrite(f: Expression => Expression): Expression = f(PrimitiveEquals(a.rewrite(f), b.rewrite(f)))
 

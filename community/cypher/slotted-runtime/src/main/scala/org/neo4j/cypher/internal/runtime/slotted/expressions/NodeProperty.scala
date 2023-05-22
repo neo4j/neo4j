@@ -73,8 +73,6 @@ case class NodePropertyExists(offset: Int, token: Int) extends Predicate with Sl
     ))
   }
 
-  override def containsIsNull = false
-
   override def children: Seq[AstNode[_]] = Seq.empty
 }
 
@@ -94,8 +92,6 @@ case class NodePropertyExistsLate(offset: Int, propKey: String) extends Predicat
         )
     IsMatchResult(result)
   }
-
-  override def containsIsNull = false
 
   override def children: Seq[AstNode[_]] = Seq.empty
 }

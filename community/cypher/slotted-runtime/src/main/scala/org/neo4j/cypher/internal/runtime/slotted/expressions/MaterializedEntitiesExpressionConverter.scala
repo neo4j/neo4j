@@ -210,8 +210,6 @@ case class MaterializedEntityHasLabel(entity: commands.expressions.Expression, l
   override def children: Seq[commands.expressions.Expression] = Seq(label, entity)
 
   override def arguments: Seq[commands.expressions.Expression] = Seq(entity)
-
-  override def containsIsNull = false
 }
 
 case class MaterializedEntityHasType(entity: commands.expressions.Expression, typeToken: KeyToken) extends Predicate {
@@ -235,8 +233,6 @@ case class MaterializedEntityHasType(entity: commands.expressions.Expression, ty
   override def children: Seq[commands.expressions.Expression] = Seq(typeToken, entity)
 
   override def arguments: Seq[commands.expressions.Expression] = Seq(entity)
-
-  override def containsIsNull = false
 }
 
 case class MaterializedEntityHasLabelOrType(entity: commands.expressions.Expression, labelOrType: String)
@@ -272,8 +268,6 @@ case class MaterializedEntityHasLabelOrType(entity: commands.expressions.Express
   override def children: Seq[commands.expressions.Expression] = Seq(entity)
 
   override def arguments: Seq[commands.expressions.Expression] = Seq(entity)
-
-  override def containsIsNull = false
 }
 
 case class MaterializedEntityKeysFunction(expr: Expression) extends NullInNullOutExpression(expr) {

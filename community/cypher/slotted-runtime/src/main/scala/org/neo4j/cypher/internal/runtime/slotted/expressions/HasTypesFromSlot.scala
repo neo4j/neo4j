@@ -35,8 +35,6 @@ case class HasTypeFromSlot(offset: Int, resolvedTypeToken: Int) extends Predicat
     ))
   }
 
-  override def containsIsNull: Boolean = false
-
   override def children: Seq[AstNode[_]] = Seq.empty[AstNode[_]]
 }
 
@@ -52,8 +50,6 @@ case class HasTypeFromSlotLate(offset: Int, typeName: String) extends Predicate 
 
     IsMatchResult(result)
   }
-
-  override def containsIsNull: Boolean = false
 
   override def children: Seq[AstNode[_]] = Seq.empty[AstNode[_]]
 }

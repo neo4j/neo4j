@@ -31,8 +31,6 @@ case class HasLabelFromSlot(offset: Int, resolvedLabelToken: Int) extends Predic
     IsMatchResult(state.query.isLabelSetOnNode(resolvedLabelToken, ctx.getLongAt(offset), state.cursors.nodeCursor))
   }
 
-  override def containsIsNull: Boolean = false
-
   override def children: Seq[AstNode[_]] = Seq.empty[AstNode[_]]
 }
 
@@ -49,8 +47,6 @@ case class HasLabelFromSlotLate(offset: Int, labelName: String) extends Predicat
     IsMatchResult(result)
   }
 
-  override def containsIsNull: Boolean = false
-
   override def children: Seq[AstNode[_]] = Seq.empty[AstNode[_]]
 }
 
@@ -59,8 +55,6 @@ case class HasAnyLabelFromSlot(offset: Int, resolvedLabelTokens: Array[Int]) ext
   override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     IsMatchResult(state.query.isAnyLabelSetOnNode(resolvedLabelTokens, ctx.getLongAt(offset), state.cursors.nodeCursor))
   }
-
-  override def containsIsNull: Boolean = false
 
   override def children: Seq[AstNode[_]] = Seq.empty[AstNode[_]]
 }
@@ -72,8 +66,6 @@ case class HasAnyLabelFromSlotLate(offset: Int, labelNames: Seq[String]) extends
     IsMatchResult(state.query.isAnyLabelSetOnNode(tokens, ctx.getLongAt(offset), state.cursors.nodeCursor))
   }
 
-  override def containsIsNull: Boolean = false
-
   override def children: Seq[AstNode[_]] = Seq.empty[AstNode[_]]
 }
 
@@ -82,8 +74,6 @@ case class HasALabelFromSlot(offset: Int) extends Predicate with SlottedExpressi
   override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
     IsMatchResult(state.query.isALabelSetOnNode(ctx.getLongAt(offset), state.cursors.nodeCursor))
   }
-
-  override def containsIsNull: Boolean = false
 
   override def children: Seq[AstNode[_]] = Seq.empty
 }

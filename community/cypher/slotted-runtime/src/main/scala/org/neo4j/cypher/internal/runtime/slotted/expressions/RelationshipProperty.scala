@@ -73,8 +73,6 @@ case class RelationshipPropertyExists(offset: Int, token: Int) extends Predicate
     ))
   }
 
-  override def containsIsNull = false
-
   override def children: Seq[AstNode[_]] = Seq.empty
 }
 
@@ -94,8 +92,6 @@ case class RelationshipPropertyExistsLate(offset: Int, propKey: String) extends 
         )
     IsMatchResult(result)
   }
-
-  override def containsIsNull = false
 
   override def children: Seq[AstNode[_]] = Seq.empty
 }

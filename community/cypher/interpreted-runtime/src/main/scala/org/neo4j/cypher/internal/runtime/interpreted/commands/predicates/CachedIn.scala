@@ -56,8 +56,6 @@ case class CachedIn(value: Expression, list: Expression, id: Id) extends Predica
     }
   }
 
-  override def containsIsNull = false
-
   override def children: Seq[AstNode[_]] = Seq(value, list)
 
   override def arguments: Seq[Expression] = Seq(list)

@@ -114,7 +114,6 @@ abstract class Predicate extends Expression {
   def isTrue(ctx: ReadableRow, state: QueryState): Boolean = isMatch(ctx, state) eq IsTrue
   def andWith(other: Predicate): Predicate = Ands(this, other)
   def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult
-  def containsIsNull: Boolean
 
   def andWith(preds: Predicate*): Predicate =
     if (preds.isEmpty) this else preds.fold(this)(_ andWith _)
@@ -129,8 +128,6 @@ abstract class CompositeBooleanPredicate extends Predicate {
   def predicates: NonEmptyList[Predicate]
 
   def shouldExitWhen: IsMatchResult
-
-  override def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
 
   /**
    * This algorithm handles the case where we combine multiple AND or multiple OR groups (CNF or DNF).
@@ -168,7 +165,6 @@ case class Not(a: Predicate) extends Predicate {
 
   def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = a.isMatch(ctx, state).negate
   override def toString: String = "NOT(" + a + ")"
-  override def containsIsNull: Boolean = a.containsIsNull
   override def rewrite(f: Expression => Expression): Expression = f(Not(a.rewriteAsPredicate(f)))
   override def arguments: Seq[Expression] = Seq(a)
   override def children: Seq[AstNode[_]] = Seq(a)
@@ -179,7 +175,6 @@ case class Xor(a: Predicate, b: Predicate) extends Predicate {
   def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = a.isMatch(ctx, state) ^ b.isMatch(ctx, state)
 
   override def toString: String = "(" + a + " XOR " + b + ")"
-  override def containsIsNull: Boolean = a.containsIsNull || b.containsIsNull
 
   override def rewrite(f: Expression => Expression): Expression =
     f(Xor(a.rewriteAsPredicate(f), b.rewriteAsPredicate(f)))
@@ -197,7 +192,6 @@ case class IsNull(expression: Expression) extends Predicate {
   }
 
   override def toString: String = expression + " IS NULL"
-  override def containsIsNull = true
   override def rewrite(f: Expression => Expression): Expression = f(IsNull(expression.rewrite(f)))
   override def arguments: Seq[Expression] = Seq(expression)
   override def children: Seq[AstNode[_]] = Seq(expression)
@@ -206,7 +200,6 @@ case class IsNull(expression: Expression) extends Predicate {
 case class True() extends Predicate {
   override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = IsTrue
   override def toString: String = "true"
-  override def containsIsNull = false
   override def rewrite(f: Expression => Expression): Expression = f(this)
   override def arguments: Seq[Expression] = Seq.empty
   override def children: Seq[AstNode[_]] = Seq.empty
@@ -262,8 +255,6 @@ abstract class CachedNodePropertyExists(cp: AbstractCachedProperty) extends Pred
     f(CachedNodePropertyExists(cp.rewrite(f)))
 
   override def toString: String = s"hasCachedNodeProp($cp)"
-
-  override def containsIsNull = false
 
   override def arguments: Seq[Expression] = Seq(cp)
 
@@ -367,8 +358,6 @@ abstract class CachedRelationshipPropertyExists(cp: AbstractCachedProperty) exte
 
   override def toString: String = s"hasCachedRelationshipProp($cp)"
 
-  override def containsIsNull = false
-
   override def arguments: Seq[Expression] = Seq(cp)
 
   override def children: Seq[AstNode[_]] = Seq(cp)
@@ -432,7 +421,6 @@ trait StringOperator {
   def lhs: Expression
   def rhs: Expression
   def compare(a: TextValue, b: TextValue): Boolean
-  override def containsIsNull = false
   override def arguments: Seq[Expression] = Seq(lhs, rhs)
 }
 
@@ -470,8 +458,6 @@ converter: TextValue => TextValue = identity) extends Predicate {
       case _            => IsUnknown
     }
 
-  override def containsIsNull = false
-
   override def rewrite(f: Expression => Expression): Expression = f(regexExpr.rewrite(f) match {
     case lit: Literal => LiteralRegularExpression(lhsExpr.rewrite(f), lit)(converter)
     case other        => RegularExpression(lhsExpr.rewrite(f), other)(converter)
@@ -499,8 +485,6 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)(implici
 
   override def toString: String = lhsExpr.toString() + " ~= /" + regexExpr.toString() + "/"
 
-  override def containsIsNull = false
-
   override def rewrite(f: Expression => Expression): Expression = f(regexExpr.rewrite(f) match {
     case lit: Literal => LiteralRegularExpression(lhsExpr.rewrite(f), lit)(converter)
     case other        => RegularExpression(lhsExpr.rewrite(f), other)(converter)
@@ -522,8 +506,6 @@ case class NonEmpty(collection: Expression) extends Predicate {
   }
 
   override def toString: String = "nonEmpty(" + collection.toString() + ")"
-
-  override def containsIsNull = false
 
   override def rewrite(f: Expression => Expression): Expression = f(NonEmpty(collection.rewrite(f)))
 
@@ -554,7 +536,6 @@ case class HasALabel(entity: Expression) extends Predicate {
 
   override def arguments: Seq[Expression] = Seq(entity)
 
-  override def containsIsNull = false
 }
 
 case class HasALabelOrType(entity: Expression) extends Predicate {
@@ -585,8 +566,6 @@ case class HasALabelOrType(entity: Expression) extends Predicate {
   override def children: Seq[Expression] = Seq(entity)
 
   override def arguments: Seq[Expression] = Seq(entity)
-
-  override def containsIsNull = false
 }
 
 case class HasLabelOrType(entity: Expression, labelOrType: String) extends Predicate {
@@ -623,8 +602,6 @@ case class HasLabelOrType(entity: Expression, labelOrType: String) extends Predi
   override def children: Seq[Expression] = Seq(entity)
 
   override def arguments: Seq[Expression] = Seq(entity)
-
-  override def containsIsNull = false
 }
 
 case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
@@ -655,8 +632,6 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
   override def children: Seq[Expression] = Seq(label, entity)
 
   override def arguments: Seq[Expression] = Seq(entity)
-
-  override def containsIsNull = false
 }
 
 case class HasAnyLabel(entity: Expression, labels: Seq[KeyToken]) extends Predicate {
@@ -679,8 +654,6 @@ case class HasAnyLabel(entity: Expression, labels: Seq[KeyToken]) extends Predic
   override def children: Seq[Expression] = labels :+ entity
 
   override def arguments: Seq[Expression] = Seq(entity)
-
-  override def containsIsNull = false
 }
 
 case class HasType(entity: Expression, typ: KeyToken) extends Predicate {
@@ -715,8 +688,6 @@ case class HasType(entity: Expression, typ: KeyToken) extends Predicate {
   override def children: Seq[Expression] = Seq(typ, entity)
 
   override def arguments: Seq[Expression] = Seq(entity)
-
-  override def containsIsNull = false
 }
 
 case class CoercedPredicate(inner: Expression) extends Predicate {
@@ -732,8 +703,6 @@ case class CoercedPredicate(inner: Expression) extends Predicate {
   }
 
   override def rewrite(f: Expression => Expression): Expression = f(CoercedPredicate(inner.rewrite(f)))
-
-  override def containsIsNull = false
 
   override def toString: String = inner.toString
 }

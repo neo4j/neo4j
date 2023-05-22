@@ -60,8 +60,6 @@ abstract class InList(collection: Expression, innerVariableName: String, innerVa
 
   override def toString: String = s"$name($innerVariableName IN $collection WHERE $predicate)"
 
-  def containsIsNull: Boolean = predicate.containsIsNull
-
   override def children: Seq[Expression] = Seq(collection, predicate)
 
   def arguments: Seq[Expression] = Seq(collection)
