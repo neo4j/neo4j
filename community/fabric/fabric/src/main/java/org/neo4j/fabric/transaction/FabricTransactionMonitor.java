@@ -113,7 +113,6 @@ public class FabricTransactionMonitor extends TransactionMonitor {
         public String getIdentifyingDescription() {
             StringBuilder sb = new StringBuilder();
             sb.append("QueryRouterTransaction[");
-            sb.append("id=").append(fabricTransaction.getId()).append(",");
 
             var rawAddress = fabricTransaction
                     .getTransactionInfo()

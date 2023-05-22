@@ -44,6 +44,10 @@ public class FabricFeatureToggles {
         public void clear() {
             FeatureToggles.clear(location, name);
         }
+
+        public boolean defaultValue() {
+            return defaultValue;
+        }
     }
 
     public static final Toggle NEW_COMPOSITE_STACK = new Toggle("new_composite_stack", false);

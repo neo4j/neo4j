@@ -26,12 +26,27 @@ import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
+import org.neo4j.fabric.FabricFeatureToggles
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
-class DeprecationBoltAcceptanceTest extends DeprecationAcceptanceTestBase {
+class DefaultDeprecationBoltAcceptanceTest()
+    extends DeprecationBoltAcceptanceTest(FabricFeatureToggles.NEW_COMPOSITE_STACK.defaultValue())
+class QueryRouterDeprecationBoltAcceptanceTest() extends DeprecationBoltAcceptanceTest(true)
+
+abstract class DeprecationBoltAcceptanceTest(queryRouter: Boolean) extends DeprecationAcceptanceTestBase {
+
+  override def beforeAll() {
+    super.beforeAll()
+    FabricFeatureToggles.NEW_COMPOSITE_STACK.set(queryRouter)
+  }
+
+  override def afterAll() {
+    super.afterAll()
+    FabricFeatureToggles.NEW_COMPOSITE_STACK.clear()
+  }
 
   val boltConfig: Map[Setting[_], Object] =
     Map(

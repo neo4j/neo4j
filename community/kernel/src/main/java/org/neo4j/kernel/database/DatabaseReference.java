@@ -75,6 +75,10 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         return namespace + name;
     }
 
+    public boolean isComposite() {
+        return false;
+    }
+
     /**
      * External references point to databases which are not stored within this DBMS.
      */
@@ -291,6 +295,11 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
                     + namedDatabaseId + ", primary="
                     + primary + ", constituents="
                     + constituents + '}';
+        }
+
+        @Override
+        public boolean isComposite() {
+            return true;
         }
     }
 }

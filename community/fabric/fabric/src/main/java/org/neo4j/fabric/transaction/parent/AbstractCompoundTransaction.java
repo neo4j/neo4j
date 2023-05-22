@@ -369,16 +369,15 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
     }
 
     private FabricException commitFailedError() {
-        return new FabricException(TransactionCommitFailed, "Failed to commit composite transaction %d", getId());
+        return new FabricException(TransactionCommitFailed, "Failed to commit composite transaction");
     }
 
     private FabricException rollbackFailedError() {
-        return new FabricException(TransactionRollbackFailed, "Failed to rollback composite transaction %d", getId());
+        return new FabricException(TransactionRollbackFailed, "Failed to rollback composite transaction");
     }
 
     private FabricException terminationFailedError() {
-        return new FabricException(
-                TransactionTerminationFailed, "Failed to terminate composite transaction %d", getId());
+        return new FabricException(TransactionTerminationFailed, "Failed to terminate composite transaction");
     }
 
     protected abstract boolean isUninitialized();
@@ -390,6 +389,4 @@ public abstract class AbstractCompoundTransaction<Child extends ChildTransaction
     protected abstract Mono<Void> childTransactionRollback(Child child);
 
     protected abstract Mono<Void> childTransactionTerminate(Child child, Status reason);
-
-    protected abstract long getId();
 }

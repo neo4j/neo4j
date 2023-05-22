@@ -21,8 +21,6 @@ package org.neo4j.fabric.transaction;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import org.neo4j.cypher.internal.util.CancellationChecker;
@@ -53,14 +51,10 @@ import reactor.core.publisher.Mono;
 
 public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbTransaction>
         implements FabricCompoundTransaction, FabricTransaction, FabricTransaction.FabricExecutionContext {
-    private static final AtomicLong ID_GENERATOR = new AtomicLong();
-
-    private final Set<ReadingTransaction> readingTransactions = ConcurrentHashMap.newKeySet();
     private final FabricTransactionInfo transactionInfo;
     private final TransactionBookmarkManager bookmarkManager;
     private final Catalog catalogSnapshot;
     private final TransactionManager transactionManager;
-    private final long id;
     private final FabricRemoteExecutor.RemoteTransactionContext remoteTransactionContext;
     private final FabricLocalExecutor.LocalTransactionContext localTransactionContext;
     private final AtomicReference<StatementType> statementType = new AtomicReference<>();
@@ -92,7 +86,6 @@ public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbT
         this.transactionManager = transactionManager;
         this.bookmarkManager = bookmarkManager;
         this.catalogSnapshot = catalogSnapshot;
-        this.id = ID_GENERATOR.incrementAndGet();
         this.initializationTrace = traceProvider.getTraceInfo();
         this.contextlessProcedures = contextlessProcedures;
 
@@ -249,7 +242,7 @@ public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbT
         NamedDatabaseId namedDbId =
                 DatabaseIdFactory.from(sessionDatabaseReference.alias().name(), sessionDatabaseReference.id());
 
-        Long transactionSequenceNumber = kernelTransaction.transactionSequenceNumber();
+        long transactionSequenceNumber = kernelTransaction.transactionSequenceNumber();
         return new ExecutingQuery.TransactionBinding(
                 namedDbId, () -> 0L, () -> 0L, () -> 0L, transactionSequenceNumber);
     }
@@ -272,16 +265,9 @@ public class FabricTransactionImpl extends AbstractCompoundTransaction<SingleDbT
         return this::checkTransactionOpenForStatementExecution;
     }
 
-    @Override
-    public long getId() {
-        return id;
-    }
-
     public TransactionInitializationTrace getInitializationTrace() {
         return initializationTrace;
     }
-
-    private record ReadingTransaction(SingleDbTransaction singleDbTransaction, boolean readingOnly) {}
 
     public Set<InternalTransaction> getInternalTransactions() {
         return localTransactionContext.getInternalTransactions();
