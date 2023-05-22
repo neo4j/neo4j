@@ -25,6 +25,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.mockito.Mockito;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.security.Authentication;
@@ -126,5 +127,6 @@ public class CommunityEditionStateMachineDependencyProvider implements StateMach
     @Override
     public void close(ExtensionContext context) {
         this.instanceContext.stop(context);
+        Mockito.framework().clearInlineMocks();
     }
 }
