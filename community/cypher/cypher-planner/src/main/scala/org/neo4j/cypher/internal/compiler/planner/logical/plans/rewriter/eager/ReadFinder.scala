@@ -842,6 +842,14 @@ object ReadFinder {
       case TransactionForeach(_, _, _, _, _) =>
         PlanReads().withCallInTx
 
+      case Trail(_, _, _, start, end, _, _, _, _, _, _, _, _) =>
+        PlanReads().withIntroducedNodeVariable(end)
+          .withReferencedNodeVariable(start)
+
+      case BidirectionalRepeatTrail(_, _, _, _, _, _, _, _, _, _, _, _, _) |
+        RepeatOptions(_, _) =>
+        throw new IllegalStateException(s"Unsupported plan in eagerness analysis: $plan")
+
       /*
         Be careful when adding something to this fall-through case.
         Any (new) plan that performs reads of nodes, relationships, labels, properties or types should not be in this list.
@@ -851,7 +859,6 @@ object ReadFinder {
       case Aggregation(_, _, _) |
         AntiSemiApply(_, _) |
         Apply(_, _) |
-        BidirectionalRepeatTrail(_, _, _, _, _, _, _, _, _, _, _, _, _) |
         CacheProperties(_, _) |
         CartesianProduct(_, _) |
         plans.DeleteExpression(_, _) |
@@ -875,7 +882,6 @@ object ReadFinder {
         OrderedAggregation(_, _, _, _) |
         OrderedDistinct(_, _, _) |
         ProcedureCall(_, _) |
-        RepeatOptions(_, _) |
         SelectOrAntiSemiApply(_, _, _) |
         SelectOrSemiApply(_, _, _) |
         SemiApply(_, _) |
@@ -884,7 +890,6 @@ object ReadFinder {
         SetProperty(_, _, _, _) |
         Skip(_, _) |
         SubqueryForeach(_, _) |
-        Trail(_, _, _, _, _, _, _, _, _, _, _, _, _) |
         Union(_, _) |
         UnwindCollection(_, _, _) |
         ValueHashJoin(_, _, _) =>
