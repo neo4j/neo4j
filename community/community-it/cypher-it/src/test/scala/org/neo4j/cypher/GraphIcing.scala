@@ -30,10 +30,10 @@ import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexDefinition
 import org.neo4j.graphdb.schema.IndexSetting
 import org.neo4j.graphdb.schema.IndexType
+import org.neo4j.graphdb.schema.PropertyType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.internal.schema.IndexProviderDescriptor
-import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
@@ -667,13 +667,13 @@ trait GraphIcing {
     def getConstraintTypeByName(name: String): ConstraintType =
       withTx(tx => tx.schema().getConstraintByName(name).getConstraintType)
 
-    def getConstraintPropertyTypeByName(name: String): Option[PropertyTypeSet] =
+    def getConstraintPropertyTypeByName(name: String): Option[List[PropertyType]] =
       withTx(tx => {
         tx.schema().getConstraintByName(name) match {
           case nodePropertyConstraintDefinition: NodePropertyTypeConstraintDefinition =>
-            Some(nodePropertyConstraintDefinition.getAllowedTypes)
+            Some(nodePropertyConstraintDefinition.getPropertyType.toList)
           case relPropertyConstraintDefinition: RelationshipPropertyTypeConstraintDefinition =>
-            Some(relPropertyConstraintDefinition.getAllowedTypes)
+            Some(relPropertyConstraintDefinition.getPropertyType.toList)
           case _ => None
         }
       })

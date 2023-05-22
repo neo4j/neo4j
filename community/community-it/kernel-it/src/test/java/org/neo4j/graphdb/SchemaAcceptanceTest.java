@@ -66,14 +66,13 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexSettingImpl;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.graphdb.schema.PropertyType;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.index.internal.gbptree.DynamicSizeUtil;
 import org.neo4j.internal.helpers.collection.Iterables;
 import org.neo4j.internal.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexMonitor;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
-import org.neo4j.internal.schema.SchemaValueType;
-import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.fs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -1208,7 +1207,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator = ((BaseNodeConstraintCreator)
                             tx.schema().constraintFor(label))
-                    .assertPropertyHasType(propertyKey, PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+                    .assertPropertyHasType(propertyKey, PropertyType.DATE);
             ConstraintViolationException exception =
                     assertThrows(ConstraintViolationException.class, constraintCreator::create);
             assertThat(exception).hasMessageContaining("Enterprise Edition");
@@ -1221,7 +1220,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator = ((BaseRelationshipConstraintCreator)
                             tx.schema().constraintFor(relType))
-                    .assertPropertyHasType(propertyKey, PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+                    .assertPropertyHasType(propertyKey, PropertyType.BOOLEAN);
             ConstraintViolationException exception =
                     assertThrows(ConstraintViolationException.class, constraintCreator::create);
             assertThat(exception).hasMessageContaining("Enterprise Edition");

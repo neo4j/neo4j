@@ -27,6 +27,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.IndexSetting;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.graphdb.schema.PropertyType;
 import org.neo4j.internal.schema.IndexConfig;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
@@ -63,10 +64,11 @@ public class BaseNodeConstraintCreator extends AbstractConstraintCreator impleme
         throw new UnsupportedOperationException("Relationship key constraints are not supported on nodes.");
     }
 
-    // FIXME PTC Create a public type abstraction and expose on API when ready
-    public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyTypeSet allowedTypes) {
+    // FIXME PTC Expose on API when ready
+    public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyType... propertyType) {
+        PropertyTypeSet propertyTypeSet = validatePropertyTypes(propertyType);
         return new NodePropertyTypeConstraintCreator(
-                actions, name, label, propertyKey, indexType, indexConfig, allowedTypes);
+                actions, name, label, propertyKey, indexType, indexConfig, propertyTypeSet);
     }
 
     @Override

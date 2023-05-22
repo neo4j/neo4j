@@ -23,7 +23,9 @@ import static java.lang.String.format;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.schema.PropertyType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
+import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
 public class NodePropertyTypeConstraintDefinition extends NodeConstraintDefinition {
@@ -47,12 +49,13 @@ public class NodePropertyTypeConstraintDefinition extends NodeConstraintDefiniti
                 label.name().toLowerCase(),
                 label.name(),
                 propertyText(label.name().toLowerCase()),
-                constraint.asPropertyTypeConstraint().propertyType().toString());
+                constraint.asPropertyTypeConstraint().propertyType().userDescription());
     }
 
-    // FIXME PTC this should be a list of whatever public structure we choose for the types in the end.
-    public PropertyTypeSet getAllowedTypes() {
+    // FIXME PTC expose when ready. When exposed it must throw something or return null if it is not a type constraint
+    public PropertyType[] getPropertyType() {
         assertInUnterminatedTransaction();
-        return constraint.asPropertyTypeConstraint().propertyType();
+        PropertyTypeSet propertyTypeSet = constraint.asPropertyTypeConstraint().propertyType();
+        return propertyTypeSet.stream().map(SchemaValueType::toPublicApi).toArray(PropertyType[]::new);
     }
 }

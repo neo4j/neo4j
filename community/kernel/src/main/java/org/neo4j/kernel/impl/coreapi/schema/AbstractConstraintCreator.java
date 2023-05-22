@@ -21,7 +21,10 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexType;
+import org.neo4j.graphdb.schema.PropertyType;
 import org.neo4j.internal.schema.IndexConfig;
+import org.neo4j.internal.schema.SchemaValueType;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 
 abstract class AbstractConstraintCreator {
     protected final InternalSchemaActions actions;
@@ -44,5 +47,15 @@ abstract class AbstractConstraintCreator {
 
     protected final void assertInUnterminatedTransaction() {
         actions.assertInOpenTransaction();
+    }
+
+    protected PropertyTypeSet validatePropertyTypes(PropertyType[] propertyType) {
+        if (propertyType.length == 0) {
+            throw new IllegalArgumentException("A property type must be supplied.");
+        }
+        if (propertyType.length > 1) {
+            throw new IllegalArgumentException("Multiple property types are not supported yet.");
+        }
+        return PropertyTypeSet.of(SchemaValueType.fromPublicApi(propertyType[0]));
     }
 }

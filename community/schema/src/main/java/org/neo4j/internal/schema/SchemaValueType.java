@@ -20,6 +20,7 @@
 package org.neo4j.internal.schema;
 
 import java.util.Set;
+import org.neo4j.graphdb.schema.PropertyType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueRepresentation;
 
@@ -89,5 +90,40 @@ public enum SchemaValueType {
     @Override
     public String toString() {
         return userDescription;
+    }
+
+    public static SchemaValueType fromPublicApi(PropertyType propertyType) {
+        return switch (propertyType) {
+            case BOOLEAN -> SchemaValueType.BOOLEAN;
+            case STRING -> SchemaValueType.STRING;
+            case INTEGER -> SchemaValueType.INTEGER;
+            case FLOAT -> SchemaValueType.FLOAT;
+            case DURATION -> SchemaValueType.DURATION;
+            case DATE -> SchemaValueType.DATE;
+            case ZONED_DATETIME -> SchemaValueType.ZONED_DATETIME;
+            case LOCAL_DATETIME -> SchemaValueType.LOCAL_DATETIME;
+            case ZONED_TIME -> SchemaValueType.ZONED_TIME;
+            case LOCAL_TIME -> SchemaValueType.LOCAL_TIME;
+            case POINT -> SchemaValueType.POINT;
+        };
+    }
+
+    public PropertyType toPublicApi() {
+        return switch (this) {
+            case BOOLEAN -> PropertyType.BOOLEAN;
+            case STRING -> PropertyType.STRING;
+            case INTEGER -> PropertyType.INTEGER;
+            case FLOAT -> PropertyType.FLOAT;
+            case DURATION -> PropertyType.DURATION;
+            case DATE -> PropertyType.DATE;
+            case ZONED_DATETIME -> PropertyType.ZONED_DATETIME;
+            case LOCAL_DATETIME -> PropertyType.LOCAL_DATETIME;
+            case ZONED_TIME -> PropertyType.ZONED_TIME;
+            case LOCAL_TIME -> PropertyType.LOCAL_TIME;
+            case POINT -> PropertyType.POINT;
+                // FIXME PTC remove default when we have all the types in Core API
+            default -> throw new IllegalArgumentException(
+                    "Property type '" + this.userDescription() + "' is not supported in Core API yet.");
+        };
     }
 }
