@@ -25,7 +25,7 @@ import static org.neo4j.util.FeatureToggles.flag;
 import java.util.stream.Stream;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseClient;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
@@ -47,96 +47,107 @@ public class ParallelAccessCheck {
         }
     }
 
-    public static Locks.Client maybeWrapLockClient(Locks.Client wrappedLockClient) {
+    public static LockManager.Client maybeWrapLockClient(LockManager.Client wrappedLockClient) {
         if (!shouldPerformCheck()) {
             return wrappedLockClient;
         }
-        return new Locks.Client() {
+        return new ParallelAccessCheckClient(wrappedLockClient);
+    }
 
-            @Override
-            public boolean tryExclusiveLock(ResourceType resourceType, long resourceId) {
-                checkNotCypherWorkerThread();
-                return wrappedLockClient.tryExclusiveLock(resourceType, resourceId);
-            }
+    public static final class ParallelAccessCheckClient implements LockManager.Client {
+        private final LockManager.Client wrappedLockClient;
 
-            @Override
-            public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
-                checkNotCypherWorkerThread();
-                wrappedLockClient.acquireExclusive(tracer, resourceType, resourceIds);
-            }
+        public ParallelAccessCheckClient(LockManager.Client wrappedLockClient) {
+            this.wrappedLockClient = wrappedLockClient;
+        }
 
-            @Override
-            public void releaseExclusive(ResourceType resourceType, long... resourceIds) {
-                checkNotCypherWorkerThread();
-                wrappedLockClient.releaseExclusive(resourceType, resourceIds);
-            }
+        @Override
+        public boolean tryExclusiveLock(ResourceType resourceType, long resourceId) {
+            checkNotCypherWorkerThread();
+            return wrappedLockClient.tryExclusiveLock(resourceType, resourceId);
+        }
 
-            @Override
-            public void acquireShared(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
-                checkNotCypherWorkerThread();
-                wrappedLockClient.acquireShared(tracer, resourceType, resourceIds);
-            }
+        @Override
+        public void acquireExclusive(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
+            checkNotCypherWorkerThread();
+            wrappedLockClient.acquireExclusive(tracer, resourceType, resourceIds);
+        }
 
-            @Override
-            public void releaseShared(ResourceType resourceType, long... resourceIds) {
-                checkNotCypherWorkerThread();
-                wrappedLockClient.releaseShared(resourceType, resourceIds);
-            }
+        @Override
+        public void releaseExclusive(ResourceType resourceType, long... resourceIds) {
+            checkNotCypherWorkerThread();
+            wrappedLockClient.releaseExclusive(resourceType, resourceIds);
+        }
 
-            @Override
-            public Stream<ActiveLock> activeLocks() {
-                checkNotCypherWorkerThread();
-                return wrappedLockClient.activeLocks();
-            }
+        @Override
+        public void acquireShared(LockTracer tracer, ResourceType resourceType, long... resourceIds) {
+            checkNotCypherWorkerThread();
+            wrappedLockClient.acquireShared(tracer, resourceType, resourceIds);
+        }
 
-            @Override
-            public boolean holdsLock(long id, ResourceType resource, LockType lockType) {
-                checkNotCypherWorkerThread();
-                return wrappedLockClient.holdsLock(id, resource, lockType);
-            }
+        @Override
+        public void releaseShared(ResourceType resourceType, long... resourceIds) {
+            checkNotCypherWorkerThread();
+            wrappedLockClient.releaseShared(resourceType, resourceIds);
+        }
 
-            @Override
-            public void initialize(
-                    LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config) {
-                checkNotCypherWorkerThread();
-                wrappedLockClient.initialize(leaseClient, transactionId, memoryTracker, config);
-            }
+        @Override
+        public Stream<ActiveLock> activeLocks() {
+            checkNotCypherWorkerThread();
+            return wrappedLockClient.activeLocks();
+        }
 
-            @Override
-            public boolean trySharedLock(ResourceType resourceType, long resourceId) {
-                checkNotCypherWorkerThread();
-                return wrappedLockClient.trySharedLock(resourceType, resourceId);
-            }
+        @Override
+        public boolean holdsLock(long id, ResourceType resource, LockType lockType) {
+            checkNotCypherWorkerThread();
+            return wrappedLockClient.holdsLock(id, resource, lockType);
+        }
 
-            @Override
-            public void prepareForCommit() {
-                checkNotCypherWorkerThread();
-                wrappedLockClient.prepareForCommit();
-            }
+        @Override
+        public void initialize(
+                LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config) {
+            checkNotCypherWorkerThread();
+            wrappedLockClient.initialize(leaseClient, transactionId, memoryTracker, config);
+        }
 
-            @Override
-            public void stop() {
-                checkNotCypherWorkerThread();
-                wrappedLockClient.stop();
-            }
+        @Override
+        public boolean trySharedLock(ResourceType resourceType, long resourceId) {
+            checkNotCypherWorkerThread();
+            return wrappedLockClient.trySharedLock(resourceType, resourceId);
+        }
 
-            @Override
-            public void close() {
-                checkNotCypherWorkerThread();
-                wrappedLockClient.close();
-            }
+        @Override
+        public void prepareForCommit() {
+            checkNotCypherWorkerThread();
+            wrappedLockClient.prepareForCommit();
+        }
 
-            @Override
-            public long getTransactionId() {
-                checkNotCypherWorkerThread();
-                return wrappedLockClient.getTransactionId();
-            }
+        @Override
+        public void stop() {
+            checkNotCypherWorkerThread();
+            wrappedLockClient.stop();
+        }
 
-            @Override
-            public long activeLockCount() {
-                checkNotCypherWorkerThread();
-                return wrappedLockClient.activeLockCount();
-            }
-        };
+        @Override
+        public void close() {
+            checkNotCypherWorkerThread();
+            wrappedLockClient.close();
+        }
+
+        @Override
+        public long getTransactionId() {
+            checkNotCypherWorkerThread();
+            return wrappedLockClient.getTransactionId();
+        }
+
+        @Override
+        public long activeLockCount() {
+            checkNotCypherWorkerThread();
+            return wrappedLockClient.activeLockCount();
+        }
+
+        public LockManager.Client getWrappedLockClient() {
+            return wrappedLockClient;
+        }
     }
 }

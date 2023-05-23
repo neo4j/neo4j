@@ -42,7 +42,7 @@ import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.newapi.Operations;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.lock.LockService;
@@ -73,7 +73,7 @@ public class DynamicIndexStoreViewIT {
     private LockService lockService;
 
     @Inject
-    private Locks locks;
+    private LockManager locks;
 
     @Inject
     private IndexingService indexingService;

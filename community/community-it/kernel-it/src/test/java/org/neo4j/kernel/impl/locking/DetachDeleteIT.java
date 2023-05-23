@@ -152,7 +152,7 @@ class DetachDeleteIT {
                     Phases.DETACH_DELETE_HAS_FINISHED); // Now the DETACH DELETE *should* be holding a lock on all
             // neighbours. Verify.
             try (Transaction ignore = db.beginTx()) {
-                Locks.Client locksClient = getLocksClient(ignore);
+                LockManager.Client locksClient = getLocksClient(ignore);
                 // The try-lock should fail because the detach-delete should already be holding an exclusive lock on
                 // that node.
                 assertFalse(locksClient.tryExclusiveLock(ResourceType.NODE_RELATIONSHIP_GROUP_DELETE, otherNodeId));
@@ -268,7 +268,7 @@ class DetachDeleteIT {
         return getKernelTransaction(tx).dataWrite();
     }
 
-    private static Locks.Client getLocksClient(Transaction tx) {
+    private static LockManager.Client getLocksClient(Transaction tx) {
         KernelTransactionImplementation kti = (KernelTransactionImplementation) getKernelTransaction(tx);
         return kti.lockClient();
     }

@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.api.CloseableResourceManager;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.kernel.impl.locking.LockManager.Client;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.lock.LockTracer;

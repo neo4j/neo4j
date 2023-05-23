@@ -24,7 +24,7 @@ import static org.neo4j.lock.ResourceType.NODE;
 
 import java.util.concurrent.Future;
 import org.junit.jupiter.api.Test;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
@@ -231,7 +231,7 @@ abstract class LockReentrancyCompatibility extends LockCompatibilityTestSupport 
         assertEquals(sharedLockExplorer.getLockIdentityHashCode(), releasedLockExplorer.getLockIdentityHashCode());
     }
 
-    private static class LockIdentityExplorer implements Locks.Visitor {
+    private static class LockIdentityExplorer implements LockManager.Visitor {
         private final ResourceType resourceType;
         private final long resourceId;
         private long lockIdentityHashCode;

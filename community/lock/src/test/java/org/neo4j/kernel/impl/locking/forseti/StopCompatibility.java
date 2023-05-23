@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -64,7 +64,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
     private static final long SECOND_NODE_ID = 4242;
     private static final LockTracer TRACER = LockTracer.NONE;
 
-    private Locks.Client client;
+    private LockManager.Client client;
 
     StopCompatibility(LockingCompatibilityTest suite) {
         super(suite);
@@ -83,7 +83,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
 
     @RepeatedTest(100)
     void concurrentLockClientStopAndClose() throws Throwable {
-        Locks.Client client = locks.newClient();
+        LockManager.Client client = locks.newClient();
         BinaryLatch l1 = new BinaryLatch();
         Race race = new Race();
         race.addContestant(() -> {
@@ -365,7 +365,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         assertNoLocksHeld();
     }
 
-    private Locks.Client stoppedClient() {
+    private LockManager.Client stoppedClient() {
         try {
             client.stop();
             return client;
@@ -435,7 +435,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
         Future<Void> future = threadA.submit(() -> {
-            Locks.Client client = newLockClient(lockAcquisition);
+            LockManager.Client client = newLockClient(lockAcquisition);
             if (shared) {
                 client.acquireShared(TRACER, NODE, FIRST_NODE_ID);
             } else {
@@ -456,7 +456,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
         Future<Void> future = threadA.submit(() -> {
-            try (Locks.Client client = newLockClient(lockAcquisition)) {
+            try (LockManager.Client client = newLockClient(lockAcquisition)) {
                 try {
                     if (firstShared) {
                         client.acquireShared(TRACER, NODE, FIRST_NODE_ID);
@@ -473,7 +473,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
             firstLockFailed.countDown();
             await(startSecondLock);
 
-            try (Locks.Client client = newLockClient(lockAcquisition)) {
+            try (LockManager.Client client = newLockClient(lockAcquisition)) {
                 if (secondShared) {
                     client.acquireShared(TRACER, NODE, FIRST_NODE_ID);
                 } else {
@@ -492,7 +492,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
         Future<Void> future = threadA.submit(() -> {
-            try (Locks.Client client = newLockClient(lockAcquisition)) {
+            try (LockManager.Client client = newLockClient(lockAcquisition)) {
                 client.acquireShared(TRACER, NODE, FIRST_NODE_ID);
 
                 sharedLockAcquired.countDown();
@@ -512,7 +512,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         final LockAcquisition lockAcquisition = new LockAcquisition();
 
         Future<Void> future = threadA.submit(() -> {
-            try (Locks.Client client = newLockClient(lockAcquisition)) {
+            try (LockManager.Client client = newLockClient(lockAcquisition)) {
                 if (shared) {
                     client.acquireShared(TRACER, NODE, SECOND_NODE_ID);
                 } else {
@@ -534,8 +534,8 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
         return lockAcquisition;
     }
 
-    private Locks.Client newLockClient(LockAcquisition lockAcquisition) {
-        Locks.Client client = locks.newClient();
+    private LockManager.Client newLockClient(LockAcquisition lockAcquisition) {
+        LockManager.Client client = locks.newClient();
         client.initialize(NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults());
         lockAcquisition.setClient(client);
         return client;
@@ -614,7 +614,7 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
 
     private static class LockAcquisition {
         volatile Future<?> future;
-        volatile Locks.Client client;
+        volatile LockManager.Client client;
         volatile Actor executor;
 
         Future<?> getFuture() {
@@ -627,12 +627,12 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
             this.executor = executor;
         }
 
-        Locks.Client getClient() {
+        LockManager.Client getClient() {
             Objects.requireNonNull(client, "lock acquisition was not initialized with client");
             return client;
         }
 
-        void setClient(Locks.Client client) {
+        void setClient(LockManager.Client client) {
             this.client = client;
         }
 
@@ -650,23 +650,23 @@ abstract class StopCompatibility extends LockCompatibilityTestSupport {
     }
 
     private static class AcquiredLock {
-        final Locks.Client client;
+        final LockManager.Client client;
         final boolean shared;
         final ResourceType resourceType;
         final long resourceId;
 
-        AcquiredLock(Locks.Client client, boolean shared, ResourceType resourceType, long resourceId) {
+        AcquiredLock(LockManager.Client client, boolean shared, ResourceType resourceType, long resourceId) {
             this.client = client;
             this.shared = shared;
             this.resourceType = resourceType;
             this.resourceId = resourceId;
         }
 
-        static AcquiredLock shared(Locks.Client client, ResourceType resourceType, long resourceId) {
+        static AcquiredLock shared(LockManager.Client client, ResourceType resourceType, long resourceId) {
             return new AcquiredLock(client, true, resourceType, resourceId);
         }
 
-        static AcquiredLock exclusive(Locks.Client client, ResourceType resourceType, long resourceId) {
+        static AcquiredLock exclusive(LockManager.Client client, ResourceType resourceType, long resourceId) {
             return new AcquiredLock(client, false, resourceType, resourceId);
         }
 

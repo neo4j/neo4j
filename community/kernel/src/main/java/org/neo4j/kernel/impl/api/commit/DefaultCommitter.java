@@ -36,9 +36,11 @@ import org.neo4j.kernel.impl.transaction.log.CompleteTransaction;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 
 public final class DefaultCommitter implements TransactionCommitter {
     private final KernelTransactionImplementation ktx;
@@ -47,6 +49,7 @@ public final class DefaultCommitter implements TransactionCommitter {
     private final TransactionCommitProcess commitProcess;
     private final StoreCursors transactionalCursors;
     private final TransactionIdGenerator transactionIdGenerator;
+    private final TransactionValidator transactionValidator;
 
     public DefaultCommitter(
             KernelTransactionImplementation ktx,
@@ -54,13 +57,15 @@ public final class DefaultCommitter implements TransactionCommitter {
             KernelVersionProvider kernelVersionProvider,
             StoreCursors transactionalCursors,
             TransactionIdGenerator transactionIdGenerator,
-            TransactionCommitProcess commitProcess) {
+            TransactionCommitProcess commitProcess,
+            TransactionValidator transactionValidator) {
         this.ktx = ktx;
         this.commitmentFactory = commitmentFactory;
         this.kernelVersionProvider = kernelVersionProvider;
         this.commitProcess = commitProcess;
         this.transactionalCursors = transactionalCursors;
         this.transactionIdGenerator = transactionIdGenerator;
+        this.transactionValidator = transactionValidator;
     }
 
     @Override
@@ -70,6 +75,7 @@ public final class DefaultCommitter implements TransactionCommitter {
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
             KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor,
+            LockTracer lockTracer,
             long commitTime,
             long startTimeMillis,
             long lastTransactionIdWhenStarted,
@@ -89,26 +95,29 @@ public final class DefaultCommitter implements TransactionCommitter {
          */
         if (!extractedCommands.isEmpty()) {
             // Finish up the whole transaction representation
-            CompleteTransaction transactionRepresentation = new CompleteTransaction(
-                    extractedCommands,
-                    UNKNOWN_CONSENSUS_INDEX,
-                    startTimeMillis,
-                    lastTransactionIdWhenStarted,
-                    commitTime,
-                    leaseClient.leaseId(),
-                    kernelVersionProvider.kernelVersion(),
-                    ktx.securityContext().subject().userSubject());
+            try (var guards = transactionValidator.validate(
+                    extractedCommands, ktx.getTransactionSequenceNumber(), cursorContext, leaseClient, lockTracer)) {
+                CompleteTransaction transactionRepresentation = new CompleteTransaction(
+                        extractedCommands,
+                        UNKNOWN_CONSENSUS_INDEX,
+                        startTimeMillis,
+                        lastTransactionIdWhenStarted,
+                        commitTime,
+                        leaseClient.leaseId(),
+                        kernelVersionProvider.kernelVersion(),
+                        ktx.securityContext().subject().userSubject());
 
-            // Commit the transaction
-            TransactionToApply batch = new TransactionToApply(
-                    transactionRepresentation,
-                    cursorContext,
-                    transactionalCursors,
-                    commitmentFactory.newCommitment(),
-                    transactionIdGenerator);
+                // Commit the transaction
+                TransactionToApply batch = new TransactionToApply(
+                        transactionRepresentation,
+                        cursorContext,
+                        transactionalCursors,
+                        commitmentFactory.newCommitment(),
+                        transactionIdGenerator);
 
-            kernelTransactionMonitor.beforeApply();
-            return commitProcess.commit(batch, transactionWriteEvent, INTERNAL);
+                kernelTransactionMonitor.beforeApply();
+                return commitProcess.commit(batch, transactionWriteEvent, INTERNAL);
+            }
         }
         return KernelTransaction.READ_ONLY_ID;
     }

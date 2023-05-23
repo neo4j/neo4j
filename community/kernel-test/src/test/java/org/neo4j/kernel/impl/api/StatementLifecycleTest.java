@@ -35,7 +35,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 
@@ -82,7 +82,7 @@ class StatementLifecycleTest {
                 Config.defaults(GraphDatabaseInternalSettings.track_tx_statement_close, true));
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         var cursorContext = contextFactory.create("test");
-        statement.initialize(mock(Locks.Client.class), cursorContext, 1);
+        statement.initialize(mock(LockManager.Client.class), cursorContext, 1);
         return statement;
     }
 }

@@ -49,6 +49,7 @@ import static org.neo4j.kernel.api.security.AnonymousContext.access;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
+import static org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
 import static org.neo4j.util.concurrent.Futures.combine;
 
 import java.util.ArrayList;
@@ -104,7 +105,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -155,7 +156,7 @@ class KernelTransactionsTest {
     @Inject
     private OtherThread t2;
 
-    private final Locks locks = mock(Locks.class);
+    private final LockManager locks = mock(LockManager.class);
 
     @BeforeEach
     void setUp() {
@@ -239,7 +240,7 @@ class KernelTransactionsTest {
     void shouldNotReuseTransactionsUnableToClose() throws Throwable {
         // GIVEN
         KernelTransactions transactions = newKernelTransactions();
-        Locks.Client client = mock(Locks.Client.class);
+        LockManager.Client client = mock(LockManager.Client.class);
         RuntimeException foo = new RuntimeException("foo");
         doThrow(foo).when(client).close();
         when(locks.newClient()).thenReturn(client);
@@ -633,7 +634,7 @@ class KernelTransactionsTest {
                 mock(TransactionIdStore.class),
                 mock(KernelVersionProvider.class),
                 DatabaseTracers.EMPTY,
-                mock(Locks.class),
+                mock(LockManager.class),
                 Clocks.nanoClock(),
                 mock(AvailabilityGuard.class),
                 Config.defaults(),
@@ -696,7 +697,7 @@ class KernelTransactionsTest {
             Config config,
             StorageReader... otherReaders)
             throws Throwable {
-        Locks.Client client = mock(Locks.Client.class);
+        LockManager.Client client = mock(LockManager.Client.class);
         when(locks.newClient()).thenReturn(client);
 
         StorageEngine storageEngine = mock(StorageEngine.class, RETURNS_MOCKS);
@@ -718,7 +719,7 @@ class KernelTransactionsTest {
     }
 
     private KernelTransactions newKernelTransactions(
-            Locks locks,
+            LockManager locks,
             StorageEngine storageEngine,
             TransactionCommitProcess commitProcess,
             boolean testKernelTransactions,
@@ -770,7 +771,7 @@ class KernelTransactionsTest {
             TransactionIdStore transactionIdStore,
             KernelVersionProvider kernelVersionProvider,
             DatabaseTracers tracers,
-            Locks locks,
+            LockManager locks,
             SystemNanoClock clock,
             AvailabilityGuard databaseAvailabilityGuard,
             Config config,
@@ -813,6 +814,7 @@ class KernelTransactionsTest {
                 TransactionIdGenerator.EMPTY,
                 mock(DatabaseHealth.class),
                 mock(LogicalTransactionStore.class),
+                EMPTY_VALIDATOR_FACTORY,
                 NullLogProvider.getInstance());
     }
 
@@ -822,7 +824,7 @@ class KernelTransactionsTest {
             TransactionIdStore transactionIdStore,
             KernelVersionProvider kernelVersionProvider,
             DatabaseTracers tracers,
-            Locks locks,
+            LockManager locks,
             SystemNanoClock clock,
             AvailabilityGuard databaseAvailabilityGuard) {
         Dependencies dependencies = createDependencies();
@@ -878,7 +880,7 @@ class KernelTransactionsTest {
 
     private static class TestKernelTransactions extends KernelTransactions {
         TestKernelTransactions(
-                Locks locks,
+                LockManager locks,
                 ConstraintIndexCreator constraintIndexCreator,
                 TransactionCommitProcess transactionCommitProcess,
                 DatabaseTransactionEventListeners eventListeners,
@@ -932,6 +934,7 @@ class KernelTransactionsTest {
                     TransactionIdGenerator.EMPTY,
                     mock(DatabaseHealth.class),
                     mock(LogicalTransactionStore.class),
+                    EMPTY_VALIDATOR_FACTORY,
                     NullLogProvider.getInstance());
         }
 

@@ -41,7 +41,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.internal.helpers.Exceptions;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.GlobalMemoryGroupTracker;
@@ -86,7 +86,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void trackMemoryOnSharedLockAcquire() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireShared(LockTracer.NONE, NODE, 1);
             var oneLockAllocatedMemory = memoryTracker.estimatedHeapMemory();
@@ -102,7 +102,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void trackMemoryOnExclusiveLockAcquire() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireExclusive(LockTracer.NONE, NODE, 1);
             var oneLockAllocatedMemory = memoryTracker.estimatedHeapMemory();
@@ -118,7 +118,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void sharedLockReAcquireDoesNotAllocateMemory() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireShared(LockTracer.NONE, NODE, 1);
             var oneLockAllocatedMemory = memoryTracker.estimatedHeapMemory();
@@ -132,7 +132,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void exclusiveLockReAcquireDoesNotAllocateMemory() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireExclusive(LockTracer.NONE, NODE, 1);
             var oneLockAllocatedMemory = memoryTracker.estimatedHeapMemory();
@@ -146,7 +146,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void exclusiveLockOverSharedDoesNotAllocateMemory() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireShared(LockTracer.NONE, NODE, 1);
             var sharedAllocatedMemory = memoryTracker.estimatedHeapMemory();
@@ -160,7 +160,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void sharedLockOverExclusiveAllocateMemory() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireExclusive(LockTracer.NONE, NODE, 1);
             var exclusiveAllocatedMemory = memoryTracker.estimatedHeapMemory();
@@ -179,7 +179,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void releaseMemoryOfSharedLock() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireShared(LockTracer.NONE, NODE, 1);
             var sharedAllocatedMemory = memoryTracker.estimatedHeapMemory();
@@ -193,7 +193,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void releaseMemoryOfExclusiveLock() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireExclusive(LockTracer.NONE, NODE, 1);
 
@@ -214,7 +214,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void releaseExclusiveLockWhyHoldingSharedDoNotReleaseAnyMemory() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireExclusive(LockTracer.NONE, NODE, 1);
             client.acquireShared(LockTracer.NONE, NODE, 1);
@@ -230,7 +230,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void releaseLocksReleasingMemory() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             assertThat(memoryTracker.estimatedHeapMemory()).isEqualTo(0);
             client.acquireExclusive(LockTracer.NONE, NODE, 1);
             client.acquireShared(LockTracer.NONE, NODE, 1);
@@ -264,7 +264,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void trackMemoryOnLocksAcquire() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             client.acquireShared(LockTracer.NONE, NODE, 1);
             client.acquireExclusive(LockTracer.NONE, NODE, 2);
             assertThat(memoryTracker.estimatedHeapMemory()).isGreaterThan(0);
@@ -273,7 +273,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void releaseMemoryOnUnlock() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             client.acquireShared(LockTracer.NONE, NODE, 1);
             client.releaseShared(NODE, 1);
             client.acquireExclusive(LockTracer.NONE, NODE, 2);
@@ -286,7 +286,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void upgradingLockShouldNotLeakMemory() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             client.acquireShared(LockTracer.NONE, NODE, 1);
             client.acquireShared(LockTracer.NONE, NODE, 1);
             client.acquireExclusive(LockTracer.NONE, NODE, 1); // Should be upgraded
@@ -300,7 +300,7 @@ class ForsetiMemoryTrackingTest {
 
     @Test
     void closeShouldReleaseAllMemory() {
-        try (Locks.Client client = getClient()) {
+        try (LockManager.Client client = getClient()) {
             client.acquireShared(LockTracer.NONE, NODE, 1);
             client.acquireShared(LockTracer.NONE, NODE, 1);
             client.acquireExclusive(LockTracer.NONE, NODE, 1); // Should be upgraded
@@ -315,7 +315,7 @@ class ForsetiMemoryTrackingTest {
         LocalMemoryTracker[] trackers = new LocalMemoryTracker[numThreads];
         for (int i = 0; i < numThreads; i++) {
             trackers[i] = new LocalMemoryTracker(memoryPool);
-            Locks.Client client = forsetiLockManager.newClient();
+            LockManager.Client client = forsetiLockManager.newClient();
             client.initialize(LeaseService.NoLeaseClient.INSTANCE, i, trackers[i], Config.defaults());
             race.addContestant(new SimulatedTransaction(client));
         }
@@ -331,9 +331,9 @@ class ForsetiMemoryTrackingTest {
 
     private static class SimulatedTransaction implements Runnable {
         private final Deque<LockEvent> heldLocks = new ArrayDeque<>();
-        private final Locks.Client client;
+        private final LockManager.Client client;
 
-        SimulatedTransaction(Locks.Client client) {
+        SimulatedTransaction(LockManager.Client client) {
             this.client = client;
         }
 
@@ -463,7 +463,7 @@ class ForsetiMemoryTrackingTest {
         }
     }
 
-    private void lockSomeNodes(MemoryTracker tracker, Locks lockManager) {
+    private void lockSomeNodes(MemoryTracker tracker, LockManager lockManager) {
         var nodesPerBatch = 30;
         var message = new AtomicReference<>("No MemoryLimitExceededException observed");
         try (var client = lockManager.newClient()) {
@@ -512,7 +512,7 @@ class ForsetiMemoryTrackingTest {
         assertThat(tracker.estimatedHeapMemory()).as(message.get()).isZero();
     }
 
-    private void verifyNoLocks(Locks lockManager, AtomicReference<String> message) {
+    private void verifyNoLocks(LockManager lockManager, AtomicReference<String> message) {
         lockManager.accept(
                 (lockType,
                         resourceType,
@@ -544,7 +544,7 @@ class ForsetiMemoryTrackingTest {
         }
     }
 
-    private void raceSharedAndExclusiveLock(LocalMemoryTracker memoryTracker1, Locks lockManager)
+    private void raceSharedAndExclusiveLock(LocalMemoryTracker memoryTracker1, LockManager lockManager)
             throws InterruptedException, ExecutionException {
         try (var memoryTracker2 = new LocalMemoryTracker(); ) {
             var message = new AtomicReference<>("No MemoryLimitExceededException observed");
@@ -609,8 +609,8 @@ class ForsetiMemoryTrackingTest {
         }
     }
 
-    private Locks.Client getClient() {
-        Locks.Client client = forsetiLockManager.newClient();
+    private LockManager.Client getClient() {
+        LockManager.Client client = forsetiLockManager.newClient();
         client.initialize(
                 LeaseService.NoLeaseClient.INSTANCE,
                 TRANSACTION_ID.getAndIncrement(),

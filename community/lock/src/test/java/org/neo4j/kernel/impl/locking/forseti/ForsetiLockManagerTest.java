@@ -43,7 +43,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.LockType;
@@ -86,7 +86,7 @@ class ForsetiLockManagerTest {
 
         Race race = new Race();
         race.addContestants(3, throwing(() -> {
-            try (Locks.Client client = manager.newClient()) {
+            try (LockManager.Client client = manager.newClient()) {
                 client.initialize(
                         LeaseService.NoLeaseClient.INSTANCE,
                         TX_ID,
@@ -107,8 +107,8 @@ class ForsetiLockManagerTest {
     @Test
     void testSameThreadMultipleClientCommitDirectDeadlock() {
         // Given
-        try (Locks.Client client1 = manager.newClient();
-                Locks.Client client2 = manager.newClient()) {
+        try (LockManager.Client client1 = manager.newClient();
+                LockManager.Client client2 = manager.newClient()) {
             client1.initialize(LeaseService.NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, config);
             client2.initialize(LeaseService.NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, config);
 
@@ -128,10 +128,10 @@ class ForsetiLockManagerTest {
         // Given
         try (OtherThreadExecutor executor1 = new OtherThreadExecutor("test1");
                 OtherThreadExecutor executor2 = new OtherThreadExecutor("test2");
-                Locks.Client client1 = manager.newClient();
-                Locks.Client client2 = manager.newClient();
-                Locks.Client client3 = manager.newClient();
-                Locks.Client client4 = manager.newClient()) {
+                LockManager.Client client1 = manager.newClient();
+                LockManager.Client client2 = manager.newClient();
+                LockManager.Client client3 = manager.newClient();
+                LockManager.Client client4 = manager.newClient()) {
             client1.initialize(LeaseService.NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, config);
             client2.initialize(LeaseService.NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, config);
             client3.initialize(LeaseService.NoLeaseClient.INSTANCE, 3, EmptyMemoryTracker.INSTANCE, config);
@@ -163,11 +163,11 @@ class ForsetiLockManagerTest {
     @Test
     void lockClientsShouldNotHaveMutatingEqualsAndHashCode() {
         int uniqueClients = 10_000;
-        var allClientsSet = new HashSet<Locks.Client>(uniqueClients);
-        var allClientsList = new ArrayList<Locks.Client>(uniqueClients);
+        var allClientsSet = new HashSet<LockManager.Client>(uniqueClients);
+        var allClientsList = new ArrayList<LockManager.Client>(uniqueClients);
 
         for (int i = 0; i < uniqueClients; i++) {
-            Locks.Client client = manager.newClient();
+            LockManager.Client client = manager.newClient();
             allClientsSet.add(client);
             allClientsList.add(client);
             client.initialize(LeaseService.NoLeaseClient.INSTANCE, i, EmptyMemoryTracker.INSTANCE, config);
@@ -184,7 +184,7 @@ class ForsetiLockManagerTest {
 
     @Test
     void shouldHaveCorrectActiveLocks() {
-        try (Locks.Client client = manager.newClient()) {
+        try (LockManager.Client client = manager.newClient()) {
             client.initialize(LeaseService.NoLeaseClient.INSTANCE, 0, EmptyMemoryTracker.INSTANCE, config);
             takeAndAssertActiveLocks(client, false);
         }
@@ -199,7 +199,7 @@ class ForsetiLockManagerTest {
         race.addContestants(5, throwing(() -> {
             start.release();
             while (!done.get()) {
-                try (Locks.Client client = manager.newClient()) {
+                try (LockManager.Client client = manager.newClient()) {
                     client.initialize(
                             LeaseService.NoLeaseClient.INSTANCE,
                             tx.incrementAndGet(),
@@ -217,7 +217,7 @@ class ForsetiLockManagerTest {
             }
         }));
         Race.Async async = race.goAsync();
-        try (Locks.Client client = manager.newClient()) {
+        try (LockManager.Client client = manager.newClient()) {
             client.initialize(
                     LeaseService.NoLeaseClient.INSTANCE, tx.incrementAndGet(), EmptyMemoryTracker.INSTANCE, config);
             start.await();
@@ -233,7 +233,7 @@ class ForsetiLockManagerTest {
         AtomicBoolean terminated = new AtomicBoolean();
         LocalMemoryTracker memoryTracker = new LocalMemoryTracker();
         try (OtherThreadExecutor executor = new OtherThreadExecutor("test");
-                Locks.Client client = manager.newClient()) {
+                LockManager.Client client = manager.newClient()) {
             client.initialize(LeaseService.NoLeaseClient.INSTANCE, 1, memoryTracker, config);
 
             // Take some locks to make the client track some memory
@@ -259,7 +259,7 @@ class ForsetiLockManagerTest {
         assertThat(memoryTracker.estimatedHeapMemory()).isZero();
     }
 
-    private void takeAndAssertActiveLocks(Locks.Client client, boolean allowedToDeadlock) {
+    private void takeAndAssertActiveLocks(LockManager.Client client, boolean allowedToDeadlock) {
         Map<Long, Integer> exclusiveLocks = new HashMap<>();
         Map<Long, Integer> sharedLocks = new HashMap<>();
         int deadlocks = 0;

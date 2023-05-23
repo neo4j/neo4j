@@ -66,7 +66,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -83,6 +83,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionId;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.ElementIdMapper;
@@ -98,7 +99,7 @@ import org.neo4j.values.ElementIdMapper;
 public class KernelTransactions extends LifecycleAdapter
         implements TransactionRegistry, Supplier<IdController.TransactionSnapshot>, IdController.IdFreeCondition {
     public static final long SYSTEM_TRANSACTION_ID = 0;
-    private final Locks locks;
+    private final LockManager lockManager;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final TransactionCommitProcess transactionCommitProcess;
     private final DatabaseTransactionEventListeners eventListeners;
@@ -126,6 +127,7 @@ public class KernelTransactions extends LifecycleAdapter
     private final TransactionCommitmentFactory commitmentFactory;
     private final TransactionIdGenerator transactionIdGenerator;
     private final DatabaseHealth databaseHealth;
+    private final TransactionValidatorFactory transactionValidatorFactory;
     private final LogProvider internalLogProvider;
     private final NamedDatabaseId namedDatabaseId;
     private final IndexingService indexingService;
@@ -167,7 +169,7 @@ public class KernelTransactions extends LifecycleAdapter
 
     public KernelTransactions(
             Config config,
-            Locks locks,
+            LockManager lockManager,
             ConstraintIndexCreator constraintIndexCreator,
             TransactionCommitProcess transactionCommitProcess,
             DatabaseTransactionEventListeners eventListeners,
@@ -203,9 +205,10 @@ public class KernelTransactions extends LifecycleAdapter
             TransactionIdGenerator transactionIdGenerator,
             DatabaseHealth databaseHealth,
             LogicalTransactionStore transactionStore,
+            TransactionValidatorFactory transactionValidatorFactory,
             LogProvider internalLogProvider) {
         this.config = config;
-        this.locks = locks;
+        this.lockManager = lockManager;
         this.constraintIndexCreator = constraintIndexCreator;
         this.transactionCommitProcess = transactionCommitProcess;
         this.eventListeners = eventListeners;
@@ -228,6 +231,7 @@ public class KernelTransactions extends LifecycleAdapter
         this.commitmentFactory = commitmentFactory;
         this.transactionIdGenerator = transactionIdGenerator;
         this.databaseHealth = databaseHealth;
+        this.transactionValidatorFactory = transactionValidatorFactory;
         this.internalLogProvider = internalLogProvider;
         this.tokenHoldersIdLookup = new TokenHoldersIdLookup(tokenHolders, globalProcedures);
         this.namedDatabaseId = namedDatabaseId;
@@ -541,7 +545,7 @@ public class KernelTransactions extends LifecycleAdapter
                     readOnlyDatabaseChecker,
                     transactionExecutionMonitor,
                     securityLog,
-                    locks,
+                    lockManager,
                     commitmentFactory,
                     KernelTransactions.this,
                     transactionIdGenerator,
@@ -552,6 +556,7 @@ public class KernelTransactions extends LifecycleAdapter
                     enrichmentStrategy,
                     databaseHealth,
                     internalLogProvider,
+                    transactionValidatorFactory,
                     multiVersioned);
             this.transactions.add(tx);
             return tx;

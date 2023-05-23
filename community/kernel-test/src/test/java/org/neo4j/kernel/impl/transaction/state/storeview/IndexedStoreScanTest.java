@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 
@@ -41,13 +41,13 @@ class IndexedStoreScanTest {
     @Test
     void shouldRunStoreScanWithinASharedLock() {
         var config = Config.defaults();
-        var locks = mock(Locks.class);
+        var locks = mock(LockManager.class);
         var index = forSchema(forAnyEntityTokens(NODE), DESCRIPTOR)
                 .withName("index")
                 .materialise(0);
         var delegate = mock(StoreScan.class);
         var storeScan = new IndexedStoreScan(locks, index, config, () -> true, delegate);
-        var client = mock(Locks.Client.class);
+        var client = mock(LockManager.Client.class);
         when(locks.newClient()).thenReturn(client);
 
         storeScan.run(NO_EXTERNAL_UPDATES);

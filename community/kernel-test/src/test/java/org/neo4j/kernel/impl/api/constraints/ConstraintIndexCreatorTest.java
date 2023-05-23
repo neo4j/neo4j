@@ -71,7 +71,7 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -388,7 +388,7 @@ class ConstraintIndexCreatorTest {
             StorageReader storageReader = mock(StorageReader.class);
             when(storageEngine.newReader()).thenReturn(storageReader);
 
-            Locks.Client locks = mock(Locks.Client.class);
+            LockManager.Client locks = mock(LockManager.Client.class);
             when(transaction.lockClient()).thenReturn(locks);
             when(transaction.tokenRead()).thenReturn(tokenRead);
             when(transaction.schemaRead()).thenReturn(schemaRead);

@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
 import org.neo4j.kernel.impl.api.index.PropertyScanConsumer;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -50,7 +50,7 @@ import org.neo4j.storageengine.api.StorageReader;
 
 public class DynamicIndexStoreView implements IndexStoreView {
     private final FullScanStoreView fullScanStoreView;
-    private final Locks locks;
+    private final LockManager lockManager;
     protected final LockService lockService;
     private final Config config;
     private final IndexProxyProvider indexProxies;
@@ -59,14 +59,14 @@ public class DynamicIndexStoreView implements IndexStoreView {
 
     public DynamicIndexStoreView(
             FullScanStoreView fullScanStoreView,
-            Locks locks,
+            LockManager lockManager,
             LockService lockService,
             Config config,
             IndexProxyProvider indexProxies,
             ReadableStorageEngine storageEngine,
             InternalLogProvider logProvider) {
         this.fullScanStoreView = fullScanStoreView;
-        this.locks = locks;
+        this.lockManager = lockManager;
         this.lockService = lockService;
         this.config = config;
         this.indexProxies = indexProxies;
@@ -101,7 +101,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
                     contextFactory,
                     memoryTracker);
             return new IndexedStoreScan(
-                    locks,
+                    lockManager,
                     tokenIndex.get().descriptor,
                     config,
                     () -> findTokenIndex(NODE).isPresent(),
@@ -166,7 +166,7 @@ public class DynamicIndexStoreView implements IndexStoreView {
                         memoryTracker);
             }
             return new IndexedStoreScan(
-                    locks,
+                    lockManager,
                     tokenIndex.get().descriptor,
                     config,
                     () -> findTokenIndex(RELATIONSHIP).isPresent(),

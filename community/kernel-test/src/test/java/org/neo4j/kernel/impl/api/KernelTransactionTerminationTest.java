@@ -34,6 +34,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.TransactionTimeout.NO_TIMEOUT;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.locking.NoLocksClient.NO_LOCKS_CLIENT;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 import java.util.UUID;
@@ -69,8 +70,7 @@ import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -82,6 +82,7 @@ import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.test.Race;
 import org.neo4j.time.Clocks;
@@ -300,14 +301,15 @@ class KernelTransactionTerminationTest {
                     ApplyEnrichmentStrategy.NO_ENRICHMENT,
                     mock(DatabaseHealth.class),
                     NullLogProvider.getInstance(),
+                    TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY,
                     false);
 
             this.monitor = monitor;
         }
 
-        private static Locks mockLocks() {
-            var locks = mock(Locks.class);
-            when(locks.newClient()).thenReturn(new NoOpClient());
+        private static LockManager mockLocks() {
+            var locks = mock(LockManager.class);
+            when(locks.newClient()).thenReturn(NO_LOCKS_CLIENT);
             return locks;
         }
 

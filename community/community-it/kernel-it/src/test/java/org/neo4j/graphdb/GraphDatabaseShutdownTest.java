@@ -34,7 +34,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiClient;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.OtherThreadExecutor;
@@ -53,7 +53,7 @@ public class GraphDatabaseShutdownTest {
     private GraphDatabaseAPI db;
 
     @Inject
-    private Locks locks;
+    private LockManager locks;
 
     @AfterEach
     void tearDown() {
@@ -133,7 +133,7 @@ public class GraphDatabaseShutdownTest {
         assertThatThrownBy(shutdownFuture::get).rootCause().isInstanceOf(TransactionTerminatedException.class);
     }
 
-    private static int lockCount(Locks locks) {
+    private static int lockCount(LockManager locks) {
         LockCountVisitor lockCountVisitor = new LockCountVisitor();
         locks.accept(lockCountVisitor);
         return lockCountVisitor.getLockCount();

@@ -64,7 +64,7 @@ public final class LockClientStateHolder {
     /**
      * Move the client to the PREPARE state, unless it is already STOPPED.
      */
-    public void prepare(Locks.Client client) {
+    public void prepare(LockManager.Client client) {
         int currentValue;
         int newValue;
         do {
@@ -111,10 +111,10 @@ public final class LockClientStateHolder {
      * Increment active number of clients that use current state instance.
      *
      * @param client the locks client associated with this state; used only to create pretty exception
-     * with {@link LockClientStoppedException#LockClientStoppedException(Locks.Client)}.
+     * with {@link LockClientStoppedException#LockClientStoppedException(LockManager.Client)}.
      * @throws LockClientStoppedException when stopped.
      */
-    public void incrementActiveClients(Locks.Client client) {
+    public void incrementActiveClients(LockManager.Client client) {
         int currentState;
         do {
             currentState = clientState.get();

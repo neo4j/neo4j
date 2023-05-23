@@ -26,7 +26,7 @@ import static java.util.stream.Collectors.toList;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.internal.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
-import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
+import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.recovery.RecoveryStartupChecker.EMPTY_CHECKER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
@@ -595,7 +595,7 @@ public final class Recovery {
         // Schema indexes
         FullScanStoreView fullScanStoreView = new FullScanStoreView(NO_LOCK_SERVICE, storageEngine, config, scheduler);
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                config, storageEngine, NO_LOCKS, fullScanStoreView, NO_LOCK_SERVICE, logProvider);
+                config, storageEngine, NO_LOCKS_LOCK_MANAGER, fullScanStoreView, NO_LOCK_SERVICE, logProvider);
 
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore(
                 databasePageCache,

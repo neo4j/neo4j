@@ -37,7 +37,7 @@ import org.neo4j.internal.kernel.api.PropertyIndexQuery;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptors;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.newapi.LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.values.storable.Value;
@@ -55,7 +55,7 @@ class LockingNodeUniqueIndexSeekTest {
     private final long resourceId = indexEntryResourceId(labelId, predicate);
     private UniqueNodeIndexSeeker<NodeValueIndexCursor> uniqueNodeIndexSeeker = mock(UniqueNodeIndexSeeker.class);
 
-    private final Locks.Client locks = mock(Locks.Client.class);
+    private final LockManager.Client locks = mock(LockManager.Client.class);
     private final Read read = mock(Read.class);
     private InOrder order;
 

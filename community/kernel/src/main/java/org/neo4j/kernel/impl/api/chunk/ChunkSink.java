@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.chunk;
 
 import static org.neo4j.configuration.GraphDatabaseInternalSettings.multi_version_transaction_chunk_size;
 
+import java.util.function.Supplier;
 import org.neo4j.configuration.Config;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -30,6 +31,7 @@ import org.neo4j.kernel.impl.api.commit.TransactionCommitter;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.coreapi.DefaultTransactionExceptionMapper;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 
 public final class ChunkSink implements ChunkedTransactionSink {
@@ -41,6 +43,7 @@ public final class ChunkSink implements ChunkedTransactionSink {
     private LeaseClient leaseClient;
     private long startTimeMillis;
     private long lastTransactionIdWhenStarted;
+    private Supplier<LockTracer> lockTracerSupplier;
 
     public ChunkSink(TransactionCommitter committer, TransactionClockContext clocks, Config config) {
         this.clocks = clocks;
@@ -59,6 +62,7 @@ public final class ChunkSink implements ChunkedTransactionSink {
                         cursorContext,
                         memoryTracker,
                         KernelTransaction.NO_MONITOR,
+                        lockTracerSupplier.get(),
                         clocks.systemClock().millis(),
                         startTimeMillis,
                         lastTransactionIdWhenStarted,
@@ -74,10 +78,12 @@ public final class ChunkSink implements ChunkedTransactionSink {
     public void initialize(
             LeaseClient leaseClient,
             CursorContext cursorContext,
+            Supplier<LockTracer> lockTracerSupplier,
             long startTimeMillis,
             long lastTransactionIdWhenStarted) {
         this.cursorContext = cursorContext;
         this.leaseClient = leaseClient;
+        this.lockTracerSupplier = lockTracerSupplier;
         this.startTimeMillis = startTimeMillis;
         this.lastTransactionIdWhenStarted = lastTransactionIdWhenStarted;
     }

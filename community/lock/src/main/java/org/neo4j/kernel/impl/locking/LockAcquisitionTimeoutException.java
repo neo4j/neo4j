@@ -29,7 +29,7 @@ import org.neo4j.lock.ResourceType;
  * Used in lock clients for cases when we unable to acquire a lock for a time that exceed configured
  * timeout, if any.
  *
- * @see Locks.Client
+ * @see LockManager.Client
  * @see GraphDatabaseSettings#lock_acquisition_timeout
  */
 public class LockAcquisitionTimeoutException extends TransactionTerminatedException {

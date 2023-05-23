@@ -80,7 +80,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.index.schema.FulltextIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.FormattedLogFormat;
@@ -103,7 +103,7 @@ abstract class OperationsTest {
 
     protected final KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
     protected Operations operations;
-    protected final Locks.Client locks = mock(Locks.Client.class);
+    protected final LockManager.Client locks = mock(LockManager.Client.class);
     protected final Write write = mock(Write.class);
     protected InOrder order;
     protected FullAccessNodeCursor nodeCursor;

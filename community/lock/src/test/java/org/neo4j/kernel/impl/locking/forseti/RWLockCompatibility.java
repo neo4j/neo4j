@@ -35,13 +35,13 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.EmptyMemoryTracker;
 
 /**
  * This is the test suite that tested the original (from 2007) lock manager.
- * It has been ported to test {@link org.neo4j.kernel.impl.locking.Locks}
+ * It has been ported to test {@link LockManager}
  * to ensure implementors of that API don't fall in any of the traps this test suite sets for them.
  */
 abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
@@ -200,7 +200,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
         private final int depthCount;
         private final float readWriteRatio;
         private final CountDownLatch startSignal;
-        private final Locks.Client client;
+        private final LockManager.Client client;
         private final long nodeId;
         private Exception error;
 

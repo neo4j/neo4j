@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
 import org.neo4j.kernel.impl.locking.LockClientStateHolder;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.ActiveLock;
 import org.neo4j.lock.LockTracer;
@@ -72,7 +72,7 @@ import org.neo4j.util.VisibleForTesting;
  * the
  * global lock manager.
  */
-public class ForsetiClient implements Locks.Client {
+public class ForsetiClient implements LockManager.Client {
     private static final int MAX_SPINS = 1000;
     private static final long MULTIPLY_UNTIL_ITERATION = MAX_SPINS + 2;
     private static final int NO_CLIENT_ID = -1;

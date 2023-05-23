@@ -85,8 +85,8 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.parallel.ParallelAccessCheck;
 import org.neo4j.kernel.impl.api.parallel.ThreadExecutionContext;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.kernel.impl.locking.LockManager;
+import org.neo4j.kernel.impl.locking.LockManager.Client;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
@@ -1057,7 +1057,7 @@ public abstract class AllStoreHolder extends Read {
         }
 
         @Override
-        Locks.Client getLockClient() {
+        LockManager.Client getLockClient() {
             // lock client has to be accessed like this, because of KernelTransaction#freezeLocks
             return ktx.lockClient();
         }
@@ -1081,7 +1081,7 @@ public abstract class AllStoreHolder extends Read {
 
         private final OverridableSecurityContext overridableSecurityContext;
         private final CursorContext cursorContext;
-        private final Locks.Client lockClient;
+        private final LockManager.Client lockClient;
         private final AssertOpen assertOpen;
         private final ProcedureCaller.ForThreadExecutionContextScope procedureCaller;
 
@@ -1183,7 +1183,7 @@ public abstract class AllStoreHolder extends Read {
         }
 
         @Override
-        Locks.Client getLockClient() {
+        LockManager.Client getLockClient() {
             return lockClient;
         }
 

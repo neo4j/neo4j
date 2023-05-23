@@ -30,7 +30,7 @@ import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.io.pagecache.context.CursorContextFactory.NULL_CONTEXT_FACTORY;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.impl.index.schema.TokenIndexProvider.DESCRIPTOR;
-import static org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
+import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
 import static org.neo4j.lock.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
@@ -350,7 +350,7 @@ class DynamicIndexStoreViewTest {
             StorageEngine storageEngine, IndexProxyProvider indexingService, FullScanStoreView fullScanStoreView) {
         return new DynamicIndexStoreView(
                 fullScanStoreView,
-                NO_LOCKS,
+                NO_LOCKS_LOCK_MANAGER,
                 NO_LOCK_SERVICE,
                 Config.defaults(),
                 indexingService,

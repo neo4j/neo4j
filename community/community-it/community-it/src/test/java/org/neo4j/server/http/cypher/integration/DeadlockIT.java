@@ -30,7 +30,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.extension.Inject;
@@ -78,7 +78,7 @@ class DeadlockIT extends AbstractRestFunctionalTestBase {
             lockCountVisitor = new LockCountVisitor();
             ((GraphDatabaseAPI) graphdb())
                     .getDependencyResolver()
-                    .resolveDependency(Locks.class)
+                    .resolveDependency(LockManager.class)
                     .accept(lockCountVisitor);
         } while (lockCountVisitor.getLockCount() < 5);
     }

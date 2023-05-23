@@ -23,14 +23,14 @@ import static org.neo4j.lock.ResourceType.NODE;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.test.OtherThreadExecutor;
 
 public class LockWorker extends OtherThreadExecutor {
     private final LockWorkerState state;
 
-    public LockWorker(String name, Locks locks) {
+    public LockWorker(String name, LockManager locks) {
         super(name);
         state = new LockWorkerState(locks);
     }

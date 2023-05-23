@@ -28,6 +28,7 @@ import static org.neo4j.internal.id.BufferingIdGeneratorFactory.PAGED_ID_BUFFER_
 import static org.neo4j.internal.schema.IndexType.LOOKUP;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.extension.ExtensionFailureStrategies.fail;
+import static org.neo4j.kernel.impl.locking.LockManager.NO_LOCKS_LOCK_MANAGER;
 import static org.neo4j.kernel.impl.transaction.log.TransactionAppenderFactory.createTransactionAppender;
 import static org.neo4j.kernel.recovery.Recovery.context;
 import static org.neo4j.kernel.recovery.Recovery.validateStoreId;
@@ -124,7 +125,7 @@ import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.factory.FacadeKernelTransactionFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.KernelTransactionFactory;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.pagecache.IOControllerService;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.pagecache.VersionStorageFactory;
@@ -231,7 +232,7 @@ public class Database extends AbstractDatabase {
     private final HostedOnMode mode;
     private MetadataCache metadataCache;
     private StorageEngineFactory storageEngineFactory;
-    private Locks locks;
+    private LockManager databaseLockManager;
     private DatabaseLayout databaseLayout;
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
@@ -317,7 +318,9 @@ public class Database extends AbstractDatabase {
     @Override
     protected void specificInit() throws IOException {
         this.storageEngineFactory = storageEngineFactorySupplier.create();
-        this.locks = storageEngineFactory.createLocks(databaseConfig, this.clock);
+        this.databaseLockManager = isNotMultiVersioned(databaseConfig)
+                ? storageEngineFactory.createLockManager(databaseConfig, this.clock)
+                : NO_LOCKS_LOCK_MANAGER;
         this.databaseLayout = storageEngineFactory.formatSpecificDatabaseLayout(databaseLayout);
         new DatabaseDirectoriesCreator(fs, databaseLayout).createDirectories();
         ioController = ioControllerService.createIOController(databaseConfig, clock);
@@ -333,6 +336,7 @@ public class Database extends AbstractDatabase {
                 databaseConfig);
         databasePageCache = new DatabasePageCache(globalPageCache, ioController, versionStorage);
 
+        life.add(onShutdown(() -> databaseLockManager.close()));
         life.add(new LockerLifecycleAdapter(fileLockerService.createDatabaseLocker(fs, databaseLayout)));
         life.add(databaseConfig);
 
@@ -351,7 +355,7 @@ public class Database extends AbstractDatabase {
         databaseDependencies.satisfyDependency(kernelTransactionFactory);
         databaseDependencies.satisfyDependency(storeCopyCheckPointMutex);
         databaseDependencies.satisfyDependency(transactionStats);
-        databaseDependencies.satisfyDependency(locks);
+        databaseDependencies.satisfyDependency(databaseLockManager);
         databaseDependencies.satisfyDependency(databaseAvailability);
         databaseDependencies.satisfyDependency(idGeneratorFactory);
         databaseDependencies.satisfyDependency(idController);
@@ -487,7 +491,12 @@ public class Database extends AbstractDatabase {
                 ? lockService
                 : LockService.NO_LOCK_SERVICE;
         IndexStoreViewFactory indexStoreViewFactory = new IndexStoreViewFactory(
-                databaseConfig, storageEngine, locks, fullScanStoreView, indexStoreViewLocks, internalLogProvider);
+                databaseConfig,
+                storageEngine,
+                databaseLockManager,
+                fullScanStoreView,
+                indexStoreViewLocks,
+                internalLogProvider);
 
         // Schema indexes
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore(
@@ -943,6 +952,9 @@ public class Database extends AbstractDatabase {
                 storageEngine,
                 readOnlyDatabaseChecker,
                 databaseConfig.get(GraphDatabaseInternalSettings.out_of_disk_space_protection));
+        var transactionValidatorFactory =
+                storageEngine.createTransactionValidatorFactory(storageEngineFactory, databaseConfig, clock);
+        life.add(onShutdown(transactionValidatorFactory::close));
 
         /*
          * This is used by explicit indexes and constraint indexes whenever a transaction is to be spawned
@@ -965,7 +977,7 @@ public class Database extends AbstractDatabase {
 
         KernelTransactions kernelTransactions = life.add(new KernelTransactions(
                 databaseConfig,
-                locks,
+                databaseLockManager,
                 constraintIndexCreator,
                 transactionCommitProcess,
                 databaseTransactionEventListeners,
@@ -1001,6 +1013,7 @@ public class Database extends AbstractDatabase {
                 transactionIdGenerator,
                 databaseHealth,
                 logsModule.getLogicalTransactionStore(),
+                transactionValidatorFactory,
                 internalLogProvider));
 
         buildTransactionMonitor(kernelTransactions, databaseConfig);

@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 
 public sealed interface TransactionCommitter permits ChunkCommitter, DefaultCommitter {
@@ -35,6 +36,7 @@ public sealed interface TransactionCommitter permits ChunkCommitter, DefaultComm
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
             KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor,
+            LockTracer lockTracer,
             long commitTime,
             long startTimeMillis,
             long lastTransactionIdWhenStarted,

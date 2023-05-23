@@ -23,7 +23,7 @@ import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.InternalLog;
 
-public class DumpLocksVisitor implements Locks.Visitor {
+public class DumpLocksVisitor implements LockManager.Visitor {
     private final InternalLog log;
 
     public DumpLocksVisitor(InternalLog log) {

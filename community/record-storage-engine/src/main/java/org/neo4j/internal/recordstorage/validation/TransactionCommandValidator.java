@@ -21,49 +21,86 @@ package org.neo4j.internal.recordstorage.validation;
 
 import static org.neo4j.kernel.impl.store.RecordPageLocationCalculator.pageIdForRecord;
 import static org.neo4j.kernel.impl.store.StoreType.STORE_TYPES;
+import static org.neo4j.lock.ResourceType.PAGE;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.neo4j.configuration.Config;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.recordstorage.Command;
 import org.neo4j.internal.recordstorage.CommandVisitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
+import org.neo4j.kernel.impl.api.LeaseClient;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.lock.LockTracer;
+import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 
 public class TransactionCommandValidator implements CommandVisitor, TransactionValidator {
 
+    private static final int PAGE_ID_BITS = 54;
     private final NeoStores neoStores;
-    private final CursorContext cursorContext;
+    private final LockManager.Client validationLockClient;
+    private final MemoryTracker memoryTracker;
+    private final Config config;
     private final PageCursor[] validationCursors;
-    private final EnumMap<StoreType, MutableLongSet> checkedPages;
+    private EnumMap<StoreType, MutableLongSet> checkedPages;
+    private LockTracer lockTracer;
+    private CursorContext cursorContext;
 
-    public TransactionCommandValidator(NeoStores neoStores, CursorContext cursorContext) {
+    public TransactionCommandValidator(
+            NeoStores neoStores, LockManager lockManager, MemoryTracker memoryTracker, Config config) {
         this.neoStores = neoStores;
-        this.cursorContext = cursorContext;
+        this.validationLockClient = lockManager.newClient();
+        this.memoryTracker = memoryTracker;
+        this.config = config;
         this.validationCursors = new PageCursor[STORE_TYPES.length];
         this.checkedPages = new EnumMap<>(StoreType.class);
     }
 
     @Override
-    public void validate(Collection<StorageCommand> commands) {
+    public Resource validate(
+            Collection<StorageCommand> commands,
+            long transactionSequenceNumber,
+            CursorContext cursorContext,
+            LeaseClient leaseClient,
+            LockTracer lockTracer) {
         try {
+            if (commands.isEmpty()) {
+                return Resource.EMPTY;
+            }
+            initValidation(transactionSequenceNumber, cursorContext, leaseClient, lockTracer);
+
             cursorContext.getVersionContext().resetObsoleteHeadState();
             for (StorageCommand command : commands) {
                 ((Command) command).handle(this);
             }
+            return validationLockClient::close;
         } catch (TransactionConflictException tce) {
+            validationLockClient.close();
             throw tce;
         } catch (Exception e) {
-            throw new RuntimeException("Concurrent modification exception.", e);
+            validationLockClient.close();
+            throw new TransactionConflictException(e);
         } finally {
             closeCursors();
         }
+    }
+
+    private void initValidation(
+            long txSequenceNumber, CursorContext cursorContext, LeaseClient leaseClient, LockTracer lockTracer) {
+        this.cursorContext = cursorContext;
+        this.lockTracer = lockTracer;
+
+        validationLockClient.initialize(leaseClient, txSequenceNumber, memoryTracker, config);
     }
 
     @Override
@@ -141,12 +178,14 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
     }
 
     private void closeCursors() {
+        checkedPages = new EnumMap<>(StoreType.class);
         for (int i = 0; i < validationCursors.length; i++) {
             var cursor = validationCursors[i];
             if (cursor != null) {
                 cursor.close();
             }
         }
+        Arrays.fill(validationCursors, null);
     }
 
     private void checkStore(long recordId, PageCursor pageCursor, StoreType storeType) throws IOException {
@@ -160,6 +199,8 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
         if (checkedStorePages.contains(pageId)) {
             return;
         }
+
+        validationLockClient.acquireExclusive(lockTracer, PAGE, pageId | ((long) storeType.ordinal() << PAGE_ID_BITS));
         if (pageCursor.next(pageId)) {
             var versionContext = cursorContext.getVersionContext();
             if (versionContext.obsoleteHeadObserved()) {

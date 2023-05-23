@@ -21,7 +21,7 @@ package org.neo4j.kernel.database;
 
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.Lock;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
@@ -37,7 +37,7 @@ interface UpgradeLocker {
 
         @Override
         public Lock acquireWriteLock(KernelTransaction tx) {
-            Locks.Client lockClient = getLockClient(tx);
+            LockManager.Client lockClient = getLockClient(tx);
             lockClient.acquireExclusive(LockTracer.NONE, type, ID);
             return new Lock() {
                 @Override
@@ -49,7 +49,7 @@ interface UpgradeLocker {
 
         @Override
         public Lock acquireReadLock(KernelTransaction tx) {
-            Locks.Client lockClient = getLockClient(tx);
+            LockManager.Client lockClient = getLockClient(tx);
             lockClient.acquireShared(LockTracer.NONE, type, ID);
             return new Lock() {
                 @Override
@@ -59,7 +59,7 @@ interface UpgradeLocker {
             };
         }
 
-        private Locks.Client getLockClient(KernelTransaction tx) {
+        private LockManager.Client getLockClient(KernelTransaction tx) {
             return ((KernelTransactionImplementation) tx)
                     .lockClient(); // Only one KernelTransaction implementation exists
         }

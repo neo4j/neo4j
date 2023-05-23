@@ -61,7 +61,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
-import org.neo4j.kernel.impl.locking.Locks
+import org.neo4j.kernel.impl.locking.LockManager
 import org.neo4j.kernel.impl.query.ChainableQuerySubscriberProbe
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.NonRecordingQuerySubscriber
@@ -321,7 +321,7 @@ class RuntimeTestSupport[CONTEXT <: RuntimeContext](
   def tx: InternalTransaction = _tx
   def txContext: TransactionalContext = _txContext
 
-  def locks: Locks = cypherGraphDb.getDependencyResolver.resolveDependency(classOf[Locks])
+  def locks: LockManager = cypherGraphDb.getDependencyResolver.resolveDependency(classOf[LockManager])
 
   override def buildPlan(
     logicalQuery: LogicalQuery,

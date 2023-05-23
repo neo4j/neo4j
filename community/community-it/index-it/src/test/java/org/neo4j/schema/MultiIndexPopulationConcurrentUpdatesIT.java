@@ -92,7 +92,7 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.FullScanStoreView;
@@ -398,7 +398,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
             Config config,
             JobScheduler scheduler) {
         LockService lockService = LockService.NO_LOCK_SERVICE;
-        Locks locks = org.neo4j.kernel.impl.locking.Locks.NO_LOCKS;
+        LockManager locks = LockManager.NO_LOCKS_LOCK_MANAGER;
         FullScanStoreView fullScanStoreView =
                 new FullScanStoreView(lockService, storageEngine, Config.defaults(), scheduler);
         return new DynamicIndexStoreViewWrapper(
@@ -529,7 +529,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
                 FullScanStoreView fullScanStoreView,
                 IndexingService.IndexProxyProvider indexProxies,
                 LockService lockService,
-                Locks locks,
+                LockManager locks,
                 StorageEngine storageEngine,
                 Runnable customAction,
                 Config config,

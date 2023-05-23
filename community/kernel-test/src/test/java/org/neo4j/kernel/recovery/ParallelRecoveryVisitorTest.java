@@ -30,15 +30,14 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_INDEX;
 import static org.neo4j.test.LatestVersions.LATEST_KERNEL_VERSION;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
-import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
 import org.neo4j.internal.schema.StorageEngineIndexingBehaviour;
 import org.neo4j.io.fs.WritableChannel;
@@ -69,6 +68,7 @@ import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.MetadataProvider;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -79,8 +79,9 @@ import org.neo4j.storageengine.api.enrichment.Enrichment;
 import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
-import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
 import org.neo4j.test.Barrier;
+import org.neo4j.time.SystemNanoClock;
 
 class ParallelRecoveryVisitorTest {
     private final CursorContextFactory contextFactory =
@@ -262,7 +263,7 @@ class ParallelRecoveryVisitorTest {
         long txId;
 
         @Override
-        public void serialize(WritableChannel channel) throws IOException {
+        public void serialize(WritableChannel channel) {
             // not needed
         }
 
@@ -336,8 +337,9 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public TransactionValidator createTransactionValidator(CursorContext cursorContext) {
-            return TransactionValidator.EMPTY_VALIDATOR;
+        public TransactionValidatorFactory createTransactionValidatorFactory(
+                StorageEngineFactory storageEngineFactory, Config config, SystemNanoClock clock) {
+            return TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
         }
 
         @Override
@@ -364,8 +366,7 @@ class ParallelRecoveryVisitorTest {
                 Decorator additionalTxStateVisitor,
                 CursorContext cursorContext,
                 StoreCursors storeCursors,
-                MemoryTracker memoryTracker)
-                throws KernelException {
+                MemoryTracker memoryTracker) {
             throw new UnsupportedOperationException();
         }
 
@@ -381,7 +382,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorTracer) throws IOException {
+        public void checkpoint(DatabaseFlushEvent flushEvent, CursorContext cursorTracer) {
             throw new UnsupportedOperationException();
         }
 
@@ -426,8 +427,7 @@ class ParallelRecoveryVisitorTest {
         }
 
         @Override
-        public void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode)
-                throws IOException {}
+        public void preAllocateStoreFilesForCommands(CommandBatchToApply batch, TransactionApplicationMode mode) {}
 
         @Override
         public void shutdown() {}

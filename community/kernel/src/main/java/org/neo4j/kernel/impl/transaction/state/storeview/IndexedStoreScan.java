@@ -29,24 +29,24 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.util.Preconditions;
 
 public class IndexedStoreScan implements StoreScan {
-    private final Locks locks;
+    private final LockManager lockManager;
     private final Config config;
     private final BooleanSupplier indexExistenceChecker;
     private final StoreScan delegate;
     private final IndexDescriptor index;
 
     public IndexedStoreScan(
-            Locks locks,
+            LockManager lockManager,
             IndexDescriptor index,
             Config config,
             BooleanSupplier indexExistenceChecker,
             StoreScan delegate) {
-        this.locks = locks;
+        this.lockManager = lockManager;
         this.config = config;
         this.indexExistenceChecker = indexExistenceChecker;
         this.delegate = delegate;
@@ -55,7 +55,7 @@ public class IndexedStoreScan implements StoreScan {
 
     @Override
     public void run(ExternalUpdatesCheck externalUpdatesCheck) {
-        try (Locks.Client client = locks.newClient()) {
+        try (LockManager.Client client = lockManager.newClient()) {
             client.initialize(NoLeaseClient.INSTANCE, SYSTEM_TRANSACTION_ID, INSTANCE, config);
             client.acquireShared(
                     LockTracer.NONE, index.schema().keyType(), index.schema().lockingKeys());

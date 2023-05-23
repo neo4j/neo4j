@@ -60,7 +60,7 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.index.schema.TokenScan;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.storageengine.api.PropertySelection;
@@ -761,5 +761,5 @@ abstract class Read
 
     abstract AccessMode getAccessMode();
 
-    abstract Locks.Client getLockClient();
+    abstract LockManager.Client getLockClient();
 }

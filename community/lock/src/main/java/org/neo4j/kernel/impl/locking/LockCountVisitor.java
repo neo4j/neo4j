@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.locking;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 
-public class LockCountVisitor implements Locks.Visitor {
+public class LockCountVisitor implements LockManager.Visitor {
     private int lockCount;
 
     @Override

@@ -93,7 +93,7 @@ import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.schema.RangeIndexProvider;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.locking.ResourceIds;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
@@ -979,7 +979,7 @@ public class PlainOperationsTest extends OperationsTest {
         when(ktx.txState()).thenReturn(mock(TransactionState.class));
         when(ktx.securityAuthorizationHandler())
                 .thenReturn(new SecurityAuthorizationHandler(CommunitySecurityLog.NULL_LOG));
-        Locks.Client lockClient = mock(Locks.Client.class);
+        LockManager.Client lockClient = mock(LockManager.Client.class);
         when(ktx.lockClient()).thenReturn(lockClient);
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
         CommandCreationContext commandCreationContext = mock(CommandCreationContext.class);
@@ -1022,7 +1022,7 @@ public class PlainOperationsTest extends OperationsTest {
         // given
         KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
         when(ktx.txState()).thenReturn(mock(TransactionState.class));
-        Locks.Client lockClient = mock(Locks.Client.class);
+        LockManager.Client lockClient = mock(LockManager.Client.class);
         when(ktx.lockClient()).thenReturn(lockClient);
         when(ktx.securityContext()).thenReturn(SecurityContext.AUTH_DISABLED);
         when(ktx.securityAuthorizationHandler())
@@ -1064,7 +1064,7 @@ public class PlainOperationsTest extends OperationsTest {
         // given
         KernelTransactionImplementation ktx = mock(KernelTransactionImplementation.class);
         when(ktx.txState()).thenReturn(mock(TransactionState.class));
-        Locks.Client lockClient = mock(Locks.Client.class);
+        LockManager.Client lockClient = mock(LockManager.Client.class);
         when(ktx.lockClient()).thenReturn(lockClient);
         CommandCreationContext commandCreationContext = mock(CommandCreationContext.class);
         IndexingProvidersService indexingProvidersService = mock(IndexingProvidersService.class);

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.ReadableStorageEngine;
@@ -30,7 +30,7 @@ import org.neo4j.storageengine.api.ReadableStorageEngine;
 public class IndexStoreViewFactory {
     private final FullScanStoreView fullScanStoreView;
     private final ReadableStorageEngine storageEngine;
-    private final Locks locks;
+    private final LockManager lockManager;
     private final LockService lockService;
     private final Config config;
     private final InternalLogProvider logProvider;
@@ -38,12 +38,12 @@ public class IndexStoreViewFactory {
     public IndexStoreViewFactory(
             Config config,
             ReadableStorageEngine storageEngine,
-            Locks locks,
+            LockManager lockManager,
             FullScanStoreView fullScanStoreView,
             LockService lockService,
             InternalLogProvider logProvider) {
         this.storageEngine = storageEngine;
-        this.locks = locks;
+        this.lockManager = lockManager;
         this.lockService = lockService;
         this.config = config;
         this.logProvider = logProvider;
@@ -52,6 +52,6 @@ public class IndexStoreViewFactory {
 
     public IndexStoreView createTokenIndexStoreView(IndexProxyProvider indexProxies) {
         return new DynamicIndexStoreView(
-                fullScanStoreView, locks, lockService, config, indexProxies, storageEngine, logProvider);
+                fullScanStoreView, lockManager, lockService, config, indexProxies, storageEngine, logProvider);
     }
 }

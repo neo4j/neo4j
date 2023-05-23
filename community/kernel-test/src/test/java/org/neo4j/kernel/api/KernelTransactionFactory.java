@@ -28,6 +28,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 import static org.neo4j.kernel.api.TransactionTimeout.NO_TIMEOUT;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.kernel.impl.locking.NoLocksClient.NO_LOCKS_CLIENT;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 
 import java.util.UUID;
@@ -58,8 +59,7 @@ import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.SimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
@@ -77,6 +77,7 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
 import org.neo4j.storageengine.api.enrichment.ApplyEnrichmentStrategy;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
 import org.neo4j.test.LatestVersions;
 import org.neo4j.time.Clocks;
 import org.neo4j.token.TokenHolders;
@@ -103,8 +104,8 @@ public final class KernelTransactionFactory {
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
-        var locks = mock(Locks.class);
-        when(locks.newClient()).thenReturn(new NoOpClient());
+        var locks = mock(LockManager.class);
+        when(locks.newClient()).thenReturn(NO_LOCKS_CLIENT);
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         KernelVersionProvider kernelVersionProvider = LatestVersions.LATEST_KERNEL_VERSION_PROVIDER;
         KernelTransactionImplementation transaction = new KernelTransactionImplementation(
@@ -145,6 +146,7 @@ public final class KernelTransactionFactory {
                 ApplyEnrichmentStrategy.NO_ENRICHMENT,
                 mock(DatabaseHealth.class),
                 NullLogProvider.getInstance(),
+                TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY,
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
 
         transaction.initialize(

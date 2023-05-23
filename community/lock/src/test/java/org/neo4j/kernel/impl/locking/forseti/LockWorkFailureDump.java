@@ -24,7 +24,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.neo4j.kernel.impl.locking.DumpLocksVisitor;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.log4j.Log4jLogProvider;
@@ -36,7 +36,7 @@ public class LockWorkFailureDump {
         this.file = file;
     }
 
-    public Path dumpState(Locks lm, LockWorker... workers) throws IOException {
+    public Path dumpState(LockManager lm, LockWorker... workers) throws IOException {
         try (OutputStream out = Files.newOutputStream(file)) {
             InternalLogProvider logProvider = new Log4jLogProvider(out);
             //  * locks held by the lock manager

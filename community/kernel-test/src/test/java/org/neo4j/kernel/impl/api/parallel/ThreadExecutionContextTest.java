@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.impl.api.OverridableSecurityContext;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
@@ -52,7 +52,7 @@ class ThreadExecutionContextTest {
         var pageCacheTracer = PageCacheTracer.NULL;
         var contextFactory = new CursorContextFactory(pageCacheTracer, EmptyVersionContextSupplier.EMPTY);
         var storageReader = mock(StorageReader.class);
-        var lockClient = mock(Locks.Client.class);
+        var lockClient = mock(LockManager.Client.class);
 
         var storeCursors = mock(StoreCursors.class);
 
@@ -73,7 +73,7 @@ class ThreadExecutionContextTest {
                 mock(IndexStatisticsStore.class),
                 mock(Dependencies.class),
                 mock(StorageLocks.class),
-                mock(Locks.Client.class),
+                mock(LockManager.Client.class),
                 mock(LockTracer.class),
                 mock(ElementIdMapper.class),
                 mock(ExtendedAssertOpen.class),

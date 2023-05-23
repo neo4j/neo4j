@@ -32,7 +32,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.AcquireLockTimeoutException;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
@@ -61,12 +61,12 @@ public abstract class LockCompatibilityTestSupport {
 
     protected final LockingCompatibilityTest suite;
 
-    protected Locks locks;
-    protected Locks.Client clientA;
-    protected Locks.Client clientB;
-    protected Locks.Client clientC;
+    protected LockManager locks;
+    protected LockManager.Client clientA;
+    protected LockManager.Client clientB;
+    protected LockManager.Client clientC;
 
-    private final Map<Locks.Client, Actor> clientToThreadMap = new HashMap<>();
+    private final Map<LockManager.Client, Actor> clientToThreadMap = new HashMap<>();
 
     public LockCompatibilityTestSupport(LockingCompatibilityTest suite) {
         this.suite = suite;
@@ -100,9 +100,9 @@ public abstract class LockCompatibilityTestSupport {
 
     public abstract static class LockCommand implements Runnable {
         private final Actor thread;
-        private final Locks.Client client;
+        private final LockManager.Client client;
 
-        LockCommand(Actor thread, Locks.Client client) {
+        LockCommand(Actor thread, LockManager.Client client) {
             this.thread = thread;
             this.client = client;
         }
@@ -127,37 +127,37 @@ public abstract class LockCompatibilityTestSupport {
             doWork(client);
         }
 
-        abstract void doWork(Locks.Client client) throws AcquireLockTimeoutException;
+        abstract void doWork(LockManager.Client client) throws AcquireLockTimeoutException;
 
-        public Locks.Client client() {
+        public LockManager.Client client() {
             return client;
         }
     }
 
     protected LockCommand acquireExclusive(
-            final Locks.Client client, final LockTracer tracer, final ResourceType resourceType, final long key) {
+            final LockManager.Client client, final LockTracer tracer, final ResourceType resourceType, final long key) {
         return new LockCommand(clientToThreadMap.get(client), client) {
             @Override
-            public void doWork(Locks.Client client) throws AcquireLockTimeoutException {
+            public void doWork(LockManager.Client client) throws AcquireLockTimeoutException {
                 client.acquireExclusive(tracer, resourceType, key);
             }
         };
     }
 
     protected LockCommand acquireShared(
-            Locks.Client client, final LockTracer tracer, final ResourceType resourceType, final long key) {
+            LockManager.Client client, final LockTracer tracer, final ResourceType resourceType, final long key) {
         return new LockCommand(clientToThreadMap.get(client), client) {
             @Override
-            public void doWork(Locks.Client client) throws AcquireLockTimeoutException {
+            public void doWork(LockManager.Client client) throws AcquireLockTimeoutException {
                 client.acquireShared(tracer, resourceType, key);
             }
         };
     }
 
-    protected LockCommand release(final Locks.Client client, final ResourceType resourceType, final long key) {
+    protected LockCommand release(final LockManager.Client client, final ResourceType resourceType, final long key) {
         return new LockCommand(clientToThreadMap.get(client), client) {
             @Override
-            public void doWork(Locks.Client client) {
+            public void doWork(LockManager.Client client) {
                 client.releaseExclusive(resourceType, key);
             }
         };
@@ -167,7 +167,7 @@ public abstract class LockCompatibilityTestSupport {
         assertDoesNotThrow(() -> lock.get(5, TimeUnit.SECONDS), "Waiting for lock timed out!");
     }
 
-    void assertWaiting(Locks.Client client, Future<Void> lock) {
+    void assertWaiting(LockManager.Client client, Future<Void> lock) {
         assertThrows(TimeoutException.class, () -> lock.get(10, TimeUnit.MILLISECONDS));
         assertDoesNotThrow(() -> clientToThreadMap.get(client).untilWaiting());
     }

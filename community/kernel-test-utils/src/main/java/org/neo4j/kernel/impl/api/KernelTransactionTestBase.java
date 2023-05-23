@@ -30,6 +30,7 @@ import static org.neo4j.io.pagecache.PageCacheOpenOptions.MULTI_VERSIONED;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOutClientConfiguration;
 import static org.neo4j.kernel.database.DatabaseIdFactory.from;
+import static org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -77,7 +78,7 @@ import org.neo4j.kernel.impl.api.txid.TransactionIdGenerator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.query.TransactionExecutionMonitor;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -124,7 +125,7 @@ class KernelTransactionTestBase {
     protected final AvailabilityGuard availabilityGuard = mock(AvailabilityGuard.class);
     protected final FakeClock clock = Clocks.fakeClock();
     protected final Pool<KernelTransactionImplementation> txPool = mock(Pool.class);
-    protected final Locks.Client locksClient = mock(Locks.Client.class);
+    protected final LockManager.Client locksClient = mock(LockManager.Client.class);
     protected CollectionsFactory collectionsFactory;
 
     private final ProcedureView procedureView = mock(ProcedureView.class);
@@ -212,7 +213,7 @@ class KernelTransactionTestBase {
     KernelTransactionImplementation newNotInitializedTransaction(
             LeaseService leaseService, Config config, NamedDatabaseId databaseId) {
         Dependencies dependencies = new Dependencies();
-        var locks = mock(Locks.class);
+        var locks = mock(LockManager.class);
         when(locks.newClient()).thenReturn(locksClient);
         dependencies.satisfyDependency(mock(GraphDatabaseFacade.class));
         var memoryPool = new MemoryPools().pool(MemoryGroup.TRANSACTION, ByteUnit.mebiBytes(4), null);
@@ -262,6 +263,7 @@ class KernelTransactionTestBase {
                 enrichmentStrategy,
                 mock(DatabaseHealth.class),
                 NullLogProvider.getInstance(),
+                EMPTY_VALIDATOR_FACTORY,
                 storageEngine.getOpenOptions().contains(MULTI_VERSIONED));
     }
 

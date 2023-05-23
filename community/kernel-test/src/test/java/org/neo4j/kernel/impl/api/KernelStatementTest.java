@@ -44,7 +44,7 @@ import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.time.Clocks;
@@ -61,7 +61,7 @@ class KernelStatementTest {
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         KernelStatement statement = createStatement(transaction);
         var cursorContext = contextFactory.create("test");
-        statement.initialize(mock(Locks.Client.class), cursorContext, 1);
+        statement.initialize(mock(LockManager.Client.class), cursorContext, 1);
         statement.acquire();
 
         // when
@@ -83,7 +83,7 @@ class KernelStatementTest {
 
         KernelStatement statement = createStatement(transaction);
         var cursorContext = contextFactory.create("test");
-        statement.initialize(mock(Locks.Client.class), cursorContext, 1);
+        statement.initialize(mock(LockManager.Client.class), cursorContext, 1);
         statement.acquire();
 
         ExecutingQuery query = getQueryWithWaitingTime();
@@ -103,7 +103,7 @@ class KernelStatementTest {
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         try (var statement = createStatement(transaction)) {
             var cursorContext = contextFactory.create("test");
-            statement.initialize(mock(Locks.Client.class), cursorContext, 100);
+            statement.initialize(mock(LockManager.Client.class), cursorContext, 100);
             statement.acquire();
 
             PageSwapper swapper = mock(PageSwapper.class, RETURNS_MOCKS);
@@ -131,7 +131,7 @@ class KernelStatementTest {
         var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef, LockTracer.NONE);
         var transaction = mock(KernelTransactionImplementation.class, RETURNS_DEEP_STUBS);
         var statement = createStatement(transaction);
-        statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
+        statement.initialize(mock(LockManager.Client.class), CursorContext.NULL_CONTEXT, 100);
 
         var query1 = queryFactory.createForStatement(statement, "test1", MapValue.EMPTY);
         var query2 = queryFactory.createForStatement(statement, "test2", MapValue.EMPTY);
@@ -160,7 +160,7 @@ class KernelStatementTest {
         var queryFactory = new ExecutingQueryFactory(Clocks.nanoClock(), cpuClockRef, LockTracer.NONE);
         var transaction = mock(KernelTransactionImplementation.class, RETURNS_DEEP_STUBS);
         var statement = createStatement(transaction);
-        statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
+        statement.initialize(mock(LockManager.Client.class), CursorContext.NULL_CONTEXT, 100);
         var query = queryFactory.createForStatement(statement, "test1", MapValue.EMPTY);
         statement.startQueryExecution(query);
 
@@ -172,13 +172,13 @@ class KernelStatementTest {
         assertThat(statement.executingQuery()).isEmpty();
 
         // When/Then Init
-        statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
+        statement.initialize(mock(LockManager.Client.class), CursorContext.NULL_CONTEXT, 100);
         statement.startQueryExecution(query);
 
         assertThat(statement.executingQuery()).isPresent();
         statement.close();
         assertThat(statement.executingQuery()).isPresent();
-        statement.initialize(mock(Locks.Client.class), CursorContext.NULL_CONTEXT, 100);
+        statement.initialize(mock(LockManager.Client.class), CursorContext.NULL_CONTEXT, 100);
         assertThat(statement.executingQuery()).isEmpty();
     }
 

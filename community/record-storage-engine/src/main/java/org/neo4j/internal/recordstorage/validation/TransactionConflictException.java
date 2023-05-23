@@ -26,10 +26,11 @@ import org.neo4j.kernel.impl.store.StoreType;
 
 public class TransactionConflictException extends RuntimeException implements Status.HasStatus {
 
-    private final StoreType storeType;
-    private final long observedVersion;
-    private final long highestClosed;
-    private final long[] nonVisibleTransactions;
+    private static final String GENERIC_MESSAGE = "Transaction conflict validation failed.";
+    private StoreType storeType;
+    private long observedVersion;
+    private long highestClosed;
+    private long[] nonVisibleTransactions;
     private final String message;
 
     public TransactionConflictException(StoreType type, VersionContext versionContext) {
@@ -38,6 +39,11 @@ public class TransactionConflictException extends RuntimeException implements St
         this.highestClosed = versionContext.highestClosed();
         this.nonVisibleTransactions = versionContext.notVisibleTransactionIds();
         this.message = createMessage();
+    }
+
+    public TransactionConflictException(Exception e) {
+        super(e);
+        this.message = GENERIC_MESSAGE;
     }
 
     @Override

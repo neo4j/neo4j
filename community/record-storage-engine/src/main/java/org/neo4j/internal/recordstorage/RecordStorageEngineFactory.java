@@ -22,7 +22,6 @@ package org.neo4j.internal.recordstorage;
 import static java.util.function.Predicate.not;
 import static java.util.stream.Collectors.toList;
 import static org.eclipse.collections.api.factory.Sets.immutable;
-import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 import static org.neo4j.dbms.database.readonly.DatabaseReadOnlyChecker.writable;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.internal.recordstorage.RecordCursorTypes.DYNAMIC_PROPERTY_KEY_TOKEN_CURSOR;
@@ -97,7 +96,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.locking.forseti.ForsetiLockManager;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicAllocatorProviders;
@@ -730,10 +729,7 @@ public class RecordStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public Locks createLocks(Config config, SystemNanoClock clock) {
-        if ("multiversion".equals(config.get(db_format))) {
-            return Locks.NO_LOCKS;
-        }
+    public LockManager createLockManager(Config config, SystemNanoClock clock) {
         return new ForsetiLockManager(config, clock, ResourceType.values());
     }
 

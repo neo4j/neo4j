@@ -32,7 +32,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.LockAcquisitionTimeoutException;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -41,9 +41,9 @@ import org.neo4j.time.FakeClock;
 
 abstract class AcquisitionTimeoutCompatibility extends LockCompatibilityTestSupport {
     private FakeClock clock;
-    private Locks lockManager;
-    private Locks.Client client;
-    private Locks.Client client2;
+    private LockManager lockManager;
+    private LockManager.Client client;
+    private LockManager.Client client2;
 
     AcquisitionTimeoutCompatibility(LockingCompatibilityTest suite) {
         super(suite);

@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockService;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -35,7 +35,7 @@ class IndexStoreViewFactoryTest {
     LockService lockService = mock(LockService.class);
     InternalLogProvider logProvider = mock(InternalLogProvider.class);
     IndexProxyProvider indexProxies = mock(IndexProxyProvider.class);
-    Locks locks = mock(Locks.class);
+    LockManager locks = mock(LockManager.class);
 
     @Test
     void shouldCreateIndexStoreView() {

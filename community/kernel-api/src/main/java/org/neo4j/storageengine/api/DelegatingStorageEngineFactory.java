@@ -60,7 +60,7 @@ import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.KernelVersionRepository;
 import org.neo4j.kernel.api.index.IndexProvidersAccess;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.transaction.log.LogTailLogVersionsMetadata;
 import org.neo4j.kernel.impl.transaction.log.LogTailMetadata;
 import org.neo4j.lock.LockService;
@@ -417,8 +417,8 @@ public class DelegatingStorageEngineFactory implements StorageEngineFactory {
     }
 
     @Override
-    public Locks createLocks(Config config, SystemNanoClock clock) {
-        return delegate.createLocks(config, clock);
+    public LockManager createLockManager(Config config, SystemNanoClock clock) {
+        return delegate.createLockManager(config, clock);
     }
 
     @Override

@@ -29,7 +29,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.locking.LockClientStoppedException;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
-import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.kernel.impl.locking.LockManager.Client;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;

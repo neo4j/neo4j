@@ -75,7 +75,8 @@ public enum ResourceType {
     RELATIONSHIP_DELETE(6),
     NODE_RELATIONSHIP_GROUP_DELETE(7),
     DEGREES(8),
-    RELATIONSHIP_GROUP(9);
+    RELATIONSHIP_GROUP(9),
+    PAGE(10);
 
     private static final ImmutableIntObjectMap<ResourceType> idToType;
 

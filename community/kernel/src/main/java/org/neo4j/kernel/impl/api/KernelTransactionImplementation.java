@@ -124,7 +124,7 @@ import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.AccessCapabilityFactory;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
@@ -160,6 +160,8 @@ import org.neo4j.storageengine.api.enrichment.CaptureMode;
 import org.neo4j.storageengine.api.enrichment.EnrichmentMode;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.values.ElementIdMapper;
@@ -216,7 +218,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private AccessCapability accessCapability;
     private final KernelStatement currentStatement;
     private OverridableSecurityContext overridableSecurityContext;
-    private final Locks.Client lockClient;
+    private final LockManager.Client lockClient;
     private volatile long transactionSequenceNumber;
     private LeaseClient leaseClient;
     private volatile boolean closing;
@@ -265,6 +267,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private volatile InnerTransactionHandlerImpl innerTransactionHandler;
 
+    private final TransactionValidator transactionValidator;
     private final TransactionCommitter committer;
     private final ChunkedTransactionSink txStateWriter;
     private boolean failedCleanup = false;
@@ -296,7 +299,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             DatabaseReadOnlyChecker readOnlyDatabaseChecker,
             TransactionExecutionMonitor transactionExecutionMonitor,
             AbstractSecurityLog securityLog,
-            Locks locks,
+            LockManager lockManager,
             TransactionCommitmentFactory commitmentFactory,
             KernelTransactions kernelTransactions,
             TransactionIdGenerator transactionIdGenerator,
@@ -307,6 +310,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             ApplyEnrichmentStrategy enrichmentStrategy,
             DatabaseHealth databaseHealth,
             LogProvider logProvider,
+            TransactionValidatorFactory transactionValidatorFactory,
             boolean multiVersioned) {
         this.closed = true;
         this.config = new LocalConfig(externalConfig);
@@ -344,7 +348,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statusDetails = EMPTY;
         this.constraintSemantics = constraintSemantics;
         this.transactionalCursors = storageEngine.createStorageCursors(CursorContext.NULL_CONTEXT);
-        this.lockClient = ParallelAccessCheck.maybeWrapLockClient(locks.newClient());
+        this.lockClient = ParallelAccessCheck.maybeWrapLockClient(lockManager.newClient());
         StorageLocks storageLocks = storageEngine.createStorageLocks(lockClient);
         DefaultPooledCursors cursors = new DefaultPooledCursors(
                 storageReader, transactionalCursors, config, storageEngine.indexingBehaviour());
@@ -366,7 +370,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 storageEngine,
                 transactionMemoryPool,
                 config,
-                locks,
+                lockManager,
                 tokenHolders,
                 schemaState,
                 indexingService,
@@ -397,6 +401,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         transactionHeapBytesLimit = config.get(memory_transaction_max_size);
         this.collectionsFactory = collectionsFactorySupplier.create();
         this.kernelTransactions = kernelTransactions;
+        this.transactionValidator = transactionValidatorFactory.createTransactionValidator(memoryTracker);
         this.committer = createCommitter(commitmentFactory, multiVersioned);
         this.txStateWriter = createChunkWriter(multiVersioned);
         registerConfigChangeListeners(config);
@@ -461,7 +466,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             StorageEngine storageEngine,
             TransactionMemoryPool transactionMemoryPool,
             Config config,
-            Locks locks,
+            LockManager lockManager,
             TokenHolders tokenHolders,
             SchemaState schemaState,
             IndexingService indexingService,
@@ -489,7 +494,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     executionContextStoreCursors,
                     config,
                     storageEngine.indexingBehaviour());
-            Locks.Client executionContextLockClient = locks.newClient();
+            LockManager.Client executionContextLockClient = lockManager.newClient();
             executionContextLockClient.initialize(
                     leaseService.newClient(), transactionId, executionContextMemoryTracker, config);
             var overridableSecurityContext = new OverridableSecurityContext(securityContext);
@@ -782,7 +787,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             leaseClient.ensureValid();
             readOnlyDatabaseChecker.check();
             transactionMonitor.upgradeToWriteTransaction();
-            txStateWriter.initialize(leaseClient, cursorContext, startTimeMillis, lastTransactionIdWhenStarted);
+            txStateWriter.initialize(
+                    leaseClient,
+                    cursorContext,
+                    currentStatement::lockTracer,
+                    startTimeMillis,
+                    lastTransactionIdWhenStarted);
             txState = new TxState(
                     collectionsFactory,
                     memoryTracker,
@@ -1000,6 +1010,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         cursorContext,
                         memoryTracker,
                         kernelTransactionMonitor,
+                        lockTracer(),
                         timeCommitted,
                         startTimeMillis,
                         lastTransactionIdWhenStarted,
@@ -1033,8 +1044,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 cursorContext,
                 transactionalCursors,
                 commandsTracker);
-        var transactionValidator = storageEngine.createTransactionValidator(cursorContext);
-        transactionValidator.validate(commands);
         return commandDecorator.transform(commands);
     }
 
@@ -1166,7 +1175,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return operations.locks();
     }
 
-    public Locks.Client lockClient() {
+    public LockManager.Client lockClient() {
         assertOpen();
         return lockClient;
     }
@@ -1376,7 +1385,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * @return the locks held by this transaction.
      */
     public Stream<ActiveLock> activeLocks() {
-        Locks.Client locks = this.lockClient;
+        LockManager.Client locks = this.lockClient;
         return locks == null ? Stream.empty() : locks.activeLocks();
     }
 
@@ -1464,14 +1473,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         databaseHealth,
                         clocks,
                         storageEngine,
-                        transactionStore)
+                        transactionStore,
+                        transactionValidator)
                 : new DefaultCommitter(
                         this,
                         commitmentFactory,
                         kernelVersionProvider,
                         transactionalCursors,
                         transactionIdGenerator,
-                        commitProcess);
+                        commitProcess,
+                        transactionValidator);
     }
 
     public static class Statistics {

@@ -68,7 +68,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.recordstorage.Command.RecordEnrichmentCommand;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreIdUsage;
 import org.neo4j.internal.recordstorage.NeoStoresDiagnostics.NeoStoreRecords;
-import org.neo4j.internal.recordstorage.validation.TransactionCommandValidator;
+import org.neo4j.internal.recordstorage.validation.TransactionCommandValidatorFactory;
 import org.neo4j.internal.schema.IndexConfigCompleter;
 import org.neo4j.internal.schema.SchemaCache;
 import org.neo4j.internal.schema.SchemaState;
@@ -114,6 +114,7 @@ import org.neo4j.storageengine.api.ConstraintRuleAccessor;
 import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageEngineFactory;
 import org.neo4j.storageengine.api.StorageLocks;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
@@ -127,10 +128,11 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
-import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
 import org.neo4j.storageengine.util.IdGeneratorUpdatesWorkSync;
 import org.neo4j.storageengine.util.IdUpdateListener;
 import org.neo4j.storageengine.util.IndexUpdatesWorkSync;
+import org.neo4j.time.SystemNanoClock;
 import org.neo4j.token.TokenHolders;
 import org.neo4j.util.VisibleForTesting;
 
@@ -411,11 +413,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle {
     }
 
     @Override
-    public TransactionValidator createTransactionValidator(CursorContext cursorContext) {
+    public TransactionValidatorFactory createTransactionValidatorFactory(
+            StorageEngineFactory storageEngineFactory, Config config, SystemNanoClock clock) {
         if (!"multiversion".equals(config.get(db_format))) {
-            return TransactionValidator.EMPTY_VALIDATOR;
+            return TransactionValidatorFactory.EMPTY_VALIDATOR_FACTORY;
         }
-        return new TransactionCommandValidator(neoStores, cursorContext);
+        return new TransactionCommandValidatorFactory(neoStores, storageEngineFactory, config, clock);
     }
 
     @Override

@@ -29,7 +29,12 @@ import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.MemoryTracker;
 
-public class NoOpClient implements Locks.Client {
+public class NoLocksClient implements LockManager.Client {
+
+    public static final NoLocksClient NO_LOCKS_CLIENT = new NoLocksClient();
+
+    private NoLocksClient() {}
+
     @Override
     public void initialize(LeaseClient leaseClient, long transactionId, MemoryTracker memoryTracker, Config config) {}
 

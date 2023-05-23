@@ -49,12 +49,14 @@ import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionCommitmentFactory;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionRollbackEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionWriteEvent;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.monitoring.DatabaseHealth;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.cursor.StoreCursors;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
 
 public final class ChunkCommitter implements TransactionCommitter {
     private final KernelTransactionImplementation ktx;
@@ -71,6 +73,7 @@ public final class ChunkCommitter implements TransactionCommitter {
     private final TransactionClockContext clocks;
     private final StorageEngine storageEngine;
     private final LogicalTransactionStore transactionStore;
+    private final TransactionValidator transactionValidator;
     private long lastTransactionIdWhenStarted;
     private long startTimeMillis;
     private LeaseClient leaseClient;
@@ -85,7 +88,8 @@ public final class ChunkCommitter implements TransactionCommitter {
             DatabaseHealth databaseHealth,
             TransactionClockContext clocks,
             StorageEngine storageEngine,
-            LogicalTransactionStore transactionStore) {
+            LogicalTransactionStore transactionStore,
+            TransactionValidator transactionValidator) {
         this.ktx = ktx;
         this.commitmentFactory = commitmentFactory;
         this.kernelVersionProvider = kernelVersionProvider;
@@ -96,6 +100,7 @@ public final class ChunkCommitter implements TransactionCommitter {
         this.clocks = clocks;
         this.storageEngine = storageEngine;
         this.transactionStore = transactionStore;
+        this.transactionValidator = transactionValidator;
     }
 
     @Override
@@ -105,6 +110,7 @@ public final class ChunkCommitter implements TransactionCommitter {
             CursorContext cursorContext,
             MemoryTracker memoryTracker,
             KernelTransaction.KernelTransactionMonitor kernelTransactionMonitor,
+            LockTracer lockTracer,
             long commitTime,
             long startTimeMillis,
             long lastTransactionIdWhenStarted,
@@ -121,26 +127,32 @@ public final class ChunkCommitter implements TransactionCommitter {
             if (commit) {
                 validateCurrentKernelVersion();
             }
-            var chunkMetadata = new ChunkMetadata(
-                    chunkNumber == BASE_CHUNK_NUMBER,
-                    commit,
-                    false,
-                    previousBatchLogPosition,
-                    chunkNumber,
-                    UNKNOWN_CONSENSUS_INDEX,
-                    startTimeMillis,
-                    lastTransactionIdWhenStarted,
-                    commitTime,
-                    leaseClient.leaseId(),
-                    kernelVersion,
-                    ktx.securityContext().subject().userSubject());
-            if (transactionPayload == null) {
-                transactionPayload = new ChunkedTransaction(
-                        cursorContext, transactionalCursors, commitmentFactory.newCommitment(), transactionIdGenerator);
+            try (var guards = transactionValidator.validate(
+                    extractedCommands, ktx.getTransactionSequenceNumber(), cursorContext, leaseClient, lockTracer)) {
+                var chunkMetadata = new ChunkMetadata(
+                        chunkNumber == BASE_CHUNK_NUMBER,
+                        commit,
+                        false,
+                        previousBatchLogPosition,
+                        chunkNumber,
+                        UNKNOWN_CONSENSUS_INDEX,
+                        startTimeMillis,
+                        lastTransactionIdWhenStarted,
+                        commitTime,
+                        leaseClient.leaseId(),
+                        kernelVersion,
+                        ktx.securityContext().subject().userSubject());
+                if (transactionPayload == null) {
+                    transactionPayload = new ChunkedTransaction(
+                            cursorContext,
+                            transactionalCursors,
+                            commitmentFactory.newCommitment(),
+                            transactionIdGenerator);
+                }
+                CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
+                transactionPayload.init(chunk);
+                commitProcess.commit(transactionPayload, transactionWriteEvent, INTERNAL);
             }
-            CommandChunk chunk = new CommandChunk(extractedCommands, chunkMetadata);
-            transactionPayload.init(chunk);
-            commitProcess.commit(transactionPayload, transactionWriteEvent, INTERNAL);
             transactionWriteEvent.chunkAppended(
                     chunkNumber, ktx.getTransactionSequenceNumber(), transactionPayload.transactionId());
             previousBatchLogPosition = transactionPayload.lastBatchLogPosition();

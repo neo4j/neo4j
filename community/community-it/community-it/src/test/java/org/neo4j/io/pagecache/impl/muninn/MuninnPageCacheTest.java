@@ -2061,6 +2061,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
     private static class TestVersionContext implements VersionContext {
 
         private final IntSupplier closedTxIdSupplier;
+        private boolean invisibleHead;
         private long committingTxId;
         private long lastClosedTxId;
         private boolean dirty;
@@ -2118,15 +2119,19 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache> {
         public void refreshVisibilityBoundaries() {}
 
         @Override
-        public void invisibleChainHead(long headVersion) {}
-
-        @Override
-        public boolean obsoleteHeadObserved() {
-            return false;
+        public void invisibleChainHead(long headVersion) {
+            invisibleHead = true;
         }
 
         @Override
-        public void resetObsoleteHeadState() {}
+        public boolean obsoleteHeadObserved() {
+            return invisibleHead;
+        }
+
+        @Override
+        public void resetObsoleteHeadState() {
+            invisibleHead = true;
+        }
 
         @Override
         public long currentInvisibleChainHeadVersion() {

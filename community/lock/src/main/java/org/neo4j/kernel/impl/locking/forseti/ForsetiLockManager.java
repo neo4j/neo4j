@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingChangeListener;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockType;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.time.SystemNanoClock;
@@ -103,7 +103,7 @@ import org.neo4j.time.SystemNanoClock;
  * locks that are being waited upon - no deadlock.
  * <p/>
  */
-public class ForsetiLockManager implements Locks {
+public class ForsetiLockManager implements LockManager {
     /** This is Forsetis internal lock API, which it uses to do deadlock detection. */
     interface Lock {
         /**

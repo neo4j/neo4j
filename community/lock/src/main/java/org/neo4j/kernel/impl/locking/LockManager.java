@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import static org.neo4j.kernel.impl.locking.NoLocksClient.NO_LOCKS_CLIENT;
+
 import org.neo4j.configuration.Config;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.lock.LockType;
@@ -45,7 +47,7 @@ import org.neo4j.memory.MemoryTracker;
  * Each call to acquire a lock must be accompanied by a call to release that same lock. A user can call acquire on the
  * same lock multiple times, thus requiring an equal number of calls to release those locks.
  */
-public interface Locks {
+public interface LockManager {
     /** For introspection and debugging. */
     interface Visitor {
         /** Visit the description of a lock held by at least one client. */
@@ -113,7 +115,7 @@ public interface Locks {
 
     /**
      * A client is able to grab and release locks, and compete with other clients for them. This can be re-used until
-     * you call {@link Locks.Client#close()}.
+     * you call {@link LockManager.Client#close()}.
      *
      * @throws IllegalStateException if this instance has been closed, i.e has had {@link #close()} called.
      */
@@ -125,10 +127,10 @@ public interface Locks {
     void close();
 
     /** An implementation that doesn't do any locking **/
-    Locks NO_LOCKS = new Locks() {
+    LockManager NO_LOCKS_LOCK_MANAGER = new LockManager() {
         @Override
         public Client newClient() {
-            return new NoOpClient();
+            return NO_LOCKS_CLIENT;
         }
 
         @Override

@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.api.chunk;
 
+import java.util.function.Supplier;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
+import org.neo4j.lock.LockTracer;
 
 public sealed interface ChunkedTransactionSink permits ChunkSink, ChunkedTransactionSink.EmptyChunkedTransactionSink {
 
@@ -33,6 +35,7 @@ public sealed interface ChunkedTransactionSink permits ChunkSink, ChunkedTransac
     void initialize(
             LeaseClient leaseClient,
             CursorContext cursorContext,
+            Supplier<LockTracer> lockTracerSupplier,
             long startTimeMillis,
             long lastTransactionIdWhenStarted);
 
@@ -47,6 +50,7 @@ public sealed interface ChunkedTransactionSink permits ChunkSink, ChunkedTransac
         public void initialize(
                 LeaseClient leaseClient,
                 CursorContext cursorContext,
+                Supplier<LockTracer> lockTracerSupplier,
                 long startTimeMillis,
                 long lastTransactionIdWhenStarted) {}
     }

@@ -51,7 +51,7 @@ import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationExcep
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.kernel.impl.locking.LockManager.Client;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;

@@ -29,12 +29,12 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.index.ValueIndexReader;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 
 class LockingRelationshipUniqueIndexSeek {
     static <CURSOR extends RelationshipValueIndexCursor> long apply(
-            Locks.Client locks,
+            LockManager.Client locks,
             LockTracer lockTracer,
             CURSOR cursor,
             UniqueRelationshipIndexSeeker<CURSOR> relationshipIndexSeeker,

@@ -17,16 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.locking;
+package org.neo4j.storageengine.api.txstate.validation;
 
-import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.memory.MemoryTracker;
 
-/**
- * Exception thrown when stopped {@link LockManager.Client} used to acquire locks.
- */
-public class LockClientStoppedException extends TransactionTerminatedException {
-    public LockClientStoppedException(LockManager.Client client) {
-        super(Status.Transaction.LockClientStopped, String.valueOf(client));
-    }
+public interface TransactionValidatorFactory extends AutoCloseable {
+    TransactionValidatorFactory EMPTY_VALIDATOR_FACTORY = new TransactionValidatorFactory() {
+        @Override
+        public TransactionValidator createTransactionValidator(MemoryTracker memoryTracker) {
+            return TransactionValidator.EMPTY_VALIDATOR;
+        }
+
+        @Override
+        public void close() {}
+    };
+
+    TransactionValidator createTransactionValidator(MemoryTracker memoryTracker);
 }

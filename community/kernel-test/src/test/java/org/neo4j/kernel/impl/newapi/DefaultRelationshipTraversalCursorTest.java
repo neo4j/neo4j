@@ -64,7 +64,7 @@ import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.state.TxState;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.PropertySelection;
 import org.neo4j.storageengine.api.Reference;
@@ -424,7 +424,7 @@ class DefaultRelationshipTraversalCursorTest {
         }
 
         @Override
-        Locks.Client getLockClient() {
+        LockManager.Client getLockClient() {
             return ktx.lockClient();
         }
 

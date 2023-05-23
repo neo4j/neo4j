@@ -22,6 +22,7 @@ package org.neo4j.storageengine.api;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import org.neo4j.configuration.Config;
 import org.neo4j.counts.CountsAccessor;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.diagnostics.DiagnosticsLogger;
@@ -43,7 +44,8 @@ import org.neo4j.storageengine.api.enrichment.EnrichmentCommand;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TransactionStateBehaviour;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor.Decorator;
-import org.neo4j.storageengine.api.txstate.validation.TransactionValidator;
+import org.neo4j.storageengine.api.txstate.validation.TransactionValidatorFactory;
+import org.neo4j.time.SystemNanoClock;
 
 /**
  * A StorageEngine provides the functionality to durably store data, and read it back.
@@ -67,9 +69,10 @@ public interface StorageEngine extends ReadableStorageEngine, Lifecycle {
     CommandCreationContext newCommandCreationContext();
 
     /**
-     * Create multi versioned stores transaction validator. Validator is noop in all other engines.
+     * Create multi versioned stores transaction validator factory. Validator factory produces noop validators in all other engines.
      */
-    TransactionValidator createTransactionValidator(CursorContext cursorContext);
+    TransactionValidatorFactory createTransactionValidatorFactory(
+            StorageEngineFactory storageEngineFactory, Config config, SystemNanoClock clock);
 
     StorageLocks createStorageLocks(ResourceLocker locker);
 

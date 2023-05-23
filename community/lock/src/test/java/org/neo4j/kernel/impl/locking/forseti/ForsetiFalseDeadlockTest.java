@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.locking.forseti;
 
 import static java.lang.Integer.max;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.neo4j.kernel.impl.locking.LockManager.Client;
 import static org.neo4j.test.Race.throwing;
 
 import java.util.ArrayList;
@@ -44,7 +45,7 @@ import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
-import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.lock.ResourceType;
 import org.neo4j.memory.EmptyMemoryTracker;
@@ -87,7 +88,7 @@ class ForsetiFalseDeadlockTest {
         Race race = new Race().withEndCondition(() -> txCount.get() > 10000);
 
         race.addContestants(max(Runtime.getRuntime().availableProcessors(), 2), throwing(() -> {
-            try (Locks.Client client = manager.newClient()) {
+            try (Client client = manager.newClient()) {
                 int txId = txCount.incrementAndGet();
                 client.initialize(NoLeaseClient.INSTANCE, txId, EmptyMemoryTracker.INSTANCE, config);
                 long prevRel = random.nextInt(10);
@@ -117,15 +118,15 @@ class ForsetiFalseDeadlockTest {
         // During development I also had iteration counts 1 and 2 here, but they never found anything, so for actually
         // running this test, I leave only iteration count 100 enabled.
         int iteration = 100;
-        LockManager[] lockManagers = LockManager.values();
+        LockManagerFactory[] lockManagerFactories = LockManagerFactory.values();
         LockType[] lockTypes = LockType.values();
-        for (LockManager lockManager : lockManagers) {
+        for (LockManagerFactory lockManagerFactory : lockManagerFactories) {
             for (LockType lockTypeAX : lockTypes) {
                 for (LockType lockTypeAY : lockTypes) {
                     for (LockType lockTypeBX : lockTypes) {
                         for (LockType lockTypeBY : lockTypes) {
                             fixtures.add(new Fixture(
-                                    iteration, lockManager, lockTypeAX, lockTypeAY, lockTypeBX, lockTypeBY));
+                                    iteration, lockManagerFactory, lockTypeAX, lockTypeAY, lockTypeBX, lockTypeBY));
                         }
                     }
                 }
@@ -171,9 +172,9 @@ class ForsetiFalseDeadlockTest {
     private static void runTest(Fixture fixture) throws InterruptedException, java.util.concurrent.ExecutionException {
         int iterations = fixture.iterations();
         ResourceType resourceType = fixture.createResourceType();
-        Locks manager = fixture.createLockManager(resourceType);
-        try (Locks.Client a = manager.newClient();
-                Locks.Client b = manager.newClient()) {
+        LockManager manager = fixture.createLockManager(resourceType);
+        try (Client a = manager.newClient();
+                Client b = manager.newClient()) {
             a.initialize(NoLeaseClient.INSTANCE, 1, EmptyMemoryTracker.INSTANCE, Config.defaults());
             b.initialize(NoLeaseClient.INSTANCE, 2, EmptyMemoryTracker.INSTANCE, Config.defaults());
 
@@ -198,7 +199,7 @@ class ForsetiFalseDeadlockTest {
         }
     }
 
-    private static void workloadA(Fixture fixture, Locks.Client a, ResourceType resourceType, int iterations) {
+    private static void workloadA(Fixture fixture, Client a, ResourceType resourceType, int iterations) {
         for (int i = 0; i < iterations; i++) {
             fixture.acquireAX(a, resourceType);
             fixture.acquireAY(a, resourceType);
@@ -207,7 +208,7 @@ class ForsetiFalseDeadlockTest {
         }
     }
 
-    private static void workloadB(Fixture fixture, Locks.Client b, ResourceType resourceType, int iterations) {
+    private static void workloadB(Fixture fixture, Client b, ResourceType resourceType, int iterations) {
         for (int i = 0; i < iterations; i++) {
             fixture.acquireBX(b, resourceType);
             fixture.releaseBX(b, resourceType);
@@ -244,7 +245,7 @@ class ForsetiFalseDeadlockTest {
 
     private static class Fixture {
         private final int iterations;
-        private final LockManager lockManager;
+        private final LockManagerFactory lockManagerFactory;
         private final LockType lockTypeAX;
         private final LockType lockTypeAY;
         private final LockType lockTypeBX;
@@ -252,13 +253,13 @@ class ForsetiFalseDeadlockTest {
 
         Fixture(
                 int iterations,
-                LockManager lockManager,
+                LockManagerFactory lockManagerFactory,
                 LockType lockTypeAX,
                 LockType lockTypeAY,
                 LockType lockTypeBX,
                 LockType lockTypeBY) {
             this.iterations = iterations;
-            this.lockManager = lockManager;
+            this.lockManagerFactory = lockManagerFactory;
             this.lockTypeAX = lockTypeAX;
             this.lockTypeAY = lockTypeAY;
             this.lockTypeBX = lockTypeBX;
@@ -269,50 +270,50 @@ class ForsetiFalseDeadlockTest {
             return iterations;
         }
 
-        Locks createLockManager(ResourceType resourceType) {
-            return lockManager.create(resourceType);
+        LockManager createLockManager(ResourceType resourceType) {
+            return lockManagerFactory.create(resourceType);
         }
 
         ResourceType createResourceType() {
             return ResourceType.NODE;
         }
 
-        void acquireAX(Locks.Client client, ResourceType resourceType) {
+        void acquireAX(Client client, ResourceType resourceType) {
             lockTypeAX.acquire(client, resourceType, 1);
         }
 
-        void releaseAX(Locks.Client client, ResourceType resourceType) {
+        void releaseAX(Client client, ResourceType resourceType) {
             lockTypeAX.release(client, resourceType, 1);
         }
 
-        void acquireAY(Locks.Client client, ResourceType resourceType) {
+        void acquireAY(Client client, ResourceType resourceType) {
             lockTypeAY.acquire(client, resourceType, 2);
         }
 
-        void releaseAY(Locks.Client client, ResourceType resourceType) {
+        void releaseAY(Client client, ResourceType resourceType) {
             lockTypeAY.release(client, resourceType, 2);
         }
 
-        void acquireBX(Locks.Client client, ResourceType resourceType) {
+        void acquireBX(Client client, ResourceType resourceType) {
             lockTypeBX.acquire(client, resourceType, 1);
         }
 
-        void releaseBX(Locks.Client client, ResourceType resourceType) {
+        void releaseBX(Client client, ResourceType resourceType) {
             lockTypeBX.release(client, resourceType, 1);
         }
 
-        void acquireBY(Locks.Client client, ResourceType resourceType) {
+        void acquireBY(Client client, ResourceType resourceType) {
             lockTypeBY.acquire(client, resourceType, 2);
         }
 
-        void releaseBY(Locks.Client client, ResourceType resourceType) {
+        void releaseBY(Client client, ResourceType resourceType) {
             lockTypeBY.release(client, resourceType, 2);
         }
 
         @Override
         public String toString() {
             return "iterations=" + iterations + ", lockManager="
-                    + lockManager + ", lockTypeAX="
+                    + lockManagerFactory + ", lockTypeAX="
                     + lockTypeAX + ", lockTypeAY="
                     + lockTypeAY + ", lockTypeBX="
                     + lockTypeBX + ", lockTypeBY="
@@ -323,40 +324,40 @@ class ForsetiFalseDeadlockTest {
     public enum LockType {
         EXCLUSIVE {
             @Override
-            public void acquire(Locks.Client client, ResourceType resourceType, int resource) {
+            public void acquire(Client client, ResourceType resourceType, int resource) {
                 client.acquireExclusive(LockTracer.NONE, resourceType, resource);
             }
 
             @Override
-            public void release(Locks.Client client, ResourceType resourceType, int resource) {
+            public void release(Client client, ResourceType resourceType, int resource) {
                 client.releaseExclusive(resourceType, resource);
             }
         },
         SHARED {
             @Override
-            public void acquire(Locks.Client client, ResourceType resourceType, int resource) {
+            public void acquire(Client client, ResourceType resourceType, int resource) {
                 client.acquireShared(LockTracer.NONE, resourceType, resource);
             }
 
             @Override
-            public void release(Locks.Client client, ResourceType resourceType, int resource) {
+            public void release(Client client, ResourceType resourceType, int resource) {
                 client.releaseShared(resourceType, resource);
             }
         };
 
-        public abstract void acquire(Locks.Client client, ResourceType resourceType, int resource);
+        public abstract void acquire(Client client, ResourceType resourceType, int resource);
 
-        public abstract void release(Locks.Client client, ResourceType resourceType, int resource);
+        public abstract void release(Client client, ResourceType resourceType, int resource);
     }
 
-    public enum LockManager {
+    public enum LockManagerFactory {
         FORSETI {
             @Override
-            public Locks create(ResourceType resourceType) {
+            public LockManager create(ResourceType resourceType) {
                 return new ForsetiLockManager(Config.defaults(), Clocks.nanoClock(), resourceType);
             }
         };
 
-        public abstract Locks create(ResourceType resourceType);
+        public abstract LockManager create(ResourceType resourceType);
     }
 }
