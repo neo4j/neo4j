@@ -122,3 +122,30 @@ Feature: MiscAcceptance
       | n0   |
       | null |
     And no side effects
+
+  Scenario: GitHub Issue #13190
+    Given an empty graph
+    When executing query:
+      """
+      RETURN [()-[]-()|1][count{()}] AS result
+      """
+    Then the result should be, in order:
+      | result   |
+      | null     |
+    And no side effects
+
+  Scenario: GitHub Issue #13190 variant
+    Given an empty graph
+    And having executed:
+      """
+      CREATE ()-[:B]->()
+      """
+    When executing query:
+      """
+      RETURN [()-[]-()|2][count{()} - 2] AS result
+      """
+    Then the result should be, in order:
+      | result |
+      | result |
+      | 2      |
+    And no side effects
