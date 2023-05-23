@@ -19,12 +19,7 @@
  */
 package org.neo4j.io.compress;
 
-import static java.util.stream.Collectors.toList;
-
-import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.file.FileSystem;
@@ -82,7 +77,7 @@ public class ZipUtils {
 
         try (FileSystem zipFs = FileSystems.newFileSystem(archiveAbsoluteURI, env)) {
             List<FileHandle> fileHandles =
-                    fileSystem.streamFilesRecursive(sourceToCompress).collect(toList());
+                    fileSystem.streamFilesRecursive(sourceToCompress).toList();
             for (FileHandle fileHandle : fileHandles) {
                 Path sourcePath = fileHandle.getPath();
                 Path zipFsPath = fileSystem.isDirectory(sourceToCompress)
@@ -125,38 +120,14 @@ public class ZipUtils {
                 throw new IllegalStateException(
                         "Zip file '" + sourceZip + "' does not contain target file '" + zipEntryName + "'.");
             }
-            Files.copy(zipFile.getInputStream(entry), targetFile);
+            try (var inputStream = zipFile.getInputStream(entry)) {
+                Files.copy(inputStream, targetFile);
+            }
         }
     }
 
     public static void unzipResource(Class<?> klass, String zipName, Path targetFile) throws IOException {
         unzipResource(klass, zipName, targetFile.getFileName().toString(), targetFile);
-    }
-
-    /**
-     * Unzip the source file to targetDirectory.
-     *
-     * @param sourceZip {@link String} with path pointing at the source zip file.
-     * @param targetDirectory {@link Path} defining directory where zip should be extracted.
-     * @throws IOException if something goes wrong.
-     */
-    public static void unzip(String sourceZip, Path targetDirectory) throws IOException {
-        try (ZipFile zipFile = new ZipFile(sourceZip)) {
-            Enumeration<? extends ZipEntry> entries = zipFile.entries();
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                if (entry.isDirectory()) {
-                    Files.createDirectories(targetDirectory.resolve(entry.getName()));
-                } else {
-                    try (OutputStream file = new BufferedOutputStream(
-                                    Files.newOutputStream(targetDirectory.resolve(entry.getName())));
-                            InputStream is = zipFile.getInputStream(entry)) {
-                        int read;
-                        is.transferTo(file);
-                    }
-                }
-            }
-        }
     }
 
     private static boolean isEmptyDirectory(FileSystemAbstraction fileSystem, Path sourceToCompress)

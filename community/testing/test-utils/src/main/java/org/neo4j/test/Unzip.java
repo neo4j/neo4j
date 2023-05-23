@@ -26,6 +26,7 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -35,7 +36,12 @@ public final class Unzip {
     public static Path unzip(Class<?> testClass, String resource, Path targetDirectory) throws IOException {
         InputStream source = testClass.getResourceAsStream(resource);
         if (source == null) {
-            throw new NoSuchFileException("Could not find resource '" + resource + "' to unzip");
+            var path = Path.of(resource);
+            if (Files.exists(path)) {
+                source = Files.newInputStream(path, StandardOpenOption.READ);
+            } else {
+                throw new NoSuchFileException("Could not find resource '" + resource + "' to unzip");
+            }
         }
 
         try (ZipInputStream zipStream = new ZipInputStream(source)) {
