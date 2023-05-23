@@ -24,6 +24,7 @@ import static java.util.concurrent.TimeUnit.HOURS;
 import static org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.parse;
 
 import java.time.Clock;
+import java.util.concurrent.TimeUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
@@ -81,20 +82,37 @@ public class LogPruneStrategyFactory {
             FileSystemAbstraction fileSystem,
             InternalLogProvider logProvider,
             Clock clock,
-            ThresholdConfigValue value,
+            ThresholdConfigValue configuredThreshold,
             String originalConfigValue) {
-        long thresholdValue = value.value;
+        long thresholdValue = configuredThreshold.value();
 
-        return switch (value.type) {
+        return switch (configuredThreshold.type()) {
             case "files" -> new FileCountThreshold(thresholdValue);
             case "size" -> new FileSizeThreshold(fileSystem, thresholdValue);
                 // txs and entries are synonyms
             case "txs", "entries" -> new EntryCountThreshold(logProvider, thresholdValue);
-            case "hours" -> new EntryTimespanThreshold(logProvider, clock, HOURS, thresholdValue);
-            case "days" -> new EntryTimespanThreshold(logProvider, clock, DAYS, thresholdValue);
+            case "hours" -> createTimeBasedThreshold(fileSystem, logProvider, clock, configuredThreshold, HOURS);
+            case "days" -> createTimeBasedThreshold(fileSystem, logProvider, clock, configuredThreshold, DAYS);
             default -> throw new IllegalArgumentException(
-                    "Invalid log pruning configuration value '" + originalConfigValue + "'. Invalid type '" + value.type
-                            + "', valid are files, size, txs, entries, hours, days.");
+                    "Invalid log pruning configuration value '" + originalConfigValue + "'. Invalid type '"
+                            + configuredThreshold.type() + "', valid are files, size, txs, entries, hours, days.");
         };
+    }
+
+    private static EntryTimespanThreshold createTimeBasedThreshold(
+            FileSystemAbstraction fileSystem,
+            InternalLogProvider logProvider,
+            Clock clock,
+            ThresholdConfigValue configuredThreshold,
+            TimeUnit timeUnit) {
+        if (configuredThreshold.hasAdditionalRestriction()) {
+            return new EntryTimespanThreshold(
+                    logProvider,
+                    clock,
+                    timeUnit,
+                    configuredThreshold.value(),
+                    new FileSizeThreshold(fileSystem, configuredThreshold.additionalRestriction()));
+        }
+        return new EntryTimespanThreshold(logProvider, clock, timeUnit, configuredThreshold.value());
     }
 }

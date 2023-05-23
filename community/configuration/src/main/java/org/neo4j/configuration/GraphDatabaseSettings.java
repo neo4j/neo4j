@@ -509,10 +509,11 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
                     "db.tx_log.rotation.retention_policy", STRING, "2 days")
             .dynamic()
             .addConstraint(SettingConstraints.matches(
-                    "^(true|keep_all|false|keep_none|(\\d+[KkMmGg]?( (files|size|txs|entries|hours|days))))$",
-                    "Must be `true` or `keep_all`, `false` or `keep_none`, or of format `<number><optional unit> <type>`. "
+                    "^(true|keep_all|false|keep_none|(\\d+[KkMmGg]?( (files|size|txs|entries|hours( \\d+[KkMmGg]?)?|days( \\d+[KkMmGg]?)?))))$",
+                    "Must be `true` or `keep_all`, `false` or `keep_none`, or of format `<number><optional unit> <type> <optional space restriction>`. "
                             + "Valid units are `K`, `M` and `G`. "
                             + "Valid types are `files`, `size`, `txs`, `entries`, `hours` and `days`. "
+                            + "Valid optional space restriction is a logical log space restriction like `100M`. "
                             + "For example, `100M size` will limit logical log space on disk to 100MiB per database,"
                             + "and `200K txs` will limit the number of transactions kept to 200 000 per database."))
             .build();

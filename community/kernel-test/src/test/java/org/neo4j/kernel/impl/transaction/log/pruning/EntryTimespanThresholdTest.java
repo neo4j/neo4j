@@ -29,16 +29,18 @@ import static org.neo4j.logging.LogAssertions.assertThat;
 import java.io.IOException;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.time.FakeClock;
 import org.neo4j.time.SystemNanoClock;
 
 class EntryTimespanThresholdTest {
+    private FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
     private final Path file = mock(Path.class);
     private final LogFileInformation source = mock(LogFileInformation.class);
     private final long version = 4;
-    private SystemNanoClock clock = new FakeClock(1000, MILLISECONDS);
+    private final SystemNanoClock clock = new FakeClock(1000, MILLISECONDS);
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
@@ -57,7 +59,7 @@ class EntryTimespanThresholdTest {
     }
 
     @Test
-    void shouldReturnReturnWhenTimeIsBeforeTheLowerLimit() throws IOException {
+    void shouldReturnTrueWhenTimeIsBeforeTheLowerLimit() throws IOException {
         // given
         final EntryTimespanThreshold threshold = new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 100);
 
@@ -83,5 +85,17 @@ class EntryTimespanThresholdTest {
         threshold.init();
         assertFalse(threshold.reached(file, version, source));
         assertThat(logProvider).containsMessages("Fail to get timestamp info from transaction log file");
+    }
+
+    @Test
+    void thresholdReachedWhenFileRestrictionIsReached() throws IOException {
+        final EntryTimespanThreshold threshold =
+                new EntryTimespanThreshold(logProvider, clock, MILLISECONDS, 200, new FileSizeThreshold(fs, 128));
+        when(source.getFirstStartRecordTimestamp(version)).thenReturn(800L);
+        when(fs.getFileSize(file)).thenReturn(129L);
+
+        // when
+        threshold.init();
+        assertTrue(threshold.reached(file, version, source));
     }
 }

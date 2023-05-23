@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
+import org.apache.commons.lang3.StringUtils;
 import org.neo4j.kernel.impl.transaction.log.LogFileInformation;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
@@ -32,24 +33,41 @@ public final class EntryTimespanThreshold implements Threshold {
     private final long timeToKeepInMillis;
     private final Clock clock;
     private final TimeUnit timeUnit;
+    private final FileSizeThreshold fileSizeThreshold;
     private final InternalLog log;
     private long lowerLimit;
 
     EntryTimespanThreshold(InternalLogProvider logProvider, Clock clock, TimeUnit timeUnit, long timeToKeep) {
+        this(logProvider, clock, timeUnit, timeToKeep, null);
+    }
+
+    EntryTimespanThreshold(
+            InternalLogProvider logProvider,
+            Clock clock,
+            TimeUnit timeUnit,
+            long timeToKeep,
+            FileSizeThreshold fileSizeThreshold) {
         this.log = logProvider.getLog(getClass());
         this.clock = clock;
         this.timeUnit = timeUnit;
         this.timeToKeepInMillis = timeUnit.toMillis(timeToKeep);
+        this.fileSizeThreshold = fileSizeThreshold;
     }
 
     @Override
     public void init() {
+        if (fileSizeThreshold != null) {
+            fileSizeThreshold.init();
+        }
         lowerLimit = clock.millis() - timeToKeepInMillis;
     }
 
     @Override
     public boolean reached(Path file, long version, LogFileInformation source) {
         try {
+            if (fileSizeThreshold != null && fileSizeThreshold.reached(file, version, source)) {
+                return true;
+            }
             long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp(version);
             return firstStartRecordTimestamp >= 0 && firstStartRecordTimestamp < lowerLimit;
         } catch (IOException e) {
@@ -61,6 +79,7 @@ public final class EntryTimespanThreshold implements Threshold {
     @Override
     public String toString() {
         return timeUnit.convert(timeToKeepInMillis, TimeUnit.MILLISECONDS) + " "
-                + timeUnit.name().toLowerCase(Locale.ROOT);
+                + timeUnit.name().toLowerCase(Locale.ROOT)
+                + (fileSizeThreshold == null ? StringUtils.EMPTY : " " + fileSizeThreshold);
     }
 }

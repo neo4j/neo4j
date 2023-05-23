@@ -21,36 +21,19 @@ package org.neo4j.kernel.impl.transaction.log.pruning;
 
 import static org.neo4j.configuration.SettingValueParsers.parseLongWithUnit;
 
-import java.util.Objects;
-
 public class ThresholdConfigParser {
-    public static final class ThresholdConfigValue {
-        static final ThresholdConfigValue NO_PRUNING = new ThresholdConfigValue("false", -1);
-        static final ThresholdConfigValue KEEP_LAST_FILE = new ThresholdConfigValue("entries", 1);
-
-        public final String type;
-        public final long value;
+    public record ThresholdConfigValue(String type, long value, long additionalRestriction) {
+        private static final long NO_ADDITIONAL_RESTRICTION = -1;
+        static final ThresholdConfigValue NO_PRUNING = new ThresholdConfigValue("false", -1, NO_ADDITIONAL_RESTRICTION);
+        static final ThresholdConfigValue KEEP_LAST_FILE =
+                new ThresholdConfigValue("entries", 1, NO_ADDITIONAL_RESTRICTION);
 
         ThresholdConfigValue(String type, long value) {
-            this.type = type;
-            this.value = value;
+            this(type, value, NO_ADDITIONAL_RESTRICTION);
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            ThresholdConfigValue that = (ThresholdConfigValue) o;
-            return value == that.value && Objects.equals(type, that.type);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(type, value);
+        boolean hasAdditionalRestriction() {
+            return additionalRestriction != NO_ADDITIONAL_RESTRICTION;
         }
     }
 
@@ -75,7 +58,9 @@ public class ThresholdConfigParser {
         } else {
             long thresholdValue = parseLongWithUnit(boolOrNumber);
             String thresholdType = tokens[1];
-            return new ThresholdConfigValue(thresholdType, thresholdValue);
+            long maxSizeRestriction =
+                    tokens.length > 2 ? parseLongWithUnit(tokens[2]) : ThresholdConfigValue.NO_ADDITIONAL_RESTRICTION;
+            return new ThresholdConfigValue(thresholdType, thresholdValue, maxSizeRestriction);
         }
     }
 }

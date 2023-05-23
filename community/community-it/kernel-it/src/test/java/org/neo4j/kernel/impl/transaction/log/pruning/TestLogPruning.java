@@ -104,6 +104,53 @@ class TestLogPruning {
     }
 
     @Test
+    void pruneByDaysPeriodSpecifiedKeepsFiles() throws IOException {
+        newDb("7 days", 1);
+
+        // When
+        for (int i = 0; i < 100; i++) {
+            doTransaction();
+        }
+
+        // nothing is pruned, unlike in the test bellow where files are removed by size limit
+        assertEquals(101, logCount());
+    }
+
+    @Test
+    void pruneBySizeEvenIfDaysPeriodSpecified() throws IOException {
+        int transactionByteSize = figureOutSampleTransactionSizeBytes();
+        int transactionsPerFile = 3;
+        int logThreshold = transactionByteSize * transactionsPerFile;
+        newDb("7 days " + logThreshold, 1);
+
+        // When
+        for (int i = 0; i < 100; i++) {
+            doTransaction();
+        }
+
+        int totalLogFileSize = logFileSize();
+        double totalTransactions = (double) totalLogFileSize / transactionByteSize;
+        assertTrue(totalTransactions >= 3 && totalTransactions < 4);
+    }
+
+    @Test
+    void pruneBySizeEvenIfHoursPeriodSpecified() throws IOException {
+        int transactionByteSize = figureOutSampleTransactionSizeBytes();
+        int transactionsPerFile = 3;
+        int logThreshold = transactionByteSize * transactionsPerFile;
+        newDb("17 hours " + logThreshold, 1);
+
+        // When
+        for (int i = 0; i < 100; i++) {
+            doTransaction();
+        }
+
+        int totalLogFileSize = logFileSize();
+        double totalTransactions = (double) totalLogFileSize / transactionByteSize;
+        assertTrue(totalTransactions >= 3 && totalTransactions < 4);
+    }
+
+    @Test
     void pruneByFileCount() throws Exception {
         int logsToKeep = 5;
         newDb(logsToKeep + " files", 3);

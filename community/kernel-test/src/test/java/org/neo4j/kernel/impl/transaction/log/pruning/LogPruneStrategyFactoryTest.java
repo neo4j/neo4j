@@ -25,6 +25,7 @@ import static org.neo4j.kernel.impl.transaction.log.pruning.LogPruneStrategyFact
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.pruning.ThresholdConfigParser.ThresholdConfigValue;
@@ -85,6 +86,13 @@ class LogPruneStrategyFactoryTest {
         Threshold threshold = getThreshold(new ThresholdConfigValue("days", 100_000));
         assertThat(threshold).isInstanceOf(EntryTimespanThreshold.class);
         assertEquals("100000 days", threshold.toString());
+    }
+
+    @Test
+    void configuringDaysThresholdWithMaxSize() {
+        Threshold threshold = getThreshold(new ThresholdConfigValue("days", 100_000, ByteUnit.mebiBytes(500)));
+        assertThat(threshold).isInstanceOf(EntryTimespanThreshold.class);
+        assertEquals("100000 days 524288000 size", threshold.toString());
     }
 
     private Threshold getThreshold(ThresholdConfigValue configValue) {
