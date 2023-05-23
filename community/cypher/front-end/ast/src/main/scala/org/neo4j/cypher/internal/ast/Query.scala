@@ -39,8 +39,6 @@ import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.topDown
 
-import scala.annotation.tailrec
-
 sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysisTooling {
   def containsUpdates: Boolean
   def returnColumns: List[LogicalVariable] = returnVariables.explicitVariables.toList
@@ -396,7 +394,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     val lastIndex = clauses.size - 1
     clauses.zipWithIndex.foldSemanticCheck {
       case (clause, idx) =>
-        val next = SemanticCheck.fromState { currentState =>
+        val next = SemanticCheck.fromState { _ =>
           clause match {
             case c: HorizonClause =>
               checkHorizon(c, outerScope)
@@ -497,7 +495,7 @@ sealed trait Union extends Query {
 
   def containsUpdates: Boolean = lhs.containsUpdates || rhs.containsUpdates
 
-  def semanticCheckAbstract(
+  private def semanticCheckAbstract(
     queryCheck: Query => SemanticCheck,
     singleQueryCheck: SingleQuery => SemanticCheck
   ): SemanticCheck =
@@ -634,14 +632,6 @@ sealed trait Union extends Query {
     nestedCallInTransactions.foldSemanticCheck { nestedCallInTransactions =>
       error("CALL { ... } IN TRANSACTIONS in a UNION is not supported", nestedCallInTransactions.position)
     }
-  }
-
-  def unionedQueries: Seq[SingleQuery] = unionedQueries(Vector.empty)
-
-  @tailrec
-  private def unionedQueries(accum: Seq[SingleQuery]): Seq[SingleQuery] = lhs match {
-    case q: SingleQuery => accum :+ rhs :+ q
-    case u: Union       => u.unionedQueries(accum :+ rhs)
   }
 }
 
