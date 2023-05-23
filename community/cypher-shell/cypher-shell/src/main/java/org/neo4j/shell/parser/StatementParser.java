@@ -44,14 +44,18 @@ public interface StatementParser {
         }
 
         public boolean hasIncompleteStatement() {
-            return statements.stream().anyMatch(statement -> statement instanceof CypherStatement c && !c.isComplete());
+            if (statements.isEmpty()) {
+                return false;
+            } else {
+                return !statements.get(statements.size() - 1).isComplete();
+            }
         }
 
         public Optional<ParsedStatement> statementAtOffset(int offset) {
             for (int i = statements.size() - 1; i >= 0; --i) {
                 var statement = statements.get(i);
                 if ((!statement.isComplete() && offset >= statement.beginOffset())
-                        || (offset >= statement.beginOffset() && offset <= statement.endOffset())) {
+                        || (offset >= statement.beginOffset() && offset <= statement.endOffset() + 1)) {
                     return Optional.of(statement);
                 }
             }
@@ -66,6 +70,7 @@ public interface StatementParser {
 
         int endOffset();
 
+        /** Returns false if more input is needed to parse this statement */
         boolean isComplete();
     }
 

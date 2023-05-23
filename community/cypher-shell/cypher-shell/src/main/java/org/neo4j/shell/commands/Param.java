@@ -31,6 +31,9 @@ import org.neo4j.shell.printer.Printer;
  * This command sets a variable to a name, for use as query parameter.
  */
 public record Param(Printer printer, ParameterService parameters) implements Command {
+    public static final String NAME = ":param";
+    public static final String ALIAS = ":params";
+
     @Override
     public void execute(List<String> args) throws ExitException, CommandException {
         requireArgumentCount(args, 0, 1);
@@ -64,7 +67,7 @@ public record Param(Printer printer, ParameterService parameters) implements Com
 
                     The arrow syntax `:param a => 1` is also supported to set parameters individually.
                     """;
-            return new Metadata(":param", "Set the value of a query parameter", usage, help, List.of(":params"));
+            return new Metadata(NAME, "Set the value of a query parameter", usage, help, List.of(ALIAS));
         }
 
         @Override

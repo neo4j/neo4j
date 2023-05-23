@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+
+source "common.expect"
+
+sendQuery ":param {\ra: 1,\rb: 2\r}"
+sendQuery ":param"
+sendQuery "return \$a, \$b;"
+
+sendQuery ":exit"
+expectCleanExit

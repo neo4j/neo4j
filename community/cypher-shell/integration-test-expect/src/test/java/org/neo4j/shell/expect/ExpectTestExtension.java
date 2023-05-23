@@ -171,7 +171,7 @@ class InteractionAssertion {
     private static final List<Pattern> REPLACEMENT_PATTERNS = List.of(
             compile("^Connected to Neo4j using Bolt protocol version ([0-9.]+) at"),
             compile("^ready to start consuming query after ([0-9]+) ms, results consumed after another ([0-9]+) ms"));
-    private static final Pattern ANSI_CODE_PATTERN = Pattern.compile("\u001B\\[[?]?[;\\d]*[mhlCD]");
+    private static final Pattern ANSI_CODE_PATTERN = Pattern.compile("\u001B\\[[?]?[;\\d]*[mhlCDA]");
 
     static void assertEqualInteraction(String actual, String expected) {
         final var cleanedActual = cleanActual(actual).collect(Collectors.joining(System.lineSeparator()));

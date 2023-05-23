@@ -62,8 +62,29 @@ class StatementJlineParserTest {
 
     @Test
     void parseCommandsForExecution() {
-        assertSimpleParse(":bla", command(":bla", List.of(), false, 0, 3));
-        assertSimpleParse(":param key => 'value' ", command(":param", List.of("key => 'value'"), false, 0, 21));
+        assertSimpleParse(":bla", command(":bla", List.of(), true, 0, 3));
+        assertSimpleParse(":param key => 'value' ", command(":param", List.of("key => 'value'"), true, 0, 21));
+        assertSimpleParse(":param \t   \n", command(":param", List.of(), true, 0, 10));
+        assertSimpleParse(":param \t clear  \n", command(":param", List.of("clear"), true, 0, 15));
+        assertSimpleParse(":param \t list  \n", command(":param", List.of("list"), true, 0, 14));
+        assertSimpleParse(":param {\n  a:1\n}\n", command(":param", List.of("{\n  a:1\n}"), true, 0, 15));
+        assertSimpleParse(":param {\n  a:2\n}}\n", command(":param", List.of("{\n  a:2\n}}"), true, 0, 16));
+        assertSimpleParse(
+                ":param {\n  a:'}'\n,\nb:'}'}", command(":param", List.of("{\n  a:'}'\n,\nb:'}'}"), true, 0, 24));
+        assertSimpleParse(
+                ":param {\n\n/* } */\n,\nb:'}'\n}",
+                command(":param", List.of("{\n\n/* } */\n,\nb:'}'\n}"), true, 0, 26));
+    }
+
+    @Test
+    void incompleteParams() {
+        assertIncomplete(":param {");
+        assertIncomplete(":param\t {");
+        assertIncomplete(":param {a:3,b:{}");
+        assertIncomplete(":param {\n//}\n");
+        assertIncomplete(":param {\na:a\n/*}/*\n");
+        assertIncomplete(":param {a:'}'");
+        assertIncomplete(":param {a:'}'//}");
     }
 
     @Test
@@ -86,9 +107,9 @@ class StatementJlineParserTest {
 
     @Test
     void parseCommandForCompletion() {
-        assertThat(parse(":", COMPLETE)).isEqualTo(new CommandCompletion(command(":", List.of(), false, 0, 0), ":", 1));
+        assertThat(parse(":", COMPLETE)).isEqualTo(new CommandCompletion(command(":", List.of(), true, 0, 0), ":", 1));
         assertThat(parse(":hel", COMPLETE))
-                .isEqualTo(new CommandCompletion(command(":hel", List.of(), false, 0, 3), ":hel", 4));
+                .isEqualTo(new CommandCompletion(command(":hel", List.of(), true, 0, 3), ":hel", 4));
     }
 
     @Test
@@ -130,6 +151,10 @@ class StatementJlineParserTest {
 
     private ParsedLine parse(String line, ParseContext context) {
         return parser.parse(line, line.length(), context);
+    }
+
+    private void assertIncomplete(String line) {
+        assertThrows(org.jline.reader.EOFError.class, () -> parse(line));
     }
 
     private void assertSimpleParse(String line, StatementParser.ParsedStatement... statements) {

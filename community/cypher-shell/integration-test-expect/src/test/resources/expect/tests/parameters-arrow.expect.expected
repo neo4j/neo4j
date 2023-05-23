@@ -1,0 +1,27 @@
+Connected to Neo4j using Bolt protocol version 5.1 at neo4j://neo4j:7687 as user neo4j.
+Type :help for a list of available commands or :exit to exit the shell.
+Note that Cypher queries must end with a semicolon.
+neo4j@neo4j> :param a => 1
+
+neo4j@neo4j> :param b => 2;
+
+neo4j@neo4j> :param
+
+{
+a: 1,
+b: 2
+}
+neo4j@neo4j> return $a, $b;
+
++---------+
+| $a | $b |
++---------+
+| 1  | 2  |
++---------+
+
+1 row
+ready to start consuming query after 0 ms, results consumed after another 0 ms
+neo4j@neo4j> :exit
+
+
+Bye!

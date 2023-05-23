@@ -200,7 +200,7 @@ class InteractiveShellRunnerTest {
         var statements = runner.readUntilStatement();
         // then
         assertThat(statements)
-                .contains(new CommandStatement(":set", List.of("var", "\"String", "with", "!bang\""), false, 0, 27));
+                .contains(new CommandStatement(":set", List.of("var", "\"String", "with", "!bang\""), true, 0, 27));
     }
 
     @Test
@@ -213,7 +213,7 @@ class InteractiveShellRunnerTest {
 
         // then
         assertThat(statements)
-                .contains(new CommandStatement(":set", List.of("var", "\"String", "with", "\\!bang\""), false, 0, 28));
+                .contains(new CommandStatement(":set", List.of("var", "\"String", "with", "\\!bang\""), true, 0, 28));
     }
 
     @Test
@@ -496,7 +496,7 @@ class InteractiveShellRunnerTest {
 
         // then
         verify(fakeShell).execute(cypher("RETURN 1"));
-        verify(fakeShell).execute(new CommandStatement(":exit", List.of(), false, 0, 4));
+        verify(fakeShell).execute(new CommandStatement(":exit", List.of(), true, 0, 4));
         verify(fakeShell).reset();
         verify(boltStateHandler).reset();
     }

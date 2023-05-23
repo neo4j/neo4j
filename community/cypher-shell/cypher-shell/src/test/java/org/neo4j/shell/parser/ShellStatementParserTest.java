@@ -43,7 +43,7 @@ class ShellStatementParserTest {
 
     @Test
     void parseAShellCommand() throws IOException {
-        var expected = new CommandStatement(":help", List.of("exit", "bob", "snob"), false, 2, 22);
+        var expected = new CommandStatement(":help", List.of("exit", "bob", "snob"), true, 2, 22);
         assertStatements("  :help exit bob snob  ", expected);
     }
 
@@ -165,36 +165,50 @@ class ShellStatementParserTest {
     void parseParamCommand() throws IOException {
         // We don't fully parse :param, but need to make sure we're not messing up the arguments that needs to be parsed
         // later
-        assertStatements(":param key => 'value'", command(":param", List.of("key => 'value'"), false, 0, 20));
+        assertStatements(":param key => 'value'", command(":param", List.of("key => 'value'"), true, 0, 20));
         assertStatements(
                 ":param `not valid but still` => `\"'strange thing ",
-                command(":param", List.of("`not valid but still` => `\"'strange thing"), false, 0, 48));
+                command(":param", List.of("`not valid but still` => `\"'strange thing"), true, 0, 48));
         assertStatements(
                 ":param \t  whitespace all around        =>   and\t value  \t  ",
-                command(":param", List.of("whitespace all around        =>   and\t value"), false, 0, 58));
+                command(":param", List.of("whitespace all around        =>   and\t value"), true, 0, 58));
+    }
+
+    @Test
+    void parseMultiLineArrow() throws IOException {
+        // Arrow syntax :param is not allowed to be muliline
+        assertStatements(
+                ":param key => \n'value'",
+                command(":param", List.of("key =>"), true, 0, 13),
+                new CypherStatement("'value'", false, 15, 21));
+    }
+
+    @Test
+    void parseMultiLineParamCommand() throws IOException {
+        assertStatements(":param {\na:1,\nb:2\n}", command(":param", List.of("{\na:1,\nb:2\n}"), true, 0, 18));
     }
 
     @Test
     void parseParamsCommand() throws IOException {
-        assertStatements(":params key  ", command(":params", List.of("key"), false, 0, 12));
+        assertStatements(":params key  ", command(":params", List.of("key"), true, 0, 12));
         assertStatements(
-                ":params `key with whitespace`", command(":params", List.of("`key with whitespace`"), false, 0, 28));
+                ":params `key with whitespace`", command(":params", List.of("`key with whitespace`"), true, 0, 28));
     }
 
     @Test
     void stripTrailingSemicolonOnCommands() throws IOException {
-        assertStatements(":command param1 param2;", command(":command", List.of("param1", "param2"), false, 0, 22));
-        assertStatements(":command;", command(":command", List.of(), false, 0, 8));
-        assertStatements(":command;;", command(":command", List.of(), false, 0, 9));
+        assertStatements(":command param1 param2;", command(":command", List.of("param1", "param2"), true, 0, 22));
+        assertStatements(":command;", command(":command", List.of(), true, 0, 8));
+        assertStatements(":command;;", command(":command", List.of(), true, 0, 9));
     }
 
     @Test
     void shouldParseCommandsAndArgs() throws IOException {
-        assertStatements(":help", command(":help", List.of(), false, 0, 4));
-        assertStatements(":help :param", command(":help", List.of(":param"), false, 0, 11));
-        assertStatements("   :help    ", command(":help", List.of(), false, 3, 11));
+        assertStatements(":help", command(":help", List.of(), true, 0, 4));
+        assertStatements(":help :param", command(":help", List.of(":param"), true, 0, 11));
+        assertStatements("   :help    ", command(":help", List.of(), true, 3, 11));
         assertStatements("   :help    \n", command(":help", List.of(), 3, 11));
-        assertStatements("   :help   arg1 arg2 ", command(":help", List.of("arg1", "arg2"), false, 3, 20));
+        assertStatements("   :help   arg1 arg2 ", command(":help", List.of("arg1", "arg2"), true, 3, 20));
     }
 
     @Test

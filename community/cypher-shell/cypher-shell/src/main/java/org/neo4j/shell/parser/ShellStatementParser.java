@@ -19,6 +19,8 @@
  */
 package org.neo4j.shell.parser;
 
+import static java.util.Arrays.asList;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.Reader;
@@ -26,8 +28,9 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
+import java.util.Locale;
 import org.eclipse.collections.api.block.predicate.primitive.CharPredicate;
+import org.neo4j.shell.commands.Param;
 
 /**
  * A cypher aware parser which can detect shell commands (:prefixed) or cypher.
@@ -41,7 +44,6 @@ public class ShellStatementParser implements StatementParser {
     private static final char BACKTICK = '`';
     private static final char DOUBLE_QUOTE = '"';
     private static final char SINGLE_QUOTE = '\'';
-    private static final Set<String> SINGLE_ARGUMENT_COMMANDS = Set.of(":param", ":params");
 
     @Override
     public ParsedStatements parse(Reader reader) throws IOException {
@@ -53,7 +55,7 @@ public class ShellStatementParser implements StatementParser {
         return parse(new StringReader(line));
     }
 
-    private static ParsedStatements parse(PeekingReader reader) throws IOException {
+    private ParsedStatements parse(PeekingReader reader) throws IOException {
         var result = new ArrayList<ParsedStatement>();
         int nextValue;
 
@@ -98,36 +100,66 @@ public class ShellStatementParser implements StatementParser {
     }
 
     /*
-     * Parses a single cypher shell command statement from the specified reader.
+     * Hacky handwritten parser for commands.
+     *
+     * Commands come in these flavours:
+     * - No argument commands like :help.
+     * - White space separated argument commands like `:connect -u bob -p hej`.
+     * - :param with cypher map syntax (`param {a:1}`), allows multi line argument.
+     * - :param with arrow syntax (`:param a => 1`), single line, single argument.
      */
-    private static ParsedStatement parseCommand(PeekingReader reader) throws IOException {
-        int startOffset = reader.offset();
-        var line = reader.readWhile(c -> c != '\n' && c != '\r');
-        int endOffset = reader.offset() - 1;
-        assert line.startsWith(":");
+    private ParsedStatement parseCommand(PeekingReader reader) throws IOException {
+        final int startOffset = reader.offset();
 
-        var parts = stripTrailingSemicolons(line).split("\\s+");
-        var name = parts[0];
+        final var name = reader.readWhile(c -> !isWhitespace(c) && c != ';').toLowerCase(Locale.US);
+        assert name.startsWith(":");
 
-        var nextChar = reader.peek();
-        var isComplete = nextChar == '\n' || nextChar == '\r';
+        // Skip whitespace after name
+        int read;
+        do {
+            read = reader.read();
+        } while (Character.isWhitespace(read) && read != '\n' && read != '\r');
 
-        if (SINGLE_ARGUMENT_COMMANDS.contains(name)) {
-            // We don't fully parse the commands (yet), but need some special handling for these cases
-            var arg = line.substring(name.length()).trim();
-            return new CommandStatement(
-                    name, arg.isEmpty() ? List.of() : List.of(arg), isComplete, startOffset, endOffset);
+        if (read == '\n' || read == '\r' || read == -1) {
+            // No command parameter
+            // Note, there might be an extra \n that belongs to the statement,
+            // but it does not matter if it's read or not.
+            final var endOffset = read != -1 ? reader.offset() - 2 : reader.offset() - 1;
+            return new CommandStatement(name, List.of(), true, startOffset, endOffset);
+        } else if (Param.NAME.equals(name) || Param.ALIAS.equals(name)) {
+            // :param needs some special handling
+            final var arg = new StringBuilder(Character.toString(read));
+            boolean complete = true;
+            if (read == '{') {
+                // Cypher map syntax, allows for multiline input
+                // Read until the (assumed) end of the map is found
+                complete = readCypher(reader, arg, new MapEndPredicate()); // Read until cypher map ends
+            }
+            reader.readLine(arg); // Read the remainder of the last line (the only line in arrow syntax)
+            final var endOffset = reader.offset() - 1;
+            return new CommandStatement(name, List.of(normaliseCommandArgs(arg)), complete, startOffset, endOffset);
+        } else {
+            // All other commands are single line.
+            final var argString = normaliseCommandArgs(reader.readLine(new StringBuilder(Character.toString(read))));
+            final int endOffset = reader.offset() - 1;
+            final var args = argString.isEmpty() ? List.<String>of() : asList(argString.split("\\s+"));
+            return new CommandStatement(name, args, true, startOffset, endOffset);
         }
-
-        return new CommandStatement(name, Arrays.stream(parts).skip(1).toList(), isComplete, startOffset, endOffset);
     }
 
-    private static String stripTrailingSemicolons(String input) {
-        int i = input.length() - 1;
-        while (i >= 0 && input.charAt(i) == ';') {
+    private String normaliseCommandArgs(StringBuilder input) {
+        // Here we remove trailing white space and semicolons.
+        // The start of the string is already stripped.
+        int i = input.length();
+        while (i > 0 && isWhiteSpaceOrSemiColon(input.charAt(i - 1))) {
             --i;
         }
-        return input.substring(0, i + 1);
+        if (i >= 0) input.setLength(i);
+        return input.toString();
+    }
+
+    private static boolean isWhiteSpaceOrSemiColon(char c) {
+        return c == ';' || Character.isWhitespace(c);
     }
 
     /*
@@ -135,8 +167,19 @@ public class ShellStatementParser implements StatementParser {
      */
     private static ParsedStatement parseCypher(PeekingReader reader) throws IOException {
         int startOffset = reader.offset();
-        String awaitedRightDelimiter = null;
         StringBuilder statement = new StringBuilder();
+        if (readCypher(reader, statement, c -> c == ';')) {
+            // remove semicolon
+            statement.setLength(statement.length() - 1);
+            return new CypherStatement(statement.toString(), true, startOffset, reader.offset() - 2);
+        } else {
+            return new CypherStatement(statement.toString(), false, startOffset, reader.offset() - 1);
+        }
+    }
+
+    private static boolean readCypher(PeekingReader reader, StringBuilder statement, CharPredicate endPredicate)
+            throws IOException {
+        String awaitedRightDelimiter = null;
         int read;
         boolean skipNext = false;
         char current = 0, previous;
@@ -165,11 +208,8 @@ public class ShellStatementParser implements StatementParser {
                 }
             }
             // Not escaped, not in a quote, not in a comment
-            else if (current == ';') {
-                // remove semicolon
-                statement.setLength(statement.length() - 1);
-                String cypherStatement = statement.toString();
-                return new CypherStatement(cypherStatement, true, startOffset, reader.offset() - 2);
+            else if (endPredicate.accept(current)) {
+                return true;
             } else {
                 // If it's the start of a quote or comment
                 awaitedRightDelimiter = getRightDelimiter(previous, current);
@@ -177,7 +217,7 @@ public class ShellStatementParser implements StatementParser {
         }
 
         // No more input
-        return new CypherStatement(statement.toString(), false, startOffset, reader.offset() - 1);
+        return false;
     }
 
     private static boolean isWhitespace(int c) {
@@ -231,6 +271,20 @@ public class ShellStatementParser implements StatementParser {
             case BACKTICK, DOUBLE_QUOTE, SINGLE_QUOTE -> String.valueOf(last);
             default -> null;
         };
+    }
+
+    private static class MapEndPredicate implements CharPredicate {
+        private int bracketDepth = 1; // Init to 1 because the first { is already read
+
+        @Override
+        public boolean accept(char value) {
+            if (value == '{') {
+                bracketDepth += 1;
+            } else if (value == '}') {
+                bracketDepth -= 1;
+            }
+            return bracketDepth <= 0;
+        }
     }
 
     /*
@@ -292,8 +346,19 @@ public class ShellStatementParser implements StatementParser {
             }
         }
 
+        /**
+         * Reads until, but not including, the next line break.
+         */
+        public StringBuilder readLine(StringBuilder builder) throws IOException {
+            int peek;
+            while ((peek = peek()) != -1 && peek != '\n' && peek != '\r') {
+                builder.append((char) read());
+            }
+            return builder;
+        }
+
         public String readWhile(CharPredicate predicate) throws IOException {
-            var line = new StringBuilder();
+            final var line = new StringBuilder();
             int peek;
             while ((peek = peek()) != -1) {
                 if (predicate.accept((char) peek)) {

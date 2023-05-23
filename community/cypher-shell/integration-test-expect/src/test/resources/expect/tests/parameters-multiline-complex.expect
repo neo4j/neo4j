@@ -1,0 +1,10 @@
+#!/usr/bin/expect -f
+
+source "common.expect"
+
+sendQuery ":param {\ra: 1 + 2 * 4,\rb: duration({seconds:1}) + duration({hours:1})\r}"
+sendQuery ":param"
+sendQuery "return \$a, \$b;"
+
+sendQuery ":exit"
+expectCleanExit
