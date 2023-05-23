@@ -42,7 +42,11 @@ public interface FabricTransaction
 
     StatementResult execute( Function<FabricExecutionContext,StatementResult> runLogic );
 
-    void markForTermination( Status reason );
+    /**
+     * Returns {@code true} if the transaction has been marked for termination by the caller,
+     * {@code false} otherwise (For instance, if the transaction has been already terminated by someone else).
+     */
+    boolean markForTermination( Status reason );
 
     Optional<Status> getReasonIfTerminated();
 

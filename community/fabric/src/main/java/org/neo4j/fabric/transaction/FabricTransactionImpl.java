@@ -387,14 +387,14 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
     }
 
     @Override
-    public void markForTermination( Status reason )
+    public boolean markForTermination( Status reason )
     {
         exclusiveLock.lock();
         try
         {
             if ( state != State.OPEN )
             {
-                return;
+                return false;
             }
 
             terminationStatus = reason;
@@ -406,6 +406,8 @@ public class FabricTransactionImpl implements FabricTransaction, CompositeTransa
         {
             exclusiveLock.unlock();
         }
+
+        return true;
     }
 
     @Override
