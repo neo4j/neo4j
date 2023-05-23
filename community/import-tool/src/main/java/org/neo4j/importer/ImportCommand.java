@@ -288,7 +288,7 @@ public class ImportCommand {
                 names = "--strict",
                 arity = "0..1",
                 showDefaultValue = ALWAYS,
-                paramLabel = "<true/false>",
+                paramLabel = "true|false",
                 description =
                         "Whether or not the lookup of nodes referred to from relationships needs to be checked strict. "
                                 + "If disabled, most but not all relationships referring to non-existent nodes will be detected. "
