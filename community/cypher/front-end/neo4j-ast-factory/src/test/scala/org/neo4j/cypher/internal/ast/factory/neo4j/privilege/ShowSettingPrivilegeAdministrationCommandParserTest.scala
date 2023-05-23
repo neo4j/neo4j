@@ -203,7 +203,7 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                      |  "."
                      |  "?"
                      |  "ON"
-                     |  "YIELD"
+                     |  "ZONED"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }
@@ -216,7 +216,7 @@ class ShowSettingPrivilegeAdministrationCommandParserTest extends Administration
                      |  "*"
                      |  "."
                      |  "?"
-                     |  "YIELD"
+                     |  "ZONED"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }

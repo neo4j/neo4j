@@ -27,7 +27,9 @@ public enum ConstraintType {
     NODE_EXISTS("EXISTS"),
     NODE_IS_NOT_NULL("IS NOT NULL"),
     REL_EXISTS("EXISTS"),
-    REL_IS_NOT_NULL("IS NOT NULL");
+    REL_IS_NOT_NULL("IS NOT NULL"),
+    NODE_IS_TYPED("IS TYPED"),
+    REL_IS_TYPED("IS TYPED");
 
     private final String description;
 

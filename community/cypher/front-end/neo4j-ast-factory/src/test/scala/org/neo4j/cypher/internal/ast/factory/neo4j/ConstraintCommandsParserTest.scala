@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.factory.ASTExceptionFactory
 import org.neo4j.cypher.internal.ast.factory.ConstraintType
+import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.util.symbols.CTMap
@@ -788,6 +789,217 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             ))
           }
 
+          Seq("IS TYPED", "IS ::", "::").foreach(typeKeyword => {
+
+            // Node property type
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString (node.prop) $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString (node.prop) $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            // Relationship property type
+
+            test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop $typeKeyword BOOLEAN") {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(s"CREATE CONSTRAINT $forOrOnString ()-[r:R]->() $requireOrAssertString r.prop $typeKeyword BOOLEAN") {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()<-[r:R]-() $requireOrAssertString (r.prop) $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()<-[r:R]->() $requireOrAssertString (r.prop) $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT $forOrOnString ()<-[r:R]-() $requireOrAssertString r.prop $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT IF NOT EXISTS $forOrOnString ()-[r:R]->() $requireOrAssertString r.prop $typeKeyword BOOLEAN"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop) $typeKeyword BOOLEAN OPTIONS {}"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.BooleanTypeName(),
+                None,
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map.empty),
+                containsOn,
+                constraintVersion
+              ))
+            }
+          })
+
           // Create constraint: With name
 
           Seq("NODE", "").foreach(nodeKeyword => {
@@ -1488,6 +1700,195 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
             )
           }
 
+          Seq("IS TYPED", "IS ::", "::").foreach(typeKeyword => {
+
+            // Node property type
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop) $typeKeyword STRING"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.StringTypeName(),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword STRING"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.StringTypeName(),
+                Some("my_constraint"),
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword STRING"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.StringTypeName(),
+                Some("my_constraint"),
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint IF NOT EXISTS $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword STRING"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.StringTypeName(),
+                Some("my_constraint"),
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString node.prop $typeKeyword STRING OPTIONS {}"
+            ) {
+              yields(ast.CreateNodePropertyTypeConstraint(
+                varFor("node"),
+                labelName("Label"),
+                prop("node", "prop"),
+                expressions.StringTypeName(),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.OptionsMap(Map.empty),
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString (node:Label) $requireOrAssertString (node.prop2, node.prop3) $typeKeyword STRING"
+            ) {
+              assertFailsWithException(
+                testName,
+                new Neo4jASTConstructionException(
+                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.NODE_IS_TYPED)
+                )
+              )
+            }
+
+            // Relationship property type
+
+            test(
+              s"CREATE CONSTRAINT `$$my_constraint` $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop $typeKeyword STRING"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.StringTypeName(),
+                Some("$my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT my_constraint $forOrOnString ()-[r:R]-() $requireOrAssertString (r.prop) $typeKeyword STRING"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.StringTypeName(),
+                Some("my_constraint"),
+                ast.IfExistsThrowError,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` $forOrOnString ()-[r:R]-() $requireOrAssertString r.prop $typeKeyword STRING"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.StringTypeName(),
+                Some("$my_constraint"),
+                ast.IfExistsReplace,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT `$$my_constraint` IF NOT EXISTS $forOrOnString ()-[r:R]->() $requireOrAssertString (r.prop) $typeKeyword STRING"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.StringTypeName(),
+                Some("$my_constraint"),
+                ast.IfExistsInvalidSyntax,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE CONSTRAINT `$$my_constraint` IF NOT EXISTS $forOrOnString ()<-[r:R]-() $requireOrAssertString r.prop $typeKeyword STRING"
+            ) {
+              yields(ast.CreateRelationshipPropertyTypeConstraint(
+                varFor("r"),
+                relTypeName("R"),
+                prop("r", "prop"),
+                expressions.StringTypeName(),
+                Some("$my_constraint"),
+                ast.IfExistsDoNothing,
+                ast.NoOptions,
+                containsOn,
+                constraintVersion
+              ))
+            }
+
+            test(
+              s"CREATE OR REPLACE CONSTRAINT my_constraint $forOrOnString ()-[r1:REL]-() $requireOrAssertString (r2.prop2, r3.prop3) $typeKeyword STRING"
+            ) {
+              assertFailsWithException(
+                testName,
+                new Neo4jASTConstructionException(
+                  ASTExceptionFactory.onlySinglePropertyAllowed(ConstraintType.REL_IS_TYPED)
+                )
+              )
+            }
+          })
+
           // Negative tests
 
           test(
@@ -1609,6 +2010,90 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
           }
         }
     }
+
+  // Property types
+
+  Seq(
+    ("BOOL", expressions.BooleanTypeName()),
+    ("BOOLEAN", expressions.BooleanTypeName()),
+    ("VARCHAR", expressions.StringTypeName()),
+    ("STRING", expressions.StringTypeName()),
+    ("INTEGER", expressions.IntegerTypeName()),
+    ("INT", expressions.IntegerTypeName()),
+    ("SIGNED INTEGER", expressions.IntegerTypeName()),
+    ("FLOAT", expressions.FloatTypeName()),
+    ("DATE", expressions.DateTypeName()),
+    ("LOCAL TIME", expressions.LocalTimeTypeName()),
+    ("TIME WITHOUT TIMEZONE", expressions.LocalTimeTypeName()),
+    ("ZONED TIME", expressions.ZonedTimeTypeName()),
+    ("TIME WITH TIMEZONE", expressions.ZonedTimeTypeName()),
+    ("LOCAL DATETIME", expressions.LocalDateTimeTypeName()),
+    ("TIMESTAMP WITHOUT TIMEZONE", expressions.LocalDateTimeTypeName()),
+    ("ZONED DATETIME", expressions.ZonedDateTimeTypeName()),
+    ("TIMESTAMP WITH TIMEZONE", expressions.ZonedDateTimeTypeName()),
+    ("DURATION", expressions.DurationTypeName()),
+    ("POINT", expressions.PointTypeName())
+  ).foreach { case (typeString, typeExpr: expressions.CypherTypeName) =>
+    test(s"CREATE CONSTRAINT FOR (n:Label) REQUIRE r.prop IS TYPED $typeString") {
+      yields(ast.CreateNodePropertyTypeConstraint(
+        varFor("n"),
+        labelName("Label"),
+        prop("r", "prop"),
+        typeExpr,
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        containsOn = false,
+        ast.ConstraintVersion2
+      ))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR (n:Label) REQUIRE r.prop IS TYPED ${typeString.toLowerCase}"
+    ) {
+      yields(ast.CreateNodePropertyTypeConstraint(
+        varFor("n"),
+        labelName("Label"),
+        prop("r", "prop"),
+        typeExpr,
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        containsOn = false,
+        ast.ConstraintVersion2
+      ))
+    }
+
+    test(s"CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE n.prop IS TYPED ${typeString.toLowerCase}") {
+      yields(ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("n", "prop"),
+        typeExpr,
+        None,
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        containsOn = false,
+        ast.ConstraintVersion2
+      ))
+    }
+
+    test(
+      s"CREATE CONSTRAINT my_constraint FOR ()-[r:R]-() REQUIRE n.prop IS TYPED $typeString"
+    ) {
+      yields(ast.CreateRelationshipPropertyTypeConstraint(
+        varFor("r"),
+        relTypeName("R"),
+        prop("n", "prop"),
+        typeExpr,
+        Some("my_constraint"),
+        ast.IfExistsThrowError,
+        ast.NoOptions,
+        containsOn = false,
+        ast.ConstraintVersion2
+      ))
+    }
+  }
 
   // ASSERT EXISTS
 
@@ -2034,7 +2519,7 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
   }
 
   test("CREATE CONSTRAINT FOR (n:Label) REQUIRE (n.prop)") {
-    assertFailsWithMessage(testName, "Invalid input '': expected \"IS\" (line 1, column 49 (offset: 48))")
+    assertFailsWithMessage(testName, "Invalid input '': expected \"::\" or \"IS\" (line 1, column 49 (offset: 48))")
   }
 
   test("CREATE CONSTRAINT FOR (node:Label) REQUIRE EXISTS (node.prop)") {
@@ -2049,11 +2534,13 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessage(
       testName,
       """Invalid input 'NULL': expected
+        |  "::"
         |  "KEY"
         |  "NODE"
         |  "NOT"
         |  "REL"
         |  "RELATIONSHIP"
+        |  "TYPED"
         |  "UNIQUE" (line 1, column 65 (offset: 64))""".stripMargin
     )
   }
@@ -2062,11 +2549,13 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessage(
       testName,
       """Invalid input 'NULL': expected
+        |  "::"
         |  "KEY"
         |  "NODE"
         |  "NOT"
         |  "REL"
         |  "RELATIONSHIP"
+        |  "TYPED"
         |  "UNIQUE" (line 1, column 67 (offset: 66))""".stripMargin
     )
   }
@@ -2075,11 +2564,13 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessage(
       testName,
       """Invalid input 'NULL': expected
+        |  "::"
         |  "KEY"
         |  "NODE"
         |  "NOT"
         |  "REL"
         |  "RELATIONSHIP"
+        |  "TYPED"
         |  "UNIQUE" (line 1, column 69 (offset: 68))""".stripMargin
     )
   }
@@ -2088,13 +2579,133 @@ class ConstraintCommandsParserTest extends AdministrationAndSchemaCommandParserT
     assertFailsWithMessage(
       testName,
       """Invalid input 'NULL': expected
+        |  "::"
         |  "KEY"
         |  "NODE"
         |  "NOT"
         |  "REL"
         |  "RELATIONSHIP"
+        |  "TYPED"
         |  "UNIQUE" (line 1, column 71 (offset: 70))""".stripMargin
     )
+  }
+
+  test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS TYPED") {
+    assertFailsWithMessageStart(
+      testName,
+      """Invalid input '': expected
+        |  "BOOL"
+        |  "BOOLEAN"
+        |  "DATE"
+        |  "DURATION"
+        |  "FLOAT"
+        |  "INT"
+        |  "INTEGER"
+        |  "LOCAL"
+        |  "POINT"
+        |  "SIGNED"
+        |  "STRING"
+        |  "TIME"
+        |  "TIMESTAMP"
+        |  "VARCHAR"
+        |  "ZONED"""".stripMargin
+    )
+  }
+
+  test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS ::") {
+    assertFailsWithMessageStart(
+      testName,
+      """Invalid input '': expected
+        |  "BOOL"
+        |  "BOOLEAN"
+        |  "DATE"
+        |  "DURATION"
+        |  "FLOAT"
+        |  "INT"
+        |  "INTEGER"
+        |  "LOCAL"
+        |  "POINT"
+        |  "SIGNED"
+        |  "STRING"
+        |  "TIME"
+        |  "TIMESTAMP"
+        |  "VARCHAR"
+        |  "ZONED"""".stripMargin
+    )
+  }
+
+  test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p ::") {
+    assertFailsWithMessageStart(
+      testName,
+      """Invalid input '': expected
+        |  "BOOL"
+        |  "BOOLEAN"
+        |  "DATE"
+        |  "DURATION"
+        |  "FLOAT"
+        |  "INT"
+        |  "INTEGER"
+        |  "LOCAL"
+        |  "POINT"
+        |  "SIGNED"
+        |  "STRING"
+        |  "TIME"
+        |  "TIMESTAMP"
+        |  "VARCHAR"
+        |  "ZONED"""".stripMargin
+    )
+  }
+
+  test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: TYPED") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'TYPED': expected
+        |  "BOOL"
+        |  "BOOLEAN"
+        |  "DATE"
+        |  "DURATION"
+        |  "FLOAT"
+        |  "INT"
+        |  "INTEGER"
+        |  "LOCAL"
+        |  "POINT"
+        |  "SIGNED"
+        |  "STRING"
+        |  "TIME"
+        |  "TIMESTAMP"
+        |  "VARCHAR"
+        |  "ZONED" (line 1, column 44 (offset: 43))""".stripMargin
+    )
+  }
+
+  test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: UNIQUE") {
+    assertFailsWithMessage(
+      testName,
+      """Invalid input 'UNIQUE': expected
+        |  "BOOL"
+        |  "BOOLEAN"
+        |  "DATE"
+        |  "DURATION"
+        |  "FLOAT"
+        |  "INT"
+        |  "INTEGER"
+        |  "LOCAL"
+        |  "POINT"
+        |  "SIGNED"
+        |  "STRING"
+        |  "TIME"
+        |  "TIMESTAMP"
+        |  "VARCHAR"
+        |  "ZONED" (line 1, column 44 (offset: 43))""".stripMargin
+    )
+  }
+
+  test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p :: BOOLEAN UNIQUE") {
+    assertFailsWithMessageStart(testName, """Invalid input 'UNIQUE': expected "OPTIONS" or <EOF>""")
+  }
+
+  test("CREATE CONSTRAINT FOR (n:L) REQUIRE n.p IS :: BOOL EAN") {
+    assertFailsWithMessageStart(testName, """Invalid input 'EAN': expected "OPTIONS" or <EOF>""")
   }
 
   // Drop constraint

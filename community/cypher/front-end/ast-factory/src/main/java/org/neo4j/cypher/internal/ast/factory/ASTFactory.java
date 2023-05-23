@@ -360,6 +360,7 @@ public interface ASTFactory<
             VARIABLE variable,
             StringPos<POS> label,
             List<PROPERTY> properties,
+            ParserCypherTypeName propertyType,
             SimpleEither<Map<String, EXPRESSION>, PARAMETER> options,
             boolean containsOn,
             ConstraintVersion constraintVersion);

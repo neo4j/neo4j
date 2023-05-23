@@ -80,6 +80,7 @@ import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodeLabelAction
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateNodePropertyTypeConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
 import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
@@ -88,6 +89,7 @@ import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyTypeConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipTypeAction
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
@@ -334,12 +336,16 @@ import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
 import org.neo4j.cypher.internal.expressions.BooleanLiteral
+import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.CypherTypeName
+import org.neo4j.cypher.internal.expressions.DateTypeName
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
+import org.neo4j.cypher.internal.expressions.DurationTypeName
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.EntityType
 import org.neo4j.cypher.internal.expressions.Equals
@@ -349,6 +355,7 @@ import org.neo4j.cypher.internal.expressions.ExtractScope
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.FilterScope
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
+import org.neo4j.cypher.internal.expressions.FloatTypeName
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
@@ -356,6 +363,7 @@ import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.Infinity
+import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -370,6 +378,8 @@ import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.Literal
 import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName
+import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.MapProjectionElement
@@ -434,6 +444,7 @@ import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.UnaryAdd
@@ -442,6 +453,8 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
+import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
@@ -1649,6 +1662,21 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     props <- oneOrMore(_variableProperty)
   } yield props
 
+  def _cypherTypeExpressionType: Gen[CypherTypeName] = for {
+    _type <- oneOf(
+      BooleanTypeName(),
+      StringTypeName(),
+      IntegerTypeName(),
+      FloatTypeName(),
+      DateTypeName(),
+      LocalTimeTypeName(),
+      ZonedTimeTypeName(),
+      LocalDateTimeTypeName(),
+      ZonedDateTimeTypeName(),
+      DurationTypeName()
+    )
+  } yield _type
+
   def _createIndex: Gen[CreateIndex] = for {
     variable <- _variable
     labelName <- _labelName
@@ -1714,6 +1742,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     relTypeName <- _relTypeName
     props <- _listOfProperties
     prop <- _variableProperty
+    propType <- _cypherTypeExpressionType
     name <- option(_identifier)
     ifExistsDo <- _ifExistsDo
     containsOn <- boolean
@@ -1796,7 +1825,41 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       ConstraintVersion2,
       use
     )(pos)
-    command <- oneOf(nodeKey, relKey, nodeUniqueness, compositeUniqueness, relUniqueness, nodeExistence, relExistence)
+    nodePropType = CreateNodePropertyTypeConstraint(
+      variable,
+      labelName,
+      prop,
+      propType,
+      name,
+      ifExistsDo,
+      options,
+      containsOn,
+      ConstraintVersion2,
+      use
+    )(pos)
+    relPropType = CreateRelationshipPropertyTypeConstraint(
+      variable,
+      relTypeName,
+      prop,
+      propType,
+      name,
+      ifExistsDo,
+      options,
+      containsOn,
+      ConstraintVersion2,
+      use
+    )(pos)
+    command <- oneOf(
+      nodeKey,
+      relKey,
+      nodeUniqueness,
+      compositeUniqueness,
+      relUniqueness,
+      nodeExistence,
+      relExistence,
+      nodePropType,
+      relPropType
+    )
   } yield command
 
   def _dropConstraint: Gen[DropConstraintOnName] = for {

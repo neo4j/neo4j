@@ -81,6 +81,7 @@ import org.neo4j.cypher.internal.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
+import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
@@ -422,6 +423,8 @@ TOKEN [IGNORE_CASE] :
     | < AT: "AT" >
     | < BAR: "|" >
     | < BINDINGS: "BINDINGS" >
+    | < BOOL: "BOOL" >
+    | < BOOLEAN: "BOOLEAN" >
     | < BOOSTED: "BOOSTED" >
     | < BREAK: "BREAK" >
     | < BRIEF: "BRIEF" >
@@ -433,6 +436,7 @@ TOKEN [IGNORE_CASE] :
     | < CHANGE: "CHANGE">
     | < COLLECT: "COLLECT">
     | < COLON: ":" >
+    | < COLONCOLON: "::" >
     | < COMMA: "," >
     | < COMMAND: "COMMAND">
     | < COMMANDS: "COMMANDS">
@@ -450,6 +454,8 @@ TOKEN [IGNORE_CASE] :
     | < DATA: "DATA">
     | < DATABASE: "DATABASE">
     | < DATABASES: "DATABASES">
+    | < DATE: "DATE">
+    | < DATETIME: "DATETIME">
     | < DBMS: "DBMS">
     | < DEALLOCATE: "DEALLOCATE" >
     | < DEFAULT_TOKEN: "DEFAULT">
@@ -469,6 +475,7 @@ TOKEN [IGNORE_CASE] :
     | < DROP: "DROP" >
     | < DRYRUN: "DRYRUN" >
     | < DUMP: "DUMP" >
+    | < DURATION: "DURATION" >
     | < EACH: "EACH" >
     | < ENABLE: "ENABLE" >
     | < ELEMENT: "ELEMENT" >
@@ -487,6 +494,7 @@ TOKEN [IGNORE_CASE] :
     | < FAIL: "FAIL" >
     | < FALSE: "false" >
     | < FIELDTERMINATOR: "FIELDTERMINATOR" >
+    | < FLOAT: "FLOAT" >
     | < FOR: "FOR" >
     | < FOREACH: "FOREACH" >
     | < FROM: "FROM" >
@@ -510,6 +518,8 @@ TOKEN [IGNORE_CASE] :
     | < INDEXES: "INDEXES" >
     | < INF: "INF" >
     | < INFINITY: "INFINITY" >
+    | < INT: "INT" >
+    | < INTEGER: "INTEGER" >
     | < IS: "IS" >
     | < JOIN: "JOIN" >
     | < KEY: "KEY" >
@@ -522,6 +532,7 @@ TOKEN [IGNORE_CASE] :
     | < LE: "<=" >
     | < LIMITROWS: "LIMIT" >
     | < LOAD: "LOAD" >
+    | < LOCAL: "LOCAL" >
     | < LOOKUP: "LOOKUP" >
     | < LPAREN: "(" >
     | < LT: "<" >
@@ -611,18 +622,23 @@ TOKEN [IGNORE_CASE] :
     | < SHORTEST_PATH: "shortestPath" >
     | < SHORTEST: "SHORTEST" >
     | < SHOW: "SHOW">
+    | < SIGNED: "SIGNED" >
     | < SINGLE: "SINGLE" >
     | < SKIPROWS: "SKIP" >
     | < START: "START">
     | < STARTS: "STARTS" >
     | < STATUS: "STATUS" >
     | < STOP: "STOP">
+    | < STRING: "STRING">
     | < SUSPENDED: "SUSPENDED">
     | < TARGET: "TARGET" >
     | < TERMINATE: "TERMINATE">
     | < TEXT: "TEXT">
     | < THEN: "THEN" >
+    | < TIME: "TIME" >
     | < TIMES: "*" >
+    | < TIMESTAMP: "TIMESTAMP" >
+    | < TIMEZONE: "TIMEZONE" >
     | < TO: "TO" >
     | < TOPOLOGY: "TOPOLOGY" >
     | < TRANSACTION: "TRANSACTION" >
@@ -630,6 +646,7 @@ TOKEN [IGNORE_CASE] :
     | < TRAVERSE: "TRAVERSE" >
     | < TRUE: "true">
     | < TYPE: "TYPE">
+    | < TYPED: "TYPED">
     | < TYPES: "TYPES">
     | < UNION: "UNION" >
     | < UNIQUE: "UNIQUE" >
@@ -639,14 +656,17 @@ TOKEN [IGNORE_CASE] :
     | < USER: "USER">
     | < USERS: "USERS">
     | < USING: "USING" >
+    | < VARCHAR: "VARCHAR" >
     | < VERBOSE: "VERBOSE" >
     | < WAIT: "WAIT">
     | < WHEN: "WHEN" >
     | < WHERE: "WHERE" >
     | < WITH: "WITH" >
+    | < WITHOUT: "WITHOUT" >
     | < WRITE: "WRITE" >
     | < XOR: "XOR" >
     | < YIELD: "YIELD" >
+    | < ZONED: "ZONED" >
 }
 
 /* IDENTIFIERS */
@@ -4483,7 +4503,8 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
     boolean ifNotExists = false;
     Token label;
     VARIABLE variable = null;
-    List<PROPERTY> properties= new ArrayList<>();
+    List<PROPERTY> properties = new ArrayList<>();
+    ParserCypherTypeName propertyType = null;
     SimpleEither<Map<String, EXPRESSION>, PARAMETER> options = null;
     ConstraintType constraintType = ConstraintType.NODE_EXISTS;
     boolean isNode = false;
@@ -4521,7 +4542,12 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
         )
         properties=PropertyList()
         (
-            errorStart=<IS>
+            <COLONCOLON> propertyType = cypherTypeName() {
+                // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop :: <TYPE>
+                // CREATE CONSTRAINT FOR ()-[variable:LABEL]-() REQUIRE variable.prop :: <TYPE>
+                constraintType = isNode ? ConstraintType.NODE_IS_TYPED : ConstraintType.REL_IS_TYPED;
+            }
+            | errorStart=<IS>
             (
                 <UNIQUE> {
                         // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS UNIQUE
@@ -4588,13 +4614,55 @@ SCHEMA_COMMAND CreateConstraint( Token start, boolean replace ) throws Exception
                         constraintVersion = ConstraintVersion.CONSTRAINT_VERSION_1;
                     }
                 }
+                | (<TYPED> | <COLONCOLON>) propertyType = cypherTypeName() {
+                    // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS :: <TYPE>
+                    // CREATE CONSTRAINT FOR (variable:LABEL) REQUIRE variable.prop IS TYPED <TYPE>
+                    // CREATE CONSTRAINT FOR ()-[variable:LABEL]-() REQUIRE variable.prop IS :: <TYPE>
+                    // CREATE CONSTRAINT FOR ()-[variable:LABEL]-() REQUIRE variable.prop IS TYPED <TYPE>
+                    constraintType = isNode ? ConstraintType.NODE_IS_TYPED : ConstraintType.REL_IS_TYPED;
+                }
             )
         )
     )
     ( <OPTIONS> options=MapOrParameter() )?
     {
         return astFactory.createConstraint( pos( start ), constraintType, replace, ifNotExists, name, variable,
-        new StringPos<POS>( label.image, pos( label ) ), properties, options, containsOn, constraintVersion );
+        new StringPos<POS>( label.image, pos( label ) ), properties, propertyType, options, containsOn, constraintVersion );
+    }
+}
+
+ParserCypherTypeName cypherTypeName():
+{
+    ParserCypherTypeName propertyType = null;
+}
+{
+    (
+        (<BOOLEAN> | <BOOL>) { propertyType = ParserCypherTypeName.BOOLEAN; }
+        | (<STRING> | <VARCHAR>) { propertyType = ParserCypherTypeName.STRING; }
+        | (<INT> | (<SIGNED>)? <INTEGER>) { propertyType = ParserCypherTypeName.INTEGER; }
+        | <FLOAT> { propertyType = ParserCypherTypeName.FLOAT; }
+        | <DATE> { propertyType = ParserCypherTypeName.DATE; }
+        | <LOCAL> (
+            <TIME> { propertyType = ParserCypherTypeName.LOCAL_TIME; }
+            | <DATETIME> { propertyType = ParserCypherTypeName.LOCAL_DATETIME; }
+        )
+        | <ZONED> (
+            <TIME> { propertyType = ParserCypherTypeName.ZONED_TIME; }
+            | <DATETIME> { propertyType = ParserCypherTypeName.ZONED_DATETIME; }
+        )
+        | <TIME> (
+            <WITHOUT> <TIMEZONE> { propertyType = ParserCypherTypeName.LOCAL_TIME; }
+            | <WITH> <TIMEZONE> { propertyType = ParserCypherTypeName.ZONED_TIME; }
+        )
+        | <TIMESTAMP> (
+            <WITHOUT> <TIMEZONE> { propertyType = ParserCypherTypeName.LOCAL_DATETIME; }
+            | <WITH> <TIMEZONE> { propertyType = ParserCypherTypeName.ZONED_DATETIME; }
+        )
+        | <DURATION> { propertyType = ParserCypherTypeName.DURATION; }
+        | <POINT> { propertyType = ParserCypherTypeName.POINT; }
+    )
+    {
+        return propertyType;
     }
 }
 
@@ -6571,6 +6639,8 @@ Token UnescapedSymbolicNameString() :
         | t=<ASSIGN>
         | t=<AT>
         | t=<BINDINGS>
+        | t=<BOOL>
+        | t=<BOOLEAN>
         | t=<BOOSTED>
         | t=<BREAK>
         | t=<BRIEF>
@@ -6597,6 +6667,8 @@ Token UnescapedSymbolicNameString() :
         | t=<DATA>
         | t=<DATABASE>
         | t=<DATABASES>
+        | t=<DATE>
+        | t=<DATETIME>
         | t=<DBMS>
         | t=<DEALLOCATE>
         | t=<DEFAULT_TOKEN>
@@ -6612,6 +6684,7 @@ Token UnescapedSymbolicNameString() :
         | t=<DROP>
         | t=<DRYRUN>
         | t=<DUMP>
+        | t=<DURATION>
         | t=<EACH>
         | t=<ELEMENT>
         | t=<ELEMENTS>
@@ -6629,6 +6702,7 @@ Token UnescapedSymbolicNameString() :
         | t=<FAIL>
         | t=<FALSE>
         | t=<FIELDTERMINATOR>
+        | t=<FLOAT>
         | t=<FOREACH>
         | t=<FOR>
         | t=<FROM>
@@ -6649,6 +6723,8 @@ Token UnescapedSymbolicNameString() :
         | t=<INDEXES>
         | t=<INF>
         | t=<INFINITY>
+        | t=<INT>
+        | t=<INTEGER>
         | t=<IS>
         | t=<JOIN>
         | t=<KEY>
@@ -6656,6 +6732,7 @@ Token UnescapedSymbolicNameString() :
         | t=<LABELS>
         | t=<LIMITROWS>
         | t=<LOAD>
+        | t=<LOCAL>
         | t=<LOOKUP>
         | t=<MATCH>
         | t=<MANAGEMENT>
@@ -6730,17 +6807,22 @@ Token UnescapedSymbolicNameString() :
         | t=<SHORTEST>
         | t=<SHORTEST_PATH>
         | t=<SHOW>
+        | t=<SIGNED>
         | t=<SINGLE>
         | t=<SKIPROWS>
         | t=<START>
         | t=<STARTS>
         | t=<STATUS>
         | t=<STOP>
+        | t=<STRING>
         | t=<SUSPENDED>
         | t=<TARGET>
         | t=<TERMINATE>
         | t=<TEXT>
         | t=<THEN>
+        | t=<TIME>
+        | t=<TIMESTAMP>
+        | t=<TIMEZONE>
         | t=<TO>
         | t=<TOPOLOGY>
         | t=<TRANSACTION>
@@ -6748,6 +6830,7 @@ Token UnescapedSymbolicNameString() :
         | t=<TRAVERSE>
         | t=<TRUE>
         | t=<TYPE>
+        | t=<TYPED>
         | t=<TYPES>
         | t=<UNION>
         | t=<UNIQUE>
@@ -6757,14 +6840,17 @@ Token UnescapedSymbolicNameString() :
         | t=<USER>
         | t=<USERS>
         | t=<USING>
+        | t=<VARCHAR>
         | t=<VERBOSE>
         | t=<WAIT>
         | t=<WHEN>
         | t=<WHERE>
         | t=<WITH>
+        | t=<WITHOUT>
         | t=<WRITE>
         | t=<XOR>
         | t=<YIELD>
+        | t=<ZONED>
     )
     {
         return t;

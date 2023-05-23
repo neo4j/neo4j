@@ -337,6 +337,7 @@ import org.neo4j.cypher.internal.ast.factory.ConstraintVersion
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes
 import org.neo4j.cypher.internal.ast.factory.HintIndexType
 import org.neo4j.cypher.internal.ast.factory.ParameterType
+import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName
 import org.neo4j.cypher.internal.ast.factory.ScopeType
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes
 import org.neo4j.cypher.internal.ast.factory.SimpleEither
@@ -347,18 +348,23 @@ import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.AnyIterablePredicate
+import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.Contains
 import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.CypherTypeName
+import org.neo4j.cypher.internal.expressions.DateTypeName
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
 import org.neo4j.cypher.internal.expressions.Divide
+import org.neo4j.cypher.internal.expressions.DurationTypeName
 import org.neo4j.cypher.internal.expressions.EndsWith
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
+import org.neo4j.cypher.internal.expressions.FloatTypeName
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GraphPatternQuantifier
@@ -366,6 +372,7 @@ import org.neo4j.cypher.internal.expressions.GreaterThan
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.Infinity
+import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
@@ -378,6 +385,8 @@ import org.neo4j.cypher.internal.expressions.ListComprehension
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.LiteralEntry
+import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName
+import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.MapProjection
@@ -409,6 +418,7 @@ import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
+import org.neo4j.cypher.internal.expressions.PointTypeName
 import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.ProcedureOutput
@@ -436,6 +446,7 @@ import org.neo4j.cypher.internal.expressions.SingleIterablePredicate
 import org.neo4j.cypher.internal.expressions.StarQuantifier
 import org.neo4j.cypher.internal.expressions.StartsWith
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.expressions.Subtract
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.expressions.UnaryAdd
@@ -444,6 +455,8 @@ import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.VariableSelector
 import org.neo4j.cypher.internal.expressions.Xor
+import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
+import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName
 import org.neo4j.cypher.internal.label_expressions.LabelExpression
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
@@ -1524,6 +1537,7 @@ class Neo4jASTFactory(query: String)
     variable: Variable,
     label: StringPos[InputPosition],
     javaProperties: util.List[Property],
+    javaPropertyType: ParserCypherTypeName,
     options: SimpleEither[util.Map[String, Expression], Parameter],
     containsOn: Boolean,
     constraintVersion: ConstraintVersion
@@ -1601,6 +1615,34 @@ class Neo4jASTFactory(query: String)
           containsOn,
           constraintVersionScala
         )(p)
+      case ConstraintType.NODE_IS_TYPED =>
+        validateSingleProperty(properties, constraintType)
+        val scalaPropertyType = convertCypherType(javaPropertyType)
+        ast.CreateNodePropertyTypeConstraint(
+          variable,
+          LabelName(label.string)(label.pos),
+          properties.head,
+          scalaPropertyType,
+          Option(name),
+          ifExistsDo(replace, ifNotExists),
+          asOptionsAst(options),
+          containsOn,
+          constraintVersionScala
+        )(p)
+      case ConstraintType.REL_IS_TYPED =>
+        validateSingleProperty(properties, constraintType)
+        val scalaPropertyTypes = convertCypherType(javaPropertyType)
+        ast.CreateRelationshipPropertyTypeConstraint(
+          variable,
+          RelTypeName(label.string)(label.pos),
+          properties.head,
+          scalaPropertyTypes,
+          Option(name),
+          ifExistsDo(replace, ifNotExists),
+          asOptionsAst(options),
+          containsOn,
+          constraintVersionScala
+        )(p)
     }
   }
 
@@ -1634,6 +1676,33 @@ class Neo4jASTFactory(query: String)
   private def validateSingleProperty(seq: Seq[_], constraintType: ConstraintType): Unit = {
     if (seq.size != 1)
       throw new Neo4jASTConstructionException(ASTExceptionFactory.onlySinglePropertyAllowed(constraintType))
+  }
+
+  private def convertCypherType(javaType: ParserCypherTypeName): CypherTypeName = javaType match {
+    case ParserCypherTypeName.BOOLEAN =>
+      BooleanTypeName()
+    case ParserCypherTypeName.STRING =>
+      StringTypeName()
+    case ParserCypherTypeName.INTEGER =>
+      IntegerTypeName()
+    case ParserCypherTypeName.FLOAT =>
+      FloatTypeName()
+    case ParserCypherTypeName.DATE =>
+      DateTypeName()
+    case ParserCypherTypeName.LOCAL_TIME =>
+      LocalTimeTypeName()
+    case ParserCypherTypeName.ZONED_TIME =>
+      ZonedTimeTypeName()
+    case ParserCypherTypeName.LOCAL_DATETIME =>
+      LocalDateTimeTypeName()
+    case ParserCypherTypeName.ZONED_DATETIME =>
+      ZonedDateTimeTypeName()
+    case ParserCypherTypeName.DURATION =>
+      DurationTypeName()
+    case ParserCypherTypeName.POINT =>
+      PointTypeName()
+    case ct =>
+      throw new Neo4jASTConstructionException(s"Unknown Cypher type: $ct")
   }
 
   // Index Commands

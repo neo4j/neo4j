@@ -36,6 +36,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSERT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ASSIGN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.AT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BINDINGS;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOL;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOLEAN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BOOSTED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BREAK;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.BRIEF;
@@ -62,6 +64,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.CURRENT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATA;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATABASE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATABASES;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DATETIME;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DBMS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEALLOCATE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DEFAULT_TOKEN;
@@ -77,6 +81,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DRIVER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DROP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DRYRUN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DUMP;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.DURATION;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ELEMENTS;
@@ -95,6 +100,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.EXISTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FAIL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FALSE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FIELDTERMINATOR;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FLOAT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FOREACH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.FROM;
@@ -117,6 +123,8 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEX;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INDEXES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INF;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INFINITY;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INT;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.INTEGER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.IS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.JOIN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.KEY;
@@ -124,6 +132,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LABEL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LABELS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LIMITROWS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOAD;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOCAL;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.LOOKUP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.MANAGEMENT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.MATCH;
@@ -198,17 +207,22 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SETTINGS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SHORTEST;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SHORTEST_PATH;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SHOW;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SIGNED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SINGLE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SKIPROWS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.START;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STARTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STATUS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STOP;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STRING;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SUSPENDED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TARGET;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TERMINATE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TEXT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.THEN;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TIME;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TIMESTAMP;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TIMEZONE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TO;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TOPOLOGY;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRANSACTION;
@@ -216,6 +230,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRANSACTIO
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRAVERSE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TRUE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TYPE;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TYPED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TYPES;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNION;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.UNIQUE;
@@ -225,14 +240,17 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USER;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USERS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.USING;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VARCHAR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.VERBOSE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WAIT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WHEN;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WHERE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WITH;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WITHOUT;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.WRITE;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.XOR;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.YIELD;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.ZONED;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -259,6 +277,8 @@ public class IdentifierTokens {
             ASSIGN,
             AT,
             BINDINGS,
+            BOOL,
+            BOOLEAN,
             BOOSTED,
             BREAK,
             BRIEF,
@@ -285,6 +305,8 @@ public class IdentifierTokens {
             DATA,
             DATABASE,
             DATABASES,
+            DATE,
+            DATETIME,
             DBMS,
             DEALLOCATE,
             DEFAULT_TOKEN,
@@ -300,6 +322,7 @@ public class IdentifierTokens {
             DROP,
             DRYRUN,
             DUMP,
+            DURATION,
             EACH,
             ELEMENT,
             ELEMENTS,
@@ -317,6 +340,7 @@ public class IdentifierTokens {
             FAIL,
             FALSE,
             FIELDTERMINATOR,
+            FLOAT,
             FOR,
             FOREACH,
             FROM,
@@ -339,6 +363,8 @@ public class IdentifierTokens {
             INDEXES,
             INF,
             INFINITY,
+            INT,
+            INTEGER,
             IS,
             JOIN,
             KEY,
@@ -346,6 +372,7 @@ public class IdentifierTokens {
             LABELS,
             LIMITROWS,
             LOAD,
+            LOCAL,
             LOOKUP,
             MANAGEMENT,
             MATCH,
@@ -420,17 +447,22 @@ public class IdentifierTokens {
             SHORTEST,
             SHORTEST_PATH,
             SHOW,
+            SIGNED,
             SINGLE,
             SKIPROWS,
             START,
             STARTS,
             STATUS,
             STOP,
+            STRING,
             SUSPENDED,
             TARGET,
             TERMINATE,
             TEXT,
             THEN,
+            TIME,
+            TIMESTAMP,
+            TIMEZONE,
             TO,
             TOPOLOGY,
             TRANSACTION,
@@ -438,6 +470,7 @@ public class IdentifierTokens {
             TRAVERSE,
             TRUE,
             TYPE,
+            TYPED,
             TYPES,
             UNION,
             UNIQUE,
@@ -447,14 +480,17 @@ public class IdentifierTokens {
             USER,
             USERS,
             USING,
+            VARCHAR,
             VERBOSE,
             WAIT,
+            WITHOUT,
             WHEN,
             WHERE,
             WITH,
             WRITE,
             XOR,
-            YIELD));
+            YIELD,
+            ZONED));
 
     public static Set<Integer> getIdentifierTokens() {
         return identifiers;

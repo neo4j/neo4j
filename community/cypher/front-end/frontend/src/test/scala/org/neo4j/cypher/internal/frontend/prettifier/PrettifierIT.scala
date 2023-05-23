@@ -617,7 +617,6 @@ class PrettifierIT extends CypherFunSuite {
       "DROP INDEX foo IF EXISTS"
   )
 
-  // Constraint commands
   def constraintCommandTests(): Seq[(String, String)] = Seq(
     "create CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY" ->
       "CREATE CONSTRAINT FOR (n:A) REQUIRE (n.p) IS NODE KEY",
@@ -767,6 +766,34 @@ class PrettifierIT extends CypherFunSuite {
       "CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
     "create or Replace CONSTRAINT foo FOR ()-[r:R]-() REQUIRE r.p IS NOT NULL" ->
       "CREATE OR REPLACE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS NOT NULL",
+    "create CONSTRAINT FOR (a:A) REQUIRE (a.p) is typed boolean" ->
+      "CREATE CONSTRAINT FOR (a:A) REQUIRE (a.p) IS :: BOOLEAN",
+    "create CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS :: int" ->
+      "CREATE CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS :: INTEGER",
+    "create CONSTRAINT `foo` FOR (a:A) REQUIRE (a.p) IS TYPED STriNG OPTIONS {}" ->
+      "CREATE CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS :: STRING OPTIONS {}",
+    "create CONSTRAINT `foo` FOR (a:A) REQUIRE a.p :: FLOAT OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
+      """CREATE CONSTRAINT foo FOR (a:A) REQUIRE (a.p) IS :: FLOAT OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
+    "create CONSTRAINT `$foo` FOR (a:A) REQUIRE a.p IS :: varChar" ->
+      "CREATE CONSTRAINT `$foo` FOR (a:A) REQUIRE (a.p) IS :: STRING",
+    "create OR replace CONSTRAINT FOR (a:A) REQUIRE a.p IS TYPED time with timezone" ->
+      "CREATE OR REPLACE CONSTRAINT FOR (a:A) REQUIRE (a.p) IS :: ZONED TIME",
+    "create CONSTRAINT foo if not EXISTS FOR (a:A) REQUIRE a.p IS :: INTEGER" ->
+      "CREATE CONSTRAINT foo IF NOT EXISTS FOR (a:A) REQUIRE (a.p) IS :: INTEGER",
+    "create CONSTRAINT FOR ()-[r:R]-() REQUIRE r.p is tyPED bool" ->
+      "CREATE CONSTRAINT FOR ()-[r:R]-() REQUIRE (r.p) IS :: BOOLEAN",
+    "create CONSTRAINT foo FOR ()-[r:R]->() REQUIRE (r.p) IS :: int" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS :: INTEGER",
+    "create CONSTRAINT `foo` FOR ()<-[r:R]-() REQUIRE r.p is TYPED STRING" ->
+      "CREATE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS :: STRING",
+    "create CONSTRAINT `$foo` FOR ()<-[r:R]->() REQUIRE r.p :: signed INTEGER OPTIONS {}" ->
+      "CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS :: INTEGER OPTIONS {}",
+    "create CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE r.p IS :: point OPtiONS {notAllowedOptions: 'butParseThem', `backticks.stays.when.needed`: 'toThrowNiceError'}" ->
+      """CREATE CONSTRAINT `$foo` FOR ()-[r:R]-() REQUIRE (r.p) IS :: POINT OPTIONS {notAllowedOptions: "butParseThem", `backticks.stays.when.needed`: "toThrowNiceError"}""",
+    "create CONSTRAINT IF not exists FOR ()-[r:R]-() REQUIRE r.p IS TYPED timestamp without timezone" ->
+      "CREATE CONSTRAINT IF NOT EXISTS FOR ()-[r:R]-() REQUIRE (r.p) IS :: LOCAL DATETIME",
+    "create or Replace CONSTRAINT foo FOR ()-[r:R]-() REQUIRE r.p IS :: string" ->
+      "CREATE OR REPLACE CONSTRAINT foo FOR ()-[r:R]-() REQUIRE (r.p) IS :: STRING",
     "drop CONSTRAINT foo" ->
       "DROP CONSTRAINT foo",
     "drop CONSTRAINT `foo`" ->

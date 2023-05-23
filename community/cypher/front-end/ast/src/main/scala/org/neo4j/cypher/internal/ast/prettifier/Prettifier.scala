@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.ast.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateNodePropertyTypeConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
 import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
@@ -54,6 +55,7 @@ import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyTypeConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.ast.CreateRole
@@ -463,6 +465,44 @@ case class Prettifier(
         ) =>
         val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
         val propertyString = propertyToStringExistenceConstraint(property, constraintVersion)
+        val optionsString = asString(options)
+        val forOrOn = if (containsOn) "ON" else "FOR"
+        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
+        s"$startOfCommand$forOrOn ()-[${backtick(variable)}:${backtick(relType)}]-() $assertOrRequire $propertyString$optionsString"
+
+      case CreateNodePropertyTypeConstraint(
+          Variable(variable),
+          LabelName(label),
+          property,
+          propertyType,
+          name,
+          ifExistsDo,
+          options,
+          containsOn,
+          constraintVersion,
+          _
+        ) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        val propertyString = s"(${propertyToString(property)}) IS :: ${propertyType.description}"
+        val optionsString = asString(options)
+        val forOrOn = if (containsOn) "ON" else "FOR"
+        val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"
+        s"$startOfCommand$forOrOn (${backtick(variable)}:${backtick(label)}) $assertOrRequire $propertyString$optionsString"
+
+      case CreateRelationshipPropertyTypeConstraint(
+          Variable(variable),
+          RelTypeName(relType),
+          property,
+          propertyType,
+          name,
+          ifExistsDo,
+          options,
+          containsOn,
+          constraintVersion,
+          _
+        ) =>
+        val startOfCommand = getStartOfCommand(name, ifExistsDo, "CONSTRAINT")
+        val propertyString = s"(${propertyToString(property)}) IS :: ${propertyType.description}"
         val optionsString = asString(options)
         val forOrOn = if (containsOn) "ON" else "FOR"
         val assertOrRequire = if (constraintVersion == ConstraintVersion2) "REQUIRE" else "ASSERT"

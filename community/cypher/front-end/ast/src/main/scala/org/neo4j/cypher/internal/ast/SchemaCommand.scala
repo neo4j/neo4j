@@ -20,6 +20,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.expressions.CypherTypeName
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.LabelName
@@ -644,6 +645,58 @@ case class DropRelationshipPropertyExistenceConstraint(
     "Relationship property existence constraints cannot be dropped by schema, please drop by name instead: DROP CONSTRAINT constraint_name. The constraint name can be found using SHOW CONSTRAINTS.",
     position
   )
+}
+
+case class CreateNodePropertyTypeConstraint(
+  variable: Variable,
+  label: LabelName,
+  property: Property,
+  propertyType: CypherTypeName,
+  override val name: Option[String],
+  ifExistsDo: IfExistsDo,
+  options: Options,
+  containsOn: Boolean,
+  constraintVersion: ConstraintVersion,
+  useGraph: Option[GraphSelection] = None
+)(val position: InputPosition) extends NodePropertyConstraintCommand with CreateConstraint {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+  override def withName(name: Option[String]): CreateNodePropertyTypeConstraint = copy(name = name)(position)
+
+  override def semanticCheck: SemanticCheck = error("Property type constraints don't exist", position)
+//    checkSemantics(
+//      "node",
+//      ifExistsDo,
+//      options,
+//      containsOn,
+//      constraintVersion
+//    ) chain super.semanticCheck
+}
+
+case class CreateRelationshipPropertyTypeConstraint(
+  variable: Variable,
+  relType: RelTypeName,
+  property: Property,
+  propertyType: CypherTypeName,
+  override val name: Option[String],
+  ifExistsDo: IfExistsDo,
+  options: Options,
+  containsOn: Boolean,
+  constraintVersion: ConstraintVersion,
+  useGraph: Option[GraphSelection] = None
+)(val position: InputPosition) extends RelationshipPropertyConstraintCommand with CreateConstraint {
+  override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
+
+  override def withName(name: Option[String]): CreateRelationshipPropertyTypeConstraint =
+    copy(name = name)(position)
+
+  override def semanticCheck: SemanticCheck = error("Property type constraints don't exist", position)
+//    checkSemantics(
+//      "relationship",
+//      ifExistsDo,
+//      options,
+//      containsOn,
+//      constraintVersion
+//    ) chain super.semanticCheck
 }
 
 case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(

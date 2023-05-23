@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
+import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
@@ -883,6 +884,7 @@ public class NullAstFactory
             NULL aNull,
             StringPos<NULL> label,
             List<NULL> nulls,
+            ParserCypherTypeName propertyType,
             SimpleEither<Map<String, NULL>, NULL> options,
             boolean containsOn,
             ConstraintVersion constraintVersion) {

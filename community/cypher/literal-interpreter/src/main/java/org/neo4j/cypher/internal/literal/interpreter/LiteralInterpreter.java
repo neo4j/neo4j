@@ -40,6 +40,7 @@ import org.neo4j.cypher.internal.ast.factory.ConstraintVersion;
 import org.neo4j.cypher.internal.ast.factory.CreateIndexTypes;
 import org.neo4j.cypher.internal.ast.factory.HintIndexType;
 import org.neo4j.cypher.internal.ast.factory.ParameterType;
+import org.neo4j.cypher.internal.ast.factory.ParserCypherTypeName;
 import org.neo4j.cypher.internal.ast.factory.ScopeType;
 import org.neo4j.cypher.internal.ast.factory.ShowCommandFilterTypes;
 import org.neo4j.cypher.internal.ast.factory.SimpleEither;
@@ -527,6 +528,7 @@ public class LiteralInterpreter
             Object o,
             StringPos<NULL> label,
             List<Object> objects,
+            ParserCypherTypeName propertyType,
             SimpleEither<Map<String, Object>, Object> options,
             boolean containsOn,
             ConstraintVersion constraintVersion) {
