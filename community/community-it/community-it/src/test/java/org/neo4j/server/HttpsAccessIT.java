@@ -31,11 +31,13 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
+import org.eclipse.jetty.http.HttpHeader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.internal.helpers.HostnamePort;
+import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.helpers.CommunityWebContainerBuilder;
 import org.neo4j.server.helpers.TestWebContainer;
 import org.neo4j.test.PortUtils;
@@ -91,6 +93,19 @@ class HttpsAccessIT extends ExclusiveWebContainerTestBase {
         shouldExposeCorrectSchemeInDiscoveryService("https");
     }
 
+    @Test
+    void shouldIncludeStrictTransportHeaderIfConfigured() throws Exception {
+        var transportHeader = "max-age=31536000";
+        startServer(false, true, transportHeader);
+        shouldInstallConnector("https", ConnectorType.HTTPS);
+
+        var response = GET(testWebContainer.getBaseUri().toString());
+
+        assertThat(response.status()).isEqualTo(200);
+        assertThat(response.header(HttpHeader.STRICT_TRANSPORT_SECURITY.lowerCaseName()))
+                .isEqualTo(transportHeader);
+    }
+
     private void shouldInstallConnector(String scheme, ConnectorType connectorType) {
         var uri = testWebContainer.getBaseUri();
         assertEquals(scheme, uri.getScheme());
@@ -112,6 +127,10 @@ class HttpsAccessIT extends ExclusiveWebContainerTestBase {
     }
 
     private void startServer(boolean httpEnabled, boolean httpsEnabled) throws Exception {
+        startServer(httpEnabled, httpsEnabled, null);
+    }
+
+    private void startServer(boolean httpEnabled, boolean httpsEnabled, String strictTransportHeader) throws Exception {
         CommunityWebContainerBuilder serverBuilder = serverOnRandomPorts()
                 .persistent()
                 .usingDataDir(
@@ -121,6 +140,9 @@ class HttpsAccessIT extends ExclusiveWebContainerTestBase {
         }
         if (httpsEnabled) {
             serverBuilder.withHttpsEnabled();
+        }
+        if (strictTransportHeader != null) {
+            serverBuilder.withProperty(ServerSettings.http_strict_transport_security.name(), strictTransportHeader);
         }
 
         testWebContainer = serverBuilder.build();
