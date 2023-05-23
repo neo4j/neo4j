@@ -50,6 +50,10 @@ public class SecurityContext extends LoginContext {
         return mode;
     }
 
+    public DatabaseAccessMode databaseAccessMode() {
+        return DatabaseAccessMode.FULL;
+    }
+
     public String database() {
         return database;
     }

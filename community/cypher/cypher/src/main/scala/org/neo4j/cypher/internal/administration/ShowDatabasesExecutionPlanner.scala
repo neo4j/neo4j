@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.administration
 
 import org.neo4j.common.DependencyResolver
-import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.checkNamespaceExists
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.getDatabaseNameFields
 import org.neo4j.cypher.internal.AdministrationCommandRuntime.internalKey
@@ -100,17 +99,10 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP
-import org.neo4j.graphdb.Direction
-import org.neo4j.graphdb.Label
-import org.neo4j.graphdb.Node
-import org.neo4j.graphdb.RelationshipType.withName
 import org.neo4j.graphdb.Transaction
 import org.neo4j.internal.helpers.collection.Iterables
-import org.neo4j.internal.kernel.api.security.AdminActionOnResource
-import org.neo4j.internal.kernel.api.security.PrivilegeAction
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
-import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.database.DatabaseIdFactory
 import org.neo4j.kernel.database.DefaultDatabaseResolver
 import org.neo4j.kernel.database.NamedDatabaseId
@@ -126,7 +118,6 @@ import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Using
 
 case class ShowDatabasesExecutionPlanner(
   resolver: DependencyResolver,
@@ -317,93 +308,8 @@ case class ShowDatabasesExecutionPlanner(
     maybeYield: Option[Yield],
     verbose: Boolean
   ): MapValue = {
-    def accessForDatabase(database: Node, roles: java.util.Set[String]): Option[Boolean] = {
-      // (:Role)-[p]->(:Privilege {action: 'access'})-[s:SCOPE]->()-[f:FOR]->(d:Database)
-      var result: Seq[Boolean] = Seq.empty
-      val dbRelationships = database.getRelationships(Direction.INCOMING, withName("FOR"))
-      try {
-        dbRelationships.forEach { f =>
-          val startRelationships = f.getStartNode.getRelationships(Direction.INCOMING, withName("SCOPE"))
-          try {
-            startRelationships.forEach { s =>
-              val privilegeNode = s.getStartNode
-              if (privilegeNode.getProperty("action").equals("access")) {
-                val prevRelationships = privilegeNode.getRelationships(Direction.INCOMING)
-                try {
-                  prevRelationships.forEach { p =>
-                    val roleName = p.getStartNode.getProperty("name")
-                    if (roles.contains(roleName)) {
-                      p.getType.name() match {
-                        case "DENIED"  => result = result :+ false
-                        case "GRANTED" => result = result :+ true
-                        case _         =>
-                      }
-                    }
-                  }
-                } finally {
-                  prevRelationships.close()
-                }
-              }
-            }
-          } finally {
-            startRelationships.close()
-          }
-        }
-      } finally {
-        dbRelationships.close()
-      }
-      result.reduceOption(_ && _)
-    }
 
-    val allowsStandardDatabaseManagement: Boolean =
-      securityContext.allowsAdminAction(new AdminActionOnResource(
-        PrivilegeAction.CREATE_DATABASE,
-        AdminActionOnResource.DatabaseScope.ALL,
-        Segment.ALL
-      )).allowsAccess() ||
-        securityContext.allowsAdminAction(new AdminActionOnResource(
-          PrivilegeAction.DROP_DATABASE,
-          AdminActionOnResource.DatabaseScope.ALL,
-          Segment.ALL
-        )).allowsAccess() ||
-        securityContext.allowsAdminAction(new AdminActionOnResource(
-          PrivilegeAction.ALTER_DATABASE,
-          AdminActionOnResource.DatabaseScope.ALL,
-          Segment.ALL
-        )).allowsAccess() ||
-        securityContext.allowsAdminAction(new AdminActionOnResource(
-          PrivilegeAction.SET_DATABASE_ACCESS,
-          AdminActionOnResource.DatabaseScope.ALL,
-          Segment.ALL
-        )).allowsAccess()
-    val allowsCompositeDatabaseManagement: Boolean =
-      securityContext.allowsAdminAction(new AdminActionOnResource(
-        PrivilegeAction.CREATE_COMPOSITE_DATABASE,
-        AdminActionOnResource.DatabaseScope.ALL,
-        Segment.ALL
-      )).allowsAccess() ||
-        securityContext.allowsAdminAction(new AdminActionOnResource(
-          PrivilegeAction.DROP_COMPOSITE_DATABASE,
-          AdminActionOnResource.DatabaseScope.ALL,
-          Segment.ALL
-        )).allowsAccess()
-    val allowsAllDatabaseManagement: Boolean =
-      allowsStandardDatabaseManagement && allowsCompositeDatabaseManagement
-    val roles = securityContext.mode().roles()
-
-    def databaseAccess(label: String) =
-      Using(transaction.findNodes(Label.label(label))) {
-        defaultDatabaseNodes =>
-          defaultDatabaseNodes.asScala.flatMap(defaultDatabaseNode =>
-            accessForDatabase(defaultDatabaseNode, roles)
-          ).reduceOption(_ && _)
-      }.get
-
-    val allDatabaseAccess = databaseAccess("DatabaseAll")
-    val defaultDatabaseAccess = databaseAccess("DatabaseDefault")
-    val defaultDatabaseName = defaultDatabaseResolver.defaultDatabase(securityContext.subject().executingUser())
-
-    val accessibleDatabases =
+    val accessibleDatabases: Set[NamedDatabaseId] =
       transaction.findNodes(DATABASE_NAME_LABEL, PRIMARY_PROPERTY, true).asScala
         .foldLeft[Set[NamedDatabaseId]](
           Set.empty
@@ -415,30 +321,10 @@ case class ShowDatabasesExecutionPlanner(
           val dbType =
             if (dbNode.hasLabel(COMPOSITE_DATABASE_LABEL) && dbNode.hasProperty(DATABASE_VIRTUAL_PROPERTY)) Composite
             else Standard
-          val isDefault = dbName.equals(defaultDatabaseName)
-          if (dbName.equals(GraphDatabaseSettings.SYSTEM_DATABASE_NAME)) {
-            acc + dbId
-          } else if (allowsAllDatabaseManagement) {
-            acc + dbId
-          } else if (allowsStandardDatabaseManagement && dbType == Standard) {
-            acc + dbId
-          } else if (allowsCompositeDatabaseManagement && dbType == Composite) {
+          if (securityContext.databaseAccessMode().canSeeDatabase(dbName, dbType == Composite)) {
             acc + dbId
           } else {
-            (accessForDatabase(dbNode, roles), allDatabaseAccess, defaultDatabaseAccess, isDefault) match {
-              // denied
-              case (Some(false), _, _, _)    => acc
-              case (_, Some(false), _, _)    => acc
-              case (_, _, Some(false), true) => acc
-
-              // granted
-              case (Some(true), _, _, _)    => acc + dbId
-              case (_, Some(true), _, _)    => acc + dbId
-              case (_, _, Some(true), true) => acc + dbId
-
-              // no privilege
-              case _ => acc
-            }
+            acc
           }
         }
 
