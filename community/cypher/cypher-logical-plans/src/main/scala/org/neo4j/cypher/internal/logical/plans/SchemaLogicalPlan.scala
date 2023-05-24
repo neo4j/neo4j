@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.logical.plans
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.expressions.CypherTypeName
+import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -37,86 +38,11 @@ abstract class SchemaLogicalPlan(idGen: IdGen) extends LogicalPlanExtension(idGe
   override val availableSymbols: Set[String] = Set.empty
 }
 
-case class CreateNodeKeyConstraint(
+case class CreateConstraint(
   source: Option[DoNothingIfExistsForConstraint],
-  node: String,
-  label: LabelName,
+  constraintType: ConstraintType,
+  entityName: ElementTypeName,
   props: Seq[Property],
-  name: Option[String],
-  options: Options
-)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
-  override def lhs: Option[LogicalPlan] = source
-}
-
-case class CreateRelationshipKeyConstraint(
-  source: Option[DoNothingIfExistsForConstraint],
-  rel: String,
-  typeName: RelTypeName,
-  props: Seq[Property],
-  name: Option[String],
-  options: Options
-)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
-  override def lhs: Option[LogicalPlan] = source
-}
-
-case class CreateNodePropertyUniquenessConstraint(
-  source: Option[DoNothingIfExistsForConstraint],
-  node: String,
-  label: LabelName,
-  props: Seq[Property],
-  name: Option[String],
-  options: Options
-)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
-  override def lhs: Option[LogicalPlan] = source
-}
-
-case class CreateRelationshipPropertyUniquenessConstraint(
-  source: Option[DoNothingIfExistsForConstraint],
-  rel: String,
-  typeName: RelTypeName,
-  props: Seq[Property],
-  name: Option[String],
-  options: Options
-)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
-  override def lhs: Option[LogicalPlan] = source
-}
-
-case class CreateNodePropertyExistenceConstraint(
-  source: Option[DoNothingIfExistsForConstraint],
-  label: LabelName,
-  prop: Property,
-  name: Option[String],
-  options: Options
-)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
-  override def lhs: Option[LogicalPlan] = source
-}
-
-case class CreateRelationshipPropertyExistenceConstraint(
-  source: Option[DoNothingIfExistsForConstraint],
-  typeName: RelTypeName,
-  prop: Property,
-  name: Option[String],
-  options: Options
-)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
-  override def lhs: Option[LogicalPlan] = source
-}
-
-case class CreateNodePropertyTypeConstraint(
-  source: Option[DoNothingIfExistsForConstraint],
-  label: LabelName,
-  prop: Property,
-  propertyType: CypherTypeName,
-  name: Option[String],
-  options: Options
-)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
-  override def lhs: Option[LogicalPlan] = source
-}
-
-case class CreateRelationshipPropertyTypeConstraint(
-  source: Option[DoNothingIfExistsForConstraint],
-  typeName: RelTypeName,
-  prop: Property,
-  propertyType: CypherTypeName,
   name: Option[String],
   options: Options
 )(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
@@ -127,7 +53,7 @@ case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen:
 
 case class CreateRangeIndex(
   source: Option[DoNothingIfExistsForIndex],
-  entityName: Either[LabelName, RelTypeName],
+  entityName: ElementTypeName,
   propertyKeyNames: List[PropertyKeyName],
   name: Option[String],
   options: Options
@@ -156,7 +82,7 @@ case class CreateFulltextIndex(
 
 case class CreateTextIndex(
   source: Option[DoNothingIfExistsForIndex],
-  entityName: Either[LabelName, RelTypeName],
+  entityName: ElementTypeName,
   propertyKeyNames: List[PropertyKeyName],
   name: Option[String],
   options: Options
@@ -166,7 +92,7 @@ case class CreateTextIndex(
 
 case class CreatePointIndex(
   source: Option[DoNothingIfExistsForIndex],
-  entityName: Either[LabelName, RelTypeName],
+  entityName: ElementTypeName,
   propertyKeyNames: List[PropertyKeyName],
   name: Option[String],
   options: Options
@@ -177,7 +103,7 @@ case class CreatePointIndex(
 case class DropIndexOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class DoNothingIfExistsForIndex(
-  entityName: Either[LabelName, RelTypeName],
+  entityName: ElementTypeName,
   propertyKeyNames: List[PropertyKeyName],
   indexType: IndexType,
   name: Option[String],
@@ -200,7 +126,7 @@ case class DoNothingIfExistsForFulltextIndex(
 
 case class DoNothingIfExistsForConstraint(
   entity: String,
-  entityName: Either[LabelName, RelTypeName],
+  entityName: ElementTypeName,
   props: Seq[Property],
   assertion: ConstraintType,
   name: Option[String],

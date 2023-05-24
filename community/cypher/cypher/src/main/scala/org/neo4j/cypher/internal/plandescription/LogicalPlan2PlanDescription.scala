@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour
 import org.neo4j.cypher.internal.ast.SubqueryCall.InTransactionsOnErrorBehaviour.OnErrorFail
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.DecimalDoubleLiteral
+import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
@@ -97,18 +98,11 @@ import org.neo4j.cypher.internal.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.logical.plans.CompositeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.CreateConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
-import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyTypeConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyTypeConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
@@ -175,6 +169,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeKey
+import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
 import org.neo4j.cypher.internal.logical.plans.NodePropertyType
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
@@ -205,6 +200,7 @@ import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipKey
+import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
 import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
@@ -1070,150 +1066,29 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case CreateNodePropertyUniquenessConstraint(
+      case CreateConstraint(
           _,
-          node,
+          constraintType,
           label,
           properties: Seq[Property],
           nameOption,
           options
         ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val entity = properties.head.map.asCanonicalStringVal
+        val assertion = constraintType match {
+          case NodePropertyExistence | RelationshipPropertyExistence => "IS NOT NULL"
+          case NodeKey                                               => "IS NODE KEY"
+          case RelationshipKey                                       => "IS RELATIONSHIP KEY"
+          case NodeUniqueness | RelationshipUniqueness               => "IS UNIQUE"
+          case NodePropertyType(t)                                   => s"IS :: ${t.description}"
+          case RelationshipPropertyType(t)                           => s"IS :: ${t.description}"
+        }
         val details = Details(constraintInfo(
           nameOption,
-          node,
-          scala.util.Left(label),
-          properties,
-          "IS UNIQUE",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case CreateRelationshipPropertyUniquenessConstraint(
-          _,
-          rel,
-          relType,
-          properties: Seq[Property],
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val details = Details(constraintInfo(
-          nameOption,
-          rel,
-          scala.util.Right(relType),
-          properties,
-          "IS UNIQUE",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case CreateNodeKeyConstraint(
-          _,
-          node,
+          entity,
           label,
-          properties: Seq[Property],
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val details = Details(constraintInfo(
-          nameOption,
-          node,
-          scala.util.Left(label),
           properties,
-          "IS NODE KEY",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case CreateRelationshipKeyConstraint(
-          _,
-          rel,
-          relType,
-          properties: Seq[Property],
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val details = Details(constraintInfo(
-          nameOption,
-          rel,
-          scala.util.Right(relType),
-          properties,
-          "IS RELATIONSHIP KEY",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case CreateNodePropertyExistenceConstraint(
-          _,
-          label,
-          prop,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val node = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(
-          nameOption,
-          node,
-          scala.util.Left(label),
-          Seq(prop),
-          "IS NOT NULL",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case CreateRelationshipPropertyExistenceConstraint(
-          _,
-          relTypeName,
-          prop,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val relationship = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(
-          nameOption,
-          relationship,
-          scala.util.Right(relTypeName),
-          Seq(prop),
-          "IS NOT NULL",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case CreateNodePropertyTypeConstraint(
-          _,
-          label,
-          prop,
-          propType,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val node = prop.map.asCanonicalStringVal
-        val typeDescr = propType.description
-        val details = Details(constraintInfo(
-          nameOption,
-          node,
-          scala.util.Left(label),
-          Seq(prop),
-          s"IS :: $typeDescr",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
-
-      case CreateRelationshipPropertyTypeConstraint(
-          _,
-          relTypeName,
-          prop,
-          propType,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val relationship = prop.map.asCanonicalStringVal
-        val typeDescr = propType.description
-        val details = Details(constraintInfo(
-          nameOption,
-          relationship,
-          scala.util.Right(relTypeName),
-          Seq(prop),
-          s"IS :: $typeDescr",
+          assertion,
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
@@ -2055,150 +1930,29 @@ case class LogicalPlan2PlanDescription(
           withRawCardinalities
         )
 
-      case CreateNodePropertyUniquenessConstraint(
+      case CreateConstraint(
           _,
-          node,
+          constraintType,
           label,
           properties: Seq[Property],
           nameOption,
           options
         ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val entity = properties.head.map.asCanonicalStringVal
+        val assertion = constraintType match {
+          case NodePropertyExistence | RelationshipPropertyExistence => "IS NOT NULL"
+          case NodeKey                                               => "IS NODE KEY"
+          case RelationshipKey                                       => "IS RELATIONSHIP KEY"
+          case NodeUniqueness | RelationshipUniqueness               => "IS UNIQUE"
+          case NodePropertyType(t)                                   => s"IS :: ${t.description}"
+          case RelationshipPropertyType(t)                           => s"IS :: ${t.description}"
+        }
         val details = Details(constraintInfo(
           nameOption,
-          node,
-          scala.util.Left(label),
-          properties,
-          "IS UNIQUE",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
-
-      case CreateRelationshipPropertyUniquenessConstraint(
-          _,
-          rel,
-          relType,
-          properties: Seq[Property],
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val details = Details(constraintInfo(
-          nameOption,
-          rel,
-          scala.util.Right(relType),
-          properties,
-          "IS UNIQUE",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
-
-      case CreateNodeKeyConstraint(
-          _,
-          node,
+          entity,
           label,
-          properties: Seq[Property],
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val details = Details(constraintInfo(
-          nameOption,
-          node,
-          scala.util.Left(label),
           properties,
-          "IS NODE KEY",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
-
-      case CreateRelationshipKeyConstraint(
-          _,
-          rel,
-          relType,
-          properties: Seq[Property],
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val details = Details(constraintInfo(
-          nameOption,
-          rel,
-          scala.util.Right(relType),
-          properties,
-          "IS RELATIONSHIP KEY",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
-
-      case CreateNodePropertyExistenceConstraint(
-          _,
-          label,
-          prop,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val node = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(
-          nameOption,
-          node,
-          scala.util.Left(label),
-          Seq(prop),
-          "IS NOT NULL",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
-
-      case CreateRelationshipPropertyExistenceConstraint(
-          _,
-          relTypeName,
-          prop,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val relationship = prop.map.asCanonicalStringVal
-        val details = Details(constraintInfo(
-          nameOption,
-          relationship,
-          scala.util.Right(relTypeName),
-          Seq(prop),
-          "IS NOT NULL",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
-
-      case CreateNodePropertyTypeConstraint(
-          _,
-          label,
-          prop,
-          propType,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val node = prop.map.asCanonicalStringVal
-        val typeDescr = propType.description
-        val details = Details(constraintInfo(
-          nameOption,
-          node,
-          scala.util.Left(label),
-          Seq(prop),
-          s"IS :: $typeDescr",
-          options
-        ))
-        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
-
-      case CreateRelationshipPropertyTypeConstraint(
-          _,
-          relTypeName,
-          prop,
-          propType,
-          nameOption,
-          options
-        ) => // Can be both a leaf plan and a middle plan so need to be in both places
-        val relationship = prop.map.asCanonicalStringVal
-        val typeDescr = propType.description
-        val details = Details(constraintInfo(
-          nameOption,
-          relationship,
-          scala.util.Right(relTypeName),
-          Seq(prop),
-          s"IS :: $typeDescr",
+          assertion,
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
@@ -2937,17 +2691,17 @@ case class LogicalPlan2PlanDescription(
   private def indexInfo(
     indexType: String,
     nameOption: Option[String],
-    entityName: Either[LabelName, RelTypeName],
+    entityName: ElementTypeName,
     properties: Seq[PropertyKeyName],
     options: Options
   ): PrettyString = {
     val name = nameOption.map(n => pretty" ${asPrettyString(n)}").getOrElse(pretty"")
     val propertyString = properties.map(asPrettyString(_)).mkPrettyString("(", SEPARATOR, ")")
     val pattern = entityName match {
-      case Left(label) =>
+      case label: LabelName =>
         val prettyLabel = asPrettyString(label.name)
         pretty"(:$prettyLabel)"
-      case Right(relType) =>
+      case relType: RelTypeName =>
         val prettyType = asPrettyString(relType.name)
         pretty"()-[:$prettyType]-()"
     }
@@ -2956,7 +2710,7 @@ case class LogicalPlan2PlanDescription(
 
   private def rangeIndexInfo(
     nameOption: Option[String],
-    entityName: Either[LabelName, RelTypeName],
+    entityName: ElementTypeName,
     properties: Seq[PropertyKeyName],
     options: Options
   ): PrettyString =
@@ -2964,7 +2718,7 @@ case class LogicalPlan2PlanDescription(
 
   private def textIndexInfo(
     nameOption: Option[String],
-    entityName: Either[LabelName, RelTypeName],
+    entityName: ElementTypeName,
     properties: Seq[PropertyKeyName],
     options: Options
   ): PrettyString =
@@ -2972,7 +2726,7 @@ case class LogicalPlan2PlanDescription(
 
   private def pointIndexInfo(
     nameOption: Option[String],
-    entityName: Either[LabelName, RelTypeName],
+    entityName: ElementTypeName,
     properties: Seq[PropertyKeyName],
     options: Options
   ): PrettyString =
@@ -3009,7 +2763,7 @@ case class LogicalPlan2PlanDescription(
   private def constraintInfo(
     nameOption: Option[String],
     entity: String,
-    entityName: Either[LabelName, RelTypeName],
+    entityName: ElementTypeName,
     properties: Seq[Property],
     assertion: String,
     options: Options = NoOptions,
@@ -3022,8 +2776,8 @@ case class LogicalPlan2PlanDescription(
     val prettyEntity = asPrettyString(entity)
 
     val entityInfo = entityName match {
-      case scala.util.Left(label)    => pretty"($prettyEntity:${asPrettyString(label)})"
-      case scala.util.Right(relType) => pretty"()-[$prettyEntity:${asPrettyString(relType)}]-()"
+      case label: LabelName     => pretty"($prettyEntity:${asPrettyString(label)})"
+      case relType: RelTypeName => pretty"()-[$prettyEntity:${asPrettyString(relType)}]-()"
     }
     val onOrFor = if (useForAndRequire) pretty"FOR" else pretty"ON"
     val assertOrRequire = if (useForAndRequire) pretty"REQUIRE" else pretty"ASSERT"

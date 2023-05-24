@@ -26,7 +26,7 @@ trait SymbolicName extends ASTNode {
   override def asCanonicalStringVal: String = name
 }
 
-trait ElementTypeName
+sealed trait ElementTypeName
 
 case class Namespace(parts: List[String] = List.empty)(val position: InputPosition) extends ASTNode
 

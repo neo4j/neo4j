@@ -176,20 +176,13 @@ import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.ConditionalApply
 import org.neo4j.cypher.internal.logical.plans.CopyRolePrivileges
 import org.neo4j.cypher.internal.logical.plans.Create
+import org.neo4j.cypher.internal.logical.plans.CreateConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateDatabase
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
-import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyTypeConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyTypeConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateRole
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
@@ -1754,7 +1747,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // RANGE
 
     assertGood(
-      attach(CreateRangeIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(CreateRangeIndex(None, label("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -1765,7 +1758,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateRangeIndex(None, Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateRangeIndex(None, label("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("RANGE INDEX FOR (:Label) ON (prop)")), Set.empty)
     )
 
@@ -1773,7 +1766,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateRangeIndex(
           None,
-          Left(label("Label")),
+          label("Label"),
           List(key("prop")),
           Some("$indexName"),
           OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
@@ -1792,8 +1785,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateRangeIndex(
-          Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.RANGE, None, NoOptions)),
-          Left(label("Label")),
+          Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), IndexType.RANGE, None, NoOptions)),
+          label("Label"),
           List(key("prop")),
           None,
           NoOptions
@@ -1818,7 +1811,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateRangeIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(CreateRangeIndex(None, relType("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -1829,7 +1822,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateRangeIndex(None, Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateRangeIndex(None, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -1843,7 +1836,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateRangeIndex(
           None,
-          Right(relType("Label")),
+          relType("Label"),
           List(key("prop")),
           Some("$indexName"),
           OptionsMap(Map("indexProvider" -> stringLiteral("range-1.0")))
@@ -1862,8 +1855,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateRangeIndex(
-          Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.RANGE, None, NoOptions)),
-          Right(relType("Label")),
+          Some(DoNothingIfExistsForIndex(relType("Label"), List(key("prop")), IndexType.RANGE, None, NoOptions)),
+          relType("Label"),
           List(key("prop")),
           None,
           NoOptions
@@ -1891,7 +1884,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateRangeIndex(
           None,
-          Left(label("Label")),
+          label("Label"),
           List(key("prop")),
           Some("$indexName"),
           OptionsParam(parameter("options", CTMap))
@@ -2212,7 +2205,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // TEXT
 
     assertGood(
-      attach(CreateTextIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(CreateTextIndex(None, label("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -2223,7 +2216,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateTextIndex(None, Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateTextIndex(None, label("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX FOR (:Label) ON (prop)")), Set.empty)
     )
 
@@ -2231,7 +2224,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateTextIndex(
           None,
-          Left(label("Label")),
+          label("Label"),
           List(key("prop")),
           Some("$indexName"),
           OptionsMap(Map("indexProvider" -> stringLiteral("text-1.0")))
@@ -2250,8 +2243,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateTextIndex(
-          Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.TEXT, None, NoOptions)),
-          Left(label("Label")),
+          Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), IndexType.TEXT, None, NoOptions)),
+          label("Label"),
           List(key("prop")),
           None,
           NoOptions
@@ -2276,7 +2269,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateTextIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(CreateTextIndex(None, relType("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -2287,7 +2280,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreateTextIndex(None, Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreateTextIndex(None, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("TEXT INDEX FOR ()-[:Label]-() ON (prop)")), Set.empty)
     )
 
@@ -2295,7 +2288,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateTextIndex(
           None,
-          Right(relType("Label")),
+          relType("Label"),
           List(key("prop")),
           Some("$indexName"),
           OptionsMap(Map("indexProvider" -> stringLiteral("text-1.0")))
@@ -2314,8 +2307,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreateTextIndex(
-          Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.TEXT, None, NoOptions)),
-          Right(relType("Label")),
+          Some(DoNothingIfExistsForIndex(relType("Label"), List(key("prop")), IndexType.TEXT, None, NoOptions)),
+          relType("Label"),
           List(key("prop")),
           None,
           NoOptions
@@ -2343,7 +2336,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreateTextIndex(
           None,
-          Left(label("Label")),
+          label("Label"),
           List(key("prop")),
           Some("$indexName"),
           OptionsParam(parameter("options", CTMap))
@@ -2362,7 +2355,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     // POINT
 
     assertGood(
-      attach(CreatePointIndex(None, Left(label("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(CreatePointIndex(None, label("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -2373,7 +2366,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreatePointIndex(None, Left(label("Label")), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreatePointIndex(None, label("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(id, "CreateIndex", NoChildren, Seq(details("POINT INDEX FOR (:Label) ON (prop)")), Set.empty)
     )
 
@@ -2381,7 +2374,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreatePointIndex(
           None,
-          Left(label("Label")),
+          label("Label"),
           List(key("prop")),
           Some("$indexName"),
           OptionsMap(Map("indexProvider" -> stringLiteral("point-1.0")))
@@ -2400,8 +2393,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreatePointIndex(
-          Some(DoNothingIfExistsForIndex(Left(label("Label")), List(key("prop")), IndexType.POINT, None, NoOptions)),
-          Left(label("Label")),
+          Some(DoNothingIfExistsForIndex(label("Label"), List(key("prop")), IndexType.POINT, None, NoOptions)),
+          label("Label"),
           List(key("prop")),
           None,
           NoOptions
@@ -2426,7 +2419,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreatePointIndex(None, Right(relType("Label")), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
+      attach(CreatePointIndex(None, relType("Label"), List(key("prop")), Some("$indexName"), NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -2437,7 +2430,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
 
     assertGood(
-      attach(CreatePointIndex(None, Right(relType("Label")), List(key("prop")), None, NoOptions), 63.2),
+      attach(CreatePointIndex(None, relType("Label"), List(key("prop")), None, NoOptions), 63.2),
       planDescription(
         id,
         "CreateIndex",
@@ -2451,7 +2444,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreatePointIndex(
           None,
-          Right(relType("Label")),
+          relType("Label"),
           List(key("prop")),
           Some("$indexName"),
           OptionsMap(Map("indexProvider" -> stringLiteral("point-1.0")))
@@ -2470,8 +2463,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     assertGood(
       attach(
         CreatePointIndex(
-          Some(DoNothingIfExistsForIndex(Right(relType("Label")), List(key("prop")), IndexType.POINT, None, NoOptions)),
-          Right(relType("Label")),
+          Some(DoNothingIfExistsForIndex(relType("Label"), List(key("prop")), IndexType.POINT, None, NoOptions)),
+          relType("Label"),
           List(key("prop")),
           None,
           NoOptions
@@ -2499,7 +2492,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       attach(
         CreatePointIndex(
           None,
-          Left(label("Label")),
+          label("Label"),
           List(key("prop")),
           Some("$indexName"),
           OptionsParam(parameter("options", CTMap))
@@ -2563,7 +2556,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateNodeUniquePropertyConstraint") {
     assertGood(
       attach(
-        CreateNodePropertyUniquenessConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions),
+        CreateConstraint(None, NodeUniqueness, label("Label"), Seq(prop(" x", "prop")), None, NoOptions),
         63.2
       ),
       planDescription(
@@ -2577,9 +2570,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodePropertyUniquenessConstraint(
+        CreateConstraint(
           None,
-          "x",
+          NodeUniqueness,
           label("Label"),
           Seq(prop("x", "prop")),
           Some("constraintName"),
@@ -2598,9 +2591,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodePropertyUniquenessConstraint(
+        CreateConstraint(
           None,
-          "x",
+          NodeUniqueness,
           label("Label"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
           Some("constraintName"),
@@ -2619,9 +2612,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodePropertyUniquenessConstraint(
+        CreateConstraint(
           None,
-          "x",
+          NodeUniqueness,
           label("Label"),
           List(prop("x", "prop")),
           Some("$constraintName"),
@@ -2642,16 +2635,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodePropertyUniquenessConstraint(
+        CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
-            scala.util.Left(label("Label")),
+            label("Label"),
             Seq(prop(" x", "prop")),
             NodeUniqueness,
             None,
             NoOptions
           )),
-          " x",
+          NodeUniqueness,
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -2678,9 +2671,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodePropertyUniquenessConstraint(
+        CreateConstraint(
           None,
-          " x",
+          NodeUniqueness,
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -2701,14 +2694,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateRelationshipUniquePropertyConstraint") {
     assertGood(
       attach(
-        CreateRelationshipPropertyUniquenessConstraint(
-          None,
-          " x",
-          relType("REL_TYPE"),
-          Seq(prop(" x", "prop")),
-          None,
-          NoOptions
-        ),
+        CreateConstraint(None, RelationshipUniqueness, relType("REL_TYPE"), Seq(prop(" x", "prop")), None, NoOptions),
         63.2
       ),
       planDescription(
@@ -2722,9 +2708,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipPropertyUniquenessConstraint(
+        CreateConstraint(
           None,
-          "x",
+          RelationshipUniqueness,
           relType("REL_TYPE"),
           Seq(prop("x", "prop")),
           Some("constraintName"),
@@ -2743,9 +2729,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipPropertyUniquenessConstraint(
+        CreateConstraint(
           None,
-          "x",
+          RelationshipUniqueness,
           relType("REL_TYPE"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
           Some("constraintName"),
@@ -2764,9 +2750,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipPropertyUniquenessConstraint(
+        CreateConstraint(
           None,
-          "x",
+          RelationshipUniqueness,
           relType("REL_TYPE"),
           List(prop("x", "prop")),
           Some("$constraintName"),
@@ -2787,16 +2773,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipPropertyUniquenessConstraint(
+        CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
-            scala.util.Right(relType("REL_TYPE")),
+            relType("REL_TYPE"),
             Seq(prop(" x", "prop")),
             RelationshipUniqueness,
             None,
             NoOptions
           )),
-          " x",
+          RelationshipUniqueness,
           relType("REL_TYPE"),
           Seq(prop(" x", "prop")),
           None,
@@ -2823,9 +2809,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipPropertyUniquenessConstraint(
+        CreateConstraint(
           None,
-          " x",
+          RelationshipUniqueness,
           relType("REL_TYPE"),
           Seq(prop(" x", "prop")),
           None,
@@ -2845,7 +2831,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("CreateNodeKeyConstraint") {
     assertGood(
-      attach(CreateNodeKeyConstraint(None, " x", label("Label"), Seq(prop(" x", "prop")), None, NoOptions), 63.2),
+      attach(CreateConstraint(None, NodeKey, label("Label"), Seq(prop(" x", "prop")), None, NoOptions), 63.2),
       planDescription(
         id,
         "CreateConstraint",
@@ -2857,9 +2843,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodeKeyConstraint(
+        CreateConstraint(
           None,
-          "x",
+          NodeKey,
           label("Label"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
           Some("constraintName"),
@@ -2878,9 +2864,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodeKeyConstraint(
+        CreateConstraint(
           None,
-          "x",
+          NodeKey,
           label("Label"),
           List(prop("x", "prop")),
           Some("$constraintName"),
@@ -2901,16 +2887,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodeKeyConstraint(
+        CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
-            scala.util.Left(label("Label")),
+            label("Label"),
             Seq(prop(" x", "prop")),
             NodeKey,
             Some("constraintName"),
             NoOptions
           )),
-          " x",
+          NodeKey,
           label("Label"),
           Seq(prop(" x", "prop")),
           Some("constraintName"),
@@ -2937,9 +2923,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodeKeyConstraint(
+        CreateConstraint(
           None,
-          " x",
+          NodeKey,
           label("Label"),
           Seq(prop(" x", "prop")),
           None,
@@ -2960,7 +2946,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateRelationshipKeyConstraint") {
     assertGood(
       attach(
-        CreateRelationshipKeyConstraint(None, " x", relType("REL_TYPE"), Seq(prop(" x", "prop")), None, NoOptions),
+        CreateConstraint(None, RelationshipKey, relType("REL_TYPE"), Seq(prop(" x", "prop")), None, NoOptions),
         63.2
       ),
       planDescription(
@@ -2974,9 +2960,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipKeyConstraint(
+        CreateConstraint(
           None,
-          "x",
+          RelationshipKey,
           relType("REL_TYPE"),
           Seq(prop("x", "prop1"), prop("x", "prop2")),
           Some("constraintName"),
@@ -2995,9 +2981,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipKeyConstraint(
+        CreateConstraint(
           None,
-          "x",
+          RelationshipKey,
           relType("REL_TYPE"),
           List(prop("x", "prop")),
           Some("$constraintName"),
@@ -3018,16 +3004,16 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipKeyConstraint(
+        CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
-            scala.util.Right(relType("REL_TYPE")),
+            relType("REL_TYPE"),
             Seq(prop(" x", "prop")),
             RelationshipKey,
             Some("constraintName"),
             NoOptions
           )),
-          " x",
+          RelationshipKey,
           relType("REL_TYPE"),
           Seq(prop(" x", "prop")),
           Some("constraintName"),
@@ -3054,9 +3040,9 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipKeyConstraint(
+        CreateConstraint(
           None,
-          " x",
+          RelationshipKey,
           relType("REL_TYPE"),
           Seq(prop(" x", "prop")),
           None,
@@ -3076,7 +3062,10 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
   test("CreateNodePropertyExistenceConstraint") {
     assertGood(
-      attach(CreateNodePropertyExistenceConstraint(None, label("Label"), prop(" x", "prop"), None, NoOptions), 63.2),
+      attach(
+        CreateConstraint(None, NodePropertyExistence, label("Label"), Seq(prop(" x", "prop")), None, NoOptions),
+        63.2
+      ),
       planDescription(
         id,
         "CreateConstraint",
@@ -3088,10 +3077,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodePropertyExistenceConstraint(
+        CreateConstraint(
           None,
+          NodePropertyExistence,
           label("Label"),
-          prop("x", "prop"),
+          Seq(prop("x", "prop")),
           Some("constraintName"),
           NoOptions
         ),
@@ -3108,17 +3098,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodePropertyExistenceConstraint(
+        CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
-            scala.util.Left(label("Label")),
+            label("Label"),
             Seq(prop(" x", "prop")),
             NodePropertyExistence,
             None,
             NoOptions
           )),
+          NodePropertyExistence,
           label("Label"),
-          prop(" x", "prop"),
+          Seq(prop(" x", "prop")),
           None,
           NoOptions
         ),
@@ -3145,7 +3136,7 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateRelationshipPropertyExistenceConstraint") {
     assertGood(
       attach(
-        CreateRelationshipPropertyExistenceConstraint(None, relType("R"), prop(" x", "prop"), None, NoOptions),
+        CreateConstraint(None, RelationshipPropertyExistence, relType("R"), Seq(prop(" x", "prop")), None, NoOptions),
         63.2
       ),
       planDescription(
@@ -3159,10 +3150,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipPropertyExistenceConstraint(
+        CreateConstraint(
           None,
+          RelationshipPropertyExistence,
           relType("R"),
-          prop(" x", "prop"),
+          Seq(prop(" x", "prop")),
           Some("constraintName"),
           NoOptions
         ),
@@ -3179,17 +3171,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipPropertyExistenceConstraint(
+        CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
-            scala.util.Right(relType("R")),
+            relType("R"),
             Seq(prop(" x", "prop")),
             RelationshipPropertyExistence,
             None,
             NoOptions
           )),
+          RelationshipPropertyExistence,
           relType("R"),
-          prop(" x", "prop"),
+          Seq(prop(" x", "prop")),
           None,
           NoOptions
         ),
@@ -3216,11 +3209,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateNodePropertyTypeConstraint") {
     assertGood(
       attach(
-        CreateNodePropertyTypeConstraint(
+        CreateConstraint(
           None,
+          NodePropertyType(IntegerTypeName()),
           label("Label"),
-          prop(" x", "prop"),
-          IntegerTypeName(),
+          Seq(prop(" x", "prop")),
           None,
           NoOptions
         ),
@@ -3237,11 +3230,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodePropertyTypeConstraint(
+        CreateConstraint(
           None,
+          NodePropertyType(BooleanTypeName()),
           label("Label"),
-          prop("x", "prop"),
-          BooleanTypeName(),
+          Seq(prop("x", "prop")),
           Some("constraintName"),
           NoOptions
         ),
@@ -3258,18 +3251,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateNodePropertyTypeConstraint(
+        CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
-            scala.util.Left(label("Label")),
+            label("Label"),
             Seq(prop(" x", "prop")),
             NodePropertyType(ZonedDateTimeTypeName()),
             None,
             NoOptions
           )),
+          NodePropertyType(ZonedDateTimeTypeName()),
           label("Label"),
-          prop(" x", "prop"),
-          ZonedDateTimeTypeName(),
+          Seq(prop(" x", "prop")),
           None,
           NoOptions
         ),
@@ -3296,11 +3289,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
   test("CreateRelationshipPropertyTypeConstraint") {
     assertGood(
       attach(
-        CreateRelationshipPropertyTypeConstraint(
+        CreateConstraint(
           None,
+          RelationshipPropertyType(FloatTypeName()),
           relType("R"),
-          prop(" x", "prop"),
-          FloatTypeName(),
+          Seq(prop(" x", "prop")),
           None,
           NoOptions
         ),
@@ -3317,11 +3310,11 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipPropertyTypeConstraint(
+        CreateConstraint(
           None,
+          RelationshipPropertyType(LocalTimeTypeName()),
           relType("R"),
-          prop(" x", "prop"),
-          LocalTimeTypeName(),
+          Seq(prop(" x", "prop")),
           Some("constraintName"),
           NoOptions
         ),
@@ -3338,18 +3331,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
 
     assertGood(
       attach(
-        CreateRelationshipPropertyTypeConstraint(
+        CreateConstraint(
           Some(DoNothingIfExistsForConstraint(
             " x",
-            scala.util.Right(relType("R")),
+            relType("R"),
             Seq(prop(" x", "prop")),
             RelationshipPropertyType(DurationTypeName()),
             None,
             NoOptions
           )),
+          RelationshipPropertyType(DurationTypeName()),
           relType("R"),
-          prop(" x", "prop"),
-          DurationTypeName(),
+          Seq(prop(" x", "prop")),
           None,
           NoOptions
         ),

@@ -44,6 +44,7 @@ import org.neo4j.cypher.internal.ast.IfExistsDoNothing
 import org.neo4j.cypher.internal.ast.Options
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
+import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -55,6 +56,14 @@ import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForIndex
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.logical.plans.NodeKey
+import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
+import org.neo4j.cypher.internal.logical.plans.NodePropertyType
+import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
+import org.neo4j.cypher.internal.logical.plans.RelationshipKey
+import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
+import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
+import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.planner.spi.AdministrationPlannerName
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -73,7 +82,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
     implicit val idGen: SequentialIdGen = new SequentialIdGen()
 
     def handleIfExistsDo(
-      entityName: Either[LabelName, RelTypeName],
+      entityName: ElementTypeName,
       props: List[Property],
       indexType: IndexType,
       name: Option[String],
@@ -89,7 +98,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
     }
 
     def createRangeIndex(
-      entityName: Either[LabelName, RelTypeName],
+      entityName: ElementTypeName,
       props: List[Property],
       name: Option[String],
       ifExistsDo: IfExistsDo,
@@ -115,7 +124,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
     }
 
     def createTextIndex(
-      entityName: Either[LabelName, RelTypeName],
+      entityName: ElementTypeName,
       props: List[Property],
       name: Option[String],
       ifExistsDo: IfExistsDo,
@@ -126,7 +135,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
     }
 
     def createPointIndex(
-      entityName: Either[LabelName, RelTypeName],
+      entityName: ElementTypeName,
       props: List[Property],
       name: Option[String],
       ifExistsDo: IfExistsDo,
@@ -142,7 +151,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               node.name,
-              scala.util.Left(label),
+              label,
               props,
               plans.NodeKey,
               name,
@@ -150,14 +159,14 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
             ))
           case _ => None
         }
-        Some(plans.CreateNodeKeyConstraint(source, node.name, label, props, name, options))
+        Some(plans.CreateConstraint(source, NodeKey, label, props, name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS RELATIONSHIP KEY [OPTIONS {...}]
       case CreateRelationshipKeyConstraint(rel, relType, props, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               rel.name,
-              scala.util.Right(relType),
+              relType,
               props,
               plans.RelationshipKey,
               name,
@@ -165,7 +174,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
             ))
           case _ => None
         }
-        Some(plans.CreateRelationshipKeyConstraint(source, rel.name, relType, props, name, options))
+        Some(plans.CreateConstraint(source, RelationshipKey, relType, props, name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
@@ -173,7 +182,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               node.name,
-              scala.util.Left(label),
+              label,
               props,
               plans.NodeUniqueness,
               name,
@@ -181,7 +190,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
             ))
           case _ => None
         }
-        Some(plans.CreateNodePropertyUniquenessConstraint(source, node.name, label, props, name, options))
+        Some(plans.CreateConstraint(source, NodeUniqueness, label, props, name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE rel.prop IS UNIQUE [OPTIONS {...}]
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS UNIQUE [OPTIONS {...}]
@@ -189,7 +198,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               rel.name,
-              scala.util.Right(relType),
+              relType,
               props,
               plans.RelationshipUniqueness,
               name,
@@ -197,14 +206,14 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
             ))
           case _ => None
         }
-        Some(plans.CreateRelationshipPropertyUniquenessConstraint(source, rel.name, relType, props, name, options))
+        Some(plans.CreateConstraint(source, RelationshipUniqueness, relType, props, name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS NOT NULL
       case CreateNodePropertyExistenceConstraint(_, label, prop, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               prop.map.asCanonicalStringVal,
-              scala.util.Left(label),
+              label,
               Seq(prop),
               plans.NodePropertyExistence,
               name,
@@ -212,14 +221,14 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
             ))
           case _ => None
         }
-        Some(plans.CreateNodePropertyExistenceConstraint(source, label, prop, name, options))
+        Some(plans.CreateConstraint(source, NodePropertyExistence, label, Seq(prop), name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL
       case CreateRelationshipPropertyExistenceConstraint(_, relType, prop, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               prop.map.asCanonicalStringVal,
-              scala.util.Right(relType),
+              relType,
               Seq(prop),
               plans.RelationshipPropertyExistence,
               name,
@@ -227,14 +236,14 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
             ))
           case _ => None
         }
-        Some(plans.CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name, options))
+        Some(plans.CreateConstraint(source, RelationshipPropertyExistence, relType, Seq(prop), name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS :: ...
       case CreateNodePropertyTypeConstraint(_, label, prop, propertyType, name, ifExistsDo, options, _, _, _) =>
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               prop.map.asCanonicalStringVal,
-              scala.util.Left(label),
+              label,
               Seq(prop),
               plans.NodePropertyType(propertyType),
               name,
@@ -242,7 +251,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
             ))
           case _ => None
         }
-        Some(plans.CreateNodePropertyTypeConstraint(source, label, prop, propertyType, name, options))
+        Some(plans.CreateConstraint(source, NodePropertyType(propertyType), label, Seq(prop), name, options))
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS :: ...
       case CreateRelationshipPropertyTypeConstraint(
@@ -260,7 +269,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
         val source = ifExistsDo match {
           case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
               prop.map.asCanonicalStringVal,
-              scala.util.Right(relType),
+              relType,
               Seq(prop),
               plans.RelationshipPropertyType(propertyType),
               name,
@@ -268,7 +277,7 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
             ))
           case _ => None
         }
-        Some(plans.CreateRelationshipPropertyTypeConstraint(source, relType, prop, propertyType, name, options))
+        Some(plans.CreateConstraint(source, RelationshipPropertyType(propertyType), relType, Seq(prop), name, options))
 
       // DROP CONSTRAINT name [IF EXISTS]
       case DropConstraintOnName(name, ifExists, _) =>
@@ -276,11 +285,11 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
       case CreateRangeNodeIndex(_, label, props, name, ifExistsDo, options, _, _) =>
-        createRangeIndex(Left(label), props, name, ifExistsDo, options)
+        createRangeIndex(label, props, name, ifExistsDo, options)
 
       // CREATE [RANGE] INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
       case CreateRangeRelationshipIndex(_, relType, props, name, ifExistsDo, options, _, _) =>
-        createRangeIndex(Right(relType), props, name, ifExistsDo, options)
+        createRangeIndex(relType, props, name, ifExistsDo, options)
 
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR (n) ON EACH labels(n)
       // CREATE LOOKUP INDEX [name] [IF NOT EXISTS] FOR ()-[r]-() ON [EACH] type(r)
@@ -302,19 +311,19 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
 
       // CREATE TEXT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
       case CreateTextNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
-        createTextIndex(Left(label), props, name, ifExistsDo, options)
+        createTextIndex(label, props, name, ifExistsDo, options)
 
       // CREATE TEXT INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
       case CreateTextRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
-        createTextIndex(Right(relType), props, name, ifExistsDo, options)
+        createTextIndex(relType, props, name, ifExistsDo, options)
 
       // CREATE POINT INDEX [name] [IF NOT EXISTS] FOR (n:LABEL) ON (n.prop) [OPTIONS {...}]
       case CreatePointNodeIndex(_, label, props, name, ifExistsDo, options, _) =>
-        createPointIndex(Left(label), props, name, ifExistsDo, options)
+        createPointIndex(label, props, name, ifExistsDo, options)
 
       // CREATE POINT INDEX [name] [IF NOT EXISTS] FOR ()-[r:RELATIONSHIP_TYPE]->() ON (r.prop) [OPTIONS {...}]
       case CreatePointRelationshipIndex(_, relType, props, name, ifExistsDo, options, _) =>
-        createPointIndex(Right(relType), props, name, ifExistsDo, options)
+        createPointIndex(relType, props, name, ifExistsDo, options)
 
       // DROP INDEX name [IF EXISTS]
       case DropIndexOnName(name, ifExists, _) =>

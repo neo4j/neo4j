@@ -22,22 +22,16 @@ package org.neo4j.cypher.internal
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.expressions.CypherTypeName
+import org.neo4j.cypher.internal.expressions.ElementTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.logical.plans.ConstraintType
+import org.neo4j.cypher.internal.logical.plans.CreateConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
-import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyTypeConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyTypeConstraint
-import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForFulltextIndex
@@ -100,7 +94,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
   val logicalToExecutable: PartialFunction[LogicalPlan, RuntimeContext => ExecutionPlan] = {
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS NODE KEY [OPTIONS {...}]
-    case CreateNodeKeyConstraint(source, _, label, props, name, options) => context =>
+    case CreateConstraint(source, NodeKey, label: LabelName, props, name, options) => context =>
         SchemaExecutionPlan(
           "CreateNodeKeyConstraint",
           (ctx, params) => {
@@ -117,7 +111,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         )
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS RELATIONSHIP KEY [OPTIONS {...}]
-    case CreateRelationshipKeyConstraint(source, _, relType, props, name, options) => context =>
+    case CreateConstraint(source, RelationshipKey, relType: RelTypeName, props, name, options) => context =>
         SchemaExecutionPlan(
           "CreateRelationshipKeyConstraint",
           (ctx, params) => {
@@ -135,7 +129,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE (node.prop1,node.prop2) IS UNIQUE [OPTIONS {...}]
-    case CreateNodePropertyUniquenessConstraint(source, _, label, props, name, options) => context =>
+    case CreateConstraint(source, NodeUniqueness, label: LabelName, props, name, options) => context =>
         SchemaExecutionPlan(
           "CreateNodePropertyUniquenessConstraint",
           (ctx, params) => {
@@ -153,7 +147,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
 
       // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE rel.prop IS UNIQUE [OPTIONS {...}]
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[rel:TYPE]-() REQUIRE (rel.prop1,rel.prop2) IS UNIQUE [OPTIONS {...}]
-    case CreateRelationshipPropertyUniquenessConstraint(source, _, relType, props, name, options) => context =>
+    case CreateConstraint(source, RelationshipUniqueness, relType: RelTypeName, props, name, options) => context =>
         SchemaExecutionPlan(
           "CreateRelationshipPropertyUniquenessConstraint",
           (ctx, params) => {
@@ -170,20 +164,25 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         )
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS NOT NULL
-    case CreateNodePropertyExistenceConstraint(source, label, prop, name, options) => context =>
+    case CreateConstraint(source, NodePropertyExistence, label: LabelName, prop, name, options) => context =>
         SchemaExecutionPlan(
           "CreateNodePropertyExistenceConstraint",
           (ctx, params) => {
             // Assert empty options
             PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", ctx).convert(options, params)
-            (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(label, prop.propertyKey, name))
+            (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(
+              label,
+              prop.head.propertyKey,
+              name
+            ))
             SuccessResult
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
         )
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS NOT NULL
-    case CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name, options) => context =>
+    case CreateConstraint(source, RelationshipPropertyExistence, relType: RelTypeName, prop, name, options) =>
+      context =>
         SchemaExecutionPlan(
           "CreateRelationshipPropertyExistenceConstraint",
           (ctx, params) => {
@@ -191,7 +190,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
             PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "existence", ctx).convert(options, params)
             (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typePropWithName(ctx)(
               relType,
-              prop.propertyKey,
+              prop.head.propertyKey,
               name
             ))
             SuccessResult
@@ -200,13 +199,13 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         )
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS TYPED ...
-    case CreateNodePropertyTypeConstraint(source, label, prop, propertyType, name, options) => context =>
+    case CreateConstraint(source, NodePropertyType(propertyType), label: LabelName, prop, name, options) => context =>
         SchemaExecutionPlan(
           "CreateNodePropertyTypeConstraint",
           (ctx, params) => {
             // Assert empty options
             PropertyExistenceOrTypeConstraintOptionsConverter("node", "type", ctx).convert(options, params)
-            val (labelId, propId, _) = labelPropWithName(ctx)(label, prop.propertyKey, name)
+            val (labelId, propId, _) = labelPropWithName(ctx)(label, prop.head.propertyKey, name)
             ctx.createNodePropertyTypeConstraint(
               labelId,
               propId,
@@ -219,13 +218,14 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         )
 
     // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS TYPED ...
-    case CreateRelationshipPropertyTypeConstraint(source, relType, prop, propertyType, name, options) => context =>
+    case CreateConstraint(source, RelationshipPropertyType(propertyType), relType: RelTypeName, prop, name, options) =>
+      context =>
         SchemaExecutionPlan(
           "CreateRelationshipPropertyTypeConstraint",
           (ctx, params) => {
             // Assert empty options
             PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "type", ctx).convert(options, params)
-            val (relTypeId, propId, _) = typePropWithName(ctx)(relType, prop.propertyKey, name)
+            val (relTypeId, propId, _) = typePropWithName(ctx)(relType, prop.head.propertyKey, name)
             ctx.createRelationshipPropertyTypeConstraint(
               relTypeId,
               propId,
@@ -452,10 +452,10 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
         )
   }
 
-  private def getEntityInfo(entityName: Either[LabelName, RelTypeName], ctx: QueryContext) = entityName match {
+  private def getEntityInfo(entityName: ElementTypeName, ctx: QueryContext) = entityName match {
     // returns (entityId, EntityType)
-    case Left(label)    => (ctx.getOrCreateLabelId(label.name), EntityType.NODE)
-    case Right(relType) => (ctx.getOrCreateRelTypeId(relType.name), EntityType.RELATIONSHIP)
+    case label: LabelName     => (ctx.getOrCreateLabelId(label.name), EntityType.NODE)
+    case relType: RelTypeName => (ctx.getOrCreateRelTypeId(relType.name), EntityType.RELATIONSHIP)
   }
 
   private def getMultipleEntityInfo(entityName: Either[List[LabelName], List[RelTypeName]], ctx: QueryContext) =
