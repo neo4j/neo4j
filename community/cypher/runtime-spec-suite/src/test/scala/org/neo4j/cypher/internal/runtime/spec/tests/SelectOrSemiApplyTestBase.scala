@@ -544,3 +544,521 @@ abstract class SelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext](
     runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
   }
 }
+
+trait OrderedSelectOrSemiApplyTestBase[CONTEXT <: RuntimeContext] {
+  self: SelectOrSemiApplyTestBase[CONTEXT] =>
+
+  test("should only let through the one that matches when the expression is false - with leveraged order") {
+    // given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("x = 1")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withSingleRow(1)
+  }
+
+  test("should not let anything through if rhs is empty and expression is false - with leveraged order") {
+    // given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("false")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should let everything through if rhs is nonEmpty and the expression is false - with leveraged order") {
+    // given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("true")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
+  test("if lhs is empty, rhs should not be touched regardless the given expression - with leveraged order") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("1/0 > 1")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then should not throw "/ by zero"
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("should let pass the one satisfying the expression even if the rhs is empty - with leveraged order") {
+    // given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("x = 1").withLeveragedOrder()
+      .|.filter("false")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withSingleRow(1)
+  }
+
+  test("should let through the one that matches and the one satisfying the expression - with leveraged order") {
+    // given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("x = 2").withLeveragedOrder()
+      .|.filter("x = 1")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(Seq(Array(1), Array(2)))
+  }
+
+  test("aggregation on lhs, non-empty rhs - with leveraged order") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("c % 2 = 0")
+      .|.argument("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("c").withRows(Seq(Array[Any](0)))
+  }
+
+  test("aggregation on lhs, empty rhs - with leveraged order") {
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("c % 2 = 1")
+      .|.argument("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("c").withNoRows()
+  }
+
+  test("empty cartesian on rhs - with leveraged order") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.cartesianProduct()
+      .|.|.allNodeScan("a", "x")
+      .|.allNodeScan("b", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("non-empty cartesian on rhs - with leveraged order") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.cartesianProduct()
+      .|.|.argument("x")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
+  test("empty optional on rhs - with leveraged order") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.optional("x")
+      .|.allNodeScan("a", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
+  test("non-empty optional on rhs - with leveraged order") {
+    given {
+      nodeGraph(sizeHint)
+    }
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.optional("x")
+      .|.allNodeScan("a", "x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
+  test("empty expand on rhs - with leveraged order") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.expandAll("(x)-[r]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("non-empty expand on rhs - with leveraged order") {
+    given {
+      circleGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.expandAll("(x)-[r]->(y)")
+      .|.argument("x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
+
+  test("limit 0 on rhs - with leveraged order") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.limit(0)
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withNoRows()
+  }
+
+  test("limit 1 on rhs - with leveraged order") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.limit(1)
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
+  test("semi-apply under apply - with leveraged order") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.selectOrSemiApply("false").withLeveragedOrder()
+      .|.|.argument("x")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
+  test("nested semi-apply - with leveraged order") {
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.selectOrSemiApply("false").withLeveragedOrder()
+      .|.|.argument("x")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(inputRows)
+  }
+
+  test("sort on rhs - with leveraged order") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.sort(Seq(Ascending("y")))
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
+
+  test("top on rhs - with leveraged order") {
+    given {
+      nodeGraph(sizeHint)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.top(Seq(Ascending("x")), 10)
+      .|.allNodeScan("y", "x")
+      .allNodeScan("x")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("x").withRows(rowCount(sizeHint))
+  }
+
+  test("should only let through rows that match, with RHS aggregation - with leveraged order") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
+
+    val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("s % 2 = 0")
+      .|.aggregation(Seq.empty, Seq("sum(x) AS s"))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expectedValues)
+  }
+
+  test("should only let through rows that match, with RHS grouping and aggregation - with leveraged order") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
+
+    val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("s % 2 = 0")
+      .|.aggregation(Seq("x AS x"), Seq("sum(x) AS s"))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expectedValues)
+  }
+
+  test("aggregation on lhs, non-empty rhs, with RHS aggregation - with leveraged order") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("c")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("s % 2 = 0")
+      .|.aggregation(Seq.empty, Seq("sum(c) AS s"))
+      .|.argument("c")
+      .aggregation(Seq.empty, Seq("count(x) AS c"))
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("c").withRows(Seq(Array(inputRows.size)))
+  }
+
+  test("aggregation on lhs, non-empty rhs, with RHS sort - with leveraged order") {
+    val inputRows = for {
+      i <- 0 until sizeHint
+    } yield Array[Any](i.toLong)
+
+    val expectedValues = inputRows.filter(_(0).asInstanceOf[Long] % 2 == 0)
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .selectOrSemiApply("false").withLeveragedOrder()
+      .|.filter("x % 2 = 0")
+      .|.sort(Seq(Ascending("x")))
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(expectedValues)
+  }
+
+  test("should handle cached properties in selectOrSemiApply - with leveraged order") {
+    given {
+      nodePropertyGraph(sizeHint, { case i => Map("prop" -> i) })
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("prop")
+      .projection("cache[n.prop] AS prop")
+      .selectOrSemiApply("cache[n.prop] < 20").withLeveragedOrder()
+      .|.expand("(n)-[r*1..]->(m)")
+      .|.argument("n")
+      .allNodeScan("n")
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime)
+    runtimeResult should beColumns("prop").withRows((0 until 20).map(Array[Any](_)))
+  }
+
+  test("limit after selectOrSemiApply on the RHS of apply - with leveraged order") {
+    // given
+    val inputRows = (0 until sizeHint).map { i =>
+      Array[Any](i.toLong)
+    }
+
+    // when
+    val logicalQuery = new LogicalQueryBuilder(this)
+      .produceResults("x")
+      .apply()
+      .|.exhaustiveLimit(1)
+      .|.apply()
+      .|.|.selectOrSemiApply("i % 2 = 0").withLeveragedOrder()
+      .|.|.|.argument("x", "i")
+      .|.|.argument("x", "i")
+      .|.unwind("[1, 2] AS i")
+      .|.argument("x")
+      .input(variables = Seq("x"))
+      .build()
+
+    // then
+    val runtimeResult = execute(logicalQuery, runtime, inputValues(inputRows: _*))
+    runtimeResult should beColumns("x").withRows(singleColumn(inputRows.map(_(0))))
+  }
+}

@@ -292,6 +292,8 @@ import org.neo4j.cypher.internal.util.symbols.CTRelationship
 import org.neo4j.exceptions.CantCompileQueryException
 import org.neo4j.exceptions.InternalException
 import org.neo4j.exceptions.ShortestPathCommonEndNodesForbiddenException
+import org.neo4j.kernel.api.StatementConstants
+import org.neo4j.values.storable.Values.NO_VALUE
 
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -1987,7 +1989,12 @@ object SlottedPipeMapper {
   /**
    * Compute the [[RowMapping]] from [[UnionSlotMapping]]s, which can be then applied to Rows at runtime.
    */
-  def computeUnionRowMapping(in: SlotConfiguration, out: SlotConfiguration): RowMapping = {
+  def computeUnionRowMapping(
+    in: SlotConfiguration,
+    out: SlotConfiguration,
+    longsToNull: Array[Int] = Array.empty,
+    refsToNull: Array[Int] = Array.empty
+  ): RowMapping = {
     val mappings = computeUnionSlotMappings(in, out)
 
     // Collect all 4 types of mappings
@@ -2026,6 +2033,16 @@ object SlottedPipeMapper {
       while (i < projectExpressionToRefSlots.length) {
         val x = projectExpressionToRefSlots(i)
         out.setRefAt(x.targetOffset, x.expression(in, state))
+        i += 1
+      }
+      i = 0
+      while (i < longsToNull.length) {
+        out.setLongAt(longsToNull(i), StatementConstants.NO_SUCH_ENTITY)
+        i += 1
+      }
+      i = 0
+      while (i < refsToNull.length) {
+        out.setRefAt(refsToNull(i), NO_VALUE)
         i += 1
       }
     }
