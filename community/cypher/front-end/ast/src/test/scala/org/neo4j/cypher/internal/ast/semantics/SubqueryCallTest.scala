@@ -32,8 +32,7 @@ class SubqueryCallTest extends CypherFunSuite with AstConstructionTestSupport {
   private val clean =
     SemanticState.clean
       .withFeature(SemanticFeature.MultipleGraphs)
-      .withFeature(SemanticFeature.UseGraphSelector)
-      .withFeature(SemanticFeature.ExpressionsInViewInvocations)
+      .withFeature(SemanticFeature.UseAsMultipleGraphsSelector)
 
   test("returned variables are added to scope after subquery") {
     // WITH 1 AS a

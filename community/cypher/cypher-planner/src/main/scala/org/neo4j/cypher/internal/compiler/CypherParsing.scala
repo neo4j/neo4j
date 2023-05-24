@@ -82,8 +82,7 @@ case class CypherParsingConfig(
   )
 
   def withUseGraphSelector(): CypherParsingConfig =
-    withSemanticFeature(SemanticFeature.UseGraphSelector)
-      .withSemanticFeature(SemanticFeature.ExpressionsInViewInvocations)
+    withSemanticFeature(SemanticFeature.UseAsMultipleGraphsSelector)
 
   private def withSemanticFeature(feature: SemanticFeature): CypherParsingConfig =
     copy(semanticFeatures = () => semanticFeatures() :+ feature)

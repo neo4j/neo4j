@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckResult
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheckable
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
 import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ast.semantics.Symbol
 import org.neo4j.cypher.internal.expressions.LogicalVariable
@@ -78,6 +79,24 @@ sealed trait Query extends Statement with SemanticCheckable with SemanticAnalysi
    * changes based on which rows are distinct vs not
    */
   def semanticCheckInSubqueryExpressionContext(canOmitReturn: Boolean): SemanticCheck
+
+  protected def checkUse(): SemanticCheck =
+    whenState(_.features(SemanticFeature.UseAsSingleGraphSelector))(
+      thenBranch = {
+        val useClauses = folder.findAllByClass[UseGraph]
+        val distinctGraphs = useClauses.map(_.expression).toSet
+        if (distinctGraphs.size > 1)
+          SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
+            SemanticCheckResult.error(
+              semanticState,
+              context.errorMessageProvider.createMultipleGraphReferencesError(),
+              useClauses(1).position
+            )
+          }
+        else
+          success
+      }
+    )
 }
 
 case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extends Query
@@ -153,6 +172,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
       checkOrder(clauses, canOmitReturnClause) chain
       checkNoCallInTransactionsAfterWriteClause(clauses) chain
       checkInputDataStream(clauses) chain
+      checkUse() chain
       recordCurrentScope(this)
 
   override def semanticCheck: SemanticCheck =
@@ -468,6 +488,7 @@ sealed trait Union extends Query {
       defineUnionVariables chain
       checkInputDataStream chain
       checkNoCallInTransactionInsideUnion chain
+      checkUse() chain
       SemanticState.recordCurrentScope(this)
 
   def semanticCheck: SemanticCheck =

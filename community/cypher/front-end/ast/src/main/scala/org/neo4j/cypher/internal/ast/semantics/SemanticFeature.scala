@@ -37,11 +37,25 @@ object SemanticFeature {
     override def name: String = "multiple graphs"
   }
 
-  case object UseGraphSelector extends SemanticFeature with FeatureToString {
-    override def name: String = "USE graph selector"
+  /**
+   * USE clauses are allowed and USE clauses in a query can target different graphs.
+   * This feature also means that dynamic USE clauses are allowed.
+   */
+  case object UseAsMultipleGraphsSelector extends SemanticFeature with FeatureToString {
+    override def name: String = "USE multiple graph selector"
   }
 
-  case object ExpressionsInViewInvocations extends SemanticFeature
+  /**
+   * USE clauses are allowed, but all USE clauses in a query must target the same graph.
+   * This feature also does not allow dynamic USE clauses.
+   */
+  case object UseAsSingleGraphSelector extends SemanticFeature with FeatureToString {
+    override def name: String = "USE single graph selector"
+  }
+
+  case object QuantifiedPathPatterns extends SemanticFeature with FeatureToString {
+    override def name: String = "Quantified path patterns"
+  }
 
   case object GpmShortestPath extends SemanticFeature with FeatureToString {
     override def name: String = "Shortest path as defined for GQL"
@@ -54,8 +68,9 @@ object SemanticFeature {
   private val allSemanticFeatures = Set(
     MultipleDatabases,
     MultipleGraphs,
-    UseGraphSelector,
-    ExpressionsInViewInvocations,
+    UseAsMultipleGraphsSelector,
+    UseAsSingleGraphSelector,
+    QuantifiedPathPatterns,
     ShowSetting,
     GpmShortestPath,
     MatchModes
@@ -67,4 +82,13 @@ object SemanticFeature {
         s"No such SemanticFeature: $str. Valid options are: ${allSemanticFeatures.map(_.productPrefix).mkString(", ")}"
       )
     )
+
+  def checkFeatureCompatibility(features: Set[SemanticFeature]): Unit =
+    if (
+      features.contains(SemanticFeature.UseAsSingleGraphSelector)
+      && features.contains(SemanticFeature.UseAsMultipleGraphsSelector)
+    )
+      throw new IllegalArgumentException(s"Semantic features ${SemanticFeature.UseAsSingleGraphSelector} " +
+        s"and ${SemanticFeature.UseAsMultipleGraphsSelector} are incompatible and cannot be enabled at the same time")
+
 }

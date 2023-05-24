@@ -25,6 +25,7 @@ object SemanticChecker {
     state: SemanticState = SemanticState.clean,
     context: SemanticCheckContext = SemanticCheckContext.default
   ): SemanticCheckResult = {
+    SemanticFeature.checkFeatureCompatibility(state.features)
     val result = statement.semanticCheck.run(state, context)
     val scopeTreeIssues = ScopeTreeVerifier.verify(result.state.scopeTree)
     if (scopeTreeIssues.nonEmpty)

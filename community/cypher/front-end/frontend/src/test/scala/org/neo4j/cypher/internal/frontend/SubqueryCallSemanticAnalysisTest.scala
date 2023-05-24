@@ -19,6 +19,7 @@ package org.neo4j.cypher.internal.frontend
 import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -27,9 +28,14 @@ class SubqueryCallSemanticAnalysisTest
     extends CypherFunSuite
     with NameBasedSemanticAnalysisTestSuite {
 
-  private val pipelineWithUseGraphSelector = pipelineWithSemanticFeatures(
+  private val pipelineWithUseAsMultipleGraphsSelector = pipelineWithSemanticFeatures(
     SemanticFeature.MultipleGraphs,
-    SemanticFeature.UseGraphSelector
+    SemanticFeature.UseAsMultipleGraphsSelector
+  )
+
+  private val pipelineWithUseAsSingleGraphSelector = pipelineWithSemanticFeatures(
+    SemanticFeature.MultipleGraphs,
+    SemanticFeature.UseAsSingleGraphSelector
   )
 
   test("Returning a variable that is already bound outside should give a useful error") {
@@ -279,7 +285,7 @@ class SubqueryCallSemanticAnalysisTest
           InputPosition(19, 1, 20)
         )
       ),
-      pipelineWithUseGraphSelector
+      pipelineWithUseAsMultipleGraphsSelector
     )
   }
 
@@ -293,7 +299,63 @@ class SubqueryCallSemanticAnalysisTest
           InputPosition(19, 1, 20)
         )
       ),
-      pipelineWithUseGraphSelector
+      pipelineWithUseAsMultipleGraphsSelector
+    )
+  }
+
+  test("should allow Multiple USE referencing the same graph when UseAsSingleGraphSelector feature is set") {
+    val query =
+      """
+        |USE x
+        |WITH 1 AS a
+        |CALL {
+        |  USE x
+        |  RETURN 2 AS b
+        |}
+        |RETURN *
+        |""".stripMargin
+
+    expectNoErrorsFrom(query, pipelineWithUseAsSingleGraphSelector)
+  }
+
+  test(
+    "should allow Multiple USE with qualified identifier referencing the same graph when UseAsSingleGraphSelector feature is set"
+  ) {
+    val query =
+      """
+        |USE x.y.z
+        |WITH 1 AS a
+        |CALL {
+        |  USE x.y.z
+        |  RETURN 2 AS b
+        |}
+        |RETURN *
+        |""".stripMargin
+
+    expectNoErrorsFrom(query, pipelineWithUseAsSingleGraphSelector)
+  }
+
+  test("should not allow Multiple USE referencing different graphs when UseAsSingleGraphSelector feature is set") {
+    val query =
+      """
+        |USE x
+        |WITH 1 AS a
+        |CALL {
+        |  USE y
+        |  RETURN 2 AS b
+        |}
+        |RETURN *
+        |""".stripMargin
+
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          messageProvider.createMultipleGraphReferencesError(),
+          InputPosition(28, 5, 3)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector
     )
   }
 
@@ -430,5 +492,11 @@ class SubqueryCallSemanticAnalysisTest
         finalVariables should equal(finalReturnVars)
       }
     }
+  }
+
+  override def messageProvider: ErrorMessageProvider = new ErrorMessageProviderAdapter {
+
+    override def createMultipleGraphReferencesError(): String =
+      "A very nice message explaining why multiple graph references are not allowed"
   }
 }

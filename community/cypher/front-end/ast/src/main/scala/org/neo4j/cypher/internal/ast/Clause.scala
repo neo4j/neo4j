@@ -276,23 +276,30 @@ case class InputDataStream(variables: Seq[Variable])(val position: InputPosition
 }
 
 sealed trait GraphSelection extends Clause with SemanticAnalysisTooling {
-
   def expression: Expression
+}
+
+final case class UseGraph(expression: Expression)(val position: InputPosition) extends GraphSelection {
+  override def name = "USE GRAPH"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
-    checkGraphReference chain
-      whenState(_.features(SemanticFeature.ExpressionsInViewInvocations))(
-        thenBranch = checkGraphReferenceExpressions,
-        elseBranch = checkGraphReferenceRecursive
+    whenState(_.features(SemanticFeature.UseAsMultipleGraphsSelector))(
+      thenBranch = checkDynamicGraphSelector,
+      elseBranch = whenState(_.features(SemanticFeature.UseAsSingleGraphSelector))(
+        // On clause level, this feature means that only static graph references are allowed
+        thenBranch = checkStaticGraphSelector,
+        elseBranch = unsupported()
       )
+    )
 
-  private def checkGraphReference: SemanticCheck =
-    GraphReference.checkNotEmpty(graphReference, expression.position)
+  private def unsupported(): SemanticCheck = SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
+    SemanticCheckResult.error(semanticState, context.errorMessageProvider.createUseClauseUnsupportedError(), position)
+  }
 
-  private def checkGraphReferenceRecursive: SemanticCheck =
-    graphReference.foldSemanticCheck(_.semanticCheck)
+  private def checkDynamicGraphSelector: SemanticCheck =
+    checkGraphReference chain checkDynamicGraphReference
 
-  private def checkGraphReferenceExpressions: SemanticCheck =
+  private def checkDynamicGraphReference: SemanticCheck =
     graphReference.foldSemanticCheck {
       case ViewRef(_, arguments)        => checkExpressions(arguments)
       case GraphRefParameter(parameter) => checkExpressions(Seq(parameter))
@@ -300,22 +307,36 @@ sealed trait GraphSelection extends Clause with SemanticAnalysisTooling {
     }
 
   private def checkExpressions(expressions: Seq[Expression]): SemanticCheck =
-    whenState(_.features(SemanticFeature.ExpressionsInViewInvocations))(
-      expressions.foldSemanticCheck(expr =>
-        SemanticExpressionCheck.check(Expression.SemanticContext.Results, expr)
-      )
+    expressions.foldSemanticCheck(expr =>
+      SemanticExpressionCheck.check(Expression.SemanticContext.Results, expr)
     )
 
-  def graphReference: Option[GraphReference] =
+  private def checkStaticGraphSelector: SemanticCheck =
+    checkGraphReference chain checkStaticGraphReference
+
+  private def checkGraphReference: SemanticCheck =
+    GraphReference.checkNotEmpty(graphReference, expression.position)
+
+  private def checkStaticGraphReference: SemanticCheck = {
+
+    def dynamicGraphReferenceError(): SemanticCheck =
+      SemanticCheck.fromFunctionWithContext { (semanticState, context) =>
+        SemanticCheckResult.error(
+          semanticState,
+          context.errorMessageProvider.createDynamicGraphReferenceUnsupportedError(),
+          position
+        )
+      }
+
+    graphReference.foldSemanticCheck {
+      case _: GraphRef => success
+      case _           => dynamicGraphReferenceError()
+    }
+  }
+
+  private def graphReference: Option[GraphReference] =
     GraphReference.from(expression)
-}
 
-final case class UseGraph(expression: Expression)(val position: InputPosition) extends GraphSelection {
-  override def name = "USE GRAPH"
-
-  override def clauseSpecificSemanticCheck: SemanticCheck =
-    requireFeatureSupport(s"The `$name` clause", SemanticFeature.UseGraphSelector, position) chain
-      super.clauseSpecificSemanticCheck
 }
 
 object GraphReference extends SemanticAnalysisTooling {

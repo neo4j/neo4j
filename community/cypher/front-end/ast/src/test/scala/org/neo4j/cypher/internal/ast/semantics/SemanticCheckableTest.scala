@@ -370,6 +370,12 @@ class SemanticCheckableTest extends CypherFunSuite with SemanticAnalysisTooling 
         override def createSelfReferenceError(name: String, variableType: String): String = {
           selfReferenceMsg
         }
+
+        override def createUseClauseUnsupportedError(): String = missingMsg
+
+        override def createDynamicGraphReferenceUnsupportedError(): String = missingMsg
+
+        override def createMultipleGraphReferencesError(): String = missingMsg
       }
     }
 

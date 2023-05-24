@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCParsing
 import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.util.CartesianProductNotification
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.symbols.CTAny
@@ -33,15 +34,14 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     SemanticFeature.MultipleGraphs
   )
 
-  private val pipelineWithUseGraphSelector = pipelineWithSemanticFeatures(
+  private val pipelineWithUseAsMultipleGraphsSelector = pipelineWithSemanticFeatures(
     SemanticFeature.MultipleGraphs,
-    SemanticFeature.UseGraphSelector
+    SemanticFeature.UseAsMultipleGraphsSelector
   )
 
-  private val pipelineWithExpressionsInView = pipelineWithSemanticFeatures(
+  private val pipelineWithUseAsSingleGraphSelector = pipelineWithSemanticFeatures(
     SemanticFeature.MultipleGraphs,
-    SemanticFeature.UseGraphSelector,
-    SemanticFeature.ExpressionsInViewInvocations
+    SemanticFeature.UseAsSingleGraphSelector
   )
 
   private val emptyTokenErrorMessage =
@@ -402,35 +402,66 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectErrorMessagesFrom(
       query,
       Set(
-        "The `USE GRAPH` clause is not available in this implementation of Cypher due to lack of support for USE graph selector."
+        messageProvider.createUseClauseUnsupportedError()
       ),
       pipelineWithMultiGraphs
     )
   }
 
-  test("should allow USE when semantic feature is set") {
+  test("should allow USE when UseAsMultipleGraphsSelector feature is set") {
     val query = "USE g RETURN 1"
-    expectNoErrorsFrom(query, pipelineWithUseGraphSelector)
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
   }
 
-  test("Allow single identifier in USE") {
-    val query = "USE x RETURN 1"
-    expectNoErrorsFrom(query, pipelineWithUseGraphSelector)
+  test("should allow USE when UseAsSingleGraphSelector feature is set") {
+    val query = "USE g RETURN 1"
+    expectNoErrorsFrom(query, pipelineWithUseAsSingleGraphSelector)
   }
 
-  test("Allow qualified identifier in USE") {
+  test("Allow qualified identifier in USE when UseAsMultipleGraphsSelector feature is set") {
     val query = "USE x.y.z RETURN 1"
-    expectNoErrorsFrom(query, pipelineWithUseGraphSelector)
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
   }
 
-  test("Allow view invocation in USE") {
-    val query = "USE v(g, w(k)) RETURN 1"
-    expectNoErrorsFrom(query, pipelineWithUseGraphSelector)
+  test("Allow qualified identifier in USE when UseAsSingleGraphSelector feature is set") {
+    val query = "USE x.y.z RETURN 1"
+    expectNoErrorsFrom(query, pipelineWithUseAsSingleGraphSelector)
+  }
+
+  test("Allow view invocation in USE when UseAsMultipleGraphsSelector feature is set") {
+    val query =
+      """
+        |WITH 1 AS g, 2 AS k
+        |USE v(g, w(k))
+        |RETURN 1
+        |""".stripMargin
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
+  }
+
+  test("Don't allow view invocation in USE when UseAsSingleGraphSelector feature is set") {
+    val query =
+      """
+        |WITH 1 AS g, 2 AS k
+        |USE v(g, w(k))
+        |RETURN 1
+        |""".stripMargin
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(messageProvider.createDynamicGraphReferenceUnsupportedError(), InputPosition(21, 3, 1))
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
   }
 
   test("Allow qualified view invocation in USE") {
-    val query = "USE a.b.v(g, x.g, x.v(k)) RETURN 1"
-    expectNoErrorsFrom(query, pipelineWithUseGraphSelector)
+    val query =
+      """
+        |WITH 1 AS g, 2 AS k
+        |USE a.b.v(g, x.g(), x.v(k))
+        |RETURN 1
+        |""".stripMargin
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
   }
 
   test("Do not allow arbitrary expressions in USE") {
@@ -443,26 +474,17 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
 
     invalidQueries.foreach {
       case (query, pos) =>
-        expectErrorsFrom(query, Set(SemanticError("Invalid graph reference", pos)), pipelineWithUseGraphSelector)
+        expectErrorsFrom(
+          query,
+          Set(SemanticError("Invalid graph reference", pos)),
+          pipelineWithUseAsMultipleGraphsSelector
+        )
     }
-  }
-
-  test("Disallow expressions in view invocations") {
-    val query = "USE a.b.v(1, 1+2, 'x') RETURN 1"
-    expectErrorsFrom(
-      query,
-      Set(
-        SemanticError("Invalid graph reference", InputPosition(10, 1, 11)),
-        SemanticError("Invalid graph reference", InputPosition(14, 1, 15)),
-        SemanticError("Invalid graph reference", InputPosition(18, 1, 19))
-      ),
-      pipelineWithUseGraphSelector
-    )
   }
 
   test("Allow expressions in view invocations (with feature flag)") {
     val query = "WITH 1 AS x USE v(2, 'x', x, x+3) RETURN 1"
-    expectNoErrorsFrom(query, pipelineWithExpressionsInView)
+    expectNoErrorsFrom(query, pipelineWithUseAsMultipleGraphsSelector)
   }
 
   test("Expressions in view invocations are checked (with feature flag)") {
@@ -470,8 +492,70 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectErrorsFrom(
       query,
       Set(SemanticError("Variable `y` not defined", InputPosition(26, 1, 27))),
-      pipelineWithExpressionsInView
+      pipelineWithUseAsMultipleGraphsSelector
     )
+  }
+
+  test("should allow multiple USE referencing the same graph when UseAsSingleGraphSelector feature is set") {
+    val query =
+      """
+        |USE x
+        |RETURN 1
+        |UNION
+        |USE x
+        |RETURN 1
+        |""".stripMargin
+
+    expectNoErrorsFrom(query, pipelineWithUseAsSingleGraphSelector)
+  }
+
+  test(
+    "should allow multiple USE with qualified identifier referencing the same graph when UseAsSingleGraphSelector feature is set"
+  ) {
+    val query =
+      """
+        |USE x.y.z
+        |RETURN 1
+        |UNION
+        |USE x.y.z
+        |RETURN 1
+        |""".stripMargin
+
+    expectNoErrorsFrom(query, pipelineWithUseAsSingleGraphSelector)
+  }
+
+  test("should not allow multiple USE referencing different graphs when UseAsSingleGraphSelector feature is set") {
+    val query =
+      """
+        |USE x
+        |RETURN 1
+        |UNION
+        |USE y
+        |RETURN 1
+        |""".stripMargin
+
+    expectErrorsFrom(
+      query,
+      Set(
+        SemanticError(
+          messageProvider.createMultipleGraphReferencesError(),
+          InputPosition(22, 5, 1)
+        )
+      ),
+      pipelineWithUseAsSingleGraphSelector
+    )
+  }
+
+  test("should allow combining explicit and ambient graph selection") {
+    val query =
+      """
+        |RETURN 1
+        |UNION
+        |USE x
+        |RETURN 1
+        |""".stripMargin
+
+    expectNoErrorsFrom(query, pipelineWithUseAsSingleGraphSelector)
   }
 
   // positive tests that we get the error message
@@ -1481,5 +1565,15 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   test("should allow index hint with negated predicate") {
     val query = "MATCH (a:A) USING INDEX a:A(prop) WHERE NOT a.prop > 123 RETURN 1"
     expectNoErrorsFrom(query)
+  }
+
+  override def messageProvider: ErrorMessageProvider = new ErrorMessageProviderAdapter {
+    override def createUseClauseUnsupportedError(): String = "A very nice message explaining why USE is not allowed"
+
+    override def createDynamicGraphReferenceUnsupportedError(): String =
+      "A very nice message explaining why dynamic graph references are not allowed"
+
+    override def createMultipleGraphReferencesError(): String =
+      "A very nice message explaining why multiple graph references are not allowed"
   }
 }

@@ -46,4 +46,14 @@ object MessageUtilProvider extends ErrorMessageProvider {
   override def createSelfReferenceError(name: String, variableType: String): String = {
     MessageUtil.createSelfReferenceError(name, variableType)
   }
+
+  override def createUseClauseUnsupportedError(): String =
+    "The USE clause is not available in embedded sessions. Try running the query using a Neo4j driver or the HTTP API."
+
+  override def createDynamicGraphReferenceUnsupportedError(): String =
+    "Dynamic graph references are supported only in composite databases."
+
+  override def createMultipleGraphReferencesError(): String = {
+    "Multiple graph references in the same query is not supported on standard databases. This capability is supported on composite databases only."
+  }
 }

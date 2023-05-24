@@ -34,7 +34,9 @@ import org.neo4j.cypher.internal.frontend.phases.SemanticAnalysis
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.rewriting.rewriters.projectNamedPaths
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
+import org.neo4j.cypher.internal.util.ErrorMessageProvider
 import org.neo4j.cypher.internal.util.InternalNotification
+import org.neo4j.cypher.internal.util.NotImplementedErrorMessageProvider
 import org.neo4j.cypher.internal.util.StepSequencer
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.util.test_helpers.TestName
@@ -51,8 +53,12 @@ trait SemanticAnalysisTestSuite extends CypherFunSuite {
 
   type Pipeline = Transformer[BaseContext, BaseState, BaseState]
 
+  def messageProvider: ErrorMessageProvider = NotImplementedErrorMessageProvider
+
   def runSemanticAnalysisWithPipelineAndState(pipeline: Pipeline, initialState: BaseState): SemanticAnalysisResult = {
-    val context = new ErrorCollectingContext()
+    val context = new ErrorCollectingContext() {
+      override def errorMessageProvider: ErrorMessageProvider = messageProvider
+    }
     val state = pipeline.transform(initialState, context)
     SemanticAnalysisResult(context, state)
   }
@@ -137,4 +143,25 @@ trait NameBasedSemanticAnalysisTestSuite extends SemanticAnalysisTestSuiteWithDe
 
   override def defaultQuery: String = testName
 
+}
+
+trait ErrorMessageProviderAdapter extends ErrorMessageProvider {
+
+  override def createMissingPropertyLabelHintError(
+    operatorDescription: String,
+    hintStringification: String,
+    missingThingDescription: String,
+    foundThingsDescription: String,
+    entityDescription: String,
+    entityName: String,
+    additionalInfo: String
+  ): String = ???
+
+  override def createSelfReferenceError(name: String, variableType: String): String = ???
+
+  override def createUseClauseUnsupportedError(): String = ???
+
+  override def createDynamicGraphReferenceUnsupportedError(): String = ???
+
+  override def createMultipleGraphReferencesError(): String = ???
 }

@@ -32,6 +32,12 @@ trait ErrorMessageProvider {
   ): String
 
   def createSelfReferenceError(name: String, variableType: String): String
+
+  def createUseClauseUnsupportedError(): String
+
+  def createDynamicGraphReferenceUnsupportedError(): String
+
+  def createMultipleGraphReferencesError(): String
 }
 
 object NotImplementedErrorMessageProvider extends ErrorMessageProvider {
@@ -47,4 +53,10 @@ object NotImplementedErrorMessageProvider extends ErrorMessageProvider {
   ): String = ???
 
   override def createSelfReferenceError(name: String, variableType: String): String = ???
+
+  override def createUseClauseUnsupportedError(): String = ???
+
+  override def createDynamicGraphReferenceUnsupportedError(): String = ???
+
+  override def createMultipleGraphReferencesError(): String = ???
 }
