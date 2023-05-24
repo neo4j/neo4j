@@ -146,6 +146,5 @@ Feature: MiscAcceptance
       """
     Then the result should be, in order:
       | result |
-      | result |
       | 2      |
     And no side effects
