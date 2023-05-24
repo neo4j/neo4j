@@ -48,8 +48,10 @@ import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DbmsInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.impl.util.DefaultValueMapper
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.ElementIdMapper
+import org.neo4j.values.ValueMapper
 
 import java.net.URL
 
@@ -188,6 +190,10 @@ class SingleThreadedTransactionalContextWrapper(tc: TransactionalContext)
 
   override def kernelExecutionContext: ExecutionContext =
     throw new UnsupportedOperationException("operation only possible in parallel runtime")
+
+  override def createValueMapper: ValueMapper[AnyRef] = {
+    new DefaultValueMapper(tc.transaction())
+  }
 }
 
 object TransactionalContextWrapper {

@@ -81,6 +81,7 @@ import org.neo4j.storageengine.api.Reference
 import org.neo4j.util.VisibleForTesting
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ElementIdMapper
+import org.neo4j.values.ValueMapper
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
@@ -725,6 +726,8 @@ trait QueryTransactionalContext extends CloseableResource {
   def config: Config
 
   def kernelExecutingQuery: org.neo4j.kernel.api.query.ExecutingQuery
+
+  def createValueMapper: ValueMapper[AnyRef]
 }
 
 trait KernelPredicate[T] {

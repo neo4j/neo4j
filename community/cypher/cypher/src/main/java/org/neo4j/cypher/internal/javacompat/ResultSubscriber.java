@@ -56,7 +56,7 @@ import org.neo4j.values.ValueMapper;
  */
 public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Object>>
         implements QuerySubscriber, Result {
-    private final ValueMapper<Object> valueMapper;
+    private ValueMapper<Object> valueMapper;
     private final TransactionalContext context;
     private QueryExecution execution;
     private AnyValue[] currentRecord;
@@ -135,6 +135,12 @@ public class ResultSubscriber extends PrefetchingResourceIterator<Map<String, Ob
     @Override
     public void onResultCompleted(QueryStatistics statistics) {
         this.statistics = statistics;
+    }
+
+    @Override
+    public void onValueMapperCreated(ValueMapper<Object> valueMapper) {
+        // Replace the default value mapper with the provided one
+        this.valueMapper = valueMapper;
     }
 
     // Result part

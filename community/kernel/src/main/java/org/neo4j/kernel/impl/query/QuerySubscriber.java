@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.query;
 
 import org.neo4j.graphdb.QueryStatistics;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.ValueMapper;
 
 /**
  * A QuerySubscriber is used for streaming result from a query.
@@ -101,6 +102,14 @@ public interface QuerySubscriber {
      * @param statistics The query statistics of the results.
      */
     void onResultCompleted(QueryStatistics statistics);
+
+    /**
+     * Optionally called if the query execution requires a special value mapper to be used by the subscriber.
+     * If the subscriber needs to apply a Java ValueMapper on the result, it _should_ use the valueMapper
+     * that is provided in this call to guarantee correct behaviour with all runtimes.
+     * Otherwise, if the subscriber is _not_ using a Java ValueMapper, it is ok to ignore this call.
+     */
+    default void onValueMapperCreated(ValueMapper<Object> valueMapper) {}
 
     /**
      * Dummy implementation that will throw whenever it is being called.

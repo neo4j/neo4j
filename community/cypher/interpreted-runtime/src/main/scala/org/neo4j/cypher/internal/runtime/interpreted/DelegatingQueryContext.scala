@@ -92,6 +92,7 @@ import org.neo4j.logging.InternalLogProvider
 import org.neo4j.memory.MemoryTracker
 import org.neo4j.values.AnyValue
 import org.neo4j.values.ElementIdMapper
+import org.neo4j.values.ValueMapper
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.ListValue
@@ -779,4 +780,6 @@ class DelegatingQueryTransactionalContext(val inner: QueryTransactionalContext) 
   override def kernelExecutingQuery: org.neo4j.kernel.api.query.ExecutingQuery = inner.kernelExecutingQuery
 
   override def kernelExecutionContext: ExecutionContext = inner.kernelExecutionContext
+
+  override def createValueMapper: ValueMapper[AnyRef] = inner.createValueMapper
 }
