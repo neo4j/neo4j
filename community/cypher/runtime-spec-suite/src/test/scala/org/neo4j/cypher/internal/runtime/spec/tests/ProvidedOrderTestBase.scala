@@ -579,8 +579,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x").withRows(inOrder(expected))
   }
 
-  // TODO, this test fails because ConditionalSink does not keep order
-  ignore("anti conditional apply should keep order of lhs") {
+  test("anti conditional apply should keep order of lhs") {
     val input = Range(0, sizeHint).map { _ =>
       val x = randomValues.nextDouble()
       val y = if (randomValues.nextBoolean()) true else null
@@ -589,7 +588,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .antiConditionalApply("y")
+      .antiConditionalApply("y").withLeveragedOrder()
       .|.unwind("[0] AS z") // Pipeline break
       .|.filter(s"x < 0.5")
       .|.argument("x")
@@ -605,8 +604,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
   }
 
-  // TODO, this test fails because ConditionalSink does not keep order
-  ignore("apply with anti conditional apply on the rhs should keep order of lhs") {
+  test("apply with anti conditional apply on the rhs should keep order of lhs") {
     val input = Range(0, sizeHint).map { _ =>
       val x = randomValues.nextDouble()
       val y = if (randomValues.nextBoolean()) true else null
@@ -702,8 +700,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x", "a.prop", "b.prop").withRows(inOrder(expected))
   }
 
-  // TODO, this test fails because ConditionalSink does not keep order
-  ignore("conditional apply should keep order of lhs") {
+  test("conditional apply should keep order of lhs") {
     val input = Range(0, sizeHint).map { _ =>
       val x = randomValues.nextDouble()
       val y = if (randomValues.nextBoolean()) true else null
@@ -712,7 +709,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .conditionalApply("y")
+      .conditionalApply("y").withLeveragedOrder()
       .|.unwind("[0] AS z") // Pipeline break
       .|.filter(s"x < 0.5")
       .|.argument("x")
@@ -728,8 +725,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x", "y").withRows(inOrder(expected))
   }
 
-  // TODO, this test fails because ConditionalSink does not keep order
-  ignore("apply with conditional apply on the rhs should keep order of lhs") {
+  test("apply with conditional apply on the rhs should keep order of lhs") {
     val input = Range(0, sizeHint).map { _ =>
       val x = randomValues.nextDouble()
       val y = if (randomValues.nextBoolean()) true else null
@@ -838,13 +834,12 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x", "rollup").withRows(inOrder(expected))
   }
 
-  // TODO, this test fails because ConditionalSink does not keep order
-  ignore("select or anti semi apply should keep order of lhs") {
+  test("select or anti semi apply should keep order of lhs") {
     val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrAntiSemiApply("x < 0.25")
+      .selectOrAntiSemiApply("x < 0.25").withLeveragedOrder()
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x < 0.75")
       .|.argument("x")
@@ -857,8 +852,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x").withRows(inOrder(expected))
   }
 
-  // TODO, this test fails because ConditionalSink does not keep order
-  ignore("apply with select or anti semi apply on rhs should keep order of lhs") {
+  test("apply with select or anti semi apply on rhs should keep order of lhs") {
     val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
 
     val logicalQuery = new LogicalQueryBuilder(this)
@@ -883,13 +877,12 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     runtimeResult should beColumns("x").withRows(inOrder(expected))
   }
 
-  // TODO, this test fails because ConditionalSink does not keep order
-  ignore("select or semi apply should keep order of lhs") {
+  test("select or semi apply should keep order of lhs") {
     val input = Range(0, sizeHint).map(_ => randomValues.nextDouble())
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .selectOrSemiApply("x < 0.25")
+      .selectOrSemiApply("x < 0.25").withLeveragedOrder()
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x > 0.75")
       .|.argument("x")
