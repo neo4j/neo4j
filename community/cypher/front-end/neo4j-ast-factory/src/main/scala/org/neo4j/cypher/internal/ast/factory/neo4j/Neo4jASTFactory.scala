@@ -275,6 +275,7 @@ import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.ShowSettingAction
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
+import org.neo4j.cypher.internal.ast.ShowSupportedPrivilegeCommand
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -2043,6 +2044,13 @@ class Neo4jASTFactory(query: String)
   }
 
   // Privilege commands
+
+  override def showSupportedPrivileges(
+    p: InputPosition,
+    yieldExpr: Yield,
+    returnWithoutGraph: Return,
+    where: Where
+  ): ReadAdministrationCommand = ShowSupportedPrivilegeCommand(yieldOrWhere(yieldExpr, returnWithoutGraph, where))(p)
 
   override def showAllPrivileges(
     p: InputPosition,

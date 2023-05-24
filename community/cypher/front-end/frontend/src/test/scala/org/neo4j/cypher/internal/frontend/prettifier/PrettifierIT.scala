@@ -1499,6 +1499,27 @@ class PrettifierIT extends CypherFunSuite {
       "REVOKE ROLE `ab%$c` FROM `x%^yz`",
 
     // show privileges
+    "show supported privileges" ->
+      "SHOW SUPPORTED PRIVILEGES",
+    "show supported privileges where action = 'access'" ->
+      """SHOW SUPPORTED PRIVILEGES
+        |  WHERE action = "access"""".stripMargin,
+    "Show supported privileges YIELD * where action = 'traverse' Return *" ->
+      """SHOW SUPPORTED PRIVILEGES
+        |  YIELD *
+        |    WHERE action = "traverse"
+        |  RETURN *""".stripMargin,
+    "Show privileges YIELD * Return DISTINCT action, target" ->
+      """SHOW ALL PRIVILEGES
+        |  YIELD *
+        |  RETURN DISTINCT action, target""".stripMargin,
+    "show supported privileges yield action, target order by action skip 1 limit 1 where target='database'" ->
+      """SHOW SUPPORTED PRIVILEGES
+        |  YIELD action, target
+        |    ORDER BY action ASCENDING
+        |    SKIP 1
+        |    LIMIT 1
+        |    WHERE target = "database"""".stripMargin,
     "show privileges" ->
       "SHOW ALL PRIVILEGES",
     "show all privileges" ->

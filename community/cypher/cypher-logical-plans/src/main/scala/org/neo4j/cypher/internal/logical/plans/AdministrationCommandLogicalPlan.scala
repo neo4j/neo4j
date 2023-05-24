@@ -330,6 +330,12 @@ case class AssertDbmsActionIsAssignable(
   action: DbmsAction
 )(implicit idGen: IdGen) extends PrivilegePlan(source)
 
+case class ShowSupportedPrivileges(
+  override val returnColumns: List[String],
+  yields: Option[Yield],
+  returns: Option[Return]
+)(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(None)
+
 case class ShowPrivileges(
   source: Option[PrivilegePlan],
   scope: ShowPrivilegeScope,

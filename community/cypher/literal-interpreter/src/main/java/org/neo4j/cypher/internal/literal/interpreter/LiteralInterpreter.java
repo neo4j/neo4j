@@ -726,6 +726,11 @@ public class LiteralInterpreter
     // Privilege commands
 
     @Override
+    public NULL showSupportedPrivileges(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
+        throw new UnsupportedOperationException("showSupportedPrivileges is not a literal");
+    }
+
+    @Override
     public NULL showAllPrivileges(
             NULL p, boolean asCommand, boolean asRevoke, NULL yieldExpr, NULL returnWithoutGraph, NULL where) {
         throw new UnsupportedOperationException("showAllPrivileges is not a literal");

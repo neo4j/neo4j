@@ -215,6 +215,7 @@ import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STARTS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STATUS;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STOP;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.STRING;
+import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SUPPORTED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.SUSPENDED;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TARGET;
 import static org.neo4j.cypher.internal.parser.javacc.CypherConstants.TERMINATE;
@@ -455,6 +456,7 @@ public class IdentifierTokens {
             STATUS,
             STOP,
             STRING,
+            SUPPORTED,
             SUSPENDED,
             TARGET,
             TERMINATE,

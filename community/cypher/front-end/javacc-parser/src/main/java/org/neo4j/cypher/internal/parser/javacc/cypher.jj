@@ -630,6 +630,7 @@ TOKEN [IGNORE_CASE] :
     | < STATUS: "STATUS" >
     | < STOP: "STOP">
     | < STRING: "STRING">
+    | < SUPPORTED: "SUPPORTED">
     | < SUSPENDED: "SUSPENDED">
     | < TARGET: "TARGET" >
     | < TERMINATE: "TERMINATE">
@@ -3893,6 +3894,7 @@ STATEMENT ShowCommand( USE_CLAUSE useClause ) throws Exception:
         | statement=ShowAliases( start, useClause )
         | statement=ShowServers( start, useClause )
         | statement=ShowPrivileges( start, useClause )
+        | statement=ShowSupportedPrivileges( start, useClause )
         | (<ROLES> | <ROLE>)
             (
                 // Need these lookaheads to distinguish e.g. 'SHOW ROLE[S] YIELD ...' from 'SHOW ROLE[S] yield[, ...] PRIVILEGE[S]'
@@ -5430,6 +5432,23 @@ STATEMENT_WITH_GRAPH ShowCurrentUser( Token start, USE_CLAUSE useClause ) throws
 
 // Privilege commands
 
+STATEMENT_WITH_GRAPH ShowSupportedPrivileges( Token start, USE_CLAUSE useClause ) throws Exception:
+{
+    YIELD yield = null;
+    RETURN_CLAUSE returnClause = null;
+    WHERE where = null;
+}
+{
+    <SUPPORTED> (<PRIVILEGE> | <PRIVILEGES>)
+    (
+        ( yield = YieldClause() ( returnClause = ReturnClause() )? )
+        | ( where=WhereClause() )
+    )?
+    {
+        return astFactory.useGraph( astFactory.showSupportedPrivileges( pos( start ), yield, returnClause, where ), useClause );
+    }
+}
+
 STATEMENT_WITH_GRAPH ShowPrivileges( Token start, USE_CLAUSE useClause ) throws Exception:
 {
     boolean asCommand = false;
@@ -6826,6 +6845,7 @@ Token UnescapedSymbolicNameString() :
         | t=<STATUS>
         | t=<STOP>
         | t=<STRING>
+        | t=<SUPPORTED>
         | t=<SUSPENDED>
         | t=<TARGET>
         | t=<TERMINATE>

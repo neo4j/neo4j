@@ -342,6 +342,7 @@ import org.neo4j.cypher.internal.logical.plans.ShowProcedures
 import org.neo4j.cypher.internal.logical.plans.ShowRoles
 import org.neo4j.cypher.internal.logical.plans.ShowServers
 import org.neo4j.cypher.internal.logical.plans.ShowSettings
+import org.neo4j.cypher.internal.logical.plans.ShowSupportedPrivileges
 import org.neo4j.cypher.internal.logical.plans.ShowTransactions
 import org.neo4j.cypher.internal.logical.plans.ShowUsers
 import org.neo4j.cypher.internal.logical.plans.SimulatedExpand
@@ -5683,6 +5684,18 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           util.Left("role1"),
           "GRANTED",
           immutableOnly = false
+        ),
+        1.0
+      ),
+      adminPlanDescription
+    )
+
+    assertGood(
+      attach(
+        ShowSupportedPrivileges(
+          List(),
+          None,
+          None
         ),
         1.0
       ),

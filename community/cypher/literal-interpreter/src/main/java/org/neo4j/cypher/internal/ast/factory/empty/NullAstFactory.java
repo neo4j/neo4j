@@ -1062,6 +1062,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL showSupportedPrivileges(NULL p, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
+        return null;
+    }
+
+    @Override
     public NULL showAllPrivileges(
             NULL p, boolean asCommand, boolean asRevoke, NULL yieldExpr, NULL returnWithoutGraph, NULL aNull) {
         return null;

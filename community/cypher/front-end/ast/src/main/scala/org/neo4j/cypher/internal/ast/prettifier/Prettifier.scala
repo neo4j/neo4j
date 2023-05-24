@@ -177,6 +177,7 @@ import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowRolesPrivileges
 import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
+import org.neo4j.cypher.internal.ast.ShowSupportedPrivilegeCommand
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
@@ -673,6 +674,10 @@ case class Prettifier(
         Prettifier.prettifyGraphPrivilege(x.name, graphScope, qualifierString, resource, "FROM", roleNames)
 
       // show privileges
+
+      case ShowSupportedPrivilegeCommand(yields, _) =>
+        val (y: String, r: String) = showClausesAsString(yields)
+        s"SHOW SUPPORTED PRIVILEGES$y$r"
 
       case ShowPrivileges(scope, yields, _) =>
         val (y: String, r: String) = showClausesAsString(yields)

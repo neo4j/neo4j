@@ -483,6 +483,9 @@ public interface ASTFactory<
 
     // Privilege Commands
 
+    ADMINISTRATION_COMMAND showSupportedPrivileges(
+            POS p, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
+
     ADMINISTRATION_COMMAND showAllPrivileges(
             POS p, boolean asCommand, boolean asRevoke, YIELD yieldExpr, RETURN_CLAUSE returnWithoutGraph, WHERE where);
 

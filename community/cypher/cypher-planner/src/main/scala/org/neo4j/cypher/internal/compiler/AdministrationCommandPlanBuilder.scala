@@ -110,6 +110,7 @@ import org.neo4j.cypher.internal.ast.ShowRoleAction
 import org.neo4j.cypher.internal.ast.ShowRoles
 import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowServers
+import org.neo4j.cypher.internal.ast.ShowSupportedPrivilegeCommand
 import org.neo4j.cypher.internal.ast.ShowUserAction
 import org.neo4j.cypher.internal.ast.ShowUserPrivileges
 import org.neo4j.cypher.internal.ast.ShowUsers
@@ -656,6 +657,9 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             (scope, Some(plans.AssertAllowedDbmsActions(ShowPrivilegeAction)))
         }
         Some(plans.ShowPrivilegeCommands(source, newScope, sp.asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
+
+      case c: ShowSupportedPrivilegeCommand =>
+        Some(plans.ShowSupportedPrivileges(c.defaultColumnNames, c.yields, c.returns))
 
       // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
       case sd: ShowDatabase =>

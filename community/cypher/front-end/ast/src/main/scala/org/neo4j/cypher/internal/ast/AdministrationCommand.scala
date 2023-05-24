@@ -471,6 +471,41 @@ object ShowPrivileges {
   }
 }
 
+final case class ShowSupportedPrivilegeCommand(
+  override val yieldOrWhere: YieldOrWhere,
+  override val defaultColumnSet: List[ShowColumn]
+)(val position: InputPosition) extends ReadAdministrationCommand {
+  override def name = "SHOW SUPPORTED PRIVILEGES"
+
+  override def semanticCheck: SemanticCheck =
+    super.semanticCheck chain
+      SemanticState.recordCurrentScope(this)
+
+  override def withYieldOrWhere(newYieldOrWhere: YieldOrWhere): ShowSupportedPrivilegeCommand =
+    this.copy(yieldOrWhere = newYieldOrWhere)(position)
+}
+
+object ShowSupportedPrivilegeCommand {
+  val ACTION: String = "action"
+  val QUALIFIER: String = "qualifier"
+  val TARGET: String = "target"
+  val SCOPE: String = "scope"
+  val DESCRIPTION: String = "description"
+
+  def apply(yieldOrWhere: YieldOrWhere)(position: InputPosition): ShowSupportedPrivilegeCommand = {
+    val allColumns =
+      List(
+        (ShowColumn(ACTION)(position), true),
+        (ShowColumn(QUALIFIER)(position), true),
+        (ShowColumn(TARGET)(position), true),
+        (ShowColumn(SCOPE, CTList(CTString))(position), true),
+        (ShowColumn(DESCRIPTION)(position), true)
+      )
+    val columns = DefaultOrAllShowColumns(allColumns, yieldOrWhere).columns
+    ShowSupportedPrivilegeCommand(yieldOrWhere, columns)(position)
+  }
+}
+
 final case class ShowPrivilegeCommands(
   scope: ShowPrivilegeScope,
   asRevoke: Boolean,

@@ -266,6 +266,7 @@ import org.neo4j.cypher.internal.ast.ShowServerAction
 import org.neo4j.cypher.internal.ast.ShowServers
 import org.neo4j.cypher.internal.ast.ShowSettingAction
 import org.neo4j.cypher.internal.ast.ShowSettingsClause
+import org.neo4j.cypher.internal.ast.ShowSupportedPrivilegeCommand
 import org.neo4j.cypher.internal.ast.ShowTransactionAction
 import org.neo4j.cypher.internal.ast.ShowTransactionsClause
 import org.neo4j.cypher.internal.ast.ShowUserAction
@@ -2236,6 +2237,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       } yield (qualifier, Some(resource))
     }
 
+  def _showSupportedPrivileges: Gen[ShowSupportedPrivilegeCommand] = for {
+    yields <- _eitherYieldOrWhere
+  } yield ShowSupportedPrivilegeCommand(yields)(pos)
+
   def _showPrivileges: Gen[ShowPrivileges] = for {
     names <- _listOfNameOfEither
     showRole = ShowRolesPrivileges(names)(pos)
@@ -2322,7 +2327,8 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     _showPrivilegeCommands,
     _dbmsPrivilege,
     _databasePrivilege,
-    _graphPrivilege
+    _graphPrivilege,
+    _showSupportedPrivileges
   )
 
   // Database commands

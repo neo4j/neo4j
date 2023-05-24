@@ -239,6 +239,7 @@ class ShowFunctionsCommandParserTest extends AdministrationAndSchemaCommandParse
         |  "SERVERS"
         |  "SETTING"
         |  "SETTINGS"
+        |  "SUPPORTED"
         |  "TEXT"
         |  "TRANSACTION"
         |  "TRANSACTIONS"

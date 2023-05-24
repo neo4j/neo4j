@@ -25,6 +25,46 @@ import org.neo4j.cypher.internal.expressions.Parameter
 
 class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSchemaCommandParserTestBase {
 
+  // Show supported privileges
+
+  test("SHOW SUPPORTED PRIVILEGES") {
+    yields(ast.ShowSupportedPrivilegeCommand(None))
+  }
+
+  test("use system show supported privileges") {
+    yields(ast.ShowSupportedPrivilegeCommand(None))
+  }
+
+  test("show supported privileges YIELD *") {
+    yields(ast.ShowSupportedPrivilegeCommand(Some(Left((yieldClause(returnAllItems, None), None)))))
+  }
+
+  test("show supported privileges YIELD action") {
+    yields(ast.ShowSupportedPrivilegeCommand(Some(Left((
+      yieldClause(returnItems(variableReturnItem("action"))),
+      None
+    )))))
+  }
+
+  test("show supported privileges WHERE action = 'read'") {
+    yields(ast.ShowSupportedPrivilegeCommand(Some(Right(where(equals(varFor("action"), literalString("read")))))))
+  }
+
+  test(
+    "show supported privileges YIELD action, target, description ORDER BY action SKIP 1 LIMIT 10 WHERE target ='graph' RETURN *"
+  ) {
+    val orderByClause = orderBy(sortItem(varFor("action")))
+    val whereClause = where(equals(varFor("target"), literalString("graph")))
+    val columns = yieldClause(
+      returnItems(variableReturnItem("action"), variableReturnItem("target"), variableReturnItem("description")),
+      Some(orderByClause),
+      Some(skip(1)),
+      Some(limit(10)),
+      Some(whereClause)
+    )
+    yields(ast.ShowSupportedPrivilegeCommand(Some(Left((columns, Some(returnClause(returnAllItems)))))))
+  }
+
   // Show privileges
 
   test("SHOW PRIVILEGES") {
@@ -551,6 +591,7 @@ class ShowPrivilegesAdministrationCommandParserTest extends AdministrationAndSch
          |  "SERVERS"
          |  "SETTING"
          |  "SETTINGS"
+         |  "SUPPORTED"
          |  "TEXT"
          |  "TRANSACTION"
          |  "TRANSACTIONS"
