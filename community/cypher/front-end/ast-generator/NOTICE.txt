@@ -21,6 +21,9 @@ Third-party licenses
 Apache Software License, Version 2.0
   Apache Commons Lang
   Caffeine cache
+  FindBugs-jsr305
+  Javassist
+  Reflections
   scala-xml
   scalacheck-1.16
   scalactic
@@ -33,4 +36,7 @@ BSD - Scala License
 BSD License
   scalacheck
   test-interface
+
+MIT License
+  SLF4J API Module
 
