@@ -41,6 +41,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -169,6 +170,21 @@ object ParallelTransactionBoundQueryContext {
       propertyKeyId: Int,
       name: Option[String]
     ): Unit = unsupported()
+
+    override def createNodePropertyTypeConstraint(
+      labelId: Int,
+      propertyKeyId: Int,
+      propertyTypes: PropertyTypeSet,
+      name: Option[String]
+    ): Unit = unsupported()
+
+    override def createRelationshipPropertyTypeConstraint(
+      relTypeId: Int,
+      propertyKeyId: Int,
+      propertyTypes: PropertyTypeSet,
+      name: Option[String]
+    ): Unit = unsupported()
+
     override def dropNamedConstraint(name: String): Unit = unsupported()
     override def detachDeleteNode(id: Long): Int = unsupported()
     override def assertSchemaWritesAllowed(): Unit = unsupported()

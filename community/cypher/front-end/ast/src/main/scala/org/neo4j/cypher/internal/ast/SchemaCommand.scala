@@ -20,15 +20,26 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticAnalysisTooling
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck
 import org.neo4j.cypher.internal.ast.semantics.SemanticCheck.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticExpressionCheck
+import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.CypherTypeName
+import org.neo4j.cypher.internal.expressions.DateTypeName
+import org.neo4j.cypher.internal.expressions.DurationTypeName
+import org.neo4j.cypher.internal.expressions.FloatTypeName
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName
+import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
 import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.PointTypeName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
+import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
+import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Type
 import org.neo4j.cypher.internal.util.InputPosition
@@ -457,6 +468,28 @@ trait CreateConstraint extends SchemaCommand {
         case _ => checkOptionsMap(s"$entityTypeString property existence constraint", options)
       }
   }
+
+  protected def checkPropertyType(entityTypeString: String, propertyType: CypherTypeName): SemanticCheck = {
+    val allowedTypes = List(
+      BooleanTypeName(),
+      StringTypeName(),
+      IntegerTypeName(),
+      FloatTypeName(),
+      DateTypeName(),
+      LocalTimeTypeName(),
+      ZonedTimeTypeName(),
+      LocalDateTimeTypeName(),
+      ZonedDateTimeTypeName(),
+      DurationTypeName(),
+      PointTypeName()
+    )
+
+    if (!allowedTypes.contains(propertyType)) error(
+      s"Failed to create $entityTypeString property type constraint: Invalid property type ${propertyType.description}.",
+      position
+    )
+    else SemanticCheck.success
+  }
 }
 
 case class CreateNodeKeyConstraint(
@@ -662,14 +695,14 @@ case class CreateNodePropertyTypeConstraint(
   override def withGraph(useGraph: Option[UseGraph]): SchemaCommand = copy(useGraph = useGraph)(position)
   override def withName(name: Option[String]): CreateNodePropertyTypeConstraint = copy(name = name)(position)
 
-  override def semanticCheck: SemanticCheck = error("Property type constraints don't exist", position)
-//    checkSemantics(
-//      "node",
-//      ifExistsDo,
-//      options,
-//      containsOn,
-//      constraintVersion
-//    ) chain super.semanticCheck
+  override def semanticCheck: SemanticCheck =
+    checkSemantics(
+      "node property type",
+      ifExistsDo,
+      options,
+      containsOn,
+      constraintVersion
+    ) chain checkPropertyType("node", propertyType) chain super.semanticCheck
 }
 
 case class CreateRelationshipPropertyTypeConstraint(
@@ -689,14 +722,14 @@ case class CreateRelationshipPropertyTypeConstraint(
   override def withName(name: Option[String]): CreateRelationshipPropertyTypeConstraint =
     copy(name = name)(position)
 
-  override def semanticCheck: SemanticCheck = error("Property type constraints don't exist", position)
-//    checkSemantics(
-//      "relationship",
-//      ifExistsDo,
-//      options,
-//      containsOn,
-//      constraintVersion
-//    ) chain super.semanticCheck
+  override def semanticCheck: SemanticCheck =
+    checkSemantics(
+      "relationship property type",
+      ifExistsDo,
+      options,
+      containsOn,
+      constraintVersion
+    ) chain checkPropertyType("relationship", propertyType) chain super.semanticCheck
 }
 
 case class DropConstraintOnName(name: String, ifExists: Boolean, useGraph: Option[GraphSelection] = None)(

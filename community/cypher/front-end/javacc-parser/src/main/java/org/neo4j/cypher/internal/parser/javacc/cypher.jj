@@ -4012,13 +4012,24 @@ STATEMENT ShowRelCommand( Token start, USE_CLAUSE useClause ) throws Exception:
     }
 }
 
-STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes constraintType ) throws Exception:
+STATEMENT ShowPropertyCommand( Token start, USE_CLAUSE useClause, ShowCommandFilterTypes existenceConstraintType ) throws Exception:
 {
     STATEMENT statement = null;
+    ShowCommandFilterTypes propertyTypeConstraintType;
+    if (existenceConstraintType.description().startsWith("NODE")) {
+        propertyTypeConstraintType = ShowCommandFilterTypes.NODE_PROP_TYPE;
+    } else if (existenceConstraintType.description().startsWith("REL")) {
+        propertyTypeConstraintType = ShowCommandFilterTypes.RELATIONSHIP_PROP_TYPE;
+    } else {
+        propertyTypeConstraintType = ShowCommandFilterTypes.PROP_TYPE;
+    }
+    ShowCommandFilterTypes constraintType;
 }
 {
-    ( (<EXISTENCE> | <EXIST>) statement=ShowConstraintsAllowYield( start, useClause, constraintType )
-    ) { return statement; }
+    ( (<EXISTENCE> | <EXIST>) { constraintType = existenceConstraintType; }
+      | <TYPE> { constraintType = propertyTypeConstraintType; }
+    ) statement=ShowConstraintsAllowYield( start, useClause, constraintType )
+     { return statement; }
 }
 
 RETURN_ITEM YieldItem() :

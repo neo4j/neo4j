@@ -36,6 +36,7 @@ import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
+import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.VirtualNodeValue
 import org.neo4j.values.virtual.VirtualRelationshipValue
@@ -54,6 +55,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   private val uniqueConstraintsAdded = new Counter
   private val relUniqueConstraintsAdded = new Counter
   private val propertyExistenceConstraintsAdded = new Counter
+  private val nodePropertyTypeConstraintsAdded = new Counter
+  private val relPropertyTypeConstraintsAdded = new Counter
   private val nodekeyConstraintsAdded = new Counter
   private val relkeyConstraintsAdded = new Counter
   private val constraintsRemoved = new Counter
@@ -71,6 +74,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     uniqueConstraintsAdded = uniqueConstraintsAdded.count,
     relUniqueConstraintsAdded = relUniqueConstraintsAdded.count,
     existenceConstraintsAdded = propertyExistenceConstraintsAdded.count,
+    nodePropTypeConstraintsAdded = nodePropertyTypeConstraintsAdded.count,
+    relPropTypeConstraintsAdded = relPropertyTypeConstraintsAdded.count,
     nodekeyConstraintsAdded = nodekeyConstraintsAdded.count,
     relkeyConstraintsAdded = relkeyConstraintsAdded.count,
     constraintsRemoved = constraintsRemoved.count
@@ -89,6 +94,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     uniqueConstraintsAdded.increase(statistics.uniqueConstraintsAdded)
     relUniqueConstraintsAdded.increase(statistics.relUniqueConstraintsAdded)
     propertyExistenceConstraintsAdded.increase(statistics.existenceConstraintsAdded)
+    nodePropertyTypeConstraintsAdded.increase(statistics.nodePropTypeConstraintsAdded)
+    relPropertyTypeConstraintsAdded.increase(statistics.relPropTypeConstraintsAdded)
     nodekeyConstraintsAdded.increase(statistics.nodekeyConstraintsAdded)
     relkeyConstraintsAdded.increase(statistics.relkeyConstraintsAdded)
     constraintsRemoved.increase(statistics.constraintsRemoved)
@@ -258,6 +265,26 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
   ): Unit = {
     inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name)
     propertyExistenceConstraintsAdded.increase()
+  }
+
+  override def createNodePropertyTypeConstraint(
+    labelId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit = {
+    inner.createNodePropertyTypeConstraint(labelId, propertyKeyId, propertyTypes, name)
+    nodePropertyTypeConstraintsAdded.increase()
+  }
+
+  override def createRelationshipPropertyTypeConstraint(
+    relTypeId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit = {
+    inner.createRelationshipPropertyTypeConstraint(relTypeId, propertyKeyId, propertyTypes, name)
+    relPropertyTypeConstraintsAdded.increase()
   }
 
   override def dropNamedConstraint(name: String): Unit = {

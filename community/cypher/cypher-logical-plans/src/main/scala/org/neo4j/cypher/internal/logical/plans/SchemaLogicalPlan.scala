@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.ast.Options
+import org.neo4j.cypher.internal.expressions.CypherTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -99,6 +100,29 @@ case class CreateRelationshipPropertyExistenceConstraint(
 )(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
   override def lhs: Option[LogicalPlan] = source
 }
+
+case class CreateNodePropertyTypeConstraint(
+  source: Option[DoNothingIfExistsForConstraint],
+  label: LabelName,
+  prop: Property,
+  propertyType: CypherTypeName,
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
+
+case class CreateRelationshipPropertyTypeConstraint(
+  source: Option[DoNothingIfExistsForConstraint],
+  typeName: RelTypeName,
+  prop: Property,
+  propertyType: CypherTypeName,
+  name: Option[String],
+  options: Options
+)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen) {
+  override def lhs: Option[LogicalPlan] = source
+}
+
 case class DropConstraintOnName(name: String, ifExists: Boolean)(implicit idGen: IdGen) extends SchemaLogicalPlan(idGen)
 
 case class CreateRangeIndex(
@@ -190,3 +214,5 @@ case object NodeUniqueness extends ConstraintType
 case object RelationshipUniqueness extends ConstraintType
 case object NodePropertyExistence extends ConstraintType
 case object RelationshipPropertyExistence extends ConstraintType
+case class NodePropertyType(propType: CypherTypeName) extends ConstraintType
+case class RelationshipPropertyType(propType: CypherTypeName) extends ConstraintType

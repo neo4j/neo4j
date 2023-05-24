@@ -51,7 +51,8 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
 
   override def databaseConfig(): Map[Setting[_], Object] =
     super.databaseConfig() ++ Map(
-      GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE
+      GraphDatabaseInternalSettings.rel_unique_constraints -> java.lang.Boolean.TRUE,
+      GraphDatabaseInternalSettings.type_constraints -> java.lang.Boolean.TRUE
     )
 
   // Index commands
@@ -297,6 +298,34 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
     graph.constraintExists(constraintName) should be(false)
   }
 
+  test("Create node property type constraint") {
+    // WHEN
+    val exception = the[CypherExecutionException] thrownBy {
+      execute(s"CREATE CONSTRAINT $constraintName FOR (n:$label) REQUIRE n.$prop IS :: INT")
+    }
+
+    // THEN
+    exception.getMessage should equal(
+      s"""Unable to create Constraint( name='$constraintName', type='NODE PROPERTY TYPE', schema=(:$label {$prop}), allowedPropertyTypes='[INTEGER]' ):
+         |Property type constraint requires Neo4j Enterprise Edition""".stripMargin
+    )
+    graph.constraintExists(constraintName) should be(false)
+  }
+
+  test("Create relationship property type constraint") {
+    // WHEN
+    val exception = the[CypherExecutionException] thrownBy {
+      execute(s"CREATE CONSTRAINT $constraintName FOR ()-[r:$relType]-() REQUIRE r.$prop IS :: INT")
+    }
+
+    // THEN
+    exception.getMessage should equal(
+      s"""Unable to create Constraint( name='$constraintName', type='RELATIONSHIP PROPERTY TYPE', schema=()-[:$relType {$prop}]-(), allowedPropertyTypes='[INTEGER]' ):
+         |Property type constraint requires Neo4j Enterprise Edition""".stripMargin
+    )
+    graph.constraintExists(constraintName) should be(false)
+  }
+
   test("Drop constraint") {
     // GIVEN
     graph.createNodeUniquenessConstraintWithName(constraintName, label, prop)
@@ -323,7 +352,8 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
       "entityType" -> "RELATIONSHIP",
       "labelsOrTypes" -> List(relType),
       "properties" -> List(prop),
-      "ownedIndex" -> constraintName
+      "ownedIndex" -> constraintName,
+      "propertyType" -> null
     )))
   }
 }

@@ -897,6 +897,14 @@ class PrettifierIT extends CypherFunSuite {
       "SHOW RELATIONSHIP KEY CONSTRAINTS",
     "show relationship key CONSTRAINTS" ->
       "SHOW RELATIONSHIP KEY CONSTRAINTS",
+    "show property type CONSTRAINTS" ->
+      "SHOW PROPERTY TYPE CONSTRAINTS",
+    "show node property type CONSTRAINTS" ->
+      "SHOW NODE PROPERTY TYPE CONSTRAINTS",
+    "show rel property type CONSTRAINTS" ->
+      "SHOW RELATIONSHIP PROPERTY TYPE CONSTRAINTS",
+    "show relationship property type CONSTRAINTS" ->
+      "SHOW RELATIONSHIP PROPERTY TYPE CONSTRAINTS",
     "show constraints WHERE entityType = 'NODE'" ->
       """SHOW ALL CONSTRAINTS
         |  WHERE entityType = "NODE"""".stripMargin,

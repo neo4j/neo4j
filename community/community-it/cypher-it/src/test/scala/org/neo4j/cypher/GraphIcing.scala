@@ -33,10 +33,13 @@ import org.neo4j.graphdb.schema.IndexType
 import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.internal.schema.IndexProviderDescriptor
+import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.KernelTransaction.Type
 import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl
+import org.neo4j.kernel.impl.coreapi.schema.NodePropertyTypeConstraintDefinition
+import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyTypeConstraintDefinition
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -172,6 +175,64 @@ trait GraphIcing {
       }
       withTx(tx => {
         tx.execute(s"CREATE CONSTRAINT `$name` FOR $relSyntax REQUIRE (r.$property) IS NOT NULL")
+      })
+      getRelationshipConstraint(relType, property)
+    }
+
+    // Create node property type constraint
+
+    def createNodePropTypeConstraint(label: String, property: String, propType: String): ConstraintDefinition = {
+      withTx(tx => {
+        tx.execute(s"CREATE CONSTRAINT FOR (n:$label) REQUIRE (n.$property) IS :: $propType")
+      })
+      getNodeConstraint(label, Seq(property))
+    }
+
+    def createNodePropTypeConstraintWithName(
+      name: String,
+      label: String,
+      property: String,
+      propType: String
+    ): ConstraintDefinition = {
+      withTx(tx => {
+        tx.execute(s"CREATE CONSTRAINT `$name` FOR (n:$label) REQUIRE (n.$property) IS :: $propType")
+      })
+      getNodeConstraint(label, Seq(property))
+    }
+
+    // Create relationship property type constraint
+
+    def createRelationshipPropTypeConstraint(
+      relType: String,
+      property: String,
+      propType: String,
+      direction: Direction = Direction.BOTH
+    ): ConstraintDefinition = {
+      val relSyntax = direction match {
+        case Direction.OUTGOING => s"()-[r:$relType]->()"
+        case Direction.INCOMING => s"()<-[r:$relType]-()"
+        case _                  => s"()-[r:$relType]-()"
+      }
+      withTx(tx => {
+        tx.execute(s"CREATE CONSTRAINT FOR $relSyntax REQUIRE (r.$property) IS :: $propType")
+      })
+      getRelationshipConstraint(relType, property)
+    }
+
+    def createRelationshipPropTypeConstraintWithName(
+      name: String,
+      relType: String,
+      property: String,
+      propType: String,
+      direction: Direction = Direction.BOTH
+    ): ConstraintDefinition = {
+      val relSyntax = direction match {
+        case Direction.OUTGOING => s"()-[r:$relType]->()"
+        case Direction.INCOMING => s"()<-[r:$relType]-()"
+        case _                  => s"()-[r:$relType]-()"
+      }
+      withTx(tx => {
+        tx.execute(s"CREATE CONSTRAINT `$name` FOR $relSyntax REQUIRE (r.$property) IS :: $propType")
       })
       getRelationshipConstraint(relType, property)
     }
@@ -605,6 +666,17 @@ trait GraphIcing {
 
     def getConstraintTypeByName(name: String): ConstraintType =
       withTx(tx => tx.schema().getConstraintByName(name).getConstraintType)
+
+    def getConstraintPropertyTypeByName(name: String): Option[PropertyTypeSet] =
+      withTx(tx => {
+        tx.schema().getConstraintByName(name) match {
+          case nodePropertyConstraintDefinition: NodePropertyTypeConstraintDefinition =>
+            Some(nodePropertyConstraintDefinition.getAllowedTypes)
+          case relPropertyConstraintDefinition: RelationshipPropertyTypeConstraintDefinition =>
+            Some(relPropertyConstraintDefinition.getAllowedTypes)
+          case _ => None
+        }
+      })
 
     def constraintExists(name: String): Boolean = withTx(tx =>
       try {

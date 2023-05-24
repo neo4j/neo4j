@@ -1607,7 +1607,8 @@ object ShowConstraintsClause {
       ShowColumn("entityType")(position),
       ShowColumn("labelsOrTypes", CTList(CTString))(position),
       ShowColumn("properties", CTList(CTString))(position),
-      ShowColumn("ownedIndex")(position)
+      ShowColumn("ownedIndex")(position),
+      ShowColumn("propertyType")(position)
     )
     val verboseCols = List(
       ShowColumn("options", CTMap)(position),

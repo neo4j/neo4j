@@ -18,7 +18,7 @@ package org.neo4j.cypher.internal.expressions
 
 sealed trait CypherTypeName {
   protected def typeName: String
-  def description: String = s"$typeName"
+  def description: String = typeName
   override def toString: String = description
 }
 

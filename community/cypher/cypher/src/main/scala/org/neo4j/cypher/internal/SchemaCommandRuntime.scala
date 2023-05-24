@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import org.neo4j.common.EntityType
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
+import org.neo4j.cypher.internal.expressions.CypherTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -29,11 +30,13 @@ import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyTypeConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyTypeConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.DoNothingIfExistsForConstraint
@@ -45,12 +48,15 @@ import org.neo4j.cypher.internal.logical.plans.DropIndexOnName
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
+import org.neo4j.cypher.internal.logical.plans.NodePropertyType
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
 import org.neo4j.cypher.internal.logical.plans.RelationshipKey
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
+import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
 import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.options.CypherRuntimeOption
 import org.neo4j.cypher.internal.procs.IgnoredResult
+import org.neo4j.cypher.internal.procs.PropertyTypeMapper
 import org.neo4j.cypher.internal.procs.SchemaExecutionPlan
 import org.neo4j.cypher.internal.procs.SuccessResult
 import org.neo4j.cypher.internal.runtime.InternalQueryType
@@ -64,6 +70,7 @@ import org.neo4j.graphdb.schema.IndexType.TEXT
 import org.neo4j.internal.schema.ConstraintDescriptor
 import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.constraints.PropertyTypeSet
 
 import scala.language.implicitConversions
 import scala.util.Try
@@ -168,7 +175,7 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           "CreateNodePropertyExistenceConstraint",
           (ctx, params) => {
             // Assert empty options
-            PropertyExistenceConstraintOptionsConverter("node", ctx).convert(options, params)
+            PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", ctx).convert(options, params)
             (ctx.createNodePropertyExistenceConstraint _).tupled(labelPropWithName(ctx)(label, prop.propertyKey, name))
             SuccessResult
           },
@@ -181,12 +188,50 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
           "CreateRelationshipPropertyExistenceConstraint",
           (ctx, params) => {
             // Assert empty options
-            PropertyExistenceConstraintOptionsConverter("relationship", ctx).convert(options, params)
+            PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "existence", ctx).convert(options, params)
             (ctx.createRelationshipPropertyExistenceConstraint _).tupled(typePropWithName(ctx)(
               relType,
               prop.propertyKey,
               name
             ))
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
+
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS TYPED ...
+    case CreateNodePropertyTypeConstraint(source, label, prop, propertyType, name, options) => context =>
+        SchemaExecutionPlan(
+          "CreateNodePropertyTypeConstraint",
+          (ctx, params) => {
+            // Assert empty options
+            PropertyExistenceOrTypeConstraintOptionsConverter("node", "type", ctx).convert(options, params)
+            val (labelId, propId, _) = labelPropWithName(ctx)(label, prop.propertyKey, name)
+            ctx.createNodePropertyTypeConstraint(
+              labelId,
+              propId,
+              PropertyTypeMapper.asPropertyTypeSet(propertyType),
+              name
+            )
+            SuccessResult
+          },
+          source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
+        )
+
+    // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS TYPED ...
+    case CreateRelationshipPropertyTypeConstraint(source, relType, prop, propertyType, name, options) => context =>
+        SchemaExecutionPlan(
+          "CreateRelationshipPropertyTypeConstraint",
+          (ctx, params) => {
+            // Assert empty options
+            PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "type", ctx).convert(options, params)
+            val (relTypeId, propId, _) = typePropWithName(ctx)(relType, prop.propertyKey, name)
+            ctx.createRelationshipPropertyTypeConstraint(
+              relTypeId,
+              propId,
+              PropertyTypeMapper.asPropertyTypeSet(propertyType),
+              name
+            )
             SuccessResult
           },
           source.map(logicalToExecutable.applyOrElse(_, throwCantCompile).apply(context))
@@ -381,9 +426,14 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
                 IndexBackedConstraintsOptionsConverter("relationship uniqueness constraint", ctx)
                   .convert(options, params)
               case NodePropertyExistence =>
-                PropertyExistenceConstraintOptionsConverter("node", ctx).convert(options, params)
+                PropertyExistenceOrTypeConstraintOptionsConverter("node", "existence", ctx).convert(options, params)
               case RelationshipPropertyExistence =>
-                PropertyExistenceConstraintOptionsConverter("relationship", ctx).convert(options, params)
+                PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "existence", ctx)
+                  .convert(options, params)
+              case _: NodePropertyType =>
+                PropertyExistenceOrTypeConstraintOptionsConverter("node", "type", ctx).convert(options, params)
+              case _: RelationshipPropertyType =>
+                PropertyExistenceOrTypeConstraintOptionsConverter("relationship", "type", ctx).convert(options, params)
             }
 
             val (entityId, _) = getEntityInfo(entityName, ctx)
@@ -426,7 +476,18 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       case RelationshipUniqueness        => c => c.isRelationshipUniquenessConstraint
       case NodeKey                       => c => c.isNodeKeyConstraint
       case RelationshipKey               => c => c.isRelationshipKeyConstraint
+      case NodePropertyType(propType) =>
+        c => c.isNodePropertyTypeConstraint && checkTypes(propType, c.asPropertyTypeConstraint().allowedPropertyTypes())
+      case RelationshipPropertyType(propType) =>
+        c =>
+          c.isRelationshipPropertyTypeConstraint &&
+            checkTypes(propType, c.asPropertyTypeConstraint().allowedPropertyTypes())
     }
+
+  // Checks if the pre-existing constraints property type (preExistingTypes)
+  // is the same as the property type of the constraint to be created (askedForType)
+  private def checkTypes(askedForType: CypherTypeName, preExistingTypes: PropertyTypeSet): Boolean =
+    preExistingTypes.equals(PropertyTypeMapper.asPropertyTypeSet(askedForType))
 
   implicit private def propertyToId(ctx: QueryContext)(property: PropertyKeyName): PropertyKeyId =
     PropertyKeyId(ctx.getOrCreatePropertyKeyId(property.name))

@@ -101,11 +101,13 @@ import org.neo4j.cypher.internal.logical.plans.CreateFulltextIndex
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyTypeConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyTypeConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateTextIndex
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
@@ -173,6 +175,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexEndsWithScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeKey
+import org.neo4j.cypher.internal.logical.plans.NodePropertyType
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
 import org.neo4j.cypher.internal.logical.plans.NullifyMetadata
@@ -202,6 +205,7 @@ import org.neo4j.cypher.internal.logical.plans.RangeLessThan
 import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipKey
+import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
 import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RepeatOptions
@@ -1051,7 +1055,11 @@ case class LogicalPlan2PlanDescription(
           case RelationshipKey        => "IS RELATIONSHIP KEY"
           case NodeUniqueness         => "IS UNIQUE"
           case RelationshipUniqueness => "IS UNIQUE"
-          case _                      => "IS NOT NULL"
+          case NodePropertyType(propType) =>
+            s"IS :: ${propType.description}"
+          case RelationshipPropertyType(propType) =>
+            s"IS :: ${propType.description}"
+          case _ => "IS NOT NULL"
         }
         PlanDescriptionImpl(
           id,
@@ -1166,6 +1174,46 @@ case class LogicalPlan2PlanDescription(
           scala.util.Right(relTypeName),
           Seq(prop),
           "IS NOT NULL",
+          options
+        ))
+        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
+
+      case CreateNodePropertyTypeConstraint(
+          _,
+          label,
+          prop,
+          propType,
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val node = prop.map.asCanonicalStringVal
+        val typeDescr = propType.description
+        val details = Details(constraintInfo(
+          nameOption,
+          node,
+          scala.util.Left(label),
+          Seq(prop),
+          s"IS :: $typeDescr",
+          options
+        ))
+        PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
+
+      case CreateRelationshipPropertyTypeConstraint(
+          _,
+          relTypeName,
+          prop,
+          propType,
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val relationship = prop.map.asCanonicalStringVal
+        val typeDescr = propType.description
+        val details = Details(constraintInfo(
+          nameOption,
+          relationship,
+          scala.util.Right(relTypeName),
+          Seq(prop),
+          s"IS :: $typeDescr",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", NoChildren, Seq(details), variables, withRawCardinalities)
@@ -2111,6 +2159,46 @@ case class LogicalPlan2PlanDescription(
           scala.util.Right(relTypeName),
           Seq(prop),
           "IS NOT NULL",
+          options
+        ))
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
+
+      case CreateNodePropertyTypeConstraint(
+          _,
+          label,
+          prop,
+          propType,
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val node = prop.map.asCanonicalStringVal
+        val typeDescr = propType.description
+        val details = Details(constraintInfo(
+          nameOption,
+          node,
+          scala.util.Left(label),
+          Seq(prop),
+          s"IS :: $typeDescr",
+          options
+        ))
+        PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)
+
+      case CreateRelationshipPropertyTypeConstraint(
+          _,
+          relTypeName,
+          prop,
+          propType,
+          nameOption,
+          options
+        ) => // Can be both a leaf plan and a middle plan so need to be in both places
+        val relationship = prop.map.asCanonicalStringVal
+        val typeDescr = propType.description
+        val details = Details(constraintInfo(
+          nameOption,
+          relationship,
+          scala.util.Right(relTypeName),
+          Seq(prop),
+          s"IS :: $typeDescr",
           options
         ))
         PlanDescriptionImpl(id, "CreateConstraint", children, Seq(details), variables, withRawCardinalities)

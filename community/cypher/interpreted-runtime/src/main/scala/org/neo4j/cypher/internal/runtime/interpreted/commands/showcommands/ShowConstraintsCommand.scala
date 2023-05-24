@@ -25,9 +25,12 @@ import org.neo4j.cypher.internal.ast.ExistsConstraints
 import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
 import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
+import org.neo4j.cypher.internal.ast.PropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowConstraintType
@@ -58,7 +61,13 @@ import org.neo4j.values.virtual.VirtualValues
 import scala.collection.immutable.ListMap
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
-// SHOW [ALL|UNIQUE|NODE EXIST|RELATIONSHIP EXIST|EXIST|NODE KEY] CONSTRAINT[S] [BRIEF|VERBOSE|WHERE clause|YIELD clause]
+// SHOW [
+//   ALL
+//   | NODE UNIQUE | RELATIONSHIP UNIQUE | UNIQUE
+//   | NODE EXIST | RELATIONSHIP EXIST | EXIST
+//   | NODE KEY | RELATIONSHIP KEY | KEY
+//   | NODE PROPERTY TYPE | RELATIONSHIP PROPERTY TYPE | PROPERTY TYPE
+// ] CONSTRAINT[S] [BRIEF | VERBOSE | WHERE clause | YIELD clause]
 case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: Boolean, columns: List[ShowColumn])
     extends Command(columns) {
 
@@ -85,6 +94,12 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
         c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.NODE)
       case _: RelExistsConstraints =>
         c => c.`type`().equals(schema.ConstraintType.EXISTS) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
+      case PropTypeConstraints => c => c.`type`().equals(schema.ConstraintType.PROPERTY_TYPE)
+      case NodePropTypeConstraints =>
+        c => c.`type`().equals(schema.ConstraintType.PROPERTY_TYPE) && c.schema.entityType.equals(EntityType.NODE)
+      case RelPropTypeConstraints =>
+        c =>
+          c.`type`().equals(schema.ConstraintType.PROPERTY_TYPE) && c.schema.entityType.equals(EntityType.RELATIONSHIP)
       case AllConstraints => _ => true // Should keep all and not filter away any constraints
       case c              => throw new IllegalStateException(s"Unknown constraint type: $c")
     }
@@ -107,6 +122,12 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
               .map(Values.stringValue)
               .getOrElse(Values.NO_VALUE)
           else Values.NO_VALUE
+        val propertyType =
+          if (constraintDescriptor.isPropertyTypeConstraint)
+            Some(
+              constraintDescriptor.asPropertyTypeConstraint().allowedPropertyTypes().userDescription()
+            )
+          else None
         val entityType = constraintDescriptor.schema.entityType
         val constraintType = getConstraintType(constraintDescriptor.`type`, entityType)
 
@@ -124,7 +145,9 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
           // The properties of this constraint, for example ["propKey", "propKey2"]
           "properties" -> VirtualValues.fromList(properties.map(prop => Values.of(prop).asInstanceOf[AnyValue]).asJava),
           // The name of the index associated to the constraint
-          "ownedIndex" -> ownedIndex
+          "ownedIndex" -> ownedIndex,
+          // The Cypher type this constraint restricts its property to
+          "propertyType" -> propertyType.map(Values.stringValue).getOrElse(Values.NO_VALUE)
         )
         if (verbose) {
           val (options, createString) =
@@ -145,7 +168,13 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
               )
               (options, createWithOptions)
             } else {
-              val createWithoutOptions = createConstraintStatement(name, constraintType, labels, properties)
+              val createWithoutOptions = createConstraintStatement(
+                name,
+                constraintType,
+                labels,
+                properties,
+                propertyType = propertyType
+              )
               (Values.NO_VALUE, createWithoutOptions)
             }
 
@@ -169,7 +198,8 @@ object ShowConstraintsCommand {
     labelsOrTypes: List[String],
     properties: List[String],
     providerName: Option[String] = None,
-    indexConfig: Option[IndexConfig] = None
+    indexConfig: Option[IndexConfig] = None,
+    propertyType: Option[String] = None
   ): String = {
     val labelsOrTypesWithColons = asEscapedString(labelsOrTypes, colonStringJoiner)
     val escapedName = escapeBackticks(name)
@@ -196,6 +226,18 @@ object ShowConstraintsCommand {
       case _: RelExistsConstraints =>
         val escapedProperties = asEscapedString(properties, relPropStringJoiner)
         s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS NOT NULL"
+      case NodePropTypeConstraints =>
+        val escapedProperties = asEscapedString(properties, propStringJoiner)
+        val typeString = propertyType.getOrElse(
+          throw new IllegalArgumentException(s"Expected a property type for $constraintType constraint.")
+        )
+        s"CREATE CONSTRAINT `$escapedName` FOR (n$labelsOrTypesWithColons) REQUIRE ($escapedProperties) IS :: $typeString"
+      case RelPropTypeConstraints =>
+        val escapedProperties = asEscapedString(properties, relPropStringJoiner)
+        val typeString = propertyType.getOrElse(
+          throw new IllegalArgumentException(s"Expected a property type for $constraintType constraint.")
+        )
+        s"CREATE CONSTRAINT `$escapedName` FOR ()-[r$labelsOrTypesWithColons]-() REQUIRE ($escapedProperties) IS :: $typeString"
       case _ => throw new IllegalArgumentException(
           s"Did not expect constraint type ${constraintType.prettyPrint} for constraint create command."
         )
@@ -228,6 +270,8 @@ object ShowConstraintsCommand {
       case (schema.ConstraintType.UNIQUE_EXISTS, EntityType.RELATIONSHIP) => RelKeyConstraints
       case (schema.ConstraintType.EXISTS, EntityType.NODE)                => NodeExistsConstraints()
       case (schema.ConstraintType.EXISTS, EntityType.RELATIONSHIP)        => RelExistsConstraints()
+      case (schema.ConstraintType.PROPERTY_TYPE, EntityType.NODE)         => NodePropTypeConstraints
+      case (schema.ConstraintType.PROPERTY_TYPE, EntityType.RELATIONSHIP) => RelPropTypeConstraints
       case _ => throw new IllegalStateException(
           s"Invalid constraint combination: ConstraintType $internalConstraintType and EntityType $entityType."
         )

@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.ast.CreateFulltextRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateLookupIndex
 import org.neo4j.cypher.internal.ast.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateNodePropertyTypeConstraint
 import org.neo4j.cypher.internal.ast.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreatePointNodeIndex
 import org.neo4j.cypher.internal.ast.CreatePointRelationshipIndex
@@ -32,6 +33,7 @@ import org.neo4j.cypher.internal.ast.CreateRangeNodeIndex
 import org.neo4j.cypher.internal.ast.CreateRangeRelationshipIndex
 import org.neo4j.cypher.internal.ast.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyTypeConstraint
 import org.neo4j.cypher.internal.ast.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
@@ -226,6 +228,47 @@ case object SchemaCommandPlanBuilder extends Phase[PlannerContext, BaseState, Lo
           case _ => None
         }
         Some(plans.CreateRelationshipPropertyExistenceConstraint(source, relType, prop, name, options))
+
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR (node:Label) REQUIRE node.prop IS :: ...
+      case CreateNodePropertyTypeConstraint(_, label, prop, propertyType, name, ifExistsDo, options, _, _, _) =>
+        val source = ifExistsDo match {
+          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
+              prop.map.asCanonicalStringVal,
+              scala.util.Left(label),
+              Seq(prop),
+              plans.NodePropertyType(propertyType),
+              name,
+              options
+            ))
+          case _ => None
+        }
+        Some(plans.CreateNodePropertyTypeConstraint(source, label, prop, propertyType, name, options))
+
+      // CREATE CONSTRAINT [name] [IF NOT EXISTS] FOR ()-[r:R]-() REQUIRE r.prop IS :: ...
+      case CreateRelationshipPropertyTypeConstraint(
+          _,
+          relType,
+          prop,
+          propertyType,
+          name,
+          ifExistsDo,
+          options,
+          _,
+          _,
+          _
+        ) =>
+        val source = ifExistsDo match {
+          case IfExistsDoNothing => Some(plans.DoNothingIfExistsForConstraint(
+              prop.map.asCanonicalStringVal,
+              scala.util.Right(relType),
+              Seq(prop),
+              plans.RelationshipPropertyType(propertyType),
+              name,
+              options
+            ))
+          case _ => None
+        }
+        Some(plans.CreateRelationshipPropertyTypeConstraint(source, relType, prop, propertyType, name, options))
 
       // DROP CONSTRAINT name [IF EXISTS]
       case DropConstraintOnName(name, ifExists, _) =>

@@ -69,6 +69,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
 import org.neo4j.logging.InternalLogProvider
@@ -695,6 +696,26 @@ class ExceptionTranslatingQueryContext(override val inner: QueryContext)
       tokenNameLookup,
       inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name)
     )
+
+  override def createNodePropertyTypeConstraint(
+    labelId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit = translateException(
+    tokenNameLookup,
+    inner.createNodePropertyTypeConstraint(labelId, propertyKeyId, propertyTypes, name)
+  )
+
+  override def createRelationshipPropertyTypeConstraint(
+    relTypeId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit = translateException(
+    tokenNameLookup,
+    inner.createRelationshipPropertyTypeConstraint(relTypeId, propertyKeyId, propertyTypes, name)
+  )
 
   override def dropNamedConstraint(name: String): Unit =
     translateException(tokenNameLookup, inner.dropNamedConstraint(name))

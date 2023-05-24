@@ -172,6 +172,7 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
 import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
@@ -187,6 +188,7 @@ import org.neo4j.cypher.internal.ast.PrivilegeQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.PropTypeConstraints
 import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.RangeIndexes
@@ -196,6 +198,7 @@ import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.ReallocateDatabases
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
@@ -1404,7 +1407,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
       RelExistsConstraints(ValidSyntax),
       KeyConstraints,
       NodeKeyConstraints,
-      RelKeyConstraints
+      RelKeyConstraints,
+      PropTypeConstraints,
+      NodePropTypeConstraints,
+      RelPropTypeConstraints
     )
   } yield (types, unfilteredYields)
 

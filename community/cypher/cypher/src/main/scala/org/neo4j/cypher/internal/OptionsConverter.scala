@@ -547,14 +547,17 @@ trait IndexOptionsConverter[T] extends OptionsConverter[T] {
   }
 }
 
-case class PropertyExistenceConstraintOptionsConverter(entity: String, context: QueryContext)
-    extends IndexOptionsConverter[CreateWithNoOptions] {
-  // Property existence constraints are not index-backed and do not have any valid options, but allows for an empty options map
+case class PropertyExistenceOrTypeConstraintOptionsConverter(
+  entity: String,
+  constraintType: String,
+  context: QueryContext
+) extends IndexOptionsConverter[CreateWithNoOptions] {
+  // Property existence and property type constraints are not index-backed and do not have any valid options, but allows for an empty options map
 
   override def convert(options: MapValue, config: Option[Config]): CreateWithNoOptions = {
     if (!options.isEmpty)
       throw new InvalidArgumentsException(
-        s"Could not create $entity property existence constraint: property existence constraints have no valid options values."
+        s"Could not create $entity property $constraintType constraint: property $constraintType constraints have no valid options values."
       )
     CreateWithNoOptions()
   }
@@ -563,7 +566,7 @@ case class PropertyExistenceConstraintOptionsConverter(entity: String, context: 
   override def assertValidAndTransformConfig(config: AnyValue, entity: String): java.util.Map[String, Object] =
     Collections.emptyMap()
 
-  override def operation: String = s"create $entity property existence constraint"
+  override def operation: String = s"create $entity property $constraintType constraint"
 }
 
 case class IndexBackedConstraintsOptionsConverter(schemaType: String, context: QueryContext)

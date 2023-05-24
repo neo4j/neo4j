@@ -53,6 +53,7 @@ import org.neo4j.cypher.internal.ast.NoOptions
 import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
 import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.OptionsMap
 import org.neo4j.cypher.internal.ast.OptionsParam
@@ -60,12 +61,14 @@ import org.neo4j.cypher.internal.ast.PointIndexes
 import org.neo4j.cypher.internal.ast.ProcedureAllQualifier
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.PropTypeConstraints
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.ReadAction
 import org.neo4j.cypher.internal.ast.ReadOnlyAccess
 import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.ShowColumn
 import org.neo4j.cypher.internal.ast.ShowProceduresClause
@@ -90,17 +93,22 @@ import org.neo4j.cypher.internal.expressions.Add
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.AndedPropertyInequalities
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.DurationTypeName
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
+import org.neo4j.cypher.internal.expressions.FloatTypeName
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.GreaterThanOrEqual
 import org.neo4j.cypher.internal.expressions.In
+import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.ListLiteral
+import org.neo4j.cypher.internal.expressions.LocalTimeTypeName
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
@@ -118,6 +126,7 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName
 import org.neo4j.cypher.internal.expressions.functions.Collect
 import org.neo4j.cypher.internal.expressions.functions.Count
 import org.neo4j.cypher.internal.expressions.functions.Point
@@ -173,11 +182,13 @@ import org.neo4j.cypher.internal.logical.plans.CreateLocalDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateLookupIndex
 import org.neo4j.cypher.internal.logical.plans.CreateNodeKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyTypeConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateNodePropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreatePointIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRangeIndex
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipKeyConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyExistenceConstraint
+import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyTypeConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRelationshipPropertyUniquenessConstraint
 import org.neo4j.cypher.internal.logical.plans.CreateRemoteDatabaseAlias
 import org.neo4j.cypher.internal.logical.plans.CreateRole
@@ -263,6 +274,7 @@ import org.neo4j.cypher.internal.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeIndexSeekLeafPlan
 import org.neo4j.cypher.internal.logical.plans.NodeKey
 import org.neo4j.cypher.internal.logical.plans.NodePropertyExistence
+import org.neo4j.cypher.internal.logical.plans.NodePropertyType
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueIndexSeek
 import org.neo4j.cypher.internal.logical.plans.NodeUniqueness
 import org.neo4j.cypher.internal.logical.plans.Optional
@@ -288,6 +300,7 @@ import org.neo4j.cypher.internal.logical.plans.RangeQueryExpression
 import org.neo4j.cypher.internal.logical.plans.RelationshipCountFromCountStore
 import org.neo4j.cypher.internal.logical.plans.RelationshipKey
 import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyExistence
+import org.neo4j.cypher.internal.logical.plans.RelationshipPropertyType
 import org.neo4j.cypher.internal.logical.plans.RelationshipUniqueness
 import org.neo4j.cypher.internal.logical.plans.RemoveLabels
 import org.neo4j.cypher.internal.logical.plans.RenameRole
@@ -3199,6 +3212,166 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
     )
   }
 
+  test("CreateNodePropertyTypeConstraint") {
+    assertGood(
+      attach(
+        CreateNodePropertyTypeConstraint(
+          None,
+          label("Label"),
+          prop(" x", "prop"),
+          IntegerTypeName(),
+          None,
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT FOR (` x`:Label) REQUIRE (` x`.prop) IS :: INTEGER")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateNodePropertyTypeConstraint(
+          None,
+          label("Label"),
+          prop("x", "prop"),
+          BooleanTypeName(),
+          Some("constraintName"),
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT constraintName FOR (x:Label) REQUIRE (x.prop) IS :: BOOLEAN")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateNodePropertyTypeConstraint(
+          Some(DoNothingIfExistsForConstraint(
+            " x",
+            scala.util.Left(label("Label")),
+            Seq(prop(" x", "prop")),
+            NodePropertyType(ZonedDateTimeTypeName()),
+            None,
+            NoOptions
+          )),
+          label("Label"),
+          prop(" x", "prop"),
+          ZonedDateTimeTypeName(),
+          None,
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        SingleChild(
+          planDescription(
+            id,
+            "DoNothingIfExists(CONSTRAINT)",
+            NoChildren,
+            Seq(details("CONSTRAINT FOR (` x`:Label) REQUIRE (` x`.prop) IS :: ZONED DATETIME")),
+            Set.empty
+          )
+        ),
+        Seq(details("CONSTRAINT FOR (` x`:Label) REQUIRE (` x`.prop) IS :: ZONED DATETIME")),
+        Set.empty
+      )
+    )
+  }
+
+  test("CreateRelationshipPropertyTypeConstraint") {
+    assertGood(
+      attach(
+        CreateRelationshipPropertyTypeConstraint(
+          None,
+          relType("R"),
+          prop(" x", "prop"),
+          FloatTypeName(),
+          None,
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS :: FLOAT")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipPropertyTypeConstraint(
+          None,
+          relType("R"),
+          prop(" x", "prop"),
+          LocalTimeTypeName(),
+          Some("constraintName"),
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        NoChildren,
+        Seq(details("CONSTRAINT constraintName FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS :: LOCAL TIME")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(
+        CreateRelationshipPropertyTypeConstraint(
+          Some(DoNothingIfExistsForConstraint(
+            " x",
+            scala.util.Right(relType("R")),
+            Seq(prop(" x", "prop")),
+            RelationshipPropertyType(DurationTypeName()),
+            None,
+            NoOptions
+          )),
+          relType("R"),
+          prop(" x", "prop"),
+          DurationTypeName(),
+          None,
+          NoOptions
+        ),
+        63.2
+      ),
+      planDescription(
+        id,
+        "CreateConstraint",
+        SingleChild(
+          planDescription(
+            id,
+            "DoNothingIfExists(CONSTRAINT)",
+            NoChildren,
+            Seq(details("CONSTRAINT FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS :: DURATION")),
+            Set.empty
+          )
+        ),
+        Seq(details("CONSTRAINT FOR ()-[` x`:R]-() REQUIRE (` x`.prop) IS :: DURATION")),
+        Set.empty
+      )
+    )
+  }
+
   test("DropConstraintOnName") {
     assertGood(
       attach(DropConstraintOnName("name", ifExists = false), 63.2),
@@ -3288,6 +3461,39 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
         "ShowConstraints",
         NoChildren,
         Seq(details("relationshipExistenceConstraints, allColumns")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(ShowConstraints(constraintType = PropTypeConstraints, verbose = false, List.empty), 1.0),
+      planDescription(
+        id,
+        "ShowConstraints",
+        NoChildren,
+        Seq(details("propertyTypeConstraints, defaultColumns")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(ShowConstraints(constraintType = NodePropTypeConstraints, verbose = true, List.empty), 1.0),
+      planDescription(
+        id,
+        "ShowConstraints",
+        NoChildren,
+        Seq(details("nodePropertyTypeConstraints, allColumns")),
+        Set.empty
+      )
+    )
+
+    assertGood(
+      attach(ShowConstraints(constraintType = RelPropTypeConstraints, verbose = true, List.empty), 1.0),
+      planDescription(
+        id,
+        "ShowConstraints",
+        NoChildren,
+        Seq(details("relationshipPropertyTypeConstraints, allColumns")),
         Set.empty
       )
     )

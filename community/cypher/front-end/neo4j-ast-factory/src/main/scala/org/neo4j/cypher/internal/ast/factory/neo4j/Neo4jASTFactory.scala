@@ -181,6 +181,7 @@ import org.neo4j.cypher.internal.ast.NoResource
 import org.neo4j.cypher.internal.ast.NoWait
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
 import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.OnCreate
 import org.neo4j.cypher.internal.ast.OnMatch
@@ -195,6 +196,7 @@ import org.neo4j.cypher.internal.ast.PrivilegeType
 import org.neo4j.cypher.internal.ast.ProcedureQualifier
 import org.neo4j.cypher.internal.ast.ProcedureResult
 import org.neo4j.cypher.internal.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.ast.PropTypeConstraints
 import org.neo4j.cypher.internal.ast.PropertiesResource
 import org.neo4j.cypher.internal.ast.Query
 import org.neo4j.cypher.internal.ast.RangeIndexes
@@ -205,6 +207,7 @@ import org.neo4j.cypher.internal.ast.ReadWriteAccess
 import org.neo4j.cypher.internal.ast.ReallocateDatabases
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RelationshipAllQualifier
 import org.neo4j.cypher.internal.ast.RelationshipQualifier
@@ -1427,6 +1430,9 @@ class Neo4jASTFactory(query: String)
       case ShowCommandFilterTypes.RELATIONSHIP_EXIST      => RelExistsConstraints(ValidSyntax)
       case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXISTS => RelExistsConstraints(RemovedSyntax)
       case ShowCommandFilterTypes.RELATIONSHIP_OLD_EXIST  => RelExistsConstraints(ValidSyntax)
+      case ShowCommandFilterTypes.PROP_TYPE               => PropTypeConstraints
+      case ShowCommandFilterTypes.NODE_PROP_TYPE          => NodePropTypeConstraints
+      case ShowCommandFilterTypes.RELATIONSHIP_PROP_TYPE  => RelPropTypeConstraints
       case t => throw new Neo4jASTConstructionException(ASTExceptionFactory.invalidShowFilterType("constraints", t))
     }
     ShowConstraintsClause(constraintType, brief, verbose, Option(where), hasYield)(p)

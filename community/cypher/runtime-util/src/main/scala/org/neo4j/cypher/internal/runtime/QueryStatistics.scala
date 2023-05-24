@@ -39,6 +39,8 @@ case class QueryStatistics(
   uniqueConstraintsAdded: Int = 0,
   relUniqueConstraintsAdded: Int = 0,
   existenceConstraintsAdded: Int = 0,
+  nodePropTypeConstraintsAdded: Int = 0,
+  relPropTypeConstraintsAdded: Int = 0,
   nodekeyConstraintsAdded: Int = 0,
   relkeyConstraintsAdded: Int = 0,
   @BeanProperty constraintsRemoved: Int = 0,
@@ -50,7 +52,8 @@ case class QueryStatistics(
 
   @BeanProperty
   val constraintsAdded: Int = uniqueConstraintsAdded + relUniqueConstraintsAdded +
-    existenceConstraintsAdded + nodekeyConstraintsAdded + relkeyConstraintsAdded
+    existenceConstraintsAdded + nodekeyConstraintsAdded + relkeyConstraintsAdded +
+    nodePropTypeConstraintsAdded + relPropTypeConstraintsAdded
 
   override def containsUpdates: Boolean =
     nodesCreated > 0 ||
@@ -85,6 +88,8 @@ case class QueryStatistics(
       includeIfNonZero(builder, "Unique constraints added: ", uniqueConstraintsAdded)
       includeIfNonZero(builder, "Relationship uniqueness constraints added: ", relUniqueConstraintsAdded)
       includeIfNonZero(builder, "Property existence constraints added: ", existenceConstraintsAdded)
+      includeIfNonZero(builder, "Node property type constraints added: ", nodePropTypeConstraintsAdded)
+      includeIfNonZero(builder, "Relationship property type constraints added: ", relPropTypeConstraintsAdded)
       includeIfNonZero(builder, "Node key constraints added: ", nodekeyConstraintsAdded)
       includeIfNonZero(builder, "Relationship key constraints added: ", relkeyConstraintsAdded)
       includeIfNonZero(builder, "Constraints removed: ", constraintsRemoved)
@@ -115,6 +120,8 @@ case class QueryStatistics(
       uniqueConstraintsAdded = this.uniqueConstraintsAdded + other.uniqueConstraintsAdded,
       relUniqueConstraintsAdded = this.relUniqueConstraintsAdded + other.relUniqueConstraintsAdded,
       existenceConstraintsAdded = this.existenceConstraintsAdded + other.existenceConstraintsAdded,
+      nodePropTypeConstraintsAdded = this.nodePropTypeConstraintsAdded + other.nodePropTypeConstraintsAdded,
+      relPropTypeConstraintsAdded = this.relPropTypeConstraintsAdded + other.relPropTypeConstraintsAdded,
       nodekeyConstraintsAdded = this.nodekeyConstraintsAdded + other.nodekeyConstraintsAdded,
       relkeyConstraintsAdded = this.relkeyConstraintsAdded + other.relkeyConstraintsAdded,
       constraintsRemoved = this.constraintsRemoved + other.constraintsRemoved,
@@ -139,6 +146,8 @@ case class QueryStatistics(
       uniqueConstraintsAdded = this.uniqueConstraintsAdded - other.uniqueConstraintsAdded,
       relUniqueConstraintsAdded = this.relUniqueConstraintsAdded - other.relUniqueConstraintsAdded,
       existenceConstraintsAdded = this.existenceConstraintsAdded - other.existenceConstraintsAdded,
+      nodePropTypeConstraintsAdded = this.nodePropTypeConstraintsAdded - other.nodePropTypeConstraintsAdded,
+      relPropTypeConstraintsAdded = this.relPropTypeConstraintsAdded - other.relPropTypeConstraintsAdded,
       nodekeyConstraintsAdded = this.nodekeyConstraintsAdded - other.nodekeyConstraintsAdded,
       relkeyConstraintsAdded = this.relkeyConstraintsAdded - other.relkeyConstraintsAdded,
       constraintsRemoved = this.constraintsRemoved - other.constraintsRemoved,

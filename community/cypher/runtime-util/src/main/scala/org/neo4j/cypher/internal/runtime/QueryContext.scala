@@ -65,6 +65,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE
@@ -544,6 +545,22 @@ trait WriteQueryContext {
 
   /* throws if failed or pre-existing */
   def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int, name: Option[String]): Unit
+
+  /* throws if failed or pre-existing */
+  def createNodePropertyTypeConstraint(
+    labelId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit
+
+  /* throws if failed or pre-existing */
+  def createRelationshipPropertyTypeConstraint(
+    relTypeId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit
 
   def dropNamedConstraint(name: String): Unit
 

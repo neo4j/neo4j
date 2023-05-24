@@ -82,6 +82,24 @@ case object RelKeyConstraints extends ShowConstraintType {
   override val description: String = "relationshipKeyConstraints"
 }
 
+case object PropTypeConstraints extends ShowConstraintType {
+  override val output: String = "PROPERTY TYPE"
+  override val prettyPrint: String = "PROPERTY TYPE"
+  override val description: String = "propertyTypeConstraints"
+}
+
+case object NodePropTypeConstraints extends ShowConstraintType {
+  override val output: String = "NODE_PROPERTY_TYPE"
+  override val prettyPrint: String = "NODE PROPERTY TYPE"
+  override val description: String = "nodePropertyTypeConstraints"
+}
+
+case object RelPropTypeConstraints extends ShowConstraintType {
+  override val output: String = "RELATIONSHIP_PROPERTY_TYPE"
+  override val prettyPrint: String = "RELATIONSHIP PROPERTY TYPE"
+  override val description: String = "relationshipPropertyTypeConstraints"
+}
+
 sealed trait ExistenceConstraintSyntax
 case object RemovedSyntax extends ExistenceConstraintSyntax
 case object ValidSyntax extends ExistenceConstraintSyntax

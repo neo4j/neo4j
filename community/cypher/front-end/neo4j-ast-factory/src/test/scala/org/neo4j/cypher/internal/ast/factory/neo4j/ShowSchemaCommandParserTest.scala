@@ -28,11 +28,14 @@ import org.neo4j.cypher.internal.ast.KeyConstraints
 import org.neo4j.cypher.internal.ast.LookupIndexes
 import org.neo4j.cypher.internal.ast.NodeExistsConstraints
 import org.neo4j.cypher.internal.ast.NodeKeyConstraints
+import org.neo4j.cypher.internal.ast.NodePropTypeConstraints
 import org.neo4j.cypher.internal.ast.NodeUniqueConstraints
 import org.neo4j.cypher.internal.ast.PointIndexes
+import org.neo4j.cypher.internal.ast.PropTypeConstraints
 import org.neo4j.cypher.internal.ast.RangeIndexes
 import org.neo4j.cypher.internal.ast.RelExistsConstraints
 import org.neo4j.cypher.internal.ast.RelKeyConstraints
+import org.neo4j.cypher.internal.ast.RelPropTypeConstraints
 import org.neo4j.cypher.internal.ast.RelUniqueConstraints
 import org.neo4j.cypher.internal.ast.RemovedSyntax
 import org.neo4j.cypher.internal.ast.ShowConstraintsClause
@@ -470,7 +473,11 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
     ("REL PROPERTY EXISTENCE", RelExistsConstraints(ValidSyntax)),
     ("REL PROPERTY EXIST", RelExistsConstraints(ValidSyntax)),
     ("REL EXISTENCE", RelExistsConstraints(ValidSyntax)),
-    ("REL EXIST", RelExistsConstraints(ValidSyntax))
+    ("REL EXIST", RelExistsConstraints(ValidSyntax)),
+    ("NODE PROPERTY TYPE", NodePropTypeConstraints),
+    ("RELATIONSHIP PROPERTY TYPE", RelPropTypeConstraints),
+    ("REL PROPERTY TYPE", RelPropTypeConstraints),
+    ("PROPERTY TYPE", PropTypeConstraints)
   )
 
   Seq("CONSTRAINT", "CONSTRAINTS").foreach {
@@ -802,6 +809,22 @@ class ShowSchemaCommandParserTest extends AdministrationAndSchemaCommandParserTe
   }
 
   test("SHOW PROPERTY EXISTS CONSTRAINTS") {
+    failsToParse
+  }
+
+  test("SHOW NODE TYPE CONSTRAINTS") {
+    failsToParse
+  }
+
+  test("SHOW RELATIONSHIP TYPE CONSTRAINTS") {
+    failsToParse
+  }
+
+  test("SHOW REL TYPE CONSTRAINTS") {
+    failsToParse
+  }
+
+  test("SHOW TYPE CONSTRAINTS") {
     failsToParse
   }
 

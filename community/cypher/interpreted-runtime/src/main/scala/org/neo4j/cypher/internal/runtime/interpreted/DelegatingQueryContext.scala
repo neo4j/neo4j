@@ -81,6 +81,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.io.pagecache.context.CursorContext
 import org.neo4j.kernel.api.ExecutionContext
 import org.neo4j.kernel.api.index.IndexUsageStats
@@ -425,6 +426,22 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     name: Option[String]
   ): Unit =
     singleDbHit(inner.createRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId, name))
+
+  override def createNodePropertyTypeConstraint(
+    labelId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit =
+    singleDbHit(inner.createNodePropertyTypeConstraint(labelId, propertyKeyId, propertyTypes, name))
+
+  override def createRelationshipPropertyTypeConstraint(
+    relTypeId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit =
+    singleDbHit(inner.createRelationshipPropertyTypeConstraint(relTypeId, propertyKeyId, propertyTypes, name))
 
   override def dropNamedConstraint(name: String): Unit =
     singleDbHit(inner.dropNamedConstraint(name))

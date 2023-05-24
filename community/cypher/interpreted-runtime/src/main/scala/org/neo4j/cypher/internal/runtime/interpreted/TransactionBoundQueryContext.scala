@@ -115,6 +115,7 @@ import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
 import org.neo4j.internal.schema.SchemaDescriptor
 import org.neo4j.internal.schema.SchemaDescriptors
+import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException
 import org.neo4j.kernel.api.exceptions.schema.EquivalentSchemaRuleAlreadyExistsException
@@ -434,6 +435,30 @@ sealed class TransactionBoundQueryContext(
     transactionalContext.schemaWrite.relationshipPropertyExistenceConstraintCreate(
       SchemaDescriptors.forRelType(relTypeId, propertyKeyId),
       name.orNull
+    )
+
+  override def createNodePropertyTypeConstraint(
+    labelId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit =
+    transactionalContext.schemaWrite.propertyTypeConstraintCreate(
+      SchemaDescriptors.forLabel(labelId, propertyKeyId),
+      name.orNull,
+      propertyTypes
+    )
+
+  override def createRelationshipPropertyTypeConstraint(
+    relTypeId: Int,
+    propertyKeyId: Int,
+    propertyTypes: PropertyTypeSet,
+    name: Option[String]
+  ): Unit =
+    transactionalContext.schemaWrite.propertyTypeConstraintCreate(
+      SchemaDescriptors.forRelType(relTypeId, propertyKeyId),
+      name.orNull,
+      propertyTypes
     )
 
   override def dropNamedConstraint(name: String): Unit =

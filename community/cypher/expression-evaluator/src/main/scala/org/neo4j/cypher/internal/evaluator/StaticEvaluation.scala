@@ -67,6 +67,7 @@ import org.neo4j.internal.schema.IndexConfig
 import org.neo4j.internal.schema.IndexDescriptor
 import org.neo4j.internal.schema.IndexProviderDescriptor
 import org.neo4j.internal.schema.IndexType
+import org.neo4j.internal.schema.constraints.PropertyTypeSet
 import org.neo4j.kernel.api.exceptions.Status.HasStatus
 import org.neo4j.kernel.api.index.IndexUsageStats
 import org.neo4j.kernel.impl.query.FunctionInformation
@@ -378,6 +379,20 @@ object StaticEvaluation {
     override def createRelationshipPropertyExistenceConstraint(
       relTypeId: Int,
       propertyKeyId: Int,
+      name: Option[String]
+    ): Unit = notAvailable()
+
+    override def createNodePropertyTypeConstraint(
+      labelId: Int,
+      propertyKeyId: Int,
+      propertyTypes: PropertyTypeSet,
+      name: Option[String]
+    ): Unit = notAvailable()
+
+    override def createRelationshipPropertyTypeConstraint(
+      relTypeId: Int,
+      propertyKeyId: Int,
+      propertyTypes: PropertyTypeSet,
       name: Option[String]
     ): Unit = notAvailable()
 
