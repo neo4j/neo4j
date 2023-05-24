@@ -1799,7 +1799,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .|.|.union()
       .|.|.|.optional("end")
       .|.|.|.filter("end:LOOP")
-      .|.|.|.apply(fromSubquery = false)
+      .|.|.|.apply()
       .|.|.|.|.trail(TrailParameters(
         0,
         Unlimited,
@@ -1877,7 +1877,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .|.|.|.filter("true")
       .|.|.|.nodeByLabelScan("start", "START", IndexOrderNone)
       .|.|.filter("end:LOOP")
-      .|.|.apply(fromSubquery = false)
+      .|.|.apply()
       .|.|.|.filter("true")
       .|.|.|.trail(TrailParameters(
         0,
@@ -1955,7 +1955,7 @@ abstract class TrailTestBase[CONTEXT <: RuntimeContext](
       .|.|.nodeByLabelScan("start", "START", IndexOrderNone)
       .|.projection("[start, middle, end, a, b, r1, c, d, r2] AS left")
       .|.filter("end:LOOP")
-      .|.apply(fromSubquery = false)
+      .|.apply()
       .|.|.trail(TrailParameters(
         0,
         Unlimited,
