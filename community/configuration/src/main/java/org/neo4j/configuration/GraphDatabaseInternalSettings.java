@@ -1122,4 +1122,17 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
                     "internal.dbms.page_cache_allocator_block_size", BYTES, null)
             .addConstraint(min(1L))
             .build();
+
+    @Internal
+    @Description("Should the DBMS upgrade automatically when possible (and the procedures becomes no-ops), or should "
+            + "upgrades be done via procedures. Only applicable in Enterprise Edition.")
+    public static final Setting<Boolean> automatic_upgrade_enabled =
+            newBuilder("internal.dbms.automatic_upgrade.enabled", BOOL, true).build();
+
+    @Internal
+    @Description("The length of time to wait in the upgrade procedures for automatic upgrade to complete an upgrade "
+            + "in the background, before just returning 'upgrade pending'.")
+    public static final Setting<Duration> upgrade_procedure_wait_timeout = newBuilder(
+                    "internal.dbms.upgrade.procedure.wait_timeout", DURATION, Duration.ofSeconds(30))
+            .build();
 }

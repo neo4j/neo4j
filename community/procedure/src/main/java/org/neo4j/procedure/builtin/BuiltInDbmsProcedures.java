@@ -21,6 +21,8 @@ package org.neo4j.procedure.builtin;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_procedure_wait_timeout;
 import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.REQUIRES_UPGRADE;
 import static org.neo4j.dbms.database.SystemGraphComponent.Status.UNINITIALIZED;
@@ -32,6 +34,8 @@ import static org.neo4j.procedure.builtin.ProceduresTimeFormatHelper.formatTime;
 import static org.neo4j.storageengine.util.StoreIdDecodeUtils.decodeId;
 
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -39,10 +43,12 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.neo4j.capabilities.CapabilitiesService;
 import org.neo4j.common.DependencyResolver;
+import org.neo4j.common.Edition;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.SettingImpl;
@@ -50,6 +56,7 @@ import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.SystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponent.Status;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.TransactionManager;
@@ -76,6 +83,11 @@ import org.neo4j.storageengine.api.StoreIdProvider;
 
 @SuppressWarnings("unused")
 public class BuiltInDbmsProcedures {
+    /**
+     * Upgrade result message when explicit upgrade procedures are waiting for automatic upgrade to pass.
+     */
+    public static final String UPGRADE_PENDING_RESULT = "Upgrade pending";
+
     private static final int HARD_CHAR_LIMIT = 2048;
 
     @Context
@@ -251,30 +263,41 @@ public class BuiltInDbmsProcedures {
                     SystemGraphComponentStatusResult.CANNOT_UPGRADE_STATUS, e.getMessage()));
         }
 
-        SystemGraphComponents versions = systemGraphComponents;
-        SystemGraphComponent.Status status = versions.detect(graph);
+        SystemGraphComponents components = systemGraphComponents;
+        SystemGraphComponent.Status status = components.detect(graph);
 
-        // New components are not currently initialised in cluster deployment when new binaries are booted on top of an
-        // existing database.
-        // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to CURRENT must be
-        // supported as a workaround until it is fixed.
-        var upgradableStatuses = List.of(REQUIRES_UPGRADE, UNINITIALIZED);
+        if (isUpgradeable(status)) {
 
-        if (upgradableStatuses.contains(status)) {
-            ArrayList<String> failed = new ArrayList<>();
-            versions.forEach(component -> {
-                SystemGraphComponent.Status initialStatus = component.detect(graph);
-                if (upgradableStatuses.contains(initialStatus)) {
-                    try {
-                        component.upgradeToCurrent(graph);
-                    } catch (Exception e) {
-                        failed.add(String.format("[%s] %s", component.componentName(), e.getMessage()));
-                    }
+            Config config = graph.getDependencyResolver().resolveDependency(Config.class);
+            // Auto-upgrade is an enterprise only feature, and currently has a feature flag.
+            if (graph.dbmsInfo().edition != Edition.COMMUNITY && config.get(automatic_upgrade_enabled)) {
+                var timeout = config.get(upgrade_procedure_wait_timeout);
+                var clock = resolver.resolveDependency(Clock.class);
+                // Wait / retry a little to see if automatic upgrade does the upgrade for us
+                var laterStatus = waitForUpgrade(() -> components.detect(graph), timeout, clock, log);
+
+                if (isUpgradeable(laterStatus)) {
+                    return Stream.of(new SystemGraphComponentUpgradeResult(laterStatus.name(), UPGRADE_PENDING_RESULT));
+                } else {
+                    return Stream.of(
+                            new SystemGraphComponentUpgradeResult(laterStatus.name(), laterStatus.resolution()));
                 }
-            });
-            String upgradeResult = failed.isEmpty() ? "Success" : "Failed: " + String.join(", ", failed);
-            return Stream.of(new SystemGraphComponentUpgradeResult(
-                    versions.detect(transaction).name(), upgradeResult));
+            } else {
+                List<String> failed = new ArrayList<>();
+                components.forEach(component -> {
+                    SystemGraphComponent.Status initialStatus = component.detect(graph);
+                    if (isUpgradeable(initialStatus)) {
+                        try {
+                            component.upgradeToCurrent(graph);
+                        } catch (Exception e) {
+                            failed.add(String.format("[%s] %s", component.componentName(), e.getMessage()));
+                        }
+                    }
+                });
+                String upgradeResult = failed.isEmpty() ? "Success" : "Failed: " + String.join(", ", failed);
+                return Stream.of(new SystemGraphComponentUpgradeResult(
+                        components.detect(transaction).name(), upgradeResult));
+            }
         } else {
             return Stream.of(new SystemGraphComponentUpgradeResult(status.name(), status.resolution()));
         }
@@ -431,6 +454,30 @@ public class BuiltInDbmsProcedures {
             this.status = status;
             this.upgradeResult = upgradeResult;
         }
+    }
+
+    public static boolean isUpgradeable(Status status) {
+        // New components are not currently initialised in cluster deployment when new binaries are booted on top of an
+        // existing database.
+        // This is a known shortcoming of the lifecycle and a state transfer from UNINITIALIZED to CURRENT must be
+        // supported as a workaround until it is fixed.
+        return List.of(REQUIRES_UPGRADE, UNINITIALIZED).contains(status);
+    }
+
+    public static Status waitForUpgrade(Supplier<Status> statusSupplier, Duration waitDuration, Clock clock, Log log) {
+        var timeout = clock.millis() + waitDuration.toMillis();
+        while (clock.millis() < timeout) {
+            var status = statusSupplier.get();
+            if (!isUpgradeable(status)) {
+                return status;
+            }
+            try {
+                Thread.sleep(500);
+            } catch (InterruptedException e) {
+                log.info("Wait for upgrade to complete was interrupted", e);
+            }
+        }
+        return statusSupplier.get();
     }
 
     public interface UpgradeAllowedChecker {

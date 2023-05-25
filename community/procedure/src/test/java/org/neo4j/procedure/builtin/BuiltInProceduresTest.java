@@ -28,8 +28,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.automatic_upgrade_enabled;
+import static org.neo4j.configuration.GraphDatabaseInternalSettings.upgrade_procedure_wait_timeout;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTNode;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTPath;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
@@ -37,7 +40,11 @@ import static org.neo4j.kernel.api.ResourceTracker.EMPTY_RESOURCE_TRACKER;
 import static org.neo4j.kernel.api.procedure.BasicContext.buildContext;
 import static org.neo4j.procedure.builtin.BuiltInDbmsProcedures.SystemGraphComponentStatusResult.CANNOT_UPGRADE_RESOLUTION;
 import static org.neo4j.procedure.builtin.BuiltInDbmsProcedures.SystemGraphComponentStatusResult.CANNOT_UPGRADE_STATUS;
+import static org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UPGRADE_PENDING_RESULT;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,6 +62,7 @@ import org.neo4j.configuration.Config;
 import org.neo4j.configuration.SettingImpl;
 import org.neo4j.configuration.SettingValueParsers;
 import org.neo4j.dbms.database.SystemGraphComponent;
+import org.neo4j.dbms.database.SystemGraphComponent.Status;
 import org.neo4j.dbms.database.SystemGraphComponents;
 import org.neo4j.dbms.database.TestSystemGraphComponent;
 import org.neo4j.graphdb.Node;
@@ -81,6 +89,7 @@ import org.neo4j.kernel.api.procedure.Context;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
+import org.neo4j.kernel.impl.factory.DbmsInfo;
 import org.neo4j.kernel.impl.util.DefaultValueMapper;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -90,6 +99,7 @@ import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeAlwaysAllowed;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeNotAllowedException;
 import org.neo4j.procedure.impl.GlobalProceduresRegistry;
+import org.neo4j.time.Clocks;
 import org.neo4j.token.api.NamedToken;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.TextValue;
@@ -109,6 +119,7 @@ class BuiltInProceduresTest {
     private final DependencyResolver resolver = mock(DependencyResolver.class);
     private final GraphDatabaseAPI graphDatabaseAPI = mock(GraphDatabaseAPI.class);
     private final IndexingService indexingService = mock(IndexingService.class);
+    private final Clock clock = Clocks.tickOnAccessClock(Instant.now(), Duration.ofSeconds(1));
     private final Log log = mock(InternalLog.class);
     private final GlobalProceduresRegistry procs = new GlobalProceduresRegistry();
     private SystemGraphComponents systemGraphComponents = new SystemGraphComponents.DefaultBuilder().build();
@@ -128,6 +139,8 @@ class BuiltInProceduresTest {
         procs.registerType(Node.class, NTNode);
         procs.registerType(Relationship.class, NTRelationship);
         procs.registerType(Path.class, NTPath);
+
+        doReturn(clock).when(resolver).resolveDependency(Clock.class);
 
         var builtins = SpecialBuiltInProcedures.from("1.3.37", Edition.COMMUNITY.toString());
         for (var proc : builtins.get()) {
@@ -169,6 +182,8 @@ class BuiltInProceduresTest {
         when(read.countsForNode(anyInt())).thenReturn(1L);
         when(read.countsForRelationship(anyInt(), anyInt(), anyInt())).thenReturn(1L);
         when(schemaReadCore.indexGetState(any(IndexDescriptor.class))).thenReturn(InternalIndexState.ONLINE);
+
+        when(graphDatabaseAPI.dbmsInfo()).thenReturn(DbmsInfo.ENTERPRISE);
     }
 
     @Test
@@ -395,9 +410,9 @@ class BuiltInProceduresTest {
         String description = resultAsString(row, 1);
         String resolution = resultAsString(row, 2);
         assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
-        assertThat(status).contains(SystemGraphComponent.Status.REQUIRES_UPGRADE.name());
-        assertThat(description).contains(SystemGraphComponent.Status.REQUIRES_UPGRADE.description());
-        assertThat(resolution).contains(SystemGraphComponent.Status.REQUIRES_UPGRADE.resolution());
+        assertThat(status).contains(Status.REQUIRES_UPGRADE.name());
+        assertThat(description).contains(Status.REQUIRES_UPGRADE.description());
+        assertThat(resolution).contains(Status.REQUIRES_UPGRADE.resolution());
     }
 
     @Test
@@ -437,8 +452,10 @@ class BuiltInProceduresTest {
     }
 
     @Test
-    void givenUpgradeAllowed_shouldUpgradeSystemGraph() throws ProcedureException, IndexNotFoundKernelException {
+    void givenAutoUpgradeDisabledAndUpgradeAllowed_whenUpgrade_shouldUpgrade()
+            throws ProcedureException, IndexNotFoundKernelException {
         Config config = Config.defaults();
+        config.set(automatic_upgrade_enabled, false);
         setupFakeSystemComponents();
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
         when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
@@ -451,15 +468,58 @@ class BuiltInProceduresTest {
         String status = resultAsString(row, 0);
         String result = resultAsString(row, 1);
         assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
-        assertThat(status).contains(SystemGraphComponent.Status.REQUIRES_UPGRADE.name());
+        assertThat(status).contains(Status.REQUIRES_UPGRADE.name());
         assertThat(result).contains("Failed: [component_D] Upgrade failed because this is a test");
     }
 
     @Test
-    void givenUpgradeNotAllowed_shouldNotUpgradeSystemGraph() throws ProcedureException, IndexNotFoundKernelException {
+    void givenAutoUpgradeEnabledAndUpgradeAllowed_whenUpgrade_shouldWaitForUpgrade()
+            throws ProcedureException, IndexNotFoundKernelException {
+        Config config = Config.defaults();
+        config.set(automatic_upgrade_enabled, true);
+        mockSystemGraphComponents(Status.REQUIRES_UPGRADE, Status.REQUIRES_UPGRADE, Status.CURRENT);
+        when(resolver.resolveDependency(Config.class)).thenReturn(config);
+        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
+        when(callContext.isSystemDatabase()).thenReturn(true);
+        when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
+
+        var r = call("dbms.upgrade").iterator();
+        assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
+        Object[] row = r.next();
+        String status = resultAsString(row, 0);
+        String result = resultAsString(row, 1);
+        assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
+        assertThat(status).contains(Status.CURRENT.name());
+        assertThat(result).isEqualTo(Status.CURRENT.resolution());
+    }
+
+    @Test
+    void givenAutoUpgradeEnabledAndUpgradeAllowed_whenUpgrade_shouldWaitForUpgradeButWaitTimesOut()
+            throws ProcedureException, IndexNotFoundKernelException {
+        Config config = Config.defaults();
+        config.set(automatic_upgrade_enabled, true);
+        config.set(upgrade_procedure_wait_timeout, Duration.ofSeconds(2));
+        mockSystemGraphComponents(Status.REQUIRES_UPGRADE);
+        when(resolver.resolveDependency(Config.class)).thenReturn(config);
+        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
+        when(callContext.isSystemDatabase()).thenReturn(true);
+        when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
+
+        var r = call("dbms.upgrade").iterator();
+        assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
+        Object[] row = r.next();
+        String status = resultAsString(row, 0);
+        String result = resultAsString(row, 1);
+        assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
+        assertThat(status).contains(Status.REQUIRES_UPGRADE.name());
+        assertThat(result).contains(UPGRADE_PENDING_RESULT);
+    }
+
+    @Test
+    void givenAutoUpgradeDisabledAndUpgradeNotAllowed_shouldNotUpgradeSystemGraph()
+            throws ProcedureException, IndexNotFoundKernelException {
         var failureMessage = "Don't want to";
         Config config = Config.defaults();
-        setupFakeSystemComponents();
         when(resolver.resolveDependency(Config.class)).thenReturn(config);
         when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(() -> {
             throw new UpgradeNotAllowedException(failureMessage);
@@ -475,6 +535,25 @@ class BuiltInProceduresTest {
         assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
         assertThat(status).contains("CANNOT_UPGRADE");
         assertThat(result).contains(failureMessage);
+    }
+
+    @Test
+    void givenCommunityEdition_whenUpgrade_shouldUpgrade() throws ProcedureException, IndexNotFoundKernelException {
+        when(graphDatabaseAPI.dbmsInfo()).thenReturn(DbmsInfo.COMMUNITY);
+
+        setupFakeSystemComponents();
+        when(resolver.resolveDependency(UpgradeAllowedChecker.class)).thenReturn(new UpgradeAlwaysAllowed());
+        when(callContext.isSystemDatabase()).thenReturn(true);
+        when(graphDatabaseAPI.beginTx()).thenReturn(transaction);
+
+        var r = call("dbms.upgrade").iterator();
+        assertThat(r.hasNext()).isEqualTo(true).describedAs("Expected one result");
+        Object[] row = r.next();
+        String status = resultAsString(row, 0);
+        String result = resultAsString(row, 1);
+        assertThat(r.hasNext()).isEqualTo(false).describedAs("Expected only one result");
+        assertThat(status).contains(Status.REQUIRES_UPGRADE.name());
+        assertThat(result).contains("Failed: [component_D] Upgrade failed because this is a test");
     }
 
     private static Object[] record(Object... fields) {
@@ -560,13 +639,13 @@ class BuiltInProceduresTest {
 
     private static SystemGraphComponent makeSystemComponentCurrent(String component) {
         var componentName = new SystemGraphComponent.Name(component);
-        return new TestSystemGraphComponent(componentName, SystemGraphComponent.Status.CURRENT, null, null);
+        return new TestSystemGraphComponent(componentName, Status.CURRENT, null, null);
     }
 
     @SuppressWarnings("SameParameterValue")
     private static SystemGraphComponent makeSystemComponentUpgradeSucceeds(String component) {
         var componentName = new SystemGraphComponent.Name(component);
-        return new TestSystemGraphComponent(componentName, SystemGraphComponent.Status.REQUIRES_UPGRADE, null, null);
+        return new TestSystemGraphComponent(componentName, Status.REQUIRES_UPGRADE, null, null);
     }
 
     @SuppressWarnings("SameParameterValue")
@@ -574,9 +653,14 @@ class BuiltInProceduresTest {
         var componentName = new SystemGraphComponent.Name(component);
         return new TestSystemGraphComponent(
                 componentName,
-                SystemGraphComponent.Status.REQUIRES_UPGRADE,
+                Status.REQUIRES_UPGRADE,
                 null,
                 new RuntimeException("Upgrade failed because this is a test"));
+    }
+
+    private void mockSystemGraphComponents(Status status, Status... statuses) {
+        systemGraphComponents = mock(SystemGraphComponents.class);
+        doReturn(status, (Object[]) statuses).when(systemGraphComponents).detect(any(GraphDatabaseAPI.class));
     }
 
     private void setupFakeSystemComponents() {

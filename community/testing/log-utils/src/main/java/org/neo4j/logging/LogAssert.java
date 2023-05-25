@@ -30,6 +30,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.assertj.core.api.AbstractAssert;
+import org.assertj.core.api.AbstractLongAssert;
 import org.assertj.core.api.AbstractThrowableAssert;
 import org.assertj.core.util.Throwables;
 import org.neo4j.logging.AssertableLogProvider.LogCall;
@@ -171,6 +172,10 @@ public class LogAssert extends AbstractAssert<LogAssert, AssertableLogProvider> 
             }
         }
         return this;
+    }
+
+    public AbstractLongAssert messageCount(String... messages) {
+        return assertThat(Stream.of(messages).mapToLong(this::messageMatchCount).sum());
     }
 
     public LogAssert doesNotHaveAnyLogs() {
