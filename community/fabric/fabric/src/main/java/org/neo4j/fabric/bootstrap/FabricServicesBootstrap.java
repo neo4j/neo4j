@@ -85,7 +85,8 @@ public abstract class FabricServicesBootstrap {
             LogService logService,
             AbstractSecurityLog securityLog,
             DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
-            DatabaseReferenceRepository databaseReferenceRepo) {
+            DatabaseReferenceRepository databaseReferenceRepo,
+            boolean isFallback) {
         this.dependencies = dependencies;
         this.logService = logService;
         this.securityLog = securityLog;
@@ -97,7 +98,7 @@ public abstract class FabricServicesBootstrap {
         config = dependencies.resolveDependency(Config.class);
         availabilityGuard = dependencies.resolveDependency(AvailabilityGuard.class);
 
-        fabricConfig = bootstrapFabricConfig();
+        fabricConfig = bootstrapFabricConfig(isFallback);
     }
 
     protected <T> T register(T dependency, Class<T> dependencyType) {
@@ -189,12 +190,15 @@ public abstract class FabricServicesBootstrap {
         FabricDatabaseManager fabricDatabaseManager = dependencies.resolveDependency(FabricDatabaseManager.class);
         LocalGraphTransactionIdTracker localGraphTransactionIdTracker =
                 dependencies.resolveDependency(LocalGraphTransactionIdTracker.class);
-        return dependencies.satisfyDependency(new BoltFabricDatabaseManagementService(
-                fabricExecutor,
-                fabricConfig,
-                transactionManager,
-                fabricDatabaseManager,
-                localGraphTransactionIdTracker));
+        BoltFabricDatabaseManagementService boltFabricDatabaseManagementService =
+                new BoltFabricDatabaseManagementService(
+                        fabricExecutor,
+                        fabricConfig,
+                        transactionManager,
+                        fabricDatabaseManager,
+                        localGraphTransactionIdTracker);
+
+        return dependencies.satisfyDependency(boltFabricDatabaseManagementService);
     }
 
     protected abstract FabricDatabaseManager createFabricDatabaseManager(FabricConfig fabricConfig);
@@ -203,7 +207,7 @@ public abstract class FabricServicesBootstrap {
 
     protected abstract FabricRemoteExecutor bootstrapRemoteStack();
 
-    protected abstract FabricConfig bootstrapFabricConfig();
+    protected abstract FabricConfig bootstrapFabricConfig(boolean isFallback);
 
     public static class Community extends FabricServicesBootstrap {
         public Community(
@@ -218,7 +222,8 @@ public abstract class FabricServicesBootstrap {
                     logService,
                     CommunitySecurityLog.NULL_LOG,
                     databaseProvider,
-                    databaseReferenceRepo);
+                    databaseReferenceRepo,
+                    false);
         }
 
         @Override
@@ -245,7 +250,7 @@ public abstract class FabricServicesBootstrap {
         }
 
         @Override
-        protected FabricConfig bootstrapFabricConfig() {
+        protected FabricConfig bootstrapFabricConfig(boolean isFallback) {
             var config = resolve(Config.class);
             return FabricConfig.from(config);
         }
