@@ -60,6 +60,11 @@ import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.Predicate
+import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
+import org.neo4j.cypher.internal.logical.plans.NFA.State
+import org.neo4j.cypher.internal.logical.plans.NFA.State.GroupVarName
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
@@ -369,6 +374,23 @@ object LogicalPlanToPlanBuilderString {
               else ", predicates = Seq(" + wrapInQuotationsAndMkString(predicates.map(expressionStringifier(_))) + ")"
             s""" "($from)$dirStrA[$relName$typeStr$lenStr]$dirStrB($to)"$pNameStr$allStr$predStr$fbStr$dsnStr """.trim
         }
+      case StatefulShortestPath(
+          _,
+          from,
+          to,
+          nfa,
+          nonInlinablePreFilters,
+          nodeVariableGroupings,
+          relationshipVariableGroupings
+        ) =>
+        Seq(
+          wrapInQuotations(from),
+          wrapInQuotations(to),
+          nonInlinablePreFilters.map(e => wrapInQuotations(expressionStringifier(e))),
+          s"Set(${groupEntitiesString(nodeVariableGroupings)})",
+          s"Set(${groupEntitiesString(relationshipVariableGroupings)})",
+          nfaString(nfa)
+        ).mkString(", ")
       case PruningVarExpand(_, from, dir, types, to, minLength, maxLength, nodePredicates, relationshipPredicates) =>
         val (dirStrA, dirStrB) = arrows(dir)
         val typeStr = relTypeStr(types)
@@ -1157,6 +1179,53 @@ object LogicalPlanToPlanBuilderString {
     plansWithContent.orElse(plansWithContent2).applyOrElse(logicalPlan, (_: LogicalPlan) => "")
   }
 
+  private def groupEntitiesString(groupEntities: Set[VariableGrouping]): String =
+    groupEntities.map(g => s"(${wrapInQuotations(g.singletonName)}, ${wrapInQuotations(g.groupName)})").mkString(
+      ", "
+    )
+
+  private def nfaString(nfa: NFA): String = {
+    val start = nfa.startState
+    val constructor =
+      s"new TestNFABuilder(${start.id}, ${wrapInQuotations(start.varName.name)}, groupVar = ${start.varName.isInstanceOf[GroupVarName]})"
+    val transitions = nfa.transitions.flatMap {
+      case (from, transitions) => transitions.map(t => transitionString(from, t.predicate, t.end))
+    }
+    val finalStates = nfa.finalStates.map(fs => s".addFinalState(${fs.id})")
+    val build = ".build()"
+
+    val lines = Seq(constructor) ++ transitions ++ finalStates :+ build
+    lines.mkString("\n")
+  }
+
+  private def transitionString(from: State, nfaPredicate: Predicate, to: State): String = {
+    val (patternString, groupVars) = nfaPredicate match {
+      case NodeJuxtapositionPredicate(variablePredicate) =>
+        val whereString = variablePredicate.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
+        val patternString = s""" "(${from.varName.name}) (${to.varName.name}$whereString)" """.trim
+        val groupVars = Set(
+          Option.when(from.varName.isInstanceOf[GroupVarName])(wrapInQuotations(from.varName.name)),
+          Option.when(to.varName.isInstanceOf[GroupVarName])(wrapInQuotations(to.varName.name))
+        ).flatten
+        (patternString, groupVars)
+      case RelationshipExpansionPredicate(relName, relPred, types, dir, nodePred) =>
+        val relWhereString = relPred.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
+        val nodeWhereString = nodePred.map(vp => s" WHERE ${expressionStringifier(vp.predicate)}").getOrElse("")
+        val (dirStrA, dirStrB) = arrows(dir)
+        val typeStr = relTypeStr(types)
+        val patternString =
+          s""" "(${from.varName.name})$dirStrA[${relName.name}$typeStr$relWhereString]$dirStrB(${to.varName.name}$nodeWhereString)" """.trim
+        val groupVars = Set(
+          Option.when(from.varName.isInstanceOf[GroupVarName])(wrapInQuotations(from.varName.name)),
+          Option.when(to.varName.isInstanceOf[GroupVarName])(wrapInQuotations(to.varName.name)),
+          Option.when(relName.isInstanceOf[GroupVarName])(wrapInQuotations(relName.name))
+        ).flatten
+        (patternString, groupVars)
+    }
+    val groupVarsString = s"groupVars = $groupVars"
+    s".addTransition(${from.id}, ${to.id}, $patternString, $groupVarsString)"
+  }
+
   private def trailParametersString(
     repetition: Repetition,
     start: String,
@@ -1170,10 +1239,6 @@ object LogicalPlanToPlanBuilderString {
     previouslyBoundRelationshipGroups: Set[String],
     reverseGroupVariableProjections: Boolean
   ) = {
-    def groupEntitiesString(groupEntities: Set[VariableGrouping]): String =
-      groupEntities.map(g => s"(${wrapInQuotations(g.singletonName)}, ${wrapInQuotations(g.groupName)})").mkString(
-        ", "
-      )
 
     val trailParameters =
       s"""${repetition.min}, ${repetition.max}, "$start", "$end", "$innerStart", "$innerEnd", """ +

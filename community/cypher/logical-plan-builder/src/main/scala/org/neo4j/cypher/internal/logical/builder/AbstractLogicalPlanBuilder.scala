@@ -146,6 +146,7 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ManySeekableArgs
 import org.neo4j.cypher.internal.logical.plans.Merge
 import org.neo4j.cypher.internal.logical.plans.MultiNodeIndexSeek
+import org.neo4j.cypher.internal.logical.plans.NFA
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanGetByNameExpression
@@ -208,6 +209,7 @@ import org.neo4j.cypher.internal.logical.plans.SimulatedNodeScan
 import org.neo4j.cypher.internal.logical.plans.SimulatedSelection
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.Top
 import org.neo4j.cypher.internal.logical.plans.Top1WithTies
@@ -544,6 +546,37 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       withFallback,
       disallowSameNode
     )
+
+  def statefulShortestPath(
+    sourceNode: String,
+    targetNode: String,
+    nonInlinablePreFilters: Option[String],
+    groupNodes: Set[(String, String)],
+    groupRelationships: Set[(String, String)],
+    nfa: NFA
+  ): IMPL = {
+    val predicates = nonInlinablePreFilters.map(parseExpression)
+    val nodeVariableGroupings = groupNodes.map { case (x, y) => VariableGrouping(x, y) }
+    val relationshipVariableGroupings = groupRelationships.map { case (x, y) => VariableGrouping(x, y) }
+
+    newNodes(nfa.nodeNames + targetNode)
+    newRelationships(nfa.relationshipNames)
+
+    val rewrittenNFA = nfa.endoRewrite(expressionRewriter)
+
+    appendAtCurrentIndent(UnaryOperator(lp =>
+      StatefulShortestPath(
+        lp,
+        sourceNode,
+        targetNode,
+        rewrittenNFA,
+        predicates,
+        nodeVariableGroupings,
+        relationshipVariableGroupings
+      )(_)
+    ))
+    self
+  }
 
   private def shortestPathSolver(
     pattern: String,
@@ -2017,10 +2050,13 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     ) {
       throw new IllegalArgumentException("Input must create unique variables")
     }
+    newNodes(nodes)
+    newRelationships(relationships)
+    newVariables(variables)
     appendAtCurrentIndent(LeafOperator(Input(
-      newNodes(nodes),
-      newRelationships(relationships),
-      newVariables(variables),
+      nodes,
+      relationships,
+      variables,
       nullable
     )(_)))
   }
@@ -2256,19 +2292,16 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
       .map { case (k, v) => (k.node, v) } // unwrap nodes to discard position
       .collectFirst { case (`expr`, t) => t }
 
-  protected def newNodes(nodes: Seq[String]): Seq[String] = {
+  protected def newNodes(nodes: Iterable[String]): Unit = {
     nodes.map(varFor).foreach(newNode)
-    nodes
   }
 
-  protected def newRelationships(relationships: Seq[String]): Seq[String] = {
+  protected def newRelationships(relationships: Iterable[String]): Unit = {
     relationships.map(varFor).foreach(newRelationship)
-    relationships
   }
 
-  protected def newVariables(variables: Seq[String]): Seq[String] = {
+  protected def newVariables(variables: Iterable[String]): Unit = {
     variables.map(varFor).foreach(newVariable)
-    variables
   }
 
   private val hasLabelsAndHasTypeNormalizer = new HasLabelsAndHasTypeNormalizer {

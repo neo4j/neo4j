@@ -81,6 +81,51 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
   private val testedOperators = mutable.Set[String]()
 
   testPlan(
+    "statefulShortestPath",
+    new TestPlanBuilder()
+      .produceResults("a", "b")
+      .statefulShortestPath(
+        "a",
+        "b",
+        None,
+        Set.empty,
+        Set.empty,
+        new TestNFABuilder(0, "a", groupVar = false)
+          .addTransition(0, 1, "(a)-[r]->(b)")
+          .addFinalState(1)
+          .build()
+      )
+      .allNodeScan("a")
+      .build()
+  )
+
+  testPlan(
+    "statefulShortestPath with more NFA variation",
+    new TestPlanBuilder()
+      .produceResults("a", "b", "c")
+      .statefulShortestPath(
+        "a",
+        "c",
+        Some("a.prop + c.prop = 5"),
+        Set(("b_in", "b_in"), ("c_in", "c_in")),
+        Set(("r2", "r2")),
+        new TestNFABuilder(0, "a", groupVar = false)
+          .addTransition(0, 1, "(a)-[r WHERE r.prop > 5]->(b:A&B WHERE b.prop = 10)")
+          .addTransition(1, 2, "(b) (b_in WHERE b_in.prop = 10)", groupVars = Set("b_in"))
+          .addTransition(2, 3, "(b_in)<-[r2:R2 WHERE r2 < 7]-(c_in)", groupVars = Set("b_in", "c_in", "r2"))
+          .addTransition(3, 2, "(c_in) (b_in: A|C)", groupVars = Set("b_in", "c_in"))
+          .addTransition(3, 4, "(c_in) (c:C&D WHERE c.prop = 5)", groupVars = Set("c_in"))
+          .addTransition(1, 4, "(b) (c)")
+          .addTransition(4, 5, "(c)-[r3]-(d)")
+          .addFinalState(4)
+          .addFinalState(5)
+          .build()
+      )
+      .allNodeScan("a")
+      .build()
+  )
+
+  testPlan(
     "pathPropagatingBFS",
     new TestPlanBuilder()
       .produceResults("b", "c")
@@ -2270,6 +2315,7 @@ class LogicalPlanToPlanBuilderStringTest extends CypherFunSuite with TestName {
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
             |import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
+            |import org.neo4j.cypher.internal.logical.builder.TestNFABuilder
             |import org.neo4j.cypher.internal.expressions.SemanticDirection.{INCOMING, OUTGOING, BOTH}
             |import org.neo4j.cypher.internal.expressions.LabelName
             |import org.neo4j.cypher.internal.expressions.RelTypeName

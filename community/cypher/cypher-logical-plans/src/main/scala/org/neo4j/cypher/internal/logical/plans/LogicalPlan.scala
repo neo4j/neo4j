@@ -1731,6 +1731,23 @@ case class FindShortestPaths(
   override val availableSymbols: Set[String] = source.availableSymbols ++ shortestRelationship.availableSymbols
 }
 
+case class StatefulShortestPath(
+  override val source: LogicalPlan,
+  sourceNode: String,
+  targetNode: String,
+  nfa: NFA,
+  nonInlinablePreFilters: Option[Expression],
+  nodeVariableGroupings: Set[VariableGrouping],
+  relationshipVariableGroupings: Set[VariableGrouping]
+)(implicit idGen: IdGen)
+    extends LogicalUnaryPlan(idGen) {
+  override def withLhs(newLHS: LogicalPlan)(idGen: IdGen): LogicalUnaryPlan = copy(source = newLHS)(idGen)
+
+  override val availableSymbols: Set[String] = source.availableSymbols ++ nfa.availableSymbols ++
+    nodeVariableGroupings.map(_.groupName) ++
+    relationshipVariableGroupings.map(_.groupName)
+}
+
 /**
  * Foreach is an operator that performs the provided side-effects for each item in the provided list.
  */

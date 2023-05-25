@@ -166,6 +166,7 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Skip
 import org.neo4j.cypher.internal.logical.plans.Sort
+import org.neo4j.cypher.internal.logical.plans.StatefulShortestPath
 import org.neo4j.cypher.internal.logical.plans.SubqueryForeach
 import org.neo4j.cypher.internal.logical.plans.TestOnlyPlan
 import org.neo4j.cypher.internal.logical.plans.Top
@@ -678,6 +679,8 @@ object ReadFinder {
           _
         ) =>
         processShortestPaths(name, nodes, types)
+
+      case StatefulShortestPath(_, _, _, _, _, _, _) => ???
 
       case LegacyFindShortestPaths(
           _,
