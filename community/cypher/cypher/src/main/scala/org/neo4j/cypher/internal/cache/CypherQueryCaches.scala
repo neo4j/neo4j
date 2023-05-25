@@ -48,7 +48,8 @@ import org.neo4j.cypher.internal.config.CypherConfiguration
 import org.neo4j.cypher.internal.config.StatsDivergenceCalculatorConfig
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
+import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributesCacheKey
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.kernel.impl.query.QueryCacheStatistics
@@ -227,9 +228,15 @@ object CypherQueryCaches {
     planningAttributesCacheKey: PlanningAttributesCacheKey
   )
 
+  case class CachedExecutionPlan(
+    executionPlan: ExecutionPlan,
+    effectiveCardinalities: EffectiveCardinalities,
+    providedOrders: ProvidedOrders
+  )
+
   object ExecutionPlanCache extends CacheCompanion("execution_plan") with CacheMonitorHelpers {
     type Key = ExecutionPlanCacheKey
-    type Value = (ExecutionPlan, PlanningAttributes)
+    type Value = CachedExecutionPlan
 
     abstract class Cache extends CacheCommon {
       def computeIfAbsent(cacheWhen: => Boolean, key: => Key, compute: => Value): Value
