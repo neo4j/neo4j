@@ -539,13 +539,13 @@ public class ImportCommand {
                 paramLabel = "all|prepare|build|merge",
                 description = "Stage of incremental import. "
                         + "For incremental import into an existing database use 'all' (which requires "
-                        + "the database to be stopped. For semi-online incremental import run 'prepare' (on "
-                        + "stopped database) followed by 'build' (on a potentially running database) and "
-                        + "finally 'merge' (on stopped database)",
+                        + "the database to be stopped). For semi-online incremental import run 'prepare' (on "
+                        + "a stopped database) followed by 'build' (on a potentially running database) and "
+                        + "finally 'merge' (on a stopped database).",
                 converter = StageConverter.class)
         CsvImporter.IncrementalStage stage = CsvImporter.IncrementalStage.all;
 
-        @Option(names = "--force", required = true, description = "Confirm incremental import by setting this flag")
+        @Option(names = "--force", required = true, description = "Confirm incremental import by setting this flag.")
         boolean forced;
 
         public Incremental(ExecutionContext ctx) {
@@ -556,7 +556,7 @@ public class ImportCommand {
         public void execute() throws Exception {
             if (!forced) {
                 System.err.println(
-                        "ERROR: Incremental import needs to be used with care. Please confirm by specifying --force");
+                        "ERROR: Incremental import needs to be used with care. Please confirm by specifying --force.");
                 throw new IllegalArgumentException("Missing force");
             }
             doExecute(true, stage, null, false);
