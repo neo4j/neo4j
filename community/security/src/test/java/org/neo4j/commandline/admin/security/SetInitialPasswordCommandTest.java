@@ -135,6 +135,34 @@ class SetInitialPasswordCommandTest {
     }
 
     @Test
+    void shouldFailToSetShortInitialPasswordOneCharUseTwoBytes() {
+        // Given
+        assertFalse(fileSystem.fileExists(authInitFile));
+
+        // When
+        CommandLine.populateCommand(command, "neo4j*£");
+
+        // Then
+        Exception e = assertThrows(InvalidPasswordException.class, () -> command.execute());
+
+        assertThat(e.getStackTrace().length).isEqualTo(0);
+    }
+
+    @Test
+    void shouldFailToSetShortInitialPasswordCharactersUsingFourBytesEach() {
+        // Given
+        assertFalse(fileSystem.fileExists(authInitFile));
+
+        // When
+        CommandLine.populateCommand(command, "𓃠𓃠𓃠𓃠");
+
+        // Then
+        Exception e = assertThrows(InvalidPasswordException.class, () -> command.execute());
+
+        assertThat(e.getStackTrace().length).isEqualTo(0);
+    }
+
+    @Test
     void shouldOverwriteInitialPasswordFileIfExists() throws Throwable {
         // Given
         fileSystem.mkdirs(authInitFile.getParent());

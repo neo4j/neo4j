@@ -75,6 +75,8 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
+import java.nio.ByteBuffer
+import java.nio.charset.StandardCharsets
 import java.util.Locale
 import java.util.UUID
 
@@ -96,11 +98,17 @@ object AdministrationCommandRuntime {
   private[internal] def internalKey(name: String): String = internalPrefix + name
 
   private[internal] def validatePassword(password: Array[Byte])(config: Config): Array[Byte] = {
-    val minimumPasswordLength = config.get(GraphDatabaseSettings.auth_minimum_password_length)
     if (password == null || password.length == 0) throw new InvalidArgumentException("A password cannot be empty.")
-    else if (password.length < minimumPasswordLength)
-      throw new InvalidArgumentException(s"A password must be at least $minimumPasswordLength characters.")
-    password
+
+    val minimumPasswordLength = config.get(GraphDatabaseSettings.auth_minimum_password_length)
+    val cb = StandardCharsets.UTF_8.decode(ByteBuffer.wrap(password))
+    try {
+      if (cb.codePoints.count < minimumPasswordLength)
+        throw new InvalidArgumentException(s"A password must be at least $minimumPasswordLength characters.")
+      password
+    } finally {
+      for (i <- 0 until cb.length) cb.put(i, '0')
+    }
   }
 
   protected def hashPassword(initialPassword: Array[Byte]): TextValue = {

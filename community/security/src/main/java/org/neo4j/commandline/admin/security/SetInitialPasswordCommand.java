@@ -111,7 +111,7 @@ public class SetInitialPasswordCommand extends AbstractAdminCommand implements P
         Integer minimumPasswordLength = config.get(GraphDatabaseSettings.auth_minimum_password_length);
         if (password == null || password.length() == 0) {
             throw new InvalidPasswordException("A password cannot be empty.");
-        } else if (password.length() < minimumPasswordLength) {
+        } else if (password.codePoints().count() < minimumPasswordLength) {
             throw new InvalidPasswordException("A password must be at least " + minimumPasswordLength + " characters.");
         }
     }
