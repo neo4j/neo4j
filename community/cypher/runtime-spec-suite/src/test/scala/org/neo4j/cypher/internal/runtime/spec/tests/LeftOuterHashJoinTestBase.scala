@@ -741,7 +741,7 @@ abstract class LeftOuterHashJoinTestBase[CONTEXT <: RuntimeContext](
       .limit(downstreamLimit)
       .unwind("range(0, x-1) as a")
       .input(variables = Seq("x", "y", "z"))
-      .build(readOnly = false)
+      .build()
 
     val result = execute(logicalQuery, runtime, inputValues(input.map(_.toArray[Any]): _*))
     result.awaitAll()

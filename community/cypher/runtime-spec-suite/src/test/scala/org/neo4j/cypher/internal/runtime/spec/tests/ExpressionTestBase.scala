@@ -434,7 +434,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .projection("r.prop IS NOT NULL AS hasProp")
       .expandAll("(n)-[r]->(m)")
       .allNodeScan("n")
-      .build(readOnly = false)
+      .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 
@@ -464,7 +464,7 @@ abstract class ExpressionTestBase[CONTEXT <: RuntimeContext](edition: Edition[CO
       .nonFuseable()
       .expandAll("(n)-[r]->(m)")
       .allNodeScan("n")
-      .build(readOnly = false)
+      .build()
 
     val runtimeResult = execute(logicalQuery, runtime)
 

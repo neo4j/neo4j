@@ -358,7 +358,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
       .relationshipTypeScan("(n)-[r:R]-(m)")
-      .build(readOnly = false)
+      .build()
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
@@ -376,7 +376,7 @@ abstract class RelationshipTypeScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .relationshipTypeScan("(n)-[r:R]-(m)")
-      .build(readOnly = false)
+      .build()
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }

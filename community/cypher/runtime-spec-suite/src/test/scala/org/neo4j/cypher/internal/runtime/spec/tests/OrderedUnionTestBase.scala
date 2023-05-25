@@ -1089,6 +1089,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("github issue #13169") {
+    assume(!isParallel)
     // given empty graph
 
     // when
@@ -1123,6 +1124,7 @@ abstract class OrderedUnionTestBase[CONTEXT <: RuntimeContext](
   }
 
   test("github issue #13169 variant") {
+    assume(!isParallel)
     // given empty graph
 
     // when

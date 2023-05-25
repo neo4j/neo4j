@@ -368,7 +368,7 @@ abstract class UnionRelationshipTypeTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .unionRelationshipTypesScan("(n)-[r:R|S|T]-(m)", IndexOrderNone)
-      .build(readOnly = false)
+      .build()
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }

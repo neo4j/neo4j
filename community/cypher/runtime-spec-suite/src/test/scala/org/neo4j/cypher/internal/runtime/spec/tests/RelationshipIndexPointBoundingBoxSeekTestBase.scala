@@ -810,7 +810,7 @@ abstract class RelationshipIndexPointBoundingBoxSeekTestBase[CONTEXT <: RuntimeC
         "{x: 2.0, y: 2.0, crs: 'cartesian'}",
         indexType = IndexType.POINT
       )
-      .build(readOnly = false)
+      .build()
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }

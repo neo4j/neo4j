@@ -543,7 +543,7 @@ abstract class RelationshipIndexEndsWithScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .relationshipIndexOperator("(n)-[r:R(text ENDS WITH 'alue')]-(m)", indexType = IndexType.TEXT)
-      .build(readOnly = false)
+      .build()
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }

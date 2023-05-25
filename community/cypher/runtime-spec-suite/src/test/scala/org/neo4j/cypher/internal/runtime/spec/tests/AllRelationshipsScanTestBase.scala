@@ -208,7 +208,7 @@ abstract class AllRelationshipsScanTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
       .allRelationshipsScan("(n)-[r]->(m)")
-      .build(readOnly = false)
+      .build()
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
@@ -228,7 +228,7 @@ abstract class AllRelationshipsScanTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
       .allRelationshipsScan("(n)-[r]-(m)")
-      .build(readOnly = false)
+      .build()
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
@@ -246,7 +246,7 @@ abstract class AllRelationshipsScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .allRelationshipsScan("(n)-[r]-(m)")
-      .build(readOnly = false)
+      .build()
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }

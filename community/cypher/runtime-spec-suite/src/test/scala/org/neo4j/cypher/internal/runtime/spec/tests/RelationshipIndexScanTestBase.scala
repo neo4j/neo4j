@@ -537,7 +537,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
       .nonFuseable()
       .unwind(s"range(1, 10) AS r2")
       .relationshipIndexOperator("(n)-[r:R(prop)]-(m)", indexType = IndexType.RANGE)
-      .build(readOnly = false)
+      .build()
 
     // then
     val runtimeResult: RecordingRuntimeResult = execute(logicalQuery, runtime)
@@ -558,7 +558,7 @@ abstract class RelationshipIndexScanTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .relationshipIndexOperator("(n)-[r:R(prop)]-(m)", indexType = IndexType.RANGE)
-      .build(readOnly = false)
+      .build()
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }

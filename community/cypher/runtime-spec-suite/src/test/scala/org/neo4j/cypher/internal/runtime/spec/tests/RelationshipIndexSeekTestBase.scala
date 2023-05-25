@@ -1598,7 +1598,7 @@ abstract class RelationshipIndexSeekTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("r")
       .relationshipIndexOperator("(n)-[r:R(prop = 42)]-(m)", indexType = IndexType.RANGE)
-      .build(readOnly = false)
+      .build()
 
     execute(logicalQuery, runtime) should beColumns("r").withSingleRow(rel)
   }
