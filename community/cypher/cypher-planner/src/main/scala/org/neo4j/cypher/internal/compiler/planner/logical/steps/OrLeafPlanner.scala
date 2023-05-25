@@ -100,6 +100,17 @@ object OrLeafPlanner {
     interestingOrderCandidates: Seq[InterestingOrderCandidate]
   ) {
     override def toString: String = predicates.mkString(" OR ")
+
+    def qgWithOnlyRelevantVariable(bareQg: QueryGraph): QueryGraph = {
+      val solvedRel = bareQg.patternRelationships.find(_.name == variableName)
+      QueryGraph(
+        argumentIds = bareQg.argumentIds,
+        patternNodes =
+          solvedRel.fold(bareQg.patternNodes.filter(_ == variableName))(r => Set(r.left, r.right)),
+        patternRelationships = solvedRel.toSet,
+        hints = bareQg.hints
+      )
+    }
   }
 
   /**
@@ -357,8 +368,12 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       // Collect any other top-level predicates that only use this variable
       val relatedPredicates = predicateKinds.flatMap(_.collectRelatedPredicates(qg, disjunction))
 
-      // Add all related predicates to the bare queryGraph
-      val qgWithRelatedPredicates = relatedPredicates.foldLeft(bareQg)((accQg, dp) => dp.addToQueryGraph(accQg))
+      // Keep only the node/rel variable around
+      val qgWithOnlyRelevantVariable = disjunction.qgWithOnlyRelevantVariable(bareQg)
+
+      // Add all related predicates to the queryGraph
+      val qgWithRelatedPredicates =
+        relatedPredicates.foldLeft(qgWithOnlyRelevantVariable)((accQg, dp) => dp.addToQueryGraph(accQg))
 
       // Add interesting order candidates to allow planning OrderedUnion
       val innerInterestingOrderConfig =
@@ -387,14 +402,8 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
     }
 
     def computeJoinedSolvedQueryGraph(plans: Seq[LogicalPlan], disjunction: DisjunctionForOneVariable): QueryGraph = {
-      val solvedRel = bareQg.patternRelationships.find(_.name == disjunction.variableName)
       // Start by creating a query graph containing only the variables that are involved by the disjunction, and the correct arguments.
-      val queryGraph = QueryGraph(
-        argumentIds = bareQg.argumentIds,
-        patternNodes =
-          solvedRel.fold(bareQg.patternNodes.filter(_ == disjunction.variableName))(r => Set(r.left, r.right)),
-        patternRelationships = solvedRel.toSet
-      )
+      val queryGraph = disjunction.qgWithOnlyRelevantVariable(bareQg)
 
       val solvedQgs = plans.map(solvedQueryGraph)
 
