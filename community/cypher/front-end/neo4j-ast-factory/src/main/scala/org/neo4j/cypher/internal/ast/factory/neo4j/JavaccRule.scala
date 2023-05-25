@@ -72,6 +72,7 @@ object JavaccRule {
   def Quantifier: JavaccRule[GraphPatternQuantifier] = fromParser(_.Quantifier())
   def RelationshipPattern: JavaccRule[RelationshipPattern] = fromParser(_.RelationshipPattern())
   def PatternPart: JavaccRule[PatternPart] = fromParser(_.Pattern())
+  def PathPattern: JavaccRule[PatternPart] = fromParser(_.PathPattern())
   def Statement: JavaccRule[Statement] = fromParser(_.Statement())
   def UseClause: JavaccRule[UseGraph] = fromParser(_.UseClause())
 

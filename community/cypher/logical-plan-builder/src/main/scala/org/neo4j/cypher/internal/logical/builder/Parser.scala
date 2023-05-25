@@ -29,6 +29,8 @@ import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.Namespace
+import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RELATIONSHIP_TYPE
@@ -70,7 +72,10 @@ object Parser {
   })
 
   val invalidateInputPositions: Rewriter = topDown(Rewriter.lift {
-    case a: ASTNode => a.dup(a.treeChildren.toSeq :+ AbstractLogicalPlanBuilder.pos)
+    // Special handling of PatternPartWithSelector because it happens to not include an argument for InputPosition.
+    // If more cases ends up being added this should probably be refactored. But that is left as an exercise to the reader.
+    case x: PatternPartWithSelector => x
+    case a: ASTNode                 => a.dup(a.treeChildren.toSeq :+ AbstractLogicalPlanBuilder.pos)
   })
 
   val replaceWrongFunctionInvocation: Rewriter = topDown(Rewriter.lift {
@@ -98,6 +103,11 @@ object Parser {
   def parseExpression(text: String): Expression = {
     val expression = JavaccRule.Expression.apply(text)
     Parser.cleanup(expression)
+  }
+
+  def parsePathPattern(text: String): PatternPart = {
+    val patternPart = JavaccRule.PathPattern.apply(text)
+    Parser.cleanup(patternPart)
   }
 
   def parseProcedureCall(text: String): UnresolvedCall = {
