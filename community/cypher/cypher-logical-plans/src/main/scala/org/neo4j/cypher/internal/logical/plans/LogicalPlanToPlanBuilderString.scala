@@ -1547,7 +1547,7 @@ object LogicalPlanToPlanBuilderString {
     s", $name = Seq(" + predStrs + ")"
   }
 
-  private def relTypeStr(types: Seq[RelTypeName]) = {
+  private[plans] def relTypeStr(types: Seq[RelTypeName]) = {
     types match {
       case head +: tail => s":${head.name}${tail.map(t => s"|${t.name}").mkString("")}"
       case _            => ""
@@ -1572,7 +1572,7 @@ object LogicalPlanToPlanBuilderString {
     str.substring(0, str.length - 1)
   }
 
-  private def arrows(dir: SemanticDirection): (String, String) = dir match {
+  private[plans] def arrows(dir: SemanticDirection): (String, String) = dir match {
     case SemanticDirection.OUTGOING => ("-", "->")
     case SemanticDirection.INCOMING => ("<-", "-")
     case SemanticDirection.BOTH     => ("-", "-")
