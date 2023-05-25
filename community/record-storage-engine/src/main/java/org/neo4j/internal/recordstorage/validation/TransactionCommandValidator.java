@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
+import java.util.List;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.neo4j.configuration.Config;
@@ -37,8 +38,13 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.impl.api.LeaseClient;
 import org.neo4j.kernel.impl.locking.LockManager;
+import org.neo4j.kernel.impl.store.InvalidRecordException;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
+import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.lock.LockTracer;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -117,8 +123,40 @@ public class TransactionCommandValidator implements CommandVisitor, TransactionV
 
     @Override
     public boolean visitPropertyCommand(Command.PropertyCommand command) throws IOException {
-        checkStore(command.getAfter().getId(), getCursor(StoreType.PROPERTY), StoreType.PROPERTY);
+        PropertyRecord propertyRecord = command.getAfter();
+        checkStore(propertyRecord.getId(), getCursor(StoreType.PROPERTY), StoreType.PROPERTY);
+        if (propertyRecord.inUse()) {
+            for (PropertyBlock block : propertyRecord) {
+                if (!block.isLight() && block.getValueRecords().get(0).isCreated()) {
+                    checkDynamicRecords(block.getValueRecords());
+                }
+            }
+        }
+        checkDynamicRecords(propertyRecord.getDeletedRecords());
+
         return false;
+    }
+
+    private void checkDynamicRecords(List<DynamicRecord> records) throws IOException {
+        PageCursor stringCursor = null;
+        PageCursor arrayCursor = null;
+
+        for (DynamicRecord valueRecord : records) {
+            PropertyType recordType = valueRecord.getType();
+            if (recordType == PropertyType.STRING) {
+                if (stringCursor == null) {
+                    stringCursor = getCursor(StoreType.PROPERTY_STRING);
+                }
+                checkStore(valueRecord.getId(), stringCursor, StoreType.PROPERTY_STRING);
+            } else if (recordType == PropertyType.ARRAY) {
+                if (arrayCursor == null) {
+                    arrayCursor = getCursor(StoreType.PROPERTY_ARRAY);
+                }
+                checkStore(valueRecord.getId(), arrayCursor, StoreType.PROPERTY_ARRAY);
+            } else {
+                throw new InvalidRecordException("Not supported record type for validation: " + valueRecord);
+            }
+        }
     }
 
     @Override
