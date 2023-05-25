@@ -33,6 +33,7 @@ import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
 import java.util.function.Function;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
@@ -47,6 +48,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaValueType;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -100,14 +103,42 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
         try (SchemaComplianceChecker checker = new SchemaComplianceChecker(
                 context(),
                 mandatoryProperties,
+                noAllowedTypes,
                 context().indexAccessors.onlineRules(NODE),
                 CursorContext.NULL_CONTEXT,
                 storeCursors)) {
-            checker.checkContainsMandatoryProperties(new NodeRecord(nodeId), labels, propertyValues, reporter::forNode);
+            checker.checkExistenceAndTypeConstraints(new NodeRecord(nodeId), labels, propertyValues, reporter::forNode);
         }
 
         // then
         expect(ConsistencyReport.NodeConsistencyReport.class, report -> report.missingMandatoryProperty(anyInt()));
+    }
+
+    @Test
+    void shouldReportTypeConstraintViolation() throws Exception {
+        // given
+        long nodeId = 0;
+        MutableIntObjectMap<Value> propertyValues = new IntObjectHashMap<>();
+        propertyValues.put(propertyKey2, intValue(99));
+        long[] labels = new long[] {label1, label3};
+        IntObjectMap<IntObjectMap<PropertyTypeSet>> allowedTypes = IntObjectMaps.immutable.of(
+                label1,
+                IntObjectMaps.immutable.of(
+                        propertyKey2, PropertyTypeSet.of(SchemaValueType.STRING, SchemaValueType.BOOLEAN)));
+
+        // when
+        try (SchemaComplianceChecker checker = new SchemaComplianceChecker(
+                context(),
+                noMandatoryProperties,
+                allowedTypes,
+                context().indexAccessors.onlineRules(NODE),
+                CursorContext.NULL_CONTEXT,
+                storeCursors)) {
+            checker.checkExistenceAndTypeConstraints(new NodeRecord(nodeId), labels, propertyValues, reporter::forNode);
+        }
+
+        // then
+        expect(ConsistencyReport.NodeConsistencyReport.class, report -> report.typeConstraintViolation(anyInt()));
     }
 
     @Test
@@ -240,7 +271,8 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
     private void checkIndexed(long nodeId) throws Exception {
         try (SchemaComplianceChecker checker = new SchemaComplianceChecker(
                 context(),
-                new IntObjectHashMap<>(),
+                noMandatoryProperties,
+                noAllowedTypes,
                 context().indexAccessors.onlineRules(NODE),
                 CursorContext.NULL_CONTEXT,
                 storeCursors)) {
@@ -254,7 +286,8 @@ class SchemaComplianceCheckerTest extends CheckerTestBase {
         try (var storeCursors = new CachedStoreCursors(neoStores, CursorContext.NULL_CONTEXT);
                 SchemaComplianceChecker checker = new SchemaComplianceChecker(
                         context(),
-                        new IntObjectHashMap<>(),
+                        noMandatoryProperties,
+                        noAllowedTypes,
                         context().indexAccessors.onlineRules(RELATIONSHIP),
                         CursorContext.NULL_CONTEXT,
                         storeCursors)) {

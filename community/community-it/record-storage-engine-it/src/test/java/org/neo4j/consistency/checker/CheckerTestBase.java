@@ -87,6 +87,7 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -139,6 +140,7 @@ class CheckerTestBase {
     TestDirectory directory;
 
     MutableIntObjectMap<MutableIntSet> noMandatoryProperties = IntObjectMaps.mutable.empty();
+    MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> noAllowedTypes = IntObjectMaps.mutable.empty();
     GraphDatabaseAPI db;
     NeoStores neoStores;
     NodeStore nodeStore;

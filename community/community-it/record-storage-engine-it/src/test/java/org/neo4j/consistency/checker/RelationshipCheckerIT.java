@@ -126,7 +126,7 @@ class RelationshipCheckerIT {
     @Test
     void tracePageCacheAccessOnRelationshipCheck() throws Exception {
         prepareContext();
-        var relationshipChecker = new RelationshipChecker(context, new IntObjectHashMap<>());
+        var relationshipChecker = new RelationshipChecker(context, new IntObjectHashMap<>(), new IntObjectHashMap<>());
 
         long initialPins = pageCacheTracer.pins();
         long initialUnpins = pageCacheTracer.unpins();

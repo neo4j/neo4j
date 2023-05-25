@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checker;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -49,8 +50,11 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexPrototype;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.internal.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.internal.schema.constraints.ExistenceConstraintDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
+import org.neo4j.internal.schema.constraints.TypeConstraintDescriptor;
 import org.neo4j.internal.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -76,7 +80,11 @@ class SchemaCheckerTest extends CheckerTestBase {
     private int propertyKey2;
     private final int UNUSED = 99;
     private final MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties = IntObjectMaps.mutable.empty();
+    private final MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedNodePropertyTypes =
+            IntObjectMaps.mutable.empty();
     private final MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties = IntObjectMaps.mutable.empty();
+    private final MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedRelationshipPropertyTypes =
+            IntObjectMaps.mutable.empty();
     private final String NAME = "name1";
     private final String NAME2 = "name2";
 
@@ -525,6 +533,66 @@ class SchemaCheckerTest extends CheckerTestBase {
     }
 
     @Test
+    void shouldPopulateAllowedTypesMap() throws Exception {
+        // given
+        try (AutoCloseable ignored = tx()) {
+            var cursorContext = CursorContext.NULL_CONTEXT;
+            TypeConstraintDescriptor constraint1 = ConstraintDescriptorFactory.typeForSchema(
+                            SchemaDescriptors.forLabel(label1, propertyKey1),
+                            PropertyTypeSet.of(SchemaValueType.INTEGER))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
+                    .withName(NAME);
+            TypeConstraintDescriptor constraint2 = ConstraintDescriptorFactory.typeForSchema(
+                            SchemaDescriptors.forLabel(label2, propertyKey1),
+                            PropertyTypeSet.of(SchemaValueType.STRING))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
+                    .withName(NAME2);
+            TypeConstraintDescriptor constraint3 = ConstraintDescriptorFactory.typeForSchema(
+                            SchemaDescriptors.forRelType(relationshipType1, propertyKey1),
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
+                    .withName(NAME);
+            TypeConstraintDescriptor constraint4 = ConstraintDescriptorFactory.typeForSchema(
+                            SchemaDescriptors.forRelType(relationshipType2, propertyKey1),
+                            PropertyTypeSet.of(SchemaValueType.DATE))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
+                    .withName(NAME2);
+            TypeConstraintDescriptor constraint5 = ConstraintDescriptorFactory.typeForSchema(
+                            SchemaDescriptors.forRelType(relationshipType2, propertyKey2),
+                            PropertyTypeSet.of(SchemaValueType.FLOAT))
+                    .withId(schemaIdGenerator.nextId(cursorContext))
+                    .withName(NAME2);
+            schemaStorage.writeSchemaRule(
+                    constraint1, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
+            schemaStorage.writeSchemaRule(
+                    constraint2, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
+            schemaStorage.writeSchemaRule(
+                    constraint3, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
+            schemaStorage.writeSchemaRule(
+                    constraint4, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
+            schemaStorage.writeSchemaRule(
+                    constraint5, IdUpdateListener.DIRECT, allocatorProvider, cursorContext, INSTANCE, storeCursors);
+        }
+
+        // when
+        check();
+
+        // then
+        assertThat(allowedNodePropertyTypes)
+                .isEqualTo(IntObjectMaps.mutable.of(
+                        label1, IntObjectMaps.mutable.of(propertyKey1, PropertyTypeSet.of(SchemaValueType.INTEGER)),
+                        label2, IntObjectMaps.mutable.of(propertyKey1, PropertyTypeSet.of(SchemaValueType.STRING))));
+        assertThat(allowedRelationshipPropertyTypes)
+                .isEqualTo(IntObjectMaps.mutable.of(
+                        relationshipType1,
+                                IntObjectMaps.mutable.of(propertyKey1, PropertyTypeSet.of(SchemaValueType.BOOLEAN)),
+                        relationshipType2,
+                                IntObjectMaps.mutable.of(
+                                        propertyKey1, PropertyTypeSet.of(SchemaValueType.DATE),
+                                        propertyKey2, PropertyTypeSet.of(SchemaValueType.FLOAT))));
+    }
+
+    @Test
     void shouldReportWhenConstraintIndexHasNoConstraintOwnerReference() throws Exception {
         // given
         try (AutoCloseable ignored = tx()) {
@@ -728,6 +796,8 @@ class SchemaCheckerTest extends CheckerTestBase {
                 .check(
                         mandatoryNodeProperties,
                         mandatoryRelationshipProperties,
+                        allowedNodePropertyTypes,
+                        allowedRelationshipPropertyTypes,
                         CursorContext.NULL_CONTEXT,
                         storeCursors);
     }

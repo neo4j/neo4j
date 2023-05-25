@@ -34,8 +34,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.LongConsumer;
 import org.apache.commons.lang3.ArrayUtils;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.consistency.checking.ConsistencyFlags;
@@ -51,6 +51,7 @@ import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
@@ -72,7 +73,8 @@ import org.neo4j.values.storable.Value;
 class NodeChecker implements Checker {
     private static final String NODE_INDEXES_CHECKER_TAG = "nodeIndexesChecker";
     private static final String NODE_RANGE_CHECKER_TAG = "nodeRangeChecker";
-    private final MutableIntObjectMap<MutableIntSet> mandatoryProperties;
+    private final IntObjectMap<? extends IntSet> mandatoryProperties;
+    private final IntObjectMap<? extends IntObjectMap<PropertyTypeSet>> allowedTypes;
     private final ProgressListener nodeProgress;
     private final CheckerContext context;
     private final ConsistencyReport.Reporter reporter;
@@ -82,7 +84,10 @@ class NodeChecker implements Checker {
     private final NeoStores neoStores;
     private final List<IndexDescriptor> smallIndexes;
 
-    NodeChecker(CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties) {
+    NodeChecker(
+            CheckerContext context,
+            IntObjectMap<? extends IntSet> mandatoryProperties,
+            IntObjectMap<? extends IntObjectMap<PropertyTypeSet>> allowedTypes) {
         this.context = context;
         this.reporter = context.reporter;
         this.observedCounts = context.observedCounts;
@@ -90,6 +95,7 @@ class NodeChecker implements Checker {
         this.tokenHolders = context.tokenHolders;
         this.neoStores = context.neoStores;
         this.mandatoryProperties = mandatoryProperties;
+        this.allowedTypes = allowedTypes;
         // indices are checked in following method via shouldBeChecked and so can't be null
         this.smallIndexes = context.indexSizes.smallIndexes(NODE);
         this.nodeProgress = context.roundInsensitiveProgressReporter(
@@ -139,7 +145,7 @@ class NodeChecker implements Checker {
                         getLabelIndexReader(fromNodeId, toNodeId, last, cursorContext);
                 SafePropertyChainReader property = new SafePropertyChainReader(context, cursorContext);
                 SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker(
-                        context, mandatoryProperties, smallIndexes, cursorContext, storeCursors);
+                        context, mandatoryProperties, allowedTypes, smallIndexes, cursorContext, storeCursors);
                 var localProgress = nodeProgress.threadLocalReporter();
                 var freeIdsIterator =
                         context.neoStores.getNodeStore().getIdGenerator().freeIdsIterator(fromNodeId, toNodeId)) {
@@ -222,9 +228,9 @@ class NodeChecker implements Checker {
                 }
                 client.putToCache(nodeId, nextRelCacheFields);
 
-                // Mandatory properties and (some) indexing
+                // Mandatory properties, type constraints and (some) indexing
                 if (labels != null && propertyChainIsOk) {
-                    schemaComplianceChecker.checkContainsMandatoryProperties(
+                    schemaComplianceChecker.checkExistenceAndTypeConstraints(
                             nodeRecord, labels, propertyValues, reporter::forNode);
                     // Here only the very small indexes (or indexes that we can't read the values from, like fulltext
                     // indexes)

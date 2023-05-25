@@ -123,7 +123,7 @@ class NodeCheckerIT {
     @Test
     void tracePageCacheAccessOnNodeCheck() throws Exception {
         prepareContext();
-        var nodeChecker = new NodeChecker(context, new IntObjectHashMap<>());
+        var nodeChecker = new NodeChecker(context, new IntObjectHashMap<>(), new IntObjectHashMap<>());
 
         nodeChecker.check(LongRange.range(0, nodeId + 1), true, false);
 

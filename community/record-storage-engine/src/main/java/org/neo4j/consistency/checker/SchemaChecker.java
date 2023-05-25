@@ -49,6 +49,7 @@ import org.neo4j.internal.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaProcessor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.store.DynamicStringStore;
@@ -93,16 +94,26 @@ class SchemaChecker {
     void check(
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties,
+            MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedNodePropertyTypes,
+            MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedRelationshipPropertyTypes,
             CursorContext cursorContext,
             StoreCursors storeCursors)
             throws Exception {
-        checkSchema(mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext, storeCursors);
+        checkSchema(
+                mandatoryNodeProperties,
+                mandatoryRelationshipProperties,
+                allowedNodePropertyTypes,
+                allowedRelationshipPropertyTypes,
+                cursorContext,
+                storeCursors);
         checkTokens();
     }
 
     private void checkSchema(
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties,
+            MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedNodePropertyTypes,
+            MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedRelationshipPropertyTypes,
             CursorContext cursorContext,
             StoreCursors storeCursors) {
         long highId = schemaStore.getIdGenerator().getHighId();
@@ -131,6 +142,8 @@ class SchemaChecker {
                     schemaStorage,
                     mandatoryNodeProperties,
                     mandatoryRelationshipProperties,
+                    allowedNodePropertyTypes,
+                    allowedRelationshipPropertyTypes,
                     storeCursors,
                     cursorContext);
         }
@@ -190,12 +203,16 @@ class SchemaChecker {
             SchemaStorage schemaStorage,
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties,
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties,
+            MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedNodePropertyTypes,
+            MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedRelationshipPropertyTypes,
             StoreCursors storeCursors,
             CursorContext cursorContext) {
         SchemaRecord record = reader.record();
         SchemaProcessor basicSchemaCheck = new BasicSchemaCheck(record, storeCursors);
         SchemaProcessor mandatoryPropertiesBuilder =
                 new MandatoryPropertiesBuilder(mandatoryNodeProperties, mandatoryRelationshipProperties);
+        AllowedTypesBuilder allowedTypesBuilder =
+                new AllowedTypesBuilder(allowedNodePropertyTypes, allowedRelationshipPropertyTypes);
         var propertyValues = new IntObjectHashMap<Value>();
         try (var propertyReader = new SafePropertyChainReader(context, cursorContext, true)) {
             for (long id = schemaStore.getNumberOfReservedLowIds(); id < highId && !context.isCancelled(); id++) {
@@ -257,6 +274,11 @@ class SchemaChecker {
                             }
                             if (rule.enforcesPropertyExistence()) {
                                 rule.schema().processWith(mandatoryPropertiesBuilder);
+                            }
+                            if (rule.enforcesPropertyType()) {
+                                allowedTypesBuilder.setAllowedTypesForSchema(
+                                        rule.asPropertyTypeConstraint().allowedPropertyTypes());
+                                rule.schema().processWith(allowedTypesBuilder);
                             }
                         } else {
                             reporter.forSchema(record).unsupportedSchemaRuleType(null);
@@ -454,6 +476,48 @@ class SchemaChecker {
                 mandatoryProperties.put(entityToken, keys);
             }
             keys.addAll(propertyIds);
+        }
+
+        @Override
+        public void processSpecific(SchemaDescriptor schema) {
+            throw new UnsupportedOperationException();
+        }
+    }
+
+    private static class AllowedTypesBuilder implements SchemaProcessor {
+        private final MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedNodePropertyTypes;
+        private final MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedRelationshipPropertyTypes;
+        private PropertyTypeSet allowedTypesForSchema = null;
+
+        AllowedTypesBuilder(
+                MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedNodePropertyTypes,
+                MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedRelationshipPropertyTypes) {
+            this.allowedNodePropertyTypes = allowedNodePropertyTypes;
+            this.allowedRelationshipPropertyTypes = allowedRelationshipPropertyTypes;
+        }
+
+        public void setAllowedTypesForSchema(PropertyTypeSet allowedTypes) {
+            this.allowedTypesForSchema = allowedTypes;
+        }
+
+        @Override
+        public void processSpecific(LabelSchemaDescriptor schema) {
+            for (int entityToken : schema.getEntityTokenIds()) {
+                putAllowedType(allowedNodePropertyTypes, entityToken, schema.getPropertyId());
+            }
+        }
+
+        @Override
+        public void processSpecific(RelationTypeSchemaDescriptor schema) {
+            putAllowedType(allowedRelationshipPropertyTypes, schema.getRelTypeId(), schema.getPropertyId());
+        }
+
+        private void putAllowedType(
+                MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedProperties,
+                int entityToken,
+                int propertyId) {
+            var allowedTypesByPropertyKey = allowedProperties.getIfAbsentPut(entityToken, IntObjectHashMap::new);
+            allowedTypesByPropertyKey.put(propertyId, allowedTypesForSchema);
         }
 
         @Override

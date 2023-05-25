@@ -334,7 +334,7 @@ class RelationshipCheckerWithRelationshipTypeIndexTest extends CheckerTestBase {
     }
 
     private void check(CheckerContext context) throws Exception {
-        new RelationshipChecker(context, noMandatoryProperties)
+        new RelationshipChecker(context, noMandatoryProperties, noAllowedTypes)
                 .check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
     }
 

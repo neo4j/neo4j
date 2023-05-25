@@ -93,6 +93,9 @@ public interface ConsistencyReport {
         @Documented("The property chain does not contain a property that is mandatory for this entity.")
         void missingMandatoryProperty(int key);
 
+        @Documented("The property chain contains a property whose value violates a type constraint.")
+        void typeConstraintViolation(int key);
+
         @Documented("The property record points to a previous record in the chain, making it a circular reference.")
         void propertyChainContainsCircularReference(PropertyRecord propertyRecord);
 

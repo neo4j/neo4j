@@ -64,6 +64,7 @@ import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.internal.recordstorage.RecordStorageIndexingBehaviour;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.schema.IndexDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.recordstorage.RecordDatabaseLayout;
@@ -234,19 +235,26 @@ public class RecordStorageConsistencyChecker implements AutoCloseable {
             // populate maps regarding mandatory properties which the node/relationship checkers uses
             SchemaChecker schemaChecker = new SchemaChecker(context);
             MutableIntObjectMap<MutableIntSet> mandatoryNodeProperties = new IntObjectHashMap<>();
+            MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedNodePropertyTypes =
+                    new IntObjectHashMap<>();
             MutableIntObjectMap<MutableIntSet> mandatoryRelationshipProperties = new IntObjectHashMap<>();
+            MutableIntObjectMap<MutableIntObjectMap<PropertyTypeSet>> allowedRelationshipPropertyTypes =
+                    new IntObjectHashMap<>();
             try (var cursorContext = contextFactory.create(SCHEMA_CONSISTENCY_CHECKER_TAG);
                     var storeCursors = new CachedStoreCursors(context.neoStores, cursorContext)) {
                 schemaChecker.check(
-                        mandatoryNodeProperties, mandatoryRelationshipProperties, cursorContext, storeCursors);
+                        mandatoryNodeProperties, mandatoryRelationshipProperties,
+                        allowedNodePropertyTypes, allowedRelationshipPropertyTypes,
+                        cursorContext, storeCursors);
             }
 
             // Some pieces of check logic are extracted from this main class to reduce the size of this class.
             // Instantiate those here first
-            NodeChecker nodeChecker = new NodeChecker(context, mandatoryNodeProperties);
+            NodeChecker nodeChecker = new NodeChecker(context, mandatoryNodeProperties, allowedNodePropertyTypes);
             NodeIndexChecker indexChecker = new NodeIndexChecker(context);
             RelationshipIndexChecker relationshipIndexChecker = new RelationshipIndexChecker(context);
-            RelationshipChecker relationshipChecker = new RelationshipChecker(context, mandatoryRelationshipProperties);
+            RelationshipChecker relationshipChecker =
+                    new RelationshipChecker(context, mandatoryRelationshipProperties, allowedRelationshipPropertyTypes);
             RelationshipGroupChecker relationshipGroupChecker = new RelationshipGroupChecker(context);
             RelationshipChainChecker relationshipChainChecker = new RelationshipChainChecker(context);
             ProgressMonitorFactory.Completer progressCompleter = progress.build();

@@ -366,7 +366,7 @@ class NodeCheckerTest extends CheckerTestBase {
     // invalidLength of dynamic label record: (impossible, right?)
 
     private void check() throws Exception {
-        NodeChecker checker = new NodeChecker(context(), noMandatoryProperties);
+        NodeChecker checker = new NodeChecker(context(), noMandatoryProperties, noAllowedTypes);
         checker.check(LongRange.range(0, nodeStore.getIdGenerator().getHighId()), true, true);
     }
 }

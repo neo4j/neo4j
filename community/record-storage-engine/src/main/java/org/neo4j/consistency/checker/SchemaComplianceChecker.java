@@ -28,11 +28,10 @@ import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.util.Arrays;
 import java.util.function.Function;
+import org.eclipse.collections.api.iterator.IntIterator;
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.iterator.MutableIntIterator;
 import org.eclipse.collections.api.map.primitive.IntObjectMap;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
@@ -42,6 +41,7 @@ import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.SchemaDescriptor;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.kernel.api.index.ValueIndexReader;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
@@ -53,34 +53,38 @@ import org.neo4j.values.storable.Values;
 
 class SchemaComplianceChecker implements AutoCloseable {
     private final CheckerContext context;
-    private final IntObjectMap<MutableIntSet> mandatoryProperties;
+    private final IntObjectMap<? extends IntSet> mandatoryProperties;
+    private final IntObjectMap<? extends IntObjectMap<PropertyTypeSet>> allowedTypes;
     private final IndexAccessors.IndexReaders indexReaders;
     private final Iterable<IndexDescriptor> indexes;
     private final CursorContext cursorContext;
     private final StoreCursors storeCursors;
     private IntHashSet reportedMissingMandatoryPropertyKeys = new IntHashSet();
+    private IntHashSet reportedTypeViolationPropertyKeys = new IntHashSet();
 
     SchemaComplianceChecker(
             CheckerContext context,
-            MutableIntObjectMap<MutableIntSet> mandatoryProperties,
+            IntObjectMap<? extends IntSet> mandatoryProperties,
+            IntObjectMap<? extends IntObjectMap<PropertyTypeSet>> allowedTypes,
             Iterable<IndexDescriptor> indexes,
             CursorContext cursorContext,
             StoreCursors storeCursors) {
         this.context = context;
         this.mandatoryProperties = mandatoryProperties;
+        this.allowedTypes = allowedTypes;
         this.indexReaders = context.indexAccessors.readers();
         this.indexes = indexes;
         this.cursorContext = cursorContext;
         this.storeCursors = storeCursors;
     }
 
-    <ENTITY extends PrimitiveRecord> void checkContainsMandatoryProperties(
+    <ENTITY extends PrimitiveRecord> void checkExistenceAndTypeConstraints(
             ENTITY entity,
             long[] entityTokens,
             IntObjectMap<Value> values,
             Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reportSupplier) {
         if (entityTokens.length > 0) {
-            checkMandatoryProperties(entity, values, entityTokens, reportSupplier);
+            checkExistenceAndTypeConstraints(entity, values, entityTokens, reportSupplier);
         }
     }
 
@@ -179,25 +183,60 @@ class SchemaComplianceChecker implements AutoCloseable {
         }
     }
 
-    private <ENTITY extends PrimitiveRecord> void checkMandatoryProperties(
+    private <ENTITY extends PrimitiveRecord> void checkExistenceAndTypeConstraints(
             ENTITY entity,
             IntObjectMap<Value> seenProperties,
             long[] entityTokenIds,
             Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reporter) {
-        if (!mandatoryProperties.isEmpty()) {
-            reportedMissingMandatoryPropertyKeys = lightReplace(reportedMissingMandatoryPropertyKeys);
-            for (long entityToken : entityTokenIds) {
-                MutableIntSet mandatoryPropertyKeysForEntityToken = mandatoryProperties.get(toIntExact(entityToken));
-                if (mandatoryPropertyKeysForEntityToken != null) {
-                    MutableIntIterator iterator = mandatoryPropertyKeysForEntityToken.intIterator();
-                    while (iterator.hasNext()) {
-                        int mandatoryPropertyKeyForEntityToken = iterator.next();
-                        if (!seenProperties.containsKey(mandatoryPropertyKeyForEntityToken)
-                                && reportedMissingMandatoryPropertyKeys.add(mandatoryPropertyKeyForEntityToken)) {
-                            reporter.apply(entity).missingMandatoryProperty(mandatoryPropertyKeyForEntityToken);
-                        }
-                    }
-                }
+        if (mandatoryProperties.isEmpty() && allowedTypes.isEmpty()) {
+            return;
+        }
+
+        reportedMissingMandatoryPropertyKeys = lightReplace(reportedMissingMandatoryPropertyKeys);
+        reportedTypeViolationPropertyKeys = lightReplace(reportedTypeViolationPropertyKeys);
+        for (long entityToken : entityTokenIds) {
+            int token = toIntExact(entityToken);
+
+            IntSet mandatoryPropertyKeysForEntityToken = mandatoryProperties.get(token);
+            if (mandatoryPropertyKeysForEntityToken != null) {
+                checkPropertyExistence(entity, seenProperties, reporter, mandatoryPropertyKeysForEntityToken);
+            }
+
+            IntObjectMap<PropertyTypeSet> allowedTypesByPropertyKey = allowedTypes.get(token);
+            if (allowedTypesByPropertyKey != null) {
+                checkPropertyTypes(entity, seenProperties, reporter, allowedTypesByPropertyKey);
+            }
+        }
+    }
+
+    private <ENTITY extends PrimitiveRecord> void checkPropertyExistence(
+            ENTITY entity,
+            IntObjectMap<Value> seenProperties,
+            Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reporter,
+            IntSet mandatoryPropertyKeysForEntityToken) {
+        IntIterator iterator = mandatoryPropertyKeysForEntityToken.intIterator();
+        while (iterator.hasNext()) {
+            int mandatoryPropertyKeyForEntityToken = iterator.next();
+            if (!seenProperties.containsKey(mandatoryPropertyKeyForEntityToken)
+                    && reportedMissingMandatoryPropertyKeys.add(mandatoryPropertyKeyForEntityToken)) {
+                reporter.apply(entity).missingMandatoryProperty(mandatoryPropertyKeyForEntityToken);
+            }
+        }
+    }
+
+    private <ENTITY extends PrimitiveRecord> void checkPropertyTypes(
+            ENTITY entity,
+            IntObjectMap<Value> seenProperties,
+            Function<ENTITY, ConsistencyReport.PrimitiveConsistencyReport> reporter,
+            IntObjectMap<PropertyTypeSet> allowedTypesByPropertyKey) {
+        for (var property : allowedTypesByPropertyKey.keyValuesView()) {
+            var propertyKey = property.getOne();
+            var allowedTypes = property.getTwo();
+            var propertyValue = seenProperties.get(propertyKey);
+            if (propertyValue != null
+                    && !allowedTypes.valueIsOfTypes(propertyValue)
+                    && reportedTypeViolationPropertyKeys.add(propertyKey)) {
+                reporter.apply(entity).typeConstraintViolation(propertyKey);
             }
         }
     }

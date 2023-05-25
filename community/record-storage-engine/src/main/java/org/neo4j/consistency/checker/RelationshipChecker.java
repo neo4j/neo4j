@@ -29,8 +29,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.neo4j.consistency.checking.ConsistencyFlags;
 import org.neo4j.consistency.checking.cache.CacheAccess;
@@ -43,6 +43,7 @@ import org.neo4j.internal.helpers.progress.ProgressListener;
 import org.neo4j.internal.recordstorage.RelationshipCounter;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.PropertySchemaType;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.impl.index.schema.EntityTokenRange;
@@ -69,11 +70,15 @@ class RelationshipChecker implements Checker {
     private final RecordLoading recordLoader;
     private final CountsState observedCounts;
     private final CheckerContext context;
-    private final MutableIntObjectMap<MutableIntSet> mandatoryProperties;
+    private final IntObjectMap<? extends IntSet> mandatoryProperties;
+    private final IntObjectMap<? extends IntObjectMap<PropertyTypeSet>> allowedTypes;
     private final List<IndexDescriptor> indexes;
     private final ProgressListener progress;
 
-    RelationshipChecker(CheckerContext context, MutableIntObjectMap<MutableIntSet> mandatoryProperties) {
+    RelationshipChecker(
+            CheckerContext context,
+            IntObjectMap<? extends IntSet> mandatoryProperties,
+            IntObjectMap<? extends IntObjectMap<PropertyTypeSet>> allowedTypes) {
         this.context = context;
         this.neoStores = context.neoStores;
         this.execution = context.execution;
@@ -83,6 +88,7 @@ class RelationshipChecker implements Checker {
         this.recordLoader = context.recordLoader;
         this.observedCounts = context.observedCounts;
         this.mandatoryProperties = mandatoryProperties;
+        this.allowedTypes = allowedTypes;
         this.indexes = context.indexSizes.smallIndexes(RELATIONSHIP);
         this.progress = context.progressReporter(
                 this,
@@ -128,7 +134,7 @@ class RelationshipChecker implements Checker {
                         fromRelationshipId, toRelationshipId, checkToEndOfIndex, cursorContext);
                 SafePropertyChainReader property = new SafePropertyChainReader(context, cursorContext);
                 SchemaComplianceChecker schemaComplianceChecker = new SchemaComplianceChecker(
-                        context, mandatoryProperties, indexes, cursorContext, storeCursors);
+                        context, mandatoryProperties, allowedTypes, indexes, cursorContext, storeCursors);
                 var localProgress = progress.threadLocalReporter();
                 var freeIdsIterator = firstRound
                         ? context.neoStores
@@ -225,7 +231,7 @@ class RelationshipChecker implements Checker {
                     boolean propertyChainIsOk =
                             property.read(propertyValues, relationshipRecord, reporter::forRelationship, storeCursors);
                     if (propertyChainIsOk) {
-                        schemaComplianceChecker.checkContainsMandatoryProperties(
+                        schemaComplianceChecker.checkExistenceAndTypeConstraints(
                                 relationshipRecord, typeHolder, propertyValues, reporter::forRelationship);
                         // Here only the very small indexes (or indexes that we can't read the values from, like
                         // fulltext indexes)
