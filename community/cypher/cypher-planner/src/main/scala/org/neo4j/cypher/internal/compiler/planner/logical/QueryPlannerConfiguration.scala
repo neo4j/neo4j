@@ -90,16 +90,16 @@ object QueryPlannerConfiguration {
     relationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
     // MATCH ()-[r:R|S]->()
-    unionRelationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
-
-    // MATCH ()-[r]->()
-    allRelationshipsScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners)
+    unionRelationshipTypeScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners)
   )
 
   private def allLeafPlanners(restrictions: LeafPlanRestrictions): IndexedSeq[LeafPlanner] = {
     val innerOrLeafPlanners = leafPlannersUsedInOrLeafPlanner(restrictions)
     innerOrLeafPlanners ++ IndexedSeq(
       argumentLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
+
+      // MATCH ()-[r]->()
+      allRelationshipsScanLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
 
       // MATCH (n) RETURN n
       allNodesLeafPlanner(restrictions.symbolsThatShouldOnlyUseIndexSeekLeafPlanners),
