@@ -368,22 +368,21 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
       disjunction.predicates.map { predicate =>
         val qgForExpression = predicate.addToQueryGraph(qgWithRelatedPredicates)
 
-        // Obtain plans for each for the query graph with this expression added
-        val innerLeafPlans = inner.flatMap(_(qgForExpression, innerInterestingOrderConfig, context)).distinct
-        // Apply selections on top of the leaf plans.
-        val innerPlansWithSelections =
-          innerLeafPlans.map(select(_, qgForExpression, innerInterestingOrderConfig, context))
+        // Obtain plans for the query graph with this expression added
+        val innerLeafPlans = inner
+          .flatMap(_(qgForExpression, innerInterestingOrderConfig, context)).distinct
+          // Apply selections on top of the leaf plans.
+          .map(select(_, qgForExpression, innerInterestingOrderConfig, context))
+          // Only keep a plan if it actually solves the predicate from the disjunction
+          .filter(plan => predicate.containedIn(solvedQueryGraph(plan)))
 
         // This is a Seq of possible solutions per expression
         // We really only want the best option
         pickBest(
-          innerPlansWithSelections,
+          innerLeafPlans,
           leafPlanHeuristic(context),
           s"best plan for $predicate from disjunction $disjunction"
-        )
-          // Only keep a plan if it actually solves the predicate from the disjunction
-          .filter(plan => predicate.containedIn(solvedQueryGraph(plan)))
-          .toArray
+        ).toArray
       }.toArray
     }
 
