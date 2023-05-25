@@ -20,8 +20,6 @@
 package org.neo4j.cypher.internal.compiler.helpers
 
 import org.neo4j.cypher.internal.ast.semantics.ExpressionTypeInfo
-import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.combineHasLabels
-import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder
@@ -31,7 +29,6 @@ import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
-import org.neo4j.cypher.internal.rewriting.rewriters.HasLabelsAndHasTypeNormalizer
 import org.neo4j.cypher.internal.util.Cardinality
 import org.neo4j.cypher.internal.util.EffectiveCardinality
 import org.neo4j.cypher.internal.util.InputPosition
@@ -55,14 +52,6 @@ class LogicalPlanBuilder(wholePlan: Boolean = true, resolver: Resolver = new Log
   }
 
   def fakeLeafPlan(args: String*): LogicalPlanBuilder = appendAtCurrentIndent(LeafOperator(FakeLeafPlan(args.toSet)(_)))
-
-  private val hasLabelsAndHasTypeNormalizer = new HasLabelsAndHasTypeNormalizer {
-    override def isNode(expr: Expression): Boolean = semanticTable.isNodeNoFail(expr)
-    override def isRelationship(expr: Expression): Boolean = semanticTable.isRelationshipNoFail(expr)
-  }
-
-  override protected def rewriteExpression(expr: Expression): Expression =
-    expr.endoRewrite(hasLabelsAndHasTypeNormalizer).endoRewrite(combineHasLabels)
 
   def withCardinality(x: Double): LogicalPlanBuilder = {
     cardinalities.set(idOfLastPlan, Cardinality(x))

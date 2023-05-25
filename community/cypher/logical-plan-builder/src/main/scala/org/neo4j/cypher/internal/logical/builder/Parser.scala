@@ -87,7 +87,6 @@ object Parser {
   )(in).asInstanceOf[T]
 
   private val regex = s"(.+) [Aa][Ss] (.+)".r
-  private val parser = new Parser
 
   def parseProjections(projections: String*): Map[String, Expression] = {
     projections.map {
@@ -95,15 +94,6 @@ object Parser {
       case x => throw new IllegalArgumentException(s"'$x' cannot be parsed as a projection")
     }.toMap
   }
-
-  def parseExpression(text: String): Expression = parser.parseExpression(text)
-
-  def parseProcedureCall(text: String): UnresolvedCall = parser.parseProcedureCall(text)
-
-  def unapply(arg: String): Option[Expression] = Some(parser.parseExpression(arg))
-}
-
-private class Parser {
 
   def parseExpression(text: String): Expression = {
     val expression = JavaccRule.Expression.apply(text)
@@ -117,4 +107,6 @@ private class Parser {
       case c                 => throw new IllegalArgumentException(s"Expected UnresolvedCall but got: $c")
     }
   }
+
+  def unapply(arg: String): Option[Expression] = Some(parseExpression(arg))
 }

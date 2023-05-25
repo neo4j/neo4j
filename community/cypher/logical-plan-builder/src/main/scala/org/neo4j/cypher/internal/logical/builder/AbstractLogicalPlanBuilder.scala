@@ -230,18 +230,22 @@ import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.UserFunctionSignature
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.rewriting.rewriters.HasLabelsAndHasTypeNormalizer
+import org.neo4j.cypher.internal.rewriting.rewriters.combineHasLabels
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InputPosition.NONE
 import org.neo4j.cypher.internal.util.LabelId
 import org.neo4j.cypher.internal.util.PropertyKeyId
 import org.neo4j.cypher.internal.util.RelTypeId
 import org.neo4j.cypher.internal.util.Repetition
+import org.neo4j.cypher.internal.util.Rewritable.RewritableAny
 import org.neo4j.cypher.internal.util.Rewriter
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.attribution.Id
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.util.inSequence
 import org.neo4j.cypher.internal.util.symbols.CTAny
 import org.neo4j.cypher.internal.util.symbols.CypherType
 import org.neo4j.cypher.internal.util.topDown
@@ -960,7 +964,9 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   private def projectionWithDiscard(projectExpressions: Map[String, Expression], discard: Set[String]): IMPL = {
     appendAtCurrentIndent(UnaryOperator(lp => {
-      val rewrittenProjections = projectExpressions.map { case (name, expr) => name -> rewriteExpression(expr) }
+      val rewrittenProjections = projectExpressions.map { case (name, expr) =>
+        name -> expr.endoRewrite(expressionRewriter)
+      }
       projectExpressions.foreach { case (name, expr) => newAlias(varFor(name), expr) }
       Projection(lp, discard, rewrittenProjections)(_)
     }))
@@ -1812,10 +1818,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => AntiConditionalApply(lhs, rhs, items)(_)))
 
   def selectOrSemiApply(predicateString: String): IMPL = {
-    val predicate = parseExpression(predicateString)
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
-      val rewrittenPredicate = rewriteExpression(predicate)
-      SelectOrSemiApply(lhs, rhs, rewrittenPredicate)(_)
+      SelectOrSemiApply(lhs, rhs, parseExpression(predicateString))(_)
     }))
   }
 
@@ -1823,26 +1827,20 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => SelectOrSemiApply(lhs, rhs, predicate)(_)))
 
   def selectOrAntiSemiApply(predicateString: String): IMPL = {
-    val predicate = parseExpression(predicateString)
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
-      val rewrittenPredicate = rewriteExpression(predicate)
-      SelectOrAntiSemiApply(lhs, rhs, rewrittenPredicate)(_)
+      SelectOrAntiSemiApply(lhs, rhs, parseExpression(predicateString))(_)
     }))
   }
 
   def letSelectOrSemiApply(idName: String, predicateString: String): IMPL = {
-    val predicate = parseExpression(predicateString)
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
-      val rewrittenPredicate = rewriteExpression(predicate)
-      LetSelectOrSemiApply(lhs, rhs, idName, rewrittenPredicate)(_)
+      LetSelectOrSemiApply(lhs, rhs, idName, parseExpression(predicateString))(_)
     }))
   }
 
   def letSelectOrAntiSemiApply(idName: String, predicateString: String): IMPL = {
-    val predicate = parseExpression(predicateString)
     appendAtCurrentIndent(BinaryOperator((lhs, rhs) => {
-      val rewrittenPredicate = rewriteExpression(predicate)
-      LetSelectOrAntiSemiApply(lhs, rhs, idName, rewrittenPredicate)(_)
+      LetSelectOrAntiSemiApply(lhs, rhs, idName, parseExpression(predicateString))(_)
     }))
   }
 
@@ -2034,10 +2032,8 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def filter(predicateStrings: String*): IMPL = {
-    val predicates = predicateStrings.map(parseExpression)
     appendAtCurrentIndent(UnaryOperator(lp => {
-      val rewrittenPredicates = predicates.map(rewriteExpression)
-      Selection(rewrittenPredicates, lp)(_)
+      Selection(predicateStrings.map(parseExpression), lp)(_)
     }))
   }
 
@@ -2052,16 +2048,15 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
   }
 
   def filterExpressionOrString(predicateExpressionsOrStrings: AnyRef*): IMPL = {
-    val predicates = predicateExpressionsOrStrings.map {
-      case s: String     => parseExpression(s)
-      case e: Expression => e
-      case other => throw new IllegalArgumentException(
-          s"Expected Expression or String, got [${other.getClass.getSimpleName}] $other}"
-        )
-    }
     appendAtCurrentIndent(UnaryOperator(lp => {
-      val rewrittenPredicates = predicates.map(rewriteExpression)
-      Selection(rewrittenPredicates, lp)(_)
+      val predicates = predicateExpressionsOrStrings.map {
+        case s: String     => parseExpression(s)
+        case e: Expression => e.endoRewrite(expressionRewriter)
+        case other => throw new IllegalArgumentException(
+            s"Expected Expression or String, got [${other.getClass.getSimpleName}] $other}"
+          )
+      }
+      Selection(predicates, lp)(_)
     }))
   }
 
@@ -2276,10 +2271,14 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     variables
   }
 
-  /**
-   * Allows implementations to rewrite expressions using contextual information
-   */
-  protected def rewriteExpression(expr: Expression): Expression = expr
+  private val hasLabelsAndHasTypeNormalizer = new HasLabelsAndHasTypeNormalizer {
+    override def isNode(expr: Expression): Boolean = semanticTable.isNodeNoFail(expr)
+
+    override def isRelationship(expr: Expression): Boolean = semanticTable.isRelationshipNoFail(expr)
+  }
+
+  protected def expressionRewriter: Rewriter =
+    inSequence(hasLabelsAndHasTypeNormalizer, combineHasLabels)
 
   /**
    * Returns the finalized output of the builder.
@@ -2288,11 +2287,11 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
 
   // HELPERS
   private def parseExpression(expression: String): Expression = {
-    Parser.parseExpression(expression) match {
+    (Parser.parseExpression(expression) match {
       case f: FunctionInvocation if f.needsToBeResolved =>
         ResolvedFunctionInvocation(resolver.functionSignature)(f).coerceArguments
       case e => e
-    }
+    }).endoRewrite(expressionRewriter)
   }
 
   protected def appendAtCurrentIndent(operatorBuilder: OperatorBuilder): IMPL = {
