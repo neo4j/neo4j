@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.RepeatPathStep
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.ir.EagernessReason
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
@@ -38,6 +39,7 @@ import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
 import org.neo4j.cypher.internal.util.UpperBound
 import org.neo4j.cypher.internal.util.UpperBound.Unlimited
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
+import org.neo4j.exceptions.SyntaxException
 
 import scala.collection.immutable.ListSet
 
@@ -918,28 +920,10 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
          |MATCH (n)-[r:R WHERE r.prop > 123]->{2,5}(m)
          |RETURN n, m
          |""".stripMargin
-
     val plan = planner.plan(query).stripProduceResults
-    val `(n)-[r:R WHERE r.prop > 123]->{2,5}(m)` = TrailParameters(
-      min = 2,
-      max = UpperBound.Limited(5),
-      start = "n",
-      end = "m",
-      innerStart = "anon_0",
-      innerEnd = "anon_1",
-      groupNodes = Set(),
-      groupRelationships = Set(("r", "r")),
-      innerRelationships = Set("r"),
-      previouslyBoundRelationships = Set(),
-      previouslyBoundRelationshipGroups = Set(),
-      reverseGroupVariableProjections = false
-    )
 
     plan shouldBe planner.subPlanBuilder()
-      .trail(`(n)-[r:R WHERE r.prop > 123]->{2,5}(m)`)
-      .|.filterExpressionOrString("r.prop > 123", isRepeatTrailUnique("r"))
-      .|.expandAll("(anon_0)-[r:R]->(anon_1)")
-      .|.argument("anon_0")
+      .expand("(n)-[r:R*2..5]->(m)", relationshipPredicates = Seq(Predicate("r", "r.prop > 123")))
       .allNodeScan("n")
       .build()
   }
@@ -1538,70 +1522,167 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       .build()
   }
 
-  test("Should plan VarExpand instead of Trail on quantified path pattern with relationship type predicate") {
-    val query = "MATCH (a) ((b)-[r:R]->(c))+ (d) RETURN r"
+  test(
+    "Should not plan VarExpand instead of Trail on quantified path pattern with pre-filter predicate that has no dependencies"
+  ) {
+    val query = "MATCH (a) ((n)-[r]->(m) WHERE 1 = true)+ (b) RETURN r"
     val plan = planner.plan(query).stripProduceResults
-
-    plan shouldEqual planner.subPlanBuilder()
-      .expandAll("(a)-[r:R*1..]->(d)")
-      .allNodeScan("a")
-      .build()
-  }
-
-  test("Should plan Trail on quantified path pattern with multiple relationship type predicates") {
-    val query = "MATCH (a) ((b)-[r:R&T]->(c))+ (d) RETURN r"
-    val plan = planner.plan(query).stripProduceResults
-    val `(a) ((b)-[r:R&T]->(c))+ (d)` =
+    val `(a) ((n)-[r]-(m))+ (b)` =
       TrailParameters(
         min = 1,
         max = UpperBound.Unlimited,
         start = "a",
-        end = "d",
-        innerStart = "b",
-        innerEnd = "c",
+        end = "b",
+        innerStart = "n",
+        innerEnd = "m",
         groupNodes = Set.empty,
         groupRelationships = Set(("r", "r")),
         innerRelationships = Set("r"),
-        previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty,
+        previouslyBoundRelationships = Set(),
+        previouslyBoundRelationshipGroups = Set(),
         reverseGroupVariableProjections = false
       )
 
     plan shouldEqual planner.subPlanBuilder()
-      .trail(`(a) ((b)-[r:R&T]->(c))+ (d)`)
-      .|.filterExpressionOrString("r:R", "r:T", isRepeatTrailUnique("r"))
-      .|.expandAll("(b)-[r]->(c)")
-      .|.argument("b")
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpression(isRepeatTrailUnique("r"))
+      .|.expandAll("(n)-[r]->(m)")
+      .|.filter("1 = true")
+      .|.argument("n")
+      .filter("1 = true")
       .allNodeScan("a")
       .build()
   }
 
   test(
-    "Should not plan VarExpand instead of Trail on quantified path patterns with predicate"
+    "Should not plan VarExpand instead of Trail on quantified path pattern with pre-filter predicate that has inner node variable dependency"
   ) {
-    val query = "MATCH (a)(()-[r WHERE r.prop > 5]->()){2,3}(c) RETURN *"
+    val query = "MATCH (a) ((n)-[r]->(m) WHERE n.p = 1)+ (b) RETURN r"
     val plan = planner.plan(query).stripProduceResults
-    val `(a)(()-[r WHERE r.prop > 5]->()){2,3}(c)` =
+    val `(a) ((n)-[r]-(m))+ (b)` =
       TrailParameters(
-        min = 2,
-        max = UpperBound.Limited(3),
+        min = 1,
+        max = UpperBound.Unlimited,
         start = "a",
-        end = "c",
-        innerStart = "anon_0",
-        innerEnd = "anon_1",
+        end = "b",
+        innerStart = "n",
+        innerEnd = "m",
         groupNodes = Set.empty,
         groupRelationships = Set(("r", "r")),
         innerRelationships = Set("r"),
-        previouslyBoundRelationships = Set.empty,
-        previouslyBoundRelationshipGroups = Set.empty,
+        previouslyBoundRelationships = Set(),
+        previouslyBoundRelationshipGroups = Set(),
         reverseGroupVariableProjections = false
       )
 
     plan shouldEqual planner.subPlanBuilder()
-      .trail(`(a)(()-[r WHERE r.prop > 5]->()){2,3}(c)`)
-      .|.filterExpressionOrString("r.prop > 5", isRepeatTrailUnique("r"))
-      .|.expandAll("(anon_0)-[r]->(anon_1)")
-      .|.argument("anon_0")
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpression(isRepeatTrailUnique("r"))
+      .|.expandAll("(n)-[r]->(m)")
+      .|.filter("n.p = 1")
+      .|.argument("n")
+      .filter("a.p = 1")
+      .allNodeScan("a")
+      .build()
+  }
+
+  test(
+    "Should not plan VarExpand instead of Trail on quantified path pattern with pre-filter predicate that has inner relationship dependency"
+  ) {
+    val query = "MATCH (a) ((n)-[r]->(m) WHERE r.p = 1)+ (b) RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("r", "r.p = 1")))
+      .allNodeScan("a")
+      .build()
+  }
+
+  // Unlocked by https://trello.com/c/XexwQoc1/1384-allow-non-local-predicates-in-qpps
+  test(
+    "Should plan VarExpand instead of Trail on quantified path pattern with predicates that has non-local variable dependency (but doesn't currently)"
+  ) {
+    val query = s"MATCH (a) ((n)-[r]->(m) WHERE r.p = a.p)+ (b) RETURN r"
+    val exception = the[SyntaxException] thrownBy planner.plan(query)
+    exception.getMessage should startWith(
+      "From within a quantified path pattern, one may only reference variables, that are already bound in a previous `MATCH` clause."
+    )
+  }
+
+  test(
+    "Should plan VarExpand instead of Trail on quantified path pattern with predicates that has dependency on variables from previous clauses"
+  ) {
+    val query = s"MATCH (z) MATCH (a) ((n)-[r]->(m) WHERE r.p = z.p)+ (b) RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+
+    plan shouldEqual planner.subPlanBuilder()
+      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("r", "r.p = cacheN[z.p]")))
+      .apply()
+      .|.allNodeScan("a", "z")
+      .cacheProperties("cacheNFromStore[z.p]")
+      .allNodeScan("z")
+      .build()
+  }
+
+  case class RelationshipPredicate(
+    queryPredicate: String,
+    plannedType: String,
+    plannedPredicates: Predicate*
+  )
+
+  Seq(
+    RelationshipPredicate(":R", ":R"),
+    RelationshipPredicate(":%", ""),
+    RelationshipPredicate(":%|R", ""),
+    RelationshipPredicate(":R|T", ":R|T"),
+    RelationshipPredicate("{p: 0}", "", Predicate("r", "r.p = 0")),
+    RelationshipPredicate("WHERE r.p = 0", "", Predicate("r", "r.p = 0")),
+    RelationshipPredicate("WHERE r.p <> 0", "", Predicate("r", "NOT r.p = 0")),
+    RelationshipPredicate("WHERE r.p <= 0", "", Predicate("r", "r.p <= 0")),
+    RelationshipPredicate("WHERE NOT r.p = 0", "", Predicate("r", "NOT r.p = 0")),
+    RelationshipPredicate("WHERE r.p IN [0, 1, 2]", "", Predicate("r", "r.p IN [0, 1, 2]")),
+    RelationshipPredicate("WHERE r.p IS NULL", "", Predicate("r", "r.p IS NULL")),
+    RelationshipPredicate("WHERE r.p IS NOT NULL", "", Predicate("r", "r.p IS NOT NULL")),
+    RelationshipPredicate("WHERE r.p = 0 OR r.pp IS NOT NULL", "", Predicate("r", "r.p = 0 OR r.pp IS NOT NULL")),
+    RelationshipPredicate("WHERE r.p = 0 OR NOT r.pp = 0", "", Predicate("r", "r.p = 0 OR NOT r.pp = 0")),
+    RelationshipPredicate("WHERE r.p = 0 AND r.pp = 0", "", Predicate("r", "r.p = 0"), Predicate("r", "r.pp = 0")),
+    RelationshipPredicate("WHERE r = 0", "", Predicate("r", "r = 0")),
+    RelationshipPredicate("WHERE r IS NOT NULL", "", Predicate("r", "r IS NOT NULL")),
+    RelationshipPredicate("WHERE r.p = 0 AND r IS NULL", "", Predicate("r", "r.p = 0"), Predicate("r", "r IS NULL"))
+  ).foreach { case RelationshipPredicate(queryPredicate, plannedType, plannedPredicates @ _*) =>
+    test(
+      s"Should plan VarExpand instead of Trail on quantified path pattern with relationship type predicate ${queryPredicate}"
+    ) {
+      val query = s"MATCH (a) ((n)-[r ${queryPredicate}]->(m))+ (b) RETURN r"
+      val plan = planner.plan(query).stripProduceResults
+      plan shouldEqual planner.subPlanBuilder()
+        .expand(s"(a)-[r${plannedType}*1..]->(b)", relationshipPredicates = plannedPredicates)
+        .allNodeScan("a")
+        .build()
+    }
+
+    test(
+      s"Should plan VarExpand instead of Trail on quantified relationship with relationship type predicate ${queryPredicate}"
+    ) {
+      val query = s"MATCH (a)-[r ${queryPredicate}]->+(b) RETURN r"
+      val plan = planner.plan(query).stripProduceResults
+
+      plan shouldEqual planner.subPlanBuilder()
+        .expand(s"(a)-[r${plannedType}*1..]->(b)", relationshipPredicates = plannedPredicates.toList)
+        .allNodeScan("a")
+        .build()
+    }
+  }
+
+  test("Should plan VarExpand instead of Trail on quantified path pattern with post-filter relationship predicate") {
+    val query = "MATCH (a) ((n)-[r]->(m))+ (b) WHERE all(x IN r WHERE x.p = 0 AND x:R) RETURN r"
+    val plan = planner.plan(query).stripProduceResults
+    plan shouldEqual planner.subPlanBuilder()
+      .filterExpressionOrString(
+        allInList(varFor("x"), varFor("r"), hasTypes("x", "R")),
+        allInList(varFor("x"), varFor("r"), equals(prop("x", "p"), literalInt(0)))
+      )
+      .expand("(a)-[r*1..]->(b)")
       .allNodeScan("a")
       .build()
   }

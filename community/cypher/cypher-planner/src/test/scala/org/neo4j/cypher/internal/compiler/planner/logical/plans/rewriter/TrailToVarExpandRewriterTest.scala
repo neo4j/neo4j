@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSup
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.UpperBound.Limited
@@ -155,40 +156,111 @@ class TrailToVarExpandRewriterTest extends CypherFunSuite with LogicalPlanningTe
     preserves(trail)
   }
 
-  // although the relationship has a predicate, it is a predicate which is also expressible with VarExpand
-  test("Rewrites MATCH (a) ((n)-[r:R]->(m))+ (b) RETURN 1 AS s") {
+  // pre-filter predicate with no dependency
+  test("Preserves MATCH (a) ((n)-[r]->(m) WHERE 1 = true)+ (b) RETURN 1 AS s") {
     val trail = subPlanBuilder
       .projection(project = Seq("1 AS s"), discard = Set("a", "b", "r"))
       .trail(`(a) ((n)-[r]-(m))+ (b)`)
       .|.filterExpression(isRepeatTrailUnique("r"))
-      .|.expand("(n)-[r:R]->(m)")
+      .|.expand("(n)-[r]->(m)")
+      .|.filter("1 = true")
       .|.argument("n")
-      .allNodeScan("a")
-      .build()
-    val expand = subPlanBuilder
-      .projection(project = Seq("1 AS s"), discard = Set("a", "b", "r"))
-      .expand("(a)-[r:R*1..]->(b)")
-      .allNodeScan("a")
-      .build()
-    rewrites(trail, expand)
-  }
-
-  // TODO: should be possible, follow-up with this in next PR
-  // relationship variable r has a predicate
-  test("Preserves MATCH (a) ((n)-[r {p: 1}]->(m))+ (b) RETURN 1 AS s") {
-    val trail = subPlanBuilder
-      .projection(project = Seq("1 AS s"), discard = Set("a", "b", "r"))
-      .trail(`(a) ((n)-[r]-(m))+ (b)`)
-      .|.filterExpression(isRepeatTrailUnique("r"))
-      .|.filter("r.p = 1")
-      .|.expandAll("(n)-[r]->(m)")
-      .|.argument("n")
+      .filter("1 = true")
       .allNodeScan("a")
       .build()
     preserves(trail)
   }
 
-  // relationship type predicate in post-filter position
+  // pre-filter predicate with inner relationship dependency
+  test("Rewrites MATCH (a) ((n)-[r]->(m) WHERE r.p = true)+ (b) RETURN 1 AS s") {
+    val trail = subPlanBuilder
+      .projection(project = Seq("1 AS s"), discard = Set("a", "b", "r"))
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpressionOrString("r.p = true", isRepeatTrailUnique("r"))
+      .|.expand("(n)-[r]->(m)")
+      .|.argument("n")
+      .allNodeScan("a")
+      .build()
+    val expand = subPlanBuilder
+      .projection(project = Seq("1 AS s"), discard = Set("a", "b", "r"))
+      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("r", "r.p = true")))
+      .allNodeScan("a")
+      .build()
+    rewrites(trail, expand)
+  }
+
+  // pre-filter predicate with inner node dependency
+  test("Preserves MATCH (a) ((n)-[r]->(m) WHERE n.p = true)+ (b) RETURN 1 AS s") {
+    val trail = subPlanBuilder
+      .projection(project = Seq("1 AS s"), discard = Set("a", "b", "r"))
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpression(isRepeatTrailUnique("r"))
+      .|.expand("(n)-[r]->(m)")
+      .|.filter("n.p = true")
+      .|.argument("n")
+      .filter("a.p = true")
+      .allNodeScan("a")
+      .build()
+    preserves(trail)
+  }
+
+  // pre-filter predicate with dependency on variable from previous clause
+  test("Rewrites MATCH (z) MATCH (a) ((n)-[r]->(m) WHERE r.p = z.p)+ (b) RETURN 1 AS s") {
+    val trail = subPlanBuilder
+      .projection(project = Seq("1 AS s"), discard = Set("z", "a", "b", "r"))
+      .apply()
+      .|.trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.|.filterExpressionOrString("r.p = cacheN[z.p]", isRepeatTrailUnique("r"))
+      .|.|.expandAll("(n)-[r]->(m)")
+      .|.|.argument("n", "z")
+      .|.allNodeScan("a", "z")
+      .cacheProperties("cacheNFromStore[z.p]")
+      .allNodeScan("z")
+      .build()
+    val expand = subPlanBuilder
+      .projection(project = Seq("1 AS s"), discard = Set("z", "a", "b", "r"))
+      .apply()
+      .|.expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("r", "r.p = cacheN[z.p]")))
+      .|.allNodeScan("a", "z")
+      .cacheProperties("cacheNFromStore[z.p]")
+      .allNodeScan("z")
+      .build()
+    rewrites(trail, expand)
+  }
+
+  // pre-filter relationship type predicate
+  test("Rewrites MATCH (a) ((n)-[r:T]->(m))+ (b) RETURN 1 AS s") {
+    val trail = subPlanBuilder
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpression(isRepeatTrailUnique("r"))
+      .|.expand("(n)-[r:T]->(m)")
+      .|.argument("n")
+      .allNodeScan("a")
+      .build()
+    val expand = subPlanBuilder
+      .expand("(a)-[r:T*1..]->(b)")
+      .allNodeScan("a")
+      .build()
+    rewrites(trail, expand)
+  }
+
+  // pre-filter relationship property predicate
+  test(s"Rewrites MATCH (a) ((n)-[r WHERE r.p = 0]->(m))+ (b) RETURN 1 AS s") {
+    val trail = subPlanBuilder
+      .trail(`(a) ((n)-[r]-(m))+ (b)`)
+      .|.filterExpressionOrString("r.p = 0", isRepeatTrailUnique("r"))
+      .|.expand("(n)-[r]->(m)")
+      .|.argument("n")
+      .allNodeScan("a")
+      .build()
+    val expand = subPlanBuilder
+      .expand("(a)-[r*1..]->(b)", relationshipPredicates = Seq(Predicate("r", "r.p = 0")))
+      .allNodeScan("a")
+      .build()
+    rewrites(trail, expand)
+  }
+
+  // post-filter predicate
   test("Rewrites MATCH (a) ((n)-[r]->(m))+ (b) WHERE all(x IN r WHERE x:T) RETURN 1 AS s") {
     val trail = subPlanBuilder
       .projection(project = Seq("1 AS s"), discard = Set("a", "b", "r"))

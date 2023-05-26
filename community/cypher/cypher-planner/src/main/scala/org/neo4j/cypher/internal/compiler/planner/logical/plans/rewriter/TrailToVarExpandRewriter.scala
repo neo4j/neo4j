@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandAll
+import org.neo4j.cypher.internal.logical.plans.Expand.VariablePredicate
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Selection
 import org.neo4j.cypher.internal.logical.plans.Selection.LabelAndRelTypeInfo
@@ -48,9 +49,9 @@ import org.neo4j.cypher.internal.util.attribution.Attributes
 import org.neo4j.cypher.internal.util.attribution.SameId
 import org.neo4j.cypher.internal.util.topDown
 
-import scala.collection.immutable.ListSet
-
 /**
+ * This rewriter will sometimes transform a Trail into a VarExpand, like in the example below.
+ *
  * Before
  * .trail((a) ((n)-[r]->(m))+ (b))
  * .|.filter(isRepeatTrailUnique(r))
@@ -61,6 +62,13 @@ import scala.collection.immutable.ListSet
  * After
  * .expandAll((a)-[r*]->(b))
  * .lhs(a)
+ *
+ * Trail is more powerful than VarExpand, in the sense that Trail can do more things than VarExpand. We consider Trail
+ * and VarExpand to be equivalent when the following conditions are met:
+ *  - the Trail relationship pattern contains a single relationship
+ *  - the Trail node group variables are not used by downstream logical plans and thus empty
+ *  - the Trail inner node variables are not used during path expansion in any predicates
+ *  - the Trail quantifier can be converted losslessly from Long to Int
  *
  * This rewriter should run after [[RemoveUnusedNamedGroupVariablesPhase]], so that unused group variables are pruned.
  * This rewriter should run before [[pruningVarExpander]] so that the [[PruningVarExpand]] optimisation may take place.
@@ -76,7 +84,10 @@ case class TrailToVarExpandRewriter(
     Rewriter.lift {
       case trail @ Trail(
           _,
-          RewritableTrailRhs(expand),
+          RewritableTrailRhs(
+            expand,
+            relationshipPredicates
+          ),
           RewritableTrailQuantifier(quantifier),
           _,
           _,
@@ -89,7 +100,7 @@ case class TrailToVarExpandRewriter(
           _,
           _
         ) =>
-        val varExpand = createVarExpand(trail, expand, quantifier, relationship)
+        val varExpand = createVarExpand(trail, expand, quantifier, relationship, relationshipPredicates)
         val expandWithUniqueRel = maybeAddRelUniquenessPredicates(trail, relationship, varExpand)
         val expandWithUniqueGroupRel = maybeAddGroupRelUniquenessPredicates(trail, relationship, expandWithUniqueRel)
         expandWithUniqueGroupRel
@@ -102,7 +113,8 @@ case class TrailToVarExpandRewriter(
     trail: Trail,
     trailExpand: Expand,
     trailQuantifier: VarPatternLength,
-    trailRelationship: VariableGrouping
+    trailRelationship: VariableGrouping,
+    trailRelationshipPredicates: Seq[VariablePredicate]
   ): LogicalPlan = {
     def getProjectedDir: SemanticDirection = (trailExpand.dir, trail.reverseGroupVariableProjections) match {
       case (SemanticDirection.BOTH, false) => SemanticDirection.OUTGOING
@@ -122,7 +134,7 @@ case class TrailToVarExpandRewriter(
       length = trailQuantifier,
       mode = ExpandAll,
       nodePredicates = Seq.empty,
-      relationshipPredicates = Seq.empty
+      relationshipPredicates = trailRelationshipPredicates
     )(SameId(trail.id))
   }
 
@@ -203,14 +215,45 @@ object TrailToVarExpandRewriter {
 
   object RewritableTrailRhs {
 
-    def unapply(trailRhs: LogicalPlan): Option[Expand] = {
-      def isRelationshipUniquenessExpression(expressions: ListSet[Expression]): Boolean =
-        expressions.size == 1 && expressions.head.isInstanceOf[IsRepeatTrailUnique]
+    /**
+     * This extractor ensures it will never allow a non-rewritable case to be rewritten. The opposite is not
+     * true. This extractor will sometimes consider rewritable cases non-rewritable. We tolerate false
+     * negatives. This is a tradeoff between code complexity and performance, where we tolerate missing out on a few
+     * rare cases if it makes the code significantly more maintainable.
+     *
+     * This extractor relies on several properties of our compilation pipeline, which are not obvious at first.
+     *
+     * The first property we rely on has to do with the shape of the RHS of Trail. We assume that very few rewritable
+     * cases that survive planning will deviate from the following shape. As a reminder, we require all rewritable
+     * QPPs to have a single relationship chain with a single relationship.
+     *
+     * .trail(...)
+     * .|.filter(..., isRepeatTrailUnique(r))
+     * .|.expandAll(...)
+     * .|.argument(...)
+     * .lhs
+     *
+     * The second property we rely on has to do with the binding order of variables. QPP pre-filter predicates can
+     * contain references to variables of the same MATCH clause, as can VarExpand. During LogicalPlanning we are careful
+     * to order plans based on their dependencies on unbound variables. The variables that the Trail receives are
+     * therefor guaranteed to be solved. Because this rewriter just swaps a Trail for a VarExpand without changing its
+     * position in the overarching LogicalPlan, we do not need to worry about binding orders in our rewriter.
+     */
+    def unapply(trailRhs: LogicalPlan): Option[(Expand, Seq[VariablePredicate])] = {
+      def relationshipVariablePredicate(
+        innerRel: String,
+        innerNodes: Set[String]
+      ): PartialFunction[Expression, VariablePredicate] = {
+        case p if p.dependencies.map(_.name)(innerRel) && p.dependencies.map(_.name).intersect(innerNodes).isEmpty =>
+          VariablePredicate(Variable(innerRel)(InputPosition.NONE), p)
+      }
 
       trailRhs match {
-        case Selection(Ands(expressions), e @ Expand(_: Argument, _, _, _, _, _, ExpandAll))
-          if isRelationshipUniquenessExpression(expressions) =>
-          Some(e)
+        case Selection(Ands(predicates), expand @ Expand(_: Argument, from, _, _, to, relationship, ExpandAll)) =>
+          val rewritableCandidates = predicates.filterNot(_.isInstanceOf[IsRepeatTrailUnique])
+          val rewritable = rewritableCandidates.collect(relationshipVariablePredicate(relationship, Set(from, to)))
+          val allPredicatesAreRewritable = rewritableCandidates.size == rewritable.size
+          Option.when(allPredicatesAreRewritable)((expand, rewritable.toSeq))
         case _ => None
       }
     }
