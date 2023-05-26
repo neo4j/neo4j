@@ -231,6 +231,7 @@ public class BuiltInDbmsProcedures {
         return Stream.of(new StringResult(result));
     }
 
+    @Deprecated(since = "5.9.0")
     @Admin
     @SystemProcedure
     @Description("Report the current status of the system database sub-graph schema.")
@@ -244,6 +245,7 @@ public class BuiltInDbmsProcedures {
         return Stream.of(getAggregateUpgradeStatus(systemGraphComponents, resolver, transaction));
     }
 
+    @Deprecated(since = "5.9.0")
     @Admin
     @SystemProcedure
     @Description("Upgrade the system database schema if it is not the current schema.")
