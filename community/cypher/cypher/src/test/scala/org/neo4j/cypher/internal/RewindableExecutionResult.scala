@@ -28,13 +28,13 @@ import org.neo4j.cypher.internal.runtime.QueryStatistics
 import org.neo4j.cypher.internal.runtime.QueryTransactionalContext
 import org.neo4j.cypher.internal.runtime.RuntimeScalaValueConverter
 import org.neo4j.cypher.internal.runtime.isGraphKernelResultValue
-import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.graphdb.Entity
 import org.neo4j.graphdb.Notification
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QuerySubscription
 import org.neo4j.kernel.impl.query.RecordingQuerySubscriber
+import org.neo4j.kernel.impl.query.TransactionalContext
 
 import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.IterableHasAsScala
@@ -103,26 +103,8 @@ object RewindableExecutionResult {
   }
 
   def apply(
-    runtimeResult: RuntimeResult,
-    queryContext: QueryContext,
-    subscriber: RecordingQuerySubscriber
-  ): RewindableExecutionResult = {
-    try {
-      apply(
-        runtimeResult,
-        queryContext,
-        subscriber,
-        runtimeResult.fieldNames(),
-        NormalMode,
-        () => InternalPlanDescription.error("Can't get plan description from RuntimeResult"),
-        Set.empty,
-        Seq.empty
-      )
-    } finally runtimeResult.close()
-  }
-
-  def apply(
     result: QueryExecution,
+    transactionalContext: TransactionalContext,
     queryContext: QueryContext,
     subscriber: RecordingQuerySubscriber,
     internalNotification: Seq[Notification] = Seq.empty
@@ -143,10 +125,13 @@ object RewindableExecutionResult {
         notifications,
         internalNotification
       )
-    } finally result.cancel()
+    } finally {
+      result.cancel()
+      transactionalContext.close()
+    }
   }
 
-  def apply(
+  private def apply(
     subscription: QuerySubscription,
     queryContext: QueryContext,
     subscriber: RecordingQuerySubscriber,
@@ -156,30 +141,28 @@ object RewindableExecutionResult {
     notifications: Set[Notification],
     internalNotifications: Seq[Notification]
   ): RewindableExecutionResult = {
-    try {
-      subscription.request(Long.MaxValue)
-      subscriber.assertNoErrors()
-      subscription.await()
-      val result = new ArrayBuffer[Map[String, AnyRef]]()
-      subscriber.getOrThrow().asScala.foreach(record => {
-        val row = columns.zipWithIndex.map {
-          case (value, index) => {
-            val atIndex = scalaValues.asDeepScalaValue(queryContext.asObject(record(index))).asInstanceOf[AnyRef]
-            checkValidInput(queryContext.transactionalContext, atIndex)
-            value -> atIndex
-          }
+    subscription.request(Long.MaxValue)
+    subscriber.assertNoErrors()
+    subscription.await()
+    val result = new ArrayBuffer[Map[String, AnyRef]]()
+    subscriber.getOrThrow().asScala.foreach(record => {
+      val row = columns.zipWithIndex.map {
+        case (value, index) => {
+          val atIndex = scalaValues.asDeepScalaValue(queryContext.asObject(record(index))).asInstanceOf[AnyRef]
+          checkValidInput(queryContext.transactionalContext, atIndex)
+          value -> atIndex
         }
-        if (row.nonEmpty) result.append(row.toMap)
-      })
-      new RewindableExecutionResultImplementation(
-        columns,
-        result.toSeq,
-        executionMode,
-        planDescription(),
-        QueryStatistics(subscriber.queryStatistics()),
-        notifications ++ internalNotifications
-      )
-    } finally subscription.cancel()
+      }
+      if (row.nonEmpty) result.append(row.toMap)
+    })
+    new RewindableExecutionResultImplementation(
+      columns,
+      result.toSeq,
+      executionMode,
+      planDescription(),
+      QueryStatistics(subscriber.queryStatistics()),
+      notifications ++ internalNotifications
+    )
   }
 
   private def checkValidInput(context: QueryTransactionalContext, input: AnyRef): Unit = input match {
