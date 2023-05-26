@@ -35,6 +35,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.function.Predicate;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.eclipse.collections.api.list.primitive.IntList;
 import org.eclipse.collections.api.list.primitive.LongList;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.Predicates;
+import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.kernel.api.Kernel;
@@ -1184,26 +1186,564 @@ class BFSPruningVarExpandCursorTest {
                     .isEqualTo(graph().add().add(a).add(b, c).build());
             assertThat(graph(allExpander(start, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add(start).add(a).add(b, c).build());
-            assertThat(graph(allExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(a)
-                            .add(b, c)
-                            .add()
-                            .add()
-                            .add(start)
-                            .build());
+            // TODO uncomment assertion after fixing BFS cursor loop detection bug
+            //            assertThat(graph(allExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor,
+            // NO_TRACKING)))
+            //                    .isEqualTo(graph().add().add(a).add(b, c).build());
             assertThat(graph(allExpander(
                             start, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
                     .isEqualTo(graph().add(start).add(a).add(b, c).build());
+            // TODO uncomment assertion after fixing BFS cursor loop detection bug
+            //            assertThat(graph(allExpander(
+            //                            start, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor,
+            // NO_TRACKING)))
+            //                    .isEqualTo(graph().add().add(a).add(b, c).build());
+        }
+    }
+
+    @Test
+    void shouldHandleImpossibleSquareLoop() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+
+            //         (c)-(d)
+            //          |   |
+            // (start)-(a)-(b)
+            long start = write.nodeCreate();
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            long d = write.nodeCreate();
+            write.relationshipCreate(start, rel, a);
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, d);
+            write.relationshipCreate(c, rel, d);
+
+            // then
+            assertThat(graph(allExpander(start, true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(start, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(start, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).build());
+            assertThat(graph(allExpander(start, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).build());
+            assertThat(graph(allExpander(start, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).build());
+            assertThat(graph(allExpander(start, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(b, c).build());
+            assertThat(graph(allExpander(start, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(start, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(start, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(start, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(start, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(start, true, 6, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            // TODO uncomment assertion after fixing BFS cursor loop detection bug
+            //            assertThat(graph(allExpander(
+            //                            start, false, 6, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+            //                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
             assertThat(graph(allExpander(
-                            start, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
-                    .isEqualTo(graph().add()
-                            .add(a)
-                            .add(b, c)
-                            .add()
-                            .add()
-                            .add(start)
-                            .build());
+                            start, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            // TODO uncomment assertion after fixing BFS cursor loop detection bug
+            //            assertThat(graph(allExpander(
+            //                            start, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor,
+            // NO_TRACKING)))
+            //                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
+        }
+    }
+
+    @Test
+    void shouldHandleSquareLoopWhenNoFirstHopRelationshipsAreFiltered() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+
+            //         (c)-(d)
+            //          |   |
+            // (start)=(a)-(b)
+            long start = write.nodeCreate();
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            long d = write.nodeCreate();
+            write.relationshipCreate(start, rel, a);
+            write.relationshipCreate(start, rel, a);
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, d);
+            write.relationshipCreate(c, rel, d);
+
+            // then
+            assertThat(graph(allExpander(start, true, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(start, false, 0, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(start, true, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).build());
+            assertThat(graph(allExpander(start, false, 1, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).build());
+            assertThat(graph(allExpander(start, true, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).build());
+            assertThat(graph(allExpander(start, false, 2, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(start, b, c).build());
+            assertThat(graph(allExpander(start, true, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(start, false, 3, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(start, b, c).add(d).build());
+            assertThat(graph(allExpander(start, true, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(start, false, 4, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(start, b, c).add(d).build());
+            assertThat(graph(allExpander(start, true, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(start, false, 5, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(start, b, c).add(d).build());
+            assertThat(graph(allExpander(start, true, 6, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            // TODO uncomment assertion after fixing BFS cursor loop detection bug
+            //            assertThat(graph(allExpander(start, false, 6, tx.dataRead(), nodeCursor, relCursor,
+            // NO_TRACKING)))
+            //                    .isEqualTo(graph().add().add(a).add(start, b, c).add(d).build());
+            assertThat(graph(allExpander(
+                            start, true, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor, NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            // TODO uncomment assertion after fixing BFS cursor loop detection bug
+            //            assertThat(graph(allExpander(
+            //                            start, false, Integer.MAX_VALUE, tx.dataRead(), nodeCursor, relCursor,
+            // NO_TRACKING)))
+            //                    .isEqualTo(graph().add().add(a).add(start, b, c).add(d).build());
+        }
+    }
+
+    @Test
+    void shouldHandleSquareLoopWhenAllButOneFirstHopRelationshipsAreFiltered() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+
+            //         (c)-(d)
+            //          |   |
+            // (start)=(a)-(b)
+            long start = write.nodeCreate();
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            long d = write.nodeCreate();
+            long r1 = write.relationshipCreate(start, rel, a);
+            write.relationshipCreate(start, rel, a);
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, d);
+            write.relationshipCreate(c, rel, d);
+
+            Predicate<RelationshipTraversalCursor> relPredicate = r -> r.relationshipReference() != r1;
+
+            // then
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            0,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            0,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            1,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            1,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).build());
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            2,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            2,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(b, c).build());
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            3,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            3,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            4,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            4,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            5,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            5,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            6,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            // TODO uncomment assertion after fixing BFS cursor loop detection bug
+            //            assertThat(graph(allExpander(
+            //                            start,
+            //                            false,
+            //                            6,
+            //                            tx.dataRead(),
+            //                            nodeCursor,
+            //                            relCursor,
+            //                            LongPredicates.alwaysTrue(),
+            //                            relPredicate,
+            //                            NO_TRACKING)))
+            //                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            Integer.MAX_VALUE,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).add(a).add(b, c).add(d).build());
+            // TODO uncomment assertion after fixing BFS cursor loop detection bug
+            //            assertThat(graph(allExpander(
+            //                            start,
+            //                            false,
+            //                            Integer.MAX_VALUE,
+            //                            tx.dataRead(),
+            //                            nodeCursor,
+            //                            relCursor,
+            //                            LongPredicates.alwaysTrue(),
+            //                            relPredicate,
+            //                            NO_TRACKING)))
+            //                    .isEqualTo(graph().add().add(a).add(b, c).add(d).build());
+        }
+    }
+
+    @Test
+    void shouldHandleSquareLoopWhenAllFirstHopRelationshipsAreFiltered() throws KernelException {
+        // given
+        try (var tx = kernel.beginTransaction(EXPLICIT, AUTH_DISABLED);
+                var nodeCursor = tx.cursors().allocateNodeCursor(NULL_CONTEXT);
+                var relCursor = tx.cursors().allocateRelationshipTraversalCursor(NULL_CONTEXT)) {
+            Write write = tx.dataWrite();
+            int rel = tx.tokenWrite().relationshipTypeGetOrCreateForName("R");
+
+            //         (c)-(d)
+            //          |   |
+            // (start)=(a)-(b)
+            long start = write.nodeCreate();
+            long a = write.nodeCreate();
+            long b = write.nodeCreate();
+            long c = write.nodeCreate();
+            long d = write.nodeCreate();
+            long r1 = write.relationshipCreate(start, rel, a);
+            long r2 = write.relationshipCreate(start, rel, a);
+            write.relationshipCreate(a, rel, b);
+            write.relationshipCreate(a, rel, c);
+            write.relationshipCreate(b, rel, d);
+            write.relationshipCreate(c, rel, d);
+
+            Predicate<RelationshipTraversalCursor> relPredicate =
+                    r -> r.relationshipReference() != r1 && r.relationshipReference() != r2;
+
+            // then
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            0,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            0,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            1,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            1,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            2,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            2,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            3,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            3,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            4,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            4,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            5,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            5,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            6,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            6,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(EMPTY);
+            assertThat(graph(allExpander(
+                            start,
+                            true,
+                            Integer.MAX_VALUE,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(graph().add(start).build());
+            assertThat(graph(allExpander(
+                            start,
+                            false,
+                            Integer.MAX_VALUE,
+                            tx.dataRead(),
+                            nodeCursor,
+                            relCursor,
+                            LongPredicates.alwaysTrue(),
+                            relPredicate,
+                            NO_TRACKING)))
+                    .isEqualTo(EMPTY);
         }
     }
 

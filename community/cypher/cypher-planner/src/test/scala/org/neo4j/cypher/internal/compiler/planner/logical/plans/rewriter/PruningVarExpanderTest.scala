@@ -34,9 +34,6 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("simplest possible query that can use PruningVarExpand") {
-    // Simplest query:
-    // match (a)-[*2..3]-(b) return distinct b
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .expand("(from)-[*2..3]-(to)")
@@ -53,9 +50,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("simplest possible query that can use BFSPruningVarExpand") {
-    // Simplest query:
-    // match (a)-[*1..3]->(b) return distinct b
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .expand("(from)-[*1..3]->(to)")
@@ -71,7 +65,24 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("do use BFSPruningVarExpand for undirected search") {
+  test("do use BFSPruningVarExpand for undirected search when min depth is 0") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .expand("(from)-[*0..3]-(to)")
+      .allNodeScan("from")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("to AS to")
+      .bfsPruningVarExpand("(from)-[*0..3]-(to)")
+      .allNodeScan("from")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("do not use BFSPruningVarExpand for undirected search when min depth is 1") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .expand("(from)-[*1..3]-(to)")
@@ -80,7 +91,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
-      .bfsPruningVarExpand("(from)-[*1..3]-(to)")
+      .pruningVarExpand("(from)-[*1..3]-(to)")
       .allNodeScan("from")
       .build()
 
@@ -120,9 +131,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("query with distinct aggregation") {
-    // Simplest query:
-    // match (from)-[2..3]-(to) return count(distinct to)
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
       .expand("(from)-[*2..3]-(to)")
@@ -139,9 +147,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("query with distinct aggregation and BFSPruningVarExpand") {
-    // Simplest query:
-    // match (from)<-[1..3]-(to) return count(distinct to)
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq.empty, Seq("count(DISTINCT to) AS x"))
       .expand("(from)<-[*1..3]-(to)")
@@ -174,9 +179,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("Simple query that filters between expand and distinct") {
-    // Simplest query:
-    // match (a)-[*2..3]-(b:X) return distinct b
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .filter("to:X")
@@ -195,9 +197,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("Simple query that filters between expand and distinct and BFSPruningVarExpand") {
-    // Simplest query:
-    // match (a)-[*1..3]->(b:X) return distinct b
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .filter("to:X")
@@ -216,9 +215,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("Query that aggregates before making the result DISTINCT") {
-    // Simplest query:
-    // match (a)-[:R*1..3]-(b) with count(*) as count return distinct count
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .expand("(from)-[*1..3]-(to)")
@@ -229,9 +225,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("Double var expand with distinct result to both pruning") {
-    // Simplest query:
-    // match (a)-[:R*2..3]-(b)-[:T*2..3]-(c) return distinct c
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .expand("(b)-[:T*2..3]-(c)")
@@ -250,9 +243,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("Double var expand with distinct result to both BFSPruningVarExpand") {
-    // Simplest query:
-    // match (a)-[:R*1..3]->(b)-[:T*1..3]->(c) return distinct c
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .expand("(b)-[:T*1..3]->(c)")
@@ -271,9 +261,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("var expand followed by normal expand to first pruning") {
-    // Simplest query:
-    // match (a)-[:R*2..3]-(b)-[:T]-(c) return distinct c
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .expand("(b)-[:T]-(c)")
@@ -292,9 +279,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("var expand followed by normal expand to first BFSPruningVarExpand") {
-    // Simplest query:
-    // match (a)<-[:R*..3]-(b)<-[:T]-(c) return distinct c
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .expand("(b)<-[:T]-(c)")
@@ -313,9 +297,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("double var expand with grouping aggregation to one pruning") {
-    // Simplest query:
-    // match (a)-[r*2..]-(b) match (b)-[*2..3]-(c) return c, min(size(r))
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("c AS c"), Seq("min(size(r)) AS distance"))
       .expand("(b)-[*2..3]-(c)")
@@ -333,14 +314,11 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("double var expand with grouping aggregation to one bfs") {
-    // Simplest query:
-    // match (a)-[r1*1..]-(b) match (b)-[r2*1..3]-(c) return size(r2), min(size(r1))
-
+  test("double var expand with grouping aggregation to one bfs when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("size(r2) AS group"), Seq("min(size(r1)) AS distance"))
-      .expand("(b)-[r2*1..3]-(c)")
-      .expand("(a)-[r1*1..]-(b)")
+      .expand("(b)-[r2*0..3]-(c)")
+      .expand("(a)-[r1*0..]-(b)")
       .allNodeScan("a")
       .build()
 
@@ -348,22 +326,31 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("size(r2) AS group"), Seq(s"min(`${depthNameStr}`) AS distance"))
-      .expand("(b)-[r2*1..3]-(c)")
-      .bfsPruningVarExpand("(a)-[r1*1..]-(b)", depthName = Some(depthNameStr))
+      .expand("(b)-[r2*0..3]-(c)")
+      .bfsPruningVarExpand("(a)-[r1*0..]-(b)", depthName = Some(depthNameStr))
       .allNodeScan("a")
       .build()
 
     rewrite(before, names = Seq(depthNameStr)) should equal(after)
   }
 
-  test("double var expand with grouping aggregation to bfs and pruning") {
-    // Simplest query:
-    // match (a)-[r*1..]-(b) match (b)-[*2..3]-(c) return c, min(size(r))
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("double var expand with grouping aggregation to one bfs when min depth is 1") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("size(r2) AS group"), Seq("min(size(r1)) AS distance"))
+      .expand("(b)-[r2*1..3]-(c)")
+      .expand("(a)-[r1*1..]-(b)")
+      .allNodeScan("a")
+      .build()
 
+    assertNotRewritten(before)
+  }
+
+  test("double var expand with grouping aggregation to bfs and pruning when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("c AS c"), Seq("min(size(r)) AS distance"))
       .expand("(b)-[*2..3]-(c)")
-      .expand("(a)-[r*1..]-(b)")
+      .expand("(a)-[r*0..]-(b)")
       .allNodeScan("a")
       .build()
 
@@ -372,17 +359,33 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val after = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("c AS c"), Seq(s"min(`${depthNameStr}`) AS distance"))
       .pruningVarExpand("(b)-[*2..3]-(c)")
-      .bfsPruningVarExpand("(a)-[r*1..]-(b)", depthName = Some(depthNameStr))
+      .bfsPruningVarExpand("(a)-[r*0..]-(b)", depthName = Some(depthNameStr))
       .allNodeScan("a")
       .build()
 
     rewrite(before, names = Seq(depthNameStr)) should equal(after)
   }
 
-  test("double var expand with grouping aggregation to both pruning") {
-    // Simplest query:
-    // match (a)-[r*2..]-(b) match (b)-[*2..3]-(c) return c, min(size(r))
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("double var expand with grouping aggregation to bfs and pruning when min depth is 1") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("c AS c"), Seq("min(size(r)) AS distance"))
+      .expand("(b)-[*2..3]-(c)")
+      .expand("(a)-[r*1..]-(b)")
+      .allNodeScan("a")
+      .build()
 
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("c AS c"), Seq("min(size(r)) AS distance"))
+      .pruningVarExpand("(b)-[*2..3]-(c)")
+      .expand("(a)-[r*1..]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  test("double var expand with grouping aggregation to both pruning") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("a AS a"), Seq("collect(distinct b) AS aggB", "collect(distinct c) AS aggC"))
       .expand("(b)-[*2..3]-(c)")
@@ -400,10 +403,39 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("double var expand with grouping aggregation to both bfs") {
-    // Simplest query:
-    // match path=(a)-[*1..]-(b) match (b)-[r*1..3]-(c) return a, min(size(r)), min(length(path)), min(length(path))
+  test("double var expand with grouping aggregation to both bfs when min depth is 0") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Map("a" -> varFor("a")),
+        Map(
+          "agg1" -> min(size(varFor("r2"))),
+          "agg2" -> min(length(path(varFor("a"), varFor("r1"), varFor("b")))),
+          "agg3" -> min(length(path(varFor("a"), varFor("r1"), varFor("b"))))
+        )
+      )
+      .expand("(b)-[r2*0..3]-(c)")
+      .expand("(a)-[r1*0..]-(b)")
+      .allNodeScan("a")
+      .build()
 
+    val r1DepthNameStr = "  depth0"
+    val r2DepthNameStr = "  depth1"
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Seq("a AS a"),
+        Seq(s"min(`$r1DepthNameStr`) AS agg1", s"min(`$r2DepthNameStr`) AS agg2", s"min(`$r2DepthNameStr`) AS agg3")
+      )
+      .bfsPruningVarExpand("(b)-[*0..3]-(c)", depthName = Some(r1DepthNameStr))
+      .bfsPruningVarExpand("(a)-[*0..]-(b)", depthName = Some(r2DepthNameStr))
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before, names = Seq(r1DepthNameStr, r2DepthNameStr)) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("double var expand with grouping aggregation to both bfs when min depth is 1") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
         Map("a" -> varFor("a")),
@@ -418,26 +450,10 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .allNodeScan("a")
       .build()
 
-    val r1DepthNameStr = "  depth0"
-    val r2DepthNameStr = "  depth1"
-
-    val after = new LogicalPlanBuilder(wholePlan = false)
-      .aggregation(
-        Seq("a AS a"),
-        Seq(s"min(`$r1DepthNameStr`) AS agg1", s"min(`$r2DepthNameStr`) AS agg2", s"min(`$r2DepthNameStr`) AS agg3")
-      )
-      .bfsPruningVarExpand("(b)-[*1..3]-(c)", depthName = Some(r1DepthNameStr))
-      .bfsPruningVarExpand("(a)-[*1..]-(b)", depthName = Some(r2DepthNameStr))
-      .allNodeScan("a")
-      .build()
-
-    rewrite(before, names = Seq(r1DepthNameStr, r2DepthNameStr)) should equal(after)
+    assertNotRewritten(before)
   }
 
   test("optional match can be solved with PruningVarExpand") {
-    // Simplest query:
-    // match (a) optional match (a)-[:R*2..3]-(b) return distinct b
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b")
       .apply()
@@ -460,9 +476,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("optional match can be solved with BFSPruningVarExpand") {
-    // Simplest query:
-    // match (a) optional match (a)-[:R*1..3]->(b) return distinct b
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b")
       .apply()
@@ -504,7 +517,32 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("can plan BFSPruningVarExpand when VarExpand is on RHS of NodeHashJoin and Distinct is above Join") {
+  test(
+    "can plan BFSPruningVarExpand when VarExpand is on RHS of NodeHashJoin and Distinct is above Join when min depth is 0"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.expand("(b)-[:R*0..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.bfsPruningVarExpand("(b)-[:R*0..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test(
+    "can not plan BFSPruningVarExpand when VarExpand is on RHS of NodeHashJoin and Distinct is above Join when min depth is 1"
+  ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("a AS a")
       .nodeHashJoin("a")
@@ -516,7 +554,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("a AS a")
       .nodeHashJoin("a")
-      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(a)")
+      .|.pruningVarExpand("(b)-[:R*1..3]-(a)")
       .|.allNodeScan("b")
       .allNodeScan("a")
       .build()
@@ -544,7 +582,32 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("can plan BFSPruningVarExpand when VarExpand is on RHS of ValueHashJoin and Distinct is above Join") {
+  test(
+    "can plan BFSPruningVarExpand when VarExpand is on RHS of ValueHashJoin and Distinct is above Join when min depth is 0"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .valueHashJoin("a=b")
+      .|.expand("(b)-[:R*0..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .valueHashJoin("a=b")
+      .|.bfsPruningVarExpand("(b)-[:R*0..3]-(a)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test(
+    "can not plan BFSPruningVarExpand when VarExpand is on RHS of ValueHashJoin and Distinct is above Join when min depth is 1"
+  ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("a AS a")
       .valueHashJoin("a=b")
@@ -556,7 +619,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("a AS a")
       .valueHashJoin("a=b")
-      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(a)")
+      .|.pruningVarExpand("(b)-[:R*1..3]-(a)")
       .|.allNodeScan("b")
       .allNodeScan("a")
       .build()
@@ -614,7 +677,32 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("can plan BFSPruningVarExpand when VarExpand is on LHS of NodeHashJoin and Distinct is above Join") {
+  test(
+    "can plan BFSPruningVarExpand when VarExpand is on LHS of NodeHashJoin and Distinct is above Join when min depth is 0"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.allNodeScan("b")
+      .expand("(b)-[:R*0..3]-(a)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("a AS a")
+      .nodeHashJoin("a")
+      .|.allNodeScan("b")
+      .bfsPruningVarExpand("(b)-[:R*0..3]-(a)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test(
+    "can not plan BFSPruningVarExpand when VarExpand is on LHS of NodeHashJoin and Distinct is above Join when min depth is 1"
+  ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("a AS a")
       .nodeHashJoin("a")
@@ -627,7 +715,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .distinct("a AS a")
       .nodeHashJoin("a")
       .|.allNodeScan("b")
-      .bfsPruningVarExpand("(b)-[:R*1..3]-(a)")
+      .pruningVarExpand("(b)-[:R*1..3]-(a)")
       .allNodeScan("a")
       .build()
 
@@ -654,7 +742,32 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("can plan BFSPruningVarExpand when VarExpand is on LHS of ValueHashJoin and Distinct is above Join") {
+  test(
+    "can plan BFSPruningVarExpand when VarExpand is on LHS of ValueHashJoin and Distinct is above Join when min depth is 0"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .valueHashJoin("b=c")
+      .|.allNodeScan("c")
+      .expand("(a)-[:R*0..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .valueHashJoin("b=c")
+      .|.allNodeScan("c")
+      .bfsPruningVarExpand("(a)-[:R*0..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test(
+    "can not plan BFSPruningVarExpand when VarExpand is on LHS of ValueHashJoin and Distinct is above Join when min depth is 1"
+  ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b")
       .valueHashJoin("b=c")
@@ -667,7 +780,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .distinct("b AS b")
       .valueHashJoin("b=c")
       .|.allNodeScan("c")
-      .bfsPruningVarExpand("(a)-[:R*1..3]-(b)")
+      .pruningVarExpand("(a)-[:R*1..3]-(b)")
       .allNodeScan("a")
       .build()
 
@@ -721,7 +834,32 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test(
-    "can solve with BFSPruningVarExpand when VarExpand is on both LHS and RHS of Apply and Distinct is above Apply"
+    "can solve with BFSPruningVarExpand when VarExpand is on both LHS and RHS of Apply and Distinct is above Apply when min depth is 0"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b", "c AS c")
+      .apply()
+      .|.expand("(a)-[:R*0..3]-(c)")
+      .|.argument("a")
+      .expand("(a)-[:R*0..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b", "c AS c")
+      .apply()
+      .|.bfsPruningVarExpand("(a)-[:R*0..3]-(c)")
+      .|.argument("a")
+      .expand("(a)-[:R*0..3]-(b)")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test(
+    "can not solve with BFSPruningVarExpand when VarExpand is on both LHS and RHS of Apply and Distinct is above Apply when min depth is 1"
   ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b", "c AS c")
@@ -735,7 +873,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b", "c AS c")
       .apply()
-      .|.bfsPruningVarExpand("(a)-[:R*1..3]-(c)")
+      .|.pruningVarExpand("(a)-[:R*1..3]-(c)")
       .|.argument("a")
       .expand("(a)-[:R*1..3]-(b)")
       .allNodeScan("a")
@@ -762,7 +900,28 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("can solve with BFSPruningVarExpand when VarExpand is on RHS of SemiApply") {
+  test("can solve with BFSPruningVarExpand when VarExpand is on RHS of SemiApply when min depth is 0") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .semiApply()
+      .|.expand("(a)-[:R*0..3]-(b)")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .semiApply()
+      .|.bfsPruningVarExpand("(a)-[:R*0..3]-(b)")
+      .|.argument("a")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("can not solve with BFSPruningVarExpand when VarExpand is on RHS of SemiApply when min depth is 1") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b")
       .semiApply()
@@ -774,7 +933,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b")
       .semiApply()
-      .|.bfsPruningVarExpand("(a)-[:R*1..3]-(b)")
+      .|.pruningVarExpand("(a)-[:R*1..3]-(b)")
       .|.argument("a")
       .allNodeScan("a")
       .build()
@@ -822,9 +981,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("on longer var-lengths, we also use PruningVarExpand") {
-    // Simplest query:
-    // match (a)-[*4..5]-(b) return distinct b
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .expand("(from)-[*4..5]-(to)")
@@ -841,9 +997,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("do not use pruning for length=1") {
-    // Simplest query:
-    // match (a)-[*1..1]-(b) return distinct b
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("to AS to")
       .expand("(from)-[*1..1]-(to)")
@@ -854,9 +1007,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("do not use pruning for pathExpressions when path is needed") {
-    // Simplest query:
-    // match p=(from)-[r*0..2]-(to) with nodes(p) as d return distinct d
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("d AS d")
       .projection("nodes(path) AS d")
@@ -911,10 +1061,28 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("cartesian product can be solved with BFSPruningVarExpand when VarExpand is on LHS") {
-    // Simplest query:
-    // match (a) match (b)-[:R*1..3]-(c) return distinct c
+  test("cartesian product can be solved with BFSPruningVarExpand when VarExpand is on LHS when min depth is 0") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*0..3]-(c)")
+      .allNodeScan("b")
+      .build()
 
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.allNodeScan("a")
+      .bfsPruningVarExpand("(b)-[:R*0..3]-(c)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("cartesian product can not be solved with BFSPruningVarExpand when VarExpand is on LHS when min depth is 1") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .cartesianProduct()
@@ -927,7 +1095,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .distinct("c AS c")
       .cartesianProduct()
       .|.allNodeScan("a")
-      .bfsPruningVarExpand("(b)-[:R*1..3]-(c)")
+      .pruningVarExpand("(b)-[:R*1..3]-(c)")
       .allNodeScan("b")
       .build()
 
@@ -954,7 +1122,28 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("cartesian product can be solved with BFSPruningVarExpand when VarExpand is on RHS") {
+  test("cartesian product can be solved with BFSPruningVarExpand when VarExpand is on RHS when min depth is 0") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.expand("(b)-[:R*0..3]-(c)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .cartesianProduct()
+      .|.bfsPruningVarExpand("(b)-[:R*0..3]-(c)")
+      .|.allNodeScan("b")
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("cartesian product can not be solved with BFSPruningVarExpand when VarExpand is on RHS when min depth is 1") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .cartesianProduct()
@@ -966,7 +1155,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .cartesianProduct()
-      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(c)")
+      .|.pruningVarExpand("(b)-[:R*1..3]-(c)")
       .|.allNodeScan("b")
       .allNodeScan("a")
       .build()
@@ -996,7 +1185,32 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("cartesian product can be solved with BFSPruningVarExpand when VarExpand is on both sides") {
+  test("cartesian product can be solved with BFSPruningVarExpand when VarExpand is on both sides when min depth is 0") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .cartesianProduct()
+      .|.expand("(a)-[:R*0..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*0..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .cartesianProduct()
+      .|.bfsPruningVarExpand("(a)-[:R*0..3]-(c2)")
+      .|.allNodeScan("a")
+      .bfsPruningVarExpand("(b)-[:R*0..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test(
+    "cartesian product can not be solved with BFSPruningVarExpand when VarExpand is on both sides when min depth is 1"
+  ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c1 AS c1", "c2 AS c2")
       .cartesianProduct()
@@ -1009,9 +1223,9 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c1 AS c1", "c2 AS c2")
       .cartesianProduct()
-      .|.bfsPruningVarExpand("(a)-[:R*1..3]-(c2)")
+      .|.pruningVarExpand("(a)-[:R*1..3]-(c2)")
       .|.allNodeScan("a")
-      .bfsPruningVarExpand("(b)-[:R*1..3]-(c1)")
+      .pruningVarExpand("(b)-[:R*1..3]-(c1)")
       .allNodeScan("b")
       .build()
 
@@ -1068,7 +1282,28 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("Union can be solved with BFSPruningVarExpand when VarExpand is on LHS") {
+  test("Union can be solved with BFSPruningVarExpand when VarExpand is on LHS when min depth is 0") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*0..3]-(c)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.allNodeScan("a")
+      .bfsPruningVarExpand("(b)-[:R*0..3]-(c)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("Union can not be solved with BFSPruningVarExpand when VarExpand is on LHS when min depth is 1") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .union()
@@ -1081,7 +1316,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .distinct("c AS c")
       .union()
       .|.allNodeScan("a")
-      .bfsPruningVarExpand("(b)-[:R*1..3]-(c)")
+      .pruningVarExpand("(b)-[:R*1..3]-(c)")
       .allNodeScan("b")
       .build()
 
@@ -1108,7 +1343,28 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("Union can be solved with BFSPruningVarExpand when VarExpand is on RHS") {
+  test("Union can be solved with BFSPruningVarExpand when VarExpand is on RHS when min depth is 0") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.expand("(b)-[:R*0..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c AS c")
+      .union()
+      .|.bfsPruningVarExpand("(b)-[:R*0..3]-(c)")
+      .|.allNodeScan("a")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("Union can not be solved with BFSPruningVarExpand when VarExpand is on RHS when min depth is 1") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .union()
@@ -1120,7 +1376,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c AS c")
       .union()
-      .|.bfsPruningVarExpand("(b)-[:R*1..3]-(c)")
+      .|.pruningVarExpand("(b)-[:R*1..3]-(c)")
       .|.allNodeScan("a")
       .allNodeScan("b")
       .build()
@@ -1150,7 +1406,30 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("Union can be solved with BFSPruningVarExpand when VarExpand is on both sides") {
+  test("Union can be solved with BFSPruningVarExpand when VarExpand is on both sides when min depth is 0") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .union()
+      .|.expand("(a)-[:R*0..3]-(c2)")
+      .|.allNodeScan("a")
+      .expand("(b)-[:R*0..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("c1 AS c1", "c2 AS c2")
+      .union()
+      .|.bfsPruningVarExpand("(a)-[:R*0..3]-(c2)")
+      .|.allNodeScan("a")
+      .bfsPruningVarExpand("(b)-[:R*0..3]-(c1)")
+      .allNodeScan("b")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("Union can not be solved with BFSPruningVarExpand when VarExpand is on both sides when min depth is 1") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c1 AS c1", "c2 AS c2")
       .union()
@@ -1163,9 +1442,9 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("c1 AS c1", "c2 AS c2")
       .union()
-      .|.bfsPruningVarExpand("(a)-[:R*1..3]-(c2)")
+      .|.pruningVarExpand("(a)-[:R*1..3]-(c2)")
       .|.allNodeScan("a")
-      .bfsPruningVarExpand("(b)-[:R*1..3]-(c1)")
+      .pruningVarExpand("(b)-[:R*1..3]-(c1)")
       .allNodeScan("b")
       .build()
 
@@ -1211,9 +1490,6 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("do not use pruning when upper limit is not specified") {
-    // Simplest query:
-    // match (a)-[*2..]-(b) return distinct b
-
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b")
       .expand("(a)-[*2..]-(b)")
@@ -1223,35 +1499,40 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(before)
   }
 
-  test("use bfs pruning even when upper limit is not specified") {
-    // Simplest query:
-    // match (a)-[*2..]-(b) return distinct b
-
+  test("use bfs pruning even when upper limit is not specified when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b")
-      .expand("(a)-[*1..]-(b)")
+      .expand("(a)-[*0..]-(b)")
       .allNodeScan("a")
       .build()
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b")
-      .bfsPruningVarExpand("(a)-[*1..]-(b)")
+      .bfsPruningVarExpand("(a)-[*0..]-(b)")
       .allNodeScan("a")
       .build()
 
     rewrite(before) should equal(after)
   }
 
-  test("use bfs pruning with aggregation when aggregation function is min(length(path))") {
-    // Simplest query:
-    // match path=(a)-[*1..]-(b) return min(length(path))
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("do not use bfs pruning even when upper limit is not specified when min depth is 1") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .expand("(a)-[*1..]-(b)")
+      .allNodeScan("a")
+      .build()
 
+    assertNotRewritten(before)
+  }
+
+  test("use bfs pruning with aggregation when aggregation function is min(length(path)) when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
         Map.empty[String, Expression],
         Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b")))))
       )
-      .expand("(a)-[r*1..]-(b)")
+      .expand("(a)-[r*0..]-(b)")
       .allNodeScan("a")
       .build()
 
@@ -1259,17 +1540,28 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq.empty, Seq(s"min(`$depthNameStr`) AS distance"))
-      .bfsPruningVarExpand("(a)-[r*1..]-(b)", depthName = Some(depthNameStr))
+      .bfsPruningVarExpand("(a)-[r*0..]-(b)", depthName = Some(depthNameStr))
       .allNodeScan("a")
       .build()
 
     rewrite(before, names = Seq(depthNameStr)) should equal(after)
   }
 
-  test("do not use pruning with aggregation when aggregation function is min(length(path))") {
-    // Simplest query:
-    // match path=(a)-[*2..]-(b) return min(length(path))
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("do not use bfs pruning with aggregation when aggregation function is min(length(path)) when min depth is 1") {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(
+        Map.empty[String, Expression],
+        Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b")))))
+      )
+      .expand("(a)-[r*1..]-(b)")
+      .allNodeScan("a")
+      .build()
 
+    assertNotRewritten(before)
+  }
+
+  test("do not use pruning with aggregation when aggregation function is min(length(path))") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(
         Map.empty[String, Expression],
@@ -1282,13 +1574,11 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(before)
   }
 
-  test("use bfs pruning with aggregation when grouping aggregation function is min(length(path))") {
-    // Simplest query:
-    // match path=(a)-[*1..]-(b) return a, min(length(path))
-
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test("use bfs pruning with aggregation when grouping aggregation function is min(length(path)) when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Map("a" -> varFor("a")), Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b"))))))
-      .expand("(a)-[r*1..]-(b)")
+      .expand("(a)-[r*0..]-(b)")
       .allNodeScan("a")
       .build()
 
@@ -1296,17 +1586,27 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("a AS a"), Seq(s"min(`$depthNameStr`) AS distance"))
-      .bfsPruningVarExpand("(a)-[*1..]-(b)", depthName = Some(depthNameStr))
+      .bfsPruningVarExpand("(a)-[*0..]-(b)", depthName = Some(depthNameStr))
       .allNodeScan("a")
       .build()
 
     rewrite(before, names = Seq(depthNameStr)) should equal(after)
   }
 
-  test("do not use pruning with aggregation when grouping aggregation function is min(length(path))") {
-    // Simplest query:
-    // match path=(a)-[*2..]-(b) return a, min(length(path))
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test(
+    "do not do not use bfs pruning with aggregation when grouping aggregation function is min(length(path)) when min depth is 1"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Map("a" -> varFor("a")), Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b"))))))
+      .expand("(a)-[r*1..]-(b)")
+      .allNodeScan("a")
+      .build()
 
+    assertNotRewritten(before)
+  }
+
+  test("do not use pruning with aggregation when grouping aggregation function is min(length(path))") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Map("a" -> varFor("a")), Map("distance" -> min(length(path(varFor("a"), varFor("r"), varFor("b"))))))
       .expand("(a)-[r*2..]-(b)")
@@ -1316,13 +1616,10 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     assertNotRewritten(before)
   }
 
-  test("use bfs pruning with aggregation when grouping aggregation function is min(size(r))") {
-    // Simplest query:
-    // match path=(a)-[*1..]-(b) return a, min(size(r))
-
+  test("use bfs pruning with aggregation when grouping aggregation function is min(size(r)) when min depth is 0") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("a AS a"), Seq("min(size(r)) AS distance"))
-      .expand("(a)-[r*1..]-(b)")
+      .expand("(a)-[r*0..]-(b)")
       .allNodeScan("a")
       .build()
 
@@ -1330,17 +1627,27 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
 
     val after = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("a AS a"), Seq(s"min(`$depthNameStr`) AS distance"))
-      .bfsPruningVarExpand("(a)-[r*1..]-(b)", depthName = Some(depthNameStr))
+      .bfsPruningVarExpand("(a)-[r*0..]-(b)", depthName = Some(depthNameStr))
       .allNodeScan("a")
       .build()
 
     rewrite(before, names = Seq(depthNameStr)) should equal(after)
   }
 
-  test("do not use pruning with aggregation when grouping aggregation function is min(size(r))") {
-    // Simplest query:
-    // match path=(a)-[*2..]-(b) return a, min(size(r))
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test(
+    "do not use bfs pruning with aggregation when grouping aggregation function is min(size(r)) when min depth is 1"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .aggregation(Seq("a AS a"), Seq("min(size(r)) AS distance"))
+      .expand("(a)-[r*1..]-(b)")
+      .allNodeScan("a")
+      .build()
 
+    assertNotRewritten(before)
+  }
+
+  test("do not use pruning with aggregation when grouping aggregation function is min(size(r))") {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .aggregation(Seq("a AS a"), Seq("min(size(r)) AS distance"))
       .expand("(a)-[r*2..]-(b)")
@@ -1424,7 +1731,30 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
     rewrite(before) should equal(after)
   }
 
-  test("should not rewrite to bfs pruning when relationships variable is used in predicate of another var expand") {
+  test(
+    "should not rewrite to bfs pruning when relationships variable is used in predicate of another var expand when min depth is 0"
+  ) {
+    val before = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .expand("(b)-[*0..]-(c)", nodePredicates = Seq(Predicate("n", "n.prop > head(r).prop")))
+      .expand("(a)-[r:R*0..3]-(b)") // Should not get rewritten
+      .allNodeScan("a")
+      .build()
+
+    val after = new LogicalPlanBuilder(wholePlan = false)
+      .distinct("b AS b")
+      .bfsPruningVarExpand("(b)-[*0..]-(c)", nodePredicates = Seq(Predicate("n", "n.prop > head(r).prop")))
+      .expand("(a)-[r:R*0..3]-(b)") // Should not get rewritten
+      .allNodeScan("a")
+      .build()
+
+    rewrite(before) should equal(after)
+  }
+
+  // TODO assert on correct rewriting after fixing BFS cursor loop detection bug
+  test(
+    "should not rewrite to bfs pruning when relationships variable is used in predicate of another var expand when min depth is 1"
+  ) {
     val before = new LogicalPlanBuilder(wholePlan = false)
       .distinct("b AS b")
       .expand("(b)-[*]-(c)", nodePredicates = Seq(Predicate("n", "n.prop > head(r).prop")))
@@ -1432,14 +1762,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
       .allNodeScan("a")
       .build()
 
-    val after = new LogicalPlanBuilder(wholePlan = false)
-      .distinct("b AS b")
-      .bfsPruningVarExpand("(b)-[*]-(c)", nodePredicates = Seq(Predicate("n", "n.prop > head(r).prop")))
-      .expand("(a)-[r:R*1..3]-(b)") // Should not get rewritten
-      .allNodeScan("a")
-      .build()
-
-    rewrite(before) should equal(after)
+    assertNotRewritten(before)
   }
 
   test("should not rewrite to pruning when relationships variable is used in predicate of another optional expand") {
