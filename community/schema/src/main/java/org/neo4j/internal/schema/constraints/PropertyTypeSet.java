@@ -20,19 +20,25 @@
 package org.neo4j.internal.schema.constraints;
 
 import java.util.Arrays;
+import java.util.StringJoiner;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import org.neo4j.internal.schema.SchemaValueType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueRepresentation;
 
 /**
  * An ordered set of {@link SchemaValueType}s, used to represent unions of types.
- * The order is defined in CIP-90 and implemented in terms of the natural ordering of {@link SchemaValueType}.
+ * The order is defined in CIP-100 and implemented in terms of the natural ordering of {@link SchemaValueType}.
  */
 public class PropertyTypeSet extends TreeSet<SchemaValueType> {
+    /**
+     * This method return a string version of the normalized type expression as defined by CIP-100.
+     * @return A string representation of the normalized type expression
+     */
     public String userDescription() {
-        return stream().map(SchemaValueType::userDescription).collect(Collectors.joining(" | "));
+        var joiner = size() > 1 ? new StringJoiner(" | ", "ANY<", ">") : new StringJoiner("");
+        this.forEach(schemaValueType -> joiner.add(schemaValueType.userDescription()));
+        return joiner.toString();
     }
 
     public static PropertyTypeSet of(SchemaValueType... types) {

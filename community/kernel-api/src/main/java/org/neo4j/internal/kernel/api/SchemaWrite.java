@@ -131,12 +131,12 @@ public interface SchemaWrite {
      *
      * @param schema description of the constraint
      * @param name the name the created constraint should have, or null
-     * @param allowedPropertyTypes the allowed property types
+     * @param propertyType the allowed property types
      * @return the created constraint.
      * @throws KernelException if the constraint cannot be created for some reason.
      */
     ConstraintDescriptor propertyTypeConstraintCreate(
-            SchemaDescriptor schema, String name, PropertyTypeSet allowedPropertyTypes) throws KernelException;
+            SchemaDescriptor schema, String name, PropertyTypeSet propertyType) throws KernelException;
 
     /**
      * Drop the constraint with the given name.

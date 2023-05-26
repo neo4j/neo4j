@@ -32,5 +32,5 @@ public interface TypeConstraintDescriptor extends ConstraintDescriptor {
     /**
      * Returns the types allowed for values of properties.
      */
-    PropertyTypeSet allowedPropertyTypes();
+    PropertyTypeSet propertyType();
 }

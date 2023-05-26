@@ -28,25 +28,28 @@ class PropertyTypeSetTest {
     @Test
     void testOrder() {
         var set = new PropertyTypeSet();
-        set.add(SchemaValueType.LIST_BOOLEAN);
+        set.add(SchemaValueType.FLOAT);
         set.add(SchemaValueType.INTEGER);
         set.add(SchemaValueType.BOOLEAN);
         set.add(SchemaValueType.BOOLEAN);
-        set.add(SchemaValueType.LIST_BOOLEAN);
+        set.add(SchemaValueType.FLOAT);
 
-        assertThat(set).containsExactly(SchemaValueType.BOOLEAN, SchemaValueType.INTEGER, SchemaValueType.LIST_BOOLEAN);
+        assertThat(set).containsExactly(SchemaValueType.BOOLEAN, SchemaValueType.INTEGER, SchemaValueType.FLOAT);
     }
 
     @Test
     void testUserDescription() {
-        var set = new PropertyTypeSet();
-        set.add(SchemaValueType.LIST_BOOLEAN);
-        set.add(SchemaValueType.INTEGER);
-        set.add(SchemaValueType.BOOLEAN);
-        set.add(SchemaValueType.BOOLEAN);
-        set.add(SchemaValueType.LIST_BOOLEAN);
+        var set1 = new PropertyTypeSet();
+        var set2 = new PropertyTypeSet();
+        set1.add(SchemaValueType.FLOAT);
+        set1.add(SchemaValueType.INTEGER);
+        set1.add(SchemaValueType.BOOLEAN);
+        set1.add(SchemaValueType.BOOLEAN);
+        set1.add(SchemaValueType.FLOAT);
+        set2.add(SchemaValueType.DURATION);
 
-        assertThat(set.userDescription()).isEqualTo("BOOLEAN | INTEGER | LIST<BOOLEAN>");
+        assertThat(set1.userDescription()).isEqualTo("ANY<BOOLEAN | INTEGER | FLOAT>");
+        assertThat(set2.userDescription()).isEqualTo("DURATION");
     }
 
     @Test

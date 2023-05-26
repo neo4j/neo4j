@@ -277,7 +277,7 @@ class SchemaChecker {
                             }
                             if (rule.enforcesPropertyType()) {
                                 allowedTypesBuilder.setAllowedTypesForSchema(
-                                        rule.asPropertyTypeConstraint().allowedPropertyTypes());
+                                        rule.asPropertyTypeConstraint().propertyType());
                                 rule.schema().processWith(allowedTypesBuilder);
                             }
                         } else {

@@ -1208,7 +1208,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator = ((BaseNodeConstraintCreator)
                             tx.schema().constraintFor(label))
-                    .assertPropertyHasType(propertyKey, PropertyTypeSet.of(SchemaValueType.LIST_INTEGER));
+                    .assertPropertyHasType(propertyKey, PropertyTypeSet.of(SchemaValueType.BOOLEAN));
             ConstraintViolationException exception =
                     assertThrows(ConstraintViolationException.class, constraintCreator::create);
             assertThat(exception).hasMessageContaining("Enterprise Edition");
@@ -1221,7 +1221,7 @@ class SchemaAcceptanceTest extends SchemaAcceptanceTestBase {
         try (Transaction tx = db.beginTx()) {
             ConstraintCreator constraintCreator = ((BaseRelationshipConstraintCreator)
                             tx.schema().constraintFor(relType))
-                    .assertPropertyHasType(propertyKey, PropertyTypeSet.of(SchemaValueType.LIST_LOCAL_TIME));
+                    .assertPropertyHasType(propertyKey, PropertyTypeSet.of(SchemaValueType.BOOLEAN));
             ConstraintViolationException exception =
                     assertThrows(ConstraintViolationException.class, constraintCreator::create);
             assertThat(exception).hasMessageContaining("Enterprise Edition");

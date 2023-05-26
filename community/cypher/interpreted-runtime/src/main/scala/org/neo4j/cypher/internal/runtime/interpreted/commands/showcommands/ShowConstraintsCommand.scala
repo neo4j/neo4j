@@ -125,7 +125,7 @@ case class ShowConstraintsCommand(constraintType: ShowConstraintType, verbose: B
         val propertyType =
           if (constraintDescriptor.isPropertyTypeConstraint)
             Some(
-              constraintDescriptor.asPropertyTypeConstraint().allowedPropertyTypes().userDescription()
+              constraintDescriptor.asPropertyTypeConstraint().propertyType().userDescription()
             )
           else None
         val entityType = constraintDescriptor.schema.entityType

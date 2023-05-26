@@ -67,6 +67,6 @@ public class PropertyTypeException extends ConstraintValidationException {
                 entityToken,
                 value,
                 value.getTypeName(),
-                descriptor.allowedPropertyTypes().userDescription());
+                descriptor.propertyType().userDescription());
     }
 }

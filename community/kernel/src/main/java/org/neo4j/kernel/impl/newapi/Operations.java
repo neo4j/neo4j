@@ -1990,7 +1990,7 @@ public class Operations implements Write, SchemaWrite {
 
     @Override
     public ConstraintDescriptor propertyTypeConstraintCreate(
-            SchemaDescriptor schema, String name, PropertyTypeSet allowedPropertyTypes) throws KernelException {
+            SchemaDescriptor schema, String name, PropertyTypeSet propertyType) throws KernelException {
         if (schema.getPropertyIds().length != 1) {
             throw new UnsupportedOperationException("Composite property type constraints are not supported.");
         }
@@ -2000,7 +2000,7 @@ public class Operations implements Write, SchemaWrite {
             assertSupportedInVersion(
                     "Failed to create property type constraint.", KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED);
         }
-        ConstraintDescriptor constraint = lockAndValidatePropertyTypeConstraint(schema, name, allowedPropertyTypes);
+        ConstraintDescriptor constraint = lockAndValidatePropertyTypeConstraint(schema, name, propertyType);
 
         TypeConstraintDescriptor descriptor = constraint.asPropertyTypeConstraint();
 
@@ -2021,9 +2021,13 @@ public class Operations implements Write, SchemaWrite {
     }
 
     private ConstraintDescriptor lockAndValidatePropertyTypeConstraint(
-            SchemaDescriptor descriptor, String name, PropertyTypeSet allowedPropertyTypes) throws KernelException {
+            SchemaDescriptor descriptor, String name, PropertyTypeSet propertyType) throws KernelException {
+        if (propertyType.size() != 1) {
+            throw new IllegalArgumentException("Unable to create property type constraint because the provided union '"
+                    + propertyType.userDescription() + "' is not legal: Must have exactly one property type.");
+        }
         return lockAndValidateNonIndexPropertyConstraint(
-                descriptor, desc -> ConstraintDescriptorFactory.typeForSchema(desc, allowedPropertyTypes), name);
+                descriptor, desc -> ConstraintDescriptorFactory.typeForSchema(desc, propertyType), name);
     }
 
     private ConstraintDescriptor lockAndValidateNonIndexPropertyConstraint(

@@ -52,7 +52,7 @@ public class ConstraintDescriptorImplementation
     private final String name;
     private final Long ownedIndex;
     private final IndexType ownedIndexType;
-    private final PropertyTypeSet allowedPropertyTypes;
+    private final PropertyTypeSet propertyType;
 
     static ConstraintDescriptorImplementation makeExistsConstraint(SchemaDescriptor schema) {
         return new ConstraintDescriptorImplementation(EXISTS, schema, NO_ID, null, null, null, null);
@@ -70,12 +70,10 @@ public class ConstraintDescriptorImplementation
         return new ConstraintDescriptorImplementation(UNIQUE, schema, NO_ID, null, null, indexType, null);
     }
 
-    static TypeConstraintDescriptor makePropertyTypeConstraint(
-            SchemaDescriptor schema, PropertyTypeSet allowedPropertyTypes) {
+    static TypeConstraintDescriptor makePropertyTypeConstraint(SchemaDescriptor schema, PropertyTypeSet propertyType) {
         Preconditions.checkState(
-                allowedPropertyTypes != null, "Property types should be supplied for property type constraints");
-        return new ConstraintDescriptorImplementation(
-                PROPERTY_TYPE, schema, NO_ID, null, null, null, allowedPropertyTypes);
+                propertyType != null, "Property types should be supplied for property type constraints");
+        return new ConstraintDescriptorImplementation(PROPERTY_TYPE, schema, NO_ID, null, null, null, propertyType);
     }
 
     private ConstraintDescriptorImplementation(
@@ -85,14 +83,14 @@ public class ConstraintDescriptorImplementation
             String name,
             Long ownedIndex,
             IndexType ownedIndexType,
-            PropertyTypeSet allowedPropertyTypes) {
+            PropertyTypeSet propertyType) {
         this.type = type;
         this.schema = schema;
         this.id = id;
         this.name = name;
         this.ownedIndex = ownedIndex;
         this.ownedIndexType = ownedIndexType;
-        this.allowedPropertyTypes = allowedPropertyTypes;
+        this.propertyType = propertyType;
     }
 
     // METHODS
@@ -128,8 +126,7 @@ public class ConstraintDescriptorImplementation
      */
     @Override
     public String userDescription(TokenNameLookup tokenNameLookup) {
-        return SchemaUserDescription.forConstraint(
-                tokenNameLookup, id, name, type, schema(), ownedIndex, allowedPropertyTypes);
+        return SchemaUserDescription.forConstraint(tokenNameLookup, id, name, type, schema(), ownedIndex, propertyType);
     }
 
     @Override
@@ -262,8 +259,7 @@ public class ConstraintDescriptorImplementation
         }
 
         if (that.enforcesPropertyType()
-                && !this.allowedPropertyTypes.equals(
-                        that.asPropertyTypeConstraint().allowedPropertyTypes())) {
+                && !this.propertyType.equals(that.asPropertyTypeConstraint().propertyType())) {
             return false;
         }
 
@@ -311,8 +307,7 @@ public class ConstraintDescriptorImplementation
 
     @Override
     public ConstraintDescriptorImplementation withId(long id) {
-        return new ConstraintDescriptorImplementation(
-                type, schema, id, name, ownedIndex, ownedIndexType, allowedPropertyTypes);
+        return new ConstraintDescriptorImplementation(type, schema, id, name, ownedIndex, ownedIndexType, propertyType);
     }
 
     @Override
@@ -321,24 +316,22 @@ public class ConstraintDescriptorImplementation
             return this;
         }
         name = SchemaNameUtil.sanitiseName(name);
-        return new ConstraintDescriptorImplementation(
-                type, schema, id, name, ownedIndex, ownedIndexType, allowedPropertyTypes);
+        return new ConstraintDescriptorImplementation(type, schema, id, name, ownedIndex, ownedIndexType, propertyType);
     }
 
     @Override
-    public PropertyTypeSet allowedPropertyTypes() {
+    public PropertyTypeSet propertyType() {
         if (!enforcesPropertyType()) {
             throw new IllegalStateException("This constraint does not enforce property types.");
         }
-        return allowedPropertyTypes;
+        return propertyType;
     }
 
     @Override
     public ConstraintDescriptorImplementation withOwnedIndexId(long ownedIndex) {
         Preconditions.checkState(
                 ownedIndexType != null, "ConstraintDescriptor missing IndexType when connected to index");
-        return new ConstraintDescriptorImplementation(
-                type, schema, id, name, ownedIndex, ownedIndexType, allowedPropertyTypes);
+        return new ConstraintDescriptorImplementation(type, schema, id, name, ownedIndex, ownedIndexType, propertyType);
     }
 
     @Override

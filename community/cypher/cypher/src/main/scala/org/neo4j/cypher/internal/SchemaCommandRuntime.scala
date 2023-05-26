@@ -477,11 +477,11 @@ object SchemaCommandRuntime extends CypherRuntime[RuntimeContext] {
       case NodeKey                       => c => c.isNodeKeyConstraint
       case RelationshipKey               => c => c.isRelationshipKeyConstraint
       case NodePropertyType(propType) =>
-        c => c.isNodePropertyTypeConstraint && checkTypes(propType, c.asPropertyTypeConstraint().allowedPropertyTypes())
+        c => c.isNodePropertyTypeConstraint && checkTypes(propType, c.asPropertyTypeConstraint().propertyType())
       case RelationshipPropertyType(propType) =>
         c =>
           c.isRelationshipPropertyTypeConstraint &&
-            checkTypes(propType, c.asPropertyTypeConstraint().allowedPropertyTypes())
+            checkTypes(propType, c.asPropertyTypeConstraint().propertyType())
     }
 
   // Checks if the pre-existing constraints property type (preExistingTypes)

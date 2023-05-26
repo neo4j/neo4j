@@ -57,7 +57,7 @@ public class SchemaRuleMapifier {
             PROP_SCHEMA_RULE_PREFIX + "schemaPropertySchemaType";
 
     private static final String PROP_INDEX_TYPE = PROP_SCHEMA_RULE_PREFIX + "indexType";
-    private static final String PROP_CONSTRAINT_ALLOWED_TYPES = PROP_SCHEMA_RULE_PREFIX + "allowedPropertyTypes";
+    private static final String PROP_CONSTRAINT_ALLOWED_TYPES = PROP_SCHEMA_RULE_PREFIX + "propertyType";
     private static final String PROP_INDEX_CONFIG_PREFIX = PROP_SCHEMA_RULE_PREFIX + "IndexConfig.";
 
     /**
@@ -169,7 +169,7 @@ public class SchemaRuleMapifier {
             }
             case PROPERTY_TYPE -> {
                 TypeConstraintDescriptor typeConstraintDescriptor = rule.asPropertyTypeConstraint();
-                PropertyTypeSet schemaValueTypes = typeConstraintDescriptor.allowedPropertyTypes();
+                PropertyTypeSet schemaValueTypes = typeConstraintDescriptor.propertyType();
                 String[] typeArray = new String[schemaValueTypes.size()];
                 int i = 0;
                 for (SchemaValueType schemaValueType : schemaValueTypes) {

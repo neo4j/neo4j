@@ -87,7 +87,7 @@ public final class SchemaUserDescription {
             ConstraintType type,
             SchemaDescriptor schema,
             Long ownedIndex,
-            PropertyTypeSet allowedPropertyTypes) {
+            PropertyTypeSet propertyType) {
         StringJoiner joiner = new StringJoiner(", ", "Constraint( ", " )");
         maybeAddId(id, joiner);
         maybeAddName(name, joiner);
@@ -96,7 +96,7 @@ public final class SchemaUserDescription {
         if (ownedIndex != null) {
             joiner.add("ownedIndex=" + ownedIndex);
         }
-        maybeAddAllowedPropertyTypes(allowedPropertyTypes, joiner);
+        maybeAddAllowedPropertyTypes(propertyType, joiner);
         return joiner.toString();
     }
 
@@ -121,9 +121,9 @@ public final class SchemaUserDescription {
         }
     }
 
-    private static void maybeAddAllowedPropertyTypes(PropertyTypeSet allowedPropertyTypes, StringJoiner joiner) {
-        if (allowedPropertyTypes != null) {
-            joiner.add("allowedPropertyTypes='" + allowedPropertyTypes + "'");
+    private static void maybeAddAllowedPropertyTypes(PropertyTypeSet propertyType, StringJoiner joiner) {
+        if (propertyType != null) {
+            joiner.add("propertyType=" + propertyType.userDescription());
         }
     }
 

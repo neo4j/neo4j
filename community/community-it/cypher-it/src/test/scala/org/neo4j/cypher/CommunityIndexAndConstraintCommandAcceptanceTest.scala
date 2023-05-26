@@ -306,7 +306,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
 
     // THEN
     exception.getMessage should equal(
-      s"""Unable to create Constraint( name='$constraintName', type='NODE PROPERTY TYPE', schema=(:$label {$prop}), allowedPropertyTypes='[INTEGER]' ):
+      s"""Unable to create Constraint( name='$constraintName', type='NODE PROPERTY TYPE', schema=(:$label {$prop}), propertyType=INTEGER ):
          |Property type constraint requires Neo4j Enterprise Edition""".stripMargin
     )
     graph.constraintExists(constraintName) should be(false)
@@ -320,7 +320,7 @@ class CommunityIndexAndConstraintCommandAcceptanceTest extends ExecutionEngineFu
 
     // THEN
     exception.getMessage should equal(
-      s"""Unable to create Constraint( name='$constraintName', type='RELATIONSHIP PROPERTY TYPE', schema=()-[:$relType {$prop}]-(), allowedPropertyTypes='[INTEGER]' ):
+      s"""Unable to create Constraint( name='$constraintName', type='RELATIONSHIP PROPERTY TYPE', schema=()-[:$relType {$prop}]-(), propertyType=INTEGER ):
          |Property type constraint requires Neo4j Enterprise Edition""".stripMargin
     )
     graph.constraintExists(constraintName) should be(false)

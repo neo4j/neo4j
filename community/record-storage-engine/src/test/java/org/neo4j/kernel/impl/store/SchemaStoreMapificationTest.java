@@ -120,8 +120,7 @@ class SchemaStoreMapificationTest {
             .withId(1);
     private final ConstraintDescriptor relTypeConstraintSeveralTypes = ConstraintDescriptorFactory.typeForSchema(
                     relTypeSchema,
-                    PropertyTypeSet.of(
-                            SchemaValueType.BOOLEAN, SchemaValueType.LOCAL_DATETIME, SchemaValueType.LIST_FLOAT))
+                    PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.LOCAL_DATETIME, SchemaValueType.FLOAT))
             .withName("relTypeConstrainSeveralTypes")
             .withId(1);
 
@@ -395,7 +394,7 @@ class SchemaStoreMapificationTest {
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("PROPERTY_TYPE"),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.allowedPropertyTypes", Values.stringArray("BOOLEAN"));
+                "__org.neo4j.SchemaRule.propertyType", Values.stringArray("BOOLEAN"));
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(nodeTypeConstraintSingleScalarType);
     }
 
@@ -409,8 +408,7 @@ class SchemaStoreMapificationTest {
                 "__org.neo4j.SchemaRule.schemaRuleType", Values.stringValue("CONSTRAINT"),
                 "__org.neo4j.SchemaRule.constraintRuleType", Values.stringValue("PROPERTY_TYPE"),
                 "__org.neo4j.SchemaRule.schemaEntityIds", Values.intArray(new int[] {1}),
-                "__org.neo4j.SchemaRule.allowedPropertyTypes",
-                        Values.stringArray("BOOLEAN", "LOCAL_DATETIME", "LIST_FLOAT"));
+                "__org.neo4j.SchemaRule.propertyType", Values.stringArray("BOOLEAN", "LOCAL_DATETIME", "FLOAT"));
         assertThat(unmapifySchemaRule(1, mapified)).isEqualTo(relTypeConstraintSeveralTypes);
     }
 }

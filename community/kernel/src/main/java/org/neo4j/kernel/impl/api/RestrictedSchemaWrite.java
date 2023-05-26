@@ -111,9 +111,9 @@ public class RestrictedSchemaWrite implements SchemaWrite {
 
     @Override
     public ConstraintDescriptor propertyTypeConstraintCreate(
-            SchemaDescriptor schema, String name, PropertyTypeSet allowedPropertyTypes) throws KernelException {
+            SchemaDescriptor schema, String name, PropertyTypeSet propertyType) throws KernelException {
         securityAuthorizationHandler.assertSchemaWrites(securityContext, PrivilegeAction.CREATE_CONSTRAINT);
-        return inner.propertyTypeConstraintCreate(schema, name, allowedPropertyTypes);
+        return inner.propertyTypeConstraintCreate(schema, name, propertyType);
     }
 
     @Override

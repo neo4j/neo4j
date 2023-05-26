@@ -24,7 +24,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueRepresentation;
 
 /**
- * Note: ordering is defined by CIP-90.
+ * Note: ordering and name (user description) is defined by CIP-100.
  */
 public enum SchemaValueType {
     BOOLEAN("BOOLEAN", ValueRepresentation.BOOLEAN),
@@ -36,30 +36,31 @@ public enum SchemaValueType {
             ValueRepresentation.INT16,
             ValueRepresentation.INT8),
     FLOAT("FLOAT", ValueRepresentation.FLOAT64, ValueRepresentation.FLOAT32),
-    DURATION("DURATION", ValueRepresentation.DURATION),
     DATE("DATE", ValueRepresentation.DATE),
-    ZONED_DATETIME("ZONED DATETIME", ValueRepresentation.ZONED_DATE_TIME),
-    LOCAL_DATETIME("LOCAL DATETIME", ValueRepresentation.LOCAL_DATE_TIME),
-    ZONED_TIME("ZONED TIME", ValueRepresentation.ZONED_TIME),
     LOCAL_TIME("LOCAL TIME", ValueRepresentation.LOCAL_TIME),
-    POINT("POINT", ValueRepresentation.GEOMETRY),
+    ZONED_TIME("ZONED TIME", ValueRepresentation.ZONED_TIME),
+    LOCAL_DATETIME("LOCAL DATETIME", ValueRepresentation.LOCAL_DATE_TIME),
+    ZONED_DATETIME("ZONED DATETIME", ValueRepresentation.ZONED_DATE_TIME),
+    DURATION("DURATION", ValueRepresentation.DURATION),
+    POINT("POINT", ValueRepresentation.GEOMETRY);
 
-    LIST_BOOLEAN("LIST<BOOLEAN>", ValueRepresentation.BOOLEAN_ARRAY),
-    LIST_STRING("LIST<STRING>", ValueRepresentation.TEXT_ARRAY),
-    LIST_INTEGER(
-            "LIST<INTEGER>",
-            ValueRepresentation.INT64_ARRAY,
-            ValueRepresentation.INT32_ARRAY,
-            ValueRepresentation.INT16_ARRAY,
-            ValueRepresentation.INT8_ARRAY),
-    LIST_FLOAT("LIST<FLOAT>", ValueRepresentation.FLOAT64_ARRAY, ValueRepresentation.FLOAT32_ARRAY),
-    LIST_DURATION("LIST<DURATION>", ValueRepresentation.DURATION_ARRAY),
-    LIST_DATE("LIST<DATE>", ValueRepresentation.DATE_ARRAY),
-    LIST_ZONED_DATETIME("LIST<ZONED DATETIME>", ValueRepresentation.ZONED_DATE_TIME_ARRAY),
-    LIST_LOCAL_DATETIME("LIST<LOCAL DATETIME>", ValueRepresentation.LOCAL_DATE_TIME_ARRAY),
-    LIST_ZONED_TIME("LIST<ZONED TIME>", ValueRepresentation.ZONED_TIME_ARRAY),
-    LIST_LOCAL_TIME("LIST<LOCAL TIME>", ValueRepresentation.LOCAL_TIME_ARRAY),
-    LIST_POINT("LIST<POINT>", ValueRepresentation.GEOMETRY_ARRAY);
+    // Future list types
+    // LIST_BOOLEAN("LIST<BOOLEAN>", ValueRepresentation.BOOLEAN_ARRAY),
+    // LIST_STRING("LIST<STRING>", ValueRepresentation.TEXT_ARRAY),
+    // LIST_INTEGER(
+    //         "LIST<INTEGER>",
+    //         ValueRepresentation.INT64_ARRAY,
+    //         ValueRepresentation.INT32_ARRAY,
+    //         ValueRepresentation.INT16_ARRAY,
+    //         ValueRepresentation.INT8_ARRAY),
+    // LIST_FLOAT("LIST<FLOAT>", ValueRepresentation.FLOAT64_ARRAY, ValueRepresentation.FLOAT32_ARRAY),
+    // LIST_DATE("LIST<DATE>", ValueRepresentation.DATE_ARRAY),
+    // LIST_LOCAL_TIME("LIST<LOCAL TIME>", ValueRepresentation.LOCAL_TIME_ARRAY),
+    // LIST_ZONED_TIME("LIST<ZONED TIME>", ValueRepresentation.ZONED_TIME_ARRAY),
+    // LIST_LOCAL_DATETIME("LIST<LOCAL DATETIME>", ValueRepresentation.LOCAL_DATE_TIME_ARRAY),
+    // LIST_ZONED_DATETIME("LIST<ZONED DATETIME>", ValueRepresentation.ZONED_DATE_TIME_ARRAY),
+    // LIST_DURATION("LIST<DURATION>", ValueRepresentation.DURATION_ARRAY),
+    // LIST_POINT("LIST<POINT>", ValueRepresentation.GEOMETRY_ARRAY);
 
     private final String userDescription;
     private final Set<ValueRepresentation> valueRepresentations;

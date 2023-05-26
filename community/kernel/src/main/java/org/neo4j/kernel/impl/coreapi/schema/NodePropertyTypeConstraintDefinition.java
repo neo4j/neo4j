@@ -47,12 +47,12 @@ public class NodePropertyTypeConstraintDefinition extends NodeConstraintDefiniti
                 label.name().toLowerCase(),
                 label.name(),
                 propertyText(label.name().toLowerCase()),
-                constraint.asPropertyTypeConstraint().allowedPropertyTypes().toString());
+                constraint.asPropertyTypeConstraint().propertyType().toString());
     }
 
     // FIXME PTC this should be a list of whatever public structure we choose for the types in the end.
     public PropertyTypeSet getAllowedTypes() {
         assertInUnterminatedTransaction();
-        return constraint.asPropertyTypeConstraint().allowedPropertyTypes();
+        return constraint.asPropertyTypeConstraint().propertyType();
     }
 }

@@ -49,12 +49,12 @@ public class RelationshipPropertyTypeConstraintDefinition extends RelationshipCo
                 relationshipType.name().toLowerCase(),
                 relationshipType.name(),
                 propertyText(relationshipType.name().toLowerCase()),
-                constraint.asPropertyTypeConstraint().allowedPropertyTypes().toString());
+                constraint.asPropertyTypeConstraint().propertyType().toString());
     }
 
     // FIXME PTC this should be a list of whatever public structure we choose for the types in the end.
     public PropertyTypeSet getAllowedTypes() {
         assertInUnterminatedTransaction();
-        return constraint.asPropertyTypeConstraint().allowedPropertyTypes();
+        return constraint.asPropertyTypeConstraint().propertyType();
     }
 }

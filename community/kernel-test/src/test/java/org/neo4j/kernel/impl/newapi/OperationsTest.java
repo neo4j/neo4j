@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -38,12 +39,15 @@ import static org.neo4j.values.storable.Values.intValue;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.stream.Stream;
 import org.eclipse.collections.impl.factory.primitive.IntObjectMaps;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.function.Executable;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 import org.neo4j.collection.Dependencies;
@@ -65,9 +69,12 @@ import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.internal.schema.IndexProviderDescriptor;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
+import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptorImplementation;
 import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.internal.schema.SchemaState;
+import org.neo4j.internal.schema.SchemaValueType;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.kernel.api.procedure.ProcedureView;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -204,7 +211,7 @@ abstract class OperationsTest {
                 constraintIndexCreator,
                 mock(ConstraintSemantics.class),
                 indexingProvidersService,
-                Config.defaults(GraphDatabaseInternalSettings.rel_unique_constraints, true),
+                Config.defaults(GraphDatabaseInternalSettings.type_constraints, true),
                 INSTANCE);
         operations.initialize(NULL_CONTEXT);
 
@@ -310,6 +317,18 @@ abstract class OperationsTest {
         // then
         verify(locks).acquireExclusive(any(), eq(ResourceType.RELATIONSHIP), eq(1L));
         verify(locks).acquireShared(any(), eq(ResourceType.RELATIONSHIP_TYPE), eq((long) type));
+    }
+
+    @ParameterizedTest
+    @MethodSource("schemaDescriptors")
+    void shouldThrowWhenCreatingPropertyTypeConstraintWithIllegalUnion(SchemaDescriptor schema) {
+        var illegalPropertyTypeUnion = PropertyTypeSet.of(SchemaValueType.INTEGER, SchemaValueType.DATE);
+        assertThatThrownBy(() -> operations.propertyTypeConstraintCreate(schema, "name", illegalPropertyTypeUnion))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    private static Stream<SchemaDescriptor> schemaDescriptors() {
+        return Stream.of(SchemaDescriptors.forLabel(1, 1), SchemaDescriptors.forRelType(1, 1));
     }
 
     protected String runForSecurityLevel(Executable executable, AccessMode mode, boolean shoudldBeAuthorized)

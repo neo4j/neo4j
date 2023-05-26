@@ -91,10 +91,7 @@ public class SchemaNameUtil {
             if (constraint.enforcesPropertyType()) {
                 key = hf.update(
                         key,
-                        constraint
-                                .asPropertyTypeConstraint()
-                                .allowedPropertyTypes()
-                                .hashCode());
+                        constraint.asPropertyTypeConstraint().propertyType().hashCode());
             }
             return String.format("constraint_%x", hf.toInt(hf.finalise(key)));
         }
