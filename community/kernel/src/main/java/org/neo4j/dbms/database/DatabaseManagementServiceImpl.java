@@ -23,6 +23,7 @@ import static org.neo4j.configuration.GraphDatabaseSettings.SYSTEM_DATABASE_NAME
 import static org.neo4j.configuration.GraphDatabaseSettings.db_format;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import org.neo4j.configuration.Config;
 import org.neo4j.dbms.api.DatabaseExistsException;
@@ -79,13 +80,15 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService 
 
     @Override
     public void createDatabase(String name) throws DatabaseExistsException {
-        systemDatabaseExecute("CREATE DATABASE `" + name + "`");
+        systemDatabaseExecute("CREATE DATABASE $name", Map.of("name", name));
     }
 
     @Override
     public void createDatabase(String name, Configuration databaseSpecificSettings) {
         String storeFormat = getStoreFormat(databaseSpecificSettings);
-        systemDatabaseExecute("CREATE DATABASE `" + name + "` OPTIONS {storeFormat:\"" + storeFormat + "\"}");
+        systemDatabaseExecute(
+                "CREATE DATABASE $name OPTIONS {storeFormat: $storeFormat}",
+                Map.of("name", name, "storeFormat", storeFormat));
     }
 
     private String getStoreFormat(Configuration databaseSpecificSettings) {
@@ -99,17 +102,17 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService 
 
     @Override
     public void dropDatabase(String name) {
-        systemDatabaseExecute("DROP DATABASE `" + name + "`");
+        systemDatabaseExecute("DROP DATABASE $name", Map.of("name", name));
     }
 
     @Override
     public void startDatabase(String name) {
-        systemDatabaseExecute("START DATABASE `" + name + "`");
+        systemDatabaseExecute("START DATABASE $name", Map.of("name", name));
     }
 
     @Override
     public void shutdownDatabase(String name) {
-        systemDatabaseExecute("STOP DATABASE `" + name + "`");
+        systemDatabaseExecute("STOP DATABASE $name", Map.of("name", name));
     }
 
     @Override
@@ -153,12 +156,12 @@ public class DatabaseManagementServiceImpl implements DatabaseManagementService 
         }
     }
 
-    private void systemDatabaseExecute(String query) {
+    private void systemDatabaseExecute(String query, Map<String, Object> parameters) {
         try {
             GraphDatabaseAPI database = (GraphDatabaseAPI) database(SYSTEM_DATABASE_NAME);
             try (InternalTransaction transaction =
                     database.beginTransaction(KernelTransaction.Type.EXPLICIT, LoginContext.AUTH_DISABLED)) {
-                transaction.execute(query);
+                transaction.execute(query, parameters);
                 transaction.commit();
             }
         } catch (QueryExecutionException e) {
