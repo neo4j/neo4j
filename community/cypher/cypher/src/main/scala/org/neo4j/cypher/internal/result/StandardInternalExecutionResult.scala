@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.ProfileMode
 import org.neo4j.cypher.internal.runtime.READ_ONLY
 import org.neo4j.cypher.internal.runtime.WRITE
-import org.neo4j.cypher.internal.util.OuterTaskCloser
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
@@ -38,7 +37,7 @@ import org.neo4j.kernel.impl.query.QuerySubscriber
 class StandardInternalExecutionResult(
   runtimeResult: RuntimeResult,
   taskCloser: TaskCloser,
-  maybeOuterTaskCloser: Option[OuterTaskCloser],
+  outerCloseable: AutoCloseable,
   override val queryType: InternalQueryType,
   override val executionMode: ExecutionMode,
   planDescriptionBuilder: PlanDescriptionBuilder,
@@ -99,7 +98,7 @@ class StandardInternalExecutionResult(
       case _ =>
         runtimeResult.cancel()
         closer.close(success)
-        maybeOuterTaskCloser.foreach(_.close())
+        outerCloseable.close()
     }
   }
 
@@ -115,7 +114,7 @@ class StandardInternalExecutionResult(
     try {
       runtimeResult.awaitCleanup()
     } finally {
-      maybeOuterTaskCloser.foreach(_.close())
+      outerCloseable.close()
     }
   }
 
@@ -140,4 +139,8 @@ class StandardInternalExecutionResult(
   }
 
   override def notifications: Iterable[Notification] = internalNotifications
+}
+
+object StandardInternalExecutionResult {
+  final val NoOuterCloseable: AutoCloseable = () => ()
 }

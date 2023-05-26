@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.result.ExplainExecutionResult
 import org.neo4j.cypher.internal.result.FailedExecutionResult
 import org.neo4j.cypher.internal.result.InternalExecutionResult
 import org.neo4j.cypher.internal.result.StandardInternalExecutionResult
+import org.neo4j.cypher.internal.result.StandardInternalExecutionResult.NoOuterCloseable
 import org.neo4j.cypher.internal.runtime.DBMS
 import org.neo4j.cypher.internal.runtime.DBMS_READ
 import org.neo4j.cypher.internal.runtime.ExplainMode
@@ -65,7 +66,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionalContextWrapper
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.InternalNotificationLogger
-import org.neo4j.cypher.internal.util.OuterTaskCloser
 import org.neo4j.cypher.internal.util.TaskCloser
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.exceptions.InternalException
@@ -366,25 +366,27 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
     ): QueryExecution = {
 
       val taskCloser = new TaskCloser
-      var maybeOuterTaskCloser: Option[OuterTaskCloser] = None
       val queryContext = getQueryContext(transactionalContext, taskCloser) // We create the QueryContext here
-      if (isOutermostQuery) {
-        val outerTaskCloser = new OuterTaskCloser
-        outerTaskCloser.addTask(_ => {
-          // NOTE: We leave it up to outer layers to rollback on failure.
-          // This will only close the statement.
-          val context = queryContext.transactionalContext
-          context.close()
-        })
-        maybeOuterTaskCloser = Some(outerTaskCloser)
-      }
+      val outerCloseable: AutoCloseable =
+        if (isOutermostQuery) {
+          () =>
+            {
+              val context = queryContext.transactionalContext
+              context.close()
+              // NOTE: We leave it up to outer layers to rollback on failure.
+              // This will only close the statement.
+            }
+        } else {
+          NoOuterCloseable
+        }
+
       taskCloser.addTask(_ => queryContext.resources.close())
       try {
         innerExecute(
           transactionalContext,
           queryOptions,
           taskCloser,
-          maybeOuterTaskCloser,
+          outerCloseable,
           queryContext,
           params,
           prePopulateResults,
@@ -398,7 +400,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
           QuerySubscriber.safelyOnError(subscriber, e)
           taskCloser.close(false)
           transactionalContext.rollback()
-          maybeOuterTaskCloser.foreach(_.close())
+          outerCloseable.close()
           new FailedExecutionResult(columnNames(logicalPlan), internalQueryType, subscriber)
       }
     }
@@ -407,7 +409,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       transactionalContext: TransactionalContext,
       queryOptions: QueryOptions,
       taskCloser: TaskCloser,
-      maybeOuterTaskCloser: Option[OuterTaskCloser],
+      outerCloseable: AutoCloseable,
       queryContext: QueryContext,
       params: MapValue,
       prePopulateResults: Boolean,
@@ -459,7 +461,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
           new StandardInternalExecutionResult(
             runtimeResult,
             taskCloser,
-            maybeOuterTaskCloser,
+            outerCloseable,
             internalQueryType,
             innerExecutionMode,
             planDescriptionBuilder,

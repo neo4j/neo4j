@@ -24,6 +24,7 @@ import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.neo4j.cypher.internal.javacompat.ResultSubscriber
 import org.neo4j.cypher.internal.plandescription.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.result.StandardInternalExecutionResult.NoOuterCloseable
 import org.neo4j.cypher.internal.runtime.InternalQueryType
 import org.neo4j.cypher.internal.runtime.NormalMode
 import org.neo4j.cypher.internal.runtime.QueryStatistics
@@ -156,7 +157,7 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
     new StandardInternalExecutionResult(
       inner,
       new TaskCloser,
-      None,
+      NoOuterCloseable,
       queryType,
       NormalMode,
       mock[PlanDescriptionBuilder],
