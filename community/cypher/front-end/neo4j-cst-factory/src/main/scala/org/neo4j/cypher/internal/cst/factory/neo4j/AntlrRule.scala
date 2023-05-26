@@ -1,0 +1,202 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.cst.factory.neo4j
+
+import org.antlr.v4.runtime.BaseErrorListener
+import org.antlr.v4.runtime.CharStreams
+import org.antlr.v4.runtime.CommonTokenStream
+import org.antlr.v4.runtime.ParserRuleContext
+import org.antlr.v4.runtime.RecognitionException
+import org.antlr.v4.runtime.Recognizer
+import org.antlr.v4.runtime.Token
+import org.neo4j.cypher.internal.parser.CypherLexer
+import org.neo4j.cypher.internal.parser.CypherParser
+
+import scala.collection.mutable
+
+case class SyntaxError(
+  offendingSymbol: Any,
+  line: Int,
+  charPositionInLine: Int,
+  message: String,
+  e: RecognitionException
+) extends Exception
+
+class SyntaxErrorListener extends BaseErrorListener {
+  private var syntaxErrors: mutable.Seq[SyntaxError] = mutable.Seq.empty
+
+  def getSyntaxErrors: Iterator[SyntaxError] = {
+    syntaxErrors.iterator
+  }
+
+  override def syntaxError(
+    recognizer: Recognizer[_, _],
+    offendingSymbol: Any,
+    line: Int,
+    charPositionInLine: Int,
+    msg: String,
+    e: RecognitionException
+  ): Unit = {
+    syntaxErrors :+= SyntaxError(offendingSymbol, line, charPositionInLine, msg, e)
+  }
+}
+
+trait AntlrRule[+T <: ParserRuleContext] {
+  def apply(queryText: String): Cst[T]
+}
+
+object AntlrRule {
+
+  type Parser = CypherParser
+
+  def fromParser[T <: ParserRuleContext](runParser: Parser => T, checkAllTokensConsumed: Boolean = true): AntlrRule[T] =
+    fromQueryAndParser(identity, runParser, checkAllTokensConsumed)
+
+  private def areAllTokensConsumed[T <: ParserRuleContext](
+    parserResult: T,
+    tokenStream: CommonTokenStream
+  ): Option[Exception] = {
+    tokenStream.fill()
+    var index = tokenStream.size() - 1
+    var lastToken = tokenStream.get(index)
+    var result: Option[Exception] = Option.empty
+
+    if (parserResult.stop.getType != Token.EOF) {
+      while (index >= 0 && (lastToken.getType == Token.EOF || lastToken.getChannel != Token.DEFAULT_CHANNEL)) {
+        index -= 1
+        lastToken = tokenStream.get(index)
+      }
+
+      if (parserResult.stop != lastToken) {
+        val token = parserResult.stop
+        val tokenText = token.getText
+        val tokenLine = token.getLine
+        val tokenColumn = token.getCharPositionInLine
+
+        result = Some(new Exception(
+          s"did not read all input, it stopped at token $tokenText at line $tokenLine, column $tokenColumn"
+        ))
+      }
+    }
+
+    result
+  }
+
+  def fromQueryAndParser[T <: ParserRuleContext](
+    transformQuery: String => String,
+    runParser: Parser => T,
+    checkAllTokensConsumed: Boolean
+  ): AntlrRule[T] =
+    (queryText: String) => {
+      val transformedQuery = transformQuery(queryText)
+      val inputStream = CharStreams.fromStream(new CypherInputStream(transformedQuery))
+      val lexer = new CypherLexer(inputStream)
+      val tokenStream = new CommonTokenStream(lexer)
+      val parser = new CypherParser(tokenStream)
+      val syntaxChecker = new SyntaxChecker()
+      val parserErrorListener: SyntaxErrorListener = new SyntaxErrorListener()
+
+      // This avoids printing all ANTLR errors to console
+      // https://stackoverflow.com/questions/25990158/antlr-4-avoid-error-printing-to-console
+      parser.removeErrorListeners()
+      parser.addParseListener(syntaxChecker)
+      parser.addErrorListener(parserErrorListener)
+      val parserResult = runParser(parser)
+
+      val exhaustedInputError =
+        if (checkAllTokensConsumed) areAllTokensConsumed(parserResult, tokenStream) else Option.empty
+      new Cst(parserResult) {
+        val parsingErrors: List[Exception] =
+          (parserErrorListener.getSyntaxErrors ++ syntaxChecker.getErrors ++ exhaustedInputError).toList
+      }
+    }
+
+  def CallClause: AntlrRule[Cst.CallClause] =
+    fromParser(_.callClause())
+
+  def MatchClause: AntlrRule[Cst.MatchClause] =
+    fromParser(_.matchClause())
+
+  def CaseExpression: AntlrRule[Cst.CaseExpression] =
+    fromParser(_.caseExpression())
+
+  def Clause: AntlrRule[Cst.Clause] =
+    fromParser(_.clause())
+
+  def Expression: AntlrRule[Cst.Expression] =
+    fromParser(_.expression())
+
+  def FunctionInvocation: AntlrRule[Cst.FunctionInvocation] =
+    fromParser(_.functionInvocation())
+
+  def ListComprehension: AntlrRule[Cst.ListComprehension] =
+    fromParser(_.listComprehension())
+
+  def MapLiteral: AntlrRule[Cst.MapLiteral] =
+    fromParser(_.mapLiteral())
+
+  def MapProjection: AntlrRule[Cst.MapProjection] =
+    fromParser(_.mapProjection())
+
+  def NodePattern: AntlrRule[Cst.NodePattern] =
+    fromParser(_.nodePattern())
+
+  def NumberLiteral: AntlrRule[Cst.NumberLiteral] =
+    fromParser(_.numberLiteral())
+
+  def Parameter: AntlrRule[Cst.Parameter] =
+    fromParser(_.parameter())
+
+  def ParenthesizedPath: AntlrRule[Cst.ParenthesizedPath] =
+    fromParser(_.parenthesizedPath())
+
+  def PatternComprehension: AntlrRule[Cst.PatternComprehension] =
+    fromParser(_.patternComprehension())
+
+  def Quantifier: AntlrRule[Cst.Quantifier] =
+    fromParser(_.quantifier())
+
+  def RelationshipPattern: AntlrRule[Cst.RelationshipPattern] =
+    fromParser(_.relationshipPattern())
+
+  def PatternPart: AntlrRule[Cst.Pattern] =
+    fromParser(_.pattern())
+
+  def Statement: AntlrRule[Cst.Statement] =
+    fromParser(_.statement())
+
+  def UseClause: AntlrRule[Cst.UseClause] =
+    fromParser(_.useClause())
+
+  // The reason for using Statements rather than Statement, is that Statements exhausts the input
+  // reading until the EOF, even if it does not know how to parse all of it, whereas Statement
+  // (and the rest of parser rules) will stop the moment they find a token they cannot recognize
+  def Statements(checkAllTokensConsumed: Boolean = true): AntlrRule[Cst.Statement] =
+    fromParser(_.statements().statement(0), checkAllTokensConsumed)
+
+  def StringLiteral: AntlrRule[Cst.StringLiteral] =
+    fromParser(_.stringLiteral())
+
+  def SubqueryClause: AntlrRule[Cst.SubqueryClause] =
+    fromParser(_.subqueryClause())
+
+  def Variable: AntlrRule[Cst.Variable] =
+    fromParser(_.variable())
+}
