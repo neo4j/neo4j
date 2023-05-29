@@ -89,8 +89,8 @@ trait PlanStalenessCaller[EXECUTABLE_QUERY] {
  * Cache which maps query strings into CachedExecutableQueries.
  *
  * This cache knows that CachedExecutableQueries can become stale, and uses a
- * PlanStalenessCaller to verify that CEQs are reusable before returning. A CEQ
- * which is detected in the cache, but is found to be stale
+ * PlanStalenessCaller to verify that CEQs are reusable before returning a CEQ
+ * which is detected in the cache, but is found to be stale.
  *
  * @param maximumSize Maximum size of this cache
  * @param stalenessCaller Decided whether CachedExecutionPlans are stale
