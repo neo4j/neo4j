@@ -101,13 +101,18 @@ public class RandomExtension extends StatefulFieldExtension<RandomSupport>
             return;
         }
 
-        final long seed = getStoredValue(context).seed();
+        var random = getStoredValue(context);
 
         // The reason we throw a new exception wrapping the actual exception here, instead of simply enhancing the
         // message is:
         // - AssertionFailedError has its own 'message' field, in addition to Throwable's 'detailedMessage' field
         // - Even if 'message' field is updated the test doesn't seem to print the updated message on assertion failure
-        throw new AssertionFailedError(format("%s [ random seed used: %dL ]", t.getMessage(), seed), t);
+        decorateAndThrow(random, t);
+    }
+
+    public static void decorateAndThrow(RandomSupport random, Throwable cause) {
+        throw new AssertionFailedError(
+                format("%s [ random seed used: %dL ]", cause.getMessage(), random.seed()), cause);
     }
 
     private void setSeed(ExtensionContext extensionContext) {
