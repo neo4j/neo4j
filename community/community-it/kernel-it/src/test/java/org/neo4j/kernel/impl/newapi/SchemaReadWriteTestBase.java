@@ -56,6 +56,8 @@ import org.neo4j.internal.schema.IndexType;
 import org.neo4j.internal.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptor;
 import org.neo4j.internal.schema.SchemaDescriptors;
+import org.neo4j.internal.schema.SchemaValueType;
+import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.values.storable.Values;
@@ -1602,6 +1604,126 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try (KernelTransaction tx = beginTransaction()) {
             assertThrows(SchemaKernelException.class, () -> tx.schemaWrite()
                     .keyConstraintCreate(uniqueForSchema(forLabel(label, prop1, prop1))));
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldCreatePropertyTypeConstraint(EntityType entityType) throws Exception {
+        ConstraintDescriptor constraint;
+        int entityToken = entityType.selectEntityToken(label, type);
+        try (KernelTransaction transaction = beginTransaction()) {
+            constraint = transaction
+                    .schemaWrite()
+                    .propertyTypeConstraintCreate(
+                            entityType.createSchemaDescriptor(entityToken, prop1),
+                            null,
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertTrue(schemaRead.constraintExists(constraint));
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
+                    .isEqualTo(singletonList(constraint));
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
+                    .isEqualTo(singletonList(constraint));
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldDropPropertyTypeConstraint(EntityType entityType) throws Exception {
+        ConstraintDescriptor constraint;
+        int entityToken = entityType.selectEntityToken(label, type);
+        try (KernelTransaction transaction = beginTransaction()) {
+            constraint = transaction
+                    .schemaWrite()
+                    .propertyTypeConstraintCreate(
+                            entityType.createSchemaDescriptor(entityToken, prop1),
+                            null,
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            transaction.schemaWrite().constraintDrop(constraint);
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertFalse(schemaRead.constraintExists(constraint));
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
+                    .isEmpty();
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
+                    .isEmpty();
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldSeePropertyTypeConstraintFromTransaction(EntityType entityType) throws Exception {
+        ConstraintDescriptor existing;
+        int entityToken = entityType.selectEntityToken(label, type);
+        try (KernelTransaction transaction = beginTransaction()) {
+            existing = transaction
+                    .schemaWrite()
+                    .propertyTypeConstraintCreate(
+                            entityType.createSchemaDescriptor(entityToken, prop1),
+                            "existing constraint",
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            SchemaReadCore before = transaction.schemaRead().snapshot();
+            ConstraintDescriptor newConstraint = transaction
+                    .schemaWrite()
+                    .propertyTypeConstraintCreate(
+                            entityType.createSchemaDescriptor(entityToken, prop2),
+                            "new constraint",
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertTrue(schemaRead.constraintExists(existing));
+            assertTrue(schemaRead.constraintExists(newConstraint));
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
+                    .contains(existing, newConstraint);
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
+                    .contains(existing, newConstraint);
+            assertThat(asList(entityType.constraintsGetForEntityToken(before, entityToken)))
+                    .contains(existing, newConstraint);
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(EntityType.class)
+    void shouldNotSeeDroppedPropertyTypeConstraintFromTransaction(EntityType entityType) throws Exception {
+        ConstraintDescriptor existing;
+        int entityToken = entityType.selectEntityToken(label, type);
+        try (KernelTransaction transaction = beginTransaction()) {
+            existing = transaction
+                    .schemaWrite()
+                    .propertyTypeConstraintCreate(
+                            entityType.createSchemaDescriptor(entityToken, prop1),
+                            "constraint name",
+                            PropertyTypeSet.of(SchemaValueType.BOOLEAN));
+            transaction.commit();
+        }
+
+        try (KernelTransaction transaction = beginTransaction()) {
+            SchemaReadCore before = transaction.schemaRead().snapshot();
+            transaction.schemaWrite().constraintDrop(existing);
+            SchemaRead schemaRead = transaction.schemaRead();
+            assertFalse(schemaRead.constraintExists(existing));
+
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead, entityToken)))
+                    .isEmpty();
+            assertThat(asList(entityType.constraintsGetForEntityToken(schemaRead.snapshot(), entityToken)))
+                    .isEmpty();
+            assertThat(asList(entityType.constraintsGetForEntityToken(before, entityToken)))
+                    .isEmpty();
         }
     }
 
