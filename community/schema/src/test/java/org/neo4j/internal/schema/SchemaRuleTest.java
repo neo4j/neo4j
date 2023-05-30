@@ -179,6 +179,18 @@ class SchemaRuleTest {
             labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.INTEGER));
     private final ConstraintDescriptor nodeTypeConstraintBoolString = ConstraintDescriptorFactory.typeForSchema(
             labelSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING));
+    private final ConstraintDescriptor relationshipTypeConstraintIntBool = ConstraintDescriptorFactory.typeForSchema(
+            relTypeSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING));
+    private final ConstraintDescriptor relationshipTypeConstraintBoolInt = ConstraintDescriptorFactory.typeForSchema(
+            relTypeSchema, PropertyTypeSet.of(SchemaValueType.BOOLEAN, SchemaValueType.STRING));
+    private final ConstraintDescriptor namedNodeTypeConstraint = ConstraintDescriptorFactory.typeForSchema(
+                    labelSchema, PropertyTypeSet.of(SchemaValueType.STRING))
+            .withName("namedNodeTypeConstraint")
+            .withId(10);
+    private final ConstraintDescriptor namedRelationshipTypeConstraint = ConstraintDescriptorFactory.typeForSchema(
+                    relTypeSchema, PropertyTypeSet.of(SchemaValueType.STRING))
+            .withName("namedRelationshipTypeConstraint")
+            .withId(11);
 
     private final InMemoryTokens lookup = new InMemoryTokens()
             .label(0, "La:bel")
@@ -213,6 +225,8 @@ class SchemaRuleTest {
         assertName(nodeTypeConstraintIntBool, "constraint_6d996305");
         assertName(nodeTypeConstraintBoolInt, "constraint_6d996305");
         assertName(nodeTypeConstraintBoolString, "constraint_83c1f5d4");
+        assertName(nodeTypeConstraintIntBool, "constraint_6d996305");
+        assertName(nodeTypeConstraintBoolInt, "constraint_6d996305");
         assertName(allLabelsPrototype, "index_f56fb29d");
         assertName(allRelTypesPrototype, "index_9625776f");
         assertName(textLabelPrototype, "index_e76ccd25");
@@ -223,7 +237,6 @@ class SchemaRuleTest {
 
     @Test
     void mustGenerateReasonableUserDescription() {
-
         assertUserDescription(
                 "Index( type='RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 rangeLabelPrototype);
@@ -273,7 +286,21 @@ class SchemaRuleTest {
         assertUserDescription(
                 "Constraint( type='RELATIONSHIP UNIQUENESS', schema=()-[:Type1 {prop2, prop3}]-() )",
                 uniqueRelTypeConstraint);
-
+        assertUserDescription(
+                "Constraint( type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=ANY<BOOLEAN | INTEGER> )",
+                nodeTypeConstraintBoolInt);
+        assertUserDescription(
+                "Constraint( type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=ANY<BOOLEAN | INTEGER> )",
+                nodeTypeConstraintIntBool);
+        assertUserDescription(
+                "Constraint( type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=ANY<BOOLEAN | STRING> )",
+                nodeTypeConstraintBoolString);
+        assertUserDescription(
+                "Constraint( type='RELATIONSHIP PROPERTY TYPE', schema=()-[:Type1 {prop2, prop3}]-(), propertyType=ANY<BOOLEAN | STRING> )",
+                relationshipTypeConstraintBoolInt);
+        assertUserDescription(
+                "Constraint( type='RELATIONSHIP PROPERTY TYPE', schema=()-[:Type1 {prop2, prop3}]-(), propertyType=ANY<BOOLEAN | STRING> )",
+                relationshipTypeConstraintIntBool);
         assertUserDescription(
                 "Index( name='rangeLabelPrototypeNamed', type='RANGE', schema=(:Label1 {prop2, prop3}), indexProvider='Undecided-0' )",
                 rangeLabelPrototypeNamed);
@@ -386,6 +413,12 @@ class SchemaRuleTest {
         assertUserDescription(
                 "Constraint( id=5, name='uniqueLabelConstraint2Named', type='UNIQUENESS', schema=(:`La:bel` {`prop:erty`, prop1}), ownedIndex=5 )",
                 uniqueLabelConstraint2Named);
+        assertUserDescription(
+                "Constraint( id=10, name='namedNodeTypeConstraint', type='NODE PROPERTY TYPE', schema=(:Label1 {prop2, prop3}), propertyType=STRING )",
+                namedNodeTypeConstraint);
+        assertUserDescription(
+                "Constraint( id=11, name='namedRelationshipTypeConstraint', type='RELATIONSHIP PROPERTY TYPE', schema=()-[:Type1 {prop2, prop3}]-(), propertyType=STRING )",
+                namedRelationshipTypeConstraint);
     }
 
     private static void assertName(SchemaDescriptorSupplier schemaish, String expectedName) {
