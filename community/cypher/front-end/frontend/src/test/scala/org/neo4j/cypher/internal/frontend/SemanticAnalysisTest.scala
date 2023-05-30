@@ -18,6 +18,7 @@ package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticError
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
+import org.neo4j.cypher.internal.ast.semantics.SemanticFeature.TypePredicateExpression
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
 import org.neo4j.cypher.internal.expressions.StringLiteral
 import org.neo4j.cypher.internal.frontend.phases.OpenCypherJavaCCParsing
@@ -1568,16 +1569,40 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
   }
 
   test("Should check for undefined variables in type predicate expression") {
-    val result = runSemanticAnalysis("MATCH (n) WHERE x IS :: BOOL RETURN 1")
+    val result =
+      runSemanticAnalysisWithSemanticFeatures(Seq(TypePredicateExpression), "MATCH (n) WHERE x IS :: BOOL RETURN 1")
     result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
       ("Variable `x` not defined", 1, 17)
     ))
   }
 
   test("Should check for undefined variables in negative type predicate expression") {
-    val result = runSemanticAnalysis("MATCH (n) WHERE x IS NOT :: BOOL RETURN 1")
+    val result =
+      runSemanticAnalysisWithSemanticFeatures(Seq(TypePredicateExpression), "MATCH (n) WHERE x IS NOT :: BOOL RETURN 1")
     result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
       ("Variable `x` not defined", 1, 17)
+    ))
+  }
+
+  test("Should fail without type predicate expression feature flag") {
+    val result = runSemanticAnalysis("MATCH (n) WHERE n.prop :: BOOL RETURN 1")
+    result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
+      (
+        "The `IS :: BOOLEAN` expression is not available in this implementation of Cypher due to lack of support for type predicate expression.",
+        1,
+        24
+      )
+    ))
+  }
+
+  test("Should fail without type predicate expression feature flag - negative") {
+    val result = runSemanticAnalysis("MATCH (n) WHERE n.prop IS NOT TYPED BOOL RETURN 1")
+    result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
+      (
+        "The `IS NOT :: BOOLEAN` expression is not available in this implementation of Cypher due to lack of support for type predicate expression.",
+        1,
+        24
+      )
     ))
   }
 

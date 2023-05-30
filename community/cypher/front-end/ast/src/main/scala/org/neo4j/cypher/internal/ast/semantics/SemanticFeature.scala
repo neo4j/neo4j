@@ -33,6 +33,10 @@ object SemanticFeature {
     override def name: String = "show setting"
   }
 
+  case object TypePredicateExpression extends SemanticFeature with FeatureToString {
+    override def name: String = "type predicate expression"
+  }
+
   case object MultipleGraphs extends SemanticFeature with FeatureToString {
     override def name: String = "multiple graphs"
   }
@@ -72,6 +76,7 @@ object SemanticFeature {
     UseAsSingleGraphSelector,
     QuantifiedPathPatterns,
     ShowSetting,
+    TypePredicateExpression,
     GpmShortestPath,
     MatchModes
   )
