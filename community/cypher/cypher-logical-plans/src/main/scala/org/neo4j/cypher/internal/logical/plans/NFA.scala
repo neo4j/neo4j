@@ -39,12 +39,15 @@ object NFA {
       def toDotString: String
     }
 
-    case class SingletonVarName(name: String) extends VarName {
-      override def toDotString: String = name
-    }
+    object VarName {
 
-    case class GroupVarName(name: String) extends VarName {
-      override def toDotString: String = s"<i>$name</i>"
+      case class SingletonVarName(name: String) extends VarName {
+        override def toDotString: String = name
+      }
+
+      case class GroupVarName(name: String) extends VarName {
+        override def toDotString: String = s"<i>$name</i>"
+      }
     }
   }
 

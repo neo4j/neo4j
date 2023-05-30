@@ -562,14 +562,12 @@ abstract class AbstractLogicalPlanBuilder[T, IMPL <: AbstractLogicalPlanBuilder[
     newNodes(nfa.nodeNames + targetNode)
     newRelationships(nfa.relationshipNames)
 
-    val rewrittenNFA = nfa.endoRewrite(expressionRewriter)
-
     appendAtCurrentIndent(UnaryOperator(lp =>
       StatefulShortestPath(
         lp,
         sourceNode,
         targetNode,
-        rewrittenNFA,
+        nfa.endoRewrite(expressionRewriter),
         predicates,
         nodeVariableGroupings,
         relationshipVariableGroupings

@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.logical.plans
 
 import org.neo4j.cypher.internal.logical.plans
-import org.neo4j.cypher.internal.logical.plans.NFA.State.GroupVarName
-import org.neo4j.cypher.internal.logical.plans.NFA.State.SingletonVarName
 import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName
+import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.GroupVarName
+import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.SingletonVarName
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.State
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.StateImpl
 import org.neo4j.cypher.internal.logical.plans.NFABuilder.Transition

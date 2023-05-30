@@ -64,7 +64,7 @@ import org.neo4j.cypher.internal.logical.plans.NFA.NodeJuxtapositionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.Predicate
 import org.neo4j.cypher.internal.logical.plans.NFA.RelationshipExpansionPredicate
 import org.neo4j.cypher.internal.logical.plans.NFA.State
-import org.neo4j.cypher.internal.logical.plans.NFA.State.GroupVarName
+import org.neo4j.cypher.internal.logical.plans.NFA.State.VarName.GroupVarName
 import org.neo4j.cypher.internal.logical.plans.Trail.VariableGrouping
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
