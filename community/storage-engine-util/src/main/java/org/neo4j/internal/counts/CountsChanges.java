@@ -32,7 +32,7 @@ public abstract class CountsChanges {
     static final long ABSENT = -1;
 
     protected final ConcurrentMap<CountsKey, AtomicLong> changes;
-    private volatile ConcurrentMap<CountsKey, AtomicLong> previousChanges;
+    protected volatile ConcurrentMap<CountsKey, AtomicLong> previousChanges;
     private volatile boolean frozen;
 
     protected CountsChanges(ConcurrentMap<CountsKey, AtomicLong> changes) {
