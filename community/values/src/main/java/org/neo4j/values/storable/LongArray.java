@@ -58,6 +58,7 @@ public final class LongArray extends IntegralArray {
         return mapper.mapLongArray(this);
     }
 
+    @Override
     public boolean equals(SequenceValue other) {
         if (other instanceof ArrayValue otherArray) {
             return otherArray.equals(value);

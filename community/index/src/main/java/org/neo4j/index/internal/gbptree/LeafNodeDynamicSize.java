@@ -724,6 +724,7 @@ class LeafNodeDynamicSize<KEY, VALUE> implements LeafNodeBehaviour<KEY, VALUE> {
         return DynamicSizeUtil.HEADER_LENGTH_DYNAMIC + pos * DynamicSizeUtil.OFFSET_SIZE;
     }
 
+    @Override
     public String toString() {
         return "TreeNodeDynamicSize[pageSize:" + payloadSize + ", keyValueSizeCap:" + keyValueSizeCap
                 + ", inlineKeyValueSizeCap:" + inlineKeyValueSizeCap + "]";

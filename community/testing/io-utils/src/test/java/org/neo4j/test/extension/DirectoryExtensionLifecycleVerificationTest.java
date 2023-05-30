@@ -28,7 +28,7 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SHARED_RESOURCE;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
 import java.nio.file.Path;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -130,7 +130,7 @@ abstract class DirectoryExtensionLifecycleVerificationTest {
             var filename = UUID.randomUUID().toString();
             var file = testDirectory.createFile(filename);
             List<Pair<Path, Boolean>> pairs = ExecutionSharedContext.getValue(CREATED_TEST_FILE_PAIRS_KEY);
-            pairs = pairs == null ? new LinkedList<>() : pairs;
+            pairs = pairs == null ? new ArrayList<>() : pairs;
             pairs.add(Pair.of(file, fail));
             ExecutionSharedContext.setValue(CREATED_TEST_FILE_PAIRS_KEY, pairs);
             if (fail) {

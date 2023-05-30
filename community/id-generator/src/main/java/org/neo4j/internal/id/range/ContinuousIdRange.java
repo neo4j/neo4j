@@ -34,10 +34,12 @@ public class ContinuousIdRange implements PageIdRange {
         this.rangeSize = rangeSize;
     }
 
+    @Override
     public long nextId() {
         return rangeStart + (cursor++);
     }
 
+    @Override
     public boolean hasNext() {
         return cursor < rangeSize;
     }

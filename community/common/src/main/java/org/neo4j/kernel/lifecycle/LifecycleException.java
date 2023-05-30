@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.lifecycle;
 
+import java.util.Locale;
+
 /**
  * This exception is thrown by LifeSupport if a lifecycle transition fails. If many exceptions occur
  * they will be chained through the cause exception mechanism.
@@ -62,9 +64,9 @@ public class LifecycleException extends RuntimeException {
             message.append("Component '")
                     .append(instanceStr)
                     .append("' failed to transition from ")
-                    .append(from.name().toLowerCase())
+                    .append(from.name().toLowerCase(Locale.ROOT))
                     .append(" to ")
-                    .append(to.name().toLowerCase());
+                    .append(to.name().toLowerCase(Locale.ROOT));
         }
         message.append('.');
         if (cause != null) {

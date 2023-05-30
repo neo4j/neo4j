@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.lock.ResourceType.NODE;
 
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -230,7 +231,7 @@ abstract class RWLockCompatibility extends LockCompatibilityTestSupport {
         public void run() {
             try {
                 startSignal.await();
-                java.util.Stack<Object> lockStack = new java.util.Stack<>();
+                var lockStack = new ArrayDeque<>();
                 for (int i = 0; i < numberOfIterations; i++) {
                     try {
                         int depth = depthCount;

@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.helpers.collection.LongRange;
 
@@ -60,9 +61,7 @@ class ParallelExecutionTest {
         ParallelExecution.ThrowingRunnable uncheckedException = () -> {
             throw new RuntimeException();
         };
-        ParallelExecution.ThrowingRunnable assertion = () -> {
-            assert false;
-        };
+        ParallelExecution.ThrowingRunnable assertion = Assertions::fail;
         ParallelExecution.ThrowingRunnable oom = () -> {
             throw new OutOfMemoryError();
         };

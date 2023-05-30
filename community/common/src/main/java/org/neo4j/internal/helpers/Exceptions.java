@@ -25,6 +25,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.Thread.State;
 import java.lang.Thread.UncaughtExceptionHandler;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -197,12 +198,12 @@ public final class Exceptions {
                 .append(" tid=")
                 .append(thread.getId())
                 .append(' ')
-                .append(thread.getState().name().toLowerCase())
+                .append(thread.getState().name().toLowerCase(Locale.ROOT))
                 .append('\n');
         builder.append("   ")
                 .append(State.class.getName())
                 .append(": ")
-                .append(thread.getState().name().toUpperCase())
+                .append(thread.getState().name().toUpperCase(Locale.ROOT))
                 .append('\n');
         for (StackTraceElement element : elements) {
             builder.append("      at ")

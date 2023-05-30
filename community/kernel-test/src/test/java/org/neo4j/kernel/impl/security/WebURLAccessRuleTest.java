@@ -87,7 +87,7 @@ class WebURLAccessRuleTest {
             final var result = URLAccessRules.webAccess().validate(config, url);
 
             // assert that the validation passes
-            assert result == url;
+            assertThat(result).isSameAs(url);
         }
     }
 
@@ -248,19 +248,19 @@ class WebURLAccessRuleTest {
 
         // execute the query
         assertThrows(URLAccessValidationError.class, () -> accessRule.validate(config, httpUrl));
-        assertTrue(accessRule.enteredIpPinning);
+        assertTrue(TestWebURLAccessRule.enteredIpPinning);
 
-        accessRule.enteredIpPinning = false;
+        TestWebURLAccessRule.enteredIpPinning = false;
         accessRule.validate(config, ftpUrl);
-        assertTrue(accessRule.enteredIpPinning);
+        assertTrue(TestWebURLAccessRule.enteredIpPinning);
 
-        accessRule.enteredIpPinning = false;
+        TestWebURLAccessRule.enteredIpPinning = false;
         assertThrows(URLAccessValidationError.class, () -> accessRule.validate(config, httpsUrl));
-        assertFalse(accessRule.enteredIpPinning);
+        assertFalse(TestWebURLAccessRule.enteredIpPinning);
     }
 
     @Test
-    void shouldSubstitueIpCorrectly() throws Exception {
+    void shouldSubstituteIpCorrectly() throws Exception {
         var accessRule = new WebURLAccessRule();
         assertEquals(
                 "http://127.0.0.1/test.csv",

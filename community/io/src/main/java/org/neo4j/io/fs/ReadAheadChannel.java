@@ -73,6 +73,7 @@ public class ReadAheadChannel<T extends StoreChannel> implements ReadableChannel
      * @return The position within the buffered stream.
      * @throws IOException on I/O error.
      */
+    @Override
     public long position() throws IOException {
         return channel.position() - aheadBuffer.remaining();
     }

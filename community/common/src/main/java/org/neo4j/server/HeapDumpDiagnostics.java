@@ -41,7 +41,7 @@ public class HeapDumpDiagnostics {
             if (Objects.equals(database, "")) {
                 // Empty string is System diagnostics
                 INSTANCE.SYSTEM_DIAGNOSTICS = cleanupDiagnostics(diagnostics);
-            } else if (INSTANCE.DIAGNOSTICS.contains(database) || INSTANCE.DIAGNOSTICS.size() < 10) {
+            } else if (INSTANCE.DIAGNOSTICS.containsKey(database) || INSTANCE.DIAGNOSTICS.size() < 10) {
                 INSTANCE.DIAGNOSTICS.put(database, cleanupDiagnostics(diagnostics));
             }
         }

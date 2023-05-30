@@ -98,7 +98,6 @@ public class TestRelationshipCount {
 
     @AfterEach
     public void closeTransaction() {
-        assert tx != null;
         tx.commit();
     }
 

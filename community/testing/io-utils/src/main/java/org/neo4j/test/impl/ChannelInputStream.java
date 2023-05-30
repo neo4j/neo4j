@@ -45,6 +45,31 @@ public class ChannelInputStream extends InputStream {
     }
 
     @Override
+    public int read(byte[] b, int off, int len) throws IOException {
+        buffer.clear();
+        buffer.limit(Math.min(len, buffer.capacity()));
+        int totalRead = 0;
+        boolean eof = false;
+        while (buffer.hasRemaining() && !eof) {
+            int bytesRead = channel.read(buffer);
+            if (bytesRead < 0) {
+                eof = true;
+                if (totalRead == 0) {
+                    return -1;
+                }
+            } else {
+                totalRead += bytesRead;
+            }
+        }
+
+        buffer.flip();
+        position += totalRead;
+
+        buffer.get(b, off, totalRead);
+        return totalRead;
+    }
+
+    @Override
     public int read() throws IOException {
         buffer.clear();
         buffer.limit(1);
