@@ -361,6 +361,16 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL isTyped(NULL p, NULL e, ParserCypherTypeName typeName) {
+        return null;
+    }
+
+    @Override
+    public NULL isNotTyped(NULL p, NULL e, ParserCypherTypeName typeName) {
+        return null;
+    }
+
+    @Override
     public NULL listLookup(NULL list, NULL index) {
         return null;
     }

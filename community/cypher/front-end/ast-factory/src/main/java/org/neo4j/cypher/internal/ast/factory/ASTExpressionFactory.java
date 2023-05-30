@@ -153,6 +153,10 @@ public interface ASTExpressionFactory<
 
     EXPRESSION isNotNull(POS p, EXPRESSION e);
 
+    EXPRESSION isTyped(POS p, EXPRESSION e, ParserCypherTypeName typeName);
+
+    EXPRESSION isNotTyped(POS p, EXPRESSION e, ParserCypherTypeName typeName);
+
     EXPRESSION listLookup(EXPRESSION list, EXPRESSION index);
 
     EXPRESSION listSlice(POS p, EXPRESSION list, EXPRESSION start, EXPRESSION end);

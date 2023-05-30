@@ -366,7 +366,9 @@ import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNotTyped
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
@@ -693,10 +695,13 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _predicateUnary: Gen[Expression] = for {
     r <- _expression
+    typeName <- _cypherTypeName
     res <- oneOf(
       Not(r)(pos),
       IsNull(r)(pos),
-      IsNotNull(r)(pos)
+      IsNotNull(r)(pos),
+      IsTyped(r, typeName)(pos),
+      IsNotTyped(r, typeName)(pos)
     )
   } yield res
 

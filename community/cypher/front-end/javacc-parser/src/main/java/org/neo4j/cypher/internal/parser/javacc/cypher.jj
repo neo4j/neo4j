@@ -3270,6 +3270,7 @@ EXPRESSION ComparisonExpression6( EXPRESSION lhs ) throws Exception:
 {
     Token t;
     EXPRESSION rhs;
+    ParserCypherTypeName typeName;
 }
 {
     LOOKAHEAD( 2 ) t=<REGEQ> rhs=Expression6() { return astFactory.regeq( pos( t ), lhs, rhs ); }
@@ -3279,8 +3280,14 @@ EXPRESSION ComparisonExpression6( EXPRESSION lhs ) throws Exception:
     | t=<IN> rhs=Expression6() { return astFactory.in( pos( t ), lhs, rhs ); }
     | t=<IS> (
         <NULL> { return astFactory.isNull( pos( t ), lhs ); }
-        | <NOT> <NULL> { return astFactory.isNotNull( pos( t ), lhs ); }
+        | <NOT> (
+            <NULL> { return astFactory.isNotNull( pos( t ), lhs ); }
+            | ((<TYPED> | <COLONCOLON>) typeName = cypherTypeName() { return astFactory.isNotTyped( pos( t ), lhs, typeName ); })
+        )
+        | (<TYPED> | <COLONCOLON>) typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
+
     )
+    | t=<COLONCOLON> typeName = cypherTypeName() { return astFactory.isTyped( pos( t ), lhs, typeName ); }
 }
 
 EXPRESSION Expression6() throws Exception:

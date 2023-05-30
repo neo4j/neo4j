@@ -1567,6 +1567,20 @@ class SemanticAnalysisTest extends SemanticAnalysisTestSuite {
     expectNoErrorsFrom(query)
   }
 
+  test("Should check for undefined variables in type predicate expression") {
+    val result = runSemanticAnalysis("MATCH (n) WHERE x IS :: BOOL RETURN 1")
+    result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
+      ("Variable `x` not defined", 1, 17)
+    ))
+  }
+
+  test("Should check for undefined variables in negative type predicate expression") {
+    val result = runSemanticAnalysis("MATCH (n) WHERE x IS NOT :: BOOL RETURN 1")
+    result.errors.map(e => (e.msg, e.position.line, e.position.column)) should equal(List(
+      ("Variable `x` not defined", 1, 17)
+    ))
+  }
+
   override def messageProvider: ErrorMessageProvider = new ErrorMessageProviderAdapter {
     override def createUseClauseUnsupportedError(): String = "A very nice message explaining why USE is not allowed"
 

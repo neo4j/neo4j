@@ -53,8 +53,10 @@ import org.neo4j.cypher.internal.expressions.HasTypes
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNotTyped
 import org.neo4j.cypher.internal.expressions.IsNull
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
+import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.LessThan
 import org.neo4j.cypher.internal.expressions.LessThanOrEqual
 import org.neo4j.cypher.internal.expressions.ListComprehension
@@ -209,6 +211,12 @@ private class DefaultExpressionStringifier(
 
       case IsNotNull(arg) =>
         s"${inner(ast)(arg)} IS NOT NULL"
+
+      case e @ IsTyped(arg, predicateType) =>
+        s"${inner(ast)(arg)} ${e.canonicalOperatorSymbol} ${predicateType.description}"
+
+      case e @ IsNotTyped(arg, predicateType) =>
+        s"${inner(ast)(arg)} ${e.canonicalOperatorSymbol} ${predicateType.description}"
 
       case ContainerIndex(exp, idx) =>
         s"${inner(ast)(exp)}[${inner(ast)(idx)}]"
@@ -456,7 +464,9 @@ private class DefaultExpressionStringifier(
       _: EndsWith |
       _: Contains |
       _: IsNull |
-      _: IsNotNull =>
+      _: IsNotNull |
+      _: IsTyped |
+      _: IsNotTyped =>
       Precedence(3)
 
     case _: Property |

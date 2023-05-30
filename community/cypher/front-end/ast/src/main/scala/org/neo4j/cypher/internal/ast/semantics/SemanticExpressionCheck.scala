@@ -63,7 +63,9 @@ import org.neo4j.cypher.internal.expressions.Infinity
 import org.neo4j.cypher.internal.expressions.IntegerLiteral
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNotTyped
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.IterablePredicateExpression
 import org.neo4j.cypher.internal.expressions.LabelCheckExpression
 import org.neo4j.cypher.internal.expressions.LabelOrTypeCheckExpression
@@ -274,6 +276,14 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           checkTypes(x, x.signatures)
 
       case x: IsNotNull =>
+        check(ctx, x.arguments) chain
+          checkTypes(x, x.signatures)
+
+      case x: IsTyped =>
+        check(ctx, x.arguments) chain
+          checkTypes(x, x.signatures)
+
+      case x: IsNotTyped =>
         check(ctx, x.arguments) chain
           checkTypes(x, x.signatures)
 

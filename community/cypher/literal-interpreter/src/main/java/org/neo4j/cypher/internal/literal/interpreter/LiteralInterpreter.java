@@ -1384,6 +1384,16 @@ public class LiteralInterpreter
     }
 
     @Override
+    public Object isTyped(NULL p, Object e, ParserCypherTypeName typeName) {
+        throw new UnsupportedOperationException("isTyped is not a literal");
+    }
+
+    @Override
+    public Object isNotTyped(NULL p, Object e, ParserCypherTypeName typeName) {
+        throw new UnsupportedOperationException("isNotTyped is not a literal");
+    }
+
+    @Override
     public Object listLookup(Object list, Object index) {
         throw new UnsupportedOperationException("listLookup is not a literal");
     }

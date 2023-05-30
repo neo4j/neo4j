@@ -380,7 +380,9 @@ import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
 import org.neo4j.cypher.internal.expressions.InvalidNotEquals
 import org.neo4j.cypher.internal.expressions.IsNotNull
+import org.neo4j.cypher.internal.expressions.IsNotTyped
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.LessThan
@@ -1171,6 +1173,16 @@ class Neo4jASTFactory(query: String)
   override def isNull(p: InputPosition, e: Expression): Expression = IsNull(e)(p)
 
   override def isNotNull(p: InputPosition, e: Expression): Expression = IsNotNull(e)(p)
+
+  override def isTyped(p: InputPosition, e: Expression, javaType: ParserCypherTypeName): Expression = {
+    val scalaType = convertCypherType(javaType)
+    IsTyped(e, scalaType)(p)
+  }
+
+  override def isNotTyped(p: InputPosition, e: Expression, javaType: ParserCypherTypeName): Expression = {
+    val scalaType = convertCypherType(javaType)
+    IsNotTyped(e, scalaType)(p)
+  }
 
   override def listLookup(list: Expression, index: Expression): Expression = ContainerIndex(list, index)(index.position)
 

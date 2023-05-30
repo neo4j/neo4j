@@ -83,7 +83,13 @@ class ExpressionStringifierIT extends CypherFunSuite {
       "COUNT { MATCH (n : Label)-[:HAS_REL]->(m) WHERE n.prop = 'f' RETURN n }" -> "COUNT { MATCH (n:Label)-[:HAS_REL]->(m)\n  WHERE n.prop = \"f\"\nRETURN n }",
       "reduce(totalAge = 0, n IN nodes(p)| totalAge + n.age) + 4 * 5" -> "reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age) + 4 * 5",
       "1 < 2 > 3 = 4 >= 5 <= 6" -> "1 < 2 > 3 = 4 >= 5 <= 6",
-      "1 < 2 > 3 = 4 >= 5 <= 6 AND a OR b" -> "(1 < 2 > 3 = 4 >= 5 <= 6) AND a OR b"
+      "1 < 2 > 3 = 4 >= 5 <= 6 AND a OR b" -> "(1 < 2 > 3 = 4 >= 5 <= 6) AND a OR b",
+      "x IS TYPED bool" -> "x IS :: BOOLEAN",
+      "n.prop is :: varChar" -> "n.prop IS :: STRING",
+      "1 :: InT" -> "1 IS :: INTEGER",
+      "['2'] IS not TYPED TIMESTAMP without TIMEZONE" -> "[\"2\"] IS NOT :: LOCAL DATETIME",
+      "$param is NOT :: time without TIMEZONE" -> "$param IS NOT :: LOCAL TIME",
+      "1 :: SIGNED INTEGER OR 1 IS NOT TYPED point" -> "1 IS :: INTEGER OR 1 IS NOT :: POINT"
     )
 
   tests foreach {
