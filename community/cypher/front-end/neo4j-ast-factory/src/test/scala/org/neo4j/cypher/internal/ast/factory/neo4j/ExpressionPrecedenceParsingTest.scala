@@ -23,11 +23,13 @@ import org.neo4j.cypher.internal.ast.CollectExpression
 import org.neo4j.cypher.internal.ast.CountExpression
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
+import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ListSlice
 import org.neo4j.cypher.internal.expressions.MapProjection
 import org.neo4j.cypher.internal.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.util.symbols.CTAny
 
 class ExpressionPrecedenceParsingTest extends JavaccParserAstTestBase[Expression] {
@@ -41,7 +43,7 @@ class ExpressionPrecedenceParsingTest extends JavaccParserAstTestBase[Expression
    * 10: AND
    * 9: NOT
    * 8: =, !=, <>, <, >, <=, >=
-   * 7: =~, STARS WITH, ENDS WITH, CONTAINS, IN, IS NULL, IS NOT NULL
+   * 7: =~, STARS WITH, ENDS WITH, CONTAINS, IN, IS NULL, IS NOT NULL, IS ::, IS NOT ::
    * 6: +, -
    * 5: *, /, %
    * 4: POW
@@ -88,9 +90,12 @@ class ExpressionPrecedenceParsingTest extends JavaccParserAstTestBase[Expression
 
   test("precedence 8 vs 7") {
     // ('string' STARTS WITH 's') = ('string' =~ 's?') > ('string' ENDS WITH 's') < ('string' IS NULL)
-    // >= ('string' CONTAINS 's') <> ('string' IS NOT NULL) <= ('string' IN list)
-    parsing("'string' STARTS WITH 's' = 'string' =~ 's?' > 'string' ENDS WITH 's' < 'string' IS NULL >= 'string' " +
-      "CONTAINS 's' <> 'string' IS NOT NULL <= 'string' IN list") shouldGive
+    // >= ('string' CONTAINS 's') <> ('string' IS NOT NULL) <= ('string' IN list) = (y IS TYPED BOOLEAN)
+    // = (1 IS NOT TYPED BOOLEAN)
+    parsing(
+      "'string' STARTS WITH 's' = 'string' =~ 's?' > 'string' ENDS WITH 's' < 'string' IS NULL >= 'string' " +
+        "CONTAINS 's' <> 'string' IS NOT NULL <= 'string' IN list = y IS TYPED BOOLEAN = 1 IS NOT TYPED BOOLEAN"
+    ) shouldGive
       ands(
         eq(
           startsWith(literalString("string"), literalString("s")),
@@ -115,12 +120,22 @@ class ExpressionPrecedenceParsingTest extends JavaccParserAstTestBase[Expression
         lessThanOrEqual(
           isNotNull(literalString("string")),
           in(literalString("string"), varFor("list"))
+        ),
+        eq(
+          in(literalString("string"), varFor("list")),
+          isTyped(varFor("y"), BooleanTypeName())
+        ),
+        eq(
+          isTyped(varFor("y"), BooleanTypeName()),
+          isNotTyped(literalInt(1), BooleanTypeName())
         )
       )
   }
 
   test("precedence 7 - negative") {
     failsToParse("'parse' ENDS WITH 'se' CONTAINS 'e'")
+    failsToParse("'ab' STARTS WITH 'a' IS NOT TYPED BOOLEAN")
+    failsToParse("RETURN [1] IS :: LIST<INT> IS :: BOOLEAN")
   }
 
   test("precedence 7 vs 6") {
@@ -161,6 +176,14 @@ class ExpressionPrecedenceParsingTest extends JavaccParserAstTestBase[Expression
 
     // (1 - 2) IS NULL
     parsing("1 - 2 IS NULL") shouldGive isNull(subtract(literalInt(1), literalInt(2)))
+
+    //  ([true] + n.p) :: STRING
+    parsing(" [true] + n.p :: STRING") shouldGive
+      isTyped(add(listOf(trueLiteral), prop("n", "p")), StringTypeName())
+
+    // (3 - 4) IS NOT TYPED BOOLEAN
+    parsing("3 - 4 IS NOT :: BOOLEAN") shouldGive
+      isNotTyped(subtract(literalInt(3), literalInt(4)), BooleanTypeName())
   }
 
   test("precedence 6 - left-associativity") {
