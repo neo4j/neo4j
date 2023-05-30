@@ -16,6 +16,7 @@
  */
 package org.neo4j.cypher.internal.ast.prettifier
 
+import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FixedQuantifier
 import org.neo4j.cypher.internal.expressions.IntervalQuantifier
@@ -23,6 +24,7 @@ import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -59,9 +61,20 @@ private class DefaultPatternStringifier(expr: ExpressionStringifier) extends Pat
     p.patternParts.map(apply).mkString(", ")
 
   override def apply(p: PatternPart): String = p match {
-    case allPaths @ PatternPartWithSelector(_, AllPaths()) => apply(allPaths.element)
-    case withSelector: PatternPartWithSelector => s"${withSelector.selector.prettified} ${apply(withSelector.element)}"
+    case allPaths: PathPatternPart => apply(allPaths.element)
+
+    case withSelector: PatternPartWithSelector => withSelector.selector match {
+        case AllPaths() => apply(withSelector.part)
+        case selector =>
+          withSelector.part match {
+            case NamedPatternPart(variable, patternPart) =>
+              s"${expr(variable)} = ${selector.prettified} ${apply(patternPart)}"
+            case part: AnonymousPatternPart => s"${selector.prettified} ${apply(part)}"
+          }
+      }
+
     case shortestPaths: ShortestPathsPatternPart => s"${shortestPaths.name}(${apply(shortestPaths.element)})"
+
     case namedPattern: NamedPatternPart => s"${expr(namedPattern.variable)} = ${apply(namedPattern.patternPart)}"
   }
 

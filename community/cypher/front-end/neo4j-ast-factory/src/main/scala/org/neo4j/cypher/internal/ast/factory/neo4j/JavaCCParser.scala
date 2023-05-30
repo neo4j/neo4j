@@ -37,8 +37,8 @@ case object JavaCCParser {
     cypherExceptionFactory: CypherExceptionFactory
   ): Statement = {
     val charStream = new CypherCharStream(queryText)
-    val astFactory = new Neo4jASTFactory(queryText)
     val astExceptionFactory = new Neo4jASTExceptionFactory(cypherExceptionFactory)
+    val astFactory = new Neo4jASTFactory(queryText, astExceptionFactory)
 
     val statements = new Cypher(astFactory, astExceptionFactory, charStream).Statements()
     if (statements.size() == 1) {

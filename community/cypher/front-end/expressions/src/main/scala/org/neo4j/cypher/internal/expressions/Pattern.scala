@@ -23,7 +23,26 @@ import org.neo4j.cypher.internal.util.InputPosition
 
 import scala.annotation.tailrec
 
+/**
+ * Represents a comma-separated list of pattern parts. Therefore, this is known in the parser as PatternList.
+ * As we (in contrast to PatternParts) can use this to describe arbitrary shaped graph structures, GQL refers to these as graph patterns.
+ */
+
+sealed trait Pattern extends ASTNode {
+
+  def patternParts: Seq[PatternPart]
+
+  lazy val length: Int = this.folder.fold(0) {
+    case RelationshipChain(_, _, _) => _ + 1
+    case _                          => identity
+  }
+}
+
 object Pattern {
+
+  final case class ForMatch(patternParts: Seq[PatternPartWithSelector])(val position: InputPosition) extends Pattern
+
+  final case class ForUpdate(patternParts: Seq[NonPrefixedPatternPart])(val position: InputPosition) extends Pattern
 
   sealed trait SemanticContext {
     def name: String = SemanticContext.name(this)
@@ -52,18 +71,6 @@ object Pattern {
   }
 }
 
-/**
- * Represents a comma-separated list of pattern parts. Therefore, this is known in the parser as PatternList.
- * As we (in contrast to PatternParts) can use this to describe arbitrary shaped graph structures, GQL refers to these as graph patterns.
- */
-case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode {
-
-  lazy val length: Int = this.folder.fold(0) {
-    case RelationshipChain(_, _, _) => _ + 1
-    case _                          => identity
-  }
-}
-
 case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode
 
 /**
@@ -77,29 +84,67 @@ sealed abstract class PatternPart extends ASTNode {
   def element: PatternElement
 
   def isBounded: Boolean
+}
 
-  def isSelective: Boolean
+sealed trait NonPrefixedPatternPart extends PatternPart
+
+case class PatternPartWithSelector(selector: Selector, part: NonPrefixedPatternPart) extends PatternPart {
+  override def position: InputPosition = part.position
+  override def allVariables: Set[LogicalVariable] = part.allVariables
+  override def element: PatternElement = part.element
+  override def isBounded: Boolean = part.isBounded || selector.isBounded
+
+  def isSelective: Boolean = selector.isBounded
+
+  def replaceElement(newElement: PatternElement): PatternPartWithSelector = {
+    def replaceInAnonymous(app: AnonymousPatternPart): AnonymousPatternPart = app match {
+      case p: PathPatternPart          => p.copy(element = newElement)
+      case s: ShortestPathsPatternPart => s.copy(element = newElement)(s.position)
+    }
+
+    def replaceInNonPrefixed(npp: NonPrefixedPatternPart): NonPrefixedPatternPart = npp match {
+      case npp: NamedPatternPart     => npp.copy(patternPart = replaceInAnonymous(npp.patternPart))(npp.position)
+      case app: AnonymousPatternPart => replaceInAnonymous(app)
+    }
+
+    copy(part = replaceInNonPrefixed(part))
+  }
 }
 
 case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPart)(val position: InputPosition)
-    extends PatternPart {
+    extends NonPrefixedPatternPart {
   override def element: PatternElement = patternPart.element
 
   override def allVariables: Set[LogicalVariable] = patternPart.allVariables + variable
 
   override def isBounded: Boolean = patternPart.isBounded
-
-  override def isSelective: Boolean = patternPart.isSelective
 }
 
-sealed trait AnonymousPatternPart extends PatternPart {
+sealed trait AnonymousPatternPart extends NonPrefixedPatternPart {
   override def allVariables: Set[LogicalVariable] = element.allVariables
+}
+
+case class PathPatternPart(element: PatternElement) extends AnonymousPatternPart {
+  override def position: InputPosition = element.position
+  override def isBounded: Boolean = element.isBounded
+}
+
+case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(val position: InputPosition)
+    extends AnonymousPatternPart {
+
+  val name: String =
+    if (single)
+      "shortestPath"
+    else
+      "allShortestPaths"
+
+  override def isBounded: Boolean = true
 }
 
 object PatternPart {
 
-  def apply(element: PatternElement): PatternPartWithSelector =
-    PatternPartWithSelector(element, AllPaths()(element.position))
+  def apply(element: PatternElement): PathPatternPart =
+    PathPatternPart(element)
 
   sealed trait Selector extends ASTNode {
     def prettified: String
@@ -141,31 +186,6 @@ object PatternPart {
   }
 }
 
-case class PatternPartWithSelector(element: PatternElement, selector: Selector) extends AnonymousPatternPart {
-  override def position: InputPosition = element.position
-  override def isBounded: Boolean = element.isBounded || selector.isBounded
-  override def isSelective: Boolean = selector.isBounded
-}
-
-case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(val position: InputPosition)
-    extends AnonymousPatternPart {
-
-  val name: String =
-    if (single)
-      "shortestPath"
-    else
-      "allShortestPaths"
-
-  override def isBounded: Boolean = true
-
-  /**
-   * While GQL's SHORTEST PATH is selective, Neo4j's shortestPath(...) is not. Although it breaks the normal DIFFERENT
-   * RELATIONSHIPS semantics that we're used to, shortestPath(...) has always been exempted from this restriction.
-   * A such, we need to consider shortestPath(...) non-selective.
-   */
-  override def isSelective: Boolean = false
-}
-
 /**
  * Contains a list of elements that are concatenated in the query.
  *
@@ -188,7 +208,7 @@ sealed trait PathFactor extends PatternElement
 sealed trait PatternAtom extends ASTNode
 
 case class QuantifiedPath(
-  part: PatternPart,
+  part: NonPrefixedPatternPart,
   quantifier: GraphPatternQuantifier,
   optionalWhereExpression: Option[Expression],
   variableGroupings: Set[VariableGrouping]
@@ -210,7 +230,7 @@ case class QuantifiedPath(
 object QuantifiedPath {
 
   def apply(
-    part: PatternPart,
+    part: NonPrefixedPatternPart,
     quantifier: GraphPatternQuantifier,
     optionalWhereExpression: Option[Expression]
   )(position: InputPosition): QuantifiedPath = {
@@ -234,7 +254,7 @@ case class VariableGrouping(singleton: LogicalVariable, group: LogicalVariable)(
 
 // We can currently parse these but not plan them. Therefore, we represent them in the AST but disallow them in semantic checking when concatenated and unwrap them otherwise.
 case class ParenthesizedPath(
-  part: PatternPart,
+  part: NonPrefixedPatternPart,
   optionalWhereClause: Option[Expression]
 )(val position: InputPosition)
     extends PathFactor with PatternAtom {
@@ -248,7 +268,7 @@ case class ParenthesizedPath(
 
 object ParenthesizedPath {
 
-  def apply(part: PatternPart)(position: InputPosition): ParenthesizedPath =
+  def apply(part: NonPrefixedPatternPart)(position: InputPosition): ParenthesizedPath =
     ParenthesizedPath(part, None)(position)
 }
 

@@ -17,28 +17,6 @@
 package org.neo4j.cypher.internal.frontend
 
 import org.neo4j.cypher.internal.ast.semantics.SemanticFeature
-import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.util.test_helpers.TestName
-
-abstract class PathSelectorsInDifferentClausesSemanticAnalysisTest(statement: Statement)
-    extends CypherFunSuite
-    with SemanticAnalysisTestSuiteWithDefaultQuery
-    with TestName {
-
-  override def defaultQuery: String = s"$statement $testName"
-
-  test("ANY (a)-[:Rel]->(b)") {
-    runSemanticAnalysisWithSemanticFeatures(SemanticFeature.GpmShortestPath).errorMessages shouldEqual Seq(
-      s"Path selectors such as `ANY 1 PATHS` cannot be used in a $statement clause, but only in a MATCH clause."
-    )
-  }
-}
-
-class PathSelectorsInCreateClausesSemanticAnalysisTest
-    extends PathSelectorsInDifferentClausesSemanticAnalysisTest(Statement.CREATE)
-
-class PathSelectorsInMergeClausesSemanticAnalysisTest
-    extends PathSelectorsInDifferentClausesSemanticAnalysisTest(Statement.MERGE)
 
 class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSuite {
 
@@ -73,33 +51,7 @@ class PathSelectorsSemanticAnalysisTest extends NameBasedSemanticAnalysisTestSui
     result.errorMessages shouldBe empty
   }
 
-  // Selectors may not be placed inside QPPs and PPPs
-  allSelectiveSelectors.foreach { selector =>
-    Seq("+", "").foreach { quantifier =>
-      test(s"MATCH ($selector (a)-[r]->(b))$quantifier RETURN count(*)") {
-        val result = runSemanticAnalysisWithSemanticFeatures(
-          SemanticFeature.GpmShortestPath
-        )
-        val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
-        result.errorMessages shouldBe Seq(
-          s"Path selectors such as `$selector` are not supported within $pathPatternKind path patterns."
-        )
-      }
-
-      if (quantifier == "+") {
-        test(s"MATCH (() ($selector (a)-[r]->(b))$quantifier ()--()) RETURN count(*)") {
-          val result = runSemanticAnalysisWithSemanticFeatures(
-            SemanticFeature.GpmShortestPath
-          )
-          result.errorMessages shouldBe Seq(
-            s"Path selectors such as `$selector` are not supported within quantified path patterns."
-          )
-        }
-      }
-    }
-  }
-
-  // ... but they may, if separated by a subquery expression
+  // Selectors may be placed inside QPPs and PPPs if separated by a subquery expression
   Seq(
     "r IN COLLECT",
     "EXISTS",

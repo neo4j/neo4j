@@ -100,8 +100,8 @@ object JavaccRule {
   // noinspection TypeAnnotation
   val cypherJavaccParserFactory = ParserFactory { queryText: String =>
     val charStream = new CypherCharStream(queryText)
-    val astFactory = new Neo4jASTFactory(queryText)
     val astExceptionFactory = new Neo4jASTExceptionFactory(exceptionFactory)
+    val astFactory = new Neo4jASTFactory(queryText, astExceptionFactory)
     new Cypher(astFactory, astExceptionFactory, charStream)
   }
 }

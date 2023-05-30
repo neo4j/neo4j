@@ -407,6 +407,7 @@ import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
@@ -416,6 +417,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathFactor
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternAtom
 import org.neo4j.cypher.internal.expressions.PatternComprehension
@@ -505,7 +507,7 @@ object TupleConverter extends DecorateTuple
 
 import org.neo4j.cypher.internal.ast.factory.neo4j.TupleConverter.asScalaEither
 
-class Neo4jASTFactory(query: String)
+class Neo4jASTFactory(query: String, astExceptionFactory: ASTExceptionFactory)
     extends ASTFactory[
       Statement,
       Query,
@@ -552,7 +554,8 @@ class Neo4jASTFactory(query: String)
       PatternAtom,
       DatabaseName,
       PatternPart.Selector,
-      MatchMode
+      MatchMode,
+      PatternElement
     ] {
 
   override def newSingleQuery(p: InputPosition, clauses: util.List[Clause]): Query = {
@@ -625,8 +628,14 @@ class Neo4jASTFactory(query: String)
 
   override def orderAsc(p: InputPosition, e: Expression): SortItem = AscSortItem(e)(p)
 
-  override def createClause(p: InputPosition, patterns: util.List[PatternPart]): Clause =
-    Create(Pattern(patterns.asScala.toList)(patterns.asScala.map(_.position).minBy(_.offset)))(p)
+  override def createClause(p: InputPosition, patterns: util.List[PatternPart]): Clause = {
+    val patternList: Seq[NonPrefixedPatternPart] = patterns.asScala.toList.map {
+      case p: NonPrefixedPatternPart  => p
+      case p: PatternPartWithSelector => throw pathSelectorCannotBeUsedInClauseException("CREATE", p.selector)
+    }
+
+    Create(Pattern.ForUpdate(patternList)(patterns.asScala.map(_.position).minBy(_.offset)))(p)
+  }
 
   override def matchClause(
     p: InputPosition,
@@ -637,12 +646,15 @@ class Neo4jASTFactory(query: String)
     hints: util.List[UsingHint],
     where: Where
   ): Clause = {
-    val patternList = patterns.asScala.toList
+    val patternList: Seq[PatternPartWithSelector] = patterns.asScala.toList.map {
+      case part: PatternPartWithSelector => part
+      case part: NonPrefixedPatternPart  => PatternPartWithSelector(allPathSelector(part.position), part)
+    }
     val finalMatchMode = if (matchMode == null) MatchMode.default(p) else matchMode
     Match(
       optional,
       finalMatchMode,
-      Pattern(patternList)(patternPos),
+      Pattern.ForMatch(patternList)(patternPos),
       if (hints == null) Nil else hints.asScala.toList,
       Option(where)
     )(
@@ -722,6 +734,11 @@ class Neo4jASTFactory(query: String)
     actionTypes: util.List[MergeActionType],
     positions: util.List[InputPosition]
   ): Clause = {
+    val patternForMerge: NonPrefixedPatternPart = pattern match {
+      case p: NonPrefixedPatternPart   => p
+      case pp: PatternPartWithSelector => throw pathSelectorCannotBeUsedInClauseException("MERGE", pp.selector)
+    }
+
     val clausesIter = setClauses.iterator()
     val positionItr = positions.iterator()
     val actions = actionTypes.asScala.toList.map {
@@ -731,7 +748,7 @@ class Neo4jASTFactory(query: String)
         OnCreate(clausesIter.next())(positionItr.next)
     }
 
-    Merge(pattern, actions)(p)
+    Merge(patternForMerge, actions)(p)
   }
 
   override def callClause(
@@ -822,16 +839,31 @@ class Neo4jASTFactory(query: String)
   override def namedPattern(v: Variable, pattern: PatternPart): PatternPart =
     NamedPatternPart(v, pattern.asInstanceOf[AnonymousPatternPart])(v.position)
 
-  override def shortestPathPattern(p: InputPosition, pattern: PatternPart): PatternPart =
-    ShortestPathsPatternPart(pattern.element, single = true)(p)
+  override def shortestPathPattern(p: InputPosition, patternElement: PatternElement): PatternPart =
+    ShortestPathsPatternPart(patternElement, single = true)(p)
 
-  override def allShortestPathsPattern(p: InputPosition, pattern: PatternPart): PatternPart =
-    ShortestPathsPatternPart(pattern.element, single = false)(p)
+  override def allShortestPathsPattern(p: InputPosition, patternElement: PatternElement): PatternPart =
+    ShortestPathsPatternPart(patternElement, single = false)(p)
 
-  override def pathPattern(
-    atoms: util.List[PatternAtom],
-    selector: PatternPart.Selector
-  ): PatternPart = {
+  override def pathPattern(patternElement: PatternElement): PatternPart =
+    PathPatternPart(patternElement)
+
+  override def patternWithSelector(
+    selector: PatternPart.Selector,
+    patternPart: PatternPart
+  ): PatternPartWithSelector = {
+    val nonPrefixedPatternPart = patternPart match {
+      case npp: NonPrefixedPatternPart => npp
+      case pp: PatternPartWithSelector =>
+        throw new IllegalArgumentException(
+          s"Expected a pattern without a selector, got: [${pp.getClass.getSimpleName}]: $pp"
+        )
+    }
+
+    PatternPartWithSelector(selector, nonPrefixedPatternPart)
+  }
+
+  override def patternElement(atoms: util.List[PatternAtom]): PatternElement = {
 
     val iterator = atoms.iterator().asScala.buffered
 
@@ -863,10 +895,7 @@ class Neo4jASTFactory(query: String)
         val position = factors.head.position
         PathConcatenation(factors)(position)
     }
-    PatternPartWithSelector(
-      pathElement,
-      if (selector != null) selector else PatternPart.AllPaths()(pathElement.position)
-    )
+    pathElement
   }
 
   override def anyPathSelector(
@@ -1010,10 +1039,17 @@ class Neo4jASTFactory(query: String)
     where: Expression,
     length: GraphPatternQuantifier
   ): PatternAtom = {
+    val nonPrefixedPatternPart: NonPrefixedPatternPart = internalPattern match {
+      case p: NonPrefixedPatternPart => p
+      case pp: PatternPartWithSelector =>
+        val pathPatternKind = if (length == null) "parenthesized" else "quantified"
+        throw pathSelectorNotAllowedWithinPathPatternKindException(pathPatternKind, pp.selector)
+    }
+
     if (length != null)
-      QuantifiedPath(internalPattern, length, Option(where))(p)
+      QuantifiedPath(nonPrefixedPatternPart, length, Option(where))(p)
     else {
-      ParenthesizedPath(internalPattern, Option(where))(p)
+      ParenthesizedPath(nonPrefixedPatternPart, Option(where))(p)
     }
   }
 
@@ -1023,15 +1059,44 @@ class Neo4jASTFactory(query: String)
   ): PatternAtom = {
     // represent -[rel]->+ as (()-[rel]->())+
     val pos = rel.position
-    val pattern = PatternPartWithSelector(
+    val pattern = PathPatternPart(
       RelationshipChain(
         NodePattern(None, None, None, None)(pos),
         rel,
         NodePattern(None, None, None, None)(pos)
-      )(pos),
-      PatternPart.AllPaths()(pos)
+      )(pos)
     )
     parenthesizedPathPattern(pos, pattern, where = null, quantifier)
+  }
+
+  private def pathSelectorCannotBeUsedInClauseException(
+    clauseName: String,
+    selector: PatternPart.Selector
+  ): Exception = {
+    val p = selector.position
+    astExceptionFactory.syntaxException(
+      new Neo4jASTConstructionException(
+        s"Path selectors such as `${selector.prettified}` cannot be used in a $clauseName clause, but only in a MATCH clause."
+      ),
+      p.offset,
+      p.line,
+      p.column
+    )
+  }
+
+  private def pathSelectorNotAllowedWithinPathPatternKindException(
+    pathPatternKind: String,
+    selector: PatternPart.Selector
+  ): Exception = {
+    val p = selector.position
+    astExceptionFactory.syntaxException(
+      new Neo4jASTConstructionException(
+        s"Path selectors such as `${selector.prettified}` are not supported within $pathPatternKind path patterns."
+      ),
+      p.offset,
+      p.line,
+      p.column
+    )
   }
 
   // EXPRESSIONS
@@ -1276,12 +1341,15 @@ class Neo4jASTFactory(query: String)
     if (query != null) {
       query
     } else {
-      val patternParts = patterns.asScala.toList
+      val patternParts = patterns.asScala.toList.map {
+        case p: PatternPartWithSelector => p
+        case p: NonPrefixedPatternPart  => PatternPartWithSelector(allPathSelector(p.position), p)
+      }
       val patternPos = patternParts.head.position
       val finalMatchMode = if (matchMode == null) MatchMode.default(patternPos) else matchMode
       SingleQuery(
         Seq(
-          Match(optional = false, finalMatchMode, Pattern(patternParts)(patternPos), Seq.empty, Option(where))(
+          Match(optional = false, finalMatchMode, Pattern.ForMatch(patternParts)(patternPos), Seq.empty, Option(where))(
             patternPos
           )
         )

@@ -106,7 +106,8 @@ public class LiteralInterpreter
                 NULL, // PATTERN_ATOM
                 NULL, // DATABASE NAME
                 NULL, // PATTERN_SELECTOR
-                NULL // MATCH_MODE
+                NULL, // MATCH_MODE
+                NULL // PATTERN_ELEMENT
         > {
 
     public static final ZoneId DEFAULT_ZONE_ID = ZoneId.systemDefault();
@@ -303,6 +304,11 @@ public class LiteralInterpreter
     }
 
     @Override
+    public NULL patternWithSelector(NULL patternPart, NULL aNull) {
+        throw new UnsupportedOperationException("patternWithSelector is not a literal");
+    }
+
+    @Override
     public NULL namedPattern(Object v, NULL aNull) {
         throw new UnsupportedOperationException("namedPattern is not a literal");
     }
@@ -318,8 +324,13 @@ public class LiteralInterpreter
     }
 
     @Override
-    public NULL pathPattern(List<NULL> atoms, NULL selector) {
+    public NULL pathPattern(NULL aNull) {
         throw new UnsupportedOperationException("pathPattern is not a literal");
+    }
+
+    @Override
+    public NULL patternElement(List<NULL> nulls) {
+        throw new UnsupportedOperationException("patternElement is not a literal");
     }
 
     @Override

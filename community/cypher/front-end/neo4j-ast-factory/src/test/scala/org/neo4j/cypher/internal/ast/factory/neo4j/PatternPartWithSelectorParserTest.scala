@@ -22,23 +22,20 @@ package org.neo4j.cypher.internal.ast.factory.neo4j
 import org.neo4j.cypher.internal.ast
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.CountExpression
-import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.ExistsExpression
 import org.neo4j.cypher.internal.ast.Match
-import org.neo4j.cypher.internal.ast.Merge
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.cst.factory.neo4j.AntlrRule
 import org.neo4j.cypher.internal.cst.factory.neo4j.Cst
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
-import org.neo4j.cypher.internal.expressions.ParenthesizedPath
-import org.neo4j.cypher.internal.expressions.PathConcatenation
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
-import org.neo4j.cypher.internal.expressions.StarQuantifier
+import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class PatternPartWithSelectorParserTest extends CypherFunSuite
@@ -86,48 +83,10 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
           Match(
             optional = false,
             matchMode = MatchMode.default(pos),
-            Pattern(Seq(
+            Pattern.ForMatch(Seq(
               PatternPartWithSelector(
-                relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-                astNode
-              )
-            ))(pos),
-            Seq(),
-            None
-          )(pos)
-        }
-      }
-    }
-  }
-
-  test("MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())") {
-    selectors.foreach { case selector -> astNode =>
-      withClue(s"selector = $selector") {
-        parsing(s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())") shouldGive {
-          Match(
-            optional = false,
-            matchMode = MatchMode.default(pos),
-            Pattern(Seq(
-              PatternPartWithSelector(
-                ParenthesizedPath(
-                  PatternPartWithSelector(
-                    PathConcatenation(Seq(
-                      nodePat(),
-                      QuantifiedPath(
-                        PatternPartWithSelector(
-                          relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-                          astNode
-                        ),
-                        StarQuantifier()(pos),
-                        None
-                      )(pos),
-                      relationshipChain(nodePat(), relPat(), nodePat())
-                    ))(pos),
-                    AllPaths()(pos)
-                  ),
-                  None
-                )(pos),
-                astNode
+                astNode,
+                PatternPart(relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))))
               )
             ))(pos),
             Seq(),
@@ -145,20 +104,22 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
           Match(
             optional = false,
             matchMode = MatchMode.default(pos),
-            Pattern(Seq(NamedPatternPart(
-              varFor("path"),
-              PatternPartWithSelector(
-                parenthesizedPath(
-                  relationshipChain(
-                    nodePat(Some("a")),
-                    relPat(Some("r")),
-                    nodePat(Some("b"))
-                  ),
-                  Some(equals(prop("a", "prop"), prop("b", "prop")))
-                ),
-                astNode
-              )
-            )(pos)))(pos),
+            Pattern.ForMatch(Seq(PatternPartWithSelector(
+              selector = astNode,
+              part = NamedPatternPart(
+                varFor("path"),
+                PathPatternPart(
+                  parenthesizedPath(
+                    relationshipChain(
+                      nodePat(Some("a")),
+                      relPat(Some("r")),
+                      nodePat(Some("b"))
+                    ),
+                    Some(equals(prop("a", "prop"), prop("b", "prop")))
+                  )
+                )
+              )(pos)
+            )))(pos),
             List(),
             None
           )(pos)
@@ -174,17 +135,16 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
           Match(
             optional = false,
             matchMode = MatchMode.default(pos),
-            Pattern(Seq(
+            Pattern.ForMatch(Seq(
               PatternPartWithSelector(
-                QuantifiedPath(
-                  PatternPartWithSelector(
-                    relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-                    AllPaths()(pos)
+                selector = astNode,
+                part = PathPatternPart(QuantifiedPath(
+                  PathPatternPart(
+                    relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b")))
                   ),
                   PlusQuantifier()(pos),
                   None
-                )(pos),
-                astNode
+                )(pos))
               )
             ))(pos),
             Seq(),
@@ -202,48 +162,14 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
           Match(
             optional = true,
             matchMode = MatchMode.default(pos),
-            Pattern(Seq(
+            Pattern.ForMatch(Seq(
               PatternPartWithSelector(
-                relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-                astNode
+                selector = astNode,
+                part = PathPatternPart(
+                  relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b")))
+                )
               )
             ))(pos),
-            Seq(),
-            None
-          )(pos)
-        }
-      }
-    }
-  }
-
-  // A Create should parse, but will fail semantic checking
-  test("CREATE $selector (a)-[r]->(b)") {
-    selectors.foreach { case selector -> astNode =>
-      withClue(s"selector = $selector") {
-        parsing(s"CREATE $selector (a)-[r]->(b)") shouldGive {
-          Create(
-            Pattern(Seq(
-              PatternPartWithSelector(
-                relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-                astNode
-              )
-            ))(pos)
-          )(pos)
-        }
-      }
-    }
-  }
-
-  // A Merge should parse, but will fail semantic checking
-  test("MERGE $selector (a)-[r]->(b)") {
-    selectors.foreach { case selector -> astNode =>
-      withClue(s"selector = $selector") {
-        parsing(s"MERGE $selector (a)-[r]->(b)") shouldGive {
-          Merge(
-            PatternPartWithSelector(
-              relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-              astNode
-            ),
             Seq(),
             None
           )(pos)
@@ -263,10 +189,14 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
                   Match(
                     optional = false,
                     matchMode = MatchMode.default(pos),
-                    Pattern(Seq(
+                    Pattern.ForMatch(Seq(
                       PatternPartWithSelector(
-                        relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-                        astNode
+                        selector = astNode,
+                        part = PathPatternPart(relationshipChain(
+                          nodePat(Some("a")),
+                          relPat(Some("r")),
+                          nodePat(Some("b"))
+                        ))
                       )
                     ))(pos),
                     Seq(),
@@ -293,10 +223,14 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
                   Match(
                     optional = false,
                     matchMode = MatchMode.default(pos),
-                    Pattern(Seq(
+                    Pattern.ForMatch(Seq(
                       PatternPartWithSelector(
-                        relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-                        astNode
+                        selector = astNode,
+                        part = PathPatternPart(relationshipChain(
+                          nodePat(Some("a")),
+                          relPat(Some("r")),
+                          nodePat(Some("b"))
+                        ))
                       )
                     ))(pos),
                     Seq(),
@@ -321,10 +255,11 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
               Match(
                 optional = false,
                 matchMode = MatchMode.default(pos),
-                Pattern(Seq(
+                Pattern.ForMatch(Seq(
                   PatternPartWithSelector(
-                    relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))),
-                    astNode
+                    selector = astNode,
+                    part =
+                      PathPatternPart(relationshipChain(nodePat(Some("a")), relPat(Some("r")), nodePat(Some("b"))))
                   )
                 ))(pos),
                 Seq(),
@@ -375,6 +310,63 @@ class PatternPartWithSelectorParserTest extends CypherFunSuite
     withClue(s"selector = ${selector._1}") {
       test(s"RETURN [ ${selector._1} (a)-->(b) | a ]") {
         failsToParse
+      }
+    }
+  }
+
+  test("MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())") {
+    selectors.foreach { case selector -> _ =>
+      withClue(s"selector = $selector") {
+        failsToParse(s"MATCH $selector (() ($selector (a)-[r]->(b))* ()-->())")
+      }
+    }
+  }
+
+  test("CREATE $selector (a)-[r]->(b)") {
+    selectors.foreach { case selector -> _ =>
+      withClue(s"selector = $selector") {
+        failsToParse(s"CREATE $selector (a)-[r]->(b)")
+      }
+    }
+  }
+
+  test("MERGE $selector (a)-[r]->(b)") {
+    selectors.foreach { case selector -> _ =>
+      withClue(s"selector = $selector") {
+        failsToParse(s"MERGE $selector (a)-[r]->(b)")
+      }
+    }
+  }
+
+  test("ANY (a)-[:Rel]->(b)") {
+    val clausesToTest = Seq(("CREATE", InputPosition(7, 1, 8)), ("MERGE", InputPosition(6, 1, 7)))
+    for ((clause, pos) <- clausesToTest) withClue(clause) {
+      val q = s"$clause $testName"
+      assertFailsWithMessage(
+        q,
+        s"Path selectors such as `ANY 1 PATHS` cannot be used in a $clause clause, but only in a MATCH clause. ($pos)"
+      )
+    }
+  }
+
+  // Selectors may not be placed inside QPPs and PPPs
+  selectors.foreach { case (selector -> astSelector) =>
+    Seq("+", "").foreach { quantifier =>
+      test(s"MATCH ($selector (a)-[r]->(b))$quantifier") {
+        val pathPatternKind = if (quantifier == "") "parenthesized" else "quantified"
+        assertFailsWithMessageStart(
+          testName,
+          s"Path selectors such as `${astSelector.prettified}` are not supported within $pathPatternKind path patterns."
+        )
+      }
+
+      if (quantifier == "+") {
+        test(s"MATCH (() ($selector (a)-[r]->(b))$quantifier ()--())") {
+          assertFailsWithMessageStart(
+            testName,
+            s"Path selectors such as `${astSelector.prettified}` are not supported within quantified path patterns."
+          )
+        }
       }
     }
   }

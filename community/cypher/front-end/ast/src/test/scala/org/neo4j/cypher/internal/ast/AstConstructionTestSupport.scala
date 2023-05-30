@@ -86,6 +86,7 @@ import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.NodeRelPair
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
@@ -105,6 +106,7 @@ import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.Pow
 import org.neo4j.cypher.internal.expressions.ProcedureName
@@ -760,7 +762,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     SubqueryCall.InTransactionsParameters(batchParams, errorParams, reportParams)(pos)
 
   def create(pattern: PatternElement, position: InputPosition = pos): Create =
-    Create(Pattern(Seq(PatternPart(pattern)))(pattern.position))(position)
+    Create(Pattern.ForUpdate(Seq(PatternPart(pattern)))(pattern.position))(position)
 
   def merge(pattern: PatternElement): Merge =
     Merge(PatternPart(pattern), Seq.empty)(pos)
@@ -770,14 +772,22 @@ trait AstConstructionTestSupport extends CypherTestSupport {
     matchMode: MatchMode = MatchMode.default(pos),
     where: Option[Where] = None
   ): Match =
-    Match(optional = false, matchMode = matchMode, Pattern(Seq(PatternPart(pattern)))(pos), Seq(), where)(pos)
+    Match(optional = false, matchMode = matchMode, patternForMatch(pattern), Seq(), where)(pos)
 
   def optionalMatch(pattern: PatternElement, where: Option[Where] = None): Match = {
-    Match(optional = true, MatchMode.default(pos), Pattern(Seq(PatternPart(pattern)))(pos), Seq(), where)(pos)
+    Match(optional = true, MatchMode.default(pos), patternForMatch(pattern), Seq(), where)(pos)
   }
 
   def match_(patterns: Seq[PatternElement], where: Option[Where]): Match =
-    Match(optional = false, MatchMode.default(pos), Pattern(patterns.map(PatternPart.apply))(pos), Seq(), where)(pos)
+    Match(optional = false, MatchMode.default(pos), patternForMatch(patterns: _*), Seq(), where)(pos)
+
+  def patternForMatch(parts: Seq[NonPrefixedPatternPart]): Pattern.ForMatch = {
+    Pattern.ForMatch(parts.map(_.withAllPathsSelector))(pos)
+  }
+
+  def patternForMatch(elements: PatternElement*)(implicit dummy: DummyImplicit): Pattern.ForMatch = {
+    patternForMatch(elements.map(e => PatternPart(e)))
+  }
 
   def with_(items: ReturnItem*): With =
     With(ReturnItems(includeExisting = false, items)(pos))(pos)
@@ -917,7 +927,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   ): CaseExpression = CaseExpression(expression, alternatives.toIndexedSeq, default)(pos)
 
   def simpleExistsExpression(
-    pattern: Pattern,
+    pattern: Pattern.ForMatch,
     maybeWhere: Option[Where],
     matchMode: MatchMode = MatchMode.default(pos),
     introducedVariables: Set[LogicalVariable] = Set.empty,
@@ -932,7 +942,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   }
 
   def simpleCollectExpression(
-    pattern: Pattern,
+    pattern: Pattern.ForMatch,
     maybeWhere: Option[Where],
     returnItem: Return,
     matchMode: MatchMode = MatchMode.default(pos),
@@ -949,7 +959,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   }
 
   def simpleCountExpression(
-    pattern: Pattern,
+    pattern: Pattern.ForMatch,
     maybeWhere: Option[Where],
     matchMode: MatchMode = MatchMode.default(pos),
     introducedVariables: Set[LogicalVariable] = Set.empty,
@@ -1004,6 +1014,12 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   implicit class UnionLiteralOps(u: UnionDistinct) {
     def all: UnionAll = UnionAll(u.lhs, u.rhs)(pos)
+  }
+
+  implicit class NonPrefixedPatternPartOps(part: NonPrefixedPatternPart) {
+
+    def withAllPathsSelector: PatternPartWithSelector =
+      PatternPartWithSelector(allPathsSelector(), part)
   }
 
   def increasePos(position: InputPosition, inc: Int): InputPosition = {

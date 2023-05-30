@@ -87,7 +87,8 @@ public class NullAstFactory
                 NULL, // PATTERN_ATOM
                 NULL, // DATABASE NAME
                 NULL, // PATTERN_SELECTOR
-                NULL // MATCH MODE
+                NULL, // MATCH MODE
+                NULL // PATTERN_ELEMENT
         > {
 
     @Override
@@ -666,6 +667,11 @@ public class NullAstFactory
     }
 
     @Override
+    public NULL patternWithSelector(NULL selector, NULL pattern) {
+        return null;
+    }
+
+    @Override
     public NULL namedPattern(NULL v, NULL aNull) {
         return null;
     }
@@ -681,7 +687,12 @@ public class NullAstFactory
     }
 
     @Override
-    public NULL pathPattern(List<NULL> atoms, NULL selector) {
+    public NULL pathPattern(NULL aNull) {
+        return null;
+    }
+
+    @Override
+    public NULL patternElement(List<NULL> atoms) {
         return null;
     }
 

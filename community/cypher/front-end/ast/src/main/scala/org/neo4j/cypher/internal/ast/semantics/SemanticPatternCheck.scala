@@ -37,6 +37,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathFactor
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Match
@@ -44,7 +45,6 @@ import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.Merge
 import org.neo4j.cypher.internal.expressions.Pattern.SemanticContext.name
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
-import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
 import org.neo4j.cypher.internal.expressions.PatternPart.CountedSelector
 import org.neo4j.cypher.internal.expressions.PatternPart.ShortestGroups
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
@@ -67,7 +67,6 @@ import org.neo4j.cypher.internal.label_expressions.SolvableLabelExpression
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
-import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.RepeatedVarLengthRelationshipReference
@@ -101,11 +100,14 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def declareVariables(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
+      case PatternPartWithSelector(_, part) =>
+        declareVariables(ctx)(part)
+
       case x: NamedPatternPart =>
         declareVariables(ctx)(x.patternPart) chain
           declareVariable(x.variable, CTPath)
 
-      case x: PatternPartWithSelector =>
+      case x: PathPatternPart =>
         (x.element, ctx) match {
           case (_: NodePattern, SemanticContext.Match) =>
             declareVariables(ctx, x.element)
@@ -122,11 +124,8 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
 
   def check(ctx: SemanticContext)(part: PatternPart): SemanticCheck =
     part match {
-      case x: NamedPatternPart =>
-        check(ctx)(x.patternPart)
-
       case x: PatternPartWithSelector =>
-        check(ctx, x.element) chain
+        check(ctx)(x.part) chain
           when(!x.selector.isInstanceOf[PatternPart.AllPaths]) {
             checkContext(ctx, s"Path selectors such as `${x.selector.prettified}`", x.selector.position) chain
               whenState(!_.features.contains(SemanticFeature.GpmShortestPath)) {
@@ -134,6 +133,12 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
               }
           } chain
           check(x.selector)
+
+      case x: NamedPatternPart =>
+        check(ctx)(x.patternPart)
+
+      case x: PathPatternPart =>
+        check(ctx, x.element)
 
       case x: ShortestPathsPatternPart =>
         def checkContainsSingle: SemanticCheck =
@@ -299,12 +304,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
                   "Variable length relationships cannot be part of a quantified path pattern.",
                   rel.position
                 ))
-            case PatternPartWithSelector(_, AllPaths()) => acc => TraverseChildren(acc)
-            case PatternPartWithSelector(_, selector) => acc =>
-                SkipChildren(acc chain error(
-                  s"Path selectors such as `${selector.prettified}` are not supported within quantified path patterns.",
-                  selector.position
-                ))
             case _: FullSubqueryExpression => acc => SkipChildren(acc)
           }
 
@@ -345,12 +344,6 @@ object SemanticPatternCheck extends SemanticAnalysisTooling {
               SemanticError(
                 s"${shortestPaths.name}(...) is only allowed as a top-level element and not inside a parenthesized path pattern",
                 shortestPaths.position
-              )
-            case PatternPartWithSelector(_, AllPaths()) => success
-            case PatternPartWithSelector(_, selector) =>
-              error(
-                s"Path selectors such as `${selector.prettified}` are not supported within parenthesized path patterns.",
-                selector.position
               )
             case _ => success
           }

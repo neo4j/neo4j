@@ -83,7 +83,8 @@ public interface ASTFactory<
                 PATTERN_ATOM,
                 DATABASE_NAME,
                 PATTERN_SELECTOR,
-                MATCH_MODE>
+                MATCH_MODE,
+                PATTERN_ELEMENT>
         extends ASTExpressionFactory<
                 EXPRESSION,
                 LABEL_EXPRESSION,
@@ -217,13 +218,17 @@ public interface ASTFactory<
 
     CALL_RESULT_ITEM callResultItem(POS p, String name, VARIABLE v);
 
+    PATTERN patternWithSelector(PATTERN_SELECTOR selector, PATTERN patternPart);
+
     PATTERN namedPattern(VARIABLE v, PATTERN pattern);
 
-    PATTERN shortestPathPattern(POS p, PATTERN pattern);
+    PATTERN shortestPathPattern(POS p, PATTERN_ELEMENT patternElement);
 
-    PATTERN allShortestPathsPattern(POS p, PATTERN pattern);
+    PATTERN allShortestPathsPattern(POS p, PATTERN_ELEMENT patternElement);
 
-    PATTERN pathPattern(List<PATTERN_ATOM> atoms, PATTERN_SELECTOR selector);
+    PATTERN pathPattern(PATTERN_ELEMENT patternElement);
+
+    PATTERN_ELEMENT patternElement(List<PATTERN_ATOM> atoms);
 
     PATTERN_SELECTOR anyPathSelector(String count, POS countPosition, POS position);
 

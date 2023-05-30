@@ -64,16 +64,17 @@ import org.neo4j.cypher.internal.expressions.MatchMode.MatchMode
 import org.neo4j.cypher.internal.expressions.MatchMode.RepeatableElements
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
-import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.ProcedureName
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
@@ -387,8 +388,8 @@ trait SingleRelTypeCheck {
 
   protected def checkRelTypes(patternPart: PatternPart): SemanticCheck =
     patternPart match {
-      case PatternPartWithSelector(element, _) => checkRelTypes(element)
-      case _                                   => success
+      case PathPatternPart(element) => checkRelTypes(element)
+      case _                        => success
     }
 
   protected def checkRelTypes(pattern: Pattern): SemanticCheck =
@@ -428,7 +429,7 @@ object Match {
 case class Match(
   optional: Boolean,
   matchMode: MatchMode,
-  pattern: Pattern,
+  pattern: Pattern.ForMatch,
   hints: Seq[UsingHint],
   where: Option[Where]
 )(val position: InputPosition) extends Clause with SemanticAnalysisTooling {
@@ -847,7 +848,7 @@ case class Match(
   def allExportedVariables: Set[LogicalVariable] = pattern.patternParts.folder.findAllByClass[LogicalVariable].toSet
 }
 
-case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[Where] = None)(
+case class Merge(pattern: NonPrefixedPatternPart, actions: Seq[MergeAction], where: Option[Where] = None)(
   val position: InputPosition
 ) extends UpdateClause with SingleRelTypeCheck {
 
@@ -868,14 +869,15 @@ case class Merge(pattern: PatternPart, actions: Seq[MergeAction], where: Option[
   }
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
-    SemanticPatternCheck.check(Pattern.SemanticContext.Merge, Pattern(Seq(pattern))(pattern.position)) chain
+    SemanticPatternCheck.check(Pattern.SemanticContext.Merge, Pattern.ForUpdate(Seq(pattern))(pattern.position)) chain
       actions.semanticCheck chain
       checkRelTypes(pattern) chain
       where.semanticCheck chain
       checkNoSubqueryInMerge
 }
 
-case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateClause with SingleRelTypeCheck {
+case class Create(pattern: Pattern.ForUpdate)(val position: InputPosition) extends UpdateClause
+    with SingleRelTypeCheck {
   override def name = "CREATE"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =
@@ -886,7 +888,7 @@ case class Create(pattern: Pattern)(val position: InputPosition) extends UpdateC
   override protected def shouldRunGpmChecks: Boolean = false
 }
 
-case class CreateUnique(pattern: Pattern)(val position: InputPosition) extends UpdateClause {
+case class CreateUnique(pattern: Pattern.ForUpdate)(val position: InputPosition) extends UpdateClause {
   override def name = "CREATE UNIQUE"
 
   override def clauseSpecificSemanticCheck: SemanticCheck =

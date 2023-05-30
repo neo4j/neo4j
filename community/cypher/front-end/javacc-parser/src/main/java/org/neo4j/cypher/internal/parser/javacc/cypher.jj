@@ -131,7 +131,8 @@ public class Cypher<STATEMENT,
                     PATTERN_ATOM,
                     DATABASE_NAME,
                     PATTERN_SELECTOR,
-                    MATCH_MODE> {
+                    MATCH_MODE,
+                    PATTERN_ELEMENT> {
 
     ASTExceptionFactory exceptionFactory;
     ASTFactory<STATEMENT,
@@ -179,7 +180,8 @@ public class Cypher<STATEMENT,
                PATTERN_ATOM,
                DATABASE_NAME,
                PATTERN_SELECTOR,
-               MATCH_MODE> astFactory;
+               MATCH_MODE,
+               PATTERN_ELEMENT> astFactory;
     // to distinguish a bar that follows a label expression from the or-operator as part of a label expression, this stack keeps track of the current context
     Stack<ExpectBar> labelExpressionStack = new Stack<>();
 
@@ -228,7 +230,8 @@ public class Cypher<STATEMENT,
                              PATTERN_ATOM,
                              DATABASE_NAME,
                              PATTERN_SELECTOR,
-                             MATCH_MODE> astFactory,
+                             MATCH_MODE,
+                             PATTERN_ELEMENT> astFactory,
                   ASTExceptionFactory exceptionFactory,
                   CharStream stream) {
         this(stream);
@@ -2287,12 +2290,21 @@ List<PATTERN> PatternList() throws Exception:
 
 PATTERN Pattern() throws Exception:
 {
-    VARIABLE v;
+    VARIABLE v = null;
     PATTERN p;
+    PATTERN_SELECTOR s = null;
 }
 {
-    LOOKAHEAD( 2 ) v=Variable() <EQ> p=AnonymousPattern() { return astFactory.namedPattern( v, p ); }
-    | p=AnonymousPattern() { return p; }
+     ( LOOKAHEAD(2)
+       v=Variable() <EQ> [s=Selector()]
+     | [s=Selector()]
+     )
+     p=AnonymousPattern()
+    {
+        if (v != null) p = astFactory.namedPattern( v, p );
+        if (s != null) p = astFactory.patternWithSelector( s, p );
+        return p;
+    }
 }
 
 PATTERN_QUANTIFIER Quantifier() :
@@ -2316,25 +2328,21 @@ PATTERN_QUANTIFIER Quantifier() :
 PATTERN AnonymousPattern() throws Exception:
 {
     PATTERN p;
+    PATTERN_ELEMENT pe;
 }
 {
-    (
-        LOOKAHEAD( 3 ) p=ShortestPathPattern()
-        | p=PathPatternWithSelector()
-    )
-    {
-        return p;
-    }
+    LOOKAHEAD( 3 ) p=ShortestPathPattern() { return p; }
+    | pe=PatternElement() { return astFactory.pathPattern( pe ); }
 }
 
 PATTERN ShortestPathPattern() throws Exception:
 {
     Token t;
-    PATTERN p;
+    PATTERN_ELEMENT pe;
 }
 {
-    t=<SHORTEST_PATH> <LPAREN> p=PathPattern() <RPAREN> { return astFactory.shortestPathPattern( pos( t ), p ); }
-    | t=<ALL_SHORTEST_PATH> <LPAREN> p=PathPattern() <RPAREN> { return astFactory.allShortestPathsPattern( pos( t ), p ); }
+    t=<SHORTEST_PATH> <LPAREN> pe=PatternElement() <RPAREN> { return astFactory.shortestPathPattern( pos( t ), pe ); }
+    | t=<ALL_SHORTEST_PATH> <LPAREN> pe=PatternElement() <RPAREN> { return astFactory.allShortestPathsPattern( pos( t ), pe ); }
 }
 
 PATTERN_ATOM MaybeQuantifiedRelationshipPattern() throws Exception:
@@ -2356,27 +2364,14 @@ PATTERN_ATOM MaybeQuantifiedRelationshipPattern() throws Exception:
     }
 }
 
-PATTERN PathPatternWithSelector() throws Exception:
-{
-    List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
-    PATTERN_SELECTOR selector = null;
-}
-{
-    ( selector = Selector() )?
-    patternAtoms = PathPatternAtoms()
-    {
-    return astFactory.pathPattern( patternAtoms, selector );
-    }
-}
-
-PATTERN PathPattern() throws Exception:
+PATTERN_ELEMENT PatternElement() throws Exception:
 {
     List<PATTERN_ATOM> patternAtoms = new ArrayList<>();
 }
 {
     patternAtoms = PathPatternAtoms()
     {
-    return astFactory.pathPattern( patternAtoms, null );
+    return astFactory.patternElement( patternAtoms );
     }
 }
 
@@ -2444,7 +2439,7 @@ PATTERN PathPatternNonEmpty() throws Exception:
       )+
       {
         labelExpressionStack.pop();
-        return astFactory.pathPattern( patternAtoms, null );
+        return astFactory.pathPattern( astFactory.patternElement( patternAtoms ) );
       }
 }
 
