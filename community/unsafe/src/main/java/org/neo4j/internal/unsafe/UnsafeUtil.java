@@ -21,13 +21,13 @@ package org.neo4j.internal.unsafe;
 
 import static java.lang.Long.compareUnsigned;
 import static java.lang.String.format;
+import static java.lang.invoke.MethodType.methodType;
 import static org.neo4j.util.FeatureToggles.flag;
 
 import com.sun.jna.Native;
 import com.sun.jna.Pointer;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
 import java.lang.invoke.VarHandle;
 import java.lang.reflect.Field;
 import java.nio.Buffer;
@@ -74,6 +74,8 @@ public final class UnsafeUtil {
     private static final FreeTrace[] freeTraces = CHECK_NATIVE_ACCESS ? new FreeTrace[4096] : null;
     private static final AtomicLong freeCounter = new AtomicLong();
 
+    private static final boolean java21;
+
     public static final Class<?> DIRECT_BYTE_BUFFER_CLASS;
     private static final VarHandle BYTE_BUFFER_MARK;
     private static final VarHandle BYTE_BUFFER_POSITION;
@@ -93,6 +95,7 @@ public final class UnsafeUtil {
 
         allowUnalignedMemoryAccess = findUnalignedMemoryAccess();
         nativeByteOrderIsLittleEndian = ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN;
+        java21 = Runtime.version().feature() > 20;
 
         Class<?> dbbClass = null;
         VarHandle bbMark = null;
@@ -102,25 +105,21 @@ public final class UnsafeUtil {
         VarHandle bbAddress = null;
         MethodHandle dbbCtor = null;
         try {
+
             var bufferLookup = MethodHandles.privateLookupIn(Buffer.class, MethodHandles.lookup());
             bbMark = bufferLookup.findVarHandle(Buffer.class, "mark", int.class);
             bbPosition = bufferLookup.findVarHandle(Buffer.class, "position", int.class);
             bbLimit = bufferLookup.findVarHandle(Buffer.class, "limit", int.class);
-            bbCapacity = bufferLookup.findVarHandle(Buffer.class, "capacity", int.class);
+            // so if we are in java 21 we will fake capacity reset with another call to limit
+            bbCapacity = java21 ? bbLimit : bufferLookup.findVarHandle(Buffer.class, "capacity", int.class);
             bbAddress = bufferLookup.findVarHandle(Buffer.class, "address", long.class);
 
             dbbClass = Class.forName("java.nio.DirectByteBuffer");
-        } catch (Throwable e) {
-            if (dbbClass != null) {
-                try {
-                    MethodHandles.Lookup directByteBufferLookup =
-                            MethodHandles.privateLookupIn(dbbClass, MethodHandles.lookup());
-                    dbbCtor = directByteBufferLookup.findConstructor(
-                            dbbClass, MethodType.methodType(void.class, long.class, int.class));
-                } catch (Throwable e1) {
-                    // ignore
-                }
+            if (java21) {
+                dbbCtor = tryLookupConstructor(dbbClass);
             }
+        } catch (Throwable e) {
+            dbbCtor = tryLookupConstructor(dbbClass);
         }
         DIRECT_BYTE_BUFFER_CLASS = dbbClass;
         BYTE_BUFFER_MARK = bbMark;
@@ -132,6 +131,23 @@ public final class UnsafeUtil {
     }
 
     private UnsafeUtil() {}
+
+    private static MethodHandle tryLookupConstructor(Class<?> dbbClass) {
+        if (dbbClass != null) {
+            try {
+                MethodHandles.Lookup directByteBufferLookup =
+                        MethodHandles.privateLookupIn(dbbClass, MethodHandles.lookup());
+                return directByteBufferLookup.findConstructor(
+                        dbbClass,
+                        java21
+                                ? methodType(void.class, long.class, long.class)
+                                : methodType(void.class, long.class, int.class));
+            } catch (Throwable e1) {
+                // ignore
+            }
+        }
+        return null;
+    }
 
     private static boolean findUnalignedMemoryAccess() {
         String alignmentProperty = System.getProperty(allowUnalignedMemoryAccessProperty);
@@ -658,14 +674,17 @@ public final class UnsafeUtil {
     public static ByteBuffer newDirectByteBuffer(long addr, int cap) throws Throwable {
         assertUnsafeByteBufferAccess();
         checkAccess(addr, cap);
-        if (DIRECT_BYTE_BUFFER_CONSTRUCTOR == null) {
+        if (DIRECT_BYTE_BUFFER_CONSTRUCTOR == null && !java21) {
             // Simulate the JNI NewDirectByteBuffer(void*, long) invocation.
             ByteBuffer dbb = (ByteBuffer) unsafe.allocateInstance(DIRECT_BYTE_BUFFER_CLASS);
             initDirectByteBuffer(dbb, addr, cap);
             return dbb;
         }
         // Reflection based fallback code.
-        return (ByteBuffer) DIRECT_BYTE_BUFFER_CONSTRUCTOR.invokeExact(addr, cap);
+        return (ByteBuffer)
+                (java21
+                        ? DIRECT_BYTE_BUFFER_CONSTRUCTOR.invoke(addr, (long) cap)
+                        : DIRECT_BYTE_BUFFER_CONSTRUCTOR.invoke(addr, cap));
     }
 
     /**
