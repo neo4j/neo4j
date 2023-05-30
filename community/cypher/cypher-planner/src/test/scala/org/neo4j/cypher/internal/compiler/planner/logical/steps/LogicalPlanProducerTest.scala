@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
-import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -970,7 +969,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.lhs,
         ctx.rhsWithUpdate,
         simpleExistsExpression(
-          Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos),
+          patternForMatch(Seq(PatternPart(nodePat(Some("x"))))),
           None,
           introducedVariables = Set(varFor("x"))
         ),
@@ -985,7 +984,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.lhs,
         ctx.rhsWithoutUpdate,
         simpleExistsExpression(
-          Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos),
+          patternForMatch(Seq(PatternPart(nodePat(Some("x"))))),
           None,
           introducedVariables = Set(varFor("x"))
         ),
@@ -1000,7 +999,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.lhs,
         ctx.rhsWithUpdate,
         simpleExistsExpression(
-          Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos),
+          patternForMatch(Seq(PatternPart(nodePat(Some("x"))))),
           None,
           introducedVariables = Set(varFor("x"))
         ),
@@ -1015,7 +1014,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
         ctx.lhs,
         ctx.rhsWithoutUpdate,
         simpleExistsExpression(
-          Pattern(Seq(PatternPart(nodePat(Some("x")))))(pos),
+          patternForMatch(Seq(PatternPart(nodePat(Some("x"))))),
           None,
           introducedVariables = Set(varFor("x"))
         ),

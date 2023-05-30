@@ -25,10 +25,8 @@ import org.neo4j.cypher.internal.ast.SingleQuery
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
@@ -50,11 +48,11 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(PatternPart(chain(
+        patternForMatch(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), nodePattern),
           relationship(Some(varFor("r"))),
           node(Some(varFor("m")))
-        )))) _,
+        )),
         Seq.empty,
         None
       ) _,
@@ -79,11 +77,11 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(PatternPart(chain(
+        patternForMatch(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
           relationshipPattern,
           node(Some(varFor("m")))
-        )))) _,
+        )),
         Seq.empty,
         None
       ) _,
@@ -109,11 +107,11 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(PatternPart(chain(
+        patternForMatch(chain(
           chain(node(Some(varFor("n"))), relationshipPattern, node(Some(varFor("k")))),
           relationship(Some(varFor("r"))),
           nodePattern
-        )))) _,
+        )),
         Seq.empty,
         None
       ) _,
@@ -140,11 +138,11 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(PatternPart(chain(
+        patternForMatch(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
           relationship(Some(varFor("r"))),
           node(Some(varFor("m")))
-        )))) _,
+        )),
         Seq.empty,
         None
       ) _,
@@ -175,11 +173,11 @@ class NoUnnamedNodesAndRelationshipsTest extends CypherFunSuite with AstConstruc
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(PatternPart(chain(
+        patternForMatch(chain(
           chain(node(Some(varFor("n"))), relationship(Some(varFor("p"))), node(Some(varFor("k")))),
           relationship(Some(varFor("r"))),
           node(Some(varFor("m")))
-        )))) _,
+        )),
         Seq.empty,
         Some(where)
       ) _,

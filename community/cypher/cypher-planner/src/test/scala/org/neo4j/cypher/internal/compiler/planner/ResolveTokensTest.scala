@@ -30,11 +30,14 @@ import org.neo4j.cypher.internal.ast.factory.neo4j.JavaCCParser
 import org.neo4j.cypher.internal.ast.semantics.SemanticChecker
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.Neo4jCypherExceptionFactory
+import org.neo4j.cypher.internal.compiler.planner.ResolveTokensTest.AllPathsPattern
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.HasLabels
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart.AllPaths
+import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -66,7 +69,7 @@ class ResolveTokensTest extends CypherFunSuite {
           Match(
             false,
             _,
-            Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
+            AllPathsPattern(PathPatternPart(NodePattern(Some(Variable("n")), None, None, None))),
             Seq(),
             Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Resolved"))))
           ),
@@ -90,7 +93,7 @@ class ResolveTokensTest extends CypherFunSuite {
           Match(
             false,
             _,
-            Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
+            AllPathsPattern(PathPatternPart(NodePattern(Some(Variable("n")), None, None, None))),
             Seq(),
             Some(Where(Equals(Property(Variable("n"), pkToken), StringLiteral("Unresolved"))))
           ),
@@ -114,7 +117,7 @@ class ResolveTokensTest extends CypherFunSuite {
           Match(
             false,
             _,
-            Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
+            AllPathsPattern(PathPatternPart(NodePattern(Some(Variable("n")), None, None, None))),
             Seq(),
             Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
           ),
@@ -138,7 +141,7 @@ class ResolveTokensTest extends CypherFunSuite {
           Match(
             false,
             _,
-            Pattern(Seq(PatternPartWithSelector(NodePattern(Some(Variable("n")), None, None, None), AllPaths()))),
+            AllPathsPattern(PathPatternPart(NodePattern(Some(Variable("n")), None, None, None))),
             Seq(),
             Some(Where(HasLabels(Variable("n"), Seq(labelToken))))
           ),
@@ -162,7 +165,7 @@ class ResolveTokensTest extends CypherFunSuite {
           Match(
             false,
             _,
-            Pattern(Seq(PatternPartWithSelector(
+            AllPathsPattern(PathPatternPart(
               RelationshipChain(
                 NodePattern(None, None, None, None),
                 RelationshipPattern(
@@ -174,9 +177,8 @@ class ResolveTokensTest extends CypherFunSuite {
                   SemanticDirection.OUTGOING
                 ),
                 NodePattern(None, None, None, None)
-              ),
-              AllPaths()
-            ))),
+              )
+            )),
             Seq(),
             None
           ),
@@ -200,7 +202,7 @@ class ResolveTokensTest extends CypherFunSuite {
           Match(
             false,
             _,
-            Pattern(Seq(PatternPartWithSelector(
+            AllPathsPattern(PathPatternPart(
               RelationshipChain(
                 NodePattern(None, None, None, None),
                 RelationshipPattern(
@@ -212,9 +214,8 @@ class ResolveTokensTest extends CypherFunSuite {
                   SemanticDirection.OUTGOING
                 ),
                 NodePattern(None, None, None, None)
-              ),
-              AllPaths()
-            ))),
+              )
+            )),
             Seq(),
             None
           ),
@@ -234,6 +235,19 @@ class ResolveTokensTest extends CypherFunSuite {
     rewriter(parsed) match {
       case query: Query => f(query)
       case other        => throw new IllegalArgumentException(s"Unexpected value: $other")
+    }
+  }
+}
+
+object ResolveTokensTest {
+
+  object AllPathsPattern {
+
+    def unapply(pattern: Pattern.ForMatch): Option[NonPrefixedPatternPart] = {
+      pattern match {
+        case Pattern.ForMatch(Seq(PatternPartWithSelector(PatternPart.AllPaths(), part))) => Some(part)
+        case _                                                                            => None
+      }
     }
   }
 }

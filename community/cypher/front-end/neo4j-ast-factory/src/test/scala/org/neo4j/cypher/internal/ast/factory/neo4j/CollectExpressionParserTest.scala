@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
@@ -346,17 +347,20 @@ class CollectExpressionParserTest extends ParserSyntaxTreeBase[Cst.Statement, as
         Match(
           optional = false,
           matchMode = MatchMode.default(pos),
-          Pattern(Seq(
-            NamedPatternPart(
-              varFor("pt"),
-              PatternPart(
-                relationshipChain(
-                  nodePat(Some("a"), namePos = InputPosition(38, 1, 39), position = InputPosition(37, 1, 38)),
-                  relPat(position = InputPosition(40, 1, 41)),
-                  nodePat(Some("b"), namePos = InputPosition(46, 1, 47), position = InputPosition(45, 1, 46))
+          Pattern.ForMatch(Seq(
+            PatternPartWithSelector(
+              PatternPart.AllPaths()(pos),
+              NamedPatternPart(
+                varFor("pt"),
+                PatternPart(
+                  relationshipChain(
+                    nodePat(Some("a"), namePos = InputPosition(38, 1, 39), position = InputPosition(37, 1, 38)),
+                    relPat(position = InputPosition(40, 1, 41)),
+                    nodePat(Some("b"), namePos = InputPosition(46, 1, 47), position = InputPosition(45, 1, 46))
+                  )
                 )
-              )
-            )(InputPosition(32, 1, 33))
+              )(InputPosition(32, 1, 33))
+            )
           ))(InputPosition(32, 1, 33)),
           Seq.empty,
           None

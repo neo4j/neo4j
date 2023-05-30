@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.Yield
 import org.neo4j.cypher.internal.expressions.ContainerIndex
 import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.Variable
@@ -72,7 +72,7 @@ class ParserPositionTest extends CypherFunSuite with TestName {
   }
 
   test("CREATE (a)-[:X]->(b)") {
-    validatePosition(testName, _.isInstanceOf[PatternPartWithSelector], InputPosition(7, 1, 8))
+    validatePosition(testName, _.isInstanceOf[NonPrefixedPatternPart], InputPosition(7, 1, 8))
   }
 
   test("SHOW ALL ROLES YIELD role") {

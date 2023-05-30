@@ -36,8 +36,6 @@ import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.PathExpression
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.RepeatPathStep
@@ -144,11 +142,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       val MATCH = Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(List(
-          PatternPart(
-            NodePattern(Some(a), None, None, None)(pos)
-          )
-        ))(pos),
+        patternForMatch(
+          NodePattern(Some(a), None, None, None)(pos)
+        ),
         List(),
         None
       )(pos)
@@ -202,11 +198,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH = Match(
       optional = false,
       matchMode = MatchMode.default(pos),
-      Pattern(List(
-        PatternPart(
-          NodePattern(Some(a), None, None, None)(pos)
-        )
-      ))(pos),
+      patternForMatch(
+        NodePattern(Some(a), None, None, None)(pos)
+      ),
       List(),
       None
     )(pos)
@@ -297,15 +291,13 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH = Match(
       optional = false,
       matchMode = MatchMode.default(pos),
-      Pattern(List(
-        PatternPart(
-          RelationshipChain(
-            NodePattern(Some(a), None, None, None)(pos),
-            RelationshipPattern(Some(r), None, None, None, None, SemanticDirection.OUTGOING)(pos),
-            NodePattern(Some(b), None, None, None)(pos)
-          )(pos)
-        )
-      ))(pos),
+      patternForMatch(
+        RelationshipChain(
+          NodePattern(Some(a), None, None, None)(pos),
+          RelationshipPattern(Some(r), None, None, None, None, SemanticDirection.OUTGOING)(pos),
+          NodePattern(Some(b), None, None, None)(pos)
+        )(pos)
+      ),
       List(),
       None
     )(pos)
@@ -406,22 +398,18 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH = Match(
       optional = false,
       matchMode = MatchMode.default(pos),
-      Pattern(List(
-        PatternPart(
-          RelationshipChain(
-            NodePattern(Some(a), None, None, None)(pos),
-            RelationshipPattern(Some(r), None, None, None, None, SemanticDirection.OUTGOING)(pos),
-            NodePattern(Some(b), None, None, None)(pos)
-          )(pos)
-        ),
-        PatternPart(
-          RelationshipChain(
-            NodePattern(Some(b), None, None, None)(pos),
-            RelationshipPattern(Some(s), None, None, None, None, SemanticDirection.OUTGOING)(pos),
-            NodePattern(Some(c), None, None, None)(pos)
-          )(pos)
-        )
-      ))(pos),
+      patternForMatch(
+        RelationshipChain(
+          NodePattern(Some(a), None, None, None)(pos),
+          RelationshipPattern(Some(r), None, None, None, None, SemanticDirection.OUTGOING)(pos),
+          NodePattern(Some(b), None, None, None)(pos)
+        )(pos),
+        RelationshipChain(
+          NodePattern(Some(b), None, None, None)(pos),
+          RelationshipPattern(Some(s), None, None, None, None, SemanticDirection.OUTGOING)(pos),
+          NodePattern(Some(c), None, None, None)(pos)
+        )(pos)
+      ),
       List(),
       None
     )(pos)
@@ -530,19 +518,17 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH = Match(
       optional = false,
       matchMode = MatchMode.default(pos),
-      Pattern(List(
-        PatternPart(
+      patternForMatch(
+        RelationshipChain(
           RelationshipChain(
-            RelationshipChain(
-              NodePattern(Some(a), None, None, None)(pos),
-              RelationshipPattern(Some(r), None, None, None, None, SemanticDirection.OUTGOING)(pos),
-              NodePattern(Some(b), None, None, None)(pos)
-            )(pos),
-            RelationshipPattern(Some(s), None, None, None, None, SemanticDirection.INCOMING)(pos),
-            NodePattern(Some(c), None, None, None)(pos)
-          )(pos)
-        )
-      ))(pos),
+            NodePattern(Some(a), None, None, None)(pos),
+            RelationshipPattern(Some(r), None, None, None, None, SemanticDirection.OUTGOING)(pos),
+            NodePattern(Some(b), None, None, None)(pos)
+          )(pos),
+          RelationshipPattern(Some(s), None, None, None, None, SemanticDirection.INCOMING)(pos),
+          NodePattern(Some(c), None, None, None)(pos)
+        )(pos)
+      ),
       List(),
       None
     )(pos)
@@ -654,11 +640,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH = Match(
       optional = false,
       matchMode = MatchMode.default(pos),
-      Pattern(List(
-        PatternPart(
-          NodePattern(Some(a), None, None, None)(pos)
-        )
-      ))(pos),
+      patternForMatch(
+        NodePattern(Some(a), None, None, None)(pos)
+      ),
       List(),
       None
     )(pos)
@@ -748,10 +732,10 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH = Match(
       optional = false,
       matchMode = MatchMode.default(pos),
-      Pattern(List(
-        PatternPart(NodePattern(Some(a), None, None, None)(pos)),
-        PatternPart(NodePattern(Some(b), None, None, None)(pos))
-      ))(pos),
+      patternForMatch(
+        NodePattern(Some(a), None, None, None)(pos),
+        NodePattern(Some(b), None, None, None)(pos)
+      ),
       List(),
       None
     )(pos)
@@ -841,11 +825,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
     val MATCH = Match(
       optional = false,
       matchMode = MatchMode.default(pos),
-      Pattern(List(
-        PatternPart(
-          NodePattern(Some(a), None, None, None)(pos)
-        )
-      ))(pos),
+      patternForMatch(
+        NodePattern(Some(a), None, None, None)(pos)
+      ),
       List(),
       None
     )(pos)
@@ -984,11 +966,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(List(
-          PatternPart(
-            NodePattern(Some(a), None, None, None)(pos)
-          )
-        ))(pos),
+        patternForMatch(
+          NodePattern(Some(a), None, None, None)(pos)
+        ),
         List(),
         None
       )(pos)
@@ -1039,11 +1019,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(List(
-          PatternPart(
-            NodePattern(Some(a), None, None, None)(pos)
-          )
-        ))(pos),
+        patternForMatch(
+          NodePattern(Some(a), None, None, None)(pos)
+        ),
         List(),
         None
       )(pos)
@@ -1097,11 +1075,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(List(
-          PatternPart(
-            NodePattern(Some(a), None, None, None)(pos)
-          )
-        ))(pos),
+        patternForMatch(
+          NodePattern(Some(a), None, None, None)(pos)
+        ),
         List(),
         None
       )(pos)
@@ -1128,11 +1104,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(List(
-          PatternPart(
-            NodePattern(Some(b), None, None, None)(pos)
-          )
-        ))(pos),
+        patternForMatch(
+          NodePattern(Some(b), None, None, None)(pos)
+        ),
         List(),
         None
       )(pos)
@@ -1306,15 +1280,13 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(List(
-          PatternPart(
-            RelationshipChain(
-              NodePattern(Some(aId), None, None, None)(pos),
-              RelationshipPattern(Some(rId), None, None, None, None, SemanticDirection.OUTGOING)(pos),
-              NodePattern(Some(bId), None, None, None)(pos)
-            )(pos)
-          )
-        ))(pos),
+        patternForMatch(
+          RelationshipChain(
+            NodePattern(Some(aId), None, None, None)(pos),
+            RelationshipPattern(Some(rId), None, None, None, None, SemanticDirection.OUTGOING)(pos),
+            NodePattern(Some(bId), None, None, None)(pos)
+          )(pos)
+        ),
         List(),
         None
       )(pos)
@@ -1370,15 +1342,13 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(List(
-          PatternPart(
-            RelationshipChain(
-              NodePattern(Some(aId), None, None, None)(pos),
-              RelationshipPattern(Some(rId), None, None, None, None, SemanticDirection.OUTGOING)(pos),
-              NodePattern(Some(bId), None, None, None)(pos)
-            )(pos)
-          )
-        ))(pos),
+        patternForMatch(
+          RelationshipChain(
+            NodePattern(Some(aId), None, None, None)(pos),
+            RelationshipPattern(Some(rId), None, None, None, None, SemanticDirection.OUTGOING)(pos),
+            NodePattern(Some(bId), None, None, None)(pos)
+          )(pos)
+        ),
         List(),
         Some(WHERE)
       )(pos)
@@ -1411,11 +1381,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(List(
-          PatternPart(
-            NodePattern(Some(a), None, None, None)(pos)
-          )
-        ))(pos),
+        patternForMatch(
+          NodePattern(Some(a), None, None, None)(pos)
+        ),
         List(),
         None
       )(pos)
@@ -1481,11 +1449,9 @@ class ProjectNamedPathsTest extends CypherFunSuite with AstRewritingTestSupport 
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(List(
-          PatternPart(
-            NodePattern(Some(aId), None, None, None)(pos)
-          )
-        ))(pos),
+        patternForMatch(
+          NodePattern(Some(aId), None, None, None)(pos)
+        ),
         List(),
         None
       )(pos)

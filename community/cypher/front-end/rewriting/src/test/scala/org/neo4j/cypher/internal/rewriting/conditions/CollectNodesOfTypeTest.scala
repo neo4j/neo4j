@@ -20,8 +20,6 @@ import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -37,7 +35,7 @@ class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupp
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(PatternPart(NodePattern(Some(idA), None, Some(idB), None) _))) _,
+        patternForMatch(NodePattern(Some(idA), None, Some(idB), None) _),
         Seq(),
         None
       ) _
@@ -50,7 +48,7 @@ class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupp
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(PatternPart(NodePattern(None, None, None, None) _))) _,
+        patternForMatch(NodePattern(None, None, None, None) _),
         Seq(),
         None
       ) _

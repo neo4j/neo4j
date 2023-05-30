@@ -32,9 +32,11 @@ import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternAtom
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -53,7 +55,7 @@ class QuantifiedPathPatternParserTest extends CypherFunSuite
 
   test("(n)") {
     givesIncludingPositions {
-      PatternPart(
+      PathPatternPart(
         nodePat(name = Some("n"), position = (1, 1, 0))
       )
     }
@@ -293,14 +295,19 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(NamedPatternPart(
-          varFor("p"),
-          PatternPart(ParenthesizedPath(PatternPart(RelationshipChain(
-            nodePat(Some("a")),
-            relPat(),
-            nodePat(Some("b"))
-          )(pos)))(pos))
-        )(pos)))(pos),
+        Pattern.ForMatch(Seq(
+          PatternPartWithSelector(
+            PatternPart.AllPaths()(pos),
+            NamedPatternPart(
+              varFor("p"),
+              PatternPart(ParenthesizedPath(PatternPart(RelationshipChain(
+                nodePat(Some("a")),
+                relPat(),
+                nodePat(Some("b"))
+              )(pos)))(pos))
+            )(pos)
+          )
+        ))(pos),
         hints = Seq.empty,
         where = Some(where(prop("a", "prop")))
       )(pos)
@@ -312,7 +319,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(
+        Pattern.ForMatch(Seq(
           PatternPart(nodePat(Some("a"))),
           PatternPart(PathConcatenation(Seq(
             RelationshipChain(
@@ -331,7 +338,7 @@ class QuantifiedPathPatternInMatchParserTest extends CypherFunSuite
             )(pos),
             nodePat(Some("f"))
           ))(pos))
-        ))(pos),
+        ).map(_.withAllPathsSelector))(pos),
         hints = Seq.empty,
         where = None
       )(pos)

@@ -23,8 +23,6 @@ import org.neo4j.cypher.internal.ast.ReturnItems
 import org.neo4j.cypher.internal.ast.UnaliasedReturnItem
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.util.ASTNode
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -37,7 +35,7 @@ class ContainsNoNodesOfTypeTest extends CypherFunSuite with AstConstructionTestS
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        Pattern(Seq(PatternPart(NodePattern(None, None, None, None) _))) _,
+        patternForMatch(NodePattern(None, None, None, None) _),
         Seq(),
         None
       ) _

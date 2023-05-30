@@ -16,10 +16,9 @@
  */
 package org.neo4j.cypher.internal.ast.semantics
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport.patternForMatch
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.SemanticDirection
@@ -40,26 +39,26 @@ class FindRepeatedRelationshipsTest extends CypherFunSuite {
   private val relS = Variable("s")(pos)
 
   test("does find repeated relationships across pattern parts") {
-    val relPath0 = PatternPart(RelationshipChain(node, relPattern(relR), node)(pos))
-    val relPath1 = PatternPart(RelationshipChain(node, relPattern(relRCopy), node)(pos))
-    val pattern = Pattern(Seq(relPath0, relPath1))(pos)
+    val relPath0 = RelationshipChain(node, relPattern(relR), node)(pos)
+    val relPath1 = RelationshipChain(node, relPattern(relRCopy), node)(pos)
+    val pattern = patternForMatch(relPath0, relPath1)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = false) should equal(Seq(relR))
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = false)(0).position should equal(relR.position)
   }
 
   test("does not find repeated relationships across pattern parts in variable length mode") {
-    val relPath0 = PatternPart(RelationshipChain(node, relPattern(relR), node)(pos))
-    val relPath1 = PatternPart(RelationshipChain(node, relPattern(relRCopy), node)(pos))
-    val pattern = Pattern(Seq(relPath0, relPath1))(pos)
+    val relPath0 = RelationshipChain(node, relPattern(relR), node)(pos)
+    val relPath1 = RelationshipChain(node, relPattern(relRCopy), node)(pos)
+    val pattern = patternForMatch(relPath0, relPath1)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true) should equal(Seq.empty)
   }
 
   test("does find repeated variable length relationships across pattern parts") {
-    val relPath0 = PatternPart(RelationshipChain(node, variableLengthRelPattern(relR), node)(pos))
-    val relPath1 = PatternPart(RelationshipChain(node, variableLengthRelPattern(relRCopy), node)(pos))
-    val pattern = Pattern(Seq(relPath0, relPath1))(pos)
+    val relPath0 = RelationshipChain(node, variableLengthRelPattern(relR), node)(pos)
+    val relPath1 = RelationshipChain(node, variableLengthRelPattern(relRCopy), node)(pos)
+    val pattern = patternForMatch(relPath0, relPath1)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true) should equal(Seq(relR))
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true)(0).position should equal(
@@ -68,31 +67,31 @@ class FindRepeatedRelationshipsTest extends CypherFunSuite {
   }
 
   test("does not find repeated variable length relationships across pattern parts without variable length mode") {
-    val relPath0 = PatternPart(RelationshipChain(node, variableLengthRelPattern(relR), node)(pos))
-    val relPath1 = PatternPart(RelationshipChain(node, variableLengthRelPattern(relRCopy), node)(pos))
-    val pattern = Pattern(Seq(relPath0, relPath1))(pos)
+    val relPath0 = RelationshipChain(node, variableLengthRelPattern(relR), node)(pos)
+    val relPath1 = RelationshipChain(node, variableLengthRelPattern(relRCopy), node)(pos)
+    val pattern = patternForMatch(relPath0, relPath1)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = false) should equal(Seq.empty)
   }
 
   test("does find repeated relationships in a long rel chain") {
-    val relPath = expressions.PatternPart(relChain(relR, relS, relRCopy))
-    val pattern = Pattern(Seq(relPath))(pos)
+    val relPath = relChain(relR, relS, relRCopy)
+    val pattern = patternForMatch(relPath)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = false) should equal(Seq(relR))
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = false)(0).position should equal(relR.position)
   }
 
   test("does not find repeated relationships in a long rel chain in variable length mode") {
-    val relPath = expressions.PatternPart(relChain(relR, relS, relRCopy))
-    val pattern = Pattern(Seq(relPath))(pos)
+    val relPath = relChain(relR, relS, relRCopy)
+    val pattern = patternForMatch(relPath)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true) should equal(Seq.empty)
   }
 
   test("does find repeated variable length relationships in a long rel chain") {
-    val relPath = expressions.PatternPart(variableLengthRelChain(relR, relS, relRCopy))
-    val pattern = Pattern(Seq(relPath))(pos)
+    val relPath = variableLengthRelChain(relR, relS, relRCopy)
+    val pattern = patternForMatch(relPath)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true) should equal(Seq(relR))
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true)(0).position should equal(
@@ -101,38 +100,38 @@ class FindRepeatedRelationshipsTest extends CypherFunSuite {
   }
 
   test("does not find repeated variable length relationships in a long rel chain without variable length mode") {
-    val relPath = expressions.PatternPart(variableLengthRelChain(relR, relS, relRCopy))
-    val pattern = Pattern(Seq(relPath))(pos)
+    val relPath = variableLengthRelChain(relR, relS, relRCopy)
+    val pattern = patternForMatch(relPath)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = false) should equal(Seq.empty)
   }
 
   test("does not find repeated relationships across pattern parts if there is none") {
-    val relPath = PatternPart(expressions.RelationshipChain(node, relPattern(relR), node)(pos))
-    val otherRelPath = PatternPart(expressions.RelationshipChain(node, relPattern(relS), node)(pos))
-    val pattern = Pattern(Seq(relPath, otherRelPath))(pos)
+    val relPath = expressions.RelationshipChain(node, relPattern(relR), node)(pos)
+    val otherRelPath = expressions.RelationshipChain(node, relPattern(relS), node)(pos)
+    val pattern = patternForMatch(relPath, otherRelPath)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = false) should equal(Seq.empty)
   }
 
   test("does not find repeated variable length relationships across pattern parts if there is none") {
-    val relPath = PatternPart(expressions.RelationshipChain(node, variableLengthRelPattern(relR), node)(pos))
-    val otherRelPath = PatternPart(expressions.RelationshipChain(node, variableLengthRelPattern(relS), node)(pos))
-    val pattern = Pattern(Seq(relPath, otherRelPath))(pos)
+    val relPath = expressions.RelationshipChain(node, variableLengthRelPattern(relR), node)(pos)
+    val otherRelPath = expressions.RelationshipChain(node, variableLengthRelPattern(relS), node)(pos)
+    val pattern = patternForMatch(relPath, otherRelPath)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true) should equal(Seq.empty)
   }
 
   test("does not find repeated relationships in a long rel chain if there is none") {
-    val relPath = expressions.PatternPart(relChain(relS, relR))
-    val pattern = Pattern(Seq(relPath))(pos)
+    val relPath = relChain(relS, relR)
+    val pattern = patternForMatch(relPath)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = false) should equal(Seq.empty)
   }
 
   test("does not find repeated variable length relationships in a long rel chain if there is none") {
-    val relPath = expressions.PatternPart(variableLengthRelChain(relS, relR))
-    val pattern = Pattern(Seq(relPath))(pos)
+    val relPath = variableLengthRelChain(relS, relR)
+    val pattern = patternForMatch(relPath)
 
     SemanticPatternCheck.findRepeatedRelationships(pattern, varLength = true) should equal(Seq.empty)
   }

@@ -104,7 +104,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH () WHERE EXISTS {REPEATABLE ELEMENTS (n)-->(m)}") {
-    val pattern = Pattern(Seq(PatternPart(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))))(pos)
+    val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
     gives {
       match_(
         nodePat(),
@@ -114,7 +114,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH () WHERE EXISTS {MATCH REPEATABLE ELEMENTS (n)-->(m)}") {
-    val pattern = Pattern(Seq(PatternPart(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))))(pos)
+    val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
     gives {
       match_(
         nodePat(),
@@ -124,7 +124,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH () WHERE EXISTS {(n)-->(m)}") {
-    val pattern = Pattern(Seq(PatternPart(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))))(pos)
+    val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
     gives {
       match_(
         nodePat(),
@@ -138,7 +138,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH () WHERE COUNT {REPEATABLE ELEMENTS (n)-->(m)}") {
-    val pattern = Pattern(Seq(PatternPart(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))))(pos)
+    val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
     gives {
       match_(
         nodePat(),
@@ -148,7 +148,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH () WHERE COLLECT {MATCH DIFFERENT RELATIONSHIPS (n)-->(m) RETURN *}") {
-    val pattern = Pattern(Seq(PatternPart(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))))(pos)
+    val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
     gives {
       match_(
         nodePat(),
@@ -163,7 +163,7 @@ class MatchModeParserTest extends CypherFunSuite with ParserSyntaxTreeBase[Cst.M
   }
 
   test("MATCH () WHERE COLLECT {MATCH REPEATABLE ELEMENTS (n)-->(m) RETURN *}") {
-    val pattern = Pattern(Seq(PatternPart(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))))(pos)
+    val pattern = patternForMatch(relationshipChain(nodePat(Some("n")), relPat(), nodePat(Some("m"))))
     gives {
       match_(
         nodePat(),

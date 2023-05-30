@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.phases
 
+import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.ast.Match
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelOrRelTypeName
 import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.NodePattern
-import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
@@ -36,10 +36,9 @@ import org.neo4j.cypher.internal.label_expressions.LabelExpression.Leaf
 import org.neo4j.cypher.internal.label_expressions.LabelExpression.Wildcard
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionPredicate
 import org.neo4j.cypher.internal.util.InputPosition
-import org.scalatest.funsuite.AnyFunSuite
-import org.scalatest.matchers.should.Matchers
+import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
-class ValidSymbolicNamesInLabelExpressionsTest extends AnyFunSuite with Matchers {
+class ValidSymbolicNamesInLabelExpressionsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("A NodePattern can contain a Label in its label expression") {
     val labelName = LabelName("A")(InputPosition.NONE)
@@ -99,7 +98,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends AnyFunSuite with Matchers
     val wildcard = Wildcard()(InputPosition.NONE)
     val disjunction = Disjunctions(Seq(Leaf(labelName), wildcard))(InputPosition.NONE)
     val nodePattern = NodePattern(Some(variable), Some(disjunction), None, None)(InputPosition.NONE)
-    val pattern = Pattern(Seq(PatternPart(nodePattern)))(InputPosition.NONE)
+    val pattern = patternForMatch(Seq(PatternPart(nodePattern)))
     val labelOrRelTypeName = LabelOrRelTypeName("B")(InputPosition.NONE)
     val labelExpressionPredicate = LabelExpressionPredicate(variable, Leaf(labelOrRelTypeName))(InputPosition.NONE)
     val where = Where(labelExpressionPredicate)(InputPosition.NONE)
@@ -115,7 +114,7 @@ class ValidSymbolicNamesInLabelExpressionsTest extends AnyFunSuite with Matchers
     val wildcard = Wildcard()(InputPosition.NONE)
     val disjunction = Disjunctions(Seq(Leaf(relTypeName), wildcard))(InputPosition.NONE)
     val nodePattern = NodePattern(Some(variable), Some(disjunction), None, None)(InputPosition.NONE)
-    val pattern = Pattern(Seq(PatternPart(nodePattern)))(InputPosition.NONE)
+    val pattern = patternForMatch(Seq(PatternPart(nodePattern)))
     val labelName = LabelName("B")(InputPosition(41, 10, 42))
     val labelExpressionPredicate = LabelExpressionPredicate(variable, Leaf(labelName))(InputPosition.NONE)
     val where = Where(labelExpressionPredicate)(InputPosition.NONE)
