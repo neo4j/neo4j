@@ -1135,4 +1135,9 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     public static final Setting<Duration> upgrade_procedure_wait_timeout = newBuilder(
                     "internal.dbms.upgrade.procedure.wait_timeout", DURATION, Duration.ofSeconds(30))
             .build();
+
+    @Internal
+    @Description("A feature toggle behind which the new query router stack is developed")
+    public static final Setting<Boolean> query_router_new_stack =
+            newBuilder("internal.dbms.query_router.new_stack", BOOL, false).build();
 }

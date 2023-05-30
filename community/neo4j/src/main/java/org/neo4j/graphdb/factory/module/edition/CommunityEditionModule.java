@@ -29,6 +29,7 @@ import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
 import org.neo4j.bolt.tx.TransactionManager;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
+import org.neo4j.configuration.GraphDatabaseInternalSettings;
 import org.neo4j.configuration.GraphDatabaseSettings;
 import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.database.readonly.ConfigBasedLookupFactory;
@@ -68,7 +69,6 @@ import org.neo4j.dbms.routing.RoutingOption;
 import org.neo4j.dbms.routing.RoutingService;
 import org.neo4j.dbms.routing.SingleAddressRoutingTableProvider;
 import org.neo4j.dbms.systemgraph.CommunityTopologyGraphComponent;
-import org.neo4j.fabric.FabricFeatureToggles;
 import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.GlobalModule;
@@ -180,7 +180,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 new CommunityKernelPanicListener(globalModule.getDatabaseEventListeners(), databaseRepository);
         globalModule.getGlobalLife().add(kernelPanicListener);
 
-        if (FabricFeatureToggles.NEW_COMPOSITE_STACK.get()) {
+        if (globalModule.getGlobalConfig().get(GraphDatabaseInternalSettings.query_router_new_stack)) {
             fabricServicesBootstrap = new QueryRouterBootstrap.Community(
                     globalModule.getGlobalLife(),
                     globalModule.getGlobalDependencies(),

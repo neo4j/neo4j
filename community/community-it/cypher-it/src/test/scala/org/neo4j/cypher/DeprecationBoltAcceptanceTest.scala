@@ -20,33 +20,24 @@
 package org.neo4j.cypher
 
 import org.neo4j.configuration.Config
+import org.neo4j.configuration.GraphDatabaseInternalSettings
+import org.neo4j.configuration.GraphDatabaseInternalSettings.query_router_new_stack
 import org.neo4j.configuration.connectors.BoltConnector
 import org.neo4j.configuration.helpers.SocketAddress
 import org.neo4j.cypher.testing.api.CypherExecutorFactory
 import org.neo4j.cypher.testing.impl.FeatureDatabaseManagementService
 import org.neo4j.cypher.testing.impl.driver.DriverCypherExecutorFactory
 import org.neo4j.dbms.api.DatabaseManagementService
-import org.neo4j.fabric.FabricFeatureToggles
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.test.TestDatabaseManagementServiceBuilder
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 
 class DefaultDeprecationBoltAcceptanceTest()
-    extends DeprecationBoltAcceptanceTest(FabricFeatureToggles.NEW_COMPOSITE_STACK.defaultValue())
+    extends DeprecationBoltAcceptanceTest(GraphDatabaseInternalSettings.query_router_new_stack.defaultValue())
 class QueryRouterDeprecationBoltAcceptanceTest() extends DeprecationBoltAcceptanceTest(true)
 
 abstract class DeprecationBoltAcceptanceTest(queryRouter: Boolean) extends DeprecationAcceptanceTestBase {
-
-  override def beforeAll() {
-    super.beforeAll()
-    FabricFeatureToggles.NEW_COMPOSITE_STACK.set(queryRouter)
-  }
-
-  override def afterAll() {
-    super.afterAll()
-    FabricFeatureToggles.NEW_COMPOSITE_STACK.clear()
-  }
 
   val boltConfig: Map[Setting[_], Object] =
     Map(
@@ -54,7 +45,10 @@ abstract class DeprecationBoltAcceptanceTest(queryRouter: Boolean) extends Depre
       BoltConnector.listen_address -> new SocketAddress("localhost", 0)
     )
 
-  private val config = Config.newBuilder().set(boltConfig.asJava).build()
+  private val config = Config.newBuilder()
+    .set(query_router_new_stack, Boolean.box(queryRouter))
+    .set(boltConfig.asJava)
+    .build()
 
   private val managementService: DatabaseManagementService =
     new TestDatabaseManagementServiceBuilder().impermanent.setConfig(config).build()
