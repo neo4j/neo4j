@@ -22,18 +22,22 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.AutoExtractedParameter
+import org.neo4j.cypher.internal.expressions.BooleanTypeName
 import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.ExplicitParameter
 import org.neo4j.cypher.internal.expressions.False
 import org.neo4j.cypher.internal.expressions.GreaterThan
+import org.neo4j.cypher.internal.expressions.IntegerTypeName
 import org.neo4j.cypher.internal.expressions.IsNotNull
 import org.neo4j.cypher.internal.expressions.IsNull
+import org.neo4j.cypher.internal.expressions.IsTyped
 import org.neo4j.cypher.internal.expressions.ListLiteral
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.Ors
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.StringLiteral
+import org.neo4j.cypher.internal.expressions.StringTypeName
 import org.neo4j.cypher.internal.expressions.True
 import org.neo4j.cypher.internal.logical.plans.CoerceToPredicate
 import org.neo4j.cypher.internal.rewriting.conditions.noReferenceEqualityAmongVariables
@@ -90,6 +94,29 @@ class SimplifyPredicatesTest extends CypherFunSuite {
   test("NOT IS NOT NULL is rewritten") {
     // not(isNotNull(P)) <=> isNull(P)
     assertRewrittenMatches("NOT( 'P' IS NOT NULL )", { case IsNull(StringLiteral("P")) => () })
+  }
+
+  test("IS NOT :: is rewritten") {
+    // isNotTyped(P) <=> not(isTyped(P, INTEGER))
+    assertRewrittenMatches(
+      "'P' IS NOT :: INTEGER",
+      { case Not(IsTyped(StringLiteral("P"), IntegerTypeName())) => () }
+    )
+  }
+
+  test("NOT IS NOT :: is rewritten") {
+    // not(isNotTyped(P), STRING) <=> isTyped(P, STRING)
+    assertRewrittenMatches(
+      "NOT( 'P' IS NOT :: STRING )",
+      { case IsTyped(StringLiteral("P"), StringTypeName()) => () }
+    )
+  }
+
+  test("NOT IS :: is not rewritten") {
+    assertRewrittenMatches(
+      "NOT( 'P' IS :: BOOL )",
+      { case Not(IsTyped(StringLiteral("P"), BooleanTypeName())) => () }
+    )
   }
 
   test("Simplify OR of identical expressions with interspersed condition") {
