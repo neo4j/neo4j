@@ -29,11 +29,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.QuerySolvableByG
 import org.neo4j.cypher.internal.expressions.CountStar
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.PathExpression
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
-import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.RelationshipsPattern
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.frontend.phases.rewriting.cnf.flattenBooleanOperators
@@ -65,7 +65,7 @@ case class CreateIrExpressions(
   anonymousVariableNameGenerator: AnonymousVariableNameGenerator,
   semanticTable: SemanticTable
 ) extends Rewriter {
-  private val pathStepBuilder: PatternPartWithSelector => PathStep = projectNamedPaths.patternPartPathExpression
+  private val pathStepBuilder: PathPatternPart => PathStep = projectNamedPaths.patternPartPathExpression
   private val stringifier = ExpressionStringifier(_.asCanonicalStringVal)
   private val inlinedWhereClausesNormalizer = PredicateNormalizer.normalizeInlinedWhereClauses
 

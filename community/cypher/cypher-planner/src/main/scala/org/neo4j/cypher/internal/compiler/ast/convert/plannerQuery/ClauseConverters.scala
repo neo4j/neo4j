@@ -69,8 +69,8 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.Null
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.PatternElement
-import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.RelTypeName
@@ -361,14 +361,14 @@ object ClauseConverters {
 
     clause.pattern.patternParts.foreach {
       // CREATE (n :L1:L2 {prop: 42})
-      case PatternPartWithSelector(NodePattern(Some(id), labelExpression, props, None), _) =>
+      case PathPatternPart(NodePattern(Some(id), labelExpression, props, None)) =>
         val labels = getLabelNameSet(labelExpression)
         commands += CreateNode(id.name, labels, props)
         seenPatternNodes += id.name
         ()
 
       // CREATE (n)-[r: R]->(m)
-      case PatternPartWithSelector(pattern: RelationshipChain, _) =>
+      case PathPatternPart(pattern: RelationshipChain) =>
         allCreatePatternsInOrderAndDeduped(pattern).foreach {
           case CreateNodeCommand(create, _) =>
             if (seenPatternNodes.add(create.idName)) {
@@ -622,7 +622,7 @@ object ClauseConverters {
 
     clause.pattern match {
       // MERGE (n :L1:L2 {prop: 42})
-      case PatternPartWithSelector(NodePattern(Some(id), labelExpression, props, _), _) =>
+      case PathPatternPart(NodePattern(Some(id), labelExpression, props, _)) =>
         val labels = getLabelNameSet(labelExpression)
         val currentlyAvailableVariables = builder.currentlyAvailableVariables
         val labelPredicates = labels.map(l => HasLabels(id, Seq(l))(id.position))
@@ -650,7 +650,7 @@ object ClauseConverters {
           .withTail(RegularSinglePlannerQuery())
 
       // MERGE (n)-[r: R]->(m)
-      case PatternPartWithSelector(pattern: RelationshipChain, _) =>
+      case PathPatternPart(pattern: RelationshipChain) =>
         val (nodes, rels) =
           allCreatePatternsInOrderAndDeduped(pattern).foldRight((
             Seq.empty[CreateNodeCommand],

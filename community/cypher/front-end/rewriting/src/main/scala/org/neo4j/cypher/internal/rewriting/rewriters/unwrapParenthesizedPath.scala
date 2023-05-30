@@ -116,7 +116,7 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with ASTRewriterF
     // Extract Predicates from ParenthesizedPaths
     case ParenthesizedPath(_, Some(where)) => acc => TraverseChildren(acc :+ where)
     // Do not traverse down into pattern parts with selectors (!= AllPaths)
-    case PatternPartWithSelector(_, selector) if !selector.isInstanceOf[AllPaths] => acc => SkipChildren(acc)
+    case PatternPartWithSelector(selector, _) if !selector.isInstanceOf[AllPaths] => acc => SkipChildren(acc)
     // Traverse the rest
     case _ => acc => TraverseChildren(acc)
   }
@@ -133,7 +133,7 @@ case object unwrapParenthesizedPath extends StepSequencer.Step with ASTRewriterF
       case p: ParenthesizedPath => p.part.element
     },
     stopper = {
-      case PatternPartWithSelector(_, selector) if !selector.isInstanceOf[AllPaths] => true
+      case PatternPartWithSelector(selector, _) if !selector.isInstanceOf[AllPaths] => true
       case _                                                                        => false
     }
   )

@@ -52,7 +52,7 @@ trait PredicateNormalizer {
   final def extractAllFrom(pattern: AnyRef): Seq[Expression] =
     pattern.folder.treeFold(Vector.empty[Expression]) {
       case _: QuantifiedPath | _: ExistsExpression | _: CountExpression => acc => SkipChildren(acc)
-      case PatternPartWithSelector(_, selector) if !selector.isInstanceOf[PatternPart.AllPaths] =>
+      case PatternPartWithSelector(selector, _) if !selector.isInstanceOf[PatternPart.AllPaths] =>
         acc => SkipChildren(acc)
       case patternElement: AnyRef if extract.isDefinedAt(patternElement) =>
         acc => TraverseChildren(acc ++ extract(patternElement))
@@ -65,7 +65,7 @@ trait PredicateNormalizer {
         Rewriter.lift(replace),
         stopper = {
           case _: QuantifiedPath                    => true
-          case PatternPartWithSelector(_, selector) => !selector.isInstanceOf[PatternPart.AllPaths]
+          case PatternPartWithSelector(selector, _) => !selector.isInstanceOf[PatternPart.AllPaths]
           case _                                    => false
         }
       )

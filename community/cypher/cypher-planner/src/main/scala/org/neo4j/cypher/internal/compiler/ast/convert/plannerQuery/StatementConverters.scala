@@ -33,9 +33,9 @@ import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.ClauseConverters.addToLogicalPlanInput
 import org.neo4j.cypher.internal.expressions.And
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Pattern
-import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.ir.PlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.UnionQuery
@@ -189,7 +189,7 @@ object StatementConverters {
    */
   def flattenCreates(clauses: Seq[Clause]): Seq[Clause] = {
     val builder = ArrayBuffer.empty[Clause]
-    var prevCreate: Option[(Seq[PatternPart], InputPosition)] = None
+    var prevCreate: Option[(Seq[NonPrefixedPatternPart], InputPosition)] = None
     for (clause <- clauses) {
       (clause, prevCreate) match {
         case (c: Create, None) =>
@@ -199,7 +199,7 @@ object StatementConverters {
           prevCreate = Some((prevParts ++ c.pattern.patternParts, pos))
 
         case (nonCreate, Some((prevParts, pos))) =>
-          builder += Create(Pattern(prevParts)(pos))(pos)
+          builder += Create(Pattern.ForUpdate(prevParts)(pos))(pos)
           builder += nonCreate
           prevCreate = None
 
@@ -208,7 +208,7 @@ object StatementConverters {
       }
     }
     for ((prevParts, pos) <- prevCreate)
-      builder += Create(Pattern(prevParts)(pos))(pos)
+      builder += Create(Pattern.ForUpdate(prevParts)(pos))(pos)
     builder
   }.toSeq
 }

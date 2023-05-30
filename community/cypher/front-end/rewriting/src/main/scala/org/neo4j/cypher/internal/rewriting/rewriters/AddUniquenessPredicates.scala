@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
@@ -132,17 +133,16 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
             case (Some(where), Some(unique)) => Some(And(where, unique)(path.position))
           }
           val newElement = path.copy(optionalWhereClause = newPredicate)(path.position)
-          part.copy(element = newElement)
+          part.replaceElement(newElement)
         case otherElement =>
           val relationships = collectRelationships(otherElement)
           createPredicateFor(relationships, part.position) match {
             // We should not wrap the pattern in new parentheses if there is no predicate to add
-            case None                      => part
+            case None => part
             case Some(uniquenessPredicate) =>
-              // We need a pattern part with selector in order to create a parenthesized path, even though it doesn't make a lot of sense
-              val syntheticPatternPart = PatternPartWithSelector(otherElement, PatternPart.AllPaths()(part.position))
+              val syntheticPatternPart = PathPatternPart(otherElement)
               val newElement = ParenthesizedPath(syntheticPatternPart, Some(uniquenessPredicate))(part.position)
-              part.copy(element = newElement)
+              part.replaceElement(newElement)
           }
       }
     case qpp @ QuantifiedPath(patternPart, _, where, _) =>
@@ -181,7 +181,7 @@ case object AddUniquenessPredicates extends AddRelationshipPredicates {
       case _: ScopeExpression =>
         acc => SkipChildren(acc)
 
-      case PatternPartWithSelector(_, selector) if !selector.isInstanceOf[PatternPart.AllPaths] =>
+      case PatternPartWithSelector(selector, _) if !selector.isInstanceOf[PatternPart.AllPaths] =>
         acc => SkipChildren(acc)
 
       case qpp: QuantifiedPath =>

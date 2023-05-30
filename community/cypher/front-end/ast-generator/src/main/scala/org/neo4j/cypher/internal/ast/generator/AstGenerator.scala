@@ -391,6 +391,7 @@ import org.neo4j.cypher.internal.expressions.NaN
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.NotEquals
@@ -399,6 +400,7 @@ import org.neo4j.cypher.internal.expressions.Or
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathFactor
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternElement
@@ -1086,12 +1088,10 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
 
   def _anonPatternPart: Gen[AnonymousPatternPart] = for {
     element <- _patternElement
-    selector <- _selector
     single <- boolean
     part <- oneOf(
-      PatternPart(element),
-      ShortestPathsPatternPart(element, single)(pos),
-      PatternPartWithSelector(element, selector)
+      PathPatternPart(element),
+      ShortestPathsPatternPart(element, single)(pos)
     )
   } yield part
 
@@ -1100,15 +1100,25 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
     part <- _anonPatternPart
   } yield NamedPatternPart(variable, part)(pos)
 
-  def _patternPart: Gen[PatternPart] =
+  def _nonPrefixedPatternPart: Gen[NonPrefixedPatternPart] =
     oneOf(
       _anonPatternPart,
       _namedPatternPart
     )
 
-  def _pattern: Gen[Pattern] = for {
-    parts <- oneOrMore(_patternPart)
-  } yield Pattern(parts)(pos)
+  def _patternPartWithSelector: Gen[PatternPartWithSelector] =
+    for {
+      part <- _nonPrefixedPatternPart
+      selector <- _selector
+    } yield PatternPartWithSelector(selector, part)
+
+  def _patternForMatch: Gen[Pattern.ForMatch] = for {
+    parts <- oneOrMore(_patternPartWithSelector)
+  } yield Pattern.ForMatch(parts)(pos)
+
+  def _patternForUpdate: Gen[Pattern.ForUpdate] = for {
+    parts <- oneOrMore(_nonPrefixedPatternPart)
+  } yield Pattern.ForUpdate(parts)(pos)
 
   // CLAUSES
   // ==========================================================================
@@ -1189,7 +1199,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _match: Gen[Match] = for {
     optional <- boolean
     matchMode <- _matchMode
-    pattern <- _pattern
+    pattern <- _patternForMatch
     hints <- zeroOrMore(_hint)
     where <- option(_where)
   } yield Match(optional, matchMode, pattern, hints, where)(pos)
@@ -1197,7 +1207,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   def _matchMode: Gen[MatchMode] = oneOf(MatchMode.RepeatableElements()(pos), MatchMode.DifferentRelationships()(pos))
 
   def _create: Gen[Create] = for {
-    pattern <- _pattern
+    pattern <- _patternForUpdate
   } yield Create(pattern)(pos)
 
   def _unwind: Gen[Unwind] = for {
@@ -1250,7 +1260,7 @@ class AstGenerator(simpleStrings: Boolean = true, allowedVarNames: Option[Seq[St
   } yield action
 
   def _merge: Gen[Merge] = for {
-    pattern <- _patternPart
+    pattern <- _nonPrefixedPatternPart
     actions <- oneOrMore(_mergeAction)
   } yield Merge(pattern, actions)(pos)
 

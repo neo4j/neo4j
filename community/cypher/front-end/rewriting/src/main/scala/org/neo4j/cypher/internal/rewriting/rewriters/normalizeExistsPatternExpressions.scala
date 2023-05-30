@@ -31,8 +31,10 @@ import org.neo4j.cypher.internal.expressions.MatchMode
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternComprehension
+import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.PatternPart
+import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Exists
 import org.neo4j.cypher.internal.expressions.functions.Size
@@ -76,7 +78,7 @@ case class normalizeExistsPatternExpressions(
   private val instance = bottomUp(Rewriter.lift {
     case p: PatternExpression if semanticState.expressionType(p).expected.contains(symbols.CTBoolean.invariant) =>
       ExistsExpression(PatternToQueryConverter.convertPatternToQuery(
-        Pattern(Seq(PatternPart(p.pattern.element)))(p.position),
+        p.pattern.element,
         None,
         p.position
       ))(
@@ -86,7 +88,7 @@ case class normalizeExistsPatternExpressions(
       )
     case Exists(p: PatternExpression) =>
       ExistsExpression(PatternToQueryConverter.convertPatternToQuery(
-        Pattern(Seq(PatternPart(p.pattern.element)))(p.position),
+        p.pattern.element,
         None,
         p.position
       ))(
@@ -137,7 +139,7 @@ case object CountLikeToExistsConverter {
     case Size(p @ PatternComprehension(_, pattern, maybePredicate, _)) =>
       Some(ExistsExpression(
         PatternToQueryConverter.convertPatternToQuery(
-          Pattern(Seq(PatternPart(pattern.element)))(p.position),
+          pattern.element,
           maybePredicate.map(mp => Where(mp)(mp.position)),
           p.position
         )
@@ -163,10 +165,14 @@ case object CountLikeToExistsConverter {
 case object PatternToQueryConverter {
 
   def convertPatternToQuery(
-    pattern: Pattern,
+    patternElement: PatternElement,
     maybeWhere: Option[Where],
     position: InputPosition
   ): Query = {
+    val pattern = Pattern.ForMatch(Seq(
+      PatternPartWithSelector(PatternPart.AllPaths()(position), PatternPart(patternElement))
+    ))(position)
+
     SingleQuery(
       Seq(
         Match(optional = false, matchMode = MatchMode.default(position), pattern, Seq.empty, maybeWhere)(position)

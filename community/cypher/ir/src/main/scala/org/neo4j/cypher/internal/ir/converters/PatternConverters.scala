@@ -23,9 +23,11 @@ import org.neo4j.cypher.internal.expressions.AnonymousPatternPart
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.NonPrefixedPatternPart
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
 import org.neo4j.cypher.internal.expressions.PathFactor
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
@@ -49,21 +51,24 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
  */
 class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGenerator) {
 
-  def convertPattern(pattern: Pattern): PathPatterns =
+  def convertPattern(pattern: Pattern.ForMatch): PathPatterns =
     PathPatterns(pattern.patternParts.toList.map(convertPatternPart))
 
-  private def convertPatternPart(patternPart: PatternPart): PathPattern =
-    patternPart match {
-      case NamedPatternPart(variable, patternPart) => convertAnonymousPatternPart(Some(variable.name), patternPart)
-      case patternPart: AnonymousPatternPart       => convertAnonymousPatternPart(None, patternPart)
+  private def convertPatternPart(patternPart: PatternPartWithSelector): PathPattern =
+    patternPart.part match {
+      case NamedPatternPart(variable, anonymousPatternPart) =>
+        convertAnonymousPatternPart(patternPart.selector, Some(variable.name), anonymousPatternPart)
+      case anonymousPatternPart: AnonymousPatternPart =>
+        convertAnonymousPatternPart(patternPart.selector, None, anonymousPatternPart)
     }
 
   private def convertAnonymousPatternPart(
+    selector: PatternPart.Selector,
     pathName: Option[String],
     anonymousPatternPart: AnonymousPatternPart
   ): PathPattern =
     anonymousPatternPart match {
-      case PatternPartWithSelector(element, selector) =>
+      case PathPatternPart(element) =>
         selector match {
           case PatternPart.AllPaths() =>
             convertPatternElement(element)
@@ -105,17 +110,13 @@ class PatternConverters(anonymousVariableNameGenerator: AnonymousVariableNameGen
     }
 
   private def convertShortestPathPatternPart(
-    part: PatternPart,
+    part: NonPrefixedPatternPart,
     predicate: Option[Expression],
     selector: Selector
   ): SelectivePathPattern = {
     part match {
-      case PatternPartWithSelector(element, allPaths) => allPaths match {
-          case PatternPart.AllPaths() =>
-            SelectivePathPattern(convertPatternElement(element), Selections.from(predicate), selector)
-          case otherSelector =>
-            throw new IllegalArgumentException(s"Path selectors such as $otherSelector cannot be nested")
-        }
+      case PathPatternPart(element) =>
+        SelectivePathPattern(convertPatternElement(element), Selections.from(predicate), selector)
       case shortest: ShortestPathsPatternPart =>
         throw new IllegalArgumentException(
           s"${shortest.name}() is not allowed inside of a parenthesised path pattern"

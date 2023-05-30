@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.expressions.And
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
@@ -98,17 +99,16 @@ case class normalizePredicates(normalizer: PredicateNormalizer) extends Rewriter
             part = normalizer.replaceAllIn(path.part),
             optionalWhereClause = newPredicate
           )(path.position)
-          part.copy(element = newElement)
+          part.replaceElement(newElement)
         case otherElement =>
           normalizer.extractAllFrom(otherElement).reduceOption(And(_, _)(part.position)) match {
             // We should not wrap the pattern in new parentheses if there is no predicate to add
-            case None               => part
+            case None => part
             case Some(newPredicate) =>
-              // We need a pattern part with selector in order to create a parenthesized path, even though it doesn't make a lot of sense
               val syntheticPatternPart =
-                PatternPartWithSelector(normalizer.replaceAllIn(otherElement), PatternPart.AllPaths()(part.position))
+                PathPatternPart(normalizer.replaceAllIn(otherElement))
               val newElement = ParenthesizedPath(syntheticPatternPart, Some(newPredicate))(part.position)
-              part.copy(element = newElement)
+              part.replaceElement(newElement)
           }
       }
 

@@ -26,9 +26,8 @@ import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.NodePattern
 import org.neo4j.cypher.internal.expressions.ParenthesizedPath
 import org.neo4j.cypher.internal.expressions.PathConcatenation
+import org.neo4j.cypher.internal.expressions.PathPatternPart
 import org.neo4j.cypher.internal.expressions.PatternElement
-import org.neo4j.cypher.internal.expressions.PatternPart
-import org.neo4j.cypher.internal.expressions.PatternPartWithSelector
 import org.neo4j.cypher.internal.expressions.PlusQuantifier
 import org.neo4j.cypher.internal.expressions.QuantifiedPath
 import org.neo4j.cypher.internal.expressions.RelationshipChain
@@ -49,8 +48,8 @@ object QuantifiedPathPatternConverters {
     quantifiedPath: QuantifiedPath,
     outerRight: String
   ): QuantifiedPathPattern = {
-    val patternPart = getPatternPartWithSelector(quantifiedPath)
-    val patternElement = getPatternElement(patternPart)
+    val patternPart = getPathPattern(quantifiedPath)
+    val patternElement = patternPart.element
     val patternRelationships = getPatternRelationships(patternElement)
     val groupings = VariableGroupings.build(quantifiedPath.variableGroupings)
     patternRelationships
@@ -77,22 +76,13 @@ object QuantifiedPathPatternConverters {
         )
     }
 
-  private def getPatternPartWithSelector(quantifiedPath: QuantifiedPath): PatternPartWithSelector =
+  private def getPathPattern(quantifiedPath: QuantifiedPath): PathPatternPart =
     quantifiedPath.part match {
-      case part: PatternPartWithSelector => part
+      case part: PathPatternPart => part
       case shortest: ShortestPathsPatternPart =>
         throw new IllegalArgumentException(s"${shortest.name}() is not allowed inside of a quantified path pattern")
       case _: NamedPatternPart =>
         throw new IllegalArgumentException("sub-path assignment is not currently supported")
-    }
-
-  private def getPatternElement(patternPartWithSelector: PatternPartWithSelector): PatternElement =
-    patternPartWithSelector.selector match {
-      case PatternPart.AllPaths() => patternPartWithSelector.element
-      case otherSelector =>
-        throw new IllegalArgumentException(
-          s"path selectors such as $otherSelector are not allowed inside of a quantified path pattern"
-        )
     }
 
   private def getPatternRelationships(patternElement: PatternElement): List[PatternRelationship] =
