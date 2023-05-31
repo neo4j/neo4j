@@ -51,6 +51,7 @@ import org.neo4j.cypher.internal.ast.SortItem
 import org.neo4j.cypher.internal.ast.SubqueryCall
 import org.neo4j.cypher.internal.ast.UnresolvedCall
 import org.neo4j.cypher.internal.ast.Unwind
+import org.neo4j.cypher.internal.ast.UseGraph
 import org.neo4j.cypher.internal.ast.Where
 import org.neo4j.cypher.internal.ast.With
 import org.neo4j.cypher.internal.ast.Yield
@@ -170,6 +171,8 @@ object ClauseConverters {
       addCallSubqueryToLogicalPlanInput(acc, c, anonymousVariableNameGenerator, cancellationChecker)
     case c: CommandClause => addCommandClauseToLogicalPlanInput(acc, c)
     case c: Yield         => addYieldToLogicalPlanInput(acc, c)
+    // Graph target is handled in upper layers and is a NOOP down here
+    case _: UseGraph => acc
 
     case x: UnresolvedCall => throw new IllegalArgumentException(s"$x is not expected here")
     case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $x")

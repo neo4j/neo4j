@@ -40,6 +40,8 @@ import org.neo4j.cypher.internal.util.InternalNotificationLogger
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.util.devNullLogger
+import org.neo4j.kernel.database.DatabaseReferenceRepository
+import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.values.virtual.MapValue
 import org.scalatestplus.mockito.MockitoSugar
 
@@ -66,7 +68,9 @@ object ContextHelper extends MockitoSugar {
     executionModel: ExecutionModel = ExecutionModel.default,
     cancellationChecker: CancellationChecker = CancellationChecker.NeverCancelled,
     materializedEntitiesMode: Boolean = false,
-    eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default
+    eagerAnalyzer: CypherEagerAnalyzerOption = CypherEagerAnalyzerOption.default,
+    databaseReferenceRepository: DatabaseReferenceRepository = mock[DatabaseReferenceRepository],
+    databaseId: NamedDatabaseId = mock[NamedDatabaseId]
   ): PlannerContext = {
     new PlannerContext(
       cypherExceptionFactory,
@@ -85,7 +89,9 @@ object ContextHelper extends MockitoSugar {
       executionModel,
       cancellationChecker,
       materializedEntitiesMode,
-      eagerAnalyzer
+      eagerAnalyzer,
+      databaseReferenceRepository,
+      databaseId
     )
   }
 

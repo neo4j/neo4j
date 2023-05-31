@@ -276,7 +276,8 @@ class CypherPlannerTest extends CypherFunSuite {
       NullLog.getInstance(),
       caches,
       CypherPlannerOption.default,
-      CypherUpdateStrategy.default
+      CypherUpdateStrategy.default,
+      null
     )
 
     val query =

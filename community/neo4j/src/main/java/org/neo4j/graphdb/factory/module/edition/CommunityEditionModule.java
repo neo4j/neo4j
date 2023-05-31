@@ -145,7 +145,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
         globalDependencies.satisfyDependency(deviceMapper);
 
         connectionTracker = globalDependencies.satisfyDependency(createConnectionTracker());
-        databaseReferenceRepo = new MapCachingDatabaseReferenceRepository();
+        databaseReferenceRepo = globalDependencies.satisfyDependency(new MapCachingDatabaseReferenceRepository());
     }
 
     @Override

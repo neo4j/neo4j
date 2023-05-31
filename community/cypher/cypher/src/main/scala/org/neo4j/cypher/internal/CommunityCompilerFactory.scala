@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.options.CypherUpdateStrategy
 import org.neo4j.cypher.internal.planning.CypherPlanner
 import org.neo4j.cypher.internal.runtime.CypherRuntimeConfiguration
 import org.neo4j.kernel.GraphDatabaseQueryService
+import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.logging.InternalLog
 import org.neo4j.logging.InternalLogProvider
 import org.neo4j.monitoring
@@ -54,6 +55,8 @@ class CommunityCompilerFactory(
     executionEngineProvider: () => ExecutionEngine
   ): Compiler = {
 
+    val dependencies = graph.getDependencyResolver
+
     val planner =
       CypherPlanner(
         plannerConfig,
@@ -62,7 +65,8 @@ class CommunityCompilerFactory(
         log,
         queryCaches,
         cypherPlanner,
-        cypherUpdateStrategy
+        cypherUpdateStrategy,
+        dependencies.resolveDependency(classOf[DatabaseReferenceRepository])
       )
 
     val runtime =

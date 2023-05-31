@@ -98,6 +98,7 @@ import org.neo4j.exceptions.DatabaseAdministrationException
 import org.neo4j.exceptions.Neo4jException
 import org.neo4j.exceptions.SyntaxException
 import org.neo4j.kernel.api.query.QueryObfuscator
+import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.logging.InternalLog
@@ -178,7 +179,8 @@ case class CypherPlanner(
   log: InternalLog,
   queryCaches: CypherQueryCaches,
   plannerOption: CypherPlannerOption,
-  updateStrategy: CypherUpdateStrategy
+  updateStrategy: CypherUpdateStrategy,
+  databaseReferenceRepository: DatabaseReferenceRepository
 ) {
 
   private val caches = new queryCaches.CypherPlannerCaches()
@@ -363,7 +365,9 @@ case class CypherPlanner(
       params,
       transactionalContextWrapper.cancellationChecker,
       options.materializedEntitiesMode,
-      options.queryOptions.eagerAnalyzer
+      options.queryOptions.eagerAnalyzer,
+      databaseReferenceRepository,
+      transactionalContextWrapper.databaseId
     )
 
     // Prepare query for caching

@@ -95,7 +95,9 @@ class CypherQueryObfuscatorFactory {
       null,
       CancellationChecker.NeverCancelled,
       false,
-      CypherEagerAnalyzerOption.default
+      CypherEagerAnalyzerOption.default,
+      null,
+      null
     )
 
   private object PlanContextWithProceduresRegistry extends PlanContext {
