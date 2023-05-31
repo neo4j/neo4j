@@ -224,18 +224,4 @@ class GBPTreeWriterTest {
             rightmostKeyCountOnLevelSoFar = keyCount;
         }
     }
-
-    private static class TreeHeightTracker extends MultiRootGBPTree.Monitor.Adaptor {
-        int treeHeight;
-
-        @Override
-        public void treeGrowth() {
-            treeHeight++;
-        }
-
-        @Override
-        public void treeShrink() {
-            treeHeight--;
-        }
-    }
 }

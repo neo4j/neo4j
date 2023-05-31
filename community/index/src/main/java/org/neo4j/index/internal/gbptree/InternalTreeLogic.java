@@ -1215,6 +1215,9 @@ class InternalTreeLogic<KEY, VALUE> {
             int keyCount = keyCount(cursor);
             simplyRemoveFromInternal(
                     cursor, keyCount, subtreePosition, true, stableGeneration, unstableGeneration, cursorContext);
+            if (currentLevel <= 0) {
+                tryShrinkTree(cursor, structurePropagation, stableGeneration, unstableGeneration);
+            }
         }
     }
 

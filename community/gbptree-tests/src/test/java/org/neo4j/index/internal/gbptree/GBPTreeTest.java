@@ -159,6 +159,38 @@ class GBPTreeTest {
     /* Meta and state page tests */
 
     @Test
+    void shouldShrinkTreeOnValueReplaceResultingInUnderflowOnLevelOne() throws IOException {
+        // given
+        var layout = new SimpleByteArrayLayout(true);
+        var monitor = new TreeHeightTracker();
+        try (var pageCache = createPageCache(PageCache.PAGE_SIZE);
+                var tree = new GBPTreeBuilder<>(pageCache, fileSystem, indexFile, layout)
+                        .with(monitor)
+                        .build()) {
+            // when adding enough large keys to juuust tip it over the edge, so that it splits
+            // into an internal root and one left and one right leaf child
+            var numKeys = 0;
+            while (monitor.treeHeight == 0) {
+                try (var writer = tree.writer(NULL_CONTEXT)) {
+                    var value = new RawBytes(new byte[100]);
+                    writer.put(layout.key(numKeys++), value);
+                }
+            }
+            assertThat(monitor.treeHeight).isEqualTo(1);
+
+            // and when reducing the value size of one of the entries in the left sibling
+            // such that its entries gets merged into its right sibling
+            try (var writer = tree.writer(NULL_CONTEXT)) {
+                var value = new RawBytes(new byte[1]);
+                writer.merge(layout.key(0), value, ValueMergers.overwrite());
+            }
+
+            // then the tree should have shrunk back to just being a root leaf
+            assertThat(monitor.treeHeight).isEqualTo(0);
+        }
+    }
+
+    @Test
     void shouldNeedRecreationIfNoCheckpointBeforeClose() throws Exception {
         try (PageCache pageCache = createPageCache(defaultPageSize)) {
             index(pageCache).build().close();
