@@ -24,14 +24,9 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.ast.convert.plannerQuery.PlannerQueryBuilder.finalizeQuery
 import org.neo4j.cypher.internal.compiler.helpers.SeqSupport.RichSeq
 import org.neo4j.cypher.internal.expressions.AssertIsNode
-import org.neo4j.cypher.internal.expressions.HasTypes
-import org.neo4j.cypher.internal.expressions.Ors
-import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.CallSubqueryHorizon
-import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.PlannerQuery
-import org.neo4j.cypher.internal.ir.Predicate
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.QueryHorizon
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
@@ -122,35 +117,6 @@ object PlannerQueryBuilder {
   def apply(semanticTable: SemanticTable, argumentIds: Set[String]): PlannerQueryBuilder =
     PlannerQueryBuilder(RegularSinglePlannerQuery(queryGraph = QueryGraph(argumentIds = argumentIds)), semanticTable)
 
-  private def findRelationshipTypePredicatesPerSymbol(qg: QueryGraph): Map[String, (Predicate, Seq[RelTypeName])] = {
-    qg.selections.predicates.foldLeft(Map.empty[String, (Predicate, Seq[RelTypeName])]) {
-      // WHERE r:REL
-      case (acc, pred @ Predicate(_, HasTypes(Variable(name), relTypes))) =>
-        acc + (name -> (pred -> relTypes))
-
-      // WHERE r:REL OR r:OTHER_REL
-      case (acc, pred @ Predicate(_, ors: Ors)) =>
-        ors.exprs.head match {
-          case HasTypes(Variable(name), _) =>
-            val relTypesOnTheSameVariable = ors.exprs.flatMap {
-              case HasTypes(Variable(`name`), relTypes) => relTypes
-              case _                                    => ListSet.empty
-            }
-
-            // all predicates must refer to the same variable to be equivalent to [r:A|B|C]
-            if (relTypesOnTheSameVariable.size == ors.exprs.size) {
-              acc + (name -> (pred -> relTypesOnTheSameVariable.toSeq))
-            } else {
-              acc
-            }
-          case _ => acc
-        }
-
-      case (acc, _) =>
-        acc
-    }
-  }
-
   def finalizeQuery(q: SinglePlannerQuery): SinglePlannerQuery = {
 
     def fixArgumentIds(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = plannerQuery.foldMap {
@@ -215,29 +181,6 @@ object PlannerQueryBuilder {
         .updateTail(groupInequalities)
     }
 
-    def inlineRelationshipTypePredicates(plannerQuery: SinglePlannerQuery): SinglePlannerQuery = {
-      plannerQuery.amendQueryGraph { qg =>
-        val typePredicates: Map[String, (Predicate, Seq[RelTypeName])] = findRelationshipTypePredicatesPerSymbol(qg)
-
-        final case class Result(newPatternRelationships: Set[PatternRelationship], inlinedPredicates: Set[Predicate])
-
-        val result = qg.patternRelationships.foldLeft(Result(qg.patternRelationships, Set.empty)) {
-          case (resultSoFar @ Result(newPatternRelationships, inlinedPredicates), rel) =>
-            if (rel.types.nonEmpty) resultSoFar
-            else {
-              typePredicates.get(rel.name).fold(resultSoFar) { case (pred, types) =>
-                Result(newPatternRelationships - rel + rel.copy(types = types), inlinedPredicates + pred)
-              }
-            }
-        }
-
-        qg.copy(
-          patternRelationships = result.newPatternRelationships,
-          selections = qg.selections.copy(predicates = qg.selections.predicates -- result.inlinedPredicates)
-        )
-      }.updateTail(inlineRelationshipTypePredicates)
-    }
-
     def fixStandaloneArgumentPatternNodes(part: SinglePlannerQuery): SinglePlannerQuery = {
 
       def addPredicates(qg: QueryGraph): QueryGraph = {
@@ -259,7 +202,6 @@ object PlannerQueryBuilder {
       fixArgumentIdsOnMerge,
       fixArgumentIdsOnQPPs,
       groupInequalities,
-      inlineRelationshipTypePredicates,
       fixStandaloneArgumentPatternNodes
     )).apply(q)
   }

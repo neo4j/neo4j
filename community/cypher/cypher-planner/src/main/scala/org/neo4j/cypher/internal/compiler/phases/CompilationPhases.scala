@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.planner.ResolveTokens
 import org.neo4j.cypher.internal.compiler.planner.VerifyGraphTarget
 import org.neo4j.cypher.internal.compiler.planner.logical.EmptyRelationshipListEndpointProjection
 import org.neo4j.cypher.internal.compiler.planner.logical.GetDegreeRewriterStep
+import org.neo4j.cypher.internal.compiler.planner.logical.InlineRelationshipTypePredicates
 import org.neo4j.cypher.internal.compiler.planner.logical.MoveQuantifiedPathPatternPredicatesToConnectedNodes
 import org.neo4j.cypher.internal.compiler.planner.logical.OptionalMatchRemover
 import org.neo4j.cypher.internal.compiler.planner.logical.QueryPlanner
@@ -106,6 +107,7 @@ object CompilationPhases {
           EmptyRelationshipListEndpointProjection,
           GetDegreeRewriterStep,
           MoveQuantifiedPathPatternPredicatesToConnectedNodes,
+          InlineRelationshipTypePredicates,
           UnfulfillableQueryRewriter,
           VarLengthQuantifierMerger,
           QueryPlanner,

@@ -1580,54 +1580,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     ))
   }
 
-  test("should inline relationship type predicate") {
-    val query = buildSinglePlannerQuery(
-      """MATCH (a)-[r]->(b)
-        |WHERE r:REL
-        |RETURN *
-        |""".stripMargin
-    )
-
-    query.queryGraph.selections shouldBe Selections()
-    query.queryGraph.patternRelationships shouldBe Set(
-      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(relTypeName("REL")), SimplePatternLength)
-    )
-  }
-
-  test("should inline ORed relationship type predicates") {
-    val query = buildSinglePlannerQuery(
-      """MATCH (a)-[r]->(b)
-        |WHERE r:X OR r:Y
-        |RETURN *
-        |""".stripMargin
-    )
-
-    query.queryGraph.selections shouldBe Selections()
-    query.queryGraph.patternRelationships shouldBe Set(
-      PatternRelationship(
-        "r",
-        ("a", "b"),
-        SemanticDirection.OUTGOING,
-        Seq(relTypeName("X"), relTypeName("Y")),
-        SimplePatternLength
-      )
-    )
-  }
-
-  test("should inline relationship type predicates and keep other predicates") {
-    val query = buildSinglePlannerQuery(
-      """MATCH (a)-[r]->(b)
-        |WHERE r:REL AND a.prop = 123
-        |RETURN *
-        |""".stripMargin
-    )
-
-    query.queryGraph.selections shouldBe Selections.from(in(prop("a", "prop"), listOfInt(123)))
-    query.queryGraph.patternRelationships shouldBe Set(
-      PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq(relTypeName("REL")), SimplePatternLength)
-    )
-  }
-
   test("should insert an extra predicate when matching on the same standalone node") {
     val query = buildSinglePlannerQuery(
       """

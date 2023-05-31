@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.phases.CompilationContains
 import org.neo4j.cypher.internal.compiler.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.planner.logical.EmptyRelationshipListEndpointProjection.InScopeZeroLengthRelationshipsHaveBeenExtracted
+import org.neo4j.cypher.internal.compiler.planner.logical.InlineRelationshipTypePredicates.RelationshipTypePredicatesInlined
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.Settings
 import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext.StaticComponents
 import org.neo4j.cypher.internal.compiler.planner.logical.Metrics.QueryGraphSolverInput
@@ -156,7 +157,8 @@ case object QueryPlanner
     InScopeZeroLengthRelationshipsHaveBeenExtracted,
     VarLengthQuantifierMerged,
     TokensResolved,
-    QuantifiedPathPatternPredicatesMovedToConnectedNodes
+    QuantifiedPathPatternPredicatesMovedToConnectedNodes,
+    RelationshipTypePredicatesInlined
   )
 
   override def postConditions: Set[StepSequencer.Condition] = Set(
