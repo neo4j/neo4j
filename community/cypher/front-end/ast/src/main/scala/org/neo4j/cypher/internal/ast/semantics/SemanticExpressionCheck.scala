@@ -280,21 +280,11 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
           checkTypes(x, x.signatures)
 
       case x: IsTyped =>
-        requireFeatureSupport(
-          s"The `${x.canonicalOperatorSymbol} ${x.typeName.description}` expression",
-          SemanticFeature.TypePredicateExpression,
-          x.position
-        ) chain
-          check(ctx, x.arguments) chain
+        check(ctx, x.arguments) chain
           checkTypes(x, x.signatures)
 
       case x: IsNotTyped =>
-        requireFeatureSupport(
-          s"The `${x.canonicalOperatorSymbol} ${x.typeName.description}` expression",
-          SemanticFeature.TypePredicateExpression,
-          x.position
-        ) chain
-          check(ctx, x.arguments) chain
+        check(ctx, x.arguments) chain
           checkTypes(x, x.signatures)
 
       case x: LessThan =>
