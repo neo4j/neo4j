@@ -222,7 +222,7 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                      |  "."
                      |  "?"
                      |  "ON"
-                     |  "ZONED"
+                     |  "TYPED"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }
@@ -235,7 +235,7 @@ class ExecuteProcedurePrivilegeAdministrationCommandParserTest extends Administr
                      |  "*"
                      |  "."
                      |  "?"
-                     |  "ZONED"
+                     |  "TYPED"
                      |  an identifier (line 1, column ${offset + 1} (offset: $offset))""".stripMargin
                 )
               }

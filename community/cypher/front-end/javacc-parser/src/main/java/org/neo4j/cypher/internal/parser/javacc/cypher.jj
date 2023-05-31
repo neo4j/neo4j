@@ -2926,102 +2926,192 @@ PATH_LENGTH PathLengthLiteral( Token t ) :
 LABEL_EXPRESSION LabelExpression( ENTITY_TYPE type ) :
 {
     LABEL_EXPRESSION e;
-    boolean containsIs;
 }
 {
-    (<COLON> {containsIs = false;} | <IS> {containsIs = true;})  (
+    (
+        (<COLON> (
             LOOKAHEAD({ !labelExpressionStack.isEmpty() && labelExpressionStack.peek() == ExpectBar.EXPECT_BAR})
-            e = LabelExpression4ExpectingBar(type, containsIs)
+            e = LabelExpression4ExpectingBar(type)
             |
             LOOKAHEAD({ labelExpressionStack.isEmpty() || labelExpressionStack.peek() == ExpectBar.DO_NOT_EXPECT_BAR})
-            e = LabelExpression4(type, containsIs)
-        )
-    {
-        return e;
-    }
-}
-
-LABEL_EXPRESSION LabelExpression4( ENTITY_TYPE type, boolean containsIs ) :
-{
-    Token t;
-    LABEL_EXPRESSION e;
-    LABEL_EXPRESSION temp;
-}
-{
-    e=LabelExpression3(type, containsIs) (
-        LOOKAHEAD(2)
-        t=<BAR>
-        (
-            <COLON> temp=LabelExpression3(type, containsIs) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, containsIs ); }
+            e = LabelExpression4(type)
+        ))
         |
-            temp=LabelExpression3(type, containsIs) { e = astFactory.labelDisjunction( pos( t ), e, temp, containsIs ); }
-        )
-    )*
-    {
-        return e;
-    }
-}
-
-LABEL_EXPRESSION LabelExpression4ExpectingBar( ENTITY_TYPE type, boolean containsIs ) :
-{
-    Token t;
-    LABEL_EXPRESSION e;
-    LABEL_EXPRESSION temp;
-}
-{
-    e=LabelExpression3(type, containsIs) (
-        LOOKAHEAD(
-            <BAR> (<COLON>)? LabelExpression3() <BAR>
-        )
-        t=<BAR>
-        (
-            <COLON> temp=LabelExpression3(type, containsIs) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, containsIs ); }
-        |
-            temp=LabelExpression3(type, containsIs) { e = astFactory.labelDisjunction( pos( t ), e, temp, containsIs ); }
-        )
-    )*
-    {
-        return e;
-    }
-}
-
-LABEL_EXPRESSION LabelExpression3( ENTITY_TYPE type, boolean containsIs ) :
-{
-    Token t;
-    LABEL_EXPRESSION e;
-    LABEL_EXPRESSION temp;
-}
-{
-    e=LabelExpression2(type, containsIs)
-    (
-        LOOKAHEAD(2)
-        (
-            t=<AMPERSAND> temp=LabelExpression2(type, containsIs) { e = astFactory.labelConjunction( pos( t ), e, temp, containsIs ); }
-        |
-            t=<COLON> temp=LabelExpression2(type, containsIs) { e = astFactory.labelColonConjunction( pos( t ), e, temp, containsIs ); }
-        )
-    )*
-    {
-        return e;
-    }
-}
-
-LABEL_EXPRESSION LabelExpression2( ENTITY_TYPE type, boolean containsIs ) :
-{
-    Token t;
-    LABEL_EXPRESSION e;
-}
-{
-    (
-        LOOKAHEAD( 3 ) t=<EXCLAMATION_MARK> e=LabelExpression2(type, containsIs) { e = astFactory.labelNegation( pos( t ), e, containsIs ); }
-        | e=LabelExpression1(type, containsIs)
+        (<IS> (
+            LOOKAHEAD({ !labelExpressionStack.isEmpty() && labelExpressionStack.peek() == ExpectBar.EXPECT_BAR})
+            e = LabelExpression4ExpectingBarIs(type)
+            |
+            LOOKAHEAD({ labelExpressionStack.isEmpty() || labelExpressionStack.peek() == ExpectBar.DO_NOT_EXPECT_BAR})
+            e = LabelExpression4Is(type)
+        ))
     )
     {
         return e;
     }
 }
 
-LABEL_EXPRESSION LabelExpression1( ENTITY_TYPE type, boolean containsIs ) :
+LABEL_EXPRESSION LabelExpression4( ENTITY_TYPE type ) :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression3(type) (
+        LOOKAHEAD(2)
+        t=<BAR>
+        (
+            <COLON> temp=LabelExpression3(type) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, false ); }
+        |
+            temp=LabelExpression3(type) { e = astFactory.labelDisjunction( pos( t ), e, temp, false ); }
+        )
+    )*
+    {
+        return e;
+    }
+}
+
+
+LABEL_EXPRESSION LabelExpression4Is( ENTITY_TYPE type ) :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression3Is(type) (
+        LOOKAHEAD(2)
+        t=<BAR>
+        (
+            <COLON> temp=LabelExpression3Is(type) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, true ); }
+        |
+            temp=LabelExpression3Is(type) { e = astFactory.labelDisjunction( pos( t ), e, temp, true ); }
+        )
+    )*
+    {
+        return e;
+    }
+}
+LABEL_EXPRESSION LabelExpression4ExpectingBar( ENTITY_TYPE type ) :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression3(type) (
+        LOOKAHEAD(
+            <BAR> (<COLON>)? LabelExpression3() <BAR>
+        )
+        t=<BAR>
+        (
+            <COLON> temp=LabelExpression3(type) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, false ); }
+        |
+            temp=LabelExpression3(type) { e = astFactory.labelDisjunction( pos( t ), e, temp, false ); }
+        )
+    )*
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression4ExpectingBarIs( ENTITY_TYPE type ) :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression3Is(type) (
+        LOOKAHEAD(
+            <BAR> (<COLON>)? LabelExpression3Is() <BAR>
+        )
+        t=<BAR>
+        (
+            <COLON> temp=LabelExpression3Is(type) { e = astFactory.labelColonDisjunction( pos( t ), e, temp, true ); }
+        |
+            temp=LabelExpression3Is(type) { e = astFactory.labelDisjunction( pos( t ), e, temp, true ); }
+        )
+    )*
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression3( ENTITY_TYPE type ) :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression2(type)
+    (
+        LOOKAHEAD(2)
+        (
+            t=<AMPERSAND> temp=LabelExpression2(type) { e = astFactory.labelConjunction( pos( t ), e, temp, false ); }
+        |
+            t=<COLON> temp=LabelExpression2(type) { e = astFactory.labelColonConjunction( pos( t ), e, temp, false ); }
+        )
+    )*
+    {
+        return e;
+    }
+}
+
+
+LABEL_EXPRESSION LabelExpression3Is( ENTITY_TYPE type ) :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+    LABEL_EXPRESSION temp;
+}
+{
+    e=LabelExpression2Is(type)
+    (
+        LOOKAHEAD(2)
+        (
+            t=<AMPERSAND> temp=LabelExpression2Is(type) { e = astFactory.labelConjunction( pos( t ), e, temp, true ); }
+        |
+            t=<COLON> temp=LabelExpression2Is(type) { e = astFactory.labelColonConjunction( pos( t ), e, temp, true ); }
+        )
+    )*
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression2( ENTITY_TYPE type ) :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+}
+{
+    (
+        LOOKAHEAD( 3 ) t=<EXCLAMATION_MARK> e=LabelExpression2(type) { e = astFactory.labelNegation( pos( t ), e, false ); }
+        | e=LabelExpression1(type)
+    )
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression2Is( ENTITY_TYPE type ) :
+{
+    Token t;
+    LABEL_EXPRESSION e;
+}
+{
+    (
+        LOOKAHEAD( 3 ) t=<EXCLAMATION_MARK> e=LabelExpression2Is(type) { e = astFactory.labelNegation( pos( t ), e, true ); }
+        | e=LabelExpression1Is(type)
+    )
+    {
+        return e;
+    }
+}
+
+LABEL_EXPRESSION LabelExpression1( ENTITY_TYPE type ) :
 {
     LABEL_EXPRESSION e = null;
     String label = null;
@@ -3030,9 +3120,29 @@ LABEL_EXPRESSION LabelExpression1( ENTITY_TYPE type, boolean containsIs ) :
 }
 {
     (
-        <LPAREN> e=LabelExpression4(type, containsIs) <RPAREN>
-        | t = <PERCENT> { e = astFactory.labelWildcard( pos ( t ), containsIs ); }
-        | t=SymbolicNameString() { e = astFactory.labelLeaf( pos ( t ), t.image, type, containsIs ); }
+        <LPAREN> e=LabelExpression4(type) <RPAREN>
+        | t = <PERCENT> { e = astFactory.labelWildcard( pos ( t ), false ); }
+        | t=SymbolicNameString() { e = astFactory.labelLeaf( pos ( t ), t.image, type, false ); }
+    )
+    {
+        labelExpressionStack.pop();
+        return e;
+    }
+}
+
+
+LABEL_EXPRESSION LabelExpression1Is( ENTITY_TYPE type ) :
+{
+    LABEL_EXPRESSION e = null;
+    String label = null;
+    Token t;
+    labelExpressionStack.push(ExpectBar.DO_NOT_EXPECT_BAR);
+}
+{
+    (
+        <LPAREN> e=LabelExpression4Is(type) <RPAREN>
+        | t = <PERCENT> { e = astFactory.labelWildcard( pos ( t ), true ); }
+        | t=SymbolicLabelNameString() { e = astFactory.labelLeaf( pos ( t ), t.image, type, true ); }
     )
     {
         labelExpressionStack.pop();
@@ -3240,7 +3350,9 @@ EXPRESSION Expression2() throws Exception:
     EXPRESSION e;
 }
 {
-    e=Expression1() ( e=PostFix1( e ) )*
+    e=Expression1()
+    ( LOOKAHEAD(<DOT> | <LBRACKET> | <COLON> | <IS> (<EXCLAMATION_MARK> | <PERCENT> | <LPAREN> | SymbolicLabelNameString() ))
+        e=PostFix1( e ) )*
     {
         return e;
     }
@@ -3256,9 +3368,8 @@ EXPRESSION PostFix1( EXPRESSION subject ) throws Exception:
 {
     (
         ret=Property( subject )
-        | LOOKAHEAD(<IS> <NULL>) t=<IS> <NULL> { ret = astFactory.isNull( pos( t ), subject ); }
-        | LOOKAHEAD(<IS> <NOT> <NULL>) t=<IS> <NOT> <NULL> { ret = astFactory.isNotNull( pos( t ), subject ); }
-        | ret=LabelExpressionPredicate( subject )
+        | LOOKAHEAD(<COLON>) ret=LabelExpressionPredicate( subject )
+        | LOOKAHEAD(<IS> (<EXCLAMATION_MARK> | <PERCENT> | <LPAREN> | SymbolicLabelNameString())) ret=LabelExpressionPredicate( subject )
         | LOOKAHEAD(<LBRACKET> Expression() <RBRACKET>) <LBRACKET> e1=Expression() <RBRACKET> { ret=astFactory.listLookup( subject, e1 ); }
         | t=<LBRACKET> ( e1=Expression() )? <DOTDOT> ( e2=Expression() )? <RBRACKET> { ret=astFactory.listSlice( pos( t ), subject, e1, e2 ); }
     )
@@ -6649,6 +6760,39 @@ Token UnescapedSymbolicNameString() :
 }
 {
     (
+        t=UnescapedLabelSymbolicNameString()
+
+        //list of additionally allowed keywords
+        | t=<NOT>
+        | t=<NULL>
+        | t=<TYPED>
+    )
+    {
+        return t;
+    }
+}
+
+//used for IS
+Token SymbolicLabelNameString() :
+{
+    Token t;
+}
+{
+    (
+        t=EscapedSymbolicNameString()
+        | t=UnescapedLabelSymbolicNameString()
+    )
+    {
+        return t;
+    }
+}
+
+Token UnescapedLabelSymbolicNameString() :
+{
+    Token t;
+}
+{
+    (
         t=<IDENTIFIER>
 
         //list of allowed keywords
@@ -6774,9 +6918,7 @@ Token UnescapedSymbolicNameString() :
         | t=<NODE>
         | t=<NODES>
         | t=<NONE>
-        | t=<NOT>
         | t=<NOWAIT>
-        | t=<NULL>
         | t=<OF>
         | t=<ON>
         | t=<ONLY>
@@ -6861,7 +7003,6 @@ Token UnescapedSymbolicNameString() :
         | t=<TRAVERSE>
         | t=<TRUE>
         | t=<TYPE>
-        | t=<TYPED>
         | t=<TYPES>
         | t=<UNION>
         | t=<UNIQUE>

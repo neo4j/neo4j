@@ -642,7 +642,7 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
     )
   }
 
-  test(s"MATCH ()-[r IS NULL WHERE r IS NULL]->()") {
+  test(s"MATCH ()-[r IS `NULL` WHERE r IS NULL]->()") {
     gives(
       singleQuery(
         match_(
@@ -675,6 +675,66 @@ class RelationshipPatternParserTest extends PatternParserTestBase {
         )
       )
     )
+  }
+
+  // Relationship types NOT, NULL and TYPED are not allowed together with IS keyword unless escaped
+  for {
+    label <- Seq("NOT", "NULL", "TYPED")
+  } yield {
+    test(s"MATCH ()-[r:$label]->()") {
+      gives(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(),
+              relPat(
+                Some("r"),
+                Some(labelRelTypeLeaf(label))
+              ),
+              nodePat()
+            )
+          )
+        )
+      )
+    }
+
+    test(s"MATCH ()-[r:`$label`]->()") {
+      gives(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(),
+              relPat(
+                Some("r"),
+                Some(labelRelTypeLeaf(label))
+              ),
+              nodePat()
+            )
+          )
+        )
+      )
+    }
+
+    test(s"MATCH ()-[r IS $label]->()") {
+      failsToParse
+    }
+
+    test(s"MATCH ()-[r IS `$label`]->()") {
+      gives(
+        singleQuery(
+          match_(
+            relationshipChain(
+              nodePat(),
+              relPat(
+                Some("r"),
+                Some(labelRelTypeLeaf(label, containsIs = true))
+              ),
+              nodePat()
+            )
+          )
+        )
+      )
+    }
   }
 
   test(s"MATCH ()-[r IS NOT NULL WHERE r IS NOT NULL]->()") {

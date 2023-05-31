@@ -1,0 +1,288 @@
+/*
+ * Copyright (c) "Neo4j"
+ * Neo4j Sweden AB [http://neo4j.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.cypher.internal.ast.factory.neo4j
+
+import org.neo4j.cypher.internal.ast.CollectExpression
+import org.neo4j.cypher.internal.ast.CountExpression
+import org.neo4j.cypher.internal.ast.ExistsExpression
+import org.neo4j.cypher.internal.expressions.AllPropertiesSelector
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.ListSlice
+import org.neo4j.cypher.internal.expressions.MapProjection
+import org.neo4j.cypher.internal.expressions.ShortestPathExpression
+import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
+import org.neo4j.cypher.internal.util.symbols.CTAny
+
+class ExpressionPrecedenceParsingTest extends JavaccParserAstTestBase[Expression] {
+
+  implicit private val parser: JavaccRule[Expression] = JavaccRule.Expression
+
+  /**
+   * Precedence in Cypher:
+   * 12: OR
+   * 11: XOR
+   * 10: AND
+   * 9: NOT
+   * 8: =, !=, <>, <, >, <=, >=
+   * 7: =~, STARS WITH, ENDS WITH, CONTAINS, IN, IS NULL, IS NOT NULL
+   * 6: +, -
+   * 5: *, /, %
+   * 4: POW
+   * 3: +(unary), -(unary)
+   * 2: .prop, :Label, [expr], [..]
+   * 1: literal, parameter, CASE, COUNT, EXISTS, COLLECT, map projection, list comprehension, pattern comprehension,
+   * reduce, all, any, none, single, pattern, shortest path, (expr), functions, variables
+   */
+
+  test("precedence 12 vs 11") {
+    // (1 XOR 2) OR (3 XOR 4)
+    parsing("1 XOR 2 OR 3 XOR 4") shouldGive or(xor(literalInt(1), literalInt(2)), xor(literalInt(3), literalInt(4)))
+  }
+
+  test("precedence 11 vs 10") {
+    // true XOR (true AND false) XOR false
+    parsing("true XOR true AND false XOR false") shouldGive xor(
+      xor(trueLiteral, and(trueLiteral, falseLiteral)),
+      falseLiteral
+    )
+  }
+
+  test("precedence 10 vs 9") {
+    // (NOT 1) AND (NOT 3) AND 5
+    parsing("NOT 1 AND NOT 3 AND 5") shouldGive and(and(not(literalInt(1)), not(literalInt(3))), literalInt(5))
+  }
+
+  test("precedence 9 vs 8") {
+    // NOT (1 < 2 = 3 <= (NOT 4) <> 5 >= 6 > 7)
+    parsing("NOT 1 < 2 = 3 <= (NOT 4) <> 5 >= 6 > 7") shouldGive
+      not(ands(
+        lessThan(literalInt(1), literalInt(2)),
+        eq(literalInt(2), literalInt(3)),
+        lessThanOrEqual(literalInt(3), not(literalInt(4))),
+        notEquals(not(literalInt(4)), literalInt(5)),
+        greaterThanOrEqual(literalInt(5), literalInt(6)),
+        greaterThan(literalInt(6), literalInt(7))
+      ))
+  }
+
+  test("precedence 9 vs 8 - negative") {
+    failsToParse("1 = NOT 2")
+  }
+
+  test("precedence 8 vs 7") {
+    // ('string' STARTS WITH 's') = ('string' =~ 's?') > ('string' ENDS WITH 's') < ('string' IS NULL)
+    // >= ('string' CONTAINS 's') <> ('string' IS NOT NULL) <= ('string' IN list)
+    parsing("'string' STARTS WITH 's' = 'string' =~ 's?' > 'string' ENDS WITH 's' < 'string' IS NULL >= 'string' " +
+      "CONTAINS 's' <> 'string' IS NOT NULL <= 'string' IN list") shouldGive
+      ands(
+        eq(
+          startsWith(literalString("string"), literalString("s")),
+          regex(literalString("string"), literalString("s?"))
+        ),
+        greaterThan(
+          regex(literalString("string"), literalString("s?")),
+          endsWith(literalString("string"), literalString("s"))
+        ),
+        lessThan(
+          endsWith(literalString("string"), literalString("s")),
+          isNull(literalString("string"))
+        ),
+        greaterThanOrEqual(
+          isNull(literalString("string")),
+          contains(literalString("string"), literalString("s"))
+        ),
+        notEquals(
+          contains(literalString("string"), literalString("s")),
+          isNotNull(literalString("string"))
+        ),
+        lessThanOrEqual(
+          isNotNull(literalString("string")),
+          in(literalString("string"), varFor("list"))
+        )
+      )
+  }
+
+  test("precedence 7 - negative") {
+    failsToParse("'parse' ENDS WITH 'se' CONTAINS 'e'")
+  }
+
+  test("precedence 7 vs 6") {
+    // ('string' + 'thing') STARTS WITH ('s' + 't')
+    parsing("'string' + 'thing' STARTS WITH 's' + 't'") shouldGive
+      startsWith(
+        add(literalString("string"), literalString("thing")),
+        add(literalString("s"), literalString("t"))
+      )
+
+    // ('string' + 'thing') CONTAINS ('ring' - 'ing')
+    parsing("'string' + 'thing' CONTAINS 'ring' - 'ing'") shouldGive
+      contains(
+        add(literalString("string"), literalString("thing")),
+        subtract(literalString("ring"), literalString("ing"))
+      )
+
+    // ('string' - 'ing') ENDS WITH ('s' + 't')
+    parsing("'string' - 'ing' ENDS WITH 's' + 't'") shouldGive
+      endsWith(
+        subtract(literalString("string"), literalString("ing")),
+        add(literalString("s"), literalString("t"))
+      )
+
+    // ('string' - 'ing') =~ ('s?' - 's')
+    parsing("'string' - 'ing' =~ 's?' - 's'") shouldGive
+      regex(
+        subtract(literalString("string"), literalString("ing")),
+        subtract(literalString("s?"), literalString("s"))
+      )
+
+    // (2 + 3) IN [(2 - 1)]
+    parsing("2 + 3 IN [2 - 1]") shouldGive
+      in(add(literalInt(2), literalInt(3)), listOf(subtract(literalInt(2), literalInt(1))))
+
+    // (1 + 2) IS NOT NULL
+    parsing("1 + 2 IS NOT NULL") shouldGive isNotNull(add(literalInt(1), literalInt(2)))
+
+    // (1 - 2) IS NULL
+    parsing("1 - 2 IS NULL") shouldGive isNull(subtract(literalInt(1), literalInt(2)))
+  }
+
+  test("precedence 6 - left-associativity") {
+    // ((1 + 2) - 3) + 4
+    parsing("1 + 2 - 3 + 4") shouldGive
+      add(subtract(add(literalInt(1), literalInt(2)), literalInt(3)), literalInt(4))
+  }
+
+  test("precedence 6 vs 5") {
+    // 1 + (2 / 3 * 4) - (5 % 6)
+    parsing("1 + 2 / 3 * 4 - 5 % 6") shouldGive
+      subtract(
+        add(literalInt(1), multiply(divide(literalInt(2), literalInt(3)), literalInt(4))),
+        modulo(literalInt(5), literalInt(6))
+      )
+  }
+
+  test("precedence 5 - left-associativity") {
+    // (2 / 3) * 4
+    parsing("2 / 3 * 4") shouldGive multiply(divide(literalInt(2), literalInt(3)), literalInt(4))
+
+    // (5 % 4) % 2
+    parsing("5 % 4 % 2") shouldGive modulo(modulo(literalInt(5), literalInt(4)), literalInt(2))
+  }
+
+  test("precedence 5 vs 4") {
+    // 1 * (2^3) / 4
+    parsing("1 * 2 ^ 3 / 4") shouldGive divide(
+      multiply(literalInt(1), pow(literalInt(2), literalInt(3))),
+      literalInt(4)
+    )
+  }
+
+  test("precedence 4 - left-associativity") {
+    // (4 ^3) ^ 2
+    parsing("4 ^ 3 ^ 2") shouldGive pow(pow(literalInt(4), literalInt(3)), literalInt(2))
+  }
+
+  test("precedence 4 vs 3") {
+    // (+1) ^ (-2)
+    parsing("+1^-2") shouldGive pow(unaryAdd(literalInt(1)), literalInt(-2))
+  }
+
+  test("precedence 3 vs 2") {
+    // -(list[+(expr:Label)])
+    parsing("-list[+expr:Label]") shouldGive
+      unarySubtract(containerIndex(
+        varFor("list"),
+        unaryAdd(labelExpressionPredicate(varFor("expr"), labelOrRelTypeLeaf("Label")))
+      ))
+
+    // +(list[-(x.y)..+(5)])
+    parsing("+list[-x.y..+5]") shouldGive
+      unaryAdd(ListSlice(
+        varFor("list"),
+        Some(unarySubtract(prop(varFor("x"), "y"))),
+        Some(unaryAdd(literalInt(5)))
+      )(pos))
+  }
+
+  test("precedence 2 vs 1") {
+
+    // ($list)[(single(x IN y WHERE ('a' + 'b').prop))]
+    parsing("$list[single(x IN y WHERE ('a' + 'b').prop)]") shouldGive
+      containerIndex(
+        parameter("list", CTAny),
+        singleInList(varFor("x"), varFor("y"), prop(add(literalString("a"), literalString("b")), "prop"))
+      )
+
+    // (all(x IN y WHERE null)):Label
+    parsing("all(x IN y WHERE null):Label") shouldGive
+      labelExpressionPredicate(allInList(varFor("x"), varFor("y"), nullLiteral), labelOrRelTypeLeaf("Label"))
+
+    // (none(x IN y WHERE true)).prop
+    parsing("none(x IN y WHERE false).prop") shouldGive
+      prop(noneInList(varFor("x"), varFor("y"), falseLiteral), "prop")
+
+    // (COLLECT {RETURN 42})[(any(x IN y WHERE (size('str')).prop))..(reduce(x=true, y IN list | x AND y))]
+    parsing("COLLECT {RETURN 42}[any(x IN y WHERE size('str').prop)..reduce(x=true, y IN list | x AND y)]") shouldGive
+      ListSlice(
+        CollectExpression(
+          singleQuery(
+            return_(returnItem(literalInt(42), "42"))
+          )
+        )(pos, None, None),
+        Some(anyInList(varFor("x"), varFor("y"), prop(function("size", literalString("str")), "prop"))),
+        Some(reduce(varFor("x"), trueLiteral, varFor("y"), varFor("list"), and(varFor("x"), varFor("y"))))
+      )(pos)
+
+    // [(x IN (EXISTS {RETURN 42}) WHERE (x{.*}) = (COUNT {RETURN 42}))][([(n)-->() | n])]
+    parsing("[x IN EXISTS {RETURN 42} WHERE x{.*} = COUNT {RETURN 42}][[(n)-->() | n]]") shouldGive
+      containerIndex(
+        listComprehension(
+          varFor("x"),
+          ExistsExpression(
+            singleQuery(
+              return_(returnItem(literalInt(42), "42"))
+            )
+          )(pos, None, None),
+          Some(
+            eq(
+              MapProjection(varFor("x"), List(AllPropertiesSelector()(pos)))(pos),
+              CountExpression(
+                singleQuery(
+                  return_(returnItem(literalInt(42), "42"))
+                )
+              )(pos, None, None)
+            )
+          ),
+          None
+        ),
+        patternComprehension(relationshipChain(nodePat(Some("n")), relPat(), nodePat()), varFor("n"))
+      )
+
+    // (shortestPath((a)-->(b)))[(CASE x WHEN true THEN 1 ELSE 2 END)]
+    parsing("shortestPath((a)-->(b))[CASE x WHEN true THEN 1 ELSE 2 END]") shouldGive
+      containerIndex(
+        ShortestPathExpression(ShortestPathsPatternPart(
+          relationshipChain(nodePat(Some("a")), relPat(), nodePat(Some("b"))),
+          single = true
+        )(pos)),
+        caseExpression(Some(varFor("x")), Some(literalInt(2)), (trueLiteral, literalInt(1)))
+      )
+  }
+}

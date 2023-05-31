@@ -1041,9 +1041,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "*"
         |  "+"
         |  "-"
-        |  "."
         |  "/"
-        |  ":"
         |  "<"
         |  "<="
         |  "<>"
@@ -1062,7 +1060,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "STARTS"
         |  "WAIT"
         |  "XOR"
-        |  "["
         |  "^"
         |  <EOF> (line 1, column 41 (offset: 40))""".stripMargin
     )
@@ -1077,9 +1074,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "*"
         |  "+"
         |  "-"
-        |  "."
         |  "/"
-        |  ":"
         |  "<"
         |  "<="
         |  "<>"
@@ -1098,7 +1093,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "STARTS"
         |  "WAIT"
         |  "XOR"
-        |  "["
         |  "^"
         |  <EOF> (line 1, column 40 (offset: 39))""".stripMargin
     )
@@ -1135,9 +1129,7 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "*"
         |  "+"
         |  "-"
-        |  "."
         |  "/"
-        |  ":"
         |  "<"
         |  "<="
         |  "<>"
@@ -1156,7 +1148,6 @@ class MultiDatabaseAdministrationCommandParserTest extends AdministrationAndSche
         |  "STARTS"
         |  "WAIT"
         |  "XOR"
-        |  "["
         |  "^"
         |  <EOF> (line 1, column 54 (offset: 53))""".stripMargin
     )

@@ -440,17 +440,7 @@ class NodePatternParserTest extends PatternParserTestBase {
   }
 
   test(s"MATCH (n) WHERE n IS NOT AND n IS NOT NULL") {
-    gives(
-      singleQuery(
-        match_(
-          nodePat(Some("n")),
-          where = Some(where(and(
-            labelExpressionPredicate("n", labelOrRelTypeLeaf("NOT", containsIs = true)),
-            isNotNull(varFor("n"))
-          )))
-        )
-      )
-    )
+    failsToParse
   }
 
   test(s"MATCH (n) WHERE n IS NULL AND n.prop IS NOT NULL") {
@@ -477,13 +467,13 @@ class NodePatternParserTest extends PatternParserTestBase {
     )
   }
 
-  test(s"MATCH (n IS NULL WHERE n IS NULL)") {
+  test(s"MATCH (n: NULL WHERE n IS NULL)") {
     gives(
       singleQuery(
         match_(
           nodePat(
             Some("n"),
-            labelExpression = Some(labelLeaf("NULL", containsIs = true)),
+            labelExpression = Some(labelLeaf("NULL", containsIs = false)),
             predicates = Some(isNull(varFor("n")))
           )
         )
@@ -506,6 +496,54 @@ class NodePatternParserTest extends PatternParserTestBase {
 
   test(s"MATCH (n IS NOT NULL WHERE n IS NOT NULL)") {
     failsToParse
+  }
+
+  // Labels NOT, NULL and TYPED are not allowed together with IS keyword unless escaped
+  for {
+    label <- Seq("NOT", "NULL", "TYPED")
+  } yield {
+    test(s"MATCH (n:$label)") {
+      gives(
+        singleQuery(
+          match_(
+            nodePat(
+              Some("n"),
+              Some(labelLeaf(label))
+            )
+          )
+        )
+      )
+    }
+
+    test(s"MATCH (n:`$label`)") {
+      gives(
+        singleQuery(
+          match_(
+            nodePat(
+              Some("n"),
+              Some(labelLeaf(label))
+            )
+          )
+        )
+      )
+    }
+
+    test(s"MATCH (n IS $label)") {
+      failsToParse
+    }
+
+    test(s"MATCH (n IS `$label`)") {
+      gives(
+        singleQuery(
+          match_(
+            nodePat(
+              Some("n"),
+              Some(labelLeaf(label, containsIs = true))
+            )
+          )
+        )
+      )
+    }
   }
 
   test("WITH [1, 2, 3] AS where RETURN [is IN where] AS IS") {
