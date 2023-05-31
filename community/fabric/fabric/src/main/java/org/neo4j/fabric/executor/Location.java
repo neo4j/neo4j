@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public interface Location {
@@ -40,7 +41,7 @@ public interface Location {
     /**
      * A Local location refers to a graph/database running on this instance of Neo4j.
      */
-    record Local(long graphId, DatabaseReference.Internal databaseReference) implements Location {
+    record Local(long graphId, DatabaseReferenceImpl.Internal databaseReference) implements Location {
         @Override
         public String getDatabaseName() {
             return databaseReference.databaseId().name();
@@ -59,7 +60,7 @@ public interface Location {
          * A Remote.Internal location refers to a graph/database running on another instance of Neo4j within
          * the same DBMS.
          */
-        record Internal(long graphId, DatabaseReference.Internal databaseReference, RemoteUri uri)
+        record Internal(long graphId, DatabaseReferenceImpl.Internal databaseReference, RemoteUri uri)
                 implements Location.Remote {
 
             @Override
@@ -76,7 +77,7 @@ public interface Location {
         /**
          * A Remote.External location refers to a graph/database running on another instance of Neo4j, in another DBMS.
          */
-        record External(long graphId, DatabaseReference.External databaseReference) implements Location.Remote {
+        record External(long graphId, DatabaseReferenceImpl.External databaseReference) implements Location.Remote {
 
             @Override
             public String getDatabaseName() {

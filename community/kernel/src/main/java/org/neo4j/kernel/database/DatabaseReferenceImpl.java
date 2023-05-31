@@ -37,44 +37,27 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
  * A database may have multiple references, each with a different alias.
  * The reference whose {@link #alias()} corresponds to the database's original name is known as the primary reference.
  */
-public abstract class DatabaseReference implements Comparable<DatabaseReference> {
+public abstract class DatabaseReferenceImpl implements DatabaseReference {
     private static final Comparator<DatabaseReference> referenceComparator =
             Comparator.comparing(a -> a.alias().name(), String::compareToIgnoreCase);
     private static final Comparator<DatabaseReference> nullSafeReferenceComparator =
             Comparator.nullsLast(referenceComparator);
     private static final NormalizedDatabaseName defaultNamespace =
             new NormalizedDatabaseName(TopologyGraphDbmsModel.DEFAULT_NAMESPACE);
-    /**
-     * @return the alias associated with this database reference
-     */
-    public abstract NormalizedDatabaseName alias();
-
-    /**
-     * @return the namespace that the alias is in, or empty if it is in the default namespace
-     */
-    public abstract Optional<NormalizedDatabaseName> namespace();
-
-    /**
-     * @return whether the alias associated with this reference is the database's original/true name
-     */
-    public abstract boolean isPrimary();
-
-    /**
-     * @return the unique identity for this reference
-     */
-    public abstract UUID id();
 
     @Override
     public int compareTo(DatabaseReference that) {
         return nullSafeReferenceComparator.compare(this, that);
     }
 
+    @Override
     public String toPrettyString() {
         var namespace = namespace().map(ns -> ns.name() + ".").orElse("");
         var name = alias().name();
         return namespace + name;
     }
 
+    @Override
     public boolean isComposite() {
         return false;
     }
@@ -82,7 +65,7 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
     /**
      * External references point to databases which are not stored within this DBMS.
      */
-    public static final class External extends DatabaseReference {
+    public static final class External extends DatabaseReferenceImpl {
         private final NormalizedDatabaseName targetAlias;
         private final NormalizedDatabaseName alias;
         private final NormalizedDatabaseName namespace;
@@ -175,7 +158,7 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
      *
      * Note, however, that a local reference may point to databases not stored on this physical instance.
      */
-    public static sealed class Internal extends DatabaseReference {
+    public static sealed class Internal extends DatabaseReferenceImpl {
         protected final NormalizedDatabaseName alias;
         protected final NormalizedDatabaseName namespace;
         protected final NamedDatabaseId namedDatabaseId;
@@ -252,7 +235,7 @@ public abstract class DatabaseReference implements Comparable<DatabaseReference>
         }
     }
 
-    public static final class Composite extends DatabaseReference.Internal {
+    public static final class Composite extends DatabaseReferenceImpl.Internal {
         private final List<DatabaseReference> constituents;
 
         /**

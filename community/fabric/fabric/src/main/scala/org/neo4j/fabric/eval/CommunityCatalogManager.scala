@@ -26,6 +26,7 @@ import org.neo4j.fabric.eval.Catalog.ExternalAlias
 import org.neo4j.fabric.eval.Catalog.InternalAlias
 import org.neo4j.fabric.executor.Location
 import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.lifecycle.LifecycleAdapter
 import org.neo4j.storageengine.api.TransactionIdStore
@@ -69,8 +70,8 @@ class CommunityCatalogManager(
 
   protected def getAliases(ids: IdProvider): Seq[Alias] = {
     val references = databaseLookup.databaseReferences.toSeq.filter {
-      case _: DatabaseReference.Composite => false
-      case _                              => true
+      case _: DatabaseReferenceImpl.Composite => false
+      case _                                  => true
     }
     // Give low ids to primary aliases
     val (primary, nonPrimary) = references.partition(_.isPrimary)
@@ -83,7 +84,7 @@ class CommunityCatalogManager(
   protected def getComposites(ids: IdProvider): Seq[(Composite, Seq[Alias])] = {
     val references = databaseLookup.databaseReferences.toSeq
     val compositeRefs = references.collect {
-      case comp: DatabaseReference.Composite => comp
+      case comp: DatabaseReferenceImpl.Composite => comp
     }
     for {
       (compositeRef, idx) <- compositeRefs.zip(ids.sequence)
@@ -98,9 +99,9 @@ class CommunityCatalogManager(
   }
 
   private def aliasFactory(ref: DatabaseReference, idx: Long): Option[Alias] = ref match {
-    case ref: DatabaseReference.Internal =>
+    case ref: DatabaseReferenceImpl.Internal =>
       Some(InternalAlias(idx, ref))
-    case ref: DatabaseReference.External =>
+    case ref: DatabaseReferenceImpl.External =>
       Some(ExternalAlias(idx, ref))
     case other =>
       None // ignore unexpected reference types

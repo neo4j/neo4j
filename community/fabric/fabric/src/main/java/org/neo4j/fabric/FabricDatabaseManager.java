@@ -27,6 +27,7 @@ import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.fabric.config.FabricConfig;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -67,12 +68,12 @@ public class FabricDatabaseManager {
     }
 
     private Optional<? extends DatabaseContext> getDatabaseContext(DatabaseReference databaseReference) {
-        if (databaseReference instanceof DatabaseReference.Composite) {
+        if (databaseReference instanceof DatabaseReferenceImpl.Composite) {
             return databaseContextProvider.getDatabaseContext(
-                    ((DatabaseReference.Composite) databaseReference).databaseId());
-        } else if (databaseReference instanceof DatabaseReference.Internal) {
+                    ((DatabaseReferenceImpl.Composite) databaseReference).databaseId());
+        } else if (databaseReference instanceof DatabaseReferenceImpl.Internal) {
             return databaseContextProvider.getDatabaseContext(
-                    ((DatabaseReference.Internal) databaseReference).databaseId());
+                    ((DatabaseReferenceImpl.Internal) databaseReference).databaseId());
         } else {
             return Optional.empty();
         }

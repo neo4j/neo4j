@@ -19,10 +19,10 @@
  */
 package org.neo4j.dbms.routing;
 
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 
 public interface RoutingTableServiceValidator {
-    void isValidForServerSideRouting(DatabaseReference.Internal databaseReference) throws RoutingException;
+    void isValidForServerSideRouting(DatabaseReferenceImpl.Internal databaseReference) throws RoutingException;
 
-    void isValidForClientSideRouting(DatabaseReference.Internal databaseReference) throws RoutingException;
+    void isValidForClientSideRouting(DatabaseReferenceImpl.Internal databaseReference) throws RoutingException;
 }

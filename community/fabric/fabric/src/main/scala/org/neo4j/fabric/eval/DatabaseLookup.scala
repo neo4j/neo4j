@@ -22,6 +22,7 @@ package org.neo4j.fabric.eval
 import org.neo4j.fabric.FabricDatabaseManager
 import org.neo4j.fabric.eval.DatabaseLookup.DatabaseClassifier
 import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
@@ -80,7 +81,7 @@ object DatabaseLookup {
 
     def databaseId(databaseName: NormalizedDatabaseName): Option[NamedDatabaseId] = {
       databaseReferenceRepo.getByAlias(databaseName).toScala.collect {
-        case ref: DatabaseReference.Internal => ref.databaseId
+        case ref: DatabaseReferenceImpl.Internal => ref.databaseId
       }
     }
 

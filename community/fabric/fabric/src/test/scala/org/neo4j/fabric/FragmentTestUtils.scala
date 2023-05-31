@@ -57,7 +57,7 @@ import org.neo4j.fabric.planning.Fragment.Union
 import org.neo4j.fabric.planning.Use
 import org.neo4j.fabric.util.Rewritten.RewritingOps
 import org.neo4j.kernel.database.DatabaseIdFactory
-import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.kernel.impl.query.NotificationConfiguration
 import org.neo4j.monitoring.Monitors
@@ -138,7 +138,7 @@ trait FragmentTestUtils {
   val defaultGraph: UseGraph = use(defaultGraphName)
   val defaultUse: Use.Inherited = Use.Inherited(Use.Default(defaultGraph))(InputPosition.NONE)
 
-  val defaultRef = new DatabaseReference.Internal(
+  val defaultRef = new DatabaseReferenceImpl.Internal(
     new NormalizedDatabaseName(defaultGraphName),
     DatabaseIdFactory.from(defaultGraphName, UUID.randomUUID()),
     true

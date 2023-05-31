@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.util.CancellationChecker
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.dbms.api.DatabaseNotFoundException
 import org.neo4j.exceptions.InvalidSemanticsException
-import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.kernel.database.NormalizedDatabaseName
@@ -148,12 +148,12 @@ class VerifyGraphTargetTest extends CypherFunSuite {
     the[InvalidSemanticsException] thrownBy verifyGraphTarget(query) should have message "Using multiple graphs in the same query is not supported on standard databases. This capability is supported on composite databases only."
   }
 
-  private def mockReferenceRepository(reference: DatabaseReference.Internal) = {
+  private def mockReferenceRepository(reference: DatabaseReferenceImpl.Internal) = {
     when(databaseReferenceRepository.getInternalByAlias(any[NormalizedDatabaseName])).thenReturn(Optional.of(reference))
   }
 
-  private def graphReference(databaseId: NamedDatabaseId): DatabaseReference.Internal = {
-    val graphReference = mock[DatabaseReference.Internal]
+  private def graphReference(databaseId: NamedDatabaseId): DatabaseReferenceImpl.Internal = {
+    val graphReference = mock[DatabaseReferenceImpl.Internal]
     when(graphReference.databaseId()).thenReturn(databaseId)
     graphReference
   }

@@ -45,7 +45,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseIdFactory;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.time.Clocks;
@@ -104,7 +104,7 @@ class TransactionManagerTest {
     private static FabricTransactionInfo createTransactionInfo() {
         var databaseName = new NormalizedDatabaseName("a");
         var databaseId = DatabaseIdFactory.from(databaseName.name(), UUID.randomUUID());
-        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId, true);
+        var databaseRef = new DatabaseReferenceImpl.Internal(databaseName, databaseId, true);
         return new FabricTransactionInfo(
                 AccessMode.READ,
                 LoginContext.AUTH_DISABLED,

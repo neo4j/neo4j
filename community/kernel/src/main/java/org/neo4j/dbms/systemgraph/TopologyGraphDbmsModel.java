@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NamedDatabaseId;
 
 public interface TopologyGraphDbmsModel {
@@ -277,17 +278,17 @@ public interface TopologyGraphDbmsModel {
     /**
      * Fetches all known internal database references
      */
-    Set<DatabaseReference.Internal> getAllInternalDatabaseReferences();
+    Set<DatabaseReferenceImpl.Internal> getAllInternalDatabaseReferences();
 
     /**
      * Fetches all known external database references
      */
-    Set<DatabaseReference.External> getAllExternalDatabaseReferences();
+    Set<DatabaseReferenceImpl.External> getAllExternalDatabaseReferences();
 
     /**
      * Fetches all known composite database references
      */
-    Set<DatabaseReference.Composite> getAllCompositeDatabaseReferences();
+    Set<DatabaseReferenceImpl.Composite> getAllCompositeDatabaseReferences();
 
     /**
      * Fetches the {@link DatabaseReference} corresponding to the provided name.
@@ -299,7 +300,7 @@ public interface TopologyGraphDbmsModel {
 
     /**
      * Fetches the {@link DriverSettings} corresponding to the provided database name
-     * if the name exists and is associated with a {@link DatabaseReference.External}
+     * if the name exists and is associated with a {@link DatabaseReferenceImpl.External}
      *
      * @param databaseName - the remote database alias to resolve driver settings for
      * @param namespace    - the namespace of the remote database alias to resolve driver settings for
@@ -311,10 +312,11 @@ public interface TopologyGraphDbmsModel {
 
     /**
      * Fetches the {@link ExternalDatabaseCredentials} corresponding to the provided database name
-     * if the name exists and is associated with a {@link DatabaseReference.External}
+     * if the name exists and is associated with a {@link DatabaseReferenceImpl.External}
      *
      * @param databaseReference - the remote database reference to resolve driver settings for
      * @return the corresponding {@link ExternalDatabaseCredentials}
      */
-    Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(DatabaseReference.External databaseReference);
+    Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(
+            DatabaseReferenceImpl.External databaseReference);
 }

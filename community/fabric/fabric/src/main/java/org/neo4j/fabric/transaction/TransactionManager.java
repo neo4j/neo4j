@@ -40,7 +40,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -93,8 +93,8 @@ public class TransactionManager extends LifecycleAdapter {
         }
 
         var sessionDb = transactionInfo.getSessionDatabaseReference();
-        var databaseNameToAuthorizeFor = sessionDb instanceof DatabaseReference.Internal
-                ? ((DatabaseReference.Internal) sessionDb).databaseId().name()
+        var databaseNameToAuthorizeFor = sessionDb instanceof DatabaseReferenceImpl.Internal
+                ? ((DatabaseReferenceImpl.Internal) sessionDb).databaseId().name()
                 : sessionDb.alias().name();
 
         transactionInfo
@@ -113,7 +113,7 @@ public class TransactionManager extends LifecycleAdapter {
                 this,
                 catalogManager.currentCatalog(),
                 catalogManager,
-                sessionDb instanceof DatabaseReference.Composite,
+                sessionDb instanceof DatabaseReferenceImpl.Composite,
                 clock,
                 TraceProviderFactory.getTraceProvider(config));
 

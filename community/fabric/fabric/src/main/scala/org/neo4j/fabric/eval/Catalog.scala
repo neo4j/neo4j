@@ -21,11 +21,11 @@ package org.neo4j.fabric.eval
 
 import org.neo4j.configuration.helpers.NormalizedGraphName
 import org.neo4j.cypher.internal.ast.CatalogName
-import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.fabric.eval.Catalog.normalize
 import org.neo4j.fabric.util.Errors
 import org.neo4j.fabric.util.Errors.show
 import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.StringValue
@@ -50,17 +50,17 @@ object Catalog {
 
   case class InternalAlias(
     id: Long,
-    reference: DatabaseReference.Internal
+    reference: DatabaseReferenceImpl.Internal
   ) extends Alias
 
   case class ExternalAlias(
     id: Long,
-    reference: DatabaseReference.External
+    reference: DatabaseReferenceImpl.External
   ) extends Alias
 
   case class Composite(
     id: Long,
-    reference: DatabaseReference.Composite
+    reference: DatabaseReferenceImpl.Composite
   ) extends Graph {
     override def namespace: Option[NormalizedGraphName] = None
   }

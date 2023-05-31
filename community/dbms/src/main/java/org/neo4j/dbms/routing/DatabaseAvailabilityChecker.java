@@ -20,7 +20,7 @@
 package org.neo4j.dbms.routing;
 
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 
 /**
  * Instances implementing this interface allow routing validators to check whether it is valid to serve a routing
@@ -38,11 +38,11 @@ public interface DatabaseAvailabilityChecker {
      * @param databaseReference the database reference to check
      * @return whether this database is currently available
      */
-    boolean isAvailable(DatabaseReference.Internal databaseReference);
+    boolean isAvailable(DatabaseReferenceImpl.Internal databaseReference);
 
     /**
      * @param databaseReference the database reference to check
      * @return whether this database is present on this Neo4j instance
      */
-    boolean isPresent(DatabaseReference.Internal databaseReference);
+    boolean isPresent(DatabaseReferenceImpl.Internal databaseReference);
 }

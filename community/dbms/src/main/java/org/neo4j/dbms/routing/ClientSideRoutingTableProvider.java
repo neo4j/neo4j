@@ -19,10 +19,10 @@
  */
 package org.neo4j.dbms.routing;
 
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.values.virtual.MapValue;
 
 public interface ClientSideRoutingTableProvider {
     RoutingResult getRoutingResultForClientSideRouting(
-            DatabaseReference.Internal databaseReference, MapValue routingContext) throws RoutingException;
+            DatabaseReferenceImpl.Internal databaseReference, MapValue routingContext) throws RoutingException;
 }

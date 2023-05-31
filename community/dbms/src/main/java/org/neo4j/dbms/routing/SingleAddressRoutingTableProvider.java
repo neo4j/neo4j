@@ -29,7 +29,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.connectors.ConnectorPortRegister;
 import org.neo4j.configuration.connectors.ConnectorType;
 import org.neo4j.configuration.helpers.SocketAddress;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.values.virtual.MapValue;
@@ -63,7 +63,7 @@ public class SingleAddressRoutingTableProvider
 
     @Override
     public RoutingResult getRoutingResultForClientSideRouting(
-            DatabaseReference.Internal databaseReference, MapValue routingContext) throws RoutingException {
+            DatabaseReferenceImpl.Internal databaseReference, MapValue routingContext) throws RoutingException {
         return createSingleAddressRoutingResult(
                 findBoltAddressToUse(routingContext),
                 routingTableTTLProvider.nextTTL().toMillis(),

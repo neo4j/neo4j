@@ -19,7 +19,7 @@
  */
 package org.neo4j.dbms.routing;
 
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 
 public class LocalRoutingTableServiceValidator implements RoutingTableServiceValidator {
 
@@ -30,16 +30,16 @@ public class LocalRoutingTableServiceValidator implements RoutingTableServiceVal
     }
 
     @Override
-    public void isValidForServerSideRouting(DatabaseReference.Internal databaseReference) throws RoutingException {
+    public void isValidForServerSideRouting(DatabaseReferenceImpl.Internal databaseReference) throws RoutingException {
         assertDatabaseIsOperational(databaseReference);
     }
 
     @Override
-    public void isValidForClientSideRouting(DatabaseReference.Internal databaseReference) throws RoutingException {
+    public void isValidForClientSideRouting(DatabaseReferenceImpl.Internal databaseReference) throws RoutingException {
         assertDatabaseIsOperational(databaseReference);
     }
 
-    private void assertDatabaseIsOperational(DatabaseReference.Internal databaseReference) throws RoutingException {
+    private void assertDatabaseIsOperational(DatabaseReferenceImpl.Internal databaseReference) throws RoutingException {
         if (!databaseAvailabilityChecker.isPresent(databaseReference)) {
             throw RoutingTableServiceHelpers.databaseNotFoundException(
                     databaseReference.alias().name());

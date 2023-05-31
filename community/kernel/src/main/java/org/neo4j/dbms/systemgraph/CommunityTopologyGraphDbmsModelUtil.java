@@ -41,7 +41,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseIdFactory;
 import org.neo4j.kernel.database.DatabaseReference;
-import org.neo4j.kernel.database.DatabaseReference.Internal;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
+import org.neo4j.kernel.database.DatabaseReferenceImpl.Internal;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.logging.Level;
@@ -92,7 +93,7 @@ public final class CommunityTopologyGraphDbmsModelUtil {
         });
     }
 
-    public static Optional<DatabaseReference.External> createExternalReference(Node ref) {
+    public static Optional<DatabaseReferenceImpl.External> createExternalReference(Node ref) {
         return ignoreConcurrentDeletes(() -> {
             var uriString = getPropertyOnNode(
                     TopologyGraphDbmsModel.REMOTE_DATABASE_LABEL_DESCRIPTION,
@@ -123,8 +124,8 @@ public final class CommunityTopologyGraphDbmsModelUtil {
                     ref,
                     TopologyGraphDbmsModel.VERSION_PROPERTY,
                     String.class);
-            return Optional.of(
-                    new DatabaseReference.External(targetName, aliasName, namespace, remoteUri, UUID.fromString(uuid)));
+            return Optional.of(new DatabaseReferenceImpl.External(
+                    targetName, aliasName, namespace, remoteUri, UUID.fromString(uuid)));
         });
     }
 

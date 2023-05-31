@@ -36,6 +36,7 @@ import org.neo4j.configuration.connectors.BoltConnector;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.kernel.api.exceptions.Status.Routing;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.logging.InternalLog;
@@ -102,17 +103,17 @@ public class DefaultRoutingService implements RoutingService, PanicEventHandler 
         RoutingResult result;
         var clientProvidedAddress =
                 RoutingTableServiceHelpers.findClientProvidedAddress(routingContext, BoltConnector.DEFAULT_PORT, log);
-        var isInternalRef = databaseReference instanceof DatabaseReference.Internal;
+        var isInternalRef = databaseReference instanceof DatabaseReferenceImpl.Internal;
         if (!isInternalRef) {
             result = serverSideRoutingTableProvider.getServerSideRoutingTable(routingContext);
         } else {
             var defaultRouter = defaultRouterSupplier.get();
             if (configAllowsForClientSideRouting(defaultRouter, clientProvidedAddress)) {
-                validator.isValidForClientSideRouting((DatabaseReference.Internal) databaseReference);
+                validator.isValidForClientSideRouting((DatabaseReferenceImpl.Internal) databaseReference);
                 result = clientSideRoutingTableProvider.getRoutingResultForClientSideRouting(
-                        (DatabaseReference.Internal) databaseReference, routingContext);
+                        (DatabaseReferenceImpl.Internal) databaseReference, routingContext);
             } else {
-                validator.isValidForServerSideRouting((DatabaseReference.Internal) databaseReference);
+                validator.isValidForServerSideRouting((DatabaseReferenceImpl.Internal) databaseReference);
                 result = serverSideRoutingTableProvider.getServerSideRoutingTable(routingContext);
             }
         }
@@ -179,7 +180,7 @@ public class DefaultRoutingService implements RoutingService, PanicEventHandler 
 
     private void assertNotIllegalAliasChain(DatabaseReference databaseReference, MapValue routingContext)
             throws RoutingException {
-        var refIsRemoteAlias = databaseReference instanceof DatabaseReference.External;
+        var refIsRemoteAlias = databaseReference instanceof DatabaseReferenceImpl.External;
 
         var sourceAlias = routingContext.get(FROM_ALIAS_KEY);
         var sourceAliasIsPresent = sourceAlias != null && sourceAlias != NO_VALUE;

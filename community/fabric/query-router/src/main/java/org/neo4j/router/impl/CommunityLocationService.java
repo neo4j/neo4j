@@ -24,13 +24,14 @@ package org.neo4j.router.impl;
 
 import org.neo4j.fabric.executor.Location;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.router.location.LocationService;
 
 public class CommunityLocationService implements LocationService {
 
     @Override
     public Location locationOf(DatabaseReference databaseReference) {
-        if (databaseReference instanceof DatabaseReference.Internal ref) {
+        if (databaseReference instanceof DatabaseReferenceImpl.Internal ref) {
             return new Location.Local(-1, ref);
         }
         throw new IllegalArgumentException("Unexpected DatabaseReference type: " + databaseReference);

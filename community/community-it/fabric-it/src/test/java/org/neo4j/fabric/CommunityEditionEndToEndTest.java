@@ -55,7 +55,7 @@ import org.neo4j.fabric.executor.FabricExecutor;
 import org.neo4j.fabric.transaction.FabricTransactionInfo;
 import org.neo4j.fabric.transaction.TransactionManager;
 import org.neo4j.kernel.database.DatabaseIdFactory;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -146,7 +146,7 @@ class CommunityEditionEndToEndTest {
         var fabricExecutor = dependencyResolver.resolveDependency(FabricExecutor.class);
         var databaseName = new NormalizedDatabaseName("neo4j");
         var databaseId = DatabaseIdFactory.from(databaseName.name(), UUID.randomUUID());
-        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId, true);
+        var databaseRef = new DatabaseReferenceImpl.Internal(databaseName, databaseId, true);
         var transactionInfo = new FabricTransactionInfo(
                 org.neo4j.bolt.protocol.common.message.AccessMode.READ,
                 AUTH_DISABLED,

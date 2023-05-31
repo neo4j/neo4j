@@ -22,33 +22,33 @@ package org.neo4j.procedure.builtin.routing;
 import java.util.HashMap;
 import java.util.Map;
 import org.neo4j.dbms.routing.DatabaseAvailabilityChecker;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 
 public final class TestDatabaseAvailabilityChecker implements DatabaseAvailabilityChecker {
 
-    private final Map<DatabaseReference.Internal, Boolean> lookups;
+    private final Map<DatabaseReferenceImpl.Internal, Boolean> lookups;
 
     public TestDatabaseAvailabilityChecker() {
         this.lookups = new HashMap<>();
     }
 
-    private TestDatabaseAvailabilityChecker(Map<DatabaseReference.Internal, Boolean> lookups) {
+    private TestDatabaseAvailabilityChecker(Map<DatabaseReferenceImpl.Internal, Boolean> lookups) {
         this.lookups = lookups;
     }
 
-    public TestDatabaseAvailabilityChecker withDatabase(DatabaseReference.Internal ref, boolean available) {
+    public TestDatabaseAvailabilityChecker withDatabase(DatabaseReferenceImpl.Internal ref, boolean available) {
         var newLookups = new HashMap<>(this.lookups);
         newLookups.put(ref, available);
         return new TestDatabaseAvailabilityChecker(newLookups);
     }
 
     @Override
-    public boolean isAvailable(DatabaseReference.Internal databaseReference) {
+    public boolean isAvailable(DatabaseReferenceImpl.Internal databaseReference) {
         return this.lookups.getOrDefault(databaseReference, false);
     }
 
     @Override
-    public boolean isPresent(DatabaseReference.Internal databaseReference) {
+    public boolean isPresent(DatabaseReferenceImpl.Internal databaseReference) {
         return this.lookups.containsKey(databaseReference);
     }
 }

@@ -61,7 +61,7 @@ import org.neo4j.fabric.planning.FabricPlan.DebugOptions
 import org.neo4j.fabric.util.Folded.Descend
 import org.neo4j.fabric.util.Folded.FoldableOps
 import org.neo4j.kernel.database.DatabaseIdFactory
-import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.neo4j.string.UTF8
 import org.neo4j.values.storable.Values
@@ -94,7 +94,7 @@ class FabricPlannerTest
   private val fabricName = "fabric"
   private val sessionGraphName = "session"
 
-  val fabricRef = new DatabaseReference.Composite(
+  val fabricRef = new DatabaseReferenceImpl.Composite(
     new NormalizedDatabaseName(fabricName),
     DatabaseIdFactory.from(fabricName, UUID.randomUUID()),
     java.util.Set.of()

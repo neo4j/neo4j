@@ -52,83 +52,83 @@ public final class TestDatabaseReferenceRepository {
         return internal ? internalDatabaseReference(databaseName) : externalDatabaseReference(databaseName);
     }
 
-    public static DatabaseReference.Internal randomInternalDatabaseReference() {
+    public static DatabaseReferenceImpl.Internal randomInternalDatabaseReference() {
         var databaseName = RandomStringUtils.randomAlphabetic(10);
         return internalDatabaseReference(databaseName);
     }
 
-    public static DatabaseReference.External randomExternalDatabaseReference() {
+    public static DatabaseReferenceImpl.External randomExternalDatabaseReference() {
         var databaseName = RandomStringUtils.randomAlphabetic(10);
         return externalDatabaseReference(databaseName);
     }
 
-    public static DatabaseReference.Internal internalDatabaseReference(String databaseName) {
+    public static DatabaseReferenceImpl.Internal internalDatabaseReference(String databaseName) {
         return internalDatabaseReferenceIn(databaseName, databaseName, DEFAULT_NAMESPACE);
     }
 
-    public static DatabaseReference.Internal internalDatabaseReference(String databaseName, String aliasName) {
+    public static DatabaseReferenceImpl.Internal internalDatabaseReference(String databaseName, String aliasName) {
         return internalDatabaseReferenceIn(databaseName, aliasName, DEFAULT_NAMESPACE);
     }
 
-    public static DatabaseReference.Internal internalDatabaseReferenceIn(String databaseName, String namespace) {
+    public static DatabaseReferenceImpl.Internal internalDatabaseReferenceIn(String databaseName, String namespace) {
         return internalDatabaseReferenceIn(databaseName, databaseName, namespace);
     }
 
-    public static DatabaseReference.Internal internalDatabaseReferenceIn(
+    public static DatabaseReferenceImpl.Internal internalDatabaseReferenceIn(
             String databaseName, String aliasName, String namespace) {
         var normalizedAlias = new NormalizedDatabaseName(aliasName);
         var normalizedNamespace = new NormalizedDatabaseName(namespace);
         var dbId = DatabaseIdFactory.from(databaseName, UUID.nameUUIDFromBytes(databaseName.getBytes(UTF_8)));
-        return new DatabaseReference.Internal(
+        return new DatabaseReferenceImpl.Internal(
                 normalizedAlias, normalizedNamespace, dbId, Objects.equals(normalizedAlias.name(), dbId.name()));
     }
 
-    public static DatabaseReference.External externalDatabaseReference(String databaseName) {
+    public static DatabaseReferenceImpl.External externalDatabaseReference(String databaseName) {
         return externalDatabaseReferenceIn(databaseName, databaseName, DEFAULT_NAMESPACE);
     }
 
-    public static DatabaseReference.External externalDatabaseReference(String databaseName, RemoteUri uri) {
+    public static DatabaseReferenceImpl.External externalDatabaseReference(String databaseName, RemoteUri uri) {
         return externalDatabaseReferenceIn(databaseName, databaseName, DEFAULT_NAMESPACE, uri);
     }
 
-    public static DatabaseReference.External externalDatabaseReference(String databaseName, String aliasName) {
+    public static DatabaseReferenceImpl.External externalDatabaseReference(String databaseName, String aliasName) {
         return externalDatabaseReferenceIn(databaseName, aliasName, DEFAULT_NAMESPACE);
     }
 
-    public static DatabaseReference.External externalDatabaseReference(
+    public static DatabaseReferenceImpl.External externalDatabaseReference(
             String databaseName, String aliasName, RemoteUri uri) {
         return externalDatabaseReferenceIn(databaseName, aliasName, DEFAULT_NAMESPACE, uri);
     }
 
-    public static DatabaseReference.External externalDatabaseReferenceIn(String localAliasName, String namespace) {
+    public static DatabaseReferenceImpl.External externalDatabaseReferenceIn(String localAliasName, String namespace) {
         return externalDatabaseReferenceIn(localAliasName, localAliasName, namespace);
     }
 
-    public static DatabaseReference.External externalDatabaseReferenceIn(
+    public static DatabaseReferenceImpl.External externalDatabaseReferenceIn(
             String localAliasName, String targetDatabaseName, String namespace) {
         var addr = List.of(new SocketAddress(localAliasName, BoltConnector.DEFAULT_PORT));
         var uri = new RemoteUri("neo4j", addr, null);
         return externalDatabaseReferenceIn(localAliasName, targetDatabaseName, namespace, uri);
     }
 
-    public static DatabaseReference.External externalDatabaseReferenceIn(
+    public static DatabaseReferenceImpl.External externalDatabaseReferenceIn(
             String localAliasName, String targetDatabaseName, String namespace, RemoteUri uri) {
         var normalizedAlias = new NormalizedDatabaseName(localAliasName);
         var normalizedTarget = new NormalizedDatabaseName(targetDatabaseName);
         var normalizedNamespace = new NormalizedDatabaseName(namespace);
         var uuid = UUID.randomUUID();
-        return new DatabaseReference.External(normalizedTarget, normalizedAlias, normalizedNamespace, uri, uuid);
+        return new DatabaseReferenceImpl.External(normalizedTarget, normalizedAlias, normalizedNamespace, uri, uuid);
     }
 
-    public static DatabaseReference.Composite compositeDatabaseReference(
+    public static DatabaseReferenceImpl.Composite compositeDatabaseReference(
             String databaseName, Set<DatabaseReference> components) {
         var name = new NormalizedDatabaseName(databaseName);
         var dbId = DatabaseIdFactory.from(databaseName, UUID.nameUUIDFromBytes(databaseName.getBytes(UTF_8)));
-        return new DatabaseReference.Composite(name, dbId, components);
+        return new DatabaseReferenceImpl.Composite(name, dbId, components);
     }
 
     public static class Fixed implements DatabaseReferenceRepository {
-        private static final DatabaseReference SYSTEM_DATABASE_REFERENCE = new DatabaseReference.Internal(
+        private static final DatabaseReference SYSTEM_DATABASE_REFERENCE = new DatabaseReferenceImpl.Internal(
                 new NormalizedDatabaseName(SYSTEM_DATABASE_NAME), NAMED_SYSTEM_DATABASE_ID, true);
 
         private final Map<NormalizedDatabaseName, DatabaseReference> databaseReferences;
@@ -157,18 +157,18 @@ public final class TestDatabaseReferenceRepository {
         }
 
         @Override
-        public Set<DatabaseReference.Internal> getInternalDatabaseReferences() {
-            return getDatabaseReferences(DatabaseReference.Internal.class);
+        public Set<DatabaseReferenceImpl.Internal> getInternalDatabaseReferences() {
+            return getDatabaseReferences(DatabaseReferenceImpl.Internal.class);
         }
 
         @Override
-        public Set<DatabaseReference.External> getExternalDatabaseReferences() {
-            return getDatabaseReferences(DatabaseReference.External.class);
+        public Set<DatabaseReferenceImpl.External> getExternalDatabaseReferences() {
+            return getDatabaseReferences(DatabaseReferenceImpl.External.class);
         }
 
         @Override
-        public Set<DatabaseReference.Composite> getCompositeDatabaseReferences() {
-            return getDatabaseReferences(DatabaseReference.Composite.class);
+        public Set<DatabaseReferenceImpl.Composite> getCompositeDatabaseReferences() {
+            return getDatabaseReferences(DatabaseReferenceImpl.Composite.class);
         }
 
         private <T extends DatabaseReference> Set<T> getDatabaseReferences(Class<T> type) {

@@ -29,7 +29,7 @@ import org.neo4j.fabric.eval.Catalog
 import org.neo4j.fabric.planning.Use.Declared
 import org.neo4j.fabric.planning.Use.Inherited
 import org.neo4j.kernel.database.DatabaseIdFactory
-import org.neo4j.kernel.database.DatabaseReference
+import org.neo4j.kernel.database.DatabaseReferenceImpl
 import org.neo4j.kernel.database.NormalizedDatabaseName
 import org.scalatest.Inside
 
@@ -248,7 +248,7 @@ class FabricStitcherTest
   }
 
   "Multi-graph:" - {
-    val fabricRef = new DatabaseReference.Composite(
+    val fabricRef = new DatabaseReferenceImpl.Composite(
       new NormalizedDatabaseName(defaultGraphName),
       DatabaseIdFactory.from(defaultGraphName, UUID.randomUUID()),
       java.util.Set.of()

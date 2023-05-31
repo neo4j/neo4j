@@ -20,7 +20,7 @@
 package org.neo4j.dbms.routing;
 
 import org.neo4j.dbms.database.DatabaseContextProvider;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 
 public final class DefaultDatabaseAvailabilityChecker implements DatabaseAvailabilityChecker {
     private final DatabaseContextProvider<?> databaseContextProvider;
@@ -30,7 +30,7 @@ public final class DefaultDatabaseAvailabilityChecker implements DatabaseAvailab
     }
 
     @Override
-    public boolean isAvailable(DatabaseReference.Internal databaseReference) {
+    public boolean isAvailable(DatabaseReferenceImpl.Internal databaseReference) {
         var databaseCtx = databaseContextProvider.getDatabaseContext(databaseReference.databaseId());
         return databaseCtx
                 .map(ctx -> ctx.database().getDatabaseAvailabilityGuard().isAvailable())
@@ -38,7 +38,7 @@ public final class DefaultDatabaseAvailabilityChecker implements DatabaseAvailab
     }
 
     @Override
-    public boolean isPresent(DatabaseReference.Internal databaseReference) {
+    public boolean isPresent(DatabaseReferenceImpl.Internal databaseReference) {
         return databaseContextProvider
                 .getDatabaseContext(databaseReference.databaseId())
                 .isPresent();

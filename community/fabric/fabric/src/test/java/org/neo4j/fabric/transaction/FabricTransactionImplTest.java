@@ -56,7 +56,7 @@ import org.neo4j.kernel.api.procedure.GlobalProcedures;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.UnavailableException;
 import org.neo4j.kernel.database.DatabaseIdFactory;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionConfiguration;
@@ -161,8 +161,8 @@ public class FabricTransactionImplTest {
         });
     }
 
-    private static DatabaseReference.Internal internalDatabase(String name) {
-        return new DatabaseReference.Internal(
+    private static DatabaseReferenceImpl.Internal internalDatabase(String name) {
+        return new DatabaseReferenceImpl.Internal(
                 new NormalizedDatabaseName(name), DatabaseIdFactory.from(name, UUID.randomUUID()), true);
     }
 
@@ -218,7 +218,7 @@ public class FabricTransactionImplTest {
     private static FabricTransactionInfo createTransactionInfo() {
         var databaseName = new NormalizedDatabaseName("a");
         var databaseId = DatabaseIdFactory.from(databaseName.name(), UUID.randomUUID());
-        var databaseRef = new DatabaseReference.Internal(databaseName, databaseId, true);
+        var databaseRef = new DatabaseReferenceImpl.Internal(databaseName, databaseId, true);
         return new FabricTransactionInfo(
                 AccessMode.READ,
                 LoginContext.AUTH_DISABLED,

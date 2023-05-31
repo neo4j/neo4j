@@ -33,7 +33,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.configuration.helpers.SocketAddress;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
 public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsModelIT {
@@ -59,11 +59,11 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createInternalReferenceForDatabase(tx, "barAlias", false, barDb);
 
         var expected = Set.of(
-                new DatabaseReference.Internal(name("foo"), fooDb, true),
-                new DatabaseReference.Internal(name("bar"), barDb, true),
-                new DatabaseReference.Internal(name("fooAlias"), fooDb, false),
-                new DatabaseReference.Internal(name("fooOtherAlias"), fooDb, false),
-                new DatabaseReference.Internal(name("barAlias"), barDb, false));
+                new DatabaseReferenceImpl.Internal(name("foo"), fooDb, true),
+                new DatabaseReferenceImpl.Internal(name("bar"), barDb, true),
+                new DatabaseReferenceImpl.Internal(name("fooAlias"), fooDb, false),
+                new DatabaseReferenceImpl.Internal(name("fooOtherAlias"), fooDb, false),
+                new DatabaseReferenceImpl.Internal(name("barAlias"), barDb, false));
 
         // when
         var aliases = dbmsModel.getAllInternalDatabaseReferences();
@@ -85,9 +85,9 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createExternalReferenceForDatabase(tx, "barAlias", "bar", remoteNeo4j, barId);
 
         var expected = Set.of(
-                new DatabaseReference.External(name("foo"), name("fooAlias"), remoteNeo4j, fooId),
-                new DatabaseReference.External(name("foo"), name("fooOtherAlias"), remoteNeo4j, fooOtherId),
-                new DatabaseReference.External(name("bar"), name("barAlias"), remoteNeo4j, barId));
+                new DatabaseReferenceImpl.External(name("foo"), name("fooAlias"), remoteNeo4j, fooId),
+                new DatabaseReferenceImpl.External(name("foo"), name("fooOtherAlias"), remoteNeo4j, fooOtherId),
+                new DatabaseReferenceImpl.External(name("bar"), name("barAlias"), remoteNeo4j, barId));
 
         // when
         var aliases = dbmsModel.getAllExternalDatabaseReferences();
@@ -125,27 +125,27 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         // then
         assertThat(dbmsModel.getAllCompositeDatabaseReferences())
                 .isEqualTo(Set.of(
-                        new DatabaseReference.Composite(
+                        new DatabaseReferenceImpl.Composite(
                                 compDb1Name,
                                 compDb1,
                                 Set.of(
-                                        new DatabaseReference.Internal(name("locAlias"), compDb1Name, locDb, false),
-                                        new DatabaseReference.External(
+                                        new DatabaseReferenceImpl.Internal(name("locAlias"), compDb1Name, locDb, false),
+                                        new DatabaseReferenceImpl.External(
                                                 name("rem2"), name("remAlias"), compDb1Name, remoteNeo4j, remAliasId2),
-                                        new DatabaseReference.External(
+                                        new DatabaseReferenceImpl.External(
                                                 name("rem3"),
                                                 name("remAlias2"),
                                                 compDb1Name,
                                                 remoteNeo4j,
                                                 remAliasId3))),
-                        new DatabaseReference.Composite(
+                        new DatabaseReferenceImpl.Composite(
                                 compDb2Name,
                                 compDb2,
                                 Set.of(
-                                        new DatabaseReference.Internal(name("locAlias"), compDb2Name, locDb, false),
-                                        new DatabaseReference.External(
+                                        new DatabaseReferenceImpl.Internal(name("locAlias"), compDb2Name, locDb, false),
+                                        new DatabaseReferenceImpl.External(
                                                 name("rem4"), name("remAlias"), compDb2Name, remoteNeo4j, remAliasId4),
-                                        new DatabaseReference.External(
+                                        new DatabaseReferenceImpl.External(
                                                 name("rem5"),
                                                 name("remAlias3"),
                                                 compDb2Name,
@@ -154,12 +154,12 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
 
         assertThat(dbmsModel.getAllInternalDatabaseReferences())
                 .isEqualTo(Set.of(
-                        new DatabaseReference.Internal(name("loc"), locDb, true),
-                        new DatabaseReference.Internal(name("locAlias"), locDb, false)));
+                        new DatabaseReferenceImpl.Internal(name("loc"), locDb, true),
+                        new DatabaseReferenceImpl.Internal(name("locAlias"), locDb, false)));
 
         assertThat(dbmsModel.getAllExternalDatabaseReferences())
                 .isEqualTo(Set.of(
-                        new DatabaseReference.External(name("rem1"), name("remAlias"), remoteNeo4j, remAliasId1)));
+                        new DatabaseReferenceImpl.External(name("rem1"), name("remAlias"), remoteNeo4j, remAliasId1)));
     }
 
     @Test
@@ -179,15 +179,15 @@ public class CommunityTopologyGraphDbmsModelIT extends BaseTopologyGraphDbmsMode
         createExternalReferenceForDatabase(tx, compDb1.name(), "remAlias", "rem", remoteNeo4j, barId2);
 
         var expected = Set.of(
-                new DatabaseReference.External(name("foo"), name("bar"), remoteNeo4j, barId),
-                new DatabaseReference.Internal(name("foo"), fooDb, true),
-                new DatabaseReference.Internal(name("fooAlias"), fooDb, false),
-                new DatabaseReference.Composite(
+                new DatabaseReferenceImpl.External(name("foo"), name("bar"), remoteNeo4j, barId),
+                new DatabaseReferenceImpl.Internal(name("foo"), fooDb, true),
+                new DatabaseReferenceImpl.Internal(name("fooAlias"), fooDb, false),
+                new DatabaseReferenceImpl.Composite(
                         name(compDb1.name()),
                         compDb1,
                         Set.of(
-                                new DatabaseReference.Internal(name("locAlias"), compDb1Name, fooDb, false),
-                                new DatabaseReference.External(
+                                new DatabaseReferenceImpl.Internal(name("locAlias"), compDb1Name, fooDb, false),
+                                new DatabaseReferenceImpl.External(
                                         name("rem"), name("remAlias"), compDb1Name, remoteNeo4j, barId2))));
 
         // when

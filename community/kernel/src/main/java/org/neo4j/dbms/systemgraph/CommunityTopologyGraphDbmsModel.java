@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.NamedDatabaseId;
 import org.neo4j.kernel.database.NormalizedDatabaseName;
 
@@ -75,7 +76,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     @Override
-    public Set<DatabaseReference.Internal> getAllInternalDatabaseReferences() {
+    public Set<DatabaseReferenceImpl.Internal> getAllInternalDatabaseReferences() {
         var primaryRefs = CommunityTopologyGraphDbmsModelUtil.getAllPrimaryStandardDatabaseReferencesInRoot(tx);
         var localAliasRefs = getAllInternalDatabaseReferencesInRoot();
 
@@ -83,12 +84,12 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
     }
 
     @Override
-    public Set<DatabaseReference.External> getAllExternalDatabaseReferences() {
+    public Set<DatabaseReferenceImpl.External> getAllExternalDatabaseReferences() {
         return getAllExternalDatabaseReferencesInRoot().collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
-    public Set<DatabaseReference.Composite> getAllCompositeDatabaseReferences() {
+    public Set<DatabaseReferenceImpl.Composite> getAllCompositeDatabaseReferences() {
         return getAllCompositeDatabaseReferencesInRoot().collect(Collectors.toUnmodifiableSet());
     }
 
@@ -118,7 +119,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
 
     @Override
     public Optional<ExternalDatabaseCredentials> getExternalDatabaseCredentials(
-            DatabaseReference.External databaseReference) {
+            DatabaseReferenceImpl.External databaseReference) {
         String databaseName = databaseReference.alias().name();
         String namespace =
                 databaseReference.namespace().map(NormalizedDatabaseName::name).orElse(DEFAULT_NAMESPACE);
@@ -127,7 +128,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
                 .flatMap(CommunityTopologyGraphDbmsModelUtil::getDatabaseCredentials);
     }
 
-    private Stream<DatabaseReference.Composite> getAllCompositeDatabaseReferencesInRoot() {
+    private Stream<DatabaseReferenceImpl.Composite> getAllCompositeDatabaseReferencesInRoot() {
         return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE)
                 .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
                         .filter(db -> db.hasLabel(COMPOSITE_DATABASE_LABEL))
@@ -135,7 +136,7 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
                         .stream());
     }
 
-    private Optional<DatabaseReference.Composite> getCompositeDatabaseReferenceInRoot(String databaseName) {
+    private Optional<DatabaseReferenceImpl.Composite> getCompositeDatabaseReferenceInRoot(String databaseName) {
         return getAliasNodesInNamespace(DATABASE_NAME_LABEL, DEFAULT_NAMESPACE, databaseName)
                 .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
                         .filter(db -> db.hasLabel(COMPOSITE_DATABASE_LABEL))
@@ -144,13 +145,13 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
                 .findFirst();
     }
 
-    private Optional<DatabaseReference.Composite> createCompositeReference(Node alias, Node db) {
+    private Optional<DatabaseReferenceImpl.Composite> createCompositeReference(Node alias, Node db) {
         return CommunityTopologyGraphDbmsModelUtil.ignoreConcurrentDeletes(() -> {
             var aliasName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE_NAME, alias);
             var compositeName = CommunityTopologyGraphDbmsModelUtil.getNameProperty(DATABASE, db);
             var components = getAllDatabaseReferencesInComposite(compositeName);
             var databaseId = CommunityTopologyGraphDbmsModelUtil.getDatabaseId(db);
-            return Optional.of(new DatabaseReference.Composite(aliasName, databaseId, components));
+            return Optional.of(new DatabaseReferenceImpl.Composite(aliasName, databaseId, components));
         });
     }
 
@@ -169,20 +170,20 @@ public class CommunityTopologyGraphDbmsModel implements TopologyGraphDbmsModel {
         return Stream.concat(internalRefs, externalRefs).collect(Collectors.toUnmodifiableSet());
     }
 
-    private Stream<DatabaseReference.External> getAllExternalDatabaseReferencesInRoot() {
+    private Stream<DatabaseReferenceImpl.External> getAllExternalDatabaseReferencesInRoot() {
         return getAllExternalDatabaseReferencesInNamespace(DEFAULT_NAMESPACE);
     }
 
-    private Stream<DatabaseReference.External> getAllExternalDatabaseReferencesInNamespace(String namespace) {
+    private Stream<DatabaseReferenceImpl.External> getAllExternalDatabaseReferencesInNamespace(String namespace) {
         return getAliasNodesInNamespace(REMOTE_DATABASE_LABEL, namespace)
                 .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.createExternalReference(alias).stream());
     }
 
-    private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferencesInRoot() {
+    private Stream<DatabaseReferenceImpl.Internal> getAllInternalDatabaseReferencesInRoot() {
         return getAllInternalDatabaseReferencesInNamespace(DEFAULT_NAMESPACE);
     }
 
-    private Stream<DatabaseReference.Internal> getAllInternalDatabaseReferencesInNamespace(String namespace) {
+    private Stream<DatabaseReferenceImpl.Internal> getAllInternalDatabaseReferencesInNamespace(String namespace) {
         return getAliasNodesInNamespace(DATABASE_NAME_LABEL, namespace)
                 .flatMap(alias -> CommunityTopologyGraphDbmsModelUtil.getTargetedDatabaseNode(alias)
                         .filter(node -> !node.hasProperty(DATABASE_VIRTUAL_PROPERTY))

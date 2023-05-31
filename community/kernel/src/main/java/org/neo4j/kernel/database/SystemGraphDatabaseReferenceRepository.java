@@ -34,7 +34,7 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 import org.neo4j.graphdb.DatabaseShutdownException;
 
 public class SystemGraphDatabaseReferenceRepository implements DatabaseReferenceRepository {
-    private static final DatabaseReference SYSTEM_DATABASE_REFERENCE = new DatabaseReference.Internal(
+    private static final DatabaseReference SYSTEM_DATABASE_REFERENCE = new DatabaseReferenceImpl.Internal(
             new NormalizedDatabaseName(SYSTEM_DATABASE_NAME), NAMED_SYSTEM_DATABASE_ID, true);
 
     private final Supplier<DatabaseContext> systemDatabaseSupplier;
@@ -57,17 +57,17 @@ public class SystemGraphDatabaseReferenceRepository implements DatabaseReference
     }
 
     @Override
-    public Set<DatabaseReference.Internal> getInternalDatabaseReferences() {
+    public Set<DatabaseReferenceImpl.Internal> getInternalDatabaseReferences() {
         return execute(TopologyGraphDbmsModel::getAllInternalDatabaseReferences);
     }
 
     @Override
-    public Set<DatabaseReference.External> getExternalDatabaseReferences() {
+    public Set<DatabaseReferenceImpl.External> getExternalDatabaseReferences() {
         return execute(TopologyGraphDbmsModel::getAllExternalDatabaseReferences);
     }
 
     @Override
-    public Set<DatabaseReference.Composite> getCompositeDatabaseReferences() {
+    public Set<DatabaseReferenceImpl.Composite> getCompositeDatabaseReferences() {
         return execute(TopologyGraphDbmsModel::getAllCompositeDatabaseReferences);
     }
 

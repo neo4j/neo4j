@@ -86,7 +86,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.procedure.Context;
-import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.kernel.database.DatabaseReferenceImpl;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.database.DefaultDatabaseResolver;
 import org.neo4j.kernel.database.NamedDatabaseId;
@@ -103,8 +103,8 @@ import org.neo4j.values.virtual.MapValueBuilder;
 
 public class SingleInstanceGetRoutingTableProcedureTest {
     protected static final NamedDatabaseId ID = from(DEFAULT_DATABASE_NAME, UUID.randomUUID());
-    protected static final DatabaseReference.Internal REF =
-            new DatabaseReference.Internal(new NormalizedDatabaseName(ID.name()), ID, true);
+    protected static final DatabaseReferenceImpl.Internal REF =
+            new DatabaseReferenceImpl.Internal(new NormalizedDatabaseName(ID.name()), ID, true);
     private static final String UNKNOWN_DATABASE_NAME = "unknownDatabaseName";
     private static Context procCtx;
 
