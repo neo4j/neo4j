@@ -58,6 +58,7 @@ public class PropertyTypeException extends ConstraintValidationException {
         String entityToken = entityType == EntityType.NODE
                 ? tokenNameLookup.labelGetName(schema.getLabelId())
                 : tokenNameLookup.relationshipTypeGetName(schema.getRelTypeId());
+        String propertyKey = tokenNameLookup.propertyKeyGetName(schema.getPropertyId());
 
         return format(
                 "%s(%s) with %s `%s` has property `%s` of wrong type `%s`. Allowed types: %s",
@@ -65,7 +66,7 @@ public class PropertyTypeException extends ConstraintValidationException {
                 entityId,
                 entityTokenType,
                 entityToken,
-                value,
+                propertyKey,
                 value.getTypeName(),
                 descriptor.propertyType().userDescription());
     }
