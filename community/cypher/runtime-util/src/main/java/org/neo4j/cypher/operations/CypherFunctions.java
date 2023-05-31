@@ -43,6 +43,18 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
+import org.neo4j.cypher.internal.expressions.BooleanTypeName;
+import org.neo4j.cypher.internal.expressions.CypherTypeName;
+import org.neo4j.cypher.internal.expressions.DateTypeName;
+import org.neo4j.cypher.internal.expressions.DurationTypeName;
+import org.neo4j.cypher.internal.expressions.FloatTypeName;
+import org.neo4j.cypher.internal.expressions.IntegerTypeName;
+import org.neo4j.cypher.internal.expressions.LocalDateTimeTypeName;
+import org.neo4j.cypher.internal.expressions.LocalTimeTypeName;
+import org.neo4j.cypher.internal.expressions.PointTypeName;
+import org.neo4j.cypher.internal.expressions.StringTypeName;
+import org.neo4j.cypher.internal.expressions.ZonedDateTimeTypeName;
+import org.neo4j.cypher.internal.expressions.ZonedTimeTypeName;
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.exceptions.CypherTypeException;
@@ -60,18 +72,24 @@ import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateTimeValue;
+import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DoubleValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.FloatingPointArray;
 import org.neo4j.values.storable.FloatingPointValue;
 import org.neo4j.values.storable.IntegralArray;
 import org.neo4j.values.storable.IntegralValue;
+import org.neo4j.values.storable.LocalDateTimeValue;
+import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.LongValue;
+import org.neo4j.values.storable.NoValue;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
@@ -1562,6 +1580,39 @@ public final class CypherFunctions {
             throw new CypherTypeException(
                     "Expected VirtualNodeValue got " + value.getClass().getName());
         }
+    }
+
+    public static BooleanValue isTyped(AnyValue item, CypherTypeName typeName) {
+        boolean result;
+        if (item instanceof NoValue) {
+            result = true;
+        } else if (typeName instanceof BooleanTypeName) {
+            result = Values.isBooleanValue(item);
+        } else if (typeName instanceof StringTypeName) {
+            result = Values.isTextValue(item);
+        } else if (typeName instanceof IntegerTypeName) {
+            result = item instanceof IntegralValue;
+        } else if (typeName instanceof FloatTypeName) {
+            result = item instanceof FloatingPointValue;
+        } else if (typeName instanceof DateTypeName) {
+            result = item instanceof DateValue;
+        } else if (typeName instanceof LocalTimeTypeName) {
+            result = item instanceof LocalTimeValue;
+        } else if (typeName instanceof ZonedTimeTypeName) {
+            result = item instanceof TimeValue;
+        } else if (typeName instanceof LocalDateTimeTypeName) {
+            result = item instanceof LocalDateTimeValue;
+        } else if (typeName instanceof ZonedDateTimeTypeName) {
+            result = item instanceof DateTimeValue;
+        } else if (typeName instanceof DurationTypeName) {
+            result = item instanceof DurationValue;
+        } else if (typeName instanceof PointTypeName) {
+            result = item instanceof PointValue;
+        } else {
+            throw new IllegalArgumentException(String.format("Unexpected type: %s", typeName.typeName()));
+        }
+
+        return Values.booleanValue(result);
     }
 
     public static BooleanValue assertIsNode(AnyValue item) {

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
+import org.neo4j.cypher.internal.expressions.CypherTypeName
 import org.neo4j.cypher.internal.runtime.CastSupport
 import org.neo4j.cypher.internal.runtime.IsList
 import org.neo4j.cypher.internal.runtime.IsNoValue
@@ -35,6 +36,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Litera
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.util.NonEmptyList
+import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.exceptions.CypherTypeException
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.internal.kernel.api.PropertyCursor
@@ -193,6 +195,22 @@ case class IsNull(expression: Expression) extends Predicate {
 
   override def toString: String = expression + " IS NULL"
   override def rewrite(f: Expression => Expression): Expression = f(IsNull(expression.rewrite(f)))
+  override def arguments: Seq[Expression] = Seq(expression)
+  override def children: Seq[AstNode[_]] = Seq(expression)
+}
+
+case class IsTyped(expression: Expression, typeName: CypherTypeName) extends Predicate {
+
+  override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
+    val booleanValue = CypherFunctions.isTyped(expression(ctx, state), typeName)
+    booleanValue match {
+      case BooleanValue.TRUE  => IsTrue
+      case BooleanValue.FALSE => IsFalse
+    }
+  }
+
+  override def toString: String = expression + " IS :: " + typeName
+  override def rewrite(f: Expression => Expression): Expression = f(IsTyped(expression.rewrite(f), typeName))
   override def arguments: Seq[Expression] = Seq(expression)
   override def children: Seq[AstNode[_]] = Seq(expression)
 }
