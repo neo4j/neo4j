@@ -34,6 +34,8 @@ case class DeprecatedRelTypeSeparatorNotification(position: InputPosition, rewri
 
 case class DeprecatedNodesOrRelationshipsInSetClauseNotification(position: InputPosition) extends InternalNotification
 
+case class DeprecatedPropertyReferenceInCreate(position: InputPosition, varName: String) extends InternalNotification
+
 case class SubqueryVariableShadowing(position: InputPosition, varName: String) extends InternalNotification
 
 case class UnionReturnItemsInDifferentOrder(position: InputPosition) extends InternalNotification

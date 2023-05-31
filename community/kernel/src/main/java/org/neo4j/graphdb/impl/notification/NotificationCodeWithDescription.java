@@ -63,6 +63,11 @@ public enum NotificationCodeWithDescription {
             Status.Statement.FeatureDeprecationWarning,
             "The use of nodes or relationships for setting properties is deprecated and will be removed in a future version. "
                     + "Please use properties() instead."),
+
+    DEPRECATED_PROPERTY_REFERENCE_IN_CREATE(
+            Status.Statement.FeatureDeprecationWarning,
+            "Creating a pattern (%s) and referencing a property of that pattern in the same CREATE is deprecated."),
+
     DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP(
             Status.Statement.FeatureDeprecationWarning,
             "The use of shortestPath and allShortestPaths with fixed length relationships is deprecated and will be removed in a future version. "

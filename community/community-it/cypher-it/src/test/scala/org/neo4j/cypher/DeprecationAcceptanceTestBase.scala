@@ -27,6 +27,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRE
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE_RETURN_FIELD
+import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROPERTY_REFERENCE_IN_CREATE
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP
 import org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_TEXT_INDEX_PROVIDER
@@ -314,5 +315,35 @@ abstract class DeprecationAcceptanceTestBase extends CypherFunSuite with BeforeA
       shouldContainNotification = true,
       DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION
     )
+  }
+
+  test("Deprecate property references across patterns in CREATE") {
+    val deprecated = Seq(
+      "CREATE (a {foo:1}), (b {foo:a.foo})",
+      "CREATE (b {prop: a.prop}), (a)",
+      "CREATE (a), (b)-[r: REL {prop: a.prop}]->(c)",
+      "CREATE (b)-[r: REL {prop: a.prop}]->(c), (a)",
+      "CREATE (b)-[a: REL]->(c), (d {prop:a.prop})",
+      "CREATE (a), (b {prop: EXISTS {(a)-->()}})",
+      "CREATE (b {prop: EXISTS {(a)-->()}}), (a)",
+      "CREATE (a), (a)-[:REL]->({prop:a.prop})",
+      "CREATE (a), (b {prop: labels(a)})"
+    )
+
+    val notDeprecated = Seq(
+      "MATCH (n) CREATE (a {prop: n.prop})",
+      "MATCH (a) CREATE (a)-[:REL]->({prop:a.prop})",
+      "CREATE (a)-[:REL]->(a)",
+      "CREATE (a), (a)-[:REL]->(b)"
+    )
+
+    assertNotification(
+      deprecated,
+      shouldContainNotification = true,
+      DEPRECATED_PROPERTY_REFERENCE_IN_CREATE,
+      "a"
+    )
+
+    assertNoDeprecations(notDeprecated)
   }
 }

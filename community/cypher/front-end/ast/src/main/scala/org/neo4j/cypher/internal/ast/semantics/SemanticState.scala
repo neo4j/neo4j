@@ -191,7 +191,7 @@ final case class Scope(symbolTable: Map[String, Symbol], children: Seq[Scope]) e
   }
 
   /**
-   * All symbols of this scope.
+   * All symbols definitions of this scope.
    */
   def symbolDefinitions: Set[SymbolUse] =
     symbolTable.values.map(_.definition).toSet

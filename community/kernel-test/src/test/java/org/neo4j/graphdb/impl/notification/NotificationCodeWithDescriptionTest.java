@@ -31,6 +31,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROCEDURE_RETURN_FIELD;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_PROPERTY_REFERENCE_IN_CREATE;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_RUNTIME_OPTION;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_SHORTEST_PATH_WITH_FIXED_LENGTH_RELATIONSHIP;
@@ -627,6 +628,19 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.SECURITY);
     }
 
+    @Test
+    void shouldConstructNotificationsFor_DEPRECATED_PROPERTY_REFERENCE_IN_CREATE() {
+        Notification notification = DEPRECATED_PROPERTY_REFERENCE_IN_CREATE.notification(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "This feature is deprecated and will be removed in future versions.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Statement.FeatureDeprecationWarning",
+                "Creating a pattern (%s) and referencing a property of that pattern in the same CREATE is deprecated.",
+                NotificationCategory.DEPRECATION);
+    }
+
     private void verifyNotification(
             Notification notification,
             String title,
@@ -679,8 +693,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            22, 5, -49, 108, -14, -76, 71, -29, 60, 16, -107, 52, -13, 73, -112, -80, -31, 121, -91, 17, 84, -125, -106,
-            -1, -33, 88, -22, -84, 94, 77, 50, 35
+            104, 96, -109, 22, -85, 10, -55, 21, 26, 88, -1, -7, -94, -81, -82, 89, 26, 67, -15, -31, -120, -47, 7,
+            -120, 127, -8, -26, -37, 74, -89, -23, 63
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

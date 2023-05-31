@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParse
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
+import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInCreate
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRuntimeNotification
 import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
@@ -167,6 +168,11 @@ object NotificationWrapping {
     case DeprecatedNodesOrRelationshipsInSetClauseNotification(pos) =>
       NotificationCodeWithDescription.DEPRECATED_NODE_OR_RELATIONSHIP_ON_RHS_SET_CLAUSE.notification(
         pos.withOffset(offset).asInputPosition
+      )
+    case DeprecatedPropertyReferenceInCreate(pos, name) =>
+      NotificationCodeWithDescription.DEPRECATED_PROPERTY_REFERENCE_IN_CREATE.notification(
+        pos.withOffset(offset).asInputPosition,
+        name
       )
     case ProcedureWarningNotification(pos, name, warning) =>
       NotificationCodeWithDescription.PROCEDURE_WARNING.notification(

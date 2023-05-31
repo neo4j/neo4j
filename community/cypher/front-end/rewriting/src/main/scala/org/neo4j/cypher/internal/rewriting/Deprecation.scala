@@ -17,6 +17,7 @@
 package org.neo4j.cypher.internal.rewriting
 
 import org.neo4j.cypher.internal.ast
+import org.neo4j.cypher.internal.ast.Create
 import org.neo4j.cypher.internal.ast.CreateDatabase
 import org.neo4j.cypher.internal.ast.CreateTextNodeIndex
 import org.neo4j.cypher.internal.ast.CreateTextRelationshipIndex
@@ -32,10 +33,14 @@ import org.neo4j.cypher.internal.ast.UnionAll
 import org.neo4j.cypher.internal.ast.UnionDistinct
 import org.neo4j.cypher.internal.ast.prettifier.ExpressionStringifier
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.NamedPatternPart
 import org.neo4j.cypher.internal.expressions.Namespace
 import org.neo4j.cypher.internal.expressions.NodePattern
+import org.neo4j.cypher.internal.expressions.Pattern
 import org.neo4j.cypher.internal.expressions.RelationshipChain
 import org.neo4j.cypher.internal.expressions.RelationshipPattern
 import org.neo4j.cypher.internal.expressions.ShortestPathsPatternPart
@@ -47,9 +52,12 @@ import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
 import org.neo4j.cypher.internal.util.DeprecatedFunctionNotification
 import org.neo4j.cypher.internal.util.DeprecatedNodesOrRelationshipsInSetClauseNotification
+import org.neo4j.cypher.internal.util.DeprecatedPropertyReferenceInCreate
 import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
+import org.neo4j.cypher.internal.util.Foldable.SkipChildren
+import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.Ref
 import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
@@ -157,21 +165,45 @@ object Deprecations {
   // add new semantically deprecated features here
   case object semanticallyDeprecatedFeatures extends SemanticDeprecations {
 
-    override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = {
+    // Returns the set of variables that are defined in a `CREATE` and then used in the same `CREATE` for property read
+    // E.g. `CREATE (a {prop: 5}), (b {prop: a.prop})
+    def propertyUsageOfNewVariable(pattern: Pattern, semanticTable: SemanticTable): Set[LogicalVariable] = {
+      val allSymbolDefinitions = semanticTable.recordedScopes(pattern).allSymbolDefinitions
+
+      def findAllVariables(e: Option[Expression]): Set[LogicalVariable] = e.folder.findAllByClass[LogicalVariable].toSet
+      def isDefinition(variable: LogicalVariable): Boolean =
+        allSymbolDefinitions(variable.name).map(_.use).contains(Ref(variable))
+
+      val (declaredVariables, referencedVariables) =
+        pattern.folder.treeFold[(Set[LogicalVariable], Set[LogicalVariable])]((Set.empty, Set.empty)) {
+          case NodePattern(maybeVariable, _, maybeProperties, _) => acc =>
+              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+          case RelationshipPattern(maybeVariable, _, _, maybeProperties, _, _) => acc =>
+              SkipChildren((acc._1 ++ maybeVariable.filter(isDefinition), acc._2 ++ findAllVariables(maybeProperties)))
+          case NamedPatternPart(variable, _) => acc =>
+              TraverseChildren((acc._1 + variable, acc._2))
+        }
+      referencedVariables.intersect(declaredVariables)
+    }
+
+    override def find(semanticTable: SemanticTable): PartialFunction[Any, Deprecation] = Function.unlift {
       case s @ SetExactPropertiesFromMapItem(_, e: Variable) if isNodeOrRelationship(e, semanticTable) =>
-        Deprecation(
-          Some(Ref(s) -> s.copy(expression =
-            functionInvocationForSetProperties(s, e)
-          )(s.position)),
+        Some(Deprecation(
+          Some(Ref(s) -> s.copy(expression = functionInvocationForSetProperties(s, e))(s.position)),
           Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
-        )
+        ))
       case s @ SetIncludingPropertiesFromMapItem(_, e: Variable) if isNodeOrRelationship(e, semanticTable) =>
-        Deprecation(
-          Some(Ref(s) -> s.copy(expression =
-            functionInvocationForSetProperties(s, e)
-          )(s.position)),
+        Some(Deprecation(
+          Some(Ref(s) -> s.copy(expression = functionInvocationForSetProperties(s, e))(s.position)),
           Some(DeprecatedNodesOrRelationshipsInSetClauseNotification(e.position))
-        )
+        ))
+
+      case Create(pattern) =>
+        propertyUsageOfNewVariable(pattern, semanticTable).collectFirst { e =>
+          Deprecation(None, Some(DeprecatedPropertyReferenceInCreate(e.position, e.name)))
+        }
+
+      case _ => None
     }
   }
 }
