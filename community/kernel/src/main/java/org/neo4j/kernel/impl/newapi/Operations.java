@@ -1995,11 +1995,10 @@ public class Operations implements Write, SchemaWrite {
             throw new UnsupportedOperationException("Composite property type constraints are not supported.");
         }
         if (!typeConstraintEnabled) {
-            // To be able to test rolling upgrades we allow type constraint even when the flag is off
-            // But the supported version is glorious future which effectively blocks the creation except for in tests
-            assertSupportedInVersion(
-                    "Failed to create property type constraint.", KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED);
+            throw new UnsupportedOperationException("Property type constraints are not supported yet");
         }
+        assertSupportedInVersion(
+                "Failed to create property type constraint.", KernelVersion.VERSION_TYPE_CONSTRAINTS_INTRODUCED);
         ConstraintDescriptor constraint = lockAndValidatePropertyTypeConstraint(schema, name, propertyType);
 
         TypeConstraintDescriptor descriptor = constraint.asPropertyTypeConstraint();

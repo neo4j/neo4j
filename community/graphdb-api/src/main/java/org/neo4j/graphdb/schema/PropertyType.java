@@ -19,11 +19,14 @@
  */
 package org.neo4j.graphdb.schema;
 
-// FIXME PTC expose as public API class when ready
+import org.neo4j.annotations.api.PublicApi;
+
 /**
- * Property type. Used with FIXME link to getPropertyType and assertHasPropertyType
+ * Property type. Used with {@link ConstraintCreator#assertPropertyHasType(String, PropertyType...)} and
+ * {@link ConstraintDefinition#getPropertyType()}
  * to specify which type a property must be and see which type a property is constrained to, respectively.
  */
+@PublicApi
 public enum PropertyType {
     BOOLEAN,
     STRING,

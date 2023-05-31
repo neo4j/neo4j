@@ -1027,7 +1027,7 @@ public class GraphDatabaseInternalSettings implements SettingsDeclaration {
     @Internal
     @Description("A feature toggle behind which type constraints are developed")
     public static final Setting<Boolean> type_constraints =
-            newBuilder("internal.dbms.type_constraints", BOOL, false).build();
+            newBuilder("internal.dbms.type_constraints", BOOL, true).build();
 
     public enum ExtractLiteral {
         ALWAYS,

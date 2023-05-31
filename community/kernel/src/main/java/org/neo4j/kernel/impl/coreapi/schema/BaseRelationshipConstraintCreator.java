@@ -65,7 +65,7 @@ public class BaseRelationshipConstraintCreator extends AbstractConstraintCreator
         return new RelationshipKeyConstraintCreator(actions, name, type, List.of(propertyKey), indexType, indexConfig);
     }
 
-    // FIXME PTC Expose on API when ready
+    @Override
     public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyType... propertyType) {
         PropertyTypeSet propertyTypeSet = validatePropertyTypes(propertyType);
         return new RelationshipPropertyTypeConstraintCreator(

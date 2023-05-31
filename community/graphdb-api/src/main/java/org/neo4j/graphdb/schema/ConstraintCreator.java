@@ -87,6 +87,21 @@ public interface ConstraintCreator {
     ConstraintCreator assertPropertyIsRelationshipKey(String propertyKey);
 
     /**
+     * Imposes a property type constraint for the given property.
+     * This means that for
+     * <ul>
+     *     <li>node constraint: for any node with the given label that has this property</li>
+     *     <li>relationship constraint: for any relationship with the given relationship type that has this property</li>
+     * </ul>
+     * the property has to be of a type matching the given propertyType.
+     *
+     * @param propertyKey property to impose the property type constraint for.
+     * @param propertyType type to impose on the property.
+     * @return a {@link ConstraintCreator} instance to be used for further interaction.
+     */
+    ConstraintCreator assertPropertyHasType(String propertyKey, PropertyType... propertyType);
+
+    /**
      * Assign a name to the constraint, which will then be returned from {@link ConstraintDefinition#getName()}, and can be used for finding the constraint
      * with {@link Schema#getConstraintByName(String)}, or the associated index with {@link Schema#getIndexByName(String)} for index backed constraints.
      *

@@ -54,7 +54,7 @@ public class RelationshipPropertyTypeConstraintDefinition extends RelationshipCo
                 constraint.asPropertyTypeConstraint().propertyType().userDescription());
     }
 
-    // FIXME PTC expose when ready. When exposed it must throw something or return null if it is not a type constraint
+    @Override
     public PropertyType[] getPropertyType() {
         assertInUnterminatedTransaction();
         PropertyTypeSet propertyTypeSet = constraint.asPropertyTypeConstraint().propertyType();

@@ -54,7 +54,7 @@ abstract class AbstractConstraintCreator {
             throw new IllegalArgumentException("A property type must be supplied.");
         }
         if (propertyType.length > 1) {
-            throw new IllegalArgumentException("Multiple property types are not supported yet.");
+            throw new IllegalArgumentException("Multiple property types are not supported.");
         }
         return PropertyTypeSet.of(SchemaValueType.fromPublicApi(propertyType[0]));
     }

@@ -64,7 +64,7 @@ public class BaseNodeConstraintCreator extends AbstractConstraintCreator impleme
         throw new UnsupportedOperationException("Relationship key constraints are not supported on nodes.");
     }
 
-    // FIXME PTC Expose on API when ready
+    @Override
     public ConstraintCreator assertPropertyHasType(String propertyKey, PropertyType... propertyType) {
         PropertyTypeSet propertyTypeSet = validatePropertyTypes(propertyType);
         return new NodePropertyTypeConstraintCreator(

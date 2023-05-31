@@ -383,6 +383,7 @@ org.neo4j.graphdb.schema.AnyTokens::valueOf(java.lang.String) org.neo4j.graphdb.
 org.neo4j.graphdb.schema.AnyTokens::values() org.neo4j.graphdb.schema.AnyTokens[] public static
 org.neo4j.graphdb.schema.ConstraintCreator public abstract interface
 org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyExists(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
+org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyHasType(java.lang.String, org.neo4j.graphdb.schema.PropertyType...) org.neo4j.graphdb.schema.ConstraintCreator public abstract
 org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyIsNodeKey(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
 org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyIsRelationshipKey(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
 org.neo4j.graphdb.schema.ConstraintCreator::assertPropertyIsUnique(java.lang.String) org.neo4j.graphdb.schema.ConstraintCreator public abstract
@@ -396,6 +397,7 @@ org.neo4j.graphdb.schema.ConstraintDefinition::getConstraintType() org.neo4j.gra
 org.neo4j.graphdb.schema.ConstraintDefinition::getLabel() org.neo4j.graphdb.Label public abstract
 org.neo4j.graphdb.schema.ConstraintDefinition::getName() java.lang.String public abstract
 org.neo4j.graphdb.schema.ConstraintDefinition::getPropertyKeys() java.lang.Iterable<java.lang.String> public abstract
+org.neo4j.graphdb.schema.ConstraintDefinition::getPropertyType() org.neo4j.graphdb.schema.PropertyType[] public abstract
 org.neo4j.graphdb.schema.ConstraintDefinition::getRelationshipType() org.neo4j.graphdb.RelationshipType public abstract
 org.neo4j.graphdb.schema.ConstraintDefinition::isConstraintType(org.neo4j.graphdb.schema.ConstraintType) boolean public abstract
 org.neo4j.graphdb.schema.ConstraintType public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.ConstraintType>
@@ -455,6 +457,20 @@ org.neo4j.graphdb.schema.IndexType::RANGE org.neo4j.graphdb.schema.IndexType pub
 org.neo4j.graphdb.schema.IndexType::TEXT org.neo4j.graphdb.schema.IndexType public static final
 org.neo4j.graphdb.schema.IndexType::valueOf(java.lang.String) org.neo4j.graphdb.schema.IndexType public static
 org.neo4j.graphdb.schema.IndexType::values() org.neo4j.graphdb.schema.IndexType[] public static
+org.neo4j.graphdb.schema.PropertyType public final enum extends java.lang.Enum<org.neo4j.graphdb.schema.PropertyType>
+org.neo4j.graphdb.schema.PropertyType::BOOLEAN org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::DATE org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::DURATION org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::FLOAT org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::INTEGER org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LOCAL_DATETIME org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::LOCAL_TIME org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::POINT org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::STRING org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::ZONED_DATETIME org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::ZONED_TIME org.neo4j.graphdb.schema.PropertyType public static final
+org.neo4j.graphdb.schema.PropertyType::valueOf(java.lang.String) org.neo4j.graphdb.schema.PropertyType public static
+org.neo4j.graphdb.schema.PropertyType::values() org.neo4j.graphdb.schema.PropertyType[] public static
 org.neo4j.graphdb.schema.Schema public abstract interface
 org.neo4j.graphdb.schema.Schema.IndexState public static final enum extends java.lang.Enum<org.neo4j.graphdb.schema.Schema.IndexState>
 org.neo4j.graphdb.schema.Schema.IndexState::FAILED org.neo4j.graphdb.schema.Schema.IndexState public static final

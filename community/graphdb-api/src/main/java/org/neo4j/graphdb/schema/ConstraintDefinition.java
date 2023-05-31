@@ -78,4 +78,15 @@ public interface ConstraintDefinition {
      * @return the unique name of the constraint.
      */
     String getName();
+
+    /**
+     * This accessor method returns the {@link PropertyType}(s) this constraint is associated with if this constraint
+     * has type {@link ConstraintType#NODE_PROPERTY_TYPE} or {@link ConstraintType#RELATIONSHIP_PROPERTY_TYPE}.
+     * Type of the constraint can be examined by calling {@link #getConstraintType()} or
+     * {@link #isConstraintType(ConstraintType)} methods.
+     *
+     * @return the {@link PropertyType}s this constraint is associated with.
+     * @throws IllegalStateException when this constraint is not of an applicable type.
+     */
+    PropertyType[] getPropertyType();
 }

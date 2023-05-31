@@ -23,6 +23,7 @@ import static java.util.Objects.requireNonNull;
 
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
+import org.neo4j.graphdb.schema.PropertyType;
 import org.neo4j.internal.schema.ConstraintDescriptor;
 
 public abstract class PropertyConstraintDefinition implements ConstraintDefinition {
@@ -72,5 +73,11 @@ public abstract class PropertyConstraintDefinition implements ConstraintDefiniti
 
     protected void assertInUnterminatedTransaction() {
         actions.assertInOpenTransaction();
+    }
+
+    @Override
+    public PropertyType[] getPropertyType() {
+        assertInUnterminatedTransaction();
+        throw new IllegalStateException("Constraint is not a property type constraint.");
     }
 }
