@@ -1971,7 +1971,7 @@ CLAUSE MatchClause() throws Exception:
     WHERE where = null;
 }
 {
-    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> ( matchMode = MatchMode() )? patterns=PatternList() hints=Hints() ( where=WhereClause() )?
+    ( optionalT=<OPTIONAL> { optional = true; } )? t=<MATCH> (LOOKAHEAD(2) matchMode = MatchMode() )? patterns=PatternList() hints=Hints() ( where=WhereClause() )?
     {
         return astFactory.matchClause( pos( optionalT != null ? optionalT : t ), optional, matchMode, patterns, pos( t.next ), hints, where );
     }
@@ -1984,8 +1984,8 @@ MATCH_MODE MatchMode():
 }
 {
     (
-        t = <REPEATABLE> ( <ELEMENT>  ( <BINDINGS> )? |  <ELEMENTS> ) { matchMode = astFactory.repeatableElements(pos(t)); } |
-        t = <DIFFERENT> ( <RELATIONSHIP>  ( <BINDINGS> )? | <RELATIONSHIPS> ) { matchMode = astFactory.differentRelationships(pos(t)); }
+        t = <REPEATABLE> (LOOKAHEAD(2) <ELEMENT> <BINDINGS> | <ELEMENT> |  <ELEMENTS> ) { matchMode = astFactory.repeatableElements(pos(t)); } |
+        t = <DIFFERENT> (LOOKAHEAD(2) <RELATIONSHIP> <BINDINGS> | <RELATIONSHIP> | <RELATIONSHIPS> ) { matchMode = astFactory.differentRelationships(pos(t)); }
     )
     {
         return matchMode;
