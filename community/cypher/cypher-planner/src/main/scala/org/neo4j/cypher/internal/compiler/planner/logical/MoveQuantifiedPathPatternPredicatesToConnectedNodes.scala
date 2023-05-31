@@ -52,34 +52,36 @@ case object MoveQuantifiedPathPatternPredicatesToConnectedNodes extends PlannerQ
     topDown(
       rewriter = Rewriter.lift {
         case qg: QueryGraph =>
-          val predicatesForOuterSelections = qg.quantifiedPathPatterns.flatMap { qpp =>
-            val (left, right) = qpp.nodes
-            val start = qpp.leftBinding.inner
-            val end = qpp.rightBinding.inner
+          val predicatesForOuterSelections = qg.quantifiedPathPatterns
+            .filter(_.repetition.min > 0)
+            .flatMap { qpp =>
+              val (left, right) = qpp.nodes
+              val start = qpp.leftBinding.inner
+              val end = qpp.rightBinding.inner
 
-            qpp.selections.predicates.foldLeft(Set.empty[Predicate]) {
-              case (acc, predicate) =>
-                val deps = predicate.dependencies
+              qpp.selections.predicates.foldLeft(Set.empty[Predicate]) {
+                case (acc, predicate) =>
+                  val deps = predicate.dependencies
 
-                // We can only copy a predicate if it depends only on arguments and either the start or the end node.
-                // We could theoretically also copy a predicate with dependencies on both start and end node,
-                // but that would currently mostly result in a filter _after_ the Trail plan, not filtering out anything new.
-                // What we are trying to achieve instead as a filter _before_ the Trail plan.
-                val okDependencies = deps.subsetOf(qpp.argumentIds + start) ||
-                  deps.subsetOf(qpp.argumentIds + end)
+                  // We can only copy a predicate if it depends only on arguments and either the start or the end node.
+                  // We could theoretically also copy a predicate with dependencies on both start and end node,
+                  // but that would currently mostly result in a filter _after_ the Trail plan, not filtering out anything new.
+                  // What we are trying to achieve instead as a filter _before_ the Trail plan.
+                  val okDependencies = deps.subsetOf(qpp.argumentIds + start) ||
+                    deps.subsetOf(qpp.argumentIds + end)
 
-                // IR Expressions can also not easily be rewritten, since they contain variables as simple Strings.
-                val noIRExpressions = predicate.folder.treeFindByClass[IRExpression].isEmpty
+                  // IR Expressions can also not easily be rewritten, since they contain variables as simple Strings.
+                  val noIRExpressions = predicate.folder.treeFindByClass[IRExpression].isEmpty
 
-                if (okDependencies && noIRExpressions) {
-                  val rewritttenPredicate: Predicate =
-                    rewritePredicate(predicate, start -> left, end -> right, context.cancellationChecker)
-                  acc + rewritttenPredicate
-                } else {
-                  acc
-                }
+                  if (okDependencies && noIRExpressions) {
+                    val rewritttenPredicate: Predicate =
+                      rewritePredicate(predicate, start -> left, end -> right, context.cancellationChecker)
+                    acc + rewritttenPredicate
+                  } else {
+                    acc
+                  }
+              }
             }
-          }
 
           val newSelections = qg.selections ++ Selections(predicatesForOuterSelections)
           qg.withSelections(newSelections)

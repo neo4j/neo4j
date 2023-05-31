@@ -216,6 +216,20 @@ Feature: QuantifiedPathPatternAcceptance
       """
     Then a SyntaxError should be raised at compile time: *
 
+  Scenario: Matching path pattern 0 times - using Kleene star
+    Given having executed:
+      """
+      CREATE ({prop: 42})
+      """
+    When executing query:
+      """
+      MATCH (a) ((:UnknownLabel)-->())*
+      RETURN a.prop
+      """
+    Then the result should be, in any order:
+      | a.prop |
+      |     42 |
+
   Scenario: Matching path pattern 1+ times - using Kleene plus
     And having executed:
       """

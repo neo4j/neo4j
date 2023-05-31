@@ -72,6 +72,7 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
     .setRelationshipCardinality("(:User)-[]->(:NN)", 10)
     .setRelationshipCardinality("()-[]->(:User)", 10)
     .setRelationshipCardinality("(:User)-[:R]->()", 10)
+    .setRelationshipCardinality("(:User)-[]->(:User)", 10)
     .setRelationshipCardinality("(:N)-[:R]->()", 10)
     .build()
 
@@ -135,6 +136,36 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
         .|.expand("(n)-[anon_3]->(m)")
         .|.argument("n")
         .nodeByLabelScan("u", "User")
+        .build()
+    )
+  }
+
+  test("Should plan quantifier * with start node without label") {
+    val query = "MATCH (u)((n:User)-[]->(m))* RETURN n, m"
+    val plan = planner.plan(query).stripProduceResults
+    val `(u)((n)-[]-(m))*` = TrailParameters(
+      min = 0,
+      max = Unlimited,
+      start = "u",
+      end = "anon_1",
+      innerStart = "n",
+      innerEnd = "m",
+      groupNodes = Set(("n", "n"), ("m", "m")),
+      groupRelationships = Set(("anon_3", "anon_7")),
+      innerRelationships = Set("anon_3"),
+      previouslyBoundRelationships = Set.empty,
+      previouslyBoundRelationshipGroups = Set.empty,
+      reverseGroupVariableProjections = false
+    )
+
+    plan should equal(
+      planner.subPlanBuilder()
+        .trail(`(u)((n)-[]-(m))*`)
+        .|.filterExpression(isRepeatTrailUnique("anon_3"))
+        .|.expand("(n)-[anon_3]->(m)")
+        .|.filter("n:User")
+        .|.argument("n")
+        .allNodeScan("u")
         .build()
     )
   }
@@ -1243,7 +1274,6 @@ class QuantifiedPathPatternPlanningIntegrationTest extends CypherFunSuite with L
       // At the time of writing, predicates do not percolate properly to quantified path patterns.
       // Here we find an overlap between MATCH () and  CREATE () even though we will not match on ().
       .eager(ListSet(EagernessReason.Unknown))
-      .filter("end:B")
       .trail(`(start)((a)-[r]->(b))*(end)`)
       .|.filterExpressionOrString("b:B", isRepeatTrailUnique("r"))
       .|.expandAll("(a)-[r]->(b)")

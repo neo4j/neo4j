@@ -75,6 +75,18 @@ class MoveQuantifiedPathPatternPredicatesToConnectedNodesTest extends CypherFunS
     assertRewrite(testName, "MATCH (:A) ((a:A)-->(b:B))+ (:B) RETURN count(*) AS c")
   }
 
+  test("MATCH (x) ((a:A)-->(b:B))* (y) RETURN count(*) AS c") {
+    assertIsNotRewritten(testName)
+  }
+
+  test("MATCH (x) ((a:A)-->(b:B)){0, 2} (y) RETURN count(*) AS c") {
+    assertIsNotRewritten(testName)
+  }
+
+  test("MATCH (x) ((a)-->(b) WHERE a.prop < 42)* (y) RETURN count(*) AS c") {
+    assertIsNotRewritten(testName)
+  }
+
   test("MATCH (x) ((a)-->(b {foo: 'bar'}) WHERE a.prop > 5)+ RETURN count(*) AS c") {
     assertRewrite(
       testName,
