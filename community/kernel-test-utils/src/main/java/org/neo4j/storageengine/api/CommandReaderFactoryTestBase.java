@@ -28,6 +28,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.neo4j.kernel.KernelVersion;
+import org.neo4j.test.LatestVersions;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public abstract class CommandReaderFactoryTestBase<FACTORY extends CommandReaderFactory> {
@@ -59,6 +60,11 @@ public abstract class CommandReaderFactoryTestBase<FACTORY extends CommandReader
     @Test
     void shouldProviderReaderForGloriousFuture() {
         assertReaderHandlesKernelVersions(KernelVersion.GLORIOUS_FUTURE);
+        assertThat(factory.get(KernelVersion.GLORIOUS_FUTURE))
+                .as(
+                        "reader for %s should be based upon reader for latest kernel version",
+                        KernelVersion.GLORIOUS_FUTURE)
+                .isInstanceOf(factory.get(LatestVersions.LATEST_KERNEL_VERSION).getClass());
     }
 
     private void assertReaderHandlesKernelVersions(KernelVersion kernelVersion) {
