@@ -31,11 +31,12 @@ class CollectNodesOfTypeTest extends CypherFunSuite with AstConstructionTestSupp
   test("collect all variables") {
     val idA = varFor("a")
     val idB = varFor("b")
+    val nodePattern = NodePattern(Some(idA), None, Some(idB), None) _
     val ast: ASTNode =
       Match(
         optional = false,
         matchMode = MatchMode.default(pos),
-        patternForMatch(NodePattern(Some(idA), None, Some(idB), None) _),
+        patternForMatch(nodePattern),
         Seq(),
         None
       ) _
