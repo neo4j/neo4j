@@ -72,7 +72,6 @@ import org.neo4j.dbms.database.DatabaseInfo
 import org.neo4j.dbms.database.DatabaseInfoService
 import org.neo4j.dbms.database.ExtendedDatabaseInfo
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.COMPOSITE_DATABASE_LABEL
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_CREATED_AT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DEFAULT_PROPERTY
@@ -80,7 +79,6 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_DESIGNATED_SEE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LABEL
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_LOG_ENRICHMENT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_PRIMARIES_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SECONDARIES_PROPERTY
@@ -90,20 +88,16 @@ import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_SEED_URI_PROPE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STARTED_AT_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STATUS_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_STOPPED_AT_PROPERTY
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_UUID_PROPERTY
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_VIRTUAL_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DEFAULT_NAMESPACE
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DISPLAY_NAME_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAMESPACE_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.NAME_PROPERTY
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.PRIMARY_PROPERTY
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS
-import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.TARGETS_RELATIONSHIP
 import org.neo4j.graphdb.Transaction
-import org.neo4j.internal.helpers.collection.Iterables
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.kernel.database.DatabaseIdFactory
+import org.neo4j.kernel.database.DatabaseReferenceRepository
 import org.neo4j.kernel.database.DefaultDatabaseResolver
 import org.neo4j.kernel.database.NamedDatabaseId
 import org.neo4j.values.AnyValue
@@ -111,10 +105,7 @@ import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues
 
-import java.util.UUID
-
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 import scala.jdk.OptionConverters.RichOptional
@@ -136,6 +127,7 @@ case class ShowDatabasesExecutionPlanner(
   private val accessibleDbsKey = internalKey("accessibleDbs")
   private val dbms = resolver.resolveDependency(classOf[DatabaseManagementService])
   private val infoService = resolver.resolveDependency(classOf[DatabaseInfoService])
+  private val referenceResolver = resolver.resolveDependency(classOf[DatabaseReferenceRepository])
 
   def planShowDatabases(
     scope: DatabaseScope,
@@ -309,24 +301,11 @@ case class ShowDatabasesExecutionPlanner(
     verbose: Boolean
   ): MapValue = {
 
-    val accessibleDatabases: Set[NamedDatabaseId] =
-      transaction.findNodes(DATABASE_NAME_LABEL, PRIMARY_PROPERTY, true).asScala
-        .foldLeft[Set[NamedDatabaseId]](
-          Set.empty
-        ) { (acc, dbNameNode) =>
-          val dbName = dbNameNode.getProperty(DATABASE_NAME_PROPERTY).toString
-          val dbNode = Iterables.first(dbNameNode.getRelationships(TARGETS_RELATIONSHIP)).getEndNode
-          val dbId =
-            DatabaseIdFactory.from(dbName, UUID.fromString(dbNode.getProperty(DATABASE_UUID_PROPERTY).toString))
-          val dbType =
-            if (dbNode.hasLabel(COMPOSITE_DATABASE_LABEL) && dbNode.hasProperty(DATABASE_VIRTUAL_PROPERTY)) Composite
-            else Standard
-          if (securityContext.databaseAccessMode().canSeeDatabase(dbName, dbType == Composite)) {
-            acc + dbId
-          } else {
-            acc
-          }
-        }
+    val accessibleDatabases = referenceResolver.getAllDatabaseReferences.asScala
+      .collect {
+        case db if db.isPrimary && securityContext.databaseAccessMode().canSeeDatabase(db) =>
+          DatabaseIdFactory.from(db.alias().name(), db.id())
+      }.toSet
 
     val username = Option(securityContext.subject().executingUser()) match {
       case None       => Values.NO_VALUE

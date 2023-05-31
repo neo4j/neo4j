@@ -19,19 +19,14 @@
  */
 package org.neo4j.internal.kernel.api.security;
 
-public interface DatabaseAccessMode {
-    boolean canAccessDatabase(String name);
+import org.neo4j.kernel.database.DatabaseReference;
 
-    boolean canSeeDatabase(String database, boolean isComposite);
+public interface DatabaseAccessMode {
+    boolean canSeeDatabase(DatabaseReference database);
 
     DatabaseAccessMode FULL = new DatabaseAccessMode() {
         @Override
-        public boolean canAccessDatabase(String name) {
-            return true;
-        }
-
-        @Override
-        public boolean canSeeDatabase(String database, boolean isComposite) {
+        public boolean canSeeDatabase(DatabaseReference database) {
             return true;
         }
     };

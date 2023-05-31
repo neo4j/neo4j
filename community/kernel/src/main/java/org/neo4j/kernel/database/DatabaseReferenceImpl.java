@@ -29,7 +29,7 @@ import org.neo4j.configuration.helpers.RemoteUri;
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel;
 
 /**
- * Implementations of this interface represent different kinds of Database reference.
+ *  Concrete implementations of this class represent different kinds of Database reference.
  *
  * - {@link Internal} references point to databases which are present in this DBMS.
  * - {@link External} references point to databases which are not present in this DBMS.

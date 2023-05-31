@@ -22,6 +22,11 @@ package org.neo4j.kernel.database;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Implementations of this interface represent different kinds of Database reference.
+ * A database may have multiple references, each with a different alias.
+ * The reference whose {@link #alias()} corresponds to the database's original name is known as the primary reference.
+ */
 public interface DatabaseReference extends Comparable<DatabaseReference> {
     NormalizedDatabaseName alias();
 
