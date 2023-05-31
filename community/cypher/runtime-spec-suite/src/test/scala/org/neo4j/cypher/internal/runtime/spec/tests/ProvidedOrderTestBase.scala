@@ -614,7 +614,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .apply()
-      .|.antiConditionalApply("y")
+      .|.antiConditionalApply("y").withLeveragedOrder()
       .|.|.unwind("[0] AS b") // Pipeline break
       .|.|.filter(s"x < 0.25")
       .|.|.argument("x")
@@ -735,7 +735,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
       .apply()
-      .|.conditionalApply("y")
+      .|.conditionalApply("y").withLeveragedOrder()
       .|.|.unwind("[0] AS b") // Pipeline break
       .|.|.filter(s"x < 0.25")
       .|.|.argument("x")
@@ -858,7 +858,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.selectOrAntiSemiApply("x < 0.15")
+      .|.selectOrAntiSemiApply("x < 0.15").withLeveragedOrder()
       .|.|.unwind("[0] AS y") // Pipeline break
       .|.|.filter(s"x <= 0.35")
       .|.|.argument("x")
