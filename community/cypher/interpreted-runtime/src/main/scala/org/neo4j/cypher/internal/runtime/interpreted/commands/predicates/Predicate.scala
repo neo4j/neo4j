@@ -202,11 +202,7 @@ case class IsNull(expression: Expression) extends Predicate {
 case class IsTyped(expression: Expression, typeName: CypherTypeName) extends Predicate {
 
   override def isMatch(ctx: ReadableRow, state: QueryState): IsMatchResult = {
-    val booleanValue = CypherFunctions.isTyped(expression(ctx, state), typeName)
-    booleanValue match {
-      case BooleanValue.TRUE  => IsTrue
-      case BooleanValue.FALSE => IsFalse
-    }
+    IsMatchResult(CypherFunctions.isTyped(expression(ctx, state), typeName))
   }
 
   override def toString: String = expression + " IS :: " + typeName
