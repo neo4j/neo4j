@@ -43,7 +43,6 @@ public class NodePropertyTypeConstraintDefinition extends NodeConstraintDefiniti
 
     @Override
     public String toString() {
-        // FIXME PTC guessed syntax - not implemented yet
         return format(
                 "FOR (%s:%s) REQUIRE %s IS :: %s",
                 label.name().toLowerCase(),

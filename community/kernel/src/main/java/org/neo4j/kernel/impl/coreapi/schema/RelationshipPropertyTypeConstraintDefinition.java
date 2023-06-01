@@ -45,7 +45,6 @@ public class RelationshipPropertyTypeConstraintDefinition extends RelationshipCo
 
     @Override
     public String toString() {
-        // FIXME PTC guessed syntax - not implemented yet
         return format(
                 "FOR ()-[%s:%s]-() REQUIRE %s IS :: %s",
                 relationshipType.name().toLowerCase(),
