@@ -154,8 +154,12 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     def planDescriptionForQuery(query: String): ExecutionPlanDescription = {
       db.withTx(tx => {
         val res = tx.execute(query)
-        res.resultAsString()
-        res.getExecutionPlanDescription
+        try {
+          res.resultAsString()
+          res.getExecutionPlanDescription
+        } finally {
+          res.close()
+        }
       })
     }
   }

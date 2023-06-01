@@ -94,7 +94,7 @@ abstract class ExecutionEngineFunSuite
     }
   }
 
-  def shouldHaveWarning(result: Result, statusCode: Status, detailMessage: String): Unit = {
+  def shouldHaveWarning(result: Result, statusCode: Status, detailMessage: String): Result = {
     val notifications: Iterable[Notification] = result.getNotifications.asScala
 
     withClue(
@@ -105,10 +105,12 @@ abstract class ExecutionEngineFunSuite
         notification.getDescription == detailMessage
       } should be(true)
     }
+    result
   }
 
-  def shouldHaveNoWarnings(result: Result): Unit = {
+  def shouldHaveNoWarnings(result: Result): Result = {
     result.getNotifications.asScala should be(empty)
+    result
   }
 
   def selectDatabase(name: String): Unit = {

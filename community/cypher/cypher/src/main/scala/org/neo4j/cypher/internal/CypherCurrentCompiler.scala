@@ -436,6 +436,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](
       val inner =
         if (innerExecutionMode == ExplainMode) {
           taskCloser.close(success = true)
+          outerCloseable.close()
           val columns = columnNames(logicalPlan)
 
           new ExplainExecutionResult(

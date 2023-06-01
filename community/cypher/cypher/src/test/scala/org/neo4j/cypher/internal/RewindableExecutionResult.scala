@@ -41,7 +41,7 @@ import scala.jdk.CollectionConverters.IterableHasAsScala
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
 
-trait RewindableExecutionResult {
+trait RewindableExecutionResult extends AutoCloseable {
   def columns: Array[String]
   protected def result: Seq[Map[String, AnyRef]]
   def executionMode: ExecutionMode
@@ -68,6 +68,10 @@ trait RewindableExecutionResult {
   def queryStatistics(): QueryStatistics = statistics
 
   def isEmpty: Boolean = result.isEmpty
+
+  protected def closeable: AutoCloseable
+
+  def close(): Unit = closeable.close()
 }
 
 /**
@@ -79,7 +83,8 @@ class RewindableExecutionResultImplementation(
   val executionMode: ExecutionMode,
   protected val planDescription: InternalPlanDescription,
   protected val statistics: QueryStatistics,
-  val notifications: Iterable[Notification]
+  val notifications: Iterable[Notification],
+  val closeable: AutoCloseable
 ) extends RewindableExecutionResult
 
 object RewindableExecutionResult {
@@ -97,7 +102,8 @@ object RewindableExecutionResult {
         NormalMode,
         in.getExecutionPlanDescription.asInstanceOf[InternalPlanDescription],
         QueryStatistics(in.getQueryStatistics),
-        in.getNotifications.asScala.toSeq
+        in.getNotifications.asScala.toSeq,
+        closeable = () => in.close()
       )
     } finally in.close()
   }
@@ -161,7 +167,8 @@ object RewindableExecutionResult {
       executionMode,
       planDescription(),
       QueryStatistics(subscriber.queryStatistics()),
-      notifications ++ internalNotifications
+      notifications ++ internalNotifications,
+      closeable = () => subscription.cancel()
     )
   }
 

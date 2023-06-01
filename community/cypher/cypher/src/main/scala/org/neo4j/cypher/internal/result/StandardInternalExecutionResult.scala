@@ -128,7 +128,9 @@ class StandardInternalExecutionResult(
 
     if (executionMode == ProfileMode) {
       if (runtimeResult.consumptionState != ConsumptionState.EXHAUSTED) {
+        // TODO: Do we really need to close here?
         taskCloser.close(success = false)
+        outerCloseable.close()
         throw new ProfilerStatisticsNotReadyException()
       }
       planDescriptionBuilder.profile(runtimeResult.queryProfile)

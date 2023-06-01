@@ -20,10 +20,12 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.ExecutionEngineHelper.asJavaMapDeep
+import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.RelationshipType
+import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.schema.ConstraintDefinition
 import org.neo4j.graphdb.schema.ConstraintType
 import org.neo4j.graphdb.schema.IndexDefinition
@@ -680,6 +682,16 @@ trait GraphIcing {
       val tx = graphService.beginTransaction(txType, AUTH_DISABLED)
       try {
         val result = f(tx)
+        // HACK: A lot of tests do not close the result but relies on implicit closing
+        result match {
+          case Some(rew: RewindableExecutionResult) =>
+            rew.close()
+          case rew: RewindableExecutionResult =>
+            rew.close()
+          case r: Result =>
+            r.close()
+          case _ =>
+        }
         if (tx.isOpen) {
           tx.commit()
         }
