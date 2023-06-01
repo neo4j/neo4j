@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
-import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Min
@@ -162,17 +161,9 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
      */
     private def canReplaceWithBfsPruning(expand: VarExpand): Boolean = {
       horizonPlan != null &&
-      validBfsMinLength(expand) &&
+      expand.length.min <= 1 &&
       validMaxLength(expand, requireMaxLength = false) &&
       !allDependenciesMinusMinPath(expand.relName)
-    }
-
-    def validBfsMinLength(expand: VarExpand): Boolean = {
-      expand.dir match {
-        // TODO remove the BOTH case after fixing BFS cursor loop detection bug
-        case BOTH => expand.length.min == 0
-        case _    => expand.length.min <= 1
-      }
     }
 
     /**

@@ -352,13 +352,13 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
      * Note that the lifecycle of the provided cursors should be maintained outside this class. They will never be closed form within this class.
      * This is useful if when cursors are pooled and reused.
      *
-     * @param types         the types of the relationships to follow
-     * @param maxDepth      the maximum depth of the search
-     * @param read          a read instance
-     * @param nodeCursor    a nodeCursor, will NOT be maintained and closed by this class
-     * @param relCursor     a relCursor, will NOT be maintained and closed by this class
-     * @param nodeFilter    must be true for all nodes along the path, NOTE not checked on startNode
-     * @param relFilter     must be true for all relationships along the path
+     * @param types      the types of the relationships to follow
+     * @param maxDepth   the maximum depth of the search
+     * @param read       a read instance
+     * @param nodeCursor a nodeCursor, will NOT be maintained and closed by this class
+     * @param relCursor  a relCursor, will NOT be maintained and closed by this class
+     * @param nodeFilter must be true for all nodes along the path, NOTE not checked on startNode
+     * @param relFilter  must be true for all relationships along the path
      */
     private BFSPruningVarExpandCursor(
             int[] types,
@@ -587,7 +587,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
     /**
      * Used for undirected pruning expands where we are not including the start node.
-     *
+     * <p>
      * The main algorithm uses two frontiers making sure we never back-track in the graph.
      * However, the fact that the start node is not included adds an extra complexity if there
      * are loops in the graph, in which case we need to include the start node at the correct
@@ -607,12 +607,10 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         // which it was discovered so that we can emit the start-node at the correct depth.
         private int loopCounter = NO_LOOP;
         private int currentDepth;
-        private int lastSuccessfulDepth;
         private HeapTrackingLongHashSet prevFrontier;
         private HeapTrackingLongHashSet currFrontier;
         // Keeps track of all seen nodes and their parent nodes. The parent is used for loop detection.
-        private final HeapTrackingLongLongHashMap seenNodesWithParent;
-
+        private final HeapTrackingLongLongHashMap seenNodesWithAncestors;
         private LongIterator currentExpand;
         private final long startNode;
 
@@ -630,10 +628,9 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
             this.startNode = startNode;
             this.prevFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
             this.currFrontier = HeapTrackingCollections.newLongSet(memoryTracker);
-            this.seenNodesWithParent = HeapTrackingCollections.newLongLongMap(memoryTracker);
+            this.seenNodesWithAncestors = HeapTrackingCollections.newLongLongMap(memoryTracker);
             expand(startNode);
             currentDepth = 1;
-            lastSuccessfulDepth = 0;
         }
 
         @Override
@@ -642,46 +639,59 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                 clearLoopCount();
                 while (selectionCursor.next()) {
                     if (relFilter.test(selectionCursor)) {
+
                         long origin = selectionCursor.originNodeReference();
                         long other = selectionCursor.otherNodeReference();
+
                         // in this loop we consider startNode as seen
                         // and only retrace later if a loop has been detected
                         if (other == startNode) {
                             // special case, self-loop for start node
-                            if (origin == other && currentDepth == 1) {
+                            if (origin == other) {
+                                assert currentDepth == 1
+                                        : "currentDepth should always be 1 if we are expanding from the source";
                                 loopCounter = 1;
                             }
                             continue;
                         }
 
-                        long parentOfOther = seenNodesWithParent.getIfAbsent(other, NO_SUCH_NODE);
+                        long ancestorOfOther = seenNodesWithAncestors.getIfAbsent(other, NO_SUCH_NODE);
 
-                        // NOTE: we are eliminating duplicated end nodes except from the first layer here in order to
-                        // simplify the loop detection later
-                        if (origin != startNode && parentOfOther == origin) {
-                            continue;
-                        }
+                        if (ancestorOfOther == NO_SUCH_NODE && nodeFilter.test(other)) {
+                            // We haven't seen this node before!
+                            long ancestor =
+                                    currentDepth > 1 ? seenNodesWithAncestors.get(origin) : selectionCursor.reference();
 
-                        if (parentOfOther == NO_SUCH_NODE && nodeFilter.test(other)) {
-                            seenNodesWithParent.put(other, origin);
+                            seenNodesWithAncestors.put(other, ancestor);
                             currFrontier.add(other);
-                            lastSuccessfulDepth = currentDepth;
                             return true;
-                        } else if (parentOfOther != NO_SUCH_NODE
+                        } else if (ancestorOfOther != NO_SUCH_NODE
                                 && // make sure nodeFilter passed
                                 origin != other
                                 && // ignore self loops
                                 shouldCheckForLoops()) // if we already found a shorter loop, don't bother
                         {
-                            long parentOfOrigin = seenNodesWithParent.getIfAbsent(origin, NO_SUCH_NODE);
-                            if (parentOfOrigin == NO_SUCH_NODE && currentDepth == 1) {
-                                // we are in the very first layer and have a loop to the start node
+                            if (currentDepth == 1) {
+                                assert origin == startNode
+                                        : "origin should always be the source node if we're at currentDepth = 1";
                                 loopCounter = 2;
-                            } else if (parentOfOrigin != other && parentOfOrigin != NO_SUCH_NODE) {
-                                // By already checking, shouldCheckForLoop we know that we either have no loop
-                                // or we have found a loop into a different BFS layer (not in prevFrontier)
-                                // so overwriting loopCounter is always safe, and we don't need a Math.min(old, new)
-                                loopCounter = prevFrontier.contains(other) ? currentDepth : currentDepth + 1;
+                                continue;
+                            }
+
+                            long ancestorOfOrigin = seenNodesWithAncestors.getIfAbsent(origin, NO_SUCH_NODE);
+                            assert ancestorOfOrigin != NO_SUCH_NODE
+                                    : "Every node is given an ancestor when it's found. "
+                                            + "We found origin in the previous level, so something is broken if it doesn't have an ancestor";
+
+                            if (ancestorOfOrigin != ancestorOfOther) { // Loop found!
+
+                                if (prevFrontier.contains(other)) {
+                                    loopCounter = currentDepth;
+                                } else {
+                                    assert currFrontier.contains(other)
+                                            : "The first node we find in a loop should lie in currFrontier or prevFrontier";
+                                    loopCounter = currentDepth + 1;
+                                }
                             }
                         }
                     }
@@ -693,18 +703,27 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
                     }
                 } else {
                     if (checkAndDecreaseLoopCount()) {
-                        lastSuccessfulDepth = currentDepth;
                         return true;
                     }
 
-                    swapFrontiers();
-                    if (lastSuccessfulDepth < currentDepth && !loopDetected()) {
-                        return false;
+                    if (!swapFrontiers()) {
+                        if (loopDetected()) {
+                            // No more nodes left to expand, but we have found a loop, so we may just as well skip
+                            // all empty expansions and emit the source node immediately
+                            currentDepth += loopCounter;
+                            if (currentDepth <= maxDepth) {
+                                loopCounter = EMIT_START_NODE;
+                                return true;
+                            } else {
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
                     }
                     currentDepth++;
                 }
             }
-
             return false;
         }
 
@@ -719,19 +738,25 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
         }
 
         /*
-         *We only need to check for loops if we haven't found one yet
-         * or if there is still a possibility to find a shorter one
+         * We only need to check for loops if we aren't currently processing one and have never found one before OR
+         * if there is still a possibility to find a shorter one
          */
         private boolean shouldCheckForLoops() {
-            return !loopDetected() || loopCounter > currentDepth;
+            return (!loopDetected() && loopCounter != START_NODE_EMITTED) || loopCounter > currentDepth;
         }
 
-        private void swapFrontiers() {
+        private boolean swapFrontiers() {
+            if (currFrontier.isEmpty()) {
+                return false;
+            }
+
             var tmp = prevFrontier;
             prevFrontier = currFrontier;
             currentExpand = prevFrontier.longIterator();
+
             currFrontier = tmp;
             currFrontier.clear();
+            return true;
         }
 
         private boolean checkAndDecreaseLoopCount() {
@@ -766,7 +791,7 @@ public abstract class BFSPruningVarExpandCursor extends DefaultCloseListenable i
 
         @Override
         protected void closeMore() {
-            seenNodesWithParent.close();
+            seenNodesWithAncestors.close();
             prevFrontier.close();
             currFrontier.close();
         }
