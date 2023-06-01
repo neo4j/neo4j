@@ -705,6 +705,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     lp match {
 
       case Aggregation(_, groupingExpressions, aggregationExpressions) =>
+        recordArgument(lp)
         addGroupingSlots(groupingExpressions, source, slots)
         aggregationExpressions foreach {
           case (key, _) =>

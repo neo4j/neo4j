@@ -39,7 +39,8 @@ class SlottedNonGroupingAggTable(
   slots: SlotConfiguration,
   aggregations: Map[Int, AggregationExpression],
   state: QueryState,
-  operatorId: Id
+  operatorId: Id,
+  argumentSize: SlotConfiguration.Size
 ) extends AggregationTable {
 
   private val (aggregationOffsets: Array[Int], aggregationExpressions: Array[AggregationExpression]) = {
@@ -81,7 +82,11 @@ class SlottedNonGroupingAggTable(
   protected def resultRow(): CypherRow = {
     val row = SlottedRow(slots)
     if (state.initialContext.nonEmpty) {
-      row.copyAllFrom(state.initialContext.get)
+      row.copyFrom(
+        state.initialContext.get,
+        Math.min(argumentSize.nLongs, slots.numberOfLongs),
+        Math.min(argumentSize.nReferences, slots.numberOfReferences)
+      )
     }
     var i = 0
     while (i < aggregationFunctions.length) {
@@ -94,11 +99,14 @@ class SlottedNonGroupingAggTable(
 
 object SlottedNonGroupingAggTable {
 
-  case class Factory(slots: SlotConfiguration, aggregations: Map[Int, AggregationExpression])
-      extends AggregationTableFactory {
+  case class Factory(
+    slots: SlotConfiguration,
+    aggregations: Map[Int, AggregationExpression],
+    argumentSize: SlotConfiguration.Size
+  ) extends AggregationTableFactory {
 
     override def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable =
-      new SlottedNonGroupingAggTable(slots, aggregations, state, operatorId)
+      new SlottedNonGroupingAggTable(slots, aggregations, state, operatorId, argumentSize)
   }
 
 }

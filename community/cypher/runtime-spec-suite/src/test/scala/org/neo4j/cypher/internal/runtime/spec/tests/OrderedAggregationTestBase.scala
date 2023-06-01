@@ -598,4 +598,47 @@ abstract class OrderedAggregationTestBase[CONTEXT <: RuntimeContext](
     stream.hasMore shouldBe true
   }
 
+  test("ordered aggregation on rhs should handle lhs rows with extra slots") {
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("c", "item", "1")
+      .projection("1 AS `1`")
+      .letSemiApply("item") // RefSlots c, item, 1
+      .|.filter("c > 0")
+      .|.orderedAggregation(Seq("c as c"), Seq("max(`c`) AS `max(c)`"), Seq("c")) // RefSlots c, max(c)
+      .|.argument("c") // RefSlots c
+      .unwind("[1,2,3] as c") // RefSlots c, item, 1
+      .argument()
+      .build()
+
+    val runtimeResult = execute(query, runtime)
+
+    runtimeResult should beColumns("c", "item", "1").withRows(Seq(
+      Array(1, true, 1),
+      Array(2, true, 1),
+      Array(3, true, 1)
+    ))
+  }
+
+  test("ordered grouping aggregation on rhs should handle lhs rows with extra slots ") {
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("c", "item", "1")
+      .projection("1 AS `1`")
+      .letSemiApply("item") // RefSlots c, item, 1
+      .|.filter("c > 0")
+      .|.orderedAggregation(Seq("c as c"), Seq("max(`c`) AS `max(c)`"), Seq()) // RefSlots c, max(c)
+      .|.argument("c") // RefSlots c
+      .unwind("[1,2,3] as c") // RefSlots c, item, 1
+      .argument()
+      .build()
+
+    val runtimeResult = execute(query, runtime)
+
+    runtimeResult should beColumns("c", "item", "1").withRows(Seq(
+      Array(1, true, 1),
+      Array(2, true, 1),
+      Array(3, true, 1)
+    ))
+  }
 }

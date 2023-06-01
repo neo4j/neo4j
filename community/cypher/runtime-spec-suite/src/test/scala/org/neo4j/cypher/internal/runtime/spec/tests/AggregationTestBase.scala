@@ -1406,6 +1406,49 @@ abstract class AggregationTestBase[CONTEXT <: RuntimeContext](
     // then
     runtimeResult should beColumns("p").withRows(singleRow(11))
   }
+
+  test("aggregation on rhs should handle lhs rows with extra slots") {
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("c", "item", "1")
+      .projection("1 AS `1`")
+      .letSemiApply("item") // RefSlots c, item, 1
+      .|.aggregation(Seq.empty, Seq("max(`c`) AS `max(c)`")) // RefSlots c, max(c)
+      .|.argument("c") // RefSlots c
+      .unwind("[1,2,3] as c") // RefSlots c, item, 1
+      .argument()
+      .build()
+
+    val runtimeResult = execute(query, runtime)
+
+    runtimeResult should beColumns("c", "item", "1").withRows(Seq(
+      Array(1, true, 1),
+      Array(2, true, 1),
+      Array(3, true, 1)
+    ))
+  }
+
+  test("grouping aggregation on rhs should handle lhs rows with extra slots") {
+
+    val query = new LogicalQueryBuilder(this)
+      .produceResults("c", "item", "1")
+      .projection("1 AS `1`")
+      .letSemiApply("item") // RefSlots c, item, 1
+      .|.filter("c > 0")
+      .|.aggregation(Seq("c as c"), Seq("max(`c`) AS `max(c)`")) // RefSlots c, max(c)
+      .|.argument("c") // RefSlots c
+      .unwind("[1,2,3] as c") // RefSlots c, item, 1
+      .argument()
+      .build()
+
+    val runtimeResult = execute(query, runtime)
+
+    runtimeResult should beColumns("c", "item", "1").withRows(Seq(
+      Array(1, true, 1),
+      Array(2, true, 1),
+      Array(3, true, 1)
+    ))
+  }
 }
 
 trait UserDefinedAggregationSupport[CONTEXT <: RuntimeContext] {

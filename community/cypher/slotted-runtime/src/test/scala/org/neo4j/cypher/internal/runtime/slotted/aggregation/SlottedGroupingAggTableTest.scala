@@ -47,7 +47,8 @@ class SlottedGroupingAggTableTest extends CypherFunSuite {
       SlottedGroupingExpression1(SlotExpression(slots("a"), ReferenceFromSlot(0))),
       Map(slots("c").offset -> CountStar()),
       state,
-      Id(0)
+      Id(0),
+      slots.size()
     )
     table.clear()
 

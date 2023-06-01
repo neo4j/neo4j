@@ -1256,7 +1256,7 @@ class SlottedPipeMapper(
         // Choose the right kind of aggregation table factory based on what grouping columns we have
         val tableFactory =
           if (groupingExpressions.isEmpty) {
-            SlottedNonGroupingAggTable.Factory(slots, aggregation)
+            SlottedNonGroupingAggTable.Factory(slots, aggregation, physicalPlan.argumentSizes(plan.id))
           } else if (
             longSlotGroupingValues.length == groupingExpressions.size &&
             longSlotGroupingValues.length == longSlotGroupingKeys.length
@@ -1268,9 +1268,11 @@ class SlottedPipeMapper(
             SlottedGroupingAggTable.Factory(
               slots,
               expressionConverters.toGroupingExpression(id, groupingExpressions, Seq.empty),
-              aggregation
+              aggregation,
+              physicalPlan.argumentSizes(plan.id)
             )
           }
+
         EagerAggregationPipe(source, tableFactory)(id)
 
       case OrderedAggregation(_, groupingExpressions, aggregationExpression, orderToLeverage) =>
@@ -1281,11 +1283,23 @@ class SlottedPipeMapper(
 
         val (orderedGroupingColumns, unorderedGroupingColumns) =
           partitionGroupingExpressions(expressionConverters, groupingExpressions, orderToLeverage, id)
+
         val tableFactory =
           if (unorderedGroupingColumns.isEmpty) {
-            SlottedOrderedNonGroupingAggTable.Factory(slots, orderedGroupingColumns, aggregation)
+            SlottedOrderedNonGroupingAggTable.Factory(
+              slots,
+              orderedGroupingColumns,
+              aggregation,
+              physicalPlan.argumentSizes(plan.id)
+            )
           } else {
-            SlottedOrderedGroupingAggTable.Factory(slots, orderedGroupingColumns, unorderedGroupingColumns, aggregation)
+            SlottedOrderedGroupingAggTable.Factory(
+              slots,
+              orderedGroupingColumns,
+              unorderedGroupingColumns,
+              aggregation,
+              physicalPlan.argumentSizes(plan.id)
+            )
           }
         OrderedAggregationPipe(source, tableFactory)(id = id)
 

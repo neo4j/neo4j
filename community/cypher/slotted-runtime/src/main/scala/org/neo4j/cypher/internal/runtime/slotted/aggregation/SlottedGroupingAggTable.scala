@@ -44,7 +44,8 @@ class SlottedGroupingAggTable(
   groupingColumns: GroupingExpression,
   aggregations: Map[Int, AggregationExpression],
   state: QueryState,
-  operatorId: Id
+  operatorId: Id,
+  argumentSize: SlotConfiguration.Size
 ) extends AggregationTable {
 
   private[this] var resultMap: HeapTrackingOrderedAppendMap[groupingColumns.KeyType, Array[AggregationFunction]] = _
@@ -94,7 +95,11 @@ class SlottedGroupingAggTable(
         val aggregateFunctions = entry.getValue
         val row = SlottedRow(slots)
         if (state.initialContext.nonEmpty) {
-          row.copyAllFrom(state.initialContext.get)
+          row.copyFrom(
+            state.initialContext.get,
+            Math.min(argumentSize.nLongs, slots.numberOfLongs),
+            Math.min(argumentSize.nReferences, slots.numberOfReferences)
+          )
         }
         groupingColumns.project(row, unorderedGroupingValue)
         var i = 0
@@ -113,11 +118,12 @@ object SlottedGroupingAggTable {
   case class Factory(
     slots: SlotConfiguration,
     groupingColumns: GroupingExpression,
-    aggregations: Map[Int, AggregationExpression]
+    aggregations: Map[Int, AggregationExpression],
+    argumentSize: SlotConfiguration.Size
   ) extends AggregationTableFactory {
 
     override def table(state: QueryState, rowFactory: CypherRowFactory, operatorId: Id): AggregationTable =
-      new SlottedGroupingAggTable(slots, groupingColumns, aggregations, state, operatorId)
+      new SlottedGroupingAggTable(slots, groupingColumns, aggregations, state, operatorId, argumentSize)
   }
 
 }

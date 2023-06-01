@@ -40,8 +40,9 @@ class SlottedOrderedGroupingAggTable(
   unorderedGroupingColumns: GroupingExpression,
   aggregations: Map[Int, AggregationExpression],
   state: QueryState,
-  operatorId: Id
-) extends SlottedGroupingAggTable(slots, unorderedGroupingColumns, aggregations, state, operatorId)
+  operatorId: Id,
+  argumentSize: SlotConfiguration.Size
+) extends SlottedGroupingAggTable(slots, unorderedGroupingColumns, aggregations, state, operatorId, argumentSize)
     with OrderedChunkReceiver {
 
   private var currentGroupKey: orderedGroupingColumns.KeyType = _
@@ -79,7 +80,8 @@ object SlottedOrderedGroupingAggTable {
     slots: SlotConfiguration,
     orderedGroupingColumns: GroupingExpression,
     unorderedGroupingColumns: GroupingExpression,
-    aggregations: Map[Int, AggregationExpression]
+    aggregations: Map[Int, AggregationExpression],
+    argumentSize: SlotConfiguration.Size
   ) extends OrderedAggregationTableFactory {
 
     override def table(
@@ -93,7 +95,8 @@ object SlottedOrderedGroupingAggTable {
         unorderedGroupingColumns,
         aggregations,
         state,
-        operatorId
+        operatorId,
+        argumentSize
       )
   }
 }

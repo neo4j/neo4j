@@ -39,8 +39,10 @@ class SlottedOrderedNonGroupingAggTable(
   orderedGroupingColumns: GroupingExpression,
   aggregations: Map[Int, AggregationExpression],
   state: QueryState,
-  operatorId: Id
-) extends SlottedNonGroupingAggTable(slots, aggregations, state, operatorId) with OrderedChunkReceiver {
+  operatorId: Id,
+  argumentSize: SlotConfiguration.Size
+) extends SlottedNonGroupingAggTable(slots, aggregations, state, operatorId, argumentSize)
+    with OrderedChunkReceiver {
 
   private var currentGroupKey: orderedGroupingColumns.KeyType = _
 
@@ -75,7 +77,8 @@ object SlottedOrderedNonGroupingAggTable {
   case class Factory(
     slots: SlotConfiguration,
     orderedGroupingColumns: GroupingExpression,
-    aggregations: Map[Int, AggregationExpression]
+    aggregations: Map[Int, AggregationExpression],
+    argumentSize: SlotConfiguration.Size
   ) extends OrderedAggregationTableFactory {
 
     override def table(
@@ -83,6 +86,13 @@ object SlottedOrderedNonGroupingAggTable {
       rowFactory: CypherRowFactory,
       operatorId: Id
     ): AggregationTable with OrderedChunkReceiver =
-      new SlottedOrderedNonGroupingAggTable(slots, orderedGroupingColumns, aggregations, state, operatorId)
+      new SlottedOrderedNonGroupingAggTable(
+        slots,
+        orderedGroupingColumns,
+        aggregations,
+        state,
+        operatorId,
+        argumentSize
+      )
   }
 }
