@@ -153,7 +153,7 @@ case class WaitReconciliationExecutionPlan(
         systemSubscriber,
         fullAccess,
         tc.kernelTransaction(),
-        previousNotifications ++ notifications
+        previousNotifications ++ notifications ++ systemSubscriber.getNotifications
       )
     } finally {
       if (revertAccessModeChange != null) revertAccessModeChange.close()

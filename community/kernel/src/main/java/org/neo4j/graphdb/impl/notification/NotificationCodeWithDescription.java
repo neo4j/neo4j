@@ -141,7 +141,13 @@ public enum NotificationCodeWithDescription {
             Status.Statement.FeatureDeprecationWarning,
             "The Cypher query option `connectComponentsPlanner` is deprecated and will be removed without a replacement. "
                     + "The product's default behavior of using a cost-based IDP search algorithm when combining sub-plans will be kept. "
-                    + "For more information, see Cypher Manual -> Cypher planner.");
+                    + "For more information, see Cypher Manual -> Cypher planner."),
+    COMMAND_HAS_NO_EFFECT(
+            Status.Security.CommandHasNoEffect, "%s See Status Codes documentation for more information."),
+    IMPOSSIBLE_REVOKE_COMMAND(
+            Status.Security.ImpossibleRevokeCommand,
+            "%s Make sure nothing is misspelled. This notification will become an error in a future major version. "
+                    + "See Status Codes documentation for more information.");
 
     private final Status status;
     private final String description;
@@ -170,6 +176,16 @@ public enum NotificationCodeWithDescription {
         return new NotificationImplementation.NotificationBuilder(this)
                 .setPosition(position)
                 .setTitleDetails(details)
+                .build();
+    }
+
+    public NotificationImplementation notificationWithTitleAndDescriptionDetails(
+            InputPosition position, String titleDetail, String... descriptionDetails) {
+        // Allows a single detail in the title and multiple in the description
+        return new NotificationImplementation.NotificationBuilder(this)
+                .setPosition(position)
+                .setTitleDetails(titleDetail)
+                .setNotificationDetails(descriptionDetails)
                 .build();
     }
 }

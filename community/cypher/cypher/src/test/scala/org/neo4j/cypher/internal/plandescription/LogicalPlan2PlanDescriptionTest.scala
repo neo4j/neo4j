@@ -5541,9 +5541,15 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
       adminPlanDescription
     )
 
-    assertGood(attach(GrantRoleToUser(privLhsLP, util.Left("role"), util.Left("user")), 1.0), adminPlanDescription)
+    assertGood(
+      attach(GrantRoleToUser(privLhsLP, util.Left("role"), util.Left("user"), "GRANT ROLE role TO user"), 1.0),
+      adminPlanDescription
+    )
 
-    assertGood(attach(RevokeRoleFromUser(privLhsLP, util.Left("role"), util.Left("user")), 1.0), adminPlanDescription)
+    assertGood(
+      attach(RevokeRoleFromUser(privLhsLP, util.Left("role"), util.Left("user"), "REVOKE ROLE role FROM user"), 1.0),
+      adminPlanDescription
+    )
 
     assertGood(
       attach(
@@ -5552,7 +5558,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ExecuteProcedureAction,
           ProcedureAllQualifier()(pos),
           util.Left("role1"),
-          immutable = false
+          immutable = false,
+          "GRANT ..."
         ),
         1.0
       ),
@@ -5566,7 +5573,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ExecuteBoostedProcedureAction,
           ProcedureQualifier("apoc.sin")(pos),
           util.Left("role1"),
-          immutable = false
+          immutable = false,
+          "DENY ..."
         ),
         1.0
       ),
@@ -5581,7 +5589,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ProcedureAllQualifier()(pos),
           util.Left("role1"),
           "GRANTED",
-          immutableOnly = false
+          immutableOnly = false,
+          "REVOKE GRANT ..."
         ),
         1.0
       ),
@@ -5596,7 +5605,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           NamedDatabaseScope(NamespacedName("foo")(pos))(pos),
           UserAllQualifier()(pos),
           util.Left("role1"),
-          immutable = false
+          immutable = false,
+          "GRANT ..."
         ),
         1.0
       ),
@@ -5611,7 +5621,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           AllDatabasesScope()(pos),
           UserQualifier(util.Left("user1"))(pos),
           util.Left("role1"),
-          immutable = false
+          immutable = false,
+          "DENY ..."
         ),
         1.0
       ),
@@ -5627,7 +5638,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           UserQualifier(util.Left("user1"))(pos),
           util.Left("role1"),
           "GRANTED",
-          immutableOnly = false
+          immutableOnly = false,
+          "REVOKE GRANT ..."
         ),
         1.0
       ),
@@ -5643,7 +5655,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           DefaultGraphScope()(pos),
           LabelQualifier("Label1")(pos),
           util.Left("role1"),
-          immutable = false
+          immutable = false,
+          "GRANT ..."
         ),
         1.0
       ),
@@ -5659,7 +5672,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           DefaultGraphScope()(pos),
           LabelQualifier("Label1")(pos),
           util.Left("role1"),
-          immutable = false
+          immutable = false,
+          "DENY ..."
         ),
         1.0
       ),
@@ -5676,7 +5690,8 @@ class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPro
           ElementsAllQualifier()(pos),
           util.Left("role1"),
           "GRANTED",
-          immutableOnly = false
+          immutableOnly = false,
+          "REVOKE GRANT ..."
         ),
         1.0
       ),

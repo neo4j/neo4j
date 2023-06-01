@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CARTESIAN_PRODUCT;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.CODE_GENERATION_FAILED;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_DATABASE_NAME;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.DEPRECATED_FORMAT;
@@ -36,6 +37,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescriptio
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.EAGER_LOAD_CSV;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.EXHAUSTIVE_SHORTEST_PATH;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.HOME_DATABASE_NOT_PRESENT;
+import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.IMPOSSIBLE_REVOKE_COMMAND;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.INDEX_LOOKUP_FOR_DYNAMIC_PROPERTY;
 import static org.neo4j.graphdb.impl.notification.NotificationCodeWithDescription.JOIN_HINT_UNFULFILLABLE;
@@ -598,6 +600,33 @@ class NotificationCodeWithDescriptionTest {
                 NotificationCategory.DEPRECATION);
     }
 
+    @Test
+    void shouldConstructNotificationsFor_COMMAND_HAD_NO_EFFECT() {
+        Notification notification = COMMAND_HAS_NO_EFFECT.notification(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "`%s` has no effect.",
+                SeverityLevel.INFORMATION,
+                "Neo.ClientNotification.Security.CommandHasNoEffect",
+                "%s See Status Codes documentation for more information.",
+                NotificationCategory.SECURITY);
+    }
+
+    @Test
+    void shouldConstructNotificationsFor_IMPOSSIBLE_REVOKE_COMMAND() {
+        Notification notification = IMPOSSIBLE_REVOKE_COMMAND.notification(InputPosition.empty);
+
+        verifyNotification(
+                notification,
+                "`%s` has no effect.",
+                SeverityLevel.WARNING,
+                "Neo.ClientNotification.Security.ImpossibleRevokeCommand",
+                "%s Make sure nothing is misspelled. This notification will become an error in a future major version. "
+                        + "See Status Codes documentation for more information.",
+                NotificationCategory.SECURITY);
+    }
+
     private void verifyNotification(
             Notification notification,
             String title,
@@ -650,8 +679,8 @@ class NotificationCodeWithDescriptionTest {
         byte[] notificationHash = DigestUtils.sha256(notificationBuilder.toString());
 
         byte[] expectedHash = new byte[] {
-            94, 17, 11, 62, -126, 99, -36, -39, 2, -23, 39, 52, 93, 120, -51, 115, 99, 99, 46, 72, -120, -70, -50, -124,
-            82, -119, 103, -69, -55, 81, 8, -116
+            22, 5, -49, 108, -14, -76, 71, -29, 60, 16, -107, 52, -13, 73, -112, -80, -31, 121, -91, 17, 84, -125, -106,
+            -1, -33, 88, -22, -84, 94, 77, 50, 35
         };
 
         if (!Arrays.equals(notificationHash, expectedHash)) {

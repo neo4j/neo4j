@@ -141,13 +141,15 @@ idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 case class GrantRoleToUser(
   source: SecurityAdministrationLogicalPlan,
   roleName: Either[String, Parameter],
-  userName: Either[String, Parameter]
+  userName: Either[String, Parameter],
+  command: String
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class RevokeRoleFromUser(
   source: SecurityAdministrationLogicalPlan,
   roleName: Either[String, Parameter],
-  userName: Either[String, Parameter]
+  userName: Either[String, Parameter],
+  command: String
 )(implicit idGen: IdGen) extends SecurityAdministrationLogicalPlan(Some(source))
 
 case class RequireRole(source: SecurityAdministrationLogicalPlan, name: Either[String, Parameter])(implicit
@@ -219,7 +221,8 @@ case class GrantDbmsAction(
   action: DbmsAction,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
-  immutable: Boolean
+  immutable: Boolean,
+  command: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class DenyDbmsAction(
@@ -227,7 +230,8 @@ case class DenyDbmsAction(
   action: DbmsAction,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
-  immutable: Boolean
+  immutable: Boolean,
+  command: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class RevokeDbmsAction(
@@ -236,7 +240,8 @@ case class RevokeDbmsAction(
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   revokeType: String,
-  immutableOnly: Boolean
+  immutableOnly: Boolean,
+  command: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class AssertDbmsPrivilegeCanBeMutated(
@@ -253,7 +258,8 @@ case class GrantDatabaseAction(
   database: DatabaseScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
-  immutable: Boolean
+  immutable: Boolean,
+  command: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class DenyDatabaseAction(
@@ -262,7 +268,8 @@ case class DenyDatabaseAction(
   database: DatabaseScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
-  immutable: Boolean
+  immutable: Boolean,
+  command: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class RevokeDatabaseAction(
@@ -272,7 +279,8 @@ case class RevokeDatabaseAction(
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   revokeType: String,
-  immutableOnly: Boolean
+  immutableOnly: Boolean,
+  command: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class AssertDatabasePrivilegeCanBeMutated(
@@ -291,7 +299,8 @@ case class GrantGraphAction(
   graph: GraphScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
-  immutable: Boolean
+  immutable: Boolean,
+  command: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class DenyGraphAction(
@@ -301,7 +310,8 @@ case class DenyGraphAction(
   graph: GraphScope,
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
-  immutable: Boolean
+  immutable: Boolean,
+  command: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class RevokeGraphAction(
@@ -312,7 +322,8 @@ case class RevokeGraphAction(
   qualifier: PrivilegeQualifier,
   roleName: Either[String, Parameter],
   revokeType: String,
-  immutableOnly: Boolean
+  immutableOnly: Boolean,
+  command: String
 )(implicit idGen: IdGen) extends PrivilegePlan(Some(source))
 
 case class AssertGraphPrivilegeCanBeMutated(

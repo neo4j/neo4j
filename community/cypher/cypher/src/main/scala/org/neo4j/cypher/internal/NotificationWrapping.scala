@@ -41,6 +41,7 @@ import org.neo4j.cypher.internal.compiler.NodeIndexLookupUnfulfillableNotificati
 import org.neo4j.cypher.internal.compiler.ProcedureWarningNotification
 import org.neo4j.cypher.internal.compiler.RelationshipIndexLookupUnfulfillableNotification
 import org.neo4j.cypher.internal.compiler.RuntimeUnsupportedNotification
+import org.neo4j.cypher.internal.util.AssignPrivilegeCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.CartesianProductNotification
 import org.neo4j.cypher.internal.util.DeprecatedConnectComponentsPlannerPreParserOption
 import org.neo4j.cypher.internal.util.DeprecatedDatabaseNameNotification
@@ -50,11 +51,15 @@ import org.neo4j.cypher.internal.util.DeprecatedRelTypeSeparatorNotification
 import org.neo4j.cypher.internal.util.DeprecatedRuntimeNotification
 import org.neo4j.cypher.internal.util.DeprecatedTextIndexProvider
 import org.neo4j.cypher.internal.util.FixedLengthRelationshipInShortestPath
+import org.neo4j.cypher.internal.util.GrantRoleCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.HomeDatabaseNotPresent
+import org.neo4j.cypher.internal.util.ImpossibleRevokeCommandWarning
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.InternalNotification
 import org.neo4j.cypher.internal.util.RepeatedRelationshipReference
 import org.neo4j.cypher.internal.util.RepeatedVarLengthRelationshipReference
+import org.neo4j.cypher.internal.util.RevokePrivilegeCommandHasNoEffectNotification
+import org.neo4j.cypher.internal.util.RevokeRoleCommandHasNoEffectNotification
 import org.neo4j.cypher.internal.util.SubqueryVariableShadowing
 import org.neo4j.cypher.internal.util.UnboundedShortestPathNotification
 import org.neo4j.cypher.internal.util.UnionReturnItemsInDifferentOrder
@@ -241,6 +246,41 @@ object NotificationWrapping {
       // This notification is generated from the pre-parser and thus should not be offset.
       NotificationCodeWithDescription.DEPRECATED_CONNECT_COMPONENTS_PLANNER_PRE_PARSER_OPTION.notification(
         position.asInputPosition
+      )
+
+    case AssignPrivilegeCommandHasNoEffectNotification(command) =>
+      NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT.notificationWithTitleAndDescriptionDetails(
+        graphdb.InputPosition.empty,
+        command,
+        "The role already has the privilege."
+      )
+
+    case RevokePrivilegeCommandHasNoEffectNotification(command) =>
+      NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT.notificationWithTitleAndDescriptionDetails(
+        graphdb.InputPosition.empty,
+        command,
+        "The role does not have the privilege."
+      )
+
+    case GrantRoleCommandHasNoEffectNotification(command) =>
+      NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT.notificationWithTitleAndDescriptionDetails(
+        graphdb.InputPosition.empty,
+        command,
+        "The user already has the role."
+      )
+
+    case RevokeRoleCommandHasNoEffectNotification(command) =>
+      NotificationCodeWithDescription.COMMAND_HAS_NO_EFFECT.notificationWithTitleAndDescriptionDetails(
+        graphdb.InputPosition.empty,
+        command,
+        "The user does not have the role."
+      )
+
+    case ImpossibleRevokeCommandWarning(command, cause) =>
+      NotificationCodeWithDescription.IMPOSSIBLE_REVOKE_COMMAND.notificationWithTitleAndDescriptionDetails(
+        graphdb.InputPosition.empty,
+        command,
+        cause
       )
 
     case _ => throw new IllegalStateException("Missing mapping for notification detail.")

@@ -173,12 +173,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
     def planRevokes(
       source: plans.PrivilegePlan,
       revokeType: RevokeType,
-      planRevoke: (plans.PrivilegePlan, String) => plans.PrivilegePlan
+      planRevoke: (plans.PrivilegePlan, RevokeType) => plans.PrivilegePlan
     ): plans.PrivilegePlan = revokeType match {
       case t: RevokeBothType =>
-        val revokeGrant = planRevoke(source, RevokeGrantType()(t.position).relType)
-        planRevoke(revokeGrant, RevokeDenyType()(t.position).relType)
-      case t => planRevoke(source, t.relType)
+        val revokeGrant = planRevoke(source, RevokeGrantType()(t.position))
+        planRevoke(revokeGrant, RevokeDenyType()(t.position))
+      case t => planRevoke(source, t)
     }
 
     def getSourceForCreateRole(
@@ -388,7 +388,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }).foldLeft(
           plans.AssertAllowedDbmsActions(AssignRoleAction).asInstanceOf[plans.SecurityAdministrationLogicalPlan]
         ) {
-          case (source, (roleName, userName)) => plans.GrantRoleToUser(source, roleName, userName)
+          case (source, (roleName, userName)) =>
+            val subCommand = c.copy(
+              roleNames = List(roleName),
+              userNames = List(userName)
+            )(c.position)
+            plans.GrantRoleToUser(source, roleName, userName, prettifier.asString(subCommand))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -399,7 +404,12 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         }).foldLeft(
           plans.AssertAllowedDbmsActions(RemoveRoleAction).asInstanceOf[plans.SecurityAdministrationLogicalPlan]
         ) {
-          case (source, (roleName, userName)) => plans.RevokeRoleFromUser(source, roleName, userName)
+          case (source, (roleName, userName)) =>
+            val subCommand = c.copy(
+              roleNames = List(roleName),
+              userNames = List(userName)
+            )(c.position)
+            plans.RevokeRoleFromUser(source, roleName, userName, prettifier.asString(subCommand))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -414,7 +424,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           ).asInstanceOf[plans.PrivilegePlan]
         ) {
           case (source, (roleName, simpleQualifier)) =>
-            plans.GrantDbmsAction(source, action, simpleQualifier, roleName, immutable)
+            val subCommand = c.copy(
+              qualifier = List(simpleQualifier),
+              roleNames = List(roleName)
+            )(c.position)
+            plans.GrantDbmsAction(source, action, simpleQualifier, roleName, immutable, prettifier.asString(subCommand))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -429,7 +443,11 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           ).asInstanceOf[plans.PrivilegePlan]
         ) {
           case (source, (roleName, simpleQualifier)) =>
-            plans.DenyDbmsAction(source, action, simpleQualifier, roleName, immutable)
+            val subCommand = c.copy(
+              qualifier = List(simpleQualifier),
+              roleNames = List(roleName)
+            )(c.position)
+            plans.DenyDbmsAction(source, action, simpleQualifier, roleName, immutable, prettifier.asString(subCommand))
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
@@ -447,25 +465,29 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             planRevokes(
               previous,
               revokeType,
-              (s, r) =>
+              (s, r) => {
+                val subCommand =
+                  c.copy(qualifier = List(simpleQualifier), roleNames = List(roleName), revokeType = r)(c.position)
                 plans.RevokeDbmsAction(
                   planRevokes(
                     s,
                     revokeType,
-                    (s, r) => plans.AssertDbmsPrivilegeCanBeMutated(s, action, simpleQualifier, roleName, r)
+                    (s, r) => plans.AssertDbmsPrivilegeCanBeMutated(s, action, simpleQualifier, roleName, r.relType)
                   ),
                   action,
                   simpleQualifier,
                   roleName,
-                  r,
-                  immutableOnly
+                  r.relType,
+                  immutableOnly,
+                  prettifier.asString(subCommand)
                 )
+              }
             )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT _ ON DATABASE foo TO role
-      case c @ GrantPrivilege(DatabasePrivilege(action, dbScopes), immutable, _, qualifiers, roleNames) =>
+      case c @ GrantPrivilege(privilege @ DatabasePrivilege(action, dbScopes), immutable, _, qualifiers, roleNames) =>
         val plan = (for (
           dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify
         ) yield {
@@ -474,12 +496,25 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) {
           case (source, (role, qualifier, dbScope: DatabaseScope)) =>
-            plans.GrantDatabaseAction(source, action, dbScope, qualifier, role, immutable)
+            val subCommand = c.copy(
+              privilege = privilege.copy(scope = List(dbScope))(privilege.position),
+              qualifier = List(qualifier),
+              roleNames = List(role)
+            )(c.position)
+            plans.GrantDatabaseAction(
+              source,
+              action,
+              dbScope,
+              qualifier,
+              role,
+              immutable,
+              prettifier.asString(subCommand)
+            )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON DATABASE foo TO role
-      case c @ DenyPrivilege(DatabasePrivilege(action, dbScopes), immutable, _, qualifiers, roleNames) =>
+      case c @ DenyPrivilege(privilege @ DatabasePrivilege(action, dbScopes), immutable, _, qualifiers, roleNames) =>
         val plan = (for (
           dbScope <- dbScopes; roleName <- roleNames; qualifier <- qualifiers; simpleQualifiers <- qualifier.simplify
         ) yield {
@@ -488,13 +523,26 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) {
           case (source, (role, qualifier, dbScope: DatabaseScope)) =>
-            plans.DenyDatabaseAction(source, action, dbScope, qualifier, role, immutable)
+            val subCommand = c.copy(
+              privilege = privilege.copy(scope = List(dbScope))(privilege.position),
+              qualifier = List(qualifier),
+              roleNames = List(role)
+            )(c.position)
+            plans.DenyDatabaseAction(
+              source,
+              action,
+              dbScope,
+              qualifier,
+              role,
+              immutable,
+              prettifier.asString(subCommand)
+            )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON DATABASE foo FROM role
       case c @ RevokePrivilege(
-          DatabasePrivilege(action, dbScopes),
+          privilege @ DatabasePrivilege(action, dbScopes),
           immutableOnly,
           _,
           qualifiers,
@@ -510,27 +558,35 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             planRevokes(
               plan,
               revokeType,
-              (s, r) =>
+              (s, r) => {
+                val subCommand = c.copy(
+                  privilege = privilege.copy(scope = List(dbScope))(privilege.position),
+                  qualifier = List(qualifier),
+                  roleNames = List(role),
+                  revokeType = r
+                )(c.position)
                 plans.RevokeDatabaseAction(
                   planRevokes(
                     s,
                     revokeType,
-                    (s, r) => plans.AssertDatabasePrivilegeCanBeMutated(s, action, dbScope, qualifier, role, r)
+                    (s, r) => plans.AssertDatabasePrivilegeCanBeMutated(s, action, dbScope, qualifier, role, r.relType)
                   ),
                   action,
                   dbScope,
                   qualifier,
                   role,
-                  r,
-                  immutableOnly
+                  r.relType,
+                  immutableOnly,
+                  prettifier.asString(subCommand)
                 )
+              }
             )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // GRANT _ ON GRAPH foo _ TO role
       case c @ GrantPrivilege(
-          GraphPrivilege(action, graphScopes),
+          privilege @ GraphPrivilege(action, graphScopes),
           immutable,
           optionalResource,
           qualifiers,
@@ -539,36 +595,70 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (
           graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers;
-          simpleQualifiers <- qualifier.simplify; resource <- resources.simplify
+          simpleQualifier <- qualifier.simplify; resource <- resources.simplify
         ) yield {
-          (roleName, simpleQualifiers, resource, graphScope)
+          (roleName, simpleQualifier, resource, graphScope)
         }).foldLeft(
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) {
-          case (source, (roleName, segment, resource, graphScope: GraphScope)) =>
-            plans.GrantGraphAction(source, action, resource, graphScope, segment, roleName, immutable)
+          case (source, (roleName, simpleQualifier, resource, graphScope: GraphScope)) =>
+            val subCommand = c.copy(
+              privilege = privilege.copy(scope = List(graphScope))(privilege.position),
+              qualifier = List(simpleQualifier),
+              roleNames = List(roleName)
+            )(c.position)
+            plans.GrantGraphAction(
+              source,
+              action,
+              resource,
+              graphScope,
+              simpleQualifier,
+              roleName,
+              immutable,
+              prettifier.asString(subCommand)
+            )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // DENY _ ON GRAPH foo _ TO role
-      case c @ DenyPrivilege(GraphPrivilege(action, graphScopes), immutable, optionalResource, qualifiers, roleNames) =>
+      case c @ DenyPrivilege(
+          privilege @ GraphPrivilege(action, graphScopes),
+          immutable,
+          optionalResource,
+          qualifiers,
+          roleNames
+        ) =>
         val resources = optionalResource.getOrElse(NoResource()(InputPosition.NONE))
         val plan = (for (
           graphScope <- graphScopes; roleName <- roleNames; qualifier <- qualifiers;
-          simpleQualifiers <- qualifier.simplify; resource <- resources.simplify
+          simpleQualifier <- qualifier.simplify; resource <- resources.simplify
         ) yield {
-          (roleName, simpleQualifiers, resource, graphScope)
+          (roleName, simpleQualifier, resource, graphScope)
         }).foldLeft(
           plans.AssertAllowedDbmsActions(assignPrivilegeAction(immutable)).asInstanceOf[plans.PrivilegePlan]
         ) {
-          case (source, (roleName, segment, resource, graphScope: GraphScope)) =>
-            plans.DenyGraphAction(source, action, resource, graphScope, segment, roleName, immutable)
+          case (source, (roleName, simpleQualifier, resource, graphScope: GraphScope)) =>
+            val subCommand = c.copy(
+              privilege = privilege.copy(scope = List(graphScope))(privilege.position),
+              qualifier = List(simpleQualifier),
+              roleNames = List(roleName)
+            )(c.position)
+            plans.DenyGraphAction(
+              source,
+              action,
+              resource,
+              graphScope,
+              simpleQualifier,
+              roleName,
+              immutable,
+              prettifier.asString(subCommand)
+            )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))
 
       // REVOKE _ ON GRAPH foo _ FROM role
       case c @ RevokePrivilege(
-          GraphPrivilege(action, graphScopes),
+          privilege @ GraphPrivilege(action, graphScopes),
           immutableOnly,
           optionalResource,
           qualifiers,
@@ -586,22 +676,39 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             planRevokes(
               source,
               revokeType,
-              (s, r) =>
+              (s, r) => {
+                val subCommand = c.copy(
+                  privilege = privilege.copy(scope = List(graphScope))(privilege.position),
+                  qualifier = List(segment),
+                  resource = if (resource.isInstanceOf[NoResource]) None else Some(resource),
+                  roleNames = List(roleName),
+                  revokeType = r
+                )(c.position)
                 plans.RevokeGraphAction(
                   planRevokes(
                     s,
                     revokeType,
                     (s, r) =>
-                      plans.AssertGraphPrivilegeCanBeMutated(s, action, resource, graphScope, segment, roleName, r)
+                      plans.AssertGraphPrivilegeCanBeMutated(
+                        s,
+                        action,
+                        resource,
+                        graphScope,
+                        segment,
+                        roleName,
+                        r.relType
+                      )
                   ),
                   action,
                   resource,
                   graphScope,
                   segment,
                   roleName,
-                  r,
-                  immutableOnly
+                  r.relType,
+                  immutableOnly,
+                  prettifier.asString(subCommand)
                 )
+              }
             )
         }
         Some(plans.LogSystemCommand(plan, prettifier.asString(c)))

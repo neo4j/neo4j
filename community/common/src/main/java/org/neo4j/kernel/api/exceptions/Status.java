@@ -513,7 +513,13 @@ public interface Status {
         AuthorizationExpired(ClientError, "The stored authorization info has expired. Please reconnect."),
         AuthProviderTimeout(TransientError, "An auth provider request timed out."),
         AuthProviderFailed(TransientError, "An auth provider request failed."),
-        TokenExpired(ClientError, "The auth provider token has expired");
+        TokenExpired(ClientError, "The auth provider token has expired"),
+
+        // Administration command
+        CommandHasNoEffect(
+                ClientNotification, "`%s` has no effect.", SeverityLevel.INFORMATION, NotificationCategory.SECURITY),
+        ImpossibleRevokeCommand(
+                ClientNotification, "`%s` has no effect.", SeverityLevel.WARNING, NotificationCategory.SECURITY);
 
         private final Code code;
 
@@ -524,6 +530,14 @@ public interface Status {
 
         Security(Classification classification, String description) {
             this.code = new Code(classification, this, description);
+        }
+
+        Security(
+                Classification classification,
+                String description,
+                SeverityLevel severity,
+                NotificationCategory category) {
+            this.code = new NotificationCode(classification, this, description, severity, category);
         }
     }
 

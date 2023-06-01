@@ -58,3 +58,10 @@ case class RepeatedRelationshipReference(position: InputPosition, relName: Strin
 case class RepeatedVarLengthRelationshipReference(position: InputPosition, relName: String) extends InternalNotification
 
 case class DeprecatedConnectComponentsPlannerPreParserOption(position: InputPosition) extends InternalNotification
+
+case class AssignPrivilegeCommandHasNoEffectNotification(command: String) extends InternalNotification
+case class RevokePrivilegeCommandHasNoEffectNotification(command: String) extends InternalNotification
+case class GrantRoleCommandHasNoEffectNotification(command: String) extends InternalNotification
+case class RevokeRoleCommandHasNoEffectNotification(command: String) extends InternalNotification
+
+case class ImpossibleRevokeCommandWarning(command: String, cause: String) extends InternalNotification

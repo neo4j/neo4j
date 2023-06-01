@@ -135,7 +135,9 @@ public final class NotificationImplementation implements Notification {
             return false;
         }
         NotificationImplementation that = (NotificationImplementation) o;
-        return Objects.equals(position, that.position) && Objects.equals(description, that.description);
+        return Objects.equals(position, that.position)
+                && Objects.equals(description, that.description)
+                && Objects.equals(title, that.title);
     }
 
     @Override

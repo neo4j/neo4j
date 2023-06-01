@@ -259,11 +259,11 @@ object AdministrationCommandRuntime {
       ),
       QueryHandler
         .handleNoResult(params =>
-          Some(
+          Some(ThrowException(
             new CypherExecutionException(
               s"Failed to create the specified user '${runtimeStringValue(userName, params)}'."
             )
-          )
+          ))
         )
         .handleError((error, params) =>
           (error, error.getCause) match {
@@ -361,9 +361,9 @@ object AdministrationCommandRuntime {
       VirtualValues.map(parameterKeys.toArray, parameterValues.toArray),
       QueryHandler
         .handleNoResult(p =>
-          Some(new InvalidArgumentException(
+          Some(ThrowException(new InvalidArgumentException(
             s"Failed to alter the specified user '${runtimeStringValue(userName, p)}': User does not exist."
-          ))
+          )))
         )
         .handleError {
           case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>
@@ -445,10 +445,10 @@ object AdministrationCommandRuntime {
       ),
       QueryHandler
         .handleNoResult(p =>
-          Some(new InvalidArgumentException(
+          Some(ThrowException(new InvalidArgumentException(
             s"Failed to rename the specified ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' to " +
               s"'${runtimeStringValue(toName, p)}': The ${entity.toLowerCase(Locale.ROOT)} '${runtimeStringValue(fromName, p)}' does not exist."
-          ))
+          )))
         )
         .handleError((error, p) =>
           (error, error.getCause) match {

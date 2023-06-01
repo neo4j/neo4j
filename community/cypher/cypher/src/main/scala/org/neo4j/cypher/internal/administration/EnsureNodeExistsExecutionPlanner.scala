@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.ast.DatabaseName
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.procs.ParameterTransformer
 import org.neo4j.cypher.internal.procs.QueryHandler
+import org.neo4j.cypher.internal.procs.ThrowException
 import org.neo4j.cypher.internal.procs.UpdatingSystemCommandExecutionPlan
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME
 import org.neo4j.dbms.systemgraph.TopologyGraphDbmsModel.DATABASE_NAME_LABEL_DESCRIPTION
@@ -100,9 +101,9 @@ case class EnsureNodeExistsExecutionPlanner(
   private def queryHandler[T](action: String, labelDescription: String, value: T)(implicit show: Show[T]) = {
     QueryHandler
       .handleNoResult(p =>
-        Some(new InvalidArgumentException(
+        Some(ThrowException(new InvalidArgumentException(
           s"Failed to $action the specified ${labelDescription.toLowerCase} '${show(value, p)}': $labelDescription does not exist."
-        ))
+        )))
       )
       .handleError {
         case (error: HasStatus, p) if error.status() == Status.Cluster.NotALeader =>

@@ -111,13 +111,13 @@ case class SetOwnPasswordExecutionPlanner(
           if (
             currentUser(p).isEmpty
           ) // This is true if the securityContext is AUTH_DISABLED (both for community and enterprise)
-            Some(new IllegalStateException(
+            Some(ThrowException(new IllegalStateException(
               "User failed to alter their own password: Command not available with auth disabled."
-            ))
+            )))
           else // The 'current user' doesn't exist in the system graph
-            Some(new IllegalStateException(
+            Some(ThrowException(new IllegalStateException(
               s"User '${currentUser(p)}' failed to alter their own password: User does not exist."
-            ))
+            )))
         }),
       checkCredentialsExpired = false,
       initAndFinally = InitAndFinallyFunctions(finallyFunction = p => {

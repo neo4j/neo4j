@@ -92,7 +92,7 @@ case class SystemCommandExecutionPlan(
         systemSubscriber,
         elevatedSecurityContext,
         tc.kernelTransaction(),
-        previousNotifications ++ notifications
+        previousNotifications ++ notifications ++ systemSubscriber.getNotifications
       )
     }
   }
@@ -126,6 +126,7 @@ class SystemCommandQuerySubscriber(
   @volatile private var ignore = false
   @volatile private var failed: Option[Throwable] = None
   @volatile private var contextUpdates: MapValue = MapValue.EMPTY
+  @volatile private var notifications: Set[InternalNotification] = Set.empty
 
   override def onResult(numberOfFields: Int): Unit = if (failed.isEmpty) {
     inner.onResult(numberOfFields)
@@ -139,8 +140,9 @@ class SystemCommandQuerySubscriber(
           failed = Some(error)
         case IgnoreResults =>
           ignore = true
-        case UpdateContextParams(params) => contextUpdates = contextUpdates.updatedWith(params)
-        case Continue                    => ()
+        case UpdateContextParams(params)         => contextUpdates = contextUpdates.updatedWith(params)
+        case NotifyAndContinue(newNotifications) => notifications = notifications ++ newNotifications
+        case Continue                            => ()
       }
     }
     if (failed.isEmpty) {
@@ -169,8 +171,9 @@ class SystemCommandQuerySubscriber(
         failed = Some(error)
       case IgnoreResults =>
         ignore = true
-      case UpdateContextParams(params) => contextUpdates = contextUpdates.updatedWith(params)
-      case Continue                    => ()
+      case UpdateContextParams(params)         => contextUpdates = contextUpdates.updatedWith(params)
+      case NotifyAndContinue(newNotifications) => notifications = notifications ++ newNotifications
+      case Continue                            => ()
     }
     if (failed.isEmpty) {
       inner.onField(offset, value)
@@ -191,6 +194,8 @@ class SystemCommandQuerySubscriber(
   def shouldIgnoreResult(): Boolean = ignore
 
   def getContextUpdates: MapValue = contextUpdates
+
+  def getNotifications: Set[InternalNotification] = notifications
 
   override def equals(obj: Any): Boolean = inner.equals(obj)
 }

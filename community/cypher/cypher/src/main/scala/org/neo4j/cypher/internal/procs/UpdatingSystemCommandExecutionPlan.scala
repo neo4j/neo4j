@@ -102,11 +102,11 @@ case class UpdatingSystemCommandExecutionPlan(
         systemSubscriber.assertNotFailed()
 
         if (systemSubscriber.shouldIgnoreResult()) {
-          IgnoredRuntimeResult(previousNotifications ++ notifications)
+          IgnoredRuntimeResult(previousNotifications ++ notifications ++ systemSubscriber.getNotifications)
         } else {
           UpdatingSystemCommandRuntimeResult(
             ctx.withContextVars(systemSubscriber.getContextUpdates),
-            previousNotifications ++ notifications
+            previousNotifications ++ notifications ++ systemSubscriber.getNotifications
           )
         }
       }
@@ -147,6 +147,7 @@ case object Continue extends QueryHandlerResult
 case object IgnoreResults extends QueryHandlerResult
 case class ThrowException(throwable: Throwable) extends QueryHandlerResult
 case class UpdateContextParams(params: MapValue) extends QueryHandlerResult
+case class NotifyAndContinue(notifications: Set[InternalNotification]) extends QueryHandlerResult
 
 class QueryHandler {
   def onError(t: Throwable, p: MapValue): Throwable = t
@@ -176,10 +177,10 @@ class QueryHandlerBuilder(parent: QueryHandler) extends QueryHandler {
     }
   }
 
-  def handleNoResult(f: MapValue => Option[Throwable]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
+  def handleNoResult(f: MapValue => Option[QueryHandlerResult]): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
 
     override def onNoResults(params: MapValue): QueryHandlerResult =
-      f(params).map(t => ThrowException(t)).getOrElse(Continue)
+      f(params).getOrElse(Continue)
   }
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(this) {
@@ -204,7 +205,7 @@ object QueryHandler {
   def handleError(f: (Throwable, MapValue) => Throwable): QueryHandlerBuilder =
     new QueryHandlerBuilder(new QueryHandler).handleError(f)
 
-  def handleNoResult(f: MapValue => Option[Throwable]): QueryHandlerBuilder =
+  def handleNoResult(f: MapValue => Option[QueryHandlerResult]): QueryHandlerBuilder =
     new QueryHandlerBuilder(new QueryHandler).handleNoResult(f)
 
   def ignoreNoResult(): QueryHandlerBuilder = new QueryHandlerBuilder(new QueryHandler).ignoreNoResult()

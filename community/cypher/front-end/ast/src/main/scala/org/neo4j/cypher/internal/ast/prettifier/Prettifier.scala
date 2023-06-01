@@ -105,6 +105,7 @@ import org.neo4j.cypher.internal.ast.IfExistsReplace
 import org.neo4j.cypher.internal.ast.IfExistsThrowError
 import org.neo4j.cypher.internal.ast.LabelAllQualifier
 import org.neo4j.cypher.internal.ast.LabelQualifier
+import org.neo4j.cypher.internal.ast.LabelResource
 import org.neo4j.cypher.internal.ast.LabelsResource
 import org.neo4j.cypher.internal.ast.Limit
 import org.neo4j.cypher.internal.ast.LoadCSV
@@ -1360,6 +1361,7 @@ object Prettifier {
       case Some(PropertyResource(name))    => s" {${ExpressionStringifier.backtick(name)}}"
       case Some(PropertiesResource(names)) => s" {${names.map(ExpressionStringifier.backtick(_)).mkString(", ")}}"
       case Some(AllPropertyResource())     => " {*}"
+      case Some(LabelResource(name))       => s" ${ExpressionStringifier.backtick(name)}"
       case Some(LabelsResource(names))     => s" ${names.map(ExpressionStringifier.backtick(_)).mkString(", ")}"
       case Some(AllLabelResource())        => " *"
       case None                            => ""
