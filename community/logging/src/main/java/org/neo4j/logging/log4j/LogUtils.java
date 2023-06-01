@@ -201,9 +201,9 @@ public final class LogUtils {
 
             try {
                 fileSystem.mkdirs(xmlConfig.getParent());
-                StoreChannel channel = fileSystem.open(xmlConfig, Set.of(CREATE, WRITE, TRUNCATE_EXISTING));
-                try (var scopedBuffer = new NativeScopedBuffer(
-                        xmlContent.length, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
+                try (StoreChannel channel = fileSystem.open(xmlConfig, Set.of(CREATE, WRITE, TRUNCATE_EXISTING));
+                        var scopedBuffer = new NativeScopedBuffer(
+                                xmlContent.length, ByteOrder.LITTLE_ENDIAN, EmptyMemoryTracker.INSTANCE)) {
                     ByteBuffer buffer = scopedBuffer.getBuffer();
                     buffer.put(xmlContent);
                     buffer.flip();
