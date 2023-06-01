@@ -268,6 +268,14 @@ public class GraphDatabaseSettings implements SettingsDeclaration {
     public static final Setting<Boolean> cypher_lenient_create_relationship =
             newBuilder("dbms.cypher.lenient_create_relationship", BOOL, false).build();
 
+    @Deprecated(since = "5.7.0", forRemoval = true)
+    @Description("The number of cached queries per database. "
+            + "Use `server.memory.query_cache.per_db_cache_num_entries` instead.")
+    public static final Setting<Integer> deprecated_query_cache_size = newBuilder(
+                    "server.db.query_cache_size", INT, 1000)
+            .addConstraint(min(0))
+            .build();
+
     @Description(
             "The number of cached queries per database. "
                     + "The max number of queries that can be kept in a cache is `number of databases` * `server.memory.query_cache.per_db_cache_num_entries`. "
