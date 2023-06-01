@@ -86,6 +86,7 @@ import org.neo4j.internal.schema.constraints.PropertyTypeSet;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.ConflictingConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedSchemaComponentException;
@@ -934,6 +935,7 @@ public class SchemaImpl implements Schema {
             try {
                 return creator.createConstraint(transaction);
             } catch (AlreadyConstrainedException
+                    | ConflictingConstraintException
                     | CreateConstraintFailureException
                     | AlreadyIndexedException
                     | RepeatedSchemaComponentException e) {

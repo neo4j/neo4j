@@ -125,6 +125,7 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyConstrainedException;
 import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
+import org.neo4j.kernel.api.exceptions.schema.ConflictingConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintWithNameAlreadyExistsException;
 import org.neo4j.kernel.api.exceptions.schema.DropConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -1660,7 +1661,8 @@ public class Operations implements Write, SchemaWrite {
 
     private void assertNoBlockingSchemaRulesExists(ConstraintDescriptor constraint)
             throws EquivalentSchemaRuleAlreadyExistsException, IndexWithNameAlreadyExistsException,
-                    ConstraintWithNameAlreadyExistsException, AlreadyConstrainedException, AlreadyIndexedException {
+                    ConstraintWithNameAlreadyExistsException, ConflictingConstraintException,
+                    AlreadyConstrainedException, AlreadyIndexedException {
         final String name = constraint.getName();
         if (name == null) {
             throw new IllegalStateException("Expected constraint to always have a name by this point");
@@ -1682,6 +1684,13 @@ public class Operations implements Write, SchemaWrite {
 
         // Already constrained
         for (ConstraintDescriptor constraintWithSameSchema : constraintsWithSameSchema) {
+            // For Type Constraints, verify that no prior constraints conflict with the addition.
+            if (constraint.isPropertyTypeConstraint()
+                    && constraintWithSameSchema.isPropertyTypeConstraint()
+                    && !constraint.equals(constraintWithSameSchema)) {
+                throw new ConflictingConstraintException(constraintWithSameSchema, token);
+            }
+
             boolean creatingIndexBackedConstraint = constraint.isIndexBackedConstraint();
             boolean existingIndexBackedConstraint = constraintWithSameSchema.isIndexBackedConstraint();
             if (creatingIndexBackedConstraint == existingIndexBackedConstraint) {
