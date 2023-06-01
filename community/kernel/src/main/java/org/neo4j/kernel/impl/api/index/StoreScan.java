@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.internal.kernel.api.PopulationProgress;
 
-public interface StoreScan {
+public interface StoreScan extends AutoCloseable {
     void run(ExternalUpdatesCheck externalUpdatesCheck);
 
     void stop();
@@ -35,6 +35,9 @@ public interface StoreScan {
      */
     default void setPhaseTracker(PhaseTracker phaseTracker) { // no-op
     }
+
+    @Override
+    default void close() {}
 
     /**
      * Interaction point from the store scan with the index population to synchronize store scan with applying external concurrent updates

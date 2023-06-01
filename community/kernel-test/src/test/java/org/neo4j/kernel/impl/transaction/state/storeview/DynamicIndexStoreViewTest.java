@@ -110,7 +110,7 @@ class DynamicIndexStoreViewTest {
 
         DynamicIndexStoreView storeView = dynamicIndexStoreView(storageEngine, indexProxies);
         TestTokenScanConsumer consumer = new TestTokenScanConsumer();
-        StoreScan storeScan = storeView.visitNodes(
+        try (StoreScan storeScan = storeView.visitNodes(
                 indexedLabels,
                 Predicates.ALWAYS_TRUE_INT,
                 new TestPropertyScanConsumer(),
@@ -118,8 +118,9 @@ class DynamicIndexStoreViewTest {
                 false,
                 true,
                 CONTEXT_FACTORY,
-                INSTANCE);
-        storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
+                INSTANCE)) {
+            storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
+        }
 
         assertThat(consumer.batches.size()).isEqualTo(1);
         assertThat(consumer.batches.get(0).size()).isEqualTo(nodeIds.length);
@@ -204,7 +205,7 @@ class DynamicIndexStoreViewTest {
 
         DynamicIndexStoreView storeView = dynamicIndexStoreView(storageEngine, indexProxies);
         TestTokenScanConsumer consumer = new TestTokenScanConsumer();
-        StoreScan storeScan = storeView.visitNodes(
+        try (StoreScan storeScan = storeView.visitNodes(
                 indexedLabels,
                 Predicates.ALWAYS_TRUE_INT,
                 new TestPropertyScanConsumer(),
@@ -212,8 +213,9 @@ class DynamicIndexStoreViewTest {
                 false,
                 true,
                 CONTEXT_FACTORY,
-                INSTANCE);
-        storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
+                INSTANCE)) {
+            storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
+        }
 
         assertThat(consumer.batches.size()).isEqualTo(1);
         assertThat(consumer.batches.get(0).size()).isEqualTo(nodeIds.length + 2);

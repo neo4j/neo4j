@@ -21,43 +21,27 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.common.EntityType.NODE;
-import static org.neo4j.internal.schema.IndexPrototype.forSchema;
-import static org.neo4j.internal.schema.SchemaDescriptors.forAnyEntityTokens;
 import static org.neo4j.kernel.impl.api.index.StoreScan.NO_EXTERNAL_UPDATES;
-import static org.neo4j.kernel.impl.index.schema.TokenIndexProvider.DESCRIPTOR;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import org.junit.jupiter.api.Test;
-import org.neo4j.configuration.Config;
-import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.lock.LockTracer;
-import org.neo4j.lock.ResourceType;
 
 class IndexedStoreScanTest {
     @Test
-    void shouldRunStoreScanWithinASharedLock() {
-        var config = Config.defaults();
-        var locks = mock(LockManager.class);
-        var index = forSchema(forAnyEntityTokens(NODE), DESCRIPTOR)
-                .withName("index")
-                .materialise(0);
+    void shouldCloseLockClientOnClose() {
+        // given
+        var locks = mock(LockManager.Client.class);
         var delegate = mock(StoreScan.class);
-        var storeScan = new IndexedStoreScan(locks, index, config, () -> true, delegate);
-        var client = mock(LockManager.Client.class);
-        when(locks.newClient()).thenReturn(client);
 
-        storeScan.run(NO_EXTERNAL_UPDATES);
+        // when
+        try (var storeScan = new IndexedStoreScan(locks, delegate)) {
+            storeScan.run(NO_EXTERNAL_UPDATES);
+        }
 
-        var inOrder = inOrder(client, delegate);
-        inOrder.verify(client).initialize(NoLeaseClient.INSTANCE, 0, INSTANCE, config);
-        inOrder.verify(client)
-                .acquireShared(
-                        LockTracer.NONE, ResourceType.LABEL, index.schema().lockingKeys());
+        // then
+        var inOrder = inOrder(locks, delegate);
         inOrder.verify(delegate).run(NO_EXTERNAL_UPDATES);
-        inOrder.verify(client).close();
+        inOrder.verify(locks).close();
     }
 }

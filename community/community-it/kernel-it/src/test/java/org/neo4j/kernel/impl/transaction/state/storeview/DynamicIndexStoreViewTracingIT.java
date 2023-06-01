@@ -85,7 +85,7 @@ class DynamicIndexStoreViewTracingIT {
                 indexDescriptor -> indexingService.getIndexProxy(indexDescriptor),
                 storageEngine,
                 NullLogProvider.getInstance());
-        var storeScan = indexStoreView.visitNodes(
+        try (var storeScan = indexStoreView.visitNodes(
                 new int[] {0, 1, 2},
                 ALWAYS_TRUE_INT,
                 null,
@@ -93,8 +93,9 @@ class DynamicIndexStoreViewTracingIT {
                 false,
                 true,
                 contextFactory,
-                INSTANCE);
-        storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
+                INSTANCE)) {
+            storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
+        }
 
         assertThatTracing(database)
                 .record(pins(104).noFaults())

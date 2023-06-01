@@ -69,7 +69,7 @@ class FullScanStoreViewTracingIT {
         var pageCacheTracer = new DefaultPageCacheTracer();
         CursorContextFactory contextFactory = new CursorContextFactory(pageCacheTracer, EMPTY);
         var indexStoreView = new FullScanStoreView(lockService, storageEngine, Config.defaults(), jobScheduler);
-        var storeScan = indexStoreView.visitNodes(
+        try (var storeScan = indexStoreView.visitNodes(
                 EMPTY_INT_ARRAY,
                 ALWAYS_TRUE_INT,
                 null,
@@ -77,8 +77,9 @@ class FullScanStoreViewTracingIT {
                 true,
                 true,
                 contextFactory,
-                INSTANCE);
-        storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
+                INSTANCE)) {
+            storeScan.run(StoreScan.NO_EXTERNAL_UPDATES);
+        }
 
         assertThatTracing(database)
                 .record(pins(103).noFaults())

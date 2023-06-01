@@ -19,49 +19,23 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
-import static org.neo4j.kernel.impl.api.KernelTransactions.SYSTEM_TRANSACTION_ID;
-import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
-
-import java.util.function.BooleanSupplier;
-import org.neo4j.configuration.Config;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.kernel.impl.api.LeaseService.NoLeaseClient;
 import org.neo4j.kernel.impl.api.index.PhaseTracker;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockManager;
-import org.neo4j.lock.LockTracer;
-import org.neo4j.util.Preconditions;
 
 public class IndexedStoreScan implements StoreScan {
-    private final LockManager lockManager;
-    private final Config config;
-    private final BooleanSupplier indexExistenceChecker;
+    private final LockManager.Client lockClient;
     private final StoreScan delegate;
-    private final IndexDescriptor index;
 
-    public IndexedStoreScan(
-            LockManager lockManager,
-            IndexDescriptor index,
-            Config config,
-            BooleanSupplier indexExistenceChecker,
-            StoreScan delegate) {
-        this.lockManager = lockManager;
-        this.config = config;
-        this.indexExistenceChecker = indexExistenceChecker;
+    public IndexedStoreScan(LockManager.Client lockClient, StoreScan delegate) {
+        this.lockClient = lockClient;
         this.delegate = delegate;
-        this.index = index;
     }
 
     @Override
     public void run(ExternalUpdatesCheck externalUpdatesCheck) {
-        try (LockManager.Client client = lockManager.newClient()) {
-            client.initialize(NoLeaseClient.INSTANCE, SYSTEM_TRANSACTION_ID, INSTANCE, config);
-            client.acquireShared(
-                    LockTracer.NONE, index.schema().keyType(), index.schema().lockingKeys());
-            Preconditions.checkState(indexExistenceChecker.getAsBoolean(), "%s no longer exists", index);
-            delegate.run(externalUpdatesCheck);
-        }
+        delegate.run(externalUpdatesCheck);
     }
 
     @Override
@@ -77,5 +51,14 @@ public class IndexedStoreScan implements StoreScan {
     @Override
     public void setPhaseTracker(PhaseTracker phaseTracker) {
         delegate.setPhaseTracker(phaseTracker);
+    }
+
+    @Override
+    public void close() {
+        try {
+            lockClient.close();
+        } finally {
+            delegate.close();
+        }
     }
 }

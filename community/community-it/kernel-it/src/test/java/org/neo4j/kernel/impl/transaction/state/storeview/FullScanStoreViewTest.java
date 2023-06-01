@@ -133,7 +133,7 @@ class FullScanStoreViewTest {
     void shouldScanExistingNodesForALabel() {
         // given
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
-        StoreScan storeScan = storeView.visitNodes(
+        try (StoreScan storeScan = storeView.visitNodes(
                 new int[] {labelId},
                 id -> id == propertyKeyId,
                 propertyScanConsumer,
@@ -141,10 +141,11 @@ class FullScanStoreViewTest {
                 false,
                 true,
                 CONTEXT_FACTORY,
-                INSTANCE);
+                INSTANCE)) {
 
-        // when
-        storeScan.run(NO_EXTERNAL_UPDATES);
+            // when
+            storeScan.run(NO_EXTERNAL_UPDATES);
+        }
 
         // then
         assertThat(propertyScanConsumer.batches.get(0))
@@ -183,7 +184,7 @@ class FullScanStoreViewTest {
         deleteAlistairAndStefanNodes();
 
         TestPropertyScanConsumer propertyScanConsumer = new TestPropertyScanConsumer();
-        StoreScan storeScan = storeView.visitNodes(
+        try (StoreScan storeScan = storeView.visitNodes(
                 new int[] {labelId},
                 id -> id == propertyKeyId,
                 propertyScanConsumer,
@@ -191,10 +192,11 @@ class FullScanStoreViewTest {
                 false,
                 true,
                 CONTEXT_FACTORY,
-                INSTANCE);
+                INSTANCE)) {
 
-        // when
-        storeScan.run(NO_EXTERNAL_UPDATES);
+            // when
+            storeScan.run(NO_EXTERNAL_UPDATES);
+        }
 
         // then
         assertTrue(propertyScanConsumer.batches.isEmpty());
@@ -226,7 +228,7 @@ class FullScanStoreViewTest {
     @Test
     void shouldLockNodesWhileReadingThem() {
         // given
-        StoreScan storeScan = storeView.visitNodes(
+        try (StoreScan storeScan = storeView.visitNodes(
                 new int[] {labelId},
                 id -> id == propertyKeyId,
                 new TestPropertyScanConsumer(),
@@ -234,10 +236,11 @@ class FullScanStoreViewTest {
                 false,
                 true,
                 CONTEXT_FACTORY,
-                INSTANCE);
+                INSTANCE)) {
 
-        // when
-        storeScan.run(NO_EXTERNAL_UPDATES);
+            // when
+            storeScan.run(NO_EXTERNAL_UPDATES);
+        }
 
         // then
         assertThat(lockMocks.size())

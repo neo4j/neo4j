@@ -616,6 +616,11 @@ public class MultiIndexPopulationConcurrentUpdatesIT {
             EntityIdIterator originalIterator = delegate.getEntityIdIterator(cursorContext, storeCursors);
             return new DelegatingEntityIdIterator(originalIterator, customAction);
         }
+
+        @Override
+        public void close() {
+            delegate.close();
+        }
     }
 
     private static class DelegatingEntityIdIterator implements EntityIdIterator {

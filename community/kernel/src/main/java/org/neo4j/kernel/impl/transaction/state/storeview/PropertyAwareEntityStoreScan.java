@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.neo4j.internal.batchimport.staging.ExecutionMonitor.INVISIBLE;
 import static org.neo4j.internal.batchimport.staging.ExecutionSupervisors.superviseDynamicExecution;
-import static org.neo4j.io.IOUtils.closeAllUnchecked;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -106,37 +105,38 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
 
     @Override
     public void run(ExternalUpdatesCheck externalUpdatesCheck) {
-        try {
-            continueScanning.set(true);
-            stage = new StoreScanStage<>(
-                    dbConfig,
-                    Configuration.DEFAULT,
-                    this::getEntityIdIterator,
-                    externalUpdatesCheck,
-                    continueScanning,
-                    storageReader,
-                    storeCursorsFactory,
-                    entityTokenIdFilter,
-                    propertyKeyIdFilter,
-                    propertyScanConsumer,
-                    tokenScanConsumer,
-                    cursorBehaviour,
-                    lockFunction,
-                    parallelWrite,
-                    scheduler,
-                    contextFactory,
-                    memoryTracker,
-                    canDetermineExternalUpdatesCutOffPoint);
-            superviseDynamicExecution(INVISIBLE, stage);
-            stage.reportTo(phaseTracker);
-        } finally {
-            closeAllUnchecked(storageReader);
-        }
+        continueScanning.set(true);
+        stage = new StoreScanStage<>(
+                dbConfig,
+                Configuration.DEFAULT,
+                this::getEntityIdIterator,
+                externalUpdatesCheck,
+                continueScanning,
+                storageReader,
+                storeCursorsFactory,
+                entityTokenIdFilter,
+                propertyKeyIdFilter,
+                propertyScanConsumer,
+                tokenScanConsumer,
+                cursorBehaviour,
+                lockFunction,
+                parallelWrite,
+                scheduler,
+                contextFactory,
+                memoryTracker,
+                canDetermineExternalUpdatesCutOffPoint);
+        superviseDynamicExecution(INVISIBLE, stage);
+        stage.reportTo(phaseTracker);
     }
 
     @Override
     public void stop() {
         continueScanning.set(false);
+    }
+
+    @Override
+    public void close() {
+        storageReader.close();
     }
 
     @Override

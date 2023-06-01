@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.neo4j.function.Predicates.ALWAYS_TRUE_INT;
 import static org.neo4j.graphdb.IndexingTestUtil.assertOnlyDefaultTokenIndexesExists;
 import static org.neo4j.graphdb.IndexingTestUtil.dropTokenIndexes;
 import static org.neo4j.io.pagecache.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.LongSupplier;
@@ -103,30 +103,34 @@ public class DynamicIndexStoreViewIT {
     }
 
     @Test
-    void shouldHandleConcurrentDeletionOfTokenIndexRightBeforeNodeScan() {
+    void shouldHandleConcurrentDeletionOfTokenIndexRightBeforeNodeScan() throws Exception {
         shouldHandleConcurrentDeletionOfTokenIndexRightBeforeScan(this::populateNodes, this::nodeStoreScan);
     }
 
     @Test
-    void shouldHandleConcurrentDeletionOfTokenIndexRightBeforeRelationshipScan() {
+    void shouldHandleConcurrentDeletionOfTokenIndexRightBeforeRelationshipScan() throws Exception {
         shouldHandleConcurrentDeletionOfTokenIndexRightBeforeScan(
                 this::populateRelationships, this::relationshipStoreScan);
     }
 
     private void shouldHandleConcurrentDeletionOfTokenIndexRightBeforeScan(
-            LongSupplier entitiesCreator, Function<TokenScanConsumer, StoreScan> storeScanSupplier) {
+            LongSupplier entitiesCreator, Function<TokenScanConsumer, StoreScan> storeScanSupplier) throws Exception {
         // Given
         entitiesCreator.getAsLong();
         var consumer = new TestTokenScanConsumer();
-        var storeScan = storeScanSupplier.apply(consumer);
+        try (var t2 = new OtherThreadExecutor("dropper")) {
+            Future<Void> dropFuture;
+            try (var storeScan = storeScanSupplier.apply(consumer)) {
+                // When
+                dropFuture = t2.executeDontWait(() -> {
+                    dropTokenIndexes(database);
+                    return null;
+                });
 
-        // When
-        dropTokenIndexes(database);
-
-        // Then
-        assertThatThrownBy(() -> storeScan.run(new ContainsExternalUpdates()))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining("no longer exists");
+                storeScan.run(new ContainsExternalUpdates());
+            }
+            dropFuture.get();
+        }
     }
 
     @Test
@@ -151,13 +155,13 @@ public class DynamicIndexStoreViewIT {
         var entities = expectedEntitiesScanned.getAsLong();
         var consumer = new TestTokenScanConsumer();
         dropTokenIndexes(database);
-        var storeScan = storeScanSupplier.apply(consumer);
+        try (var storeScan = storeScanSupplier.apply(consumer)) {
+            // When
+            storeScan.run(new ContainsExternalUpdates());
 
-        // When
-        storeScan.run(new ContainsExternalUpdates());
-
-        // Then
-        assertScanCompleted(storeScan, consumer, entities);
+            // Then
+            assertScanCompleted(storeScan, consumer, entities);
+        }
     }
 
     @Test
@@ -185,9 +189,9 @@ public class DynamicIndexStoreViewIT {
                 }
             }
         });
-        var storeScan = storeScanSupplier.apply(consumer);
 
         // When
+        var storeScan = storeScanSupplier.apply(consumer);
         try (var t2 = new OtherThreadExecutor("T2");
                 var t3 = new OtherThreadExecutor("T3")) {
             var scan = t2.executeDontWait(() -> {
@@ -202,12 +206,12 @@ public class DynamicIndexStoreViewIT {
             t3.waitUntilWaiting(waitDetails -> waitDetails.isAt(Operations.class, "indexDrop"));
             barrier.release();
             scan.get();
+            storeScan.close();
             drop.get();
         }
 
         // Then
         assertScanCompleted(storeScan, consumer, entities);
-        storeScan.stop();
     }
 
     private static void assertScanCompleted(StoreScan storeScan, TestTokenScanConsumer consumer, long entities) {

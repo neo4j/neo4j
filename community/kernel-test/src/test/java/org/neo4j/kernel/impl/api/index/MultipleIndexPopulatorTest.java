@@ -593,6 +593,12 @@ class MultipleIndexPopulatorTest {
         // then
         cancelAction.accept(population2);
         verify(actualStoreScan).stop();
+
+        // and when
+        multipleIndexPopulator.close();
+
+        // then
+        verify(actualStoreScan).close();
     }
 
     private static IndexEntryUpdate<?> createIndexEntryUpdate(SchemaDescriptorSupplier schemaDescriptor) {

@@ -326,7 +326,7 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
     @Override
     public void close() {
         phaseTracker.stop();
-        closeAllUnchecked(cursorContext);
+        closeAllUnchecked(storeScan, cursorContext);
     }
 
     void resetIndexCounts(CursorContext cursorContext) {
@@ -809,6 +809,11 @@ public class MultipleIndexPopulator implements StoreScan.ExternalUpdatesCheck, A
         @Override
         public void setPhaseTracker(PhaseTracker phaseTracker) {
             delegate.setPhaseTracker(phaseTracker);
+        }
+
+        @Override
+        public void close() {
+            delegate.close();
         }
     }
 

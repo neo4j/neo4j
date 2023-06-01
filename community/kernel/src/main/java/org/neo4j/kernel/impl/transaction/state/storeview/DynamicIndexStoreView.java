@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import static org.neo4j.common.EntityType.NODE;
 import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.kernel.impl.api.KernelTransactions.SYSTEM_TRANSACTION_ID;
+import static org.neo4j.memory.EmptyMemoryTracker.INSTANCE;
 
 import java.util.Optional;
 import java.util.function.IntPredicate;
@@ -34,6 +36,7 @@ import org.neo4j.internal.schema.SchemaDescriptors;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
 import org.neo4j.kernel.api.index.TokenIndexReader;
+import org.neo4j.kernel.impl.api.LeaseService;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService.IndexProxyProvider;
@@ -42,6 +45,7 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.TokenScanConsumer;
 import org.neo4j.kernel.impl.locking.LockManager;
 import org.neo4j.lock.LockService;
+import org.neo4j.lock.LockTracer;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.memory.MemoryTracker;
@@ -86,26 +90,36 @@ public class DynamicIndexStoreView implements IndexStoreView {
             MemoryTracker memoryTracker) {
         var tokenIndex = findTokenIndex(NODE);
         if (tokenIndex.isPresent()) {
-            var nodeStoreScan = new LabelIndexedNodeStoreScan(
-                    config,
-                    storageEngine.newReader(),
-                    storageEngine::createStorageCursors,
-                    lockService,
-                    tokenIndex.get().reader,
-                    labelScanConsumer,
-                    propertyScanConsumer,
-                    labelIds,
-                    propertyKeyIdFilter,
-                    parallelWrite,
-                    fullScanStoreView.scheduler,
-                    contextFactory,
-                    memoryTracker);
-            return new IndexedStoreScan(
-                    lockManager,
-                    tokenIndex.get().descriptor,
-                    config,
-                    () -> findTokenIndex(NODE).isPresent(),
-                    nodeStoreScan);
+            // Token index present. Lock it and check again.
+            var lockClient = lockManager.newClient();
+            var instantiatedIndexedScan = false;
+            try {
+                lockTokenIndexForScan(tokenIndex.get(), lockClient);
+                tokenIndex = findTokenIndex(NODE);
+                if (tokenIndex.isPresent()) {
+                    var nodeStoreScan = new LabelIndexedNodeStoreScan(
+                            config,
+                            storageEngine.newReader(),
+                            storageEngine::createStorageCursors,
+                            lockService,
+                            tokenIndex.get().reader,
+                            labelScanConsumer,
+                            propertyScanConsumer,
+                            labelIds,
+                            propertyKeyIdFilter,
+                            parallelWrite,
+                            fullScanStoreView.scheduler,
+                            contextFactory,
+                            memoryTracker);
+                    var indexedStoreScan = new IndexedStoreScan(lockClient, nodeStoreScan);
+                    instantiatedIndexedScan = true;
+                    return indexedStoreScan;
+                }
+            } finally {
+                if (!instantiatedIndexedScan) {
+                    lockClient.close();
+                }
+            }
         }
 
         return fullScanStoreView.visitNodes(
@@ -129,48 +143,57 @@ public class DynamicIndexStoreView implements IndexStoreView {
             boolean parallelWrite,
             CursorContextFactory contextFactory,
             MemoryTracker memoryTracker) {
-
         var tokenIndex = findTokenIndex(RELATIONSHIP);
         if (tokenIndex.isPresent()) {
-            StoreScan storeScan;
-            if (fullScanStoreView.storageEngine.indexingBehaviour().useNodeIdsInRelationshipTokenIndex()) {
-                // This index-type-lookup-index-backed relationship scan is node-based
-                storeScan = new NodeRelationshipsIndexedStoreScan(
-                        config,
-                        storageEngine.newReader(),
-                        storageEngine::createStorageCursors,
-                        lockService,
-                        tokenIndex.get().reader,
-                        relationshipTypeScanConsumer,
-                        propertyScanConsumer,
-                        relationshipTypeIds,
-                        propertyKeyIdFilter,
-                        parallelWrite,
-                        fullScanStoreView.scheduler,
-                        contextFactory,
-                        memoryTracker);
-            } else {
-                storeScan = new RelationshipIndexedRelationshipStoreScan(
-                        config,
-                        storageEngine.newReader(),
-                        storageEngine::createStorageCursors,
-                        lockService,
-                        tokenIndex.get().reader,
-                        relationshipTypeScanConsumer,
-                        propertyScanConsumer,
-                        relationshipTypeIds,
-                        propertyKeyIdFilter,
-                        parallelWrite,
-                        fullScanStoreView.scheduler,
-                        contextFactory,
-                        memoryTracker);
+            // Token index present. Lock it and check again.
+            var lockClient = lockManager.newClient();
+            var instantiatedIndexedScan = false;
+            try {
+                lockTokenIndexForScan(tokenIndex.get(), lockClient);
+                tokenIndex = findTokenIndex(RELATIONSHIP);
+                if (tokenIndex.isPresent()) {
+                    StoreScan storeScan;
+                    if (fullScanStoreView.storageEngine.indexingBehaviour().useNodeIdsInRelationshipTokenIndex()) {
+                        // This index-type-lookup-index-backed relationship scan is node-based
+                        storeScan = new NodeRelationshipsIndexedStoreScan(
+                                config,
+                                storageEngine.newReader(),
+                                storageEngine::createStorageCursors,
+                                lockService,
+                                tokenIndex.get().reader,
+                                relationshipTypeScanConsumer,
+                                propertyScanConsumer,
+                                relationshipTypeIds,
+                                propertyKeyIdFilter,
+                                parallelWrite,
+                                fullScanStoreView.scheduler,
+                                contextFactory,
+                                memoryTracker);
+                    } else {
+                        storeScan = new RelationshipIndexedRelationshipStoreScan(
+                                config,
+                                storageEngine.newReader(),
+                                storageEngine::createStorageCursors,
+                                lockService,
+                                tokenIndex.get().reader,
+                                relationshipTypeScanConsumer,
+                                propertyScanConsumer,
+                                relationshipTypeIds,
+                                propertyKeyIdFilter,
+                                parallelWrite,
+                                fullScanStoreView.scheduler,
+                                contextFactory,
+                                memoryTracker);
+                    }
+                    var indexedStoreScan = new IndexedStoreScan(lockClient, storeScan);
+                    instantiatedIndexedScan = true;
+                    return indexedStoreScan;
+                }
+            } finally {
+                if (!instantiatedIndexedScan) {
+                    lockClient.close();
+                }
             }
-            return new IndexedStoreScan(
-                    lockManager,
-                    tokenIndex.get().descriptor,
-                    config,
-                    () -> findTokenIndex(RELATIONSHIP).isPresent(),
-                    storeScan);
         }
 
         return fullScanStoreView.visitRelationships(
@@ -208,6 +231,14 @@ public class DynamicIndexStoreView implements IndexStoreView {
             log.warn("Token index missing for entity: %s, switching to full scan", entityType, e);
         }
         return Optional.empty();
+    }
+
+    private void lockTokenIndexForScan(TokenIndexData index, LockManager.Client lockClient) {
+        lockClient.initialize(LeaseService.NoLeaseClient.INSTANCE, SYSTEM_TRANSACTION_ID, INSTANCE, config);
+        lockClient.acquireShared(
+                LockTracer.NONE,
+                index.descriptor().schema().keyType(),
+                index.descriptor().schema().lockingKeys());
     }
 
     private record TokenIndexData(TokenIndexReader reader, IndexDescriptor descriptor) {}
