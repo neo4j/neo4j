@@ -35,6 +35,14 @@ public class KernelTransactionStamp {
         return ktx.isOpen() && transactionSequenceNumber == ktx.getTransactionSequenceNumber();
     }
 
+    public boolean isCommitting() {
+        return ktx.isCommitting() && transactionSequenceNumber == ktx.getTransactionSequenceNumber();
+    }
+
+    public boolean isRollingback() {
+        return ktx.isRollingback() && transactionSequenceNumber == ktx.getTransactionSequenceNumber();
+    }
+
     public boolean isClosing() {
         return ktx.isClosing() && transactionSequenceNumber == ktx.getTransactionSequenceNumber();
     }

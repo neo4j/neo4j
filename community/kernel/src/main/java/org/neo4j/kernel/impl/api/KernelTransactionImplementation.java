@@ -223,7 +223,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private LeaseClient leaseClient;
     private volatile boolean closing;
     private volatile boolean closed;
-    private boolean rollback;
+    private boolean commit;
 
     private volatile TerminationMark terminationMark;
     private long startTimeMillis;
@@ -430,7 +430,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.leaseClient = leaseService.newClient();
         this.lockClient.initialize(leaseClient, transactionSequenceNumber, memoryTracker, config);
         this.terminationMark = null;
-        this.rollback = true;
+        this.commit = false;
         this.writeState = TransactionWriteState.NONE;
         this.startTimeMillis = clocks.systemClock().millis();
         this.startTimeNanos = clocks.systemClock().nanos();
@@ -554,13 +554,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public boolean canCommit() {
-        return !rollback && terminationMark == null;
-    }
-
-    @Override
     public Optional<TerminationMark> getTerminationMark() {
         return Optional.ofNullable(terminationMark);
+    }
+
+    private boolean canCommit() {
+        return commit && terminationMark == null;
     }
 
     boolean markForTermination(long expectedTransactionSequenceNumber, Status reason) {
@@ -685,6 +684,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public boolean isOpen() {
         return !closed && !closing;
+    }
+
+    @Override
+    public boolean isCommitting() {
+        return closing && commit;
+    }
+
+    @Override
+    public boolean isRollingback() {
+        return closing && !commit;
     }
 
     @Override
@@ -851,7 +860,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     @Override
     public long commit(KernelTransactionMonitor kernelTransactionMonitor) throws TransactionFailureException {
-        rollback = false;
+        commit = true;
         this.kernelTransactionMonitor = kernelTransactionMonitor;
         return closeTransaction();
     }
@@ -924,8 +933,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private void closed() {
         closed = true;
         closing = false;
-        transactionEvent.setCommit(!rollback);
-        transactionEvent.setRollback(rollback);
+        transactionEvent.setCommit(commit);
+        transactionEvent.setRollback(!commit);
         transactionEvent.setTransactionWriteState(writeState.name());
         transactionEvent.setReadOnly(txState == null || !txState.hasChanges());
         transactionEvent.close();
@@ -965,10 +974,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * @throws TransactionTerminatedException when transaction was terminated
      */
     private void failOnNonExplicitRollbackIfNeeded() throws TransactionFailureException {
-        if (!rollback && isTerminated()) {
-            throw new TransactionTerminatedException(terminationMark.getReason());
-        }
-        if (!rollback) {
+        if (commit) {
+            if (isTerminated()) {
+                throw new TransactionTerminatedException(terminationMark.getReason());
+            }
             // Commit was called, but also failed which means that the client code using this
             // transaction passed through a happy path, but the transaction was rolled back
             // for one or more reasons. Tell the user that although it looked happy it
@@ -1596,8 +1605,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    public boolean isRollback() {
-        return rollback;
+    public boolean isCommitted() {
+        return commit;
     }
 
     @Override

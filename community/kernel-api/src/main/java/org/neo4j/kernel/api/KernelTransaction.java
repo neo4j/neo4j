@@ -221,6 +221,16 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
     boolean isClosing();
 
     /**
+     * @return {@code true} if the transaction is committing.
+     */
+    boolean isCommitting();
+
+    /**
+     * @return {@code true} if the transaction is rolling back.
+     */
+    boolean isRollingback();
+
+    /**
      * @return {@link Status} if {@link #markForTermination(Status)} has been invoked, otherwise empty optional.
      */
     default Optional<Status> getReasonIfTerminated() {
@@ -472,11 +482,6 @@ public interface KernelTransaction extends AssertOpen, AutoCloseable {
      * @return database name.
      */
     String getDatabaseName();
-
-    /**
-     * Whether this transaction can be committed or must instead be rolled back on close().
-     */
-    boolean canCommit();
 
     InnerTransactionHandler getInnerTransactionHandler();
 

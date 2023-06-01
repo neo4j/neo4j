@@ -66,11 +66,23 @@ public interface KernelTransactionHandle {
     boolean isOpen();
 
     /**
+     * Check if the underlying transaction is committing. Committing means that the transaction is closed by the user and currently doing commit.
+     */
+    boolean isCommitting();
+
+    /**
+     * Check if the underlying transaction is doing rollback. Committing means that the transaction is closed by the user and currently doing rollback.
+     */
+    boolean isRollingback();
+
+    /**
      * Check if the underlying transaction is closing. Closing means that the transaction is closed by the user and currently doing commit or rollback.
      *
      * @return {@code true} if the underlying transaction ({@link KernelTransaction#close()} is called, but not finished, {@code false} otherwise.
      */
-    boolean isClosing();
+    default boolean isClosing() {
+        return isCommitting() || isRollingback();
+    }
 
     /**
      * Mark the underlying transaction for termination.

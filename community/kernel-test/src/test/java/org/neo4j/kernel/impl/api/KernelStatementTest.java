@@ -57,7 +57,7 @@ class KernelStatementTest {
     void shouldReleaseResourcesWhenForceClosed() {
         // given
         KernelTransactionImplementation transaction = mock(KernelTransactionImplementation.class);
-        when(transaction.isRollback()).thenReturn(false);
+        when(transaction.isCommitted()).thenReturn(true);
         var contextFactory = new CursorContextFactory(new DefaultPageCacheTracer(), EMPTY);
         KernelStatement statement = createStatement(transaction);
         var cursorContext = contextFactory.create("test");

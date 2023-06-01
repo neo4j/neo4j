@@ -74,6 +74,16 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle {
     }
 
     @Override
+    public boolean isCommitting() {
+        return tx.isCommitting();
+    }
+
+    @Override
+    public boolean isRollingback() {
+        return tx.isRollingback();
+    }
+
+    @Override
     public boolean markForTermination(Status reason) {
         tx.markForTermination(reason);
         return true;

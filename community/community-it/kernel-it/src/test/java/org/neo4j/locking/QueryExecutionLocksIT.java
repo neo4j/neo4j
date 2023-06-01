@@ -823,6 +823,16 @@ class QueryExecutionLocksIT {
         }
 
         @Override
+        public boolean isCommitting() {
+            return internal.isCommitting();
+        }
+
+        @Override
+        public boolean isRollingback() {
+            return internal.isRollingback();
+        }
+
+        @Override
         public boolean isClosing() {
             return internal.isClosing();
         }
@@ -995,11 +1005,6 @@ class QueryExecutionLocksIT {
         @Override
         public String getDatabaseName() {
             return null;
-        }
-
-        @Override
-        public boolean canCommit() {
-            return internal.canCommit();
         }
 
         @Override

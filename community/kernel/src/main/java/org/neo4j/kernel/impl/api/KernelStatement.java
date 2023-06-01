@@ -199,7 +199,7 @@ public class KernelStatement extends QueryStatement {
             int leakedStatements = referenceCount;
             referenceCount = 0;
             cleanupResources();
-            if (trackStatementClose && !transaction.isRollback()) {
+            if (trackStatementClose && transaction.isCommitted()) {
                 String message = getStatementNotClosedMessage(leakedStatements);
                 throw new StatementNotClosedException(message, statementOpenCloseCalls);
             }

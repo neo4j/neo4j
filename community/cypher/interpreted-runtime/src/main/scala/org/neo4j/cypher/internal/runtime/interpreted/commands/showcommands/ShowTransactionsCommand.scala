@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.showcommands
 
+import org.apache.commons.lang3.StringUtils
 import org.apache.commons.lang3.StringUtils.EMPTY
 import org.neo4j.cypher.internal.ast.CommandResultItem
 import org.neo4j.cypher.internal.ast.ShowColumn
@@ -128,7 +129,7 @@ case class ShowTransactionsCommand(
           } else (EMPTY, EMPTY)
         val connectionId = clientInfo.map[String](_.connectionId).orElse(EMPTY)
         val clientAddress = clientInfo.map[String](_.clientAddress).orElse(EMPTY)
-        val status = getStatus(transaction, transactionDependenciesResolver)
+        val (status, statusDetails) = getStatus(transaction, transactionDependenciesResolver)
 
         val briefResult = Map(
           // Name of the database the transaction belongs to
@@ -256,7 +257,6 @@ case class ShowTransactionsCommand(
           val metaData = getMapValue(transaction.getMetaData)
           val protocol = clientInfo.map[String](_.protocol).orElse(EMPTY)
           val requestUri = clientInfo.map[String](_.requestURI).orElse(null)
-          val statusDetails = transaction.getStatusDetails
           val resourceInformation = getMapValue(
             querySnapshot.map[util.Map[String, AnyRef]](_.resourceInformation()).orElse(util.Collections.emptyMap())
           )
@@ -345,17 +345,35 @@ case class ShowTransactionsCommand(
   private def getStatus(
     handle: KernelTransactionHandle,
     transactionDependenciesResolver: TransactionDependenciesResolver
-  ): String =
-    handle.terminationMark.map[String](info => String.format(TransactionId.TERMINATED_STATE, info.getReason.code))
+  ): (String, String) =
+    handle.terminationMark.map[(String, String)](info =>
+      (String.format(TransactionId.TERMINATED_STATE, info.getReason.code), handle.getStatusDetails)
+    )
       .orElseGet(() => getExecutingStatus(handle, transactionDependenciesResolver))
+
+  private def resolveStatusDetails(handle: KernelTransactionHandle, defaultDetails: String): String = {
+    var handleDetails = handle.getStatusDetails
+    if (StringUtils.isEmpty(handleDetails)) {
+      handleDetails = defaultDetails
+    }
+    handleDetails
+  }
 
   private def getExecutingStatus(
     handle: KernelTransactionHandle,
     transactionDependenciesResolver: TransactionDependenciesResolver
-  ): String =
+  ): (String, String) =
     if (transactionDependenciesResolver.isBlocked(handle))
-      TransactionId.BLOCKED_STATE + transactionDependenciesResolver.describeBlockingTransactions(handle)
-    else if (handle.isClosing) TransactionId.CLOSING_STATE
-    else TransactionId.RUNNING_STATE
+      (
+        TransactionId.BLOCKED_STATE + transactionDependenciesResolver.describeBlockingTransactions(handle),
+        handle.getStatusDetails
+      )
+    else if (handle.isCommitting) {
+      (TransactionId.CLOSING_STATE, resolveStatusDetails(handle, TransactionId.COMMITTING_STATE))
+    } else if (handle.isRollingback) {
+      (TransactionId.CLOSING_STATE, resolveStatusDetails(handle, TransactionId.ROLLING_BACK_STATE))
+    } else {
+      (TransactionId.RUNNING_STATE, handle.getStatusDetails)
+    }
 
 }

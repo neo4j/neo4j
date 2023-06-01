@@ -68,6 +68,8 @@ object TransactionId {
 
   val RUNNING_STATE = "Running"
   val CLOSING_STATE = "Closing"
+  val COMMITTING_STATE = "Committing"
+  val ROLLING_BACK_STATE = "Rolling back"
   val BLOCKED_STATE = "Blocked by: "
   val TERMINATED_STATE = "Terminated with reason: %s"
 

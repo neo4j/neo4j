@@ -164,6 +164,16 @@ public class StubKernelTransaction implements KernelTransaction {
     }
 
     @Override
+    public boolean isCommitting() {
+        return false;
+    }
+
+    @Override
+    public boolean isRollingback() {
+        return false;
+    }
+
+    @Override
     public SecurityContext securityContext() {
         throw new UnsupportedOperationException("not implemented");
     }
@@ -332,11 +342,6 @@ public class StubKernelTransaction implements KernelTransaction {
 
     @Override
     public String getDatabaseName() {
-        throw new UnsupportedOperationException("not implemented");
-    }
-
-    @Override
-    public boolean canCommit() {
         throw new UnsupportedOperationException("not implemented");
     }
 

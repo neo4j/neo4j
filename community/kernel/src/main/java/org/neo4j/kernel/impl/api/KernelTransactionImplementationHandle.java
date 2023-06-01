@@ -100,8 +100,13 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle {
     }
 
     @Override
-    public boolean isClosing() {
-        return transactionStamp.isClosing();
+    public boolean isCommitting() {
+        return transactionStamp.isCommitting();
+    }
+
+    @Override
+    public boolean isRollingback() {
+        return transactionStamp.isRollingback();
     }
 
     @Override
