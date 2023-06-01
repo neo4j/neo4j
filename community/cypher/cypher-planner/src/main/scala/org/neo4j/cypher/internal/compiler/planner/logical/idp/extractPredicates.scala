@@ -159,16 +159,13 @@ object extractPredicates {
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _, // namespace
-              FunctionName(fname),
-              false, //distinct
-              Seq(
-                PathExpression(
-                  NodePathStep(
-                    startNode: LogicalVariable,
-                    MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep()))))))
-            if fname == "relationships" =>
+            RelationshipsFunctionArguments(PathExpression(
+              NodePathStep(
+                startNode: LogicalVariable,
+                MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
+              )
+            ))
+          ) =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
         case _ => None
@@ -180,16 +177,15 @@ object extractPredicates {
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _,
-              FunctionName(fname),
-              false,
-              Seq(
-                PathExpression(
-                  NodePathStep(
-                    startNode: LogicalVariable,
-                    MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep()))))))
-            if fname == "nodes" =>
+            NodesFunctionArguments(
+              PathExpression(
+                NodePathStep(
+                  startNode: LogicalVariable,
+                  MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
+                )
+              )
+            )
+          ) =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
         case _ => None
@@ -201,16 +197,15 @@ object extractPredicates {
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _,
-              FunctionName(fname),
-              false,
-              Seq(
-                PathExpression(
-                  NodePathStep(
-                    startNode: LogicalVariable,
-                    MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep()))))))
-            if fname == "relationships" =>
+            RelationshipsFunctionArguments(
+              PathExpression(
+                NodePathStep(
+                  startNode: LogicalVariable,
+                  MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
+                )
+              )
+            )
+          ) =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
         case _ => None
@@ -222,20 +217,36 @@ object extractPredicates {
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _,
-              FunctionName(fname),
-              false,
-              Seq(
-                PathExpression(
-                  NodePathStep(
-                    startNode: LogicalVariable,
-                    MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep()))))))
-            if fname == "nodes" =>
+            NodesFunctionArguments(
+              PathExpression(
+                NodePathStep(
+                  startNode: LogicalVariable,
+                  MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
+                )
+              )
+            )
+          ) =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
         case _ => None
       }
   }
 
+  object NodesFunctionArguments {
+
+    def unapplySeq(f: FunctionInvocation): Option[IndexedSeq[Expression]] = f match {
+      case FunctionInvocation(_, FunctionName(fname), false, args)
+        if fname.equalsIgnoreCase("nodes") => Some(args)
+      case _ => None
+    }
+  }
+
+  object RelationshipsFunctionArguments {
+
+    def unapplySeq(f: FunctionInvocation): Option[IndexedSeq[Expression]] = f match {
+      case FunctionInvocation(_, FunctionName(fname), false, args)
+        if fname.equalsIgnoreCase("relationships") => Some(args)
+      case _ => None
+    }
+  }
 }

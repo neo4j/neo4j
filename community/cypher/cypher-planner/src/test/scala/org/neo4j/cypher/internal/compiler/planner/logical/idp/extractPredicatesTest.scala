@@ -352,4 +352,52 @@ class extractPredicatesTest extends CypherFunSuite with AstConstructionTestSuppo
     relationshipPredicates shouldBe empty
     solvedPredicates shouldBe List(lowerBoundPredicate)
   }
+
+  test("should extract predicates regardless of function name spelling") {
+
+    def makePredicate(funcName: String, negatedPredicate: Boolean) = {
+      val pred = lessThan(prop("m", "prop"), literalInt(123))
+
+      // p = (a)-[r*]->(b)
+      val pathExpr = PathExpression(
+        NodePathStep(
+          varFor("a"),
+          MultiRelationshipPathStep(varFor("r"), SemanticDirection.OUTGOING, Some(varFor("b")), NilPathStep()(pos))(
+            pos
+          )
+        )(pos)
+      )(pos)
+
+      val iterablePredicate = if (negatedPredicate)
+        NoneIterablePredicate(varFor("m"), function(funcName, pathExpr), Some(pred))(pos)
+      else
+        AllIterablePredicate(varFor("m"), function(funcName, pathExpr), Some(pred))(pos)
+
+      val solvedPredicate = if (negatedPredicate) not(pred) else pred
+      (iterablePredicate, solvedPredicate)
+    }
+
+    val functionNames = Seq(("nodes", "relationships"), ("NODES", "RELATIONSHIPS"))
+    for ((nodesF, relationshipsF) <- functionNames) withClue((nodesF, relationshipsF)) {
+      val (allNode, allSolvedNode) = makePredicate(nodesF, negatedPredicate = false)
+      val (allRel, allSolvedRel) = makePredicate(relationshipsF, negatedPredicate = false)
+      val (noneNode, noneSolvedNode) = makePredicate(nodesF, negatedPredicate = true)
+      val (noneRel, noneSolvedRel) = makePredicate(relationshipsF, negatedPredicate = true)
+
+      val (nodePredicates, relationshipPredicates, solvedPredicates) =
+        extractPredicates(
+          Seq(allNode, allRel, noneNode, noneRel),
+          "r",
+          "m",
+          "m",
+          "a",
+          "b",
+          Some(VarPatternLength.unlimited)
+        )
+
+      nodePredicates shouldBe List(allSolvedNode, noneSolvedNode)
+      relationshipPredicates shouldBe List(allSolvedRel, noneSolvedRel)
+      solvedPredicates shouldBe List(allNode, allRel, noneNode, noneRel)
+    }
+  }
 }
