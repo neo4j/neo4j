@@ -169,7 +169,7 @@ public class DatabaseManagementServiceFactory {
         // Fabric depends on Procedures
         setupProcedures(globalModule, edition, databaseContextProvider, routingService);
 
-        edition.bootstrapFabricServices(managementService);
+        edition.bootstrapQueryRouterServices(managementService);
 
         edition.registerDatabaseInitializers(globalModule);
 

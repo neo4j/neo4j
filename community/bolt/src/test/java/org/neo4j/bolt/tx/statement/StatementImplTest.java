@@ -49,7 +49,7 @@ class StatementImplTest {
         this.queryExecution = Mockito.mock(QueryExecution.class);
         this.querySubscriber = Mockito.mock(StatementQuerySubscriber.class);
 
-        Mockito.doReturn(this.queryExecution).when(this.execution).getQueryExecution();
+        Mockito.doReturn(this.queryExecution).when(this.execution).queryExecution();
 
         var fieldNames = new String[] {"firstName", "lastName"};
         Mockito.doReturn(fieldNames).when(this.queryExecution).fieldNames();
@@ -66,7 +66,7 @@ class StatementImplTest {
     void shouldCacheFieldNames() {
         var statement = new StatementImpl(42, this.databaseReference, this.clock, this.execution, this.querySubscriber);
 
-        Mockito.verify(this.execution).getQueryExecution();
+        Mockito.verify(this.execution).queryExecution();
         Mockito.verify(this.queryExecution).fieldNames();
 
         Assertions.assertThat(statement.fieldNames()).containsExactly("firstName", "lastName");
@@ -79,7 +79,7 @@ class StatementImplTest {
     void shouldTerminate() {
         var statement = new StatementImpl(42, this.databaseReference, this.clock, this.execution, this.querySubscriber);
 
-        Mockito.verify(this.execution).getQueryExecution();
+        Mockito.verify(this.execution).queryExecution();
         Mockito.verify(this.queryExecution).fieldNames();
 
         Assertions.assertThat(statement.hasRemaining()).isTrue();
@@ -98,7 +98,7 @@ class StatementImplTest {
     void shouldClose() throws Exception {
         var statement = new StatementImpl(42, this.databaseReference, this.clock, this.execution, this.querySubscriber);
 
-        Mockito.verify(this.execution).getQueryExecution();
+        Mockito.verify(this.execution).queryExecution();
         Mockito.verify(this.queryExecution).fieldNames();
 
         Assertions.assertThat(statement.hasRemaining()).isTrue();
@@ -107,7 +107,7 @@ class StatementImplTest {
 
         var inOrder = Mockito.inOrder(this.execution, this.queryExecution);
 
-        inOrder.verify(this.execution).getQueryExecution();
+        inOrder.verify(this.execution).queryExecution();
         inOrder.verify(this.queryExecution).cancel();
         inOrder.verify(this.queryExecution).awaitCleanup();
         inOrder.verify(this.execution).close();

@@ -25,7 +25,7 @@ import org.neo4j.kernel.impl.query.QueryExecution;
  * A representation of a query execution result.
  */
 public interface BoltQueryExecution {
-    QueryExecution getQueryExecution();
+    QueryExecution queryExecution();
 
     /**
      * This should be called once the query is finished, either successfully or not.

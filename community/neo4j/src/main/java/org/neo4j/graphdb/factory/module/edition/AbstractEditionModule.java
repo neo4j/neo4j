@@ -160,7 +160,7 @@ public abstract class AbstractEditionModule {
         return defaultDatabaseResolver;
     }
 
-    public abstract void bootstrapFabricServices(DatabaseManagementService databaseManagementService);
+    public abstract void bootstrapQueryRouterServices(DatabaseManagementService databaseManagementService);
 
     public abstract BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider();
 

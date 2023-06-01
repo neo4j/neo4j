@@ -216,13 +216,15 @@ public class BuiltInDbmsProcedures {
     public Stream<StringResult> clearAllQueryCaches() {
         QueryExecutionEngine queryExecutionEngine =
                 graph.getDependencyResolver().resolveDependency(QueryExecutionEngine.class);
-        FabricExecutor fabricExecutor = graph.getDependencyResolver().resolveDependency(FabricExecutor.class);
+
+        long clearedFabricQueries = 0;
+        if (graph.getDependencyResolver().containsDependency(FabricExecutor.class)) {
+            FabricExecutor fabricExecutor = graph.getDependencyResolver().resolveDependency(FabricExecutor.class);
+            clearedFabricQueries = fabricExecutor.clearQueryCachesForDatabase(graph.databaseName());
+        }
 
         // we subtract 1 because the query "CALL db.queryClearCaches()" is compiled and thus populates the caches by 1
-        long numberOfClearedQueries = Math.max(
-                        queryExecutionEngine.clearQueryCaches(),
-                        fabricExecutor.clearQueryCachesForDatabase(graph.databaseName()))
-                - 1;
+        long numberOfClearedQueries = Math.max(queryExecutionEngine.clearQueryCaches(), clearedFabricQueries) - 1;
 
         String result = numberOfClearedQueries == 0
                 ? "Query cache already empty."

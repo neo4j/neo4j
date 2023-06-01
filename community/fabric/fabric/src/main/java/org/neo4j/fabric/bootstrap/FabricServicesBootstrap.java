@@ -25,7 +25,6 @@ import static org.neo4j.scheduler.JobMonitoringParams.systemJob;
 
 import java.util.concurrent.Executor;
 import org.neo4j.bolt.dbapi.BoltGraphDatabaseManagementServiceSPI;
-import org.neo4j.bolt.txtracking.TransactionIdTracker;
 import org.neo4j.collection.Dependencies;
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
@@ -58,7 +57,6 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.database.DatabaseReferenceRepository;
 import org.neo4j.kernel.impl.api.transaction.monitor.TransactionMonitorScheduler;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -67,12 +65,10 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.TransactionIdStore;
 import org.neo4j.time.SystemNanoClock;
 
-public abstract class FabricServicesBootstrap {
+public abstract class FabricServicesBootstrap extends CommonQueryRouterBoostrap {
 
     private final FabricConfig fabricConfig;
-    protected final Dependencies dependencies;
     protected final LogService logService;
-    private final ServiceBootstrapper serviceBootstrapper;
     private final Config config;
     private final AvailabilityGuard availabilityGuard;
     protected final DatabaseContextProvider<? extends DatabaseContext> databaseProvider;
@@ -87,13 +83,12 @@ public abstract class FabricServicesBootstrap {
             DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
             DatabaseReferenceRepository databaseReferenceRepo,
             boolean isFallback) {
-        this.dependencies = dependencies;
+        super(lifeSupport, dependencies, databaseProvider);
+
         this.logService = logService;
         this.securityLog = securityLog;
         this.databaseProvider = databaseProvider;
         this.databaseReferenceRepo = databaseReferenceRepo;
-
-        serviceBootstrapper = new ServiceBootstrapper(lifeSupport, dependencies);
 
         config = dependencies.resolveDependency(Config.class);
         availabilityGuard = dependencies.resolveDependency(AvailabilityGuard.class);
@@ -101,15 +96,9 @@ public abstract class FabricServicesBootstrap {
         fabricConfig = bootstrapFabricConfig(isFallback);
     }
 
-    protected <T> T register(T dependency, Class<T> dependencyType) {
-        return serviceBootstrapper.registerService(dependency, dependencyType);
-    }
-
-    protected <T> T resolve(Class<T> type) {
-        return dependencies.resolveDependency(type);
-    }
-
-    public void bootstrapServices(DatabaseManagementService databaseManagementService) {
+    public BoltGraphDatabaseManagementServiceSPI bootstrapServices(
+            DatabaseManagementService databaseManagementService) {
+        super.bootstrapCommonServices(databaseManagementService);
         InternalLogProvider internalLogProvider = logService.getInternalLogProvider();
 
         @SuppressWarnings("unchecked")
@@ -121,14 +110,9 @@ public abstract class FabricServicesBootstrap {
         var tracers = resolve(Tracers.class);
 
         var remoteExecutor = bootstrapRemoteStack();
-        var serverConfig = dependencies.resolveDependency(Config.class);
         var systemNanoClock = resolve(SystemNanoClock.class);
 
-        var transactionIdTracker = new TransactionIdTracker(databaseManagementService, monitors, systemNanoClock);
-        var databaseIdRepository = databaseProvider.databaseIdRepository();
-        var localGraphTransactionIdTracker = register(
-                new LocalGraphTransactionIdTracker(transactionIdTracker, databaseIdRepository, serverConfig),
-                LocalGraphTransactionIdTracker.class);
+        var localGraphTransactionIdTracker = resolve(LocalGraphTransactionIdTracker.class);
         var localExecutor = register(
                 new FabricLocalExecutor(fabricConfig, fabricDatabaseManager, localGraphTransactionIdTracker),
                 FabricLocalExecutor.class);
@@ -146,7 +130,7 @@ public abstract class FabricServicesBootstrap {
         var errorReporter = new ErrorReporter(logService);
         var catalogManager = register(createCatalogManger(fabricDatabaseManager), CatalogManager.class);
 
-        var globalProcedures = dependencies.resolveDependency(GlobalProcedures.class);
+        var globalProcedures = resolve(GlobalProcedures.class);
 
         register(
                 new TransactionManager(
@@ -178,27 +162,24 @@ public abstract class FabricServicesBootstrap {
         var fabricExecutor = new FabricExecutor(
                 fabricConfig, planner, useEvaluation, internalLogProvider, statementLifecycles, fabricWorkerExecutor);
         register(fabricExecutor, FabricExecutor.class);
+        return createBoltDatabaseManagementServiceProvider();
     }
 
     protected DatabaseLookup createDatabaseLookup(FabricDatabaseManager fabricDatabaseManager) {
         return new DatabaseLookup.Default(fabricDatabaseManager);
     }
 
-    public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider() {
-        FabricExecutor fabricExecutor = dependencies.resolveDependency(FabricExecutor.class);
-        TransactionManager transactionManager = dependencies.resolveDependency(TransactionManager.class);
-        FabricDatabaseManager fabricDatabaseManager = dependencies.resolveDependency(FabricDatabaseManager.class);
-        LocalGraphTransactionIdTracker localGraphTransactionIdTracker =
-                dependencies.resolveDependency(LocalGraphTransactionIdTracker.class);
-        BoltFabricDatabaseManagementService boltFabricDatabaseManagementService =
-                new BoltFabricDatabaseManagementService(
-                        fabricExecutor,
-                        fabricConfig,
-                        transactionManager,
-                        fabricDatabaseManager,
-                        localGraphTransactionIdTracker);
-
-        return dependencies.satisfyDependency(boltFabricDatabaseManagementService);
+    private BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider() {
+        FabricExecutor fabricExecutor = resolve(FabricExecutor.class);
+        TransactionManager transactionManager = resolve(TransactionManager.class);
+        FabricDatabaseManager fabricDatabaseManager = resolve(FabricDatabaseManager.class);
+        LocalGraphTransactionIdTracker localGraphTransactionIdTracker = resolve(LocalGraphTransactionIdTracker.class);
+        return new BoltFabricDatabaseManagementService(
+                fabricExecutor,
+                fabricConfig,
+                transactionManager,
+                fabricDatabaseManager,
+                localGraphTransactionIdTracker);
     }
 
     protected abstract FabricDatabaseManager createFabricDatabaseManager(FabricConfig fabricConfig);
@@ -253,19 +234,6 @@ public abstract class FabricServicesBootstrap {
         protected FabricConfig bootstrapFabricConfig(boolean isFallback) {
             var config = resolve(Config.class);
             return FabricConfig.from(config);
-        }
-    }
-
-    private record ServiceBootstrapper(LifeSupport lifeSupport, Dependencies dependencies) {
-
-        <T> T registerService(T dependency, Class<T> dependencyType) {
-            dependencies.satisfyDependency(dependency);
-
-            if (LifecycleAdapter.class.isAssignableFrom(dependencyType)) {
-                lifeSupport.add((LifecycleAdapter) dependency);
-            }
-
-            return dependencies.resolveDependency(dependencyType);
         }
     }
 }

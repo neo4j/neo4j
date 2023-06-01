@@ -38,6 +38,7 @@ import org.neo4j.dbms.CommunityDatabaseStateService;
 import org.neo4j.dbms.CommunityKernelPanicListener;
 import org.neo4j.dbms.DatabaseStateService;
 import org.neo4j.dbms.api.DatabaseManagementService;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseContextProvider;
 import org.neo4j.dbms.database.DatabaseInfoService;
 import org.neo4j.dbms.database.DatabaseLifecycles;
@@ -95,7 +96,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.InternalLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.procedure.builtin.BuiltInDbmsProcedures.UpgradeAllowedChecker.UpgradeAlwaysAllowed;
-import org.neo4j.router.QueryRouterBootstrap;
+import org.neo4j.router.CommunityQueryRouterBoostrap;
 import org.neo4j.server.CommunityNeoWebServer;
 import org.neo4j.server.config.AuthConfigProvider;
 import org.neo4j.server.rest.repr.CommunityAuthConfigProvider;
@@ -113,7 +114,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     protected final ServerIdentity identityModule;
     private final MapCachingDatabaseReferenceRepository databaseReferenceRepo;
     private final DeviceMapper deviceMapper;
-    private FabricServicesBootstrap fabricServicesBootstrap;
 
     protected DatabaseStateService databaseStateService;
     protected ReadOnlyDatabases globalReadOnlyChecker;
@@ -180,21 +180,6 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
                 new CommunityKernelPanicListener(globalModule.getDatabaseEventListeners(), databaseRepository);
         globalModule.getGlobalLife().add(kernelPanicListener);
 
-        if (globalModule.getGlobalConfig().get(GraphDatabaseInternalSettings.query_router_new_stack)) {
-            fabricServicesBootstrap = new QueryRouterBootstrap.Community(
-                    globalModule.getGlobalLife(),
-                    globalModule.getGlobalDependencies(),
-                    globalModule.getLogService(),
-                    databaseRepository,
-                    databaseReferenceRepo);
-        } else {
-            fabricServicesBootstrap = new FabricServicesBootstrap.Community(
-                    globalModule.getGlobalLife(),
-                    globalModule.getGlobalDependencies(),
-                    globalModule.getLogService(),
-                    databaseRepository,
-                    databaseReferenceRepo);
-        }
         var databaseLifecycles = new DatabaseLifecycles(
                 databaseRepository,
                 globalModule.getGlobalConfig().get(initial_default_database),
@@ -391,7 +376,7 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
 
     @Override
     public BoltGraphDatabaseManagementServiceSPI createBoltDatabaseManagementServiceProvider() {
-        return fabricServicesBootstrap.createBoltDatabaseManagementServiceProvider();
+        return globalModule.getGlobalDependencies().resolveDependency(BoltGraphDatabaseManagementServiceSPI.class);
     }
 
     protected CommitProcessFactory createCommitProcessFactory() {
@@ -399,8 +384,30 @@ public class CommunityEditionModule extends AbstractEditionModule implements Def
     }
 
     @Override
-    public void bootstrapFabricServices(DatabaseManagementService databaseManagementService) {
-        fabricServicesBootstrap.bootstrapServices(databaseManagementService);
+    public void bootstrapQueryRouterServices(DatabaseManagementService databaseManagementService) {
+        DatabaseContextProvider<? extends DatabaseContext> databaseRepository =
+                globalModule.getGlobalDependencies().resolveDependency(DatabaseContextProvider.class);
+        if (globalModule.getGlobalConfig().get(GraphDatabaseInternalSettings.query_router_new_stack)) {
+            var queryRouterBoostrap = new CommunityQueryRouterBoostrap(
+                    globalModule.getGlobalLife(),
+                    globalModule.getGlobalDependencies(),
+                    globalModule.getLogService(),
+                    databaseRepository,
+                    databaseReferenceRepo);
+            globalModule
+                    .getGlobalDependencies()
+                    .satisfyDependency(queryRouterBoostrap.bootstrapServices(databaseManagementService));
+        } else {
+            var fabricServicesBootstrap = new FabricServicesBootstrap.Community(
+                    globalModule.getGlobalLife(),
+                    globalModule.getGlobalDependencies(),
+                    globalModule.getLogService(),
+                    databaseRepository,
+                    databaseReferenceRepo);
+            globalModule
+                    .getGlobalDependencies()
+                    .satisfyDependency(fabricServicesBootstrap.bootstrapServices(databaseManagementService));
+        }
     }
 
     @Override

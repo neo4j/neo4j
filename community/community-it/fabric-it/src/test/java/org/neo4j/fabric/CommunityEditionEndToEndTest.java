@@ -63,6 +63,8 @@ import org.neo4j.test.extension.BoltDbmsExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.values.virtual.MapValue;
 
+// TODO: this test has been replaced by CommunityQueryRoutingAcceptanceTest
+// for the new Query router stack, so it can be removed when the old stack goes away
 @BoltDbmsExtension
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class CommunityEditionEndToEndTest {

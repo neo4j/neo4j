@@ -20,27 +20,19 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.router;
+package org.neo4j.router.impl;
 
-import org.neo4j.collection.Dependencies;
-import org.neo4j.dbms.database.DatabaseContext;
-import org.neo4j.dbms.database.DatabaseContextProvider;
-import org.neo4j.fabric.bootstrap.FabricServicesBootstrap;
-import org.neo4j.kernel.database.DatabaseReferenceRepository;
-import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.internal.LogService;
+import org.neo4j.fabric.executor.Location;
+import org.neo4j.kernel.database.DatabaseReference;
+import org.neo4j.router.location.LocationService;
 
-public class QueryRouterBootstrap {
+public class CommunityLocationService implements LocationService {
 
-    public static class Community extends FabricServicesBootstrap.Community {
-
-        public Community(
-                LifeSupport lifeSupport,
-                Dependencies dependencies,
-                LogService logService,
-                DatabaseContextProvider<? extends DatabaseContext> databaseProvider,
-                DatabaseReferenceRepository databaseReferenceRepo) {
-            super(lifeSupport, dependencies, logService, databaseProvider, databaseReferenceRepo);
+    @Override
+    public Location locationOf(DatabaseReference databaseReference) {
+        if (databaseReference instanceof DatabaseReference.Internal ref) {
+            return new Location.Local(-1, ref);
         }
+        throw new IllegalArgumentException("Unexpected DatabaseReference type: " + databaseReference);
     }
 }

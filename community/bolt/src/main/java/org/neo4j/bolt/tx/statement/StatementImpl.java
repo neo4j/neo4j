@@ -89,7 +89,7 @@ public class StatementImpl implements Statement {
         this.execution = execution;
         this.subscriber = subscriber;
 
-        this.fieldNames = Arrays.asList(execution.getQueryExecution().fieldNames());
+        this.fieldNames = Arrays.asList(execution.queryExecution().fieldNames());
     }
 
     @Override
@@ -134,7 +134,7 @@ public class StatementImpl implements Statement {
             this.subscriber.setHandler(recordHandler);
 
             long start = this.clock.millis();
-            var query = this.execution.getQueryExecution();
+            var query = this.execution.queryExecution();
 
             // if the caller requested for all possible results to be streamed within a single operation,
             // we'll just loop until the query indicates that no more data is available
@@ -203,7 +203,7 @@ public class StatementImpl implements Statement {
         this.executionLock.lock();
         try {
             long start = this.clock.millis();
-            var query = this.execution.getQueryExecution();
+            var query = this.execution.queryExecution();
 
             // if the query has no side effects, and we wish to discard all remaining results, we'll
             // simply terminate it
@@ -235,7 +235,7 @@ public class StatementImpl implements Statement {
     private void complete(ResponseHandler handler, QueryStatistics statistics) {
         this.statistics = statistics;
 
-        var execution = this.execution.getQueryExecution();
+        var execution = this.execution.queryExecution();
 
         handler.onStreamingMetadata(
                 this.timeSpentStreaming,
@@ -308,8 +308,8 @@ public class StatementImpl implements Statement {
         // request termination of this statement prior to attempting to free its resources in order
         // to gracefully terminate in-flight result consumption (if an)
         try {
-            this.execution.getQueryExecution().cancel();
-            this.execution.getQueryExecution().awaitCleanup();
+            this.execution.queryExecution().cancel();
+            this.execution.queryExecution().awaitCleanup();
         } catch (Exception ignore) {
             // we'll ignore any errors raised while awaiting graceful termination as we wish to free
             // the remaining resources regardless

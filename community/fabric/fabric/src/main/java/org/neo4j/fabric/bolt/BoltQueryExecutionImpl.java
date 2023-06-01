@@ -74,7 +74,7 @@ public class BoltQueryExecutionImpl implements BoltQueryExecution {
     }
 
     @Override
-    public QueryExecution getQueryExecution() {
+    public QueryExecution queryExecution() {
         return queryExecution;
     }
 
