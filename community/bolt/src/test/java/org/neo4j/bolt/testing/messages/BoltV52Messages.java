@@ -54,6 +54,7 @@ public class BoltV52Messages extends BoltV51Messages {
                 Collections.emptyList(),
                 new RoutingContext(false, Collections.emptyMap()),
                 Collections.emptyMap(),
-                DisabledNotificationsConfig.getInstance());
+                DisabledNotificationsConfig.getInstance(),
+                Collections.emptyMap());
     }
 }

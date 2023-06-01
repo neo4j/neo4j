@@ -20,6 +20,8 @@
 package org.neo4j.kernel.api.net;
 
 import java.net.SocketAddress;
+import java.util.Collections;
+import java.util.Map;
 
 public interface TrackedNetworkConnection extends AutoCloseable {
     String id();
@@ -35,6 +37,10 @@ public interface TrackedNetworkConnection extends AutoCloseable {
     String username();
 
     String userAgent();
+
+    default Map<String, String> boltAgent() {
+        return Collections.emptyMap();
+    }
 
     void updateUser(String username, String userAgent);
 

@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.net.InetSocketAddress;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
@@ -35,7 +36,8 @@ class ClientConnectionInfoTest {
                 "bolt-42",
                 "neo4j-java-bolt-driver",
                 new InetSocketAddress("127.0.0.1", 56789),
-                new InetSocketAddress("127.0.0.1", 7687));
+                new InetSocketAddress("127.0.0.1", 7687),
+                Collections.emptyMap());
 
         // when
         String connectionDetails = clientConnection.asConnectionDetails();

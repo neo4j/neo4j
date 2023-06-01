@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.protocol.v51.message.decoder.authentication;
 
+import java.util.Collections;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultHelloMessageDecoder;
 import org.neo4j.bolt.protocol.common.message.notifications.NotificationsConfig;
@@ -35,5 +36,10 @@ public final class HelloMessageDecoderV51 extends DefaultHelloMessageDecoder {
     @Override
     protected NotificationsConfig readNotificationsConfig(Map<String, Object> meta) {
         return null;
+    }
+
+    @Override
+    protected Map<String, String> readBoltAgent(Map<String, Object> meta) {
+        return Collections.emptyMap();
     }
 }

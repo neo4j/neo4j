@@ -58,6 +58,7 @@ import org.neo4j.values.virtual.VirtualValues
 import java.net.InetSocketAddress
 import java.time.Duration
 import java.util
+import java.util.Collections
 
 import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SeqHasAsJava
@@ -222,7 +223,8 @@ class ShowTransactionsCommandTest extends ShowCommandTestBase {
       "testConnection",
       "test",
       new InetSocketAddress("127.0.0.1", 56789),
-      new InetSocketAddress("127.0.0.1", 7687)
+      new InetSocketAddress("127.0.0.1", 7687),
+      Collections.emptyMap()
     )))
     when(txHandle3.startTime()).thenReturn(42L)
     when(txHandle3.getMetaData).thenReturn(Map[String, AnyRef]("key" -> "value").asJava)

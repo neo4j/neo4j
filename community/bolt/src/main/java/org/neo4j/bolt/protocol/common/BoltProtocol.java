@@ -51,6 +51,7 @@ import org.neo4j.bolt.protocol.v44.BoltProtocolV44;
 import org.neo4j.bolt.protocol.v50.BoltProtocolV50;
 import org.neo4j.bolt.protocol.v51.BoltProtocolV51;
 import org.neo4j.bolt.protocol.v52.BoltProtocolV52;
+import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.packstream.signal.FrameSignal;
 import org.neo4j.packstream.struct.StructRegistry;
@@ -68,7 +69,8 @@ public interface BoltProtocol {
                 new BoltProtocolV44(clock, logging),
                 new BoltProtocolV50(clock, logging),
                 new BoltProtocolV51(clock, logging),
-                new BoltProtocolV52(clock, logging));
+                new BoltProtocolV52(clock, logging),
+                new BoltProtocolV53(clock, logging));
     }
 
     /**

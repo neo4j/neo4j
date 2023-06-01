@@ -27,6 +27,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.Attribute;
 import java.net.SocketAddress;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -229,7 +230,8 @@ public class ConnectionMockFactory extends AbstractMockFactory<Connection, Conne
                                             "bolt-test",
                                             "bolt-test",
                                             mock(SocketAddress.class),
-                                            mock(SocketAddress.class)));
+                                            mock(SocketAddress.class),
+                                            Collections.emptyMap()));
                             loginContext.set(result.getLoginContext());
 
                             if (result.credentialsExpired()) {

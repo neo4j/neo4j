@@ -43,6 +43,7 @@ public class DefaultHelloMessageDecoder implements MessageDecoder<HelloMessage> 
 
     protected static final String FIELD_FEATURES = "patch_bolt";
     protected static final String FIELD_USER_AGENT = "user_agent";
+    protected static final String FIELD_BOLT_AGENT = "bolt_agent";
     protected static final String FIELD_ROUTING = "routing";
     protected static final String FILED_NOTIFICATIONS_MIN_SEVERITY = "notifications_minimum_severity";
     protected static final String FILED_NOTIFICATIONS_DISABLED_CATEGORIES = "notifications_disabled_categories";
@@ -74,12 +75,9 @@ public class DefaultHelloMessageDecoder implements MessageDecoder<HelloMessage> 
         var routingContext = this.readRoutingContext(meta);
         var authToken = this.readAuthToken(meta);
         var notificationsConfig = this.readNotificationsConfig(meta);
+        var boltAgent = this.readBoltAgent(meta);
 
-        return new HelloMessage(userAgent, features, routingContext, authToken, notificationsConfig);
-    }
-
-    protected NotificationsConfig readNotificationsConfig(Map<String, Object> meta) throws PackstreamReaderException {
-        return NotificationsConfigMetadataReader.readFromMap(meta);
+        return new HelloMessage(userAgent, features, routingContext, authToken, notificationsConfig, boltAgent);
     }
 
     protected String readUserAgent(Map<String, Object> meta) throws PackstreamReaderException {
@@ -106,20 +104,8 @@ public class DefaultHelloMessageDecoder implements MessageDecoder<HelloMessage> 
             return new RoutingContext(false, Collections.emptyMap());
         }
 
-        if (property instanceof Map<?, ?> routingObjectMap) {
-            var routingStringMap = new HashMap<String, String>();
-            for (var entry : routingObjectMap.entrySet()) {
-                if (entry.getKey() instanceof String key && entry.getValue() instanceof String value) {
-                    routingStringMap.put(key, value);
-                    continue;
-                }
-
-                throw new IllegalStructArgumentException(
-                        FIELD_ROUTING, "Must be a map with string keys and string values.");
-            }
-
-            return new RoutingContext(true, Map.copyOf(routingStringMap));
-        }
+        var routingStringMap = convertToStringMap(property, FIELD_ROUTING);
+        if (routingStringMap != null) return new RoutingContext(true, Map.copyOf(routingStringMap));
 
         throw new IllegalStructArgumentException(
                 FIELD_ROUTING, "Expected map but got " + property.getClass().getSimpleName());
@@ -129,5 +115,38 @@ public class DefaultHelloMessageDecoder implements MessageDecoder<HelloMessage> 
         // as of protocol version 5.1, authentication is no longer part of HELLO thus this method
         // always returns null instead
         return null;
+    }
+
+    protected NotificationsConfig readNotificationsConfig(Map<String, Object> meta) throws PackstreamReaderException {
+        return NotificationsConfigMetadataReader.readFromMap(meta);
+    }
+
+    protected Map<String, String> readBoltAgent(Map<String, Object> meta) throws PackstreamReaderException {
+        var boltAgent = meta.get(FIELD_BOLT_AGENT);
+        var map = convertToStringMap(boltAgent, FIELD_BOLT_AGENT);
+        if (map == null) {
+            throw new IllegalStructArgumentException(
+                    FIELD_BOLT_AGENT, "Must be a map with string keys and string values.");
+        }
+        if (!map.containsKey("product")) {
+            throw new IllegalStructArgumentException(FIELD_BOLT_AGENT, "Expected map to contain key: 'product'.");
+        }
+        return map;
+    }
+
+    private static Map<String, String> convertToStringMap(Object property, String field)
+            throws IllegalStructArgumentException {
+        if (!(property instanceof Map<?, ?> propertyMap)) {
+            return null;
+        }
+
+        var validatedMap = new HashMap<String, String>();
+        for (var entry : propertyMap.entrySet()) {
+            if (!(entry.getKey() instanceof String key && entry.getValue() instanceof String value)) {
+                throw new IllegalStructArgumentException(field, "Must be a map with string keys and string values.");
+            }
+            validatedMap.put(key, value);
+        }
+        return validatedMap;
     }
 }

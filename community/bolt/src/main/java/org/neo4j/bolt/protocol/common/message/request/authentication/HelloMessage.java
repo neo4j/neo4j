@@ -36,23 +36,26 @@ public final class HelloMessage implements RequestMessage {
     private final RoutingContext routingContext;
     private final Map<String, Object> authToken;
     private final NotificationsConfig notificationsConfig;
+    private final Map<String, String> boltAgent;
 
     public HelloMessage(
             String userAgent,
             List<Feature> features,
             RoutingContext routingContext,
             Map<String, Object> authToken,
-            NotificationsConfig notificationsConfig) {
+            NotificationsConfig notificationsConfig,
+            Map<String, String> boltAgent) {
         this.userAgent = userAgent;
         this.features = features;
         this.routingContext = routingContext;
         this.authToken = authToken;
         this.notificationsConfig = notificationsConfig;
+        this.boltAgent = boltAgent;
     }
 
     public HelloMessage(
             String userAgent, List<Feature> features, RoutingContext routingContext, Map<String, Object> authToken) {
-        this(userAgent, features, routingContext, authToken, null);
+        this(userAgent, features, routingContext, authToken, null, null);
     }
 
     public Map<String, Object> authToken() {
@@ -65,6 +68,10 @@ public final class HelloMessage implements RequestMessage {
 
     public String userAgent() {
         return this.userAgent;
+    }
+
+    public Map<String, String> boltAgent() {
+        return this.boltAgent;
     }
 
     public List<Feature> features() {
@@ -90,6 +97,7 @@ public final class HelloMessage implements RequestMessage {
         }
         HelloMessage that = (HelloMessage) o;
         return Objects.equals(userAgent, that.userAgent)
+                && Objects.equals(boltAgent, that.boltAgent)
                 && Objects.equals(features, that.features)
                 && Objects.equals(authToken, that.authToken)
                 && Objects.equals(routingContext, that.routingContext)
@@ -106,7 +114,8 @@ public final class HelloMessage implements RequestMessage {
         var notifications = notificationsConfig != null ? notificationsConfig.toString() : "null";
         return "HelloMessage{" + "userAgent='"
                 + userAgent + '\'' + ", features="
-                + features + ", authToken="
+                + features + ", boltAgent="
+                + boltAgent + ", authToken="
                 + authToken + ", routingContext="
                 + routingContext + ", notificationsConfig="
                 + notifications + '}';

@@ -62,8 +62,10 @@ public class ConnectedState implements State {
         var authToken = message.authToken();
         var routingContext = message.routingContext();
         var notificationsConfig = message.notificationsConfig();
+        var boltAgent = message.boltAgent();
 
-        var enabledFeatures = context.connection().negotiate(features, userAgent, routingContext, notificationsConfig);
+        var enabledFeatures =
+                context.connection().negotiate(features, userAgent, routingContext, notificationsConfig, boltAgent);
 
         if (processAuthentication(context, authToken)) {
             context.connectionState().onMetadata(CONNECTION_ID_KEY, Values.utf8Value(context.connectionId()));

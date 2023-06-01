@@ -22,6 +22,7 @@ package org.neo4j.bolt.protocol.common.message.decoder.authentication;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -72,7 +73,7 @@ public abstract class AbstractHelloMessageDecoderTest<D extends MessageDecoder<H
                 ConnectionMockFactory.newFactory().withValueReader(reader).build();
 
         var msg = this.getDecoder().read(connection, buf, new StructHeader(1, (short) 0x42));
-
+        Assertions.assertThat(msg.boltAgent()).isEqualTo(Collections.emptyMap());
         Assertions.assertThat(msg).isNotNull();
         Assertions.assertThat(msg.authToken())
                 .containsEntry("principal", "bob")

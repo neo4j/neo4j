@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.query.clientconnection;
 import static org.neo4j.configuration.helpers.SocketAddress.format;
 
 import java.net.SocketAddress;
+import java.util.Map;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 
 /**
@@ -32,13 +33,19 @@ public class BoltConnectionInfo extends ClientConnectionInfo {
     private final String clientName;
     private final SocketAddress clientAddress;
     private final SocketAddress serverAddress;
+    private final Map<String, String> boltAgent;
 
     public BoltConnectionInfo(
-            String connectionId, String clientName, SocketAddress clientAddress, SocketAddress serverAddress) {
+            String connectionId,
+            String clientName,
+            SocketAddress clientAddress,
+            SocketAddress serverAddress,
+            Map<String, String> boltAgent) {
         this.connectionId = connectionId;
         this.clientName = clientName;
         this.clientAddress = clientAddress;
         this.serverAddress = serverAddress;
+        this.boltAgent = boltAgent;
     }
 
     @Override
@@ -64,5 +71,10 @@ public class BoltConnectionInfo extends ClientConnectionInfo {
     @Override
     public String requestURI() {
         return format(serverAddress);
+    }
+
+    @Override
+    public Map<String, String> boltAgent() {
+        return boltAgent;
     }
 }

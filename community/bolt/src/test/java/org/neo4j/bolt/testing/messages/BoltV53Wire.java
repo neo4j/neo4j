@@ -19,20 +19,21 @@
  */
 package org.neo4j.bolt.testing.messages;
 
-import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.v52.BoltProtocolV52;
+import java.util.Map;
+import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
 
-public class BoltV52Wire extends BoltV51Wire {
-    public BoltV52Wire() {
-        super(BoltProtocolV52.VERSION);
-    }
-
-    protected BoltV52Wire(ProtocolVersion version) {
-        super(version);
+public class BoltV53Wire extends BoltV52Wire {
+    public BoltV53Wire() {
+        super(BoltProtocolV53.VERSION);
     }
 
     @Override
     public String getUserAgent() {
-        return "BoltWire/5.2";
+        return "BoltWire/5.3";
+    }
+
+    @Override
+    public Map<String, String> getBoltAgent() {
+        return Map.of("product", "bolt-wire/5.3");
     }
 }

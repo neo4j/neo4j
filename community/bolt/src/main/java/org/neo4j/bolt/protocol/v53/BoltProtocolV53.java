@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.protocol.v52;
+package org.neo4j.bolt.protocol.v53;
 
 import java.util.Set;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
@@ -26,17 +26,14 @@ import org.neo4j.bolt.protocol.common.connector.connection.Connection;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.fsm.StateMachine;
 import org.neo4j.bolt.protocol.common.fsm.StateMachineSPI;
-import org.neo4j.bolt.protocol.common.message.request.RequestMessage;
 import org.neo4j.bolt.protocol.v51.fsm.StateMachineV51;
-import org.neo4j.bolt.protocol.v52.message.decoder.authentication.HelloMessageDecoderV52;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.packstream.struct.StructRegistry;
 import org.neo4j.time.SystemNanoClock;
 
-public class BoltProtocolV52 extends AbstractBoltProtocol {
-    public static final ProtocolVersion VERSION = new ProtocolVersion(5, 2);
+public class BoltProtocolV53 extends AbstractBoltProtocol {
+    public static final ProtocolVersion VERSION = new ProtocolVersion(5, 3);
 
-    public BoltProtocolV52(SystemNanoClock clock, LogService logging) {
+    public BoltProtocolV53(SystemNanoClock clock, LogService logging) {
         super(clock, logging);
     }
 
@@ -51,16 +48,8 @@ public class BoltProtocolV52 extends AbstractBoltProtocol {
     }
 
     @Override
-    protected StructRegistry.Builder<Connection, RequestMessage> createRequestMessageRegistry() {
-        return super.createRequestMessageRegistry()
-                // Authentication
-                .register(HelloMessageDecoderV52.getInstance());
-    }
-
-    @Override
     protected StateMachine createStateMachine(Connection connection, StateMachineSPI stateMachineSPI) {
         connection.memoryTracker().allocateHeap(StateMachineV51.SHALLOW_SIZE);
-
         return new StateMachineV51(stateMachineSPI, connection, clock);
     }
 }

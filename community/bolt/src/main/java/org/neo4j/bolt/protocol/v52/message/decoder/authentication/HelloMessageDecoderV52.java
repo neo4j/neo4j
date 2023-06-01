@@ -17,22 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.testing.messages;
+package org.neo4j.bolt.protocol.v52.message.decoder.authentication;
 
-import org.neo4j.bolt.negotiation.ProtocolVersion;
-import org.neo4j.bolt.protocol.v52.BoltProtocolV52;
+import java.util.Collections;
+import java.util.Map;
+import org.neo4j.bolt.protocol.common.message.decoder.authentication.DefaultHelloMessageDecoder;
 
-public class BoltV52Wire extends BoltV51Wire {
-    public BoltV52Wire() {
-        super(BoltProtocolV52.VERSION);
-    }
+public final class HelloMessageDecoderV52 extends DefaultHelloMessageDecoder {
+    private static final HelloMessageDecoderV52 INSTANCE = new HelloMessageDecoderV52();
 
-    protected BoltV52Wire(ProtocolVersion version) {
-        super(version);
+    private HelloMessageDecoderV52() {}
+
+    public static HelloMessageDecoderV52 getInstance() {
+        return INSTANCE;
     }
 
     @Override
-    public String getUserAgent() {
-        return "BoltWire/5.2";
+    protected Map<String, String> readBoltAgent(Map<String, Object> meta) {
+        return Collections.emptyMap();
     }
 }

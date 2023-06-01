@@ -22,6 +22,7 @@ package org.neo4j.bolt.testing.messages;
 import io.netty.buffer.ByteBuf;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +49,8 @@ public interface BoltWire {
                 new BoltV44Wire(),
                 new BoltV50Wire(),
                 new BoltV51Wire(),
-                new BoltV52Wire());
+                new BoltV52Wire(),
+                new BoltV53Wire());
     }
 
     /**
@@ -119,8 +121,13 @@ public interface BoltWire {
     }
 
     default ByteBuf hello(UnaryOperator<HelloBuilder> fn) {
-        return fn.apply(new HelloBuilder(this.getProtocolVersion(), this.getUserAgent(), this.getEnabledFeatures()))
+        return fn.apply(new HelloBuilder(
+                        this.getProtocolVersion(), this.getUserAgent(), this.getEnabledFeatures(), this.getBoltAgent()))
                 .build();
+    }
+
+    default Map<String, String> getBoltAgent() {
+        return Collections.emptyMap();
     }
 
     default ByteBuf logon() {

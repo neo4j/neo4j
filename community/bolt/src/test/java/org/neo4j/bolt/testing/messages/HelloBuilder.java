@@ -26,6 +26,7 @@ import java.util.Set;
 import org.neo4j.bolt.negotiation.ProtocolVersion;
 import org.neo4j.bolt.protocol.common.connector.connection.Feature;
 import org.neo4j.bolt.protocol.common.message.request.connection.RoutingContext;
+import org.neo4j.bolt.protocol.v53.BoltProtocolV53;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.struct.StructHeader;
 
@@ -35,16 +36,32 @@ public final class HelloBuilder implements AuthMessageBuilder<HelloBuilder>, Not
     private final ProtocolVersion version;
     private final String defaultUserAgent;
     private final Set<Feature> defaultFeatures;
+    private final Map<String, String> defaultBoltAgent;
 
-    public HelloBuilder(ProtocolVersion version, String defaultUserAgent, Set<Feature> features) {
+    public HelloBuilder(
+            ProtocolVersion version,
+            String defaultUserAgent,
+            Set<Feature> features,
+            Map<String, String> defaultBoltAgent) {
         this.meta = new HashMap<>();
         this.version = version;
         this.defaultUserAgent = defaultUserAgent;
+        this.defaultBoltAgent = defaultBoltAgent;
         this.defaultFeatures = features;
     }
 
     public HelloBuilder withUserAgent(Object agent) {
         meta.put("user_agent", agent);
+        return this;
+    }
+
+    public HelloBuilder withBoltAgent(Map<String, String> agent) {
+        meta.put("bolt_agent", agent);
+        return this;
+    }
+
+    public HelloBuilder withBadBoltAgent(Object agent) {
+        meta.put("bolt_agent", agent);
         return this;
     }
 
@@ -75,7 +92,11 @@ public final class HelloBuilder implements AuthMessageBuilder<HelloBuilder>, Not
 
     @Override
     public ByteBuf build() {
+        // From 5.3 bolt_agent is the default & expected value, user agent is explicitly added by the user.
         meta.putIfAbsent("user_agent", defaultUserAgent);
+        if (this.version.compareTo(BoltProtocolV53.VERSION) >= 0) {
+            meta.putIfAbsent("bolt_agent", defaultBoltAgent);
+        }
 
         if (!this.defaultFeatures.isEmpty()) {
             meta.putIfAbsent(

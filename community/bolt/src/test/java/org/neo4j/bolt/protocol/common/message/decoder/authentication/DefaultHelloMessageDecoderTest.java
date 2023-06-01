@@ -19,13 +19,17 @@
  */
 package org.neo4j.bolt.protocol.common.message.decoder.authentication;
 
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+
 import java.util.List;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.neo4j.bolt.protocol.common.message.notifications.SelectiveNotificationsConfig;
 import org.neo4j.bolt.testing.mock.ConnectionMockFactory;
 import org.neo4j.packstream.error.reader.PackstreamReaderException;
+import org.neo4j.packstream.error.struct.IllegalStructArgumentException;
 import org.neo4j.packstream.io.PackstreamBuf;
 import org.neo4j.packstream.io.value.PackstreamValueReader;
 import org.neo4j.packstream.struct.StructHeader;
@@ -43,6 +47,9 @@ public class DefaultHelloMessageDecoderTest extends AbstractHelloMessageDecoderT
     protected void appendRequiredFields(MapValueBuilder meta) {
         // HELLO no longer includes authentication information
         meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        var boltBuilder = new MapValueBuilder();
+        boltBuilder.add("product", Values.stringValue("stub/5"));
+        meta.add("bolt_agent", boltBuilder.build());
     }
 
     @Test
@@ -56,6 +63,9 @@ public class DefaultHelloMessageDecoderTest extends AbstractHelloMessageDecoderT
 
         var meta = new MapValueBuilder();
         meta.add("user_agent", Values.stringValue("Example/1.0 (+https://github.com/neo4j)"));
+        var boltBuilder = new MapValueBuilder();
+        boltBuilder.add("product", Values.stringValue("stub/5"));
+        meta.add("bolt_agent", boltBuilder.build());
         meta.add("routing", routing);
         var list = ListValueBuilder.newListBuilder(1);
         list.add(Values.stringValue("HINT"));
@@ -72,6 +82,7 @@ public class DefaultHelloMessageDecoderTest extends AbstractHelloMessageDecoderT
         Assertions.assertThat(msg).isNotNull();
         // This assumes that it will be a Normal String and not a neo StringValue.
         Assertions.assertThat(msg.userAgent()).isEqualTo("Example/1.0 (+https://github.com/neo4j)");
+        Assertions.assertThat(msg.boltAgent()).isEqualTo(Map.of("product", "stub/5"));
 
         Assertions.assertThat(msg.routingContext()).isNotNull().satisfies(ctx -> {
             Assertions.assertThat(ctx.isServerRoutingEnabled()).isTrue();
@@ -91,5 +102,71 @@ public class DefaultHelloMessageDecoderTest extends AbstractHelloMessageDecoderT
     @Override
     protected void shouldConvertSensitiveValues() {
         // HELLO no longer includes authentication information
+    }
+
+    @Test
+    protected void shouldFailWithIllegalStructArgumentWhenBoltAgentIsOmitted() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("scheme", Values.stringValue("none"));
+        meta.add("user_agent", Values.stringValue("valid"));
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        assertThatExceptionOfType(IllegalStructArgumentException.class)
+                .isThrownBy(() -> this.getDecoder().read(connection, buf, new StructHeader(1, (short) 0x42)))
+                .withMessage(
+                        "Illegal value for field \"bolt_agent\": Must be a map with string keys and string values.");
+    }
+
+    @Test
+    protected void shouldFailWithIllegalStructArgumentWhenBoltAgentIsInvalid() throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("scheme", Values.stringValue("none"));
+        meta.add("user_agent", Values.stringValue("valid"));
+        var boltAgentBuilder = new MapValueBuilder();
+        boltAgentBuilder.add("product", Values.booleanValue(true));
+        meta.add("bolt_agent", boltAgentBuilder.build());
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        assertThatExceptionOfType(IllegalStructArgumentException.class)
+                .isThrownBy(() -> this.getDecoder().read(connection, buf, new StructHeader(1, (short) 0x42)))
+                .withMessage(
+                        "Illegal value for field \"bolt_agent\": Must be a map with string keys and string values.");
+    }
+
+    @Test
+    protected void shouldFailWithIllegalStructArgumentWhenBoltAgentMissingProductKey()
+            throws PackstreamReaderException {
+        var buf = PackstreamBuf.allocUnpooled();
+        var reader = Mockito.mock(PackstreamValueReader.class);
+
+        var meta = new MapValueBuilder();
+        meta.add("scheme", Values.stringValue("none"));
+        meta.add("user_agent", Values.stringValue("valid"));
+        var boltAgentBuilder = new MapValueBuilder();
+        boltAgentBuilder.add("valid-key", Values.stringValue("valid types."));
+        meta.add("bolt_agent", boltAgentBuilder.build());
+
+        Mockito.doReturn(meta.build()).when(reader).readPrimitiveMap(Mockito.anyLong());
+
+        var connection =
+                ConnectionMockFactory.newFactory().withValueReader(reader).build();
+
+        assertThatExceptionOfType(IllegalStructArgumentException.class)
+                .isThrownBy(() -> this.getDecoder().read(connection, buf, new StructHeader(1, (short) 0x42)))
+                .withMessage("Illegal value for field \"bolt_agent\": Expected map to contain key: 'product'.");
     }
 }

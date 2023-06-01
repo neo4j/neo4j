@@ -88,6 +88,7 @@ public abstract class AbstractConnection implements Connection {
     private volatile BoltConnectionInfo connectionInfo;
     private volatile String username;
     private volatile String userAgent;
+    private volatile Map<String, String> boltAgent;
     private String defaultDatabase;
     private String impersonatedDefaultDatabase;
     protected NotificationsConfig notificationsConfig;
@@ -316,10 +317,12 @@ public abstract class AbstractConnection implements Connection {
             List<Feature> features,
             String userAgent,
             RoutingContext routingContext,
-            NotificationsConfig notificationsConfig) {
+            NotificationsConfig notificationsConfig,
+            Map<String, String> boltAgent) {
         this.userAgent = userAgent;
         this.routingContext = routingContext;
         this.notificationsConfig = notificationsConfig;
+        this.boltAgent = boltAgent;
         return features.stream().filter(this::enableFeature).toList();
     }
 
@@ -374,7 +377,8 @@ public abstract class AbstractConnection implements Connection {
 
     @Override
     public AuthenticationFlag logon(Map<String, Object> token) throws AuthenticationException {
-        this.connectionInfo = new BoltConnectionInfo(this.id, userAgent, this.clientAddress(), this.serverAddress());
+        this.connectionInfo =
+                new BoltConnectionInfo(this.id, userAgent, this.clientAddress(), this.serverAddress(), this.boltAgent);
 
         var result = this.connector().authentication().authenticate(token, this.info());
 
@@ -469,6 +473,11 @@ public abstract class AbstractConnection implements Connection {
         return this.userAgent;
     }
 
+    @Override
+    public Map<String, String> boltAgent() {
+        return this.boltAgent;
+    }
+
     // TODO: Remove this function?
     @Override
     public void updateUser(String username, String userAgent) {
@@ -522,7 +531,8 @@ public abstract class AbstractConnection implements Connection {
                 + fsm + ", loginContext="
                 + loginContext + ", impersonationContext="
                 + impersonationContext + ", connectionInfo="
-                + connectionInfo + ", username='"
+                + connectionInfo + ", boltAgent="
+                + boltAgent + ", username='"
                 + username + '\'' + ", userAgent='"
                 + userAgent + '\'' + ", defaultDatabase='"
                 + defaultDatabase + '\'' + '}';

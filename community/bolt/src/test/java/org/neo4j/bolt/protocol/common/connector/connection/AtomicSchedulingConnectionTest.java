@@ -66,6 +66,7 @@ class AtomicSchedulingConnectionTest {
     private static final String CONNECTION_ID = "bolt-test";
     private static final long CONNECTION_TIME = 424242;
     private static final String USER_AGENT = "BoltTest/0.1.0 (+https://example.org)";
+    private static final Map<String, String> BOLT_AGENT = Map.of("product", "neo4j-test/5.X");
     private static final String CLIENT_ADDRESS = "133.37.21.42:1337";
     private static final String SERVER_ADDRESS = "10.13.37.42:4949";
     private static final String DEFAULT_DB = "neo4j";
@@ -150,9 +151,13 @@ class AtomicSchedulingConnectionTest {
                 this.executorService,
                 this.clock);
 
-        // this is to set useragent
+        // this is to set user agent & bolt agent
         this.connection.negotiate(
-                Collections.emptyList(), USER_AGENT, new RoutingContext(false, Collections.emptyMap()), null);
+                Collections.emptyList(),
+                USER_AGENT,
+                new RoutingContext(false, Collections.emptyMap()),
+                null,
+                BOLT_AGENT);
     }
 
     private void selectProtocol() {
@@ -692,6 +697,7 @@ class AtomicSchedulingConnectionTest {
                 .hasRequestURI(SERVER_ADDRESS)
                 .isSameAs(this.connection.info());
 
+        Assertions.assertThat(this.connection.boltAgent()).isEqualTo(BOLT_AGENT);
         // the login context and username should have been updated to reflect the authentication result
         Assertions.assertThat(this.connection.loginContext()).isSameAs(loginContext);
         Assertions.assertThat(this.connection.username()).isEqualTo(AUTHENTICATED_USER);

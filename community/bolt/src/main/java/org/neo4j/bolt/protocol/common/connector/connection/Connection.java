@@ -219,7 +219,8 @@ public interface Connection extends TrackedNetworkConnection, TransactionOwner {
             List<Feature> features,
             String userAgent,
             RoutingContext routingContext,
-            NotificationsConfig notificationsConfig);
+            NotificationsConfig notificationsConfig,
+            Map<String, String> boltAgent);
 
     /**
      * Retrieves the finite state machine for this connection.

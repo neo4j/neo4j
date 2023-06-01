@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.protocol.common.message.decoder.authentication;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.neo4j.bolt.protocol.common.message.decoder.util.AuthenticationMetadataUtils;
@@ -36,5 +37,10 @@ public abstract class AbstractLegacyHelloMessageDecoder extends DefaultHelloMess
     @Override
     protected NotificationsConfig readNotificationsConfig(Map<String, Object> meta) {
         return null;
+    }
+
+    @Override
+    protected Map<String, String> readBoltAgent(Map<String, Object> meta) {
+        return Collections.emptyMap();
     }
 }

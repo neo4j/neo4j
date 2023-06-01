@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api.connectioninfo;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * This is implemented as an abstract class in order to support different formatting for {@link #asConnectionDetails()},
  * when this method is no longer needed, and we move to a standardized format across all types of connections, we can
@@ -69,6 +72,10 @@ public abstract class ClientConnectionInfo {
      */
     public String requestURI() {
         return null;
+    }
+
+    public Map<String, String> boltAgent() {
+        return Collections.emptyMap();
     }
 
     public static final ClientConnectionInfo EMBEDDED_CONNECTION = new ClientConnectionInfo() {
