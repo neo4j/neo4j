@@ -295,4 +295,38 @@ class extractShortestPathPredicatesTest extends CypherFunSuite with AstConstruct
     solvedPredicates shouldBe ListSet(solvableAllPredicate)
   }
 
+  test("should extract predicates regardless of function name spelling") {
+
+    def makePredicate(funcName: String, negatedPredicate: Boolean) = {
+      val pred = lessThan(prop("m", "prop"), literalInt(123))
+
+      val iterablePredicate = if (negatedPredicate)
+        NoneIterablePredicate(varFor("m"), function(funcName, varFor("path")), Some(pred))(pos)
+      else
+        AllIterablePredicate(varFor("m"), function(funcName, varFor("path")), Some(pred))(pos)
+
+      val solvedPredicate = VariablePredicate(varFor("m"), if (negatedPredicate) not(pred) else pred)
+      (iterablePredicate, solvedPredicate)
+    }
+
+    val functionNames = Seq(("nodes", "relationships"), ("NODES", "RELATIONSHIPS"))
+    for ((nodesF, relationshipsF) <- functionNames) withClue((nodesF, relationshipsF)) {
+      val (allNode, allSolvedNode) = makePredicate(nodesF, negatedPredicate = false)
+      val (allRel, allSolvedRel) = makePredicate(relationshipsF, negatedPredicate = false)
+      val (noneNode, noneSolvedNode) = makePredicate(nodesF, negatedPredicate = true)
+      val (noneRel, noneSolvedRel) = makePredicate(relationshipsF, negatedPredicate = true)
+
+      val (nodePredicates, relationshipPredicates, solvedPredicates) =
+        extractShortestPathPredicates(
+          Set(allNode, allRel, noneNode, noneRel),
+          pathName = Some("path"),
+          relsName = Some("r")
+        )
+
+      nodePredicates shouldBe ListSet(allSolvedNode, noneSolvedNode)
+      relationshipPredicates shouldBe ListSet(allSolvedRel, noneSolvedRel)
+      solvedPredicates shouldBe ListSet(allNode, allRel, noneNode, noneRel)
+    }
+  }
+
 }

@@ -301,6 +301,46 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       .build()
   }
 
+  test("should extract predicates regardless of function name spelling") {
+    val functionNames = Seq(("nodes", "relationships"), ("NODES", "RELATIONSHIPS"))
+    for ((nodesF, relationshipsF) <- functionNames) withClue((nodesF, relationshipsF)) {
+
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setLabelCardinality("A", 100)
+        .setLabelCardinality("B", 900)
+        .setRelationshipCardinality("()-[]->()", 500)
+        .build()
+
+      val q =
+        s"""MATCH (a:A), (b:B)
+           |MATCH p = shortestPath( (a)-[r*]->(b) )
+           |WHERE
+           |  ALL(x IN $nodesF(p) WHERE x.prop > 123) AND
+           |  ALL(y IN $relationshipsF(p) WHERE y.prop <> 'hello') AND
+           |  NONE(z IN $nodesF(p) WHERE z.otherProp < 321) AND
+           |  NONE(t IN $relationshipsF(p) WHERE t.otherProp IS NULL)
+           |RETURN count(*) AS result""".stripMargin
+
+      val plan = planner.plan(q).stripProduceResults
+
+      val nodePredicates = Seq(Predicate("x", "x.prop > 123"), Predicate("z", "not z.otherProp < 321"))
+      val relPredicates = Seq(Predicate("y", "not y.prop = 'hello'"), Predicate("t", "not t.otherProp IS NULL"))
+      plan shouldEqual planner.subPlanBuilder()
+        .aggregation(Seq(), Seq("count(*) AS result"))
+        .shortestPath(
+          "(a)-[r*1..]->(b)",
+          pathName = Some("p"),
+          nodePredicates = nodePredicates,
+          relationshipPredicates = relPredicates
+        )
+        .cartesianProduct()
+        .|.nodeByLabelScan("b", "B")
+        .nodeByLabelScan("a", "A")
+        .build()
+    }
+  }
+
   private def varFor(name: String): Variable = Variable(name)(pos)
 
   private def outgoingPathExpression(fromNode: String, rels: String, toNode: String) = {

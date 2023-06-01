@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.NoneIterablePredicate
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.Variable
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
@@ -444,5 +445,34 @@ class VarLengthPlanningIntegrationTest
       .expand("(anon_0)-[e*1..2]->(anon_1)")
       .allNodeScan("anon_0")
       .build()
+  }
+
+  test("should extract predicates regardless of function name spelling") {
+    val functionNames = Seq(("nodes", "relationships"), ("NODES", "RELATIONSHIPS"))
+    for ((nodesF, relationshipsF) <- functionNames) withClue((nodesF, relationshipsF)) {
+      val planner = plannerBuilder()
+        .setAllNodesCardinality(1000)
+        .setRelationshipCardinality("()-[]->()", 500)
+        .build()
+
+      val q =
+        s"""MATCH p = (a)-[r*]->(b)
+           |WHERE
+           |  ALL(x IN $nodesF(p) WHERE x.prop > 123) AND
+           |  ALL(y IN $relationshipsF(p) WHERE y.prop <> 'hello') AND
+           |  NONE(z IN $nodesF(p) WHERE z.otherProp < 321) AND
+           |  NONE(t IN $relationshipsF(p) WHERE t.otherProp IS NULL)
+           |RETURN count(*) AS result""".stripMargin
+
+      val plan = planner.plan(q).stripProduceResults
+
+      val nodePredicates = Seq(Predicate("x", "x.prop > 123"), Predicate("z", "not z.otherProp < 321"))
+      val relPredicates = Seq(Predicate("y", "not y.prop = 'hello'"), Predicate("t", "not t.otherProp IS NULL"))
+      plan shouldEqual planner.subPlanBuilder()
+        .aggregation(Seq(), Seq("count(*) AS result"))
+        .expand("(a)-[r*1..]->(b)", nodePredicates = nodePredicates, relationshipPredicates = relPredicates)
+        .allNodeScan("a")
+        .build()
+    }
   }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.NodesFunctionArguments
+import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.RelationshipsFunctionArguments
 import org.neo4j.cypher.internal.expressions.AllIterablePredicate
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FilterScope
@@ -174,20 +176,13 @@ object extractPredicates {
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _, // namespace
-              FunctionName(fname),
-              false, // distinct
-              Seq(
-                PathExpression(
-                  NodePathStep(
-                    startNode: LogicalVariable,
-                    MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
-                  )
-                )
+            RelationshipsFunctionArguments(PathExpression(
+              NodePathStep(
+                startNode: LogicalVariable,
+                MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
               )
-            )
-          ) if fname == "relationships" =>
+            ))
+          ) =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
         case _ => None
@@ -200,20 +195,15 @@ object extractPredicates {
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _,
-              FunctionName(fname),
-              false,
-              Seq(
-                PathExpression(
-                  NodePathStep(
-                    startNode: LogicalVariable,
-                    MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
-                  )
+            NodesFunctionArguments(
+              PathExpression(
+                NodePathStep(
+                  startNode: LogicalVariable,
+                  MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
                 )
               )
             )
-          ) if fname == "nodes" =>
+          ) =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
         case _ => None
@@ -226,20 +216,15 @@ object extractPredicates {
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _,
-              FunctionName(fname),
-              false,
-              Seq(
-                PathExpression(
-                  NodePathStep(
-                    startNode: LogicalVariable,
-                    MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
-                  )
+            RelationshipsFunctionArguments(
+              PathExpression(
+                NodePathStep(
+                  startNode: LogicalVariable,
+                  MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
                 )
               )
             )
-          ) if fname == "relationships" =>
+          ) =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
         case _ => None
@@ -252,33 +237,45 @@ object extractPredicates {
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _,
-              FunctionName(fname),
-              false,
-              Seq(
-                PathExpression(
-                  NodePathStep(
-                    startNode: LogicalVariable,
-                    MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
-                  )
+            NodesFunctionArguments(
+              PathExpression(
+                NodePathStep(
+                  startNode: LogicalVariable,
+                  MultiRelationshipPathStep(rel: LogicalVariable, _, _, NilPathStep())
                 )
               )
             )
-          ) if fname == "nodes" =>
+          ) =>
           Some((startNode.name, rel.name, variable, innerPredicate))
 
         case _ => None
       }
   }
 
+  object NodesFunctionArguments {
+
+    def unapplySeq(f: FunctionInvocation): Option[IndexedSeq[Expression]] = f match {
+      case FunctionInvocation(_, FunctionName(fname), false, args)
+        if fname.equalsIgnoreCase("nodes") => Some(args)
+      case _ => None
+    }
+  }
+
+  object RelationshipsFunctionArguments {
+
+    def unapplySeq(f: FunctionInvocation): Option[IndexedSeq[Expression]] = f match {
+      case FunctionInvocation(_, FunctionName(fname), false, args)
+        if fname.equalsIgnoreCase("relationships") => Some(args)
+      case _ => None
+    }
+  }
 }
 
 object extractShortestPathPredicates {
 
-  import extractPredicates.NodePredicates
-  import extractPredicates.RelationshipPredicates
-  import extractPredicates.SolvedPredicates
+  import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.NodePredicates
+  import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.RelationshipPredicates
+  import org.neo4j.cypher.internal.compiler.planner.logical.idp.extractPredicates.SolvedPredicates
 
   def apply(
     availablePredicates: Set[Expression],
@@ -378,13 +375,8 @@ object extractShortestPathPredicates {
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _, // namespace
-              FunctionName(fname),
-              false, // distinct
-              Seq(Variable(pathName))
-            )
-          ) if fname == "relationships" =>
+            RelationshipsFunctionArguments(Variable(pathName))
+          ) =>
           Some((Some(pathName), variable, innerPredicate))
 
         case _ => None
@@ -397,13 +389,8 @@ object extractShortestPathPredicates {
       v match {
         case AllIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _,
-              FunctionName(fname),
-              false,
-              Seq(Variable(pathName))
-            )
-          ) if fname == "nodes" =>
+            NodesFunctionArguments(Variable(pathName))
+          ) =>
           Some((Some(pathName), variable, innerPredicate))
 
         case _ => None
@@ -416,13 +403,8 @@ object extractShortestPathPredicates {
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _,
-              FunctionName(fname),
-              false,
-              Seq(Variable(pathName))
-            )
-          ) if fname == "relationships" =>
+            RelationshipsFunctionArguments(Variable(pathName))
+          ) =>
           Some((Some(pathName), variable, innerPredicate))
 
         case _ => None
@@ -435,13 +417,8 @@ object extractShortestPathPredicates {
       v match {
         case NoneIterablePredicate(
             FilterScope(variable, Some(innerPredicate)),
-            FunctionInvocation(
-              _,
-              FunctionName(fname),
-              false,
-              Seq(Variable(pathName))
-            )
-          ) if fname == "nodes" =>
+            NodesFunctionArguments(Variable(pathName))
+          ) =>
           Some((Some(pathName), variable, innerPredicate))
 
         case _ => None
