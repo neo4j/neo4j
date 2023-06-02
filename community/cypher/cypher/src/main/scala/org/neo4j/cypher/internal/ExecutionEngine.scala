@@ -34,6 +34,7 @@ import org.neo4j.exceptions.ParameterNotFoundException
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.query.FunctionInformation
+import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.kernel.impl.query.QueryExecution
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
 import org.neo4j.kernel.impl.query.QuerySubscriber
@@ -45,7 +46,6 @@ import org.neo4j.values.virtual.MapValue
 import java.lang
 import java.time.Clock
 
-import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SeqHasAsJava
 
 /**
@@ -386,12 +386,20 @@ case class FunctionWithInformation(f: FunctionTypeSignature) extends FunctionInf
 
   override def isAggregationFunction: lang.Boolean = f.isAggregationFunction
 
+  override def isDeprecated: lang.Boolean = f.deprecated
+
   override def returnType: String = f.outputType.toNeoTypeString
 
-  override def inputSignature: java.util.List[java.util.Map[String, String]] =
+  override def inputSignature: java.util.List[InputInformation] =
     f.names.zip(f.argumentTypes ++ f.optionalTypes).map { case (name, cType) =>
       val typeString = cType.toNeoTypeString
-      Map("name" -> name, "type" -> typeString, "description" -> s"$name :: $typeString").asJava
+      new InputInformation(
+        name,
+        typeString,
+        s"$name :: $typeString",
+        false,
+        java.util.Optional.empty[String]()
+      )
     }.asJava
 }
 

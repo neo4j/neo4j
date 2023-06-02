@@ -152,8 +152,8 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     assertRewrite(
       "SHOW FUNCTIONS YIELD *",
       """SHOW FUNCTIONS
-        |YIELD name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution
-        |RETURN name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution""".stripMargin,
+        |YIELD name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution, isDeprecated
+        |RETURN name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution, isDeprecated""".stripMargin,
       rewriteShowCommand = true,
       showCommandReturnAddedInRewrite = true
     )
@@ -161,8 +161,8 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     assertRewrite(
       "SHOW FUNCTIONS YIELD * RETURN *",
       """SHOW FUNCTIONS
-        |YIELD name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution
-        |RETURN name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution""".stripMargin,
+        |YIELD name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution, isDeprecated
+        |RETURN name, category, description, signature, isBuiltIn, argumentDescription, returnDescription, aggregating, rolesExecution, rolesBoostedExecution, isDeprecated""".stripMargin,
       rewriteShowCommand = true
     )
 

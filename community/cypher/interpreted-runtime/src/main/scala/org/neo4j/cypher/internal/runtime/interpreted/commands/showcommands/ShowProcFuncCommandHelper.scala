@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER
 import org.neo4j.internal.kernel.api.security.SecurityAuthorizationHandler
 import org.neo4j.internal.kernel.api.security.SecurityContext
 import org.neo4j.internal.kernel.api.security.Segment
+import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.string.Globbing
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -94,22 +95,33 @@ object ShowProcFuncCommandHelper {
     case None    => (Set.empty[String], false)
   }
 
-  def getSignatureValues(fields: util.List[FieldSignature]): List[Map[String, String]] = fields.asScala.toList.map(
-    f => {
-      val values = Map("name" -> f.name, "type" -> f.neo4jType.toString, "description" -> f.toString)
-      val default = f.defaultValue()
-      if (default.isPresent) values ++ Map("default" -> default.get.toString) else values
-    }
-  )
+  def getSignatureValues(fields: util.List[FieldSignature]): List[InputInformation] = fields.asScala.toList.map(f => {
+    val defaultValue = f.defaultValue()
+    val default =
+      if (defaultValue.isPresent) java.util.Optional.of[String](defaultValue.get.toString)
+      else java.util.Optional.empty[String]()
 
-  def fieldDescriptions(fields: List[Map[String, String]]): ListValue = {
+    new InputInformation(
+      f.name,
+      f.neo4jType.toString,
+      f.toString,
+      f.isDeprecated,
+      default
+    )
+  })
+
+  def fieldDescriptions(fields: List[InputInformation]): ListValue = {
     val fieldMaps: List[AnyValue] = fields.map(f => {
-      val keys = Array("name", "type", "description")
-      val values: Array[AnyValue] =
-        Array(Values.stringValue(f("name")), Values.stringValue(f("type")), Values.stringValue(f("description")))
-      val default = f.get("default")
+      val keys = Array("name", "type", "description", "isDeprecated")
+      val values: Array[AnyValue] = Array(
+        Values.stringValue(f.name),
+        Values.stringValue(f.`type`),
+        Values.stringValue(f.description),
+        Values.booleanValue(f.isDeprecated)
+      )
+      val default = f.defaultValue()
 
-      if (default.isDefined) {
+      if (default.isPresent) {
         VirtualValues.map(
           keys :+ "default",
           values :+ Values.stringValue(default.get)

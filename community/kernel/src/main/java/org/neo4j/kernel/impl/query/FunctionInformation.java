@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.query;
 
+import java.util.Optional;
+
 public interface FunctionInformation {
     String getFunctionName();
 
@@ -30,7 +32,12 @@ public interface FunctionInformation {
 
     java.lang.Boolean isAggregationFunction();
 
+    java.lang.Boolean isDeprecated();
+
     String returnType();
 
-    java.util.List<java.util.Map<String, String>> inputSignature();
+    java.util.List<InputInformation> inputSignature();
+
+    record InputInformation(
+            String name, String type, String description, Boolean isDeprecated, Optional<String> defaultValue) {}
 }

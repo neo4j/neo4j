@@ -132,6 +132,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
     admin: Option[Boolean] = None,
     roles: Option[List[String]] = None,
     rolesBoosted: Option[List[String]] = None,
+    isDeprecated: Option[Boolean] = None,
     option: Option[Map[String, AnyValue]] = None
   ): Unit = {
     name.foreach(expected => resultMap("name") should be(Values.stringValue(expected)))
@@ -154,6 +155,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       if (expected == null) resultMap("rolesBoostedExecution") should be(Values.NO_VALUE)
       else resultMap("rolesBoostedExecution") should be(VirtualValues.list(expected.map(Values.stringValue): _*))
     )
+    isDeprecated.foreach(expected => resultMap("isDeprecated") should be(Values.booleanValue(expected)))
     option.foreach(expected =>
       resultMap("option") should be(VirtualValues.map(expected.view.keys.toArray, expected.view.values.toArray))
     )
@@ -201,6 +203,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
         "admin",
         "rolesExecution",
         "rolesBoostedExecution",
+        "isDeprecated",
         "option"
       )
     })
@@ -246,6 +249,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
         "admin",
         "rolesExecution",
         "rolesBoostedExecution",
+        "isDeprecated",
         "option"
       )
     })
@@ -273,6 +277,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       admin = false,
       roles = Some(null),
       rolesBoosted = Some(null),
+      isDeprecated = false,
       option = Map("deprecated" -> Values.FALSE)
     )
     checkResult(
@@ -290,6 +295,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       admin = true,
       roles = Some(null),
       rolesBoosted = Some(null),
+      isDeprecated = false,
       option = Map("deprecated" -> Values.FALSE)
     )
     checkResult(
@@ -304,6 +310,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       admin = false,
       roles = Some(null),
       rolesBoosted = Some(null),
+      isDeprecated = false,
       option = Map("deprecated" -> Values.FALSE)
     )
   }
@@ -330,6 +337,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       admin = false,
       roles = List(publicRole, adminRole),
       rolesBoosted = List(adminRole),
+      isDeprecated = false,
       option = Map("deprecated" -> Values.FALSE)
     )
     checkResult(
@@ -347,6 +355,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       admin = true,
       roles = List(adminRole),
       rolesBoosted = List(adminRole),
+      isDeprecated = false,
       option = Map("deprecated" -> Values.FALSE)
     )
     checkResult(
@@ -361,6 +370,7 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
       admin = false,
       roles = List(publicRole, adminRole),
       rolesBoosted = List(adminRole),
+      isDeprecated = false,
       option = Map("deprecated" -> Values.FALSE)
     )
   }
@@ -433,7 +443,12 @@ class ShowProceduresCommandTest extends ShowCommandTestBase {
 
     // Then
     result should have size 1
-    checkResult(result.head, name = "proc.deprecated", option = Map("deprecated" -> Values.TRUE))
+    checkResult(
+      result.head,
+      name = "proc.deprecated",
+      isDeprecated = true,
+      option = Map("deprecated" -> Values.TRUE)
+    )
   }
 
   test("show procedures should not give back roles without SHOW ROLE privilege") {

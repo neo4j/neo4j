@@ -147,6 +147,8 @@ case class ShowProceduresCommand(
         "rolesExecution" -> rolesList,
         // List of roles that can execute the procedure with boosted privileges
         "rolesBoostedExecution" -> boostedRolesList,
+        // Tells if the procedure is deprecated
+        "isDeprecated" -> Values.booleanValue(proc.deprecated().isPresent),
         // Additional output, for example if the procedure is deprecated
         "option" -> getOptionValue(proc)
       )

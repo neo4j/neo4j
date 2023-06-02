@@ -47,7 +47,8 @@ trait ShowSettingsAcceptanceTestSupport extends GraphDatabaseTestSupport {
     defaultValue: String,
     startupValue: String,
     validValues: String,
-    isExplicitlySet: Boolean
+    isExplicitlySet: Boolean,
+    deprecated: Boolean
   ): Map[String, Any] = Map(
     "name" -> name,
     "description" -> description,
@@ -56,7 +57,8 @@ trait ShowSettingsAcceptanceTestSupport extends GraphDatabaseTestSupport {
     "defaultValue" -> defaultValue,
     "startupValue" -> startupValue,
     "validValues" -> validValues,
-    "isExplicitlySet" -> isExplicitlySet
+    "isExplicitlySet" -> isExplicitlySet,
+    "isDeprecated" -> deprecated
   )
 
   protected def allSettings(graph: GraphDatabaseCypherService): Seq[Map[String, Any]] = {
@@ -77,7 +79,8 @@ trait ShowSettingsAcceptanceTestSupport extends GraphDatabaseTestSupport {
           defaultValue = s.valueToString(config.getDefault(s)),
           startupValue = s.valueToString(config.getStartupValue(s)),
           validValues = s.validValues(),
-          config.isExplicitlySet(s)
+          config.isExplicitlySet(s),
+          s.deprecated()
         )
       }
   }

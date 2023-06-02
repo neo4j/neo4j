@@ -1657,6 +1657,7 @@ object ShowProceduresClause {
       ShowColumn("admin", CTBoolean)(position),
       ShowColumn("rolesExecution", CTList(CTString))(position),
       ShowColumn("rolesBoostedExecution", CTList(CTString))(position),
+      ShowColumn("isDeprecated", CTBoolean)(position),
       ShowColumn("option", CTMap)(position)
     )
 
@@ -1701,7 +1702,8 @@ object ShowFunctionsClause {
       ShowColumn("returnDescription")(position),
       ShowColumn("aggregating", CTBoolean)(position),
       ShowColumn("rolesExecution", CTList(CTString))(position),
-      ShowColumn("rolesBoostedExecution", CTList(CTString))(position)
+      ShowColumn("rolesBoostedExecution", CTList(CTString))(position),
+      ShowColumn("isDeprecated", CTBoolean)(position)
     )
 
     ShowFunctionsClause(
@@ -1942,7 +1944,8 @@ object ShowSettingsClause {
     val verboseCols = List(
       ShowColumn("startupValue")(position),
       ShowColumn("isExplicitlySet", CTBoolean)(position),
-      ShowColumn("validValues")(position)
+      ShowColumn("validValues")(position),
+      ShowColumn("isDeprecated", CTBoolean)(position)
     )
 
     ShowSettingsClause(

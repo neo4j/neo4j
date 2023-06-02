@@ -9,7 +9,8 @@
       {
         "name": "input",
         "description": "input :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -22,7 +23,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "abs",
@@ -34,7 +36,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -47,7 +50,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "acos",
@@ -59,7 +63,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -72,7 +77,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "all",
@@ -84,12 +90,14 @@
       {
         "name": "variable",
         "description": "variable :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "name": "list",
         "description": "list :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -102,7 +110,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "any",
@@ -114,12 +123,14 @@
       {
         "name": "variable",
         "description": "variable :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "name": "list",
         "description": "list :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -132,7 +143,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "asin",
@@ -144,7 +156,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -157,7 +170,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "atan",
@@ -169,7 +183,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -182,7 +197,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "atan2",
@@ -194,12 +210,14 @@
       {
         "name": "y",
         "description": "y :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       },
       {
         "name": "x",
         "description": "x :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -212,7 +230,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "avg",
@@ -224,7 +243,8 @@
       {
         "name": "input",
         "description": "input :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -237,7 +257,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "avg",
@@ -249,7 +270,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -262,7 +284,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "avg",
@@ -274,7 +297,8 @@
       {
         "name": "input",
         "description": "input :: DURATION?",
-        "type": "DURATION?"
+        "type": "DURATION?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DURATION?",
@@ -287,7 +311,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "ceil",
@@ -299,7 +324,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -312,7 +338,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "coalesce",
@@ -324,7 +351,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "ANY?",
@@ -337,7 +365,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "collect",
@@ -349,7 +378,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF ANY?",
@@ -362,7 +392,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "cos",
@@ -374,7 +405,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -387,7 +419,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "cot",
@@ -399,7 +432,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -412,7 +446,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "count",
@@ -424,7 +459,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -437,7 +473,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "date",
@@ -450,7 +487,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATE?",
@@ -463,7 +501,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "date.realtime",
@@ -476,7 +515,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATE?",
@@ -489,7 +529,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "date.statement",
@@ -502,7 +543,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATE?",
@@ -515,7 +557,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "date.transaction",
@@ -528,7 +571,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATE?",
@@ -541,7 +585,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "date.truncate",
@@ -553,19 +598,22 @@
       {
         "name": "unit",
         "description": "unit :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=null, type=MAP?}",
         "name": "fields",
         "description": "fields = null :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATE?",
@@ -578,7 +626,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "datetime",
@@ -591,7 +640,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATETIME?",
@@ -604,7 +654,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "datetime.fromepoch",
@@ -616,12 +667,14 @@
       {
         "name": "seconds",
         "description": "seconds :: NUMBER?",
-        "type": "NUMBER?"
+        "type": "NUMBER?",
+        "isDeprecated": false
       },
       {
         "name": "nanoseconds",
         "description": "nanoseconds :: NUMBER?",
-        "type": "NUMBER?"
+        "type": "NUMBER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATETIME?",
@@ -634,7 +687,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "datetime.fromepochmillis",
@@ -646,7 +700,8 @@
       {
         "name": "milliseconds",
         "description": "milliseconds :: NUMBER?",
-        "type": "NUMBER?"
+        "type": "NUMBER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATETIME?",
@@ -659,7 +714,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "datetime.realtime",
@@ -672,7 +728,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATETIME?",
@@ -685,7 +742,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "datetime.statement",
@@ -698,7 +756,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATETIME?",
@@ -711,7 +770,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "datetime.transaction",
@@ -724,7 +784,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATETIME?",
@@ -737,7 +798,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "datetime.truncate",
@@ -749,19 +811,22 @@
       {
         "name": "unit",
         "description": "unit :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=null, type=MAP?}",
         "name": "fields",
         "description": "fields = null :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DATETIME?",
@@ -774,7 +839,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "degrees",
@@ -786,7 +852,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -799,7 +866,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "duration",
@@ -811,7 +879,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DURATION?",
@@ -824,7 +893,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "duration.between",
@@ -836,12 +906,14 @@
       {
         "name": "from",
         "description": "from :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "name": "to",
         "description": "to :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DURATION?",
@@ -854,7 +926,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "duration.inDays",
@@ -866,12 +939,14 @@
       {
         "name": "from",
         "description": "from :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "name": "to",
         "description": "to :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DURATION?",
@@ -884,7 +959,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "duration.inMonths",
@@ -896,12 +972,14 @@
       {
         "name": "from",
         "description": "from :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "name": "to",
         "description": "to :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DURATION?",
@@ -914,7 +992,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "duration.inSeconds",
@@ -926,12 +1005,14 @@
       {
         "name": "from",
         "description": "from :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "name": "to",
         "description": "to :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DURATION?",
@@ -944,7 +1025,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "e",
@@ -963,7 +1045,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "elementId",
@@ -975,7 +1058,8 @@
       {
         "name": "input",
         "description": "input :: NODE?",
-        "type": "NODE?"
+        "type": "NODE?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -988,7 +1072,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "elementId",
@@ -1000,7 +1085,8 @@
       {
         "name": "input",
         "description": "input :: RELATIONSHIP?",
-        "type": "RELATIONSHIP?"
+        "type": "RELATIONSHIP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -1013,7 +1099,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "endNode",
@@ -1025,7 +1112,8 @@
       {
         "name": "input",
         "description": "input :: RELATIONSHIP?",
-        "type": "RELATIONSHIP?"
+        "type": "RELATIONSHIP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "NODE?",
@@ -1038,7 +1126,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "exists",
@@ -1050,7 +1139,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -1063,7 +1153,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "exp",
@@ -1075,7 +1166,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -1088,7 +1180,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "file",
@@ -1107,7 +1200,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "floor",
@@ -1119,7 +1213,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -1132,7 +1227,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "graph.names",
@@ -1152,7 +1248,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "graph.propertiesByName",
@@ -1165,7 +1262,8 @@
       {
         "name": "graphName",
         "description": "graphName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "MAP?",
@@ -1178,7 +1276,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "haversin",
@@ -1190,7 +1289,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -1203,7 +1303,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "head",
@@ -1215,7 +1316,8 @@
       {
         "name": "list",
         "description": "list :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "ANY?",
@@ -1228,7 +1330,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "id",
@@ -1240,7 +1343,8 @@
       {
         "name": "input",
         "description": "input :: NODE?",
-        "type": "NODE?"
+        "type": "NODE?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -1253,7 +1357,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "id",
@@ -1265,7 +1370,8 @@
       {
         "name": "input",
         "description": "input :: RELATIONSHIP?",
-        "type": "RELATIONSHIP?"
+        "type": "RELATIONSHIP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -1278,7 +1384,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "isEmpty",
@@ -1290,7 +1397,8 @@
       {
         "name": "input",
         "description": "input :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -1303,7 +1411,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "isEmpty",
@@ -1315,7 +1424,8 @@
       {
         "name": "input",
         "description": "input :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -1328,7 +1438,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "isEmpty",
@@ -1340,7 +1451,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -1353,7 +1465,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "isNaN",
@@ -1365,7 +1478,8 @@
       {
         "name": "input",
         "description": "input :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -1378,7 +1492,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "isNaN",
@@ -1390,7 +1505,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -1403,7 +1519,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "keys",
@@ -1415,7 +1532,8 @@
       {
         "name": "input",
         "description": "input :: NODE?",
-        "type": "NODE?"
+        "type": "NODE?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF STRING?",
@@ -1428,7 +1546,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "keys",
@@ -1440,7 +1559,8 @@
       {
         "name": "input",
         "description": "input :: RELATIONSHIP?",
-        "type": "RELATIONSHIP?"
+        "type": "RELATIONSHIP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF STRING?",
@@ -1453,7 +1573,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "keys",
@@ -1465,7 +1586,8 @@
       {
         "name": "input",
         "description": "input :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF STRING?",
@@ -1478,7 +1600,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "labels",
@@ -1490,7 +1613,8 @@
       {
         "name": "input",
         "description": "input :: NODE?",
-        "type": "NODE?"
+        "type": "NODE?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF STRING?",
@@ -1503,7 +1627,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "last",
@@ -1515,7 +1640,8 @@
       {
         "name": "list",
         "description": "list :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "ANY?",
@@ -1528,7 +1654,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "left",
@@ -1540,12 +1667,14 @@
       {
         "name": "original",
         "description": "original :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "length",
         "description": "length :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -1558,7 +1687,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "length",
@@ -1570,7 +1700,8 @@
       {
         "name": "input",
         "description": "input :: PATH?",
-        "type": "PATH?"
+        "type": "PATH?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -1583,7 +1714,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "linenumber",
@@ -1602,7 +1734,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localdatetime",
@@ -1615,7 +1748,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALDATETIME?",
@@ -1628,7 +1762,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localdatetime.realtime",
@@ -1641,7 +1776,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALDATETIME?",
@@ -1654,7 +1790,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localdatetime.statement",
@@ -1667,7 +1804,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALDATETIME?",
@@ -1680,7 +1818,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localdatetime.transaction",
@@ -1693,7 +1832,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALDATETIME?",
@@ -1706,7 +1846,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localdatetime.truncate",
@@ -1718,19 +1859,22 @@
       {
         "name": "unit",
         "description": "unit :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=null, type=MAP?}",
         "name": "fields",
         "description": "fields = null :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALDATETIME?",
@@ -1743,7 +1887,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localtime",
@@ -1756,7 +1901,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALTIME?",
@@ -1769,7 +1915,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localtime.realtime",
@@ -1782,7 +1929,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALTIME?",
@@ -1795,7 +1943,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localtime.statement",
@@ -1808,7 +1957,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALTIME?",
@@ -1821,7 +1971,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localtime.transaction",
@@ -1834,7 +1985,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALTIME?",
@@ -1847,7 +1999,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "localtime.truncate",
@@ -1859,19 +2012,22 @@
       {
         "name": "unit",
         "description": "unit :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=null, type=MAP?}",
         "name": "fields",
         "description": "fields = null :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LOCALTIME?",
@@ -1884,7 +2040,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "log",
@@ -1896,7 +2053,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -1909,7 +2067,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "log10",
@@ -1921,7 +2080,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -1934,7 +2094,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "ltrim",
@@ -1946,7 +2107,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -1959,7 +2121,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "max",
@@ -1971,7 +2134,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "ANY?",
@@ -1984,7 +2148,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "min",
@@ -1996,7 +2161,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "ANY?",
@@ -2009,7 +2175,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "nodes",
@@ -2021,7 +2188,8 @@
       {
         "name": "input",
         "description": "input :: PATH?",
-        "type": "PATH?"
+        "type": "PATH?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF NODE?",
@@ -2034,7 +2202,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "none",
@@ -2046,12 +2215,14 @@
       {
         "name": "variable",
         "description": "variable :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "name": "list",
         "description": "list :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -2064,7 +2235,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "percentileCont",
@@ -2076,12 +2248,14 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       },
       {
         "name": "percentile",
         "description": "percentile :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -2094,7 +2268,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "percentileDisc",
@@ -2106,12 +2281,14 @@
       {
         "name": "input",
         "description": "input :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "percentile",
         "description": "percentile :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -2124,7 +2301,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "percentileDisc",
@@ -2136,12 +2314,14 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       },
       {
         "name": "percentile",
         "description": "percentile :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -2154,7 +2334,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "pi",
@@ -2173,7 +2354,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "point",
@@ -2185,7 +2367,8 @@
       {
         "name": "input",
         "description": "input :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "POINT?",
@@ -2198,7 +2381,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "point.distance",
@@ -2210,12 +2394,14 @@
       {
         "name": "from",
         "description": "from :: POINT?",
-        "type": "POINT?"
+        "type": "POINT?",
+        "isDeprecated": false
       },
       {
         "name": "to",
         "description": "to :: POINT?",
-        "type": "POINT?"
+        "type": "POINT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -2228,7 +2414,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "point.withinBBox",
@@ -2240,17 +2427,20 @@
       {
         "name": "point",
         "description": "point :: POINT?",
-        "type": "POINT?"
+        "type": "POINT?",
+        "isDeprecated": false
       },
       {
         "name": "lowerLeft",
         "description": "lowerLeft :: POINT?",
-        "type": "POINT?"
+        "type": "POINT?",
+        "isDeprecated": false
       },
       {
         "name": "upperRight",
         "description": "upperRight :: POINT?",
-        "type": "POINT?"
+        "type": "POINT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -2263,7 +2453,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "properties",
@@ -2275,7 +2466,8 @@
       {
         "name": "input",
         "description": "input :: NODE?",
-        "type": "NODE?"
+        "type": "NODE?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "MAP?",
@@ -2288,7 +2480,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "properties",
@@ -2300,7 +2493,8 @@
       {
         "name": "input",
         "description": "input :: RELATIONSHIP?",
-        "type": "RELATIONSHIP?"
+        "type": "RELATIONSHIP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "MAP?",
@@ -2313,7 +2507,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "properties",
@@ -2325,7 +2520,8 @@
       {
         "name": "input",
         "description": "input :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "MAP?",
@@ -2338,7 +2534,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "radians",
@@ -2350,7 +2547,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -2363,7 +2561,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "rand",
@@ -2382,7 +2581,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "randomUUID",
@@ -2401,7 +2601,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "range",
@@ -2413,12 +2614,14 @@
       {
         "name": "start",
         "description": "start :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "end",
         "description": "end :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF INTEGER?",
@@ -2431,7 +2634,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "range",
@@ -2443,17 +2647,20 @@
       {
         "name": "start",
         "description": "start :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "end",
         "description": "end :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "step",
         "description": "step :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF INTEGER?",
@@ -2466,7 +2673,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "reduce",
@@ -2478,12 +2686,14 @@
       {
         "name": "accumulator",
         "description": "accumulator :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "name": "variable",
         "description": "variable :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "ANY?",
@@ -2496,7 +2706,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "relationships",
@@ -2508,7 +2719,8 @@
       {
         "name": "input",
         "description": "input :: PATH?",
-        "type": "PATH?"
+        "type": "PATH?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF RELATIONSHIP?",
@@ -2521,7 +2733,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "replace",
@@ -2533,17 +2746,20 @@
       {
         "name": "original",
         "description": "original :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "search",
         "description": "search :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "replace",
         "description": "replace :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -2556,7 +2772,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "reverse",
@@ -2568,7 +2785,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -2581,7 +2799,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "reverse",
@@ -2593,7 +2812,8 @@
       {
         "name": "input",
         "description": "input :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF ANY?",
@@ -2606,7 +2826,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "right",
@@ -2618,12 +2839,14 @@
       {
         "name": "original",
         "description": "original :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "length",
         "description": "length :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -2636,7 +2859,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "round",
@@ -2648,7 +2872,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -2661,7 +2886,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "round",
@@ -2673,12 +2899,14 @@
       {
         "name": "value",
         "description": "value :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       },
       {
         "name": "precision",
         "description": "precision :: NUMBER?",
-        "type": "NUMBER?"
+        "type": "NUMBER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -2691,7 +2919,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "round",
@@ -2703,17 +2932,20 @@
       {
         "name": "value",
         "description": "value :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       },
       {
         "name": "precision",
         "description": "precision :: NUMBER?",
-        "type": "NUMBER?"
+        "type": "NUMBER?",
+        "isDeprecated": false
       },
       {
         "name": "mode",
         "description": "mode :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -2726,7 +2958,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "rtrim",
@@ -2738,7 +2971,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -2751,7 +2985,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "sign",
@@ -2763,7 +2998,8 @@
       {
         "name": "input",
         "description": "input :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -2776,7 +3012,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "sign",
@@ -2788,7 +3025,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -2801,7 +3039,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "sin",
@@ -2813,7 +3052,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -2826,7 +3066,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "single",
@@ -2838,12 +3079,14 @@
       {
         "name": "variable",
         "description": "variable :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "name": "list",
         "description": "list :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -2856,7 +3099,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "size",
@@ -2868,7 +3112,8 @@
       {
         "name": "input",
         "description": "input :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -2881,7 +3126,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "size",
@@ -2893,7 +3139,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -2906,7 +3153,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "split",
@@ -2918,12 +3166,14 @@
       {
         "name": "original",
         "description": "original :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "splitDelimiter",
         "description": "splitDelimiter :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF STRING?",
@@ -2936,7 +3186,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "split",
@@ -2948,12 +3199,14 @@
       {
         "name": "original",
         "description": "original :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "splitDelimiters",
         "description": "splitDelimiters :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
+        "type": "LIST? OF STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF STRING?",
@@ -2966,7 +3219,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "sqrt",
@@ -2978,7 +3232,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -2991,7 +3246,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "startNode",
@@ -3003,7 +3259,8 @@
       {
         "name": "input",
         "description": "input :: RELATIONSHIP?",
-        "type": "RELATIONSHIP?"
+        "type": "RELATIONSHIP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "NODE?",
@@ -3016,7 +3273,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "stdev",
@@ -3028,7 +3286,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -3041,7 +3300,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "stdevp",
@@ -3053,7 +3313,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -3066,7 +3327,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "substring",
@@ -3078,12 +3340,14 @@
       {
         "name": "original",
         "description": "original :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "start",
         "description": "start :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -3096,7 +3360,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "substring",
@@ -3108,17 +3373,20 @@
       {
         "name": "original",
         "description": "original :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "start",
         "description": "start :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "length",
         "description": "length :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -3131,7 +3399,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "sum",
@@ -3143,7 +3412,8 @@
       {
         "name": "input",
         "description": "input :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -3156,7 +3426,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "sum",
@@ -3168,7 +3439,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -3181,7 +3453,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "sum",
@@ -3193,7 +3466,8 @@
       {
         "name": "input",
         "description": "input :: DURATION?",
-        "type": "DURATION?"
+        "type": "DURATION?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "DURATION?",
@@ -3206,7 +3480,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "tail",
@@ -3218,7 +3493,8 @@
       {
         "name": "input",
         "description": "input :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF ANY?",
@@ -3231,7 +3507,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "tan",
@@ -3243,7 +3520,8 @@
       {
         "name": "input",
         "description": "input :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -3256,7 +3534,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "time",
@@ -3269,7 +3548,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "TIME?",
@@ -3282,7 +3562,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "time.realtime",
@@ -3295,7 +3576,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "TIME?",
@@ -3308,7 +3590,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "time.statement",
@@ -3321,7 +3604,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "TIME?",
@@ -3334,7 +3618,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "time.transaction",
@@ -3347,7 +3632,8 @@
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "timezone",
         "description": "timezone = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "TIME?",
@@ -3360,7 +3646,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "time.truncate",
@@ -3372,19 +3659,22 @@
       {
         "name": "unit",
         "description": "unit :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=DEFAULT_TEMPORAL_ARGUMENT, type=ANY?}",
         "name": "input",
         "description": "input = DEFAULT_TEMPORAL_ARGUMENT :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=null, type=MAP?}",
         "name": "fields",
         "description": "fields = null :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "TIME?",
@@ -3397,7 +3687,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toBoolean",
@@ -3409,7 +3700,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -3422,7 +3714,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toBoolean",
@@ -3434,7 +3727,8 @@
       {
         "name": "input",
         "description": "input :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -3447,7 +3741,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toBoolean",
@@ -3459,7 +3754,8 @@
       {
         "name": "input",
         "description": "input :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -3472,7 +3768,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toBooleanList",
@@ -3484,7 +3781,8 @@
       {
         "name": "input",
         "description": "input :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF BOOLEAN?",
@@ -3497,7 +3795,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toBooleanOrNull",
@@ -3509,7 +3808,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "BOOLEAN?",
@@ -3522,7 +3822,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toFloat",
@@ -3534,7 +3835,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -3547,7 +3849,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toFloat",
@@ -3559,7 +3862,8 @@
       {
         "name": "input",
         "description": "input :: NUMBER?",
-        "type": "NUMBER?"
+        "type": "NUMBER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -3572,7 +3876,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toFloatList",
@@ -3584,7 +3889,8 @@
       {
         "name": "input",
         "description": "input :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF FLOAT?",
@@ -3597,7 +3903,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toFloatOrNull",
@@ -3609,7 +3916,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "FLOAT?",
@@ -3622,7 +3930,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toInteger",
@@ -3634,7 +3943,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -3647,7 +3957,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toInteger",
@@ -3659,7 +3970,8 @@
       {
         "name": "input",
         "description": "input :: NUMBER?",
-        "type": "NUMBER?"
+        "type": "NUMBER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -3672,7 +3984,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toInteger",
@@ -3684,7 +3997,8 @@
       {
         "name": "input",
         "description": "input :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -3697,7 +4011,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toIntegerList",
@@ -3709,7 +4024,8 @@
       {
         "name": "input",
         "description": "input :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF INTEGER?",
@@ -3722,7 +4038,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toIntegerOrNull",
@@ -3734,7 +4051,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "INTEGER?",
@@ -3747,7 +4065,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toLower",
@@ -3759,7 +4078,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -3772,7 +4092,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toString",
@@ -3784,7 +4105,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -3797,7 +4119,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toStringList",
@@ -3809,7 +4132,8 @@
       {
         "name": "input",
         "description": "input :: LIST? OF ANY?",
-        "type": "LIST? OF ANY?"
+        "type": "LIST? OF ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "LIST? OF STRING?",
@@ -3822,7 +4146,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toStringOrNull",
@@ -3834,7 +4159,8 @@
       {
         "name": "input",
         "description": "input :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -3847,7 +4173,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "toUpper",
@@ -3859,7 +4186,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -3872,7 +4200,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "trim",
@@ -3884,7 +4213,8 @@
       {
         "name": "input",
         "description": "input :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -3897,7 +4227,8 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   },
   {
     "name": "type",
@@ -3909,7 +4240,8 @@
       {
         "name": "input",
         "description": "input :: RELATIONSHIP?",
-        "type": "RELATIONSHIP?"
+        "type": "RELATIONSHIP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": "STRING?",
@@ -3922,6 +4254,7 @@
       "publisher",
       "reader"
     ],
-    "rolesBoostedExecution": []
+    "rolesBoostedExecution": [],
+    "isDeprecated": false
   }
 ]

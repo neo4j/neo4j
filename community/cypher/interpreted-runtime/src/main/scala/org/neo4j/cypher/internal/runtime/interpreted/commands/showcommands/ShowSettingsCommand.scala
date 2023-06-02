@@ -50,7 +50,8 @@ case class ShowSettingsCommand(
     lazy val verboseColumns = Map(
       "startupValue" -> Values.of(setting.valueToString(config.getStartupValue(setting))),
       "validValues" -> Values.of(setting.validValues()),
-      "isExplicitlySet" -> Values.of(config.isExplicitlySet(setting))
+      "isExplicitlySet" -> Values.of(config.isExplicitlySet(setting)),
+      "isDeprecated" -> Values.booleanValue(setting.deprecated)
     )
     if (verbose) defaultColumns ++ verboseColumns
     else defaultColumns

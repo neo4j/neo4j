@@ -70,7 +70,8 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
       "description" -> setting.description(),
       "startupValue" -> setting.valueToString(config.getStartupValue(setting)),
       "isExplicitlySet" -> config.isExplicitlySet(setting),
-      "validValues" -> setting.validValues()
+      "validValues" -> setting.validValues(),
+      "deprecated" -> setting.deprecated()
     )
   }
 
@@ -94,7 +95,8 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     description: Option[String] = None,
     startupValue: Option[String] = None,
     isExplicitlySet: Option[Boolean] = None,
-    validValues: Option[String] = None
+    validValues: Option[String] = None,
+    isDeprecated: Option[Boolean] = None
   ): Unit = {
     name.foreach(expected => resultMap("name") should be(Values.stringValue(expected)))
     value.foreach(expected => resultMap("value") should be(Values.stringValue(expected)))
@@ -104,6 +106,7 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     startupValue.foreach(expected => resultMap("startupValue") should be(Values.stringValue(expected)))
     isExplicitlySet.foreach(expected => resultMap("isExplicitlySet") should be(Values.booleanValue(expected)))
     validValues.foreach(expected => resultMap("validValues") should be(Values.stringValue(expected)))
+    isDeprecated.foreach(expected => resultMap("isDeprecated") should be(Values.booleanValue(expected)))
   }
 
   // Tests
@@ -131,7 +134,8 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
       res.keys.toList should contain noElementsOf List(
         "startupValue",
         "isExplicitlySet",
-        "validValues"
+        "validValues",
+        "isDeprecated"
       )
     })
   }
@@ -154,7 +158,8 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
         description = expectedSetting("description").asInstanceOf[String],
         startupValue = expectedSetting("startupValue").asInstanceOf[String],
         isExplicitlySet = expectedSetting("isExplicitlySet").asInstanceOf[Boolean],
-        validValues = expectedSetting("validValues").asInstanceOf[String]
+        validValues = expectedSetting("validValues").asInstanceOf[String],
+        isDeprecated = expectedSetting("deprecated").asInstanceOf[Boolean]
       )
     }
   }
@@ -223,12 +228,12 @@ class ShowSettingsCommandTest extends ShowCommandTestBase {
     when(ctx.getConfig).thenReturn(mockConfig)
 
     // When
-    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = false, defaultColumns)
+    val showSettings = ShowSettingsCommand(Left(List.empty), verbose = true, allColumns)
     val result = showSettings.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
     result should have size 1
-    checkResult(result.head, name = settingName)
+    checkResult(result.head, name = settingName, isDeprecated = true)
   }
 
   test("show settings should only return specified settings when given names (string list)") {

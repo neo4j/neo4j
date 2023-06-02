@@ -35,12 +35,12 @@ import org.neo4j.internal.kernel.api.security.AdminActionOnResource.DatabaseScop
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.impl.query.FunctionInformation
+import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.jdk.CollectionConverters.ListHasAsScala
-import scala.jdk.CollectionConverters.MapHasAsScala
 
 // SHOW [ALL | BUILT IN | USER DEFINED] FUNCTION[S] [EXECUTABLE [BY {CURRENT USER | username}]] [WHERE clause | YIELD clause]
 case class ShowFunctionsCommand(
@@ -182,7 +182,9 @@ case class ShowFunctionsCommand(
         // List of roles that can execute the function
         "rolesExecution" -> rolesList,
         // List of roles that can execute the function with boosted privileges
-        "rolesBoostedExecution" -> boostedRolesList
+        "rolesBoostedExecution" -> boostedRolesList,
+        // Tells if the function is deprecated
+        "isDeprecated" -> Values.booleanValue(func.deprecated)
       )
     } else {
       briefResult
@@ -202,9 +204,10 @@ case class ShowFunctionsCommand(
     description: String,
     signature: String,
     isBuiltIn: Boolean,
-    argDescr: List[Map[String, String]],
+    argDescr: List[InputInformation],
     retDescr: String,
-    aggregating: Boolean
+    aggregating: Boolean,
+    deprecated: Boolean
   )
 
   private object FunctionInfo {
@@ -217,7 +220,18 @@ case class ShowFunctionsCommand(
       val isBuiltIn = info.isBuiltIn
       val argumentDescr = ShowProcFuncCommandHelper.getSignatureValues(info.inputSignature())
       val returnDescr = info.outputType.toString
-      FunctionInfo(name, category, description, signature, isBuiltIn, argumentDescr, returnDescr, aggregating)
+      val deprecated = info.deprecated().isPresent
+      FunctionInfo(
+        name,
+        category,
+        description,
+        signature,
+        isBuiltIn,
+        argumentDescr,
+        returnDescr,
+        aggregating,
+        deprecated
+      )
     }
 
     def apply(info: FunctionInformation): FunctionInfo = {
@@ -226,9 +240,20 @@ case class ShowFunctionsCommand(
       val signature = info.getSignature
       val description = info.getDescription
       val aggregating = info.isAggregationFunction
-      val argumentDescr = info.inputSignature.asScala.map(m => m.asScala.toMap).toList
+      val argumentDescr = info.inputSignature.asScala.toList
       val returnDescr = info.returnType
-      FunctionInfo(name, category, description, signature, isBuiltIn = true, argumentDescr, returnDescr, aggregating)
+      val deprecated = info.isDeprecated
+      FunctionInfo(
+        name,
+        category,
+        description,
+        signature,
+        isBuiltIn = true,
+        argumentDescr,
+        returnDescr,
+        aggregating,
+        deprecated
+      )
     }
   }
 }

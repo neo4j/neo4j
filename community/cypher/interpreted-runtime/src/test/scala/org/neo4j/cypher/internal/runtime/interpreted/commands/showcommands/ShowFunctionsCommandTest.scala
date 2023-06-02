@@ -45,11 +45,11 @@ import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_ROLE
 import org.neo4j.internal.kernel.api.security.Segment
 import org.neo4j.kernel.impl.query.FunctionInformation
+import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 
-import scala.jdk.CollectionConverters.MapHasAsJava
 import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.jdk.CollectionConverters.SetHasAsJava
 
@@ -139,9 +139,13 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     category = Category.STRING,
     aggregating = false,
     output = NTString.toString,
-    arguments = List(
-      Map("name" -> "input", "type" -> "FLOAT?", "description" -> "input :: FLOAT?")
-    )
+    arguments = List(new InputInformation(
+      "input",
+      "FLOAT?",
+      "input :: FLOAT?",
+      false,
+      java.util.Optional.empty[String]()
+    ))
   )
 
   // Cannot reach the default role variables (and are in either case mocking the privileges & roles...)
@@ -229,7 +233,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     returnDescription: Option[String] = None,
     aggregating: Option[Boolean] = None,
     roles: Option[List[String]] = None,
-    rolesBoosted: Option[List[String]] = None
+    rolesBoosted: Option[List[String]] = None,
+    isDeprecated: Option[Boolean] = None
   ): Unit = {
     name.foreach(expected => resultMap("name") should be(Values.stringValue(expected)))
     category.foreach(expected => resultMap("category") should be(Values.stringValue(expected)))
@@ -249,6 +254,7 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       if (expected == null) resultMap("rolesBoostedExecution") should be(Values.NO_VALUE)
       else resultMap("rolesBoostedExecution") should be(VirtualValues.list(expected.map(Values.stringValue): _*))
     )
+    isDeprecated.foreach(expected => resultMap("isDeprecated") should be(Values.booleanValue(expected)))
   }
 
   // Tests
@@ -308,7 +314,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
         "returnDescription",
         "aggregating",
         "rolesExecution",
-        "rolesBoostedExecution"
+        "rolesBoostedExecution",
+        "isDeprecated"
       )
     })
   }
@@ -368,7 +375,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
         "returnDescription",
         "aggregating",
         "rolesExecution",
-        "rolesBoostedExecution"
+        "rolesBoostedExecution",
+        "isDeprecated"
       )
     })
   }
@@ -394,7 +402,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "STRING?",
       aggregating = false,
       roles = Some(null),
-      rolesBoosted = Some(null)
+      rolesBoosted = Some(null),
+      isDeprecated = false
     )
     checkResult(
       result(1),
@@ -407,7 +416,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "BOOLEAN?",
       aggregating = true,
       roles = Some(null),
-      rolesBoosted = Some(null)
+      rolesBoosted = Some(null),
+      isDeprecated = false
     )
     checkResult(
       result(2),
@@ -420,7 +430,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "INTEGER?",
       aggregating = true,
       roles = Some(null),
-      rolesBoosted = Some(null)
+      rolesBoosted = Some(null),
+      isDeprecated = false
     )
     checkResult(
       result(3),
@@ -433,7 +444,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "STRING?",
       aggregating = false,
       roles = Some(null),
-      rolesBoosted = Some(null)
+      rolesBoosted = Some(null),
+      isDeprecated = false
     )
     checkResult(
       result(4),
@@ -449,7 +461,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "MAP?",
       aggregating = false,
       roles = Some(null),
-      rolesBoosted = Some(null)
+      rolesBoosted = Some(null),
+      isDeprecated = false
     )
     checkResult(
       result(5),
@@ -462,7 +475,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "INTEGER?",
       aggregating = true,
       roles = Some(null),
-      rolesBoosted = Some(null)
+      rolesBoosted = Some(null),
+      isDeprecated = false
     )
   }
 
@@ -487,7 +501,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "STRING?",
       aggregating = false,
       roles = List(publicRole, readerRole, editorRole, publisherRole, architectRole, adminRole).sorted,
-      rolesBoosted = List.empty[String]
+      rolesBoosted = List.empty[String],
+      isDeprecated = false
     )
     checkResult(
       result(1),
@@ -500,7 +515,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "BOOLEAN?",
       aggregating = true,
       roles = List(publicRole, readerRole, editorRole, publisherRole, architectRole, adminRole).sorted,
-      rolesBoosted = List.empty[String]
+      rolesBoosted = List.empty[String],
+      isDeprecated = false
     )
     checkResult(
       result(2),
@@ -513,7 +529,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "INTEGER?",
       aggregating = true,
       roles = List(publicRole, readerRole, editorRole, publisherRole, architectRole, adminRole).sorted,
-      rolesBoosted = List.empty[String]
+      rolesBoosted = List.empty[String],
+      isDeprecated = false
     )
     checkResult(
       result(3),
@@ -526,7 +543,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "STRING?",
       aggregating = false,
       roles = List(publicRole, readerRole, editorRole, publisherRole, architectRole, adminRole).sorted,
-      rolesBoosted = List.empty[String]
+      rolesBoosted = List.empty[String],
+      isDeprecated = false
     )
     checkResult(
       result(4),
@@ -542,7 +560,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "MAP?",
       aggregating = false,
       roles = List(publicRole, adminRole),
-      rolesBoosted = List(adminRole)
+      rolesBoosted = List(adminRole),
+      isDeprecated = false
     )
     checkResult(
       result(5),
@@ -555,7 +574,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       returnDescription = "INTEGER?",
       aggregating = true,
       roles = List(publicRole, adminRole),
-      rolesBoosted = List(adminRole)
+      rolesBoosted = List(adminRole),
+      isDeprecated = false
     )
   }
 
@@ -645,22 +665,44 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
       false,
       false
     )
+    val deprecatedLanguageFunction = TestLanguageFunction(
+      name = "deprecated.language",
+      description = "Deprecated language function",
+      signature = "deprecated.language() :: (INTEGER?)",
+      category = Category.SCALAR,
+      aggregating = false,
+      output = NTInteger.toString,
+      arguments = List.empty,
+      deprecated = true
+    )
     when(procedures.functionGetAll()).thenReturn(List(deprecatedFunc).asJava.stream())
     when(procedures.aggregationFunctionGetAll()).thenReturn(List(deprecatedAggregatingFunc).asJava.stream())
-    when(ctx.providedLanguageFunctions).thenReturn(List.empty)
+    when(ctx.providedLanguageFunctions).thenReturn(List(deprecatedLanguageFunction))
 
     // When
     val showFunctions = ShowFunctionsCommand(AllFunctions, None, verbose = true, allColumns, isCommunity = true)
     val result = showFunctions.originalNameRows(queryState, initialCypherRow).toList
 
     // Then
-    result should have size 2
+    result should have size 3
     checkResult(
       result.head,
       name = "deprecated.aggregating.func",
-      signature = "deprecated.aggregating.func() :: (STRING?)"
+      signature = "deprecated.aggregating.func() :: (STRING?)",
+      isDeprecated = true
     )
-    checkResult(result.last, name = "deprecated.func", signature = "deprecated.func() :: (STRING?)")
+    checkResult(
+      result(1),
+      name = "deprecated.func",
+      signature = "deprecated.func() :: (STRING?)",
+      isDeprecated = true
+    )
+    checkResult(
+      result(2),
+      name = "deprecated.language",
+      signature = "deprecated.language() :: (INTEGER?)",
+      isDeprecated = true
+    )
   }
 
   test("show functions should not give back roles without SHOW ROLE privilege") {
@@ -1001,7 +1043,8 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
     category: String,
     aggregating: Boolean,
     output: String,
-    arguments: List[Map[String, String]]
+    arguments: List[InputInformation],
+    deprecated: Boolean = false
   ) extends FunctionInformation {
     override def getFunctionName: String = name
 
@@ -1013,8 +1056,10 @@ class ShowFunctionsCommandTest extends ShowCommandTestBase {
 
     override def isAggregationFunction: java.lang.Boolean = aggregating
 
+    override def isDeprecated: java.lang.Boolean = deprecated
+
     override def returnType(): String = output
 
-    override def inputSignature(): java.util.List[java.util.Map[String, String]] = arguments.map(_.asJava).asJava
+    override def inputSignature(): java.util.List[InputInformation] = arguments.asJava
   }
 }

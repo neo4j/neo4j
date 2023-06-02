@@ -36,6 +36,7 @@ import org.neo4j.internal.kernel.api.security.AuthSubject
 import org.neo4j.internal.kernel.api.security.PermissionState
 import org.neo4j.internal.kernel.api.security.PrivilegeAction.SHOW_USER
 import org.neo4j.internal.kernel.api.security.Segment
+import org.neo4j.kernel.impl.query.FunctionInformation.InputInformation
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
@@ -142,7 +143,13 @@ class ShowProcFuncCommandHelperTest extends ShowCommandTestBase {
 
     // Then
     signatureResult should be(List(
-      Map("name" -> "input", "type" -> NTDate.toString, "description" -> field.toString)
+      new InputInformation(
+        "input",
+        NTDate.toString,
+        field.toString,
+        false,
+        java.util.Optional.empty[String]()
+      )
     ))
 
     // When
@@ -163,11 +170,12 @@ class ShowProcFuncCommandHelperTest extends ShowCommandTestBase {
     val signatureResult = ShowProcFuncCommandHelper.getSignatureValues(List(field).asJava)
 
     // Then
-    signatureResult should be(List(Map(
-      "name" -> "input",
-      "type" -> NTString.toString,
-      "description" -> field.toString,
-      "default" -> defaultValue.toString
+    signatureResult should be(List(new InputInformation(
+      "input",
+      NTString.toString,
+      field.toString,
+      false,
+      java.util.Optional.of[String](defaultValue.toString)
     )))
 
     // When
@@ -175,7 +183,7 @@ class ShowProcFuncCommandHelperTest extends ShowCommandTestBase {
 
     // Then
     descriptionResult should be(VirtualValues.fromList(List(
-      argumentAndReturnDescriptionMaps("input", field.toString, NTString.toString, defaultValue.toString)
+      argumentAndReturnDescriptionMaps("input", field.toString, NTString.toString, default = defaultValue.toString)
     ).asJava))
   }
 
@@ -189,8 +197,20 @@ class ShowProcFuncCommandHelperTest extends ShowCommandTestBase {
 
     // Then
     signatureResult should be(List(
-      Map("name" -> "mapOutput", "type" -> NTMap.toString, "description" -> field1.toString),
-      Map("name" -> "anyOutput", "type" -> NTAny.toString, "description" -> field2.toString)
+      new InputInformation(
+        "mapOutput",
+        NTMap.toString,
+        field1.toString,
+        false,
+        java.util.Optional.empty[String]()
+      ),
+      new InputInformation(
+        "anyOutput",
+        NTAny.toString,
+        field2.toString,
+        false,
+        java.util.Optional.empty[String]()
+      )
     ))
 
     // When
@@ -200,6 +220,31 @@ class ShowProcFuncCommandHelperTest extends ShowCommandTestBase {
     descriptionResult should be(VirtualValues.fromList(List(
       argumentAndReturnDescriptionMaps("mapOutput", field1.toString, NTMap.toString),
       argumentAndReturnDescriptionMaps("anyOutput", field2.toString, NTAny.toString)
+    ).asJava))
+  }
+
+  test("`getSignatureValues` and `fieldDescriptions` should return correct result with deprecated fields") {
+    // Given
+    val field = FieldSignature.outputField("output", NTString, true)
+
+    // When
+    val signatureResult = ShowProcFuncCommandHelper.getSignatureValues(List(field).asJava)
+
+    // Then
+    signatureResult should be(List(new InputInformation(
+      "output",
+      NTString.toString,
+      field.toString,
+      true,
+      java.util.Optional.empty[String]()
+    )))
+
+    // When
+    val descriptionResult = ShowProcFuncCommandHelper.fieldDescriptions(signatureResult)
+
+    // Then
+    descriptionResult should be(VirtualValues.fromList(List(
+      argumentAndReturnDescriptionMaps("output", field.toString, NTString.toString, deprecated = true)
     ).asJava))
   }
 

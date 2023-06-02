@@ -96,7 +96,8 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       "returnDescription" -> "STRING?",
       "aggregating" -> false,
       "rolesExecution" -> null,
-      "rolesBoostedExecution" -> null
+      "rolesBoostedExecution" -> null,
+      "isDeprecated" -> false
     ),
     Map[String, Any](
       "name" -> "test.functionWithInput",
@@ -104,11 +105,17 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       "description" -> "",
       "signature" -> "test.functionWithInput(input :: STRING?) :: (LIST? OF ANY?)",
       "isBuiltIn" -> false,
-      "argumentDescription" -> List(Map("name" -> "input", "description" -> "input :: STRING?", "type" -> "STRING?")),
+      "argumentDescription" -> List(Map[String, Any](
+        "name" -> "input",
+        "description" -> "input :: STRING?",
+        "type" -> "STRING?",
+        "isDeprecated" -> false
+      )),
       "returnDescription" -> "LIST? OF ANY?",
       "aggregating" -> false,
       "rolesExecution" -> null,
-      "rolesBoostedExecution" -> null
+      "rolesBoostedExecution" -> null,
+      "isDeprecated" -> false
     ),
     Map[String, Any](
       "name" -> "test.return.latest",
@@ -116,11 +123,17 @@ class CommunityShowFuncProcAcceptanceTest extends ExecutionEngineFunSuite with G
       "description" -> "Return the latest number, continuously updating the value.",
       "signature" -> "test.return.latest(value :: INTEGER?) :: (INTEGER?)",
       "isBuiltIn" -> false,
-      "argumentDescription" -> List(Map("name" -> "value", "description" -> "value :: INTEGER?", "type" -> "INTEGER?")),
+      "argumentDescription" -> List(Map[String, Any](
+        "name" -> "value",
+        "description" -> "value :: INTEGER?",
+        "type" -> "INTEGER?",
+        "isDeprecated" -> false
+      )),
       "returnDescription" -> "INTEGER?",
       "aggregating" -> true,
       "rolesExecution" -> null,
-      "rolesBoostedExecution" -> null
+      "rolesBoostedExecution" -> null,
+      "isDeprecated" -> false
     )
   )
 

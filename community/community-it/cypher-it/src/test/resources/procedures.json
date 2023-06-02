@@ -9,13 +9,15 @@
       {
         "name": "indexName",
         "description": "indexName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=300, type=INTEGER?}",
         "name": "timeOutSeconds",
         "description": "timeOutSeconds = 300 :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [],
@@ -27,6 +29,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -43,7 +46,8 @@
         "default": "DefaultParameterValue{value=300, type=INTEGER?}",
         "name": "timeOutSeconds",
         "description": "timeOutSeconds = 300 :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [],
@@ -55,6 +59,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -71,12 +76,14 @@
       {
         "name": "success",
         "description": "success :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       },
       {
         "name": "message",
         "description": "message :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -87,6 +94,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -103,7 +111,8 @@
       {
         "name": "value",
         "description": "value :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -113,6 +122,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -128,7 +138,8 @@
       {
         "name": "newLabel",
         "description": "newLabel :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [],
@@ -140,6 +151,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -155,7 +167,8 @@
       {
         "name": "newProperty",
         "description": "newProperty :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [],
@@ -167,6 +180,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -182,7 +196,8 @@
       {
         "name": "newRelationshipType",
         "description": "newRelationshipType :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [],
@@ -194,6 +209,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -215,6 +231,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -231,17 +248,20 @@
       {
         "name": "analyzer",
         "description": "analyzer :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "description",
         "description": "description :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "stopwords",
         "description": "stopwords :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
+        "type": "LIST? OF STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -252,6 +272,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -267,30 +288,35 @@
       {
         "name": "indexName",
         "description": "indexName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "queryString",
         "description": "queryString :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value={}, type=MAP?}",
         "name": "options",
         "description": "options = {} :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "node",
         "description": "node :: NODE?",
-        "type": "NODE?"
+        "type": "NODE?",
+        "isDeprecated": false
       },
       {
         "name": "score",
         "description": "score :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -301,6 +327,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -316,30 +343,35 @@
       {
         "name": "indexName",
         "description": "indexName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "queryString",
         "description": "queryString :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value={}, type=MAP?}",
         "name": "options",
         "description": "options = {} :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "relationship",
         "description": "relationship :: RELATIONSHIP?",
-        "type": "RELATIONSHIP?"
+        "type": "RELATIONSHIP?",
+        "isDeprecated": false
       },
       {
         "name": "score",
         "description": "score :: FLOAT?",
-        "type": "FLOAT?"
+        "type": "FLOAT?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -350,6 +382,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -366,17 +399,20 @@
       {
         "name": "id",
         "description": "id :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "name",
         "description": "name :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "creationDate",
         "description": "creationDate :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -387,6 +423,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -403,7 +440,8 @@
       {
         "name": "label",
         "description": "label :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -414,6 +452,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -430,22 +469,26 @@
       {
         "name": "mode",
         "description": "mode :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "resourceType",
         "description": "resourceType :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "resourceId",
         "description": "resourceId :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "transactionId",
         "description": "transactionId :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -455,6 +498,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -471,7 +515,8 @@
       {
         "name": "success",
         "description": "success :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -482,6 +527,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -498,7 +544,8 @@
         "default": "DefaultParameterValue{value=300, type=INTEGER?}",
         "name": "timeOutSeconds",
         "description": "timeOutSeconds = 300 :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [],
@@ -509,6 +556,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -525,7 +573,8 @@
       {
         "name": "propertyKey",
         "description": "propertyKey :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -536,6 +585,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -552,7 +602,8 @@
       {
         "name": "relationshipType",
         "description": "relationshipType :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -563,6 +614,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -578,7 +630,8 @@
       {
         "name": "indexName",
         "description": "indexName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [],
@@ -590,6 +643,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -611,6 +665,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -627,27 +682,32 @@
       {
         "name": "nodeType",
         "description": "nodeType :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "nodeLabels",
         "description": "nodeLabels :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
+        "type": "LIST? OF STRING?",
+        "isDeprecated": false
       },
       {
         "name": "propertyName",
         "description": "propertyName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "propertyTypes",
         "description": "propertyTypes :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
+        "type": "LIST? OF STRING?",
+        "isDeprecated": false
       },
       {
         "name": "mandatory",
         "description": "mandatory :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -658,6 +718,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -674,22 +735,26 @@
       {
         "name": "relType",
         "description": "relType :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "propertyName",
         "description": "propertyName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "propertyTypes",
         "description": "propertyTypes :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
+        "type": "LIST? OF STRING?",
+        "isDeprecated": false
       },
       {
         "name": "mandatory",
         "description": "mandatory :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -700,6 +765,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -716,12 +782,14 @@
       {
         "name": "nodes",
         "description": "nodes :: LIST? OF NODE?",
-        "type": "LIST? OF NODE?"
+        "type": "LIST? OF NODE?",
+        "isDeprecated": false
       },
       {
         "name": "relationships",
         "description": "relationships :: LIST? OF RELATIONSHIP?",
-        "type": "LIST? OF RELATIONSHIP?"
+        "type": "LIST? OF RELATIONSHIP?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -732,6 +800,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -747,24 +816,28 @@
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "success",
         "description": "success :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       },
       {
         "name": "message",
         "description": "message :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -774,6 +847,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -789,30 +863,35 @@
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value={}, type=MAP?}",
         "name": "config",
         "description": "config = {} :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "success",
         "description": "success :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       },
       {
         "name": "message",
         "description": "message :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -822,6 +901,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -837,25 +917,29 @@
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value={}, type=MAP?}",
         "name": "config",
         "description": "config = {} :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "data",
         "description": "data :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -865,6 +949,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -880,25 +965,29 @@
       {
         "name": "graphToken",
         "description": "graphToken :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value={}, type=MAP?}",
         "name": "config",
         "description": "config = {} :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "data",
         "description": "data :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -908,6 +997,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -924,17 +1014,20 @@
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "status",
         "description": "status :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "data",
         "description": "data :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -944,6 +1037,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -959,24 +1053,28 @@
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "section",
         "description": "section :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "success",
         "description": "success :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       },
       {
         "name": "message",
         "description": "message :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -986,6 +1084,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1001,24 +1100,28 @@
       {
         "name": "setting",
         "description": "setting :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "value",
         "description": "value :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "valid",
         "description": "valid :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       },
       {
         "name": "message",
         "description": "message :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -1028,6 +1131,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1036,6 +1140,7 @@
   {
     "admin": true,
     "name": "dbms.cluster.checkConnectivity",
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1048,27 +1153,32 @@
       {
         "name": "serverId",
         "description": "serverId :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "mode-constraint",
         "description": "mode-constraint :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "port-name",
         "description": "port-name :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "port-address",
         "description": "port-address :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "result",
         "description": "result :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "description": "Check the connectivity of this instance to other cluster members. Not all ports are relevant to all members. Valid values for 'port-name' are: []",
@@ -1080,13 +1190,15 @@
         "default": "DefaultParameterValue{value=null, type=STRING?}",
         "name": "port-name",
         "description": "port-name = null :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=null, type=STRING?}",
         "name": "server",
         "description": "server = null :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "mode": "DBMS",
@@ -1095,6 +1207,7 @@
   {
     "admin": true,
     "name": "dbms.cluster.cordonServer",
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1112,7 +1225,8 @@
       {
         "name": "server",
         "description": "server :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "mode": "WRITE",
@@ -1129,27 +1243,32 @@
       {
         "name": "orientation",
         "description": "orientation :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "remoteAddress",
         "description": "remoteAddress :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "applicationProtocol",
         "description": "applicationProtocol :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "applicationProtocolVersion",
         "description": "applicationProtocolVersion :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "modifierProtocols",
         "description": "modifierProtocols :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1160,6 +1279,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1168,6 +1288,7 @@
   {
     "admin": true,
     "name": "dbms.cluster.readReplicaToggle",
+    "isDeprecated": true,
     "option": {
       "deprecated": true
     },
@@ -1180,7 +1301,8 @@
       {
         "name": "state",
         "description": "state :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "description": "The toggle can pause or resume read replica (deprecated in favor of dbms.cluster.secondaryReplicationDisable)",
@@ -1191,12 +1313,14 @@
       {
         "name": "databaseName",
         "description": "databaseName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "pause",
         "description": "pause :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       }
     ],
     "mode": "DBMS",
@@ -1212,25 +1336,29 @@
       {
         "name": "context",
         "description": "context :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=null, type=STRING?}",
         "name": "database",
         "description": "database = null :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "ttl",
         "description": "ttl :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "servers",
         "description": "servers :: LIST? OF MAP?",
-        "type": "LIST? OF MAP?"
+        "type": "LIST? OF MAP?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1241,6 +1369,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1249,6 +1378,7 @@
   {
     "admin": true,
     "name": "dbms.cluster.secondaryReplicationDisable",
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1261,7 +1391,8 @@
       {
         "name": "state",
         "description": "state :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "description": "The toggle can pause or resume the secondary replication process",
@@ -1272,12 +1403,14 @@
       {
         "name": "databaseName",
         "description": "databaseName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "pause",
         "description": "pause :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       }
     ],
     "mode": "DBMS",
@@ -1286,6 +1419,7 @@
   {
     "admin": true,
     "name": "dbms.cluster.uncordonServer",
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1303,7 +1437,8 @@
       {
         "name": "server",
         "description": "server :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "mode": "WRITE",
@@ -1320,17 +1455,20 @@
       {
         "name": "name",
         "description": "name :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "versions",
         "description": "versions :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
+        "type": "LIST? OF STRING?",
+        "isDeprecated": false
       },
       {
         "name": "edition",
         "description": "edition :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1341,6 +1479,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1357,17 +1496,20 @@
       {
         "name": "id",
         "description": "id :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "name",
         "description": "name :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "creationDate",
         "description": "creationDate :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1378,6 +1520,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1393,24 +1536,28 @@
       {
         "name": "id",
         "description": "id :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "connectionId",
         "description": "connectionId :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "username",
         "description": "username :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "message",
         "description": "message :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1421,6 +1568,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1436,24 +1584,28 @@
       {
         "name": "ids",
         "description": "ids :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
+        "type": "LIST? OF STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "connectionId",
         "description": "connectionId :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "username",
         "description": "username :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "message",
         "description": "message :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1464,6 +1616,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1479,24 +1632,28 @@
       {
         "name": "queryId",
         "description": "queryId :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "mode",
         "description": "mode :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "resourceType",
         "description": "resourceType :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "resourceId",
         "description": "resourceId :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1507,6 +1664,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1523,17 +1681,20 @@
       {
         "name": "name",
         "description": "name :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "description",
         "description": "description :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "value",
         "description": "value :: ANY?",
-        "type": "ANY?"
+        "type": "ANY?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1544,6 +1705,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1560,49 +1722,58 @@
         "default": "DefaultParameterValue{value=, type=STRING?}",
         "name": "searchString",
         "description": "searchString =  :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "name",
         "description": "name :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "description",
         "description": "description :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "value",
         "description": "value :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "dynamic",
         "description": "dynamic :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       },
       {
         "name": "defaultValue",
         "description": "defaultValue :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "startupValue",
         "description": "startupValue :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "explicitlySet",
         "description": "explicitlySet :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       },
       {
         "name": "validValues",
         "description": "validValues :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -1612,6 +1783,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1628,37 +1800,44 @@
       {
         "name": "connectionId",
         "description": "connectionId :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "connectTime",
         "description": "connectTime :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "connector",
         "description": "connector :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "username",
         "description": "username :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "userAgent",
         "description": "userAgent :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "serverAddress",
         "description": "serverAddress :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "clientAddress",
         "description": "clientAddress :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1669,6 +1848,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1685,52 +1865,62 @@
       {
         "name": "pool",
         "description": "pool :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "databaseName",
         "description": "databaseName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "heapMemoryUsed",
         "description": "heapMemoryUsed :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "heapMemoryUsedBytes",
         "description": "heapMemoryUsedBytes :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "nativeMemoryUsed",
         "description": "nativeMemoryUsed :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "nativeMemoryUsedBytes",
         "description": "nativeMemoryUsedBytes :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "freeMemory",
         "description": "freeMemory :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "freeMemoryBytes",
         "description": "freeMemoryBytes :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "totalPoolMemory",
         "description": "totalPoolMemory :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "totalPoolMemoryBytes",
         "description": "totalPoolMemoryBytes :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1741,6 +1931,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1756,35 +1947,41 @@
       {
         "name": "databaseName",
         "description": "databaseName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "setStatus",
         "description": "setStatus :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=No reason given, type=STRING?}",
         "name": "reason",
         "description": "reason = No reason given :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "databaseName",
         "description": "databaseName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "quarantined",
         "description": "quarantined :: BOOLEAN?",
-        "type": "BOOLEAN?"
+        "type": "BOOLEAN?",
+        "isDeprecated": false
       },
       {
         "name": "result",
         "description": "result :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -1794,6 +1991,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1809,24 +2007,28 @@
       {
         "name": "query",
         "description": "query :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "name",
         "description": "name :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "description",
         "description": "description :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "attributes",
         "description": "attributes :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1837,6 +2039,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1852,25 +2055,29 @@
       {
         "name": "context",
         "description": "context :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       },
       {
         "default": "DefaultParameterValue{value=null, type=STRING?}",
         "name": "database",
         "description": "database = null :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [
       {
         "name": "ttl",
         "description": "ttl :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "servers",
         "description": "servers :: LIST? OF MAP?",
-        "type": "LIST? OF MAP?"
+        "type": "LIST? OF MAP?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -1881,6 +2088,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1897,52 +2105,62 @@
       {
         "name": "jobId",
         "description": "jobId :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "group",
         "description": "group :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "database",
         "description": "database :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "submitter",
         "description": "submitter :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "description",
         "description": "description :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "type",
         "description": "type :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "submitted",
         "description": "submitted :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "executionStart",
         "description": "executionStart :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "failureTime",
         "description": "failureTime :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "failureDescription",
         "description": "failureDescription :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -1952,6 +2170,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1968,12 +2187,14 @@
       {
         "name": "group",
         "description": "group :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "threads",
         "description": "threads :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -1983,6 +2204,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -1999,57 +2221,68 @@
       {
         "name": "jobId",
         "description": "jobId :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "group",
         "description": "group :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "submitted",
         "description": "submitted :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "database",
         "description": "database :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "submitter",
         "description": "submitter :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "description",
         "description": "description :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "type",
         "description": "type :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "scheduledAt",
         "description": "scheduledAt :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "period",
         "description": "period :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "state",
         "description": "state :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "currentStateDescription",
         "description": "currentStateDescription :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -2059,6 +2292,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -2079,6 +2313,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -2094,12 +2329,14 @@
       {
         "name": "setting",
         "description": "setting :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "value",
         "description": "value :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [],
@@ -2110,6 +2347,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -2118,6 +2356,7 @@
   {
     "admin": true,
     "name": "dbms.setDatabaseAllocator",
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -2135,7 +2374,8 @@
       {
         "name": "allocator",
         "description": "allocator :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "mode": "WRITE",
@@ -2144,6 +2384,7 @@
   {
     "admin": true,
     "name": "dbms.setDefaultAllocationNumbers",
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -2161,12 +2402,14 @@
       {
         "name": "primaries",
         "description": "primaries :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "secondaries",
         "description": "secondaries :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       }
     ],
     "mode": "WRITE",
@@ -2175,6 +2418,7 @@
   {
     "admin": true,
     "name": "dbms.setDefaultDatabase",
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -2187,7 +2431,8 @@
       {
         "name": "result",
         "description": "result :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "description": "Change the default database to the provided value. The database must exist and the old default database must be stopped.",
@@ -2198,7 +2443,8 @@
       {
         "name": "databaseName",
         "description": "databaseName :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "mode": "WRITE",
@@ -2215,17 +2461,20 @@
       {
         "name": "username",
         "description": "username :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "roles",
         "description": "roles :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
+        "type": "LIST? OF STRING?",
+        "isDeprecated": false
       },
       {
         "name": "flags",
         "description": "flags :: LIST? OF STRING?",
-        "type": "LIST? OF STRING?"
+        "type": "LIST? OF STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -2236,6 +2485,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -2244,6 +2494,7 @@
   {
     "admin": true,
     "name": "dbms.showTopologyGraphConfig",
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -2256,22 +2507,26 @@
       {
         "name": "allocator",
         "description": "allocator :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "defaultPrimariesCount",
         "description": "defaultPrimariesCount :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "defaultSecondariesCount",
         "description": "defaultSecondariesCount :: INTEGER?",
-        "type": "INTEGER?"
+        "type": "INTEGER?",
+        "isDeprecated": false
       },
       {
         "name": "defaultDatabase",
         "description": "defaultDatabase :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
 
     ],
@@ -2294,12 +2549,14 @@
       {
         "name": "status",
         "description": "status :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "upgradeResult",
         "description": "upgradeResult :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -2309,6 +2566,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": true,
     "option": {
       "deprecated": true
     },
@@ -2325,17 +2583,20 @@
       {
         "name": "status",
         "description": "status :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "description",
         "description": "description :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       },
       {
         "name": "resolution",
         "description": "resolution :: STRING?",
-        "type": "STRING?"
+        "type": "STRING?",
+        "isDeprecated": false
       }
     ],
     "admin": true,
@@ -2345,6 +2606,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": true,
     "option": {
       "deprecated": true
     },
@@ -2361,7 +2623,8 @@
       {
         "name": "metadata",
         "description": "metadata :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "admin": false,
@@ -2372,6 +2635,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },
@@ -2387,7 +2651,8 @@
       {
         "name": "data",
         "description": "data :: MAP?",
-        "type": "MAP?"
+        "type": "MAP?",
+        "isDeprecated": false
       }
     ],
     "returnDescription": [],
@@ -2399,6 +2664,7 @@
     "rolesBoostedExecution": [
       "admin"
     ],
+    "isDeprecated": false,
     "option": {
       "deprecated": false
     },

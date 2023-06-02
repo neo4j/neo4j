@@ -156,21 +156,28 @@ class ShowCommandTestBase extends CypherFunSuite {
     name: String,
     description: String,
     _type: String,
+    deprecated: Boolean = false,
     default: Option[String] = None
   ): AnyValue =
     default.map(d =>
       VirtualValues.map(
-        Array("name", "description", "type", "default"),
+        Array("name", "description", "type", "isDeprecated", "default"),
         Array(
           Values.stringValue(name),
           Values.stringValue(description),
           Values.stringValue(_type),
+          Values.booleanValue(deprecated),
           Values.stringValue(d)
         )
       )
     ).getOrElse(VirtualValues.map(
-      Array("name", "description", "type"),
-      Array(Values.stringValue(name), Values.stringValue(description), Values.stringValue(_type))
+      Array("name", "description", "type", "isDeprecated"),
+      Array(
+        Values.stringValue(name),
+        Values.stringValue(description),
+        Values.stringValue(_type),
+        Values.booleanValue(deprecated)
+      )
     ))
 
   // noinspection NotImplementedCode
