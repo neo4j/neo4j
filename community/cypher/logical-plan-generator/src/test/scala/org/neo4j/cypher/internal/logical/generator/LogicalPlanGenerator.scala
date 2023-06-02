@@ -42,9 +42,11 @@ import org.neo4j.cypher.internal.compiler.planner.logical.steps.skipAndLimit.sho
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.Expression.SemanticContext.Results
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
+import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.State
 import org.neo4j.cypher.internal.logical.generator.LogicalPlanGenerator.WithState
@@ -142,7 +144,7 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
    */
   case class State(
     semanticTable: SemanticTable,
-    arguments: Set[String],
+    arguments: Set[LogicalVariable],
     varCount: Int,
     parameters: Set[String],
     private val leafCardinalityMultipliersStack: List[Cardinality],
@@ -155,21 +157,21 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
     def incVarCount(): State =
       copy(varCount = varCount + 1)
 
-    def newNode(name: String): State =
-      copy(semanticTable = semanticTable.addNode(varFor(name)))
+    def newNode(name: Variable): State =
+      copy(semanticTable = semanticTable.addNode(name))
 
-    def newRelationship(name: String): State =
-      copy(semanticTable = semanticTable.addRelationship(varFor(name)))
+    def newRelationship(name: Variable): State =
+      copy(semanticTable = semanticTable.addRelationship(name))
 
-    def declareTypeAny(name: String): State =
+    def declareTypeAny(name: Variable): State =
       copy(semanticTable =
-        semanticTable.copy(types = semanticTable.types.updated(varFor(name), ExpressionTypeInfo(CTAny.invariant, None)))
+        semanticTable.copy(types = semanticTable.types.updated(name, ExpressionTypeInfo(CTAny.invariant, None)))
       )
 
-    def addArguments(args: Set[String]): State =
+    def addArguments(args: Set[LogicalVariable]): State =
       copy(arguments = arguments ++ args)
 
-    def removeArguments(args: Set[String]): State =
+    def removeArguments(args: Set[LogicalVariable]): State =
       copy(arguments = arguments -- args)
 
     def addParameters(ps: Set[String]): State =
@@ -184,9 +186,9 @@ object LogicalPlanGenerator extends AstConstructionTestSupport {
     def leafCardinalityMultiplier: Cardinality =
       leafCardinalityMultipliersStack.headOption.getOrElse(Cardinality.SINGLE)
 
-    def recordLabel(variable: String, label: String): State = {
+    def recordLabel(variable: Variable, label: String): State = {
       val newLabels = labelInfo(label) + LabelName(label)(pos)
-      copy(labelInfo = labelInfo.updated(variable, newLabels))
+      copy(labelInfo = labelInfo.updated(variable.name, newLabels))
     }
   }
 }
@@ -436,12 +438,12 @@ class LogicalPlanGenerator(
 
   private def projectionList(
     state: State,
-    availableSymbols: Seq[String],
+    availableSymbols: Seq[LogicalVariable],
     expressionGen: SemanticAwareAstGenerator => Gen[Expression],
     minSize: Int = 0
-  ): Gen[WithState[Map[String, Expression]]] =
+  ): Gen[WithState[Map[LogicalVariable, Expression]]] =
     Gen.sized(s => Gen.choose(minSize, s max minSize)).flatMap { n =>
-      (0 until n).foldLeft(Gen.const(WithState(Map.empty[String, Expression], state))) { (prevGen, _) =>
+      (0 until n).foldLeft(Gen.const(WithState(Map.empty[LogicalVariable, Expression], state))) { (prevGen, _) =>
         for {
           WithState(map, state) <- prevGen
           WithState(name, state) <- newVariable(state)
@@ -615,14 +617,14 @@ class LogicalPlanGenerator(
     name <- names
   } yield RelTypeName(name)(pos)
 
-  def newVariable(state: State): Gen[WithState[String]] = {
+  def newVariable(state: State): Gen[WithState[Variable]] = {
     val name = s"var${state.varCount}"
-    Gen.const(WithState(name, state.incVarCount()))
+    Gen.const(WithState(varFor(name), state.incVarCount()))
   }
 
   private def expressionList(
     state: State,
-    availableSymbols: Seq[String],
+    availableSymbols: Seq[LogicalVariable],
     expressionGen: SemanticAwareAstGenerator => Gen[Expression],
     minSize: Int
   ): Gen[WithState[Seq[Expression]]] =
@@ -658,7 +660,7 @@ class LogicalPlanGenerator(
     val resolvedLabelTypes = mutable.HashMap(labelsWithIds.mapValues(LabelId).toSeq: _*)
     val resolvedRelTypes = mutable.HashMap(relTypesWithIds.mapValues(RelTypeId).toSeq: _*)
     val arguments = state.arguments
-    val variables: Set[Expression] = arguments.map(varFor(_))
+    val variables = arguments.map(_.asInstanceOf[Expression])
 
     val semanticTable = new SemanticTable(
       resolvedLabelNames = resolvedLabelTypes,
@@ -684,7 +686,7 @@ class LogicalPlanGenerator(
    * but is inefficient and will miss lots of expressions for which it is harder to generate valid instances.
    */
   private def validExpression(
-    availableSymbols: Seq[String],
+    availableSymbols: Seq[LogicalVariable],
     state: State,
     expressionGen: SemanticAwareAstGenerator => Gen[Expression]
   ): Gen[WithState[Expression]] = {
@@ -694,7 +696,7 @@ class LogicalPlanGenerator(
       ASTAnnotationMap.empty
     )
     for {
-      expression <- expressionGen(new SemanticAwareAstGenerator(allowedVarNames = Some(availableSymbols)))
+      expression <- expressionGen(new SemanticAwareAstGenerator(allowedVarNames = Some(availableSymbols.map(_.name))))
         .suchThat(e => {
           val errors = SemanticExpressionCheck.check(Results, e).run(
             semanticState,
@@ -715,7 +717,7 @@ class LogicalPlanGenerator(
     val symbols = plan.availableSymbols.toSeq
     Gen.oneOf(
       validExpression(symbols, state, _.nonAggregatingExpression),
-      Gen.oneOf(symbols).map(s => WithState(varFor(s), state))
+      Gen.oneOf(symbols).map(s => WithState(s, state))
     )
   }
 }

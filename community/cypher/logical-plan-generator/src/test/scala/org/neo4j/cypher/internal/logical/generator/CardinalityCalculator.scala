@@ -121,9 +121,10 @@ object CardinalityCalculator {
       val Expand(source, from, dir, relTypes, to, relName, _) = plan
       val inboundCardinality = state.cardinalities.get(source.id)
       val qg = QueryGraph(
-        patternNodes = Set(from, to),
-        patternRelationships = Set(PatternRelationship(relName, (from, to), dir, relTypes, SimplePatternLength)),
-        argumentIds = state.arguments
+        patternNodes = Set(from.name, to.name),
+        patternRelationships =
+          Set(PatternRelationship(relName.name, (from.name, to.name), dir, relTypes, SimplePatternLength)),
+        argumentIds = state.arguments.map(_.name)
       )
       val qgCardinalityModel = AssumeIndependenceQueryGraphCardinalityModel(
         planContext,
@@ -169,7 +170,10 @@ object CardinalityCalculator {
   implicit val aggregationCardinality: CardinalityCalculator[Aggregation] = {
     (plan, state, _, _) =>
       val in = state.cardinalities.get(plan.source.id)
-      StatisticsBackedCardinalityModel.aggregateCardinalityEstimation(in, plan.groupingExpressions)
+      StatisticsBackedCardinalityModel.aggregateCardinalityEstimation(
+        in,
+        plan.groupingExpressions.map { case (v, e) => v.name -> e }
+      )
   }
 
   implicit val applyCardinality: CardinalityCalculator[Apply] =

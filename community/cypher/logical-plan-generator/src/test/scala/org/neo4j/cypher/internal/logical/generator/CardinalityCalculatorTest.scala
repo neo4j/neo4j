@@ -109,7 +109,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("AllNodesScan") {
-    val plan = AllNodesScan("a", Set.empty)
+    val plan = AllNodesScan(varFor("a"), Set.empty)
     val stats = new TestGraphStatistics {
       override def nodesAllCardinality(): Cardinality = Cardinality(321)
     }
@@ -120,7 +120,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("AllNodesScan under Apply") {
-    val plan = AllNodesScan("a", Set.empty)
+    val plan = AllNodesScan(varFor("a"), Set.empty)
     val multiplier = Cardinality(10)
     val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
     val stats = new TestGraphStatistics {
@@ -132,7 +132,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("NodeByLabelScan") {
-    val plan = NodeByLabelScan("a", LabelName("Label")(pos), Set.empty, IndexOrderNone)
+    val plan = NodeByLabelScan(varFor("a"), LabelName("Label")(pos), Set.empty, IndexOrderNone)
     val labelCardinality = Cardinality(321)
     val labelIds = Map("Label" -> 1)
     val stats = new TestGraphStatistics {
@@ -148,7 +148,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("NodeByLabelScan under Apply") {
-    val plan = NodeByLabelScan("a", LabelName("Label")(pos), Set.empty, IndexOrderNone)
+    val plan = NodeByLabelScan(varFor("a"), LabelName("Label")(pos), Set.empty, IndexOrderNone)
     val multiplier = Cardinality(10)
     val labelCardinality = Cardinality(321)
     val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
@@ -190,7 +190,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("NodeCountFromCountStore") {
-    val plan = NodeCountFromCountStore("", List.empty, Set.empty)
+    val plan = NodeCountFromCountStore(varFor(""), List.empty, Set.empty)
     val c = CardinalityCalculator.nodeCountFromCountStoreCardinality(
       plan,
       defaultState,
@@ -201,7 +201,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("NodeCountFromCountStore under Apply") {
-    val plan = NodeCountFromCountStore("", List.empty, Set.empty)
+    val plan = NodeCountFromCountStore(varFor(""), List.empty, Set.empty)
     val multiplier = Cardinality(10)
     val state = defaultState.pushLeafCardinalityMultiplier(multiplier)
 
@@ -222,7 +222,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val individualRelCount = 42
 
     val state = LogicalPlanGenerator.State(Map.empty, relIds).copy(
-      arguments = Set("from"),
+      arguments = Set(varFor("from")),
       cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
         override protected def defaultValue: Cardinality = defaultSourceCardinality
       }
@@ -254,7 +254,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
         val relCount = if (relTypes.isEmpty) rels.size else relTypes.size
         val avgRelsPerNode = (relCount * individualRelCount) / allNodesCount.toDouble
 
-        val plan = Expand(Argument(), "from", SemanticDirection.OUTGOING, relTypes, "to", "rel")
+        val plan = Expand(Argument(), varFor("from"), SemanticDirection.OUTGOING, relTypes, varFor("to"), varFor("rel"))
 
         val expectedAmountApprox = avgRelsPerNode * defaultSourceCardinality.amount
         val Cardinality(actualAmount) =
@@ -276,7 +276,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val individualRelCount = 42
 
     val state = LogicalPlanGenerator.State(labelIds, relIds).copy(
-      arguments = Set("from"),
+      arguments = Set(varFor("from")),
       cardinalities = new Cardinalities with Default[LogicalPlan, Cardinality] {
         override protected def defaultValue: Cardinality = defaultSourceCardinality
       },
@@ -314,7 +314,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
         val relCount = if (relTypes.isEmpty) rels.size else relTypes.size
         val avgRelsPerLabeledNode = (relCount * individualRelCount) / labeledNodesCount.toDouble
 
-        val plan = Expand(Argument(), "from", SemanticDirection.OUTGOING, relTypes, "to", "rel")
+        val plan = Expand(Argument(), varFor("from"), SemanticDirection.OUTGOING, relTypes, varFor("to"), varFor("rel"))
 
         val expectedAmountApprox = avgRelsPerLabeledNode * defaultSourceCardinality.amount
         val Cardinality(actualAmount) =
@@ -327,7 +327,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
 
   test("DirectedRelationshipByIdSeek with no relationship ids") {
     val relIds = ManySeekableArgs(ListLiteral(Seq.empty)(pos))
-    val plan = DirectedRelationshipByIdSeek("idName", relIds, "left", "right", Set.empty)
+    val plan = DirectedRelationshipByIdSeek(varFor("idName"), relIds, varFor("left"), varFor("right"), Set.empty)
 
     val c = CardinalityCalculator.directedRelationshipByIdSeek(
       plan,
@@ -342,7 +342,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val relIdsSize = 100
     val relIds = (1 to relIdsSize).map(i => SignedDecimalIntegerLiteral(i.toString)(pos))
     val seekableArgs = ManySeekableArgs(ListLiteral(relIds)(pos))
-    val plan = DirectedRelationshipByIdSeek("idName", seekableArgs, "left", "right", Set.empty)
+    val plan = DirectedRelationshipByIdSeek(varFor("idName"), seekableArgs, varFor("left"), varFor("right"), Set.empty)
 
     val c = CardinalityCalculator.directedRelationshipByIdSeek(
       plan,
@@ -355,7 +355,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
 
   test("UndirectedRelationshipByIdSeek with no relationship ids") {
     val relIds = ManySeekableArgs(ListLiteral(Seq.empty)(pos))
-    val plan = UndirectedRelationshipByIdSeek("idName", relIds, "left", "right", Set.empty)
+    val plan = UndirectedRelationshipByIdSeek(varFor("idName"), relIds, varFor("left"), varFor("right"), Set.empty)
 
     val c = CardinalityCalculator.undirectedRelationshipByIdSeek(
       plan,
@@ -370,7 +370,8 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val relIdsSize = 100
     val relIds = (1 to relIdsSize).map(i => SignedDecimalIntegerLiteral(i.toString)(pos))
     val seekableArgs = ManySeekableArgs(ListLiteral(relIds)(pos))
-    val plan = UndirectedRelationshipByIdSeek("idName", seekableArgs, "left", "right", Set.empty)
+    val plan =
+      UndirectedRelationshipByIdSeek(varFor("idName"), seekableArgs, varFor("left"), varFor("right"), Set.empty)
 
     val c = CardinalityCalculator.undirectedRelationshipByIdSeek(
       plan,
@@ -385,7 +386,8 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
     val relIdsSize = 100
     val relIds = (1 to relIdsSize).map(i => SignedDecimalIntegerLiteral(i.toString)(pos))
     val seekableArgs = ManySeekableArgs(ListLiteral(relIds)(pos))
-    val plan = UndirectedRelationshipByIdSeek("idName", seekableArgs, "left", "right", Set.empty)
+    val plan =
+      UndirectedRelationshipByIdSeek(varFor("idName"), seekableArgs, varFor("left"), varFor("right"), Set.empty)
     val leafCardinalityMultiplier = Cardinality(5)
 
     val state = defaultState.pushLeafCardinalityMultiplier(leafCardinalityMultiplier)
@@ -475,7 +477,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("Aggregation with grouping") {
-    val plan = Aggregation(Argument(), Map("x" -> CountStar()(pos)), Map.empty)
+    val plan = Aggregation(Argument(), Map(varFor("x") -> CountStar()(pos)), Map.empty)
 
     val c = CardinalityCalculator.aggregationCardinality(
       plan,
@@ -668,7 +670,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("UnwindCollection non-empty source") {
-    val plan = UnwindCollection(Argument(), "n", Variable("x")(InputPosition.NONE))
+    val plan = UnwindCollection(Argument(), varFor("n"), Variable("x")(InputPosition.NONE))
 
     val c = CardinalityCalculator.unwindCollectionCardinality(
       plan,
@@ -680,7 +682,7 @@ class CardinalityCalculatorTest extends CypherFunSuite with AstConstructionTestS
   }
 
   test("UnwindCollection empty source") {
-    val plan = UnwindCollection(Argument(), "n", Variable("x")(InputPosition.NONE))
+    val plan = UnwindCollection(Argument(), varFor("n"), Variable("x")(InputPosition.NONE))
 
     defaultState.cardinalities.set(plan.source.id, Cardinality.EMPTY)
     val c = CardinalityCalculator.unwindCollectionCardinality(
