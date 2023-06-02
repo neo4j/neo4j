@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.expressions
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.functions.Function
@@ -87,14 +88,14 @@ case class MaterializedEntitiesExpressionConverter(tokenContext: ReadTokenContex
 
   override def toGroupingExpression(
     id: Id,
-    groupings: Map[String, expressions.Expression],
+    groupings: Map[LogicalVariable, expressions.Expression],
     orderToLeverage: collection.Seq[expressions.Expression],
     self: ExpressionConverters
   ): Option[GroupingExpression] = None
 
   override def toCommandProjection(
     id: Id,
-    projections: Map[String, expressions.Expression],
+    projections: Map[LogicalVariable, expressions.Expression],
     self: ExpressionConverters
   ): Option[CommandProjection] = None
 

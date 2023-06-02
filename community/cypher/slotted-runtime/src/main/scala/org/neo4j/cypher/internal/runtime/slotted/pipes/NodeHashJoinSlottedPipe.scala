@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted.pipes
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.ClosingIterator
 import org.neo4j.cypher.internal.runtime.CypherRow
@@ -299,7 +300,7 @@ object NodeHashJoinSlottedPipe {
 
   object KeyOffsets {
 
-    def create(slots: SlotConfiguration, keyVariables: Array[String]): KeyOffsets = {
+    def create(slots: SlotConfiguration, keyVariables: Array[LogicalVariable]): KeyOffsets = {
       val (offsets, isReference) =
         keyVariables.map(slots.apply)
           .map(slot => (slot.offset, !slot.isLongSlot))

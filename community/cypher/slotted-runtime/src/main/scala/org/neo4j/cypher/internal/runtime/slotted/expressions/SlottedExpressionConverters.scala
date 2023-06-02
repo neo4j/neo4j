@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.slotted.expressions
 
 import org.neo4j.cypher.internal.expressions
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.MultiRelationshipPathStep
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.NilPathStep
@@ -74,11 +75,11 @@ object SlottedExpressionConverters {
 
   // This is a shared method to provide consistent ordering of grouping keys for all slot-based runtimes
   def orderGroupingKeyExpressions(
-    groupings: Iterable[(String, Expression)],
+    groupings: Iterable[(LogicalVariable, Expression)],
     orderToLeverage: collection.Seq[Expression]
   )(slots: SlotConfiguration): Seq[(String, Expression, Boolean)] = {
     // SlotConfiguration is a separate parameter list so it can be applied at a later stage
-    groupings.toSeq.map(a => (a._1, a._2, orderToLeverage.contains(a._2)))
+    groupings.toSeq.map(a => (a._1.name, a._2, orderToLeverage.contains(a._2)))
       // Sort grouping key (1) by expressions with provided order first, followed by unordered expressions
       //          and then (2) by slot offset
       .sortBy(b => (!b._3, slots(b._1).offset))
@@ -90,7 +91,7 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan, maybeOwningPi
 
   override def toCommandProjection(
     id: Id,
-    projections: Map[String, Expression],
+    projections: Map[LogicalVariable, Expression],
     self: ExpressionConverters
   ): Option[CommandProjection] = {
     val slots = physicalPlan.slotConfigurations(id)
@@ -102,7 +103,7 @@ case class SlottedExpressionConverters(physicalPlan: PhysicalPlan, maybeOwningPi
 
   override def toGroupingExpression(
     id: Id,
-    projections: Map[String, Expression],
+    projections: Map[LogicalVariable, Expression],
     orderToLeverage: collection.Seq[Expression],
     self: ExpressionConverters
   ): Option[GroupingExpression] = {

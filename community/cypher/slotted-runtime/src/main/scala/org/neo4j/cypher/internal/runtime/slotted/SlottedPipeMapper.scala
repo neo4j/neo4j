@@ -22,23 +22,8 @@ package org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.expressions.Equals
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.ir
-import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.CreatePattern
-import org.neo4j.cypher.internal.ir.CreateRelationship
-import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.SetLabelPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetPropertyPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -137,6 +122,21 @@ import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.create.CreateNode
+import org.neo4j.cypher.internal.logical.plans.create.CreateRelationship
+import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
+import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern
 import org.neo4j.cypher.internal.macros.AssertMacros.checkOnlyWhenAssertionsAreEnabled
 import org.neo4j.cypher.internal.physicalplanning.LongSlot
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlan
@@ -196,7 +196,7 @@ import org.neo4j.cypher.internal.runtime.slotted
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.DistinctAllPrimitive
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.DistinctWithReferences
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.computeSlotMappings
-import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.createProjectionForIdentifier
+import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.createProjectionForVariable
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.createProjectionsForResult
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.findDistinctPhysicalOp
 import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeMapper.partitionGroupingExpressions
@@ -318,11 +318,11 @@ class SlottedPipeMapper(
 
     val pipe = plan match {
       case AllNodesScan(column, _) =>
-        AllNodesScanSlottedPipe(column, slots)(id)
+        AllNodesScanSlottedPipe(column.name, slots)(id)
 
       case NodeIndexScan(column, label, properties, _, indexOrder, indexType) =>
         NodeIndexScanSlottedPipe(
-          column,
+          column.name,
           label,
           properties.map(SlottedIndexedProperty(column, _, slots)),
           indexRegistrator.registerQueryIndex(indexType, label, properties),
@@ -332,7 +332,7 @@ class SlottedPipeMapper(
 
       case NodeIndexContainsScan(column, label, property, valueExpr, _, indexOrder, indexType) =>
         NodeIndexContainsScanSlottedPipe(
-          column,
+          column.name,
           label,
           SlottedIndexedProperty(column, property, slots),
           indexRegistrator.registerQueryIndex(indexType, label, property),
@@ -343,7 +343,7 @@ class SlottedPipeMapper(
 
       case NodeIndexEndsWithScan(column, label, property, valueExpr, _, indexOrder, indexType) =>
         NodeIndexEndsWithScanSlottedPipe(
-          column,
+          column.name,
           label,
           SlottedIndexedProperty(column, property, slots),
           indexRegistrator.registerQueryIndex(indexType, label, property),
@@ -355,7 +355,7 @@ class SlottedPipeMapper(
       case NodeIndexSeek(column, label, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekSlottedPipe(
-          column,
+          column.name,
           label,
           properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
           indexRegistrator.registerQueryIndex(indexType, label, properties),
@@ -368,7 +368,7 @@ class SlottedPipeMapper(
       case NodeUniqueIndexSeek(column, label, properties, valueExpr, _, indexOrder, indexType) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         NodeIndexSeekSlottedPipe(
-          column,
+          column.name,
           label,
           properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
           indexRegistrator.registerQueryIndex(indexType, label, properties),
@@ -380,7 +380,7 @@ class SlottedPipeMapper(
 
       case NodeByLabelScan(column, label, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
-        NodesByLabelScanSlottedPipe(column, LazyLabel(label), slots, indexOrder)(id)
+        NodesByLabelScanSlottedPipe(column.name, LazyLabel(label), slots, indexOrder)(id)
 
       case UnionNodeByLabelsScan(column, labels, _, indexOrder) =>
         indexRegistrator.registerLabelScan()
@@ -411,9 +411,9 @@ class SlottedPipeMapper(
         ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         DirectedRelationshipIndexSeekSlottedPipe(
-          column,
-          leftNode,
-          rightNode,
+          column.name,
+          leftNode.name,
+          rightNode.name,
           typeToken,
           properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
           indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
@@ -436,9 +436,9 @@ class SlottedPipeMapper(
         ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         DirectedRelationshipIndexSeekSlottedPipe(
-          column,
-          leftNode,
-          rightNode,
+          column.name,
+          leftNode.name,
+          rightNode.name,
           typeToken,
           properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
           indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
@@ -461,9 +461,9 @@ class SlottedPipeMapper(
         ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
         UndirectedRelationshipIndexSeekSlottedPipe(
-          column,
-          leftNode,
-          rightNode,
+          column.name,
+          leftNode.name,
+          rightNode.name,
           typeToken,
           properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
           indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
@@ -486,9 +486,9 @@ class SlottedPipeMapper(
         ) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
         UndirectedRelationshipIndexSeekSlottedPipe(
-          column,
-          leftNode,
-          rightNode,
+          column.name,
+          leftNode.name,
+          rightNode.name,
           typeToken,
           properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
           indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
@@ -509,9 +509,9 @@ class SlottedPipeMapper(
           indexType
         ) =>
         DirectedRelationshipIndexScanSlottedPipe(
-          column,
-          leftNode,
-          rightNode,
+          column.name,
+          leftNode.name,
+          rightNode.name,
           typeToken,
           properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
           indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
@@ -530,9 +530,9 @@ class SlottedPipeMapper(
           indexType
         ) =>
         UndirectedRelationshipIndexScanSlottedPipe(
-          column,
-          leftNode,
-          rightNode,
+          column.name,
+          leftNode.name,
+          rightNode.name,
           typeToken,
           properties.map(SlottedIndexedProperty(column, _, slots)).toIndexedSeq,
           indexRegistrator.registerQueryIndex(indexType, typeToken, properties),
@@ -606,9 +606,9 @@ class SlottedPipeMapper(
           indexType
         ) =>
         DirectedRelationshipIndexContainsScanSlottedPipe(
-          name,
-          startNode,
-          endNode,
+          name.name,
+          startNode.name,
+          endNode.name,
           SlottedIndexedProperty(name, property, slots),
           indexRegistrator.registerQueryIndex(indexType, typeToken, property),
           convertExpressions(valueExpr),
@@ -628,9 +628,9 @@ class SlottedPipeMapper(
           indexType
         ) =>
         UndirectedRelationshipIndexContainsScanSlottedPipe(
-          name,
-          startNode,
-          endNode,
+          name.name,
+          startNode.name,
+          endNode.name,
           SlottedIndexedProperty(name, property, slots),
           indexRegistrator.registerQueryIndex(indexType, typeToken, property),
           convertExpressions(valueExpr),
@@ -650,9 +650,9 @@ class SlottedPipeMapper(
           indexType
         ) =>
         DirectedRelationshipIndexEndsWithScanSlottedPipe(
-          name,
-          startNode,
-          endNode,
+          name.name,
+          startNode.name,
+          endNode.name,
           SlottedIndexedProperty(name, property, slots),
           indexRegistrator.registerQueryIndex(indexType, typeToken, property),
           convertExpressions(valueExpr),
@@ -672,9 +672,9 @@ class SlottedPipeMapper(
           indexType
         ) =>
         UndirectedRelationshipIndexEndsWithScanSlottedPipe(
-          name,
-          startNode,
-          endNode,
+          name.name,
+          startNode.name,
+          endNode.name,
           SlottedIndexedProperty(name, property, slots),
           indexRegistrator.registerQueryIndex(indexType, typeToken, property),
           convertExpressions(valueExpr),
@@ -710,7 +710,7 @@ class SlottedPipeMapper(
 
       case CreatePattern(commands) =>
         commands.map {
-          case ir.CreateNode(node, labels, properties) =>
+          case CreateNode(node, labels, properties) =>
             CreateSlottedNode(
               CreateNodeSlottedCommand(
                 slots.getLongOffsetFor(node),
@@ -719,22 +719,23 @@ class SlottedPipeMapper(
               ),
               allowNullOrNaNProperty = true
             )
-          case r: ir.CreateRelationship =>
+          case r: CreateRelationship =>
             CreateSlottedRelationship(
               CreateRelationshipSlottedCommand(
-                slots.getLongOffsetFor(r.idName),
+                slots.getLongOffsetFor(r.variable),
                 SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
                 LazyType(r.relType.name),
                 SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
                 r.properties.map(convertExpressions),
-                r.idName,
-                r.startNode,
-                r.endNode
+                r.variable.name,
+                r.startNode.name,
+                r.endNode.name
               ),
               allowNullOrNaNProperty = true
             )
         }
-      case ir.DeleteExpression(expression, forced) => Seq(DeleteOperation(convertExpressions(expression), forced))
+      case org.neo4j.cypher.internal.logical.plans.set.DeleteExpression(expression, forced) =>
+        Seq(DeleteOperation(convertExpressions(expression), forced))
       case SetLabelPattern(node, labelNames) =>
         Seq(SlottedSetLabelsOperation(slots(node), labelNames.map(LazyLabel.apply)))
       case RemoveLabelPattern(node, labelNames) =>
@@ -1055,7 +1056,7 @@ class SlottedPipeMapper(
         )(id)
 
       case Optional(inner, symbols) =>
-        val nullableSlots = symbolsToSlots(inner.availableSymbols -- symbols, slots)
+        val nullableSlots = symbolsToSlots(inner.availableSymbols.map(_.name) -- symbols.map(_.name), slots)
         OptionalSlottedPipe(source, nullableSlots)(id)
 
       case Projection(_, _, expressions) =>
@@ -1070,28 +1071,28 @@ class SlottedPipeMapper(
           commands.map {
             case n: CreateNode =>
               CreateNodeSlottedCommand(
-                slots.getLongOffsetFor(n.idName),
+                slots.getLongOffsetFor(n.variable),
                 n.labels.toSeq.map(LazyLabel.apply),
                 n.properties.map(convertExpressions)
               )
 
             case r: CreateRelationship =>
               CreateRelationshipSlottedCommand(
-                slots.getLongOffsetFor(r.idName),
+                slots.getLongOffsetFor(r.variable),
                 SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
                 LazyType(r.relType.name),
                 SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
                 r.properties.map(convertExpressions),
-                r.idName,
-                r.startNode,
-                r.endNode
+                r.variable.name,
+                r.startNode.name,
+                r.endNode.name
               )
           }.toIndexedSeq
         )(id)
 
       case Merge(_, createNodes, createRelationships, onMatch, onCreate, nodesToLock) =>
         val creates = createNodes.map {
-          case ir.CreateNode(node, labels, properties) =>
+          case CreateNode(node, labels, properties) =>
             CreateSlottedNode(
               CreateNodeSlottedCommand(
                 slots.getLongOffsetFor(node),
@@ -1101,17 +1102,17 @@ class SlottedPipeMapper(
               allowNullOrNaNProperty = false
             )
         } ++ createRelationships.map {
-          r: ir.CreateRelationship =>
+          r: CreateRelationship =>
             CreateSlottedRelationship(
               CreateRelationshipSlottedCommand(
-                slots.getLongOffsetFor(r.idName),
+                slots.getLongOffsetFor(r.variable),
                 SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.startNode)),
                 LazyType(r.relType.name),
                 SlotConfigurationUtils.makeGetPrimitiveNodeFromSlotFunctionFor(slots(r.endNode)),
                 r.properties.map(convertExpressions),
-                r.idName,
-                r.startNode,
-                r.endNode
+                r.variable.name,
+                r.startNode.name,
+                r.endNode.name
               ),
               allowNullOrNaNProperty = false
             )
@@ -1428,7 +1429,7 @@ class SlottedPipeMapper(
 
       case RollUpApply(_, rhsPlan, collectionName, identifierToCollect) =>
         val rhsSlots = slotConfigs(rhsPlan.id)
-        val identifierToCollectExpression = createProjectionForIdentifier(rhsSlots)(identifierToCollect)
+        val identifierToCollectExpression = createProjectionForVariable(rhsSlots)(identifierToCollect)
         val collectionRefSlotOffset = slots.getReferenceOffsetFor(collectionName)
         RollUpApplySlottedPipe(lhs, rhs, collectionRefSlotOffset, identifierToCollectExpression, slots)(id = id)
 
@@ -1484,7 +1485,8 @@ class SlottedPipeMapper(
         )
         val longOffsets = longIds.map(e => slots.getLongOffsetFor(e))
         val refOffsets = refIds.map(e => slots.getReferenceOffsetFor(e))
-        val nullableSlots = symbolsToSlots(right.availableSymbols -- left.availableSymbols, slots)
+        val nullableSlots =
+          symbolsToSlots(right.availableSymbols.map(_.name) -- left.availableSymbols.map(_.name), slots)
         ConditionalApplySlottedPipe(lhs, rhs, longOffsets.toArray, refOffsets.toArray, slots, nullableSlots)(id)
 
       case AntiConditionalApply(left, right, items) =>
@@ -1497,7 +1499,8 @@ class SlottedPipeMapper(
         )
         val longOffsets = longIds.map(e => slots.getLongOffsetFor(e))
         val refOffsets = refIds.map(e => slots.getReferenceOffsetFor(e))
-        val nullableSlots = symbolsToSlots(right.availableSymbols -- left.availableSymbols, slots)
+        val nullableSlots =
+          symbolsToSlots(right.availableSymbols.map(_.name) -- left.availableSymbols.map(_.name), slots)
         AntiConditionalApplySlottedPipe(lhs, rhs, longOffsets.toArray, refOffsets.toArray, slots, nullableSlots)(id)
 
       case ForeachApply(_, _, variable, expression) =>
@@ -1520,7 +1523,7 @@ class SlottedPipeMapper(
           rhs,
           expressionConverters.toCommandExpression(id, batchSize),
           onErrorBehaviour,
-          (rhsPlan.availableSymbols -- lhsPlan.availableSymbols).map(slots.apply),
+          (rhsPlan.availableSymbols.map(_.name) -- lhsPlan.availableSymbols.map(_.name)).map(slots.apply),
           maybeReportAs.map(slots.apply)
         )(id = id)
 
@@ -1566,7 +1569,7 @@ class SlottedPipeMapper(
         )(id = id)
 
       case AssertSameRelationship(relationship, _, _) =>
-        AssertSameRelationshipSlottedPipe(lhs, rhs, relationship, slots(relationship))(id = id)
+        AssertSameRelationshipSlottedPipe(lhs, rhs, relationship.name, slots(relationship))(id = id)
 
       case Trail(
           _,
@@ -1613,7 +1616,7 @@ class SlottedPipeMapper(
   }
 
   private def chooseDistinctPipe(
-    groupingExpressions: Map[String, internal.expressions.Expression],
+    groupingExpressions: Map[LogicalVariable, internal.expressions.Expression],
     orderToLeverage: Seq[internal.expressions.Expression],
     slots: SlotConfiguration,
     source: Pipe,
@@ -1907,7 +1910,7 @@ object SlottedPipeMapper {
   }
 
   def findDistinctPhysicalOp(
-    groupingExpressions: Map[String, internal.expressions.Expression],
+    groupingExpressions: Map[LogicalVariable, internal.expressions.Expression],
     orderToLeverage: Seq[internal.expressions.Expression]
   ): DistinctPhysicalOp = {
     groupingExpressions.foldLeft[DistinctPhysicalOp](DistinctAllPrimitive(Seq.empty, Seq.empty)) {
@@ -1916,13 +1919,14 @@ object SlottedPipeMapper {
     }
   }
 
-  def createProjectionsForResult(columns: Seq[String], slots: SlotConfiguration): Seq[(String, Expression)] = {
+  def createProjectionsForResult(columns: Seq[LogicalVariable], slots: SlotConfiguration): Seq[(String, Expression)] = {
     val runtimeColumns: Seq[(String, commands.expressions.Expression)] =
-      columns.map(createProjectionForIdentifier(slots))
+      columns.map(createProjectionForVariable(slots))
     runtimeColumns
   }
 
-  private def createProjectionForIdentifier(slots: SlotConfiguration)(identifier: String): (String, Expression) = {
+  private def createProjectionForVariable(slots: SlotConfiguration)(variable: LogicalVariable): (String, Expression) = {
+    val identifier = variable.name
     val slot = slots.get(identifier).getOrElse(
       throw new InternalException(s"Did not find `$identifier` in the slot configuration")
     )
@@ -2112,7 +2116,7 @@ object SlottedPipeMapper {
 
   def partitionGroupingExpressions(
     expressionConverters: ExpressionConverters,
-    groupingExpressions: Map[String, internal.expressions.Expression],
+    groupingExpressions: Map[LogicalVariable, internal.expressions.Expression],
     orderToLeverage: Seq[internal.expressions.Expression],
     id: Id
   ): (GroupingExpression, GroupingExpression) = {

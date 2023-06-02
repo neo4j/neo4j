@@ -24,12 +24,13 @@ import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.CachedProperty
+import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
 import org.neo4j.cypher.internal.expressions.LabelToken
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -57,6 +58,7 @@ import org.neo4j.cypher.internal.logical.plans.SingleQueryExpression
 import org.neo4j.cypher.internal.logical.plans.Sort
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.create.CreateNode
 import org.neo4j.cypher.internal.physicalplanning.LongSlot
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanner
 import org.neo4j.cypher.internal.physicalplanning.RefSlot
@@ -166,7 +168,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("only single allnodes scan") {
     // given
-    val plan: AllNodesScan = AllNodesScan("x", Set.empty)
+    val plan: AllNodesScan = AllNodesScan(varFor("x"), Set.empty)
 
     // when
     val pipe = build(plan)
@@ -179,7 +181,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("single all nodes scan with limit") {
     // given
-    val plan = plans.Limit(AllNodesScan("x", Set.empty), literalInt(1))
+    val plan = plans.Limit(AllNodesScan(varFor("x"), Set.empty), literalInt(1))
 
     // when
     val pipe = build(plan)
@@ -194,9 +196,9 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
   }
 
   test("eagerize before create node") {
-    val allNodeScan: AllNodesScan = AllNodesScan("x", Set.empty)
+    val allNodeScan: AllNodesScan = AllNodesScan(varFor("x"), Set.empty)
     val eager = Eager(allNodeScan)
-    val createNode = Create(eager, List(CreateNode("z", Set(label), None)))
+    val createNode = Create(eager, List(CreateNode(varFor("z"), Set(label), None)))
 
     // when
     val pipe = build(createNode)
@@ -222,7 +224,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("create node") {
     val argument = Argument()
-    val createNode = Create(argument, List(CreateNode("z", Set(label), None)))
+    val createNode = Create(argument, List(CreateNode(varFor("z"), Set(label), None)))
 
     // when
     val pipe = build(createNode)
@@ -238,7 +240,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
   }
 
   test("single label scan") {
-    val plan = NodeByLabelScan("x", label, Set.empty, IndexOrderNone)
+    val plan = NodeByLabelScan(varFor("x"), label, Set.empty, IndexOrderNone)
 
     // when
     val pipe = build(plan)
@@ -250,7 +252,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
   }
 
   test("label scan with filtering") {
-    val leaf = NodeByLabelScan("x", label, Set.empty, IndexOrderNone)
+    val leaf = NodeByLabelScan(varFor("x"), label, Set.empty, IndexOrderNone)
     val filter = Selection(Seq(trueLiteral), leaf)
 
     // when
@@ -267,8 +269,9 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("single node with expand") {
     // given
-    val allNodesScan = AllNodesScan("x", Set.empty)
-    val expand = Expand(allNodesScan, "x", SemanticDirection.INCOMING, Seq.empty, "z", "r", ExpandAll)
+    val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
+    val expand =
+      Expand(allNodesScan, varFor("x"), SemanticDirection.INCOMING, Seq.empty, varFor("z"), varFor("r"), ExpandAll)
 
     // when
     val pipe = build(expand)
@@ -293,8 +296,9 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("single node with expand into") {
     // given
-    val allNodesScan = AllNodesScan("x", Set.empty)
-    val expand = Expand(allNodesScan, "x", SemanticDirection.INCOMING, Seq.empty, "x", "r", ExpandInto)
+    val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
+    val expand =
+      Expand(allNodesScan, varFor("x"), SemanticDirection.INCOMING, Seq.empty, varFor("x"), varFor("r"), ExpandInto)
 
     // when
     val pipe = build(expand)
@@ -317,9 +321,10 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("single optional node with expand") {
     // given
-    val allNodesScan = AllNodesScan("x", Set.empty)
+    val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
     val optional = Optional(allNodesScan)
-    val expand = Expand(optional, "x", SemanticDirection.INCOMING, Seq.empty, "z", "r", ExpandAll)
+    val expand =
+      Expand(optional, varFor("x"), SemanticDirection.INCOMING, Seq.empty, varFor("z"), varFor("r"), ExpandAll)
 
     // when
     val pipe = build(expand)
@@ -352,9 +357,10 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("single optional node with expand into") {
     // given
-    val allNodesScan = AllNodesScan("x", Set.empty)
+    val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
     val optional = Optional(allNodesScan)
-    val expand = Expand(optional, "x", SemanticDirection.INCOMING, Seq.empty, "x", "r", ExpandInto)
+    val expand =
+      Expand(optional, varFor("x"), SemanticDirection.INCOMING, Seq.empty, varFor("x"), varFor("r"), ExpandInto)
 
     // when
     val pipe = build(expand)
@@ -386,7 +392,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("optional node") {
     // given
-    val leaf = AllNodesScan("x", Set.empty)
+    val leaf = AllNodesScan(varFor("x"), Set.empty)
     val plan = Optional(leaf)
 
     // when
@@ -405,7 +411,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("optional refslot value") {
     // given
     val arg = Argument(Set.empty)
-    val project = Projection(arg, Set.empty, Map("x" -> literalInt(1)))
+    val project = Projection(arg, Set.empty, Map(varFor("x") -> literalInt(1)))
     val plan = Optional(project)
 
     // when
@@ -424,8 +430,16 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("single node with optionalExpand ExpandAll") {
     // given
-    val allNodesScan = AllNodesScan("x", Set.empty)
-    val expand = OptionalExpand(allNodesScan, "x", SemanticDirection.INCOMING, Seq.empty, "z", "r", ExpandAll)
+    val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
+    val expand = OptionalExpand(
+      allNodesScan,
+      varFor("x"),
+      SemanticDirection.INCOMING,
+      Seq.empty,
+      varFor("z"),
+      varFor("r"),
+      ExpandAll
+    )
 
     // when
     val pipe = build(expand)
@@ -448,8 +462,16 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("single node with optionalExpand ExpandInto") {
     // given
-    val allNodesScan = AllNodesScan("x", Set.empty)
-    val expand = OptionalExpand(allNodesScan, "x", SemanticDirection.INCOMING, Seq.empty, "x", "r", ExpandInto)
+    val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
+    val expand = OptionalExpand(
+      allNodesScan,
+      varFor("x"),
+      SemanticDirection.INCOMING,
+      Seq.empty,
+      varFor("x"),
+      varFor("r"),
+      ExpandInto
+    )
 
     // when
     val pipe = build(expand)
@@ -471,16 +493,16 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("single node with varlength expand") {
     // given
-    val allNodesScan = AllNodesScan("x", Set.empty)
+    val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
     val varLength = VarPatternLength(1, Some(15))
     val expand = VarExpand(
       allNodesScan,
-      "x",
+      varFor("x"),
       SemanticDirection.INCOMING,
       SemanticDirection.INCOMING,
       Seq.empty,
-      "z",
-      "r",
+      varFor("z"),
+      varFor("r"),
       varLength,
       ExpandAll
     )
@@ -521,17 +543,18 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("single node with varlength expand into") {
     // given
-    val allNodesScan = AllNodesScan("x", Set.empty)
-    val expand = Expand(allNodesScan, "x", SemanticDirection.OUTGOING, Seq.empty, "z", "r", ExpandAll)
+    val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
+    val expand =
+      Expand(allNodesScan, varFor("x"), SemanticDirection.OUTGOING, Seq.empty, varFor("z"), varFor("r"), ExpandAll)
     val varLength = VarPatternLength(1, Some(15))
     val varExpand = VarExpand(
       expand,
-      "x",
+      varFor("x"),
       SemanticDirection.INCOMING,
       SemanticDirection.INCOMING,
       Seq.empty,
-      "z",
-      "r2",
+      varFor("z"),
+      varFor("r2"),
       varLength,
       ExpandInto
     )
@@ -589,7 +612,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("let's skip this one") {
     // given
-    val allNodesScan = AllNodesScan("x", Set.empty)
+    val allNodesScan = AllNodesScan(varFor("x"), Set.empty)
     val skip = plans.Skip(allNodesScan, literalInt(42))
 
     // when
@@ -604,7 +627,7 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("all we need is to apply ourselves") {
     // given
-    val lhs = NodeByLabelScan("x", label, Set.empty, IndexOrderNone)
+    val lhs = NodeByLabelScan(varFor("x"), label, Set.empty, IndexOrderNone)
     val labelToken = LabelToken("label2", LabelId(0))
     val rhs = nodeIndexSeek("z:label2(prop = 42)", argumentIds = Set("x"))
     val apply = Apply(lhs, rhs)
@@ -632,8 +655,9 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("labelscan with projection") {
     // given
-    val leaf = NodeByLabelScan("x", label, Set.empty, IndexOrderNone)
-    val projection = Projection(leaf, Set.empty, Map("x" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))
+    val leaf = NodeByLabelScan(varFor("x"), label, Set.empty, IndexOrderNone)
+    val projection =
+      Projection(leaf, Set.empty, Map(varFor("x") -> varFor("x"), varFor("x.propertyKey") -> prop("x", "propertyKey")))
 
     // when
     val pipe = build(projection)
@@ -651,8 +675,9 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("labelscan with projection and alias") {
     // given
-    val leaf = NodeByLabelScan("x", label, Set.empty, IndexOrderNone)
-    val projection = Projection(leaf, Set.empty, Map("A" -> varFor("x"), "x.propertyKey" -> prop("x", "propertyKey")))
+    val leaf = NodeByLabelScan(varFor("x"), label, Set.empty, IndexOrderNone)
+    val projection =
+      Projection(leaf, Set.empty, Map(varFor("A") -> varFor("x"), varFor("x.propertyKey") -> prop("x", "propertyKey")))
 
     // when
     val pipe = build(projection)
@@ -671,8 +696,8 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("cartesian product") {
     // given
-    val lhs = NodeByLabelScan("x", labelName("label1"), Set.empty, IndexOrderNone)
-    val rhs = NodeByLabelScan("y", labelName("label2"), Set.empty, IndexOrderNone)
+    val lhs = NodeByLabelScan(varFor("x"), labelName("label1"), Set.empty, IndexOrderNone)
+    val rhs = NodeByLabelScan(varFor("y"), labelName("label2"), Set.empty, IndexOrderNone)
     val Xproduct = CartesianProduct(lhs, rhs)
 
     // when
@@ -697,15 +722,15 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("foreach") {
     // given
-    val lhs = NodeByLabelScan("x", labelName("label1"), Set.empty, IndexOrderNone)
+    val lhs = NodeByLabelScan(varFor("x"), labelName("label1"), Set.empty, IndexOrderNone)
     val rhs =
       NodeByLabelScan(
-        "y",
+        varFor("y"),
         LabelName("label2")(pos),
         Set.empty,
         IndexOrderNone
       ) // This would be meaningless as a real-world example
-    val foreach = ForeachApply(lhs, rhs, "z", listOfInt(1, 2))
+    val foreach = ForeachApply(lhs, rhs, varFor("z"), listOfInt(1, 2))
 
     // when
     val pipe = build(foreach)
@@ -730,9 +755,9 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("that argument does not apply here") {
     // given MATCH (x) MATCH (x)<-[r]-(y)
-    val lhs = NodeByLabelScan("x", labelName("label1"), Set.empty, IndexOrderNone)
-    val arg = Argument(Set("x"))
-    val rhs = Expand(arg, "x", SemanticDirection.INCOMING, Seq.empty, "z", "r", ExpandAll)
+    val lhs = NodeByLabelScan(varFor("x"), labelName("label1"), Set.empty, IndexOrderNone)
+    val arg = Argument(Set(varFor("x")))
+    val rhs = Expand(arg, varFor("x"), SemanticDirection.INCOMING, Seq.empty, varFor("z"), varFor("r"), ExpandAll)
 
     val apply = Apply(lhs, rhs)
 
@@ -786,7 +811,15 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given
     val label = LabelToken("label2", LabelId(0))
     val seekExpression = SingleQueryExpression(literalInt(42))
-    val seek = NodeUniqueIndexSeek("z", label, Seq.empty, seekExpression, Set("x"), IndexOrderNone, IndexType.RANGE)
+    val seek = NodeUniqueIndexSeek(
+      varFor("z"),
+      label,
+      Seq.empty,
+      seekExpression,
+      Set(varFor("x")),
+      IndexOrderNone,
+      IndexType.RANGE
+    )
 
     // when
     val pipe = build(seek)
@@ -809,10 +842,9 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
   test("unwind and sort") {
     // given UNWIND [1,2,3] as x RETURN x ORDER BY x
     val xVar = varFor("x")
-    val xVarName = xVar.name
     val leaf = Argument()
-    val unwind = UnwindCollection(leaf, xVarName, listOfInt(1, 2, 3))
-    val sort = Sort(unwind, List(plans.Ascending(xVarName)))
+    val unwind = UnwindCollection(leaf, xVar, listOfInt(1, 2, 3))
+    val sort = Sort(unwind, List(plans.Ascending(xVar)))
 
     // when
     val pipe = build(sort)
@@ -844,28 +876,28 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
   test("should have correct order for grouping columns") {
     // given
-    val leaf = NodeByLabelScan("x", label, Set.empty, IndexOrderNone)
+    val leaf = NodeByLabelScan(varFor("x"), label, Set.empty, IndexOrderNone)
     val varLength = VarPatternLength(1, Some(15))
     val expand = VarExpand(
       leaf,
-      "x",
+      varFor("x"),
       SemanticDirection.INCOMING,
       SemanticDirection.INCOMING,
       Seq.empty,
-      "z",
-      "r",
+      varFor("z"),
+      varFor("r"),
       varLength,
       ExpandAll
     )
 
     // must be  at least 6 grouping expressions to trigger slotted bug
-    val groupingExpressions = Map(
-      "x1" -> varFor("x"),
-      "z" -> varFor("z"),
-      "x2" -> varFor("x"),
-      "x3" -> varFor("x"),
-      "x4" -> varFor("x"),
-      "x5" -> varFor("x")
+    val groupingExpressions = Map[LogicalVariable, Expression](
+      varFor("x1") -> varFor("x"),
+      varFor("z") -> varFor("z"),
+      varFor("x2") -> varFor("x"),
+      varFor("x3") -> varFor("x"),
+      varFor("x4") -> varFor("x"),
+      varFor("x5") -> varFor("x")
     )
     val plan = Aggregation(expand, groupingExpressions, aggregationExpressions = Map.empty)
 
@@ -890,22 +922,29 @@ class SlottedPipeMapperTest extends CypherFunSuite with LogicalPlanningTestSuppo
     // given
 
     def commonSubTree = {
-      val leaf = NodeByLabelScan("node1", LabelName("label")(pos), Set.empty, IndexOrderNone)
-      val expand1 = Expand(leaf, "node1", SemanticDirection.INCOMING, Seq.empty, "node2", "r")
-      val expand2 = Expand(expand1, "node2", SemanticDirection.INCOMING, Seq.empty, "node3", "r")
-      Expand(expand2, "node3", SemanticDirection.INCOMING, Seq.empty, "node4", "r")
+      val leaf = NodeByLabelScan(varFor("node1"), LabelName("label")(pos), Set.empty, IndexOrderNone)
+      val expand1 = Expand(leaf, varFor("node1"), SemanticDirection.INCOMING, Seq.empty, varFor("node2"), varFor("r"))
+      val expand2 =
+        Expand(expand1, varFor("node2"), SemanticDirection.INCOMING, Seq.empty, varFor("node3"), varFor("r"))
+      Expand(expand2, varFor("node3"), SemanticDirection.INCOMING, Seq.empty, varFor("node4"), varFor("r"))
     }
 
-    val expand4a = Expand(commonSubTree, "node3", SemanticDirection.INCOMING, Seq.empty, "node7", "r")
-    val expand5a = Expand(expand4a, "node4", SemanticDirection.INCOMING, Seq.empty, "node5", "r")
-    val expand6a = Expand(expand5a, "node5", SemanticDirection.INCOMING, Seq.empty, "node6", "r")
+    val expand4a =
+      Expand(commonSubTree, varFor("node3"), SemanticDirection.INCOMING, Seq.empty, varFor("node7"), varFor("r"))
+    val expand5a =
+      Expand(expand4a, varFor("node4"), SemanticDirection.INCOMING, Seq.empty, varFor("node5"), varFor("r"))
+    val expand6a =
+      Expand(expand5a, varFor("node5"), SemanticDirection.INCOMING, Seq.empty, varFor("node6"), varFor("r"))
 
-    val expand4b = Expand(commonSubTree, "node4", SemanticDirection.OUTGOING, Seq.empty, "node6", "r")
-    val expand5b = Expand(expand4b, "node6", SemanticDirection.OUTGOING, Seq.empty, "node5", "r")
-    val expand6b = Expand(expand5b, "node6", SemanticDirection.OUTGOING, Seq.empty, "node8", "r")
+    val expand4b =
+      Expand(commonSubTree, varFor("node4"), SemanticDirection.OUTGOING, Seq.empty, varFor("node6"), varFor("r"))
+    val expand5b =
+      Expand(expand4b, varFor("node6"), SemanticDirection.OUTGOING, Seq.empty, varFor("node5"), varFor("r"))
+    val expand6b =
+      Expand(expand5b, varFor("node6"), SemanticDirection.OUTGOING, Seq.empty, varFor("node8"), varFor("r"))
 
     val nodes = Set("node1", "node2", "node3", "node4", "node5", "node6")
-    val plan = NodeHashJoin(nodes, expand6a, expand6b)
+    val plan = NodeHashJoin(nodes.map(varFor), expand6a, expand6b)
 
     // when
     val pipe = build(plan).asInstanceOf[NodeHashJoinSlottedPipe]
