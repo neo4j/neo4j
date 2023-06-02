@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.Disjoint
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Not
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.Variable
@@ -152,13 +153,12 @@ case class TrailToVarExpandRewriter(
     trailRelationship: VariableGrouping,
     source: LogicalPlan
   ): LogicalPlan = {
-    def excluded(groupRelationship: Variable, previouslyBoundedRel: Variable): Expression =
+    def excluded(groupRelationship: LogicalVariable, previouslyBoundedRel: LogicalVariable): Expression =
       Not(In(previouslyBoundedRel, groupRelationship)(InputPosition.NONE))(InputPosition.NONE)
 
     if (trail.previouslyBoundRelationships.nonEmpty) {
-      val groupRel = Variable(trailRelationship.groupName)(InputPosition.NONE)
+      val groupRel = trailRelationship.groupName
       val predicates: Set[Expression] = trail.previouslyBoundRelationships
-        .map(boundRel => Variable(boundRel)(InputPosition.NONE))
         .map(boundRel => excluded(groupRel, boundRel))
       appendSelection(source, predicates)
     } else {
@@ -175,9 +175,8 @@ case class TrailToVarExpandRewriter(
     source: LogicalPlan
   ): LogicalPlan =
     if (trail.previouslyBoundRelationshipGroups.nonEmpty) {
-      val groupRel = Variable(trailRelationship.groupName)(InputPosition.NONE)
+      val groupRel = trailRelationship.groupName
       val predicates: Set[Expression] = trail.previouslyBoundRelationshipGroups
-        .map(boundRel => Variable(boundRel)(InputPosition.NONE))
         .map(boundRel => Disjoint(groupRel, boundRel)(InputPosition.NONE))
       appendSelection(source, predicates)
     } else {
@@ -251,7 +250,8 @@ object TrailToVarExpandRewriter {
       trailRhs match {
         case Selection(Ands(predicates), expand @ Expand(_: Argument, from, _, _, to, relationship, ExpandAll)) =>
           val rewritableCandidates = predicates.filterNot(_.isInstanceOf[IsRepeatTrailUnique])
-          val rewritable = rewritableCandidates.collect(relationshipVariablePredicate(relationship, Set(from, to)))
+          val rewritable =
+            rewritableCandidates.collect(relationshipVariablePredicate(relationship.name, Set(from.name, to.name)))
           val allPredicatesAreRewritable = rewritableCandidates.size == rewritable.size
           Option.when(allPredicatesAreRewritable)((expand, rewritable.toSeq))
         case _ => None

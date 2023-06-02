@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.logical.plans.NestedPlanExpression
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class irExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  private val dummyPlan = AllNodesScan("a", Set.empty)
+  private val dummyPlan = AllNodesScan(varFor("a"), Set.empty)
 
   case class TestableIRExpression(expression: IRExpression, expectedRewrite: Expression)
 

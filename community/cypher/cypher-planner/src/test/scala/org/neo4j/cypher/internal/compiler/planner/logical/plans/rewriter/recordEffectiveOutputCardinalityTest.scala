@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestS
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.MAX_VAR_LENGTH
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.EffectiveCardinalities
@@ -752,7 +751,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // GIVEN
     val initial = new LogicalPlanBuilder(false)
       .limit(15).withCardinality(15)
-      .orderedUnion(Seq(Ascending("N"))).withCardinality(30)
+      .orderedUnion("N ASC").withCardinality(30)
       .|.nodeByLabelScan("n", "M", IndexOrderAscending).withCardinality(20)
       .nodeByLabelScan("n", "N", IndexOrderAscending).withCardinality(10)
 
@@ -762,7 +761,7 @@ class recordEffectiveOutputCardinalityTest extends CypherFunSuite with LogicalPl
     // THEN
     val expected = new LogicalPlanBuilder(false)
       .limit(15).withEffectiveCardinality(15)
-      .orderedUnion(Seq(Ascending("N"))).withEffectiveCardinality(15)
+      .orderedUnion("N ASC").withEffectiveCardinality(15)
       .|.nodeByLabelScan("n", "M", IndexOrderAscending).withEffectiveCardinality(10)
       .nodeByLabelScan("n", "N", IndexOrderAscending).withEffectiveCardinality(5)
 

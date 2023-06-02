@@ -44,7 +44,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, Some(projections), keepAllColumns = true, context)
 
     // then
-    result should equal(Projection(startPlan, Set.empty, projections))
+    result should equal(Projection(startPlan, Set.empty, projections.map { case (key, value) => varFor(key) -> value }))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )
@@ -61,7 +61,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, Some(projectionsToMarkSolved), keepAllColumns = true, context)
 
     // then
-    result should equal(Projection(startPlan, Set.empty, projections))
+    result should equal(Projection(startPlan, Set.empty, projections.map { case (key, value) => varFor(key) -> value }))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projectionsToMarkSolved)
     )
@@ -92,7 +92,11 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     val actualProjections = Map("42" -> literalInt(42))
-    result should equal(Projection(startPlan, Set.empty, actualProjections))
+    result should equal(Projection(
+      startPlan,
+      Set.empty,
+      actualProjections.map { case (key, value) => varFor(key) -> value }
+    ))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )
@@ -107,7 +111,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan, projections, Some(projections), keepAllColumns = true, context)
 
     // then
-    result should equal(Projection(startPlan, Set.empty, projections))
+    result should equal(Projection(startPlan, Set.empty, projections.map { case (key, value) => varFor(key) -> value }))
     context.staticComponents.planningAttributes.solveds.get(result.id).asSinglePlannerQuery.horizon should equal(
       RegularQueryProjection(projections)
     )

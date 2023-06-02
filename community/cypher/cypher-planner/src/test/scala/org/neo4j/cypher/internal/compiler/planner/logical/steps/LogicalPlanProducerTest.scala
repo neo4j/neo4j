@@ -1094,8 +1094,8 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
           "PartialSort",
           lpp.planPartialSort(
             plan(),
-            Seq(Ascending("x")),
-            Seq(Ascending("y")),
+            Seq(Ascending(varFor("x"))),
+            Seq(Ascending(varFor("y"))),
             initialOrder.asc(varFor("y")).columns,
             InterestingOrder.empty,
             context
@@ -1106,11 +1106,11 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
           lpp.planOrderedAggregation(plan(), x_vx, foo_vx, Seq(vx), x_vx, foo_vx, context)
         ),
         ("OrderedDistinct", lpp.planOrderedDistinct(plan(), foo_vx, Seq(vx), foo_vx, context)),
-        ("OrderedUnion", lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending("x")), context)),
+        ("OrderedUnion", lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending(varFor("x"))), context)),
         (
           "OrderedDistinct for Union",
           lpp.planOrderedDistinctForUnion(
-            lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending("x")), context),
+            lpp.planOrderedUnion(plan(), plan2(), unionMappings, Seq(Ascending(varFor("x"))), context),
             Seq(vx),
             context
           )
@@ -1151,7 +1151,7 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val leaf1 = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
       val leaf2 = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
-      val p1 = lpp.planSort(leaf1, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
+      val p1 = lpp.planSort(leaf1, Seq(Ascending(varFor("x"))), initialOrder.columns, InterestingOrder.empty, context)
       val p2 = lpp.planEager(p1, context, ListSet.empty)
       val p3 = lpp.planRightOuterHashJoin(Set("x"), leaf2, p2, Set.empty, context)
 
@@ -1181,9 +1181,11 @@ class LogicalPlanProducerTest extends CypherFunSuite with LogicalPlanningTestSup
 
       val leaf1 = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
       val leaf2 = fakeLogicalPlanFor(context.staticComponents.planningAttributes, "x", "y")
-      val sort1 = lpp.planSort(leaf1, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
-      val sort2 = lpp.planSort(leaf2, Seq(Ascending("x")), initialOrder.columns, InterestingOrder.empty, context)
-      val u = lpp.planOrderedUnion(sort1, sort2, List(), Seq(Ascending("x")), context)
+      val sort1 =
+        lpp.planSort(leaf1, Seq(Ascending(varFor("x"))), initialOrder.columns, InterestingOrder.empty, context)
+      val sort2 =
+        lpp.planSort(leaf2, Seq(Ascending(varFor("x"))), initialOrder.columns, InterestingOrder.empty, context)
+      val u = lpp.planOrderedUnion(sort1, sort2, List(), Seq(Ascending(varFor("x"))), context)
 
       // when
       val result = lpp.planProduceResult(

@@ -34,6 +34,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.MetricsFactory
 import org.neo4j.cypher.internal.compiler.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.compiler.planner.logical.simpleExpressionEvaluator
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
@@ -87,8 +88,8 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: CostModelMonitor
       ) =>
         plan match {
-          case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
-          case _                        => Cost(1000)
+          case AllNodesScan(LogicalVariable(`bNode`), _) => Cost(1) // Make sure we start the inner plan using b
+          case _                                         => Cost(1000)
         }
     ): CostModel)
 
@@ -103,8 +104,8 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
-      LeftOuterHashJoin(Set(aNode), left, innerPlan),
-      RightOuterHashJoin(Set(aNode), innerPlan, left)
+      LeftOuterHashJoin(Set(varFor(aNode)), left, innerPlan),
+      RightOuterHashJoin(Set(varFor(aNode)), innerPlan, left)
     )
   }
 
@@ -132,8 +133,8 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: CostModelMonitor
       ) =>
         plan match {
-          case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
-          case _                        => Cost(1000)
+          case AllNodesScan(LogicalVariable(`bNode`), _) => Cost(1) // Make sure we start the inner plan using b
+          case _                                         => Cost(1000)
         }
     ): CostModel)
 
@@ -148,8 +149,8 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, InterestingOrderConfig.empty, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
-      LeftOuterHashJoin(Set(aNode), left, innerPlan),
-      RightOuterHashJoin(Set(aNode), innerPlan, left)
+      LeftOuterHashJoin(Set(varFor(aNode)), left, innerPlan),
+      RightOuterHashJoin(Set(varFor(aNode)), innerPlan, left)
     )
     plans.map { p =>
       context.staticComponents.planningAttributes.solveds.get(p.id).asSinglePlannerQuery.lastQueryGraph.allHints
@@ -180,8 +181,8 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
         _: CostModelMonitor
       ) =>
         plan match {
-          case AllNodesScan(`bNode`, _) => Cost(1) // Make sure we start the inner plan using b
-          case _                        => Cost(1000)
+          case AllNodesScan(LogicalVariable(`bNode`), _) => Cost(1) // Make sure we start the inner plan using b
+          case _                                         => Cost(1000)
         }
     ): CostModel)
 
@@ -198,9 +199,9 @@ class OuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport w
     val plans = outerHashJoin.solver(optionalQg, enclosingQg, io, context).connect(left).toSeq
 
     plans should contain theSameElementsAs Seq(
-      LeftOuterHashJoin(Set(aNode), left, unorderedPlan),
-      LeftOuterHashJoin(Set(aNode), left, orderedPlan),
-      RightOuterHashJoin(Set(aNode), unorderedPlan, left)
+      LeftOuterHashJoin(Set(varFor(aNode)), left, unorderedPlan),
+      LeftOuterHashJoin(Set(varFor(aNode)), left, orderedPlan),
+      RightOuterHashJoin(Set(varFor(aNode)), unorderedPlan, left)
     )
   }
 }

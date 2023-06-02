@@ -77,7 +77,7 @@ case object applyOptional extends OptionalSolver {
       inner.allResults.iterator.map { inner =>
         val rhs = context.staticComponents.logicalPlanProducer.planOptional(
           inner,
-          lhs.availableSymbols,
+          lhs.availableSymbols.map(_.name),
           innerContext,
           optionalQg
         )
@@ -118,7 +118,7 @@ case object outerHashJoin extends OptionalSolver {
         context.staticComponents.queryGraphSolver.plan(rhsQG, interestingOrderConfig, context)
 
       (side1Plan: LogicalPlan) => {
-        if (joinNodes.forall(side1Plan.availableSymbols)) {
+        if (joinNodes.forall(side1Plan.availableSymbols.map(_.name))) {
           Iterator(
             leftOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints),
             rightOuterJoin(context, joinNodes, side1Plan, side2Plan, solvedHints)

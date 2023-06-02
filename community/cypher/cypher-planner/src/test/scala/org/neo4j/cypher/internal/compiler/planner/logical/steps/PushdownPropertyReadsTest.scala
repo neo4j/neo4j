@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.expressions.CaseExpression
 import org.neo4j.cypher.internal.expressions.DesugaredMapProjection
 import org.neo4j.cypher.internal.expressions.LiteralEntry
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -1099,7 +1098,7 @@ class PushdownPropertyReadsTest
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("x")
       .projection("n.prop AS x").withEffectiveCardinality(100)
-      .orderedUnion(Seq(Ascending("n"))).withEffectiveCardinality(100)
+      .orderedUnion("n ASC").withEffectiveCardinality(100)
       .|.nodeByLabelScan("n", "A", IndexOrderAscending).withEffectiveCardinality(90)
       .nodeByLabelScan("n", "B", IndexOrderAscending).withEffectiveCardinality(10)
 
@@ -1117,7 +1116,7 @@ class PushdownPropertyReadsTest
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("x")
       .projection("n.prop AS x").withEffectiveCardinality(100)
-      .orderedUnion(Seq(Ascending("n"))).withEffectiveCardinality(100)
+      .orderedUnion("n ASC").withEffectiveCardinality(100)
       .|.nodeByLabelScan("n", "A", IndexOrderAscending).withEffectiveCardinality(10)
       .nodeByLabelScan("n", "B", IndexOrderAscending).withEffectiveCardinality(90)
 

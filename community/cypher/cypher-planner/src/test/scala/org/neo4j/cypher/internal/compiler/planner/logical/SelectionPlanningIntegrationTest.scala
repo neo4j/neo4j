@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelName
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.IntersectionNodeByLabelsScan
@@ -77,7 +78,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
         |AND n.foo = n.bar
         |RETURN n""".stripMargin
     )._1
-    val noArgs = Set.empty[String]
+    val noArgs = Set.empty[LogicalVariable]
     plan should beLike {
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
       // But unapply takes the order into account for [[Ands]].
@@ -88,7 +89,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
             `nFooBar`,
             `otherLabel`
           )),
-          NodeByLabelScan("n", LabelName("Label"), `noArgs`, IndexOrderNone)
+          NodeByLabelScan(LogicalVariable("n"), LabelName("Label"), `noArgs`, IndexOrderNone)
         ) => ()
     }
   }
@@ -107,7 +108,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .build()
       .plan("MATCH (n:N) WHERE n.foo.bar.baz.blob.boing.peng.brrt = 2 AND n.prop > 2 RETURN n")
 
-    val noArgs = Set.empty[String]
+    val noArgs = Set.empty[LogicalVariable]
 
     plan.stripProduceResults should beLike {
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
@@ -117,7 +118,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
             `nPropChain`, // more selective, but needs to access deeply nested property
             `nProp`
           )),
-          NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
+          NodeByLabelScan(LogicalVariable("n"), LabelName("N"), `noArgs`, IndexOrderNone)
         ) => ()
     }
   }
@@ -132,7 +133,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       .build()
       .plan("MATCH (n:N) WHERE n.foo = 2 AND n.bar > 2 RETURN n.bar")
 
-    val noArgs = Set.empty[String]
+    val noArgs = Set.empty[LogicalVariable]
 
     plan.stripProduceResults should beLike {
       // We cannot use "plan should equal ..." because equality for [[Ands]] is overridden to not care about the order.
@@ -143,7 +144,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
               `nPropFoo`, // more selective
               `nPropBar` // is cached, but needs ro read from store
             )),
-            NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
+            NodeByLabelScan(LogicalVariable("n"), LabelName("N"), `noArgs`, IndexOrderNone)
           ),
           _,
           _
@@ -192,7 +193,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
       "MATCH (n:N) WHERE n.foo > 1 AND n.foo = 2 RETURN n.bar"
     ).map(planner.plan).map(_.stripProduceResults)
 
-    val noArgs = Set.empty[String]
+    val noArgs = Set.empty[LogicalVariable]
 
     plans.foreach { plan =>
       plan should beLike {
@@ -204,7 +205,7 @@ class SelectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
                 `nPropFoo1`, // more selective
                 `nPropFoo2`
               )),
-              NodeByLabelScan("n", LabelName("N"), `noArgs`, IndexOrderNone)
+              NodeByLabelScan(LogicalVariable("n"), LabelName("N"), `noArgs`, IndexOrderNone)
             ),
             _,
             _

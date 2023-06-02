@@ -299,7 +299,7 @@ class OrLeafPlanningIntegrationTest
 
     val planAlternatives = for {
       Seq((seek1, filter1), (seek2, filter2)) <- coveringCombinations.permutations.map(_.take(2)).toSeq
-    } yield Distinct(Union(Selection(Seq(filter1), seek1), Selection(Seq(filter2), seek2)), Map("n" -> varFor("n")))
+    } yield Distinct(Union(Selection(Seq(filter1), seek1), Selection(Seq(filter2), seek2)), Map(varFor("n") -> varFor("n")))
 
     planAlternatives should contain(plan)
   }

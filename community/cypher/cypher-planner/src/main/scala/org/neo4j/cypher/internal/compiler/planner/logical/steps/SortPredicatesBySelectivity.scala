@@ -108,7 +108,7 @@ case object SortPredicatesBySelectivity extends Phase[PlannerContext, LogicalPla
           // In case we re-order predicates after the plan has already been rewritten,
           // there is a chance that the source plan solves a UNION query.
           // In that case we just pretend it solves an Argument with the same available symbols.
-          RegularSinglePlannerQuery(QueryGraph(argumentIds = s.source.availableSymbols))
+          RegularSinglePlannerQuery(QueryGraph(argumentIds = s.source.availableSymbols.map(_.name)))
       }
 
       def sortCriteria(predicate: Expression): (CostPerRow, Selectivity) = {

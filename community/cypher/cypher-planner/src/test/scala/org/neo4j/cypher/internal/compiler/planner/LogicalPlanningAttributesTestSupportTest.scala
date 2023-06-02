@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.planner.AttributeComparisonStrategy.Co
 import org.neo4j.cypher.internal.ir.ordering.NoProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.NonEmptyProvidedOrder
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes
@@ -67,7 +66,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a").withCardinality(2)
-        .top(Seq(Ascending("a.prop")), 2).withCardinality(2)
+        .top(2, "`a.prop` ASC").withCardinality(2)
         .projection("cacheN[a.prop] AS `a.prop`").withCardinality(15)
         .filter("cacheNFromStore[a.prop] > 42").withCardinality(15)
         .nodeByLabelScan("a", "A", IndexOrderNone).withCardinality(50)
@@ -80,7 +79,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a").withCardinality(2)
-        .top(Seq(Ascending("a.prop")), 2).withCardinality(2)
+        .top(2, "`a.prop` ASC").withCardinality(2)
         .projection("cacheN[a.prop] AS `a.prop`").withCardinality(1000)
         .filter("cacheNFromStore[a.prop] > 42").withCardinality(15)
         .nodeByLabelScan("a", "A", IndexOrderNone).withCardinality(50)
@@ -93,7 +92,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a").withCardinality(2)
-        .top(Seq(Ascending("a.prop")), 2).withCardinality(2)
+        .top(2, "`a.prop` ASC").withCardinality(2)
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter("cacheNFromStore[a.prop] > 42").withCardinality(15)
         .nodeByLabelScan("a", "A", IndexOrderNone)
@@ -106,7 +105,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a").withCardinality(2)
-        .top(Seq(Ascending("a.prop")), 2)
+        .top(2, "`a.prop` ASC")
         .projection("cacheN[a.prop] AS `a.prop`").withCardinality(15)
         .filter("cacheNFromStore[a.prop] > 42")
         .nodeByLabelScan("a", "A", IndexOrderNone).withCardinality(50)
@@ -119,7 +118,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a").withCardinality(2)
-        .top(Seq(Ascending("a.prop")), 2)
+        .top(2, "`a.prop` ASC")
         .projection("cacheN[a.prop] AS `a.prop`").withCardinality(1000)
         .filter("cacheNFromStore[a.prop] > 42")
         .nodeByLabelScan("a", "A", IndexOrderNone).withCardinality(50)
@@ -134,7 +133,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a").withEffectiveCardinality(2)
-        .top(Seq(Ascending("a.prop")), 2).withEffectiveCardinality(2)
+        .top(2, "`a.prop` ASC").withEffectiveCardinality(2)
         .projection("cacheN[a.prop] AS `a.prop`").withEffectiveCardinality(15)
         .filter("cacheNFromStore[a.prop] > 42").withEffectiveCardinality(15)
         .nodeByLabelScan("a", "A", IndexOrderNone).withEffectiveCardinality(50)
@@ -150,7 +149,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a").withEffectiveCardinality(2)
-        .top(Seq(Ascending("a.prop")), 2)
+        .top(2, "`a.prop` ASC")
         .projection("cacheN[a.prop] AS `a.prop`").withEffectiveCardinality(1000)
         .filter("cacheNFromStore[a.prop] > 42")
         .nodeByLabelScan("a", "A", IndexOrderNone).withEffectiveCardinality(50)
@@ -168,7 +167,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a").withProvidedOrder(providedOrder)
-        .top(Seq(Ascending("a.prop")), 2).withProvidedOrder(providedOrder)
+        .top(2, "`a.prop` ASC").withProvidedOrder(providedOrder)
         .projection("cacheN[a.prop] AS `a.prop`").withProvidedOrder(NoProvidedOrder)
         .filter("cacheNFromStore[a.prop] > 42")
         .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(NoProvidedOrder)
@@ -181,7 +180,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a").withProvidedOrder(providedOrder)
-        .top(Seq(Ascending("a.prop")), 2).withProvidedOrder(providedOrder)
+        .top(2, "`a.prop` ASC").withProvidedOrder(providedOrder)
         .projection("cacheN[a.prop] AS `a.prop`").withProvidedOrder(NoProvidedOrder)
         .filter("cacheNFromStore[a.prop] > 42")
         .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(ProvidedOrder.desc(varFor("nonsense")).fromRight)
@@ -196,7 +195,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a")
-        .top(Seq(Ascending("a.prop")), 2).withProvidedOrder(providedOrder)
+        .top(2, "`a.prop` ASC").withProvidedOrder(providedOrder)
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter("cacheNFromStore[a.prop] > 42")
         .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(NoProvidedOrder)
@@ -212,7 +211,7 @@ class LogicalPlanningAttributesTestSupportTest
       config
         .planBuilder()
         .produceResults("a")
-        .top(Seq(Ascending("a.prop")), 2).withProvidedOrder(ProvidedOrder.desc(varFor("nonsense")).fromRight)
+        .top(2, "`a.prop` ASC").withProvidedOrder(ProvidedOrder.desc(varFor("nonsense")).fromRight)
         .projection("cacheN[a.prop] AS `a.prop`")
         .filter("cacheNFromStore[a.prop] > 42")
         .nodeByLabelScan("a", "A", IndexOrderNone).withProvidedOrder(NoProvidedOrder)

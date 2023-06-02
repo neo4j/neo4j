@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.planner.logical.ordering.InterestingOrderConfig
 import org.neo4j.cypher.internal.expressions.Ands
 import org.neo4j.cypher.internal.expressions.HasLabelsOrTypes
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -121,9 +122,9 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
 
     plan._1 should beLike {
       case Apply(
-          NodeByLabelScan("n", _, _, _),
-          Optional(Expand(NodeByLabelScan("m", _, args, _), _, _, _, _, _, _), _)
-        ) if args == Set("n") => ()
+          NodeByLabelScan(LogicalVariable("n"), _, _, _),
+          Optional(Expand(NodeByLabelScan(LogicalVariable("m"), _, args, _), _, _, _, _, _, _), _)
+        ) if args == Set(varFor("n")) => ()
     }
   }
 
@@ -144,7 +145,8 @@ class SelectHasLabelWithJoinTest extends CypherFunSuite with LogicalPlanningTest
       } getLogicalPlanFor query
 
     plan._1 should beLike {
-      case Apply(NodeByLabelScan("n", _, _, _), Optional(Selection(_, Argument(args)), _)) if args == Set("n") => ()
+      case Apply(NodeByLabelScan(LogicalVariable("n"), _, _, _), Optional(Selection(_, Argument(args)), _))
+        if args == Set(varFor("n")) => ()
     }
   }
 

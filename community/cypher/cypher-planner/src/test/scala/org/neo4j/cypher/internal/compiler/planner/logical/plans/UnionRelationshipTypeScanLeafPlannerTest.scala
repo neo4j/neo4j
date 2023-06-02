@@ -60,10 +60,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        "r",
-        "a",
+        varFor("r"),
+        varFor("a"),
         Seq(relTypeName("R"), relTypeName("S")),
-        "b",
+        varFor("b"),
         Set.empty,
         IndexOrderNone
       )
@@ -82,10 +82,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        "r",
-        "b",
+        varFor("r"),
+        varFor("b"),
         Seq(relTypeName("R"), relTypeName("S")),
-        "a",
+        varFor("a"),
         Set.empty,
         IndexOrderNone
       )
@@ -104,10 +104,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       UndirectedUnionRelationshipTypesScan(
-        "r",
-        "a",
+        varFor("r"),
+        varFor("a"),
         Seq(relTypeName("R"), relTypeName("S")),
-        "b",
+        varFor("b"),
         Set.empty,
         IndexOrderNone
       )
@@ -198,10 +198,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        "r",
-        "a",
+        varFor("r"),
+        varFor("a"),
         Seq(relTypeName("R"), relTypeName("S")),
-        "b",
+        varFor("b"),
         Set.empty,
         IndexOrderAscending
       )
@@ -226,10 +226,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        "r",
-        "a",
+        varFor("r"),
+        varFor("a"),
         Seq(relTypeName("R"), relTypeName("S")),
-        "b",
+        varFor("b"),
         Set.empty,
         IndexOrderDescending
       )
@@ -257,10 +257,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        "r",
-        "a",
+        varFor("r"),
+        varFor("a"),
         Seq(relTypeName("R"), relTypeName("S")),
-        "b",
+        varFor("b"),
         Set.empty,
         IndexOrderDescending
       )
@@ -288,10 +288,10 @@ class UnionRelationshipTypeScanLeafPlannerTest extends CypherFunSuite with Logic
     // then
     resultPlans should equal(Set(
       DirectedUnionRelationshipTypesScan(
-        "r",
-        "a",
+        varFor("r"),
+        varFor("a"),
         Seq(relTypeName("R"), relTypeName("S")),
-        "b",
+        varFor("b"),
         Set.empty,
         IndexOrderAscending
       )

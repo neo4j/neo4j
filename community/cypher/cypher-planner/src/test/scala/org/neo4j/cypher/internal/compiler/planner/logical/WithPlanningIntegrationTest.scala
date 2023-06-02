@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class WithPlanningIntegrationTest extends CypherFunSuite
@@ -357,7 +356,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("foo")
         .projection(project = Seq("n1.foo AS foo"), discard = Set("n1", "n1.bar"))
-        .sort(Seq(Ascending("n1.bar")))
+        .sort("`n1.bar` ASC")
         .projection("n1.bar AS `n1.bar`")
         .allNodeScan("n1")
         .build()
@@ -376,7 +375,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("bar", "foo")
         .projection(project = Seq("n1.foo AS foo"), discard = Set("n1"))
-        .sort(Seq(Ascending("bar")))
+        .sort("bar ASC")
         .projection("n1.bar AS bar")
         .allNodeScan("n1")
         .build()
@@ -395,7 +394,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("n1", "bar", "foo")
         .projection("n1.foo AS foo")
-        .sort(Seq(Ascending("bar")))
+        .sort("bar ASC")
         .projection("n1.bar AS bar")
         .allNodeScan("n1")
         .build()
@@ -560,7 +559,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite
       planner.planBuilder()
         .produceResults("`n.name`", "`n.age`")
         .projection(project = Seq("n.name AS `n.name`"), discard = Set("row", "n"))
-        .sort(Seq(Ascending("n.age")))
+        .sort("`n.age` ASC")
         .projection("n.age AS `n.age`")
         .transactionApply(1000, OnErrorFail)
         .|.create(createNodeWithProperties("n", Seq(), "{name: row.name, age: toInteger(row.age)}"))

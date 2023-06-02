@@ -59,7 +59,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     argumentLeafPlanner(Set.empty)(qg, InterestingOrderConfig.empty, context) should equal(
-      Set(Argument(Set("a", "b", "c")))
+      Set(Argument(Set(varFor("a"), varFor("b"), varFor("c"))))
     )
   }
 
@@ -87,7 +87,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     argumentLeafPlanner(Set("b"))(qg, InterestingOrderConfig.empty, context) should equal(
-      Set(Argument(Set("a", "b", "c")))
+      Set(Argument(Set(varFor("a"), varFor("b"), varFor("c"))))
     )
   }
 }

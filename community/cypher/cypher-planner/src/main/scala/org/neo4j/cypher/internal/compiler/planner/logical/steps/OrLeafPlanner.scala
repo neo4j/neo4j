@@ -428,8 +428,8 @@ case class OrLeafPlanner(inner: Seq[LeafPlanner]) extends LeafPlanner {
             .flatMap(_.columns.headOption)
             // The only sort column must be by a variable. Convert to a logical plan ColumnOrder.
             .collect {
-              case ordering.ColumnOrder.Asc(v @ Variable(varName), _)  => (v, logical.plans.Ascending(varName))
-              case ordering.ColumnOrder.Desc(v @ Variable(varName), _) => (v, logical.plans.Descending(varName))
+              case ordering.ColumnOrder.Asc(v: Variable, _)  => (v, logical.plans.Ascending(v))
+              case ordering.ColumnOrder.Desc(v: Variable, _) => (v, logical.plans.Descending(v))
             }
 
           // Join the plans with Union

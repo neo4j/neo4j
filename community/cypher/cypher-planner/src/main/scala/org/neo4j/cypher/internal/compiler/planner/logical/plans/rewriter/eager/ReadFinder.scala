@@ -48,22 +48,6 @@ import org.neo4j.cypher.internal.expressions.RelationshipTypeToken
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Labels
 import org.neo4j.cypher.internal.expressions.functions.Properties
-import org.neo4j.cypher.internal.ir.CreatePattern
-import org.neo4j.cypher.internal.ir.DeleteExpression
-import org.neo4j.cypher.internal.ir.PatternRelationship
-import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.SetLabelPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetPropertyPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
-import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
-import org.neo4j.cypher.internal.ir.SimpleMutatingPattern
 import org.neo4j.cypher.internal.logical.plans
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
@@ -190,6 +174,21 @@ import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
+import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SimpleMutatingPattern
+import org.neo4j.cypher.internal.logical.plans.shortest.PatternRelationship
+import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.util.AnonymousVariableNameGenerator
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
@@ -344,16 +343,14 @@ object ReadFinder {
         PlanReads()
           .withIntroducedNodeVariable(varName)
 
-      case NodeByLabelScan(varName, labelName, _, _) =>
-        val variable = Variable(varName)(InputPosition.NONE)
+      case NodeByLabelScan(variable, labelName, _, _) =>
         val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
         PlanReads()
           .withLabelRead(labelName)
           .withIntroducedNodeVariable(variable)
           .withAddedNodeFilterExpression(variable, hasLabels)
 
-      case UnionNodeByLabelsScan(varName, labelNames, _, _) =>
-        val variable = Variable(varName)(InputPosition.NONE)
+      case UnionNodeByLabelsScan(variable, labelNames, _, _) =>
         val predicates = labelNames.map { labelName =>
           HasLabels(variable, Seq(labelName))(InputPosition.NONE)
         }
@@ -365,11 +362,10 @@ object ReadFinder {
           acc.withLabelRead(labelName)
         }
 
-      case IntersectionNodeByLabelsScan(varName, labelNames, _, _) =>
+      case IntersectionNodeByLabelsScan(variable, labelNames, _, _) =>
         val acc = PlanReads()
-          .withIntroducedNodeVariable(varName)
+          .withIntroducedNodeVariable(variable)
         labelNames.foldLeft(acc) { (acc, labelName) =>
-          val variable = Variable(varName)(InputPosition.NONE)
           val hasLabels = HasLabels(variable, Seq(labelName))(InputPosition.NONE)
           acc.withLabelRead(labelName)
             .withAddedNodeFilterExpression(variable, hasLabels)
@@ -405,13 +401,13 @@ object ReadFinder {
         ))(acc)
 
       case NodeIndexScan(varName, LabelToken(labelName, _), properties, _, _, _) =>
-        processNodeIndexPlan(varName, labelName, properties)
+        processNodeIndexPlan(varName.name, labelName, properties)
 
       case NodeIndexSeek(varName, LabelToken(labelName, _), properties, _, _, _, _) =>
-        processNodeIndexPlan(varName, labelName, properties)
+        processNodeIndexPlan(varName.name, labelName, properties)
 
       case NodeUniqueIndexSeek(varName, LabelToken(labelName, _), properties, _, _, _, _) =>
-        processNodeIndexPlan(varName, labelName, properties)
+        processNodeIndexPlan(varName.name, labelName, properties)
 
       case NodeIndexContainsScan(
           varName,
@@ -422,7 +418,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processNodeIndexPlan(varName, labelName, Seq(property))
+        processNodeIndexPlan(varName.name, labelName, Seq(property))
 
       case NodeIndexEndsWithScan(
           varName,
@@ -433,7 +429,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processNodeIndexPlan(varName, labelName, Seq(property))
+        processNodeIndexPlan(varName.name, labelName, Seq(property))
 
       case NodeByIdSeek(varName, _, _) =>
         // We could avoid eagerness when we have IdSeeks with a single ID.
@@ -458,9 +454,9 @@ object ReadFinder {
         // However, Input is always the left-most-leaf plan, and therefore stable and never part of a Conflict.
         // We only include this to be prepared for potential future refactorings
         Function.chain[PlanReads](Seq(
-          nodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
-          rels.foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
-          vars.foldLeft(_) { (acc, col) =>
+          nodes.map(_.name).foldLeft(_)(_.withIntroducedNodeVariable(_)),
+          rels.map(_.name).foldLeft(_)(_.withIntroducedRelationshipVariable(_)),
+          vars.map(_.name).foldLeft(_) { (acc, col) =>
             var res = acc
             if (semanticTable.typeFor(col).couldBe(CTNode)) {
               res = res.withIntroducedNodeVariable(col)
@@ -473,16 +469,16 @@ object ReadFinder {
         ))(PlanReads())
 
       case UndirectedAllRelationshipsScan(idName, leftNode, rightNode, _) =>
-        processRelationshipRead(idName, leftNode, rightNode)
+        processRelationshipRead(idName.name, leftNode.name, rightNode.name)
 
       case DirectedAllRelationshipsScan(idName, leftNode, rightNode, _) =>
-        processRelationshipRead(idName, leftNode, rightNode)
+        processRelationshipRead(idName.name, leftNode.name, rightNode.name)
 
       case UndirectedRelationshipTypeScan(idName, leftNode, relType, rightNode, _, _) =>
-        processRelTypeRead(idName, leftNode, relType, rightNode)
+        processRelTypeRead(idName.name, leftNode.name, relType, rightNode.name)
 
       case DirectedRelationshipTypeScan(idName, leftNode, relType, rightNode, _, _) =>
-        processRelTypeRead(idName, leftNode, relType, rightNode)
+        processRelTypeRead(idName.name, leftNode.name, relType, rightNode.name)
 
       case DirectedRelationshipIndexScan(
           idName,
@@ -494,7 +490,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, properties, leftNode.name, rightNode.name)
 
       case DirectedRelationshipIndexSeek(
           idName,
@@ -507,7 +503,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, properties, leftNode.name, rightNode.name)
 
       case UndirectedRelationshipIndexScan(
           idName,
@@ -519,7 +515,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, properties, leftNode.name, rightNode.name)
 
       case UndirectedRelationshipIndexSeek(
           idName,
@@ -532,7 +528,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, properties, leftNode.name, rightNode.name)
 
       case UndirectedRelationshipUniqueIndexSeek(
           idName,
@@ -545,7 +541,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, properties, leftNode.name, rightNode.name)
 
       case DirectedRelationshipUniqueIndexSeek(
           idName,
@@ -558,7 +554,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, properties, leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, properties, leftNode.name, rightNode.name)
 
       case UndirectedRelationshipIndexContainsScan(
           idName,
@@ -571,7 +567,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, Seq(property), leftNode.name, rightNode.name)
 
       case DirectedRelationshipIndexContainsScan(
           idName,
@@ -584,7 +580,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, Seq(property), leftNode.name, rightNode.name)
 
       case UndirectedRelationshipIndexEndsWithScan(
           idName,
@@ -597,7 +593,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, Seq(property), leftNode.name, rightNode.name)
 
       case DirectedRelationshipIndexEndsWithScan(
           idName,
@@ -610,25 +606,25 @@ object ReadFinder {
           _,
           _
         ) =>
-        processRelationshipIndexPlan(idName, typeName, Seq(property), leftNode, rightNode)
+        processRelationshipIndexPlan(idName.name, typeName, Seq(property), leftNode.name, rightNode.name)
 
       case UndirectedRelationshipByIdSeek(idName, _, leftNode, rightNode, _) =>
-        processRelationshipRead(idName, leftNode, rightNode)
+        processRelationshipRead(idName.name, leftNode.name, rightNode.name)
 
       case DirectedRelationshipByIdSeek(idName, _, leftNode, rightNode, _) =>
-        processRelationshipRead(idName, leftNode, rightNode)
+        processRelationshipRead(idName.name, leftNode.name, rightNode.name)
 
       case UndirectedRelationshipByElementIdSeek(idName, _, leftNode, rightNode, _) =>
-        processRelationshipRead(idName, leftNode, rightNode)
+        processRelationshipRead(idName.name, leftNode.name, rightNode.name)
 
       case DirectedRelationshipByElementIdSeek(idName, _, leftNode, rightNode, _) =>
-        processRelationshipRead(idName, leftNode, rightNode)
+        processRelationshipRead(idName.name, leftNode.name, rightNode.name)
 
       case UndirectedUnionRelationshipTypesScan(idName, leftNode, relTypes, rightNode, _, _) =>
-        processUnionRelTypeScan(idName, leftNode, relTypes, rightNode)
+        processUnionRelTypeScan(idName.name, leftNode.name, relTypes, rightNode.name)
 
       case DirectedUnionRelationshipTypesScan(idName, leftNode, relTypes, rightNode, _, _) =>
-        processUnionRelTypeScan(idName, leftNode, relTypes, rightNode)
+        processUnionRelTypeScan(idName.name, leftNode.name, relTypes, rightNode.name)
 
       case Selection(Ands(expressions), _) =>
         expressions.foldLeft(PlanReads()) {
@@ -648,26 +644,26 @@ object ReadFinder {
         }
 
       case Expand(_, from, _, relTypes, to, relName, _) =>
-        processExpand(from, relTypes, to, relName)
+        processExpand(from.name, relTypes, to.name, relName.name)
 
       case OptionalExpand(_, from, _, relTypes, to, relName, _, _) =>
-        processExpand(from, relTypes, to, relName)
+        processExpand(from.name, relTypes, to.name, relName.name)
 
       case VarExpand(_, from, _, _, relTypes, to, relName, _, _, _, _) =>
         // relName is actually a List of relationships but we can consider it to be a Relationship Variable when doing eagerness analysis
-        processExpand(from, relTypes, to, relName)
+        processExpand(from.name, relTypes, to.name, relName.name)
 
       case PruningVarExpand(_, from, _, relTypes, to, _, _, _, _) =>
         // PruningVarExpand does not introduce a rel variable, but we need one to attach the predicates to.
-        processExpand(from, relTypes, to, anonymousVariableNameGenerator.nextName)
+        processExpand(from.name, relTypes, to.name, anonymousVariableNameGenerator.nextName)
 
       case BFSPruningVarExpand(_, from, _, relTypes, to, _, _, _, _, _) =>
         // bfsPruningVarExpand does not introduce a rel variable, but we need one to attach the predicates to.
-        processExpand(from, relTypes, to, anonymousVariableNameGenerator.nextName)
+        processExpand(from.name, relTypes, to.name, anonymousVariableNameGenerator.nextName)
 
       case PathPropagatingBFS(_, _, from, _, _, relTypes, to, relName, _, _, _) =>
         // relName is actually a List of relationships but we can consider it to be a Relationship Variable when doing eagerness analysis
-        processExpand(from, relTypes, to, relName)
+        processExpand(from.name, relTypes, to.name, relName.name)
 
       case FindShortestPaths(
           _,
@@ -678,7 +674,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processShortestPaths(name, nodes, types)
+        processShortestPaths(name.name, (nodes._1.name, nodes._2.name), types)
 
       case StatefulShortestPath(_, _, _, _, _, _, _, _) => ???
 
@@ -689,7 +685,7 @@ object ReadFinder {
           _,
           _
         ) =>
-        processShortestPaths(name, nodes, types)
+        processShortestPaths(name.name, (nodes._1.name, nodes._2.name), types)
 
       case ProduceResult(_, columns) =>
         // A ProduceResult can reference entities. These must be captured with
@@ -698,13 +694,13 @@ object ReadFinder {
         // Since, there can be no Deletes after a ProduceResult, this information is currently not used.
         columns.foldLeft(PlanReads()) { (acc, col) =>
           var res = acc
-          if (semanticTable.typeFor(col).couldBe(CTNode)) {
+          if (semanticTable.typeFor(col.name).couldBe(CTNode)) {
             res = res
               .withReferencedNodeVariable(col)
               .withUnknownNodePropertiesRead()
               .withUnknownLabelsRead()
           }
-          if (semanticTable.typeFor(col).couldBe(CTRelationship)) {
+          if (semanticTable.typeFor(col.name).couldBe(CTRelationship)) {
             res = res
               .withReferencedRelationshipVariable(col)
               .withUnknownRelPropertiesRead()
@@ -722,31 +718,31 @@ object ReadFinder {
         nodes.foldLeft(PlanReads())(_.withReferencedNodeVariable(_))
 
       case Sort(_, columns) =>
-        processPotentialEntityReferences(columns.map(_.id), semanticTable)
+        processPotentialEntityReferences(columns.map(_.id.name), semanticTable)
 
       case PartialSort(_, columns1, columns2, _) =>
-        processPotentialEntityReferences((columns1 ++ columns2).map(_.id), semanticTable)
+        processPotentialEntityReferences((columns1 ++ columns2).map(_.id.name), semanticTable)
 
       case Top(_, columns, _) =>
-        processPotentialEntityReferences(columns.map(_.id), semanticTable)
+        processPotentialEntityReferences(columns.map(_.id.name), semanticTable)
 
       case Top1WithTies(_, columns) =>
-        processPotentialEntityReferences(columns.map(_.id), semanticTable)
+        processPotentialEntityReferences(columns.map(_.id.name), semanticTable)
 
       case PartialTop(_, columns1, columns2, _, _) =>
-        processPotentialEntityReferences((columns1 ++ columns2).map(_.id), semanticTable)
+        processPotentialEntityReferences((columns1 ++ columns2).map(_.id.name), semanticTable)
 
       case OrderedUnion(_, _, columns) =>
-        processPotentialEntityReferences(columns.map(_.id), semanticTable)
+        processPotentialEntityReferences(columns.map(_.id.name), semanticTable)
 
       case ConditionalApply(_, _, columns) =>
-        processPotentialEntityReferences(columns, semanticTable)
+        processPotentialEntityReferences(columns.map(_.name), semanticTable)
 
       case AntiConditionalApply(_, _, columns) =>
-        processPotentialEntityReferences(columns, semanticTable)
+        processPotentialEntityReferences(columns.map(_.name), semanticTable)
 
       case RollUpApply(_, _, _ /* always a list */, variableToCollect) =>
-        processPotentialEntityReferences(Seq(variableToCollect), semanticTable)
+        processPotentialEntityReferences(Seq(variableToCollect.name), semanticTable)
 
       case AssertSameNode(node, _, _) =>
         PlanReads().withReferencedNodeVariable(node)
@@ -755,18 +751,17 @@ object ReadFinder {
         PlanReads().withReferencedRelationshipVariable(rel)
 
       case Optional(_, symbols) =>
-        processPotentialEntityReferences(symbols, semanticTable)
+        processPotentialEntityReferences(symbols.map(_.name), semanticTable)
 
       case ProjectEndpoints(_, rel, start, startInScope, end, endInScope, types, _, _) =>
         Function.chain[PlanReads](Seq(
           if (startInScope) _.withReferencedNodeVariable(start) else _.withIntroducedNodeVariable(start),
           if (endInScope) _.withReferencedNodeVariable(end) else _.withIntroducedNodeVariable(end),
           // rel could even be a List[Relationship]
-          if (semanticTable.typeFor(rel).couldBe(CTRelationship)) _.withReferencedRelationshipVariable(rel)
+          if (semanticTable.typeFor(rel.name).couldBe(CTRelationship)) _.withReferencedRelationshipVariable(rel)
           else identity,
           if (types.nonEmpty) {
-            val relVar = Variable(rel)(InputPosition.NONE)
-            _.withAddedRelationshipFilterExpression(relVar, relTypeNamesToOrs(relVar, types))
+            _.withAddedRelationshipFilterExpression(rel, relTypeNamesToOrs(rel, types))
           } else identity
         ))(PlanReads())
 
@@ -781,7 +776,7 @@ object ReadFinder {
         //  * Unwind
         //  * [Ordered]Aggregation
         //  * [Ordered]Distinct
-        processPotentialEntityReferences(discardSymbols, semanticTable)
+        processPotentialEntityReferences(discardSymbols.map(_.name), semanticTable)
 
       case TriadicSelection(_, _, _, sourceId, seenId, targetId) =>
         Seq(sourceId, seenId, targetId).foldLeft(PlanReads())(_.withReferencedNodeVariable(_))
@@ -789,8 +784,8 @@ object ReadFinder {
       case c: Create =>
         val nodes = c.nodes
         val rels = c.relationships
-        val createdNodes = nodes.map(_.idName)
-        val createdRels = rels.map(_.idName)
+        val createdNodes = nodes.map(_.variable.name)
+        val createdRels = rels.map(_.variable.name)
         val referencedNodes = rels.flatMap(r => Seq(r.leftNode, r.rightNode))
 
         Function.chain[PlanReads](Seq(
@@ -803,9 +798,9 @@ object ReadFinder {
         mutations.foldLeft(PlanReads())(processSimpleMutatingPattern)
 
       case Merge(_, nodes, rels, onMatch, onCreate, _) =>
-        val createdNodes = nodes.map(_.idName)
-        val createdRels = rels.map(_.idName)
-        val referencedNodes = rels.flatMap(r => Seq(r.leftNode, r.rightNode))
+        val createdNodes = nodes.map(_.variable.name)
+        val createdRels = rels.map(_.variable.name)
+        val referencedNodes = rels.flatMap(r => Seq(r.leftNode.name, r.rightNode.name))
 
         Function.chain[PlanReads](Seq(
           createdNodes.foldLeft(_)(_.withIntroducedNodeVariable(_)),
@@ -1107,8 +1102,8 @@ object ReadFinder {
       case c: CreatePattern =>
         val nodes = c.nodes
         val rels = c.relationships
-        val createdNodes = nodes.map(_.idName)
-        val createdRels = rels.map(_.idName)
+        val createdNodes = nodes.map(_.variable.name)
+        val createdRels = rels.map(_.variable.name)
         val referencedNodes = rels.flatMap(r => Seq(r.leftNode, r.rightNode))
 
         Function.chain[PlanReads](Seq(
@@ -1117,7 +1112,7 @@ object ReadFinder {
           referencedNodes.foldLeft(_)(_.withReferencedNodeVariable(_))
         ))(acc)
 
-      case _: DeleteExpression =>
+      case _: org.neo4j.cypher.internal.logical.plans.set.DeleteExpression =>
         acc
 
       case RemoveLabelPattern(nodeName, _) =>
@@ -1244,7 +1239,7 @@ object ReadFinder {
   /**
    * @param relTypes must not be empty
    */
-  private def relTypeNamesToOrs(relationshipVariable: Variable, relTypes: Seq[RelTypeName]): Expression = {
+  private def relTypeNamesToOrs(relationshipVariable: LogicalVariable, relTypes: Seq[RelTypeName]): Expression = {
     val predicates = relTypes.map { typeName =>
       HasTypes(relationshipVariable, Seq(typeName))(InputPosition.NONE)
     }

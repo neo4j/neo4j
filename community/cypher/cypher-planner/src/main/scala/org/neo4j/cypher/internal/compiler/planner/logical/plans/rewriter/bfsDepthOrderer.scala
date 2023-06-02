@@ -75,13 +75,13 @@ case object bfsDepthOrderer extends Rewriter {
         case Some(sort @ Sort(_, Seq(Ascending(_)))) if sortHorizon.dependencies.contains(depthName) =>
           removeSorts.put(sort, depthName)
 
-        case Some(sort @ Sort(_, Ascending(_) :: _)) if sortHorizon.dependencies.contains(depthName) =>
+        case Some(sort @ Sort(_, Ascending(_) +: _)) if sortHorizon.dependencies.contains(depthName) =>
           makePartialSorts.put(sort, depthName)
 
         case Some(top @ Top(_, Seq(Ascending(_)), _)) if sortHorizon.dependencies.contains(depthName) =>
           removeSorts.put(top, depthName)
 
-        case Some(top @ Top(_, Ascending(_) :: _, _)) if sortHorizon.dependencies.contains(depthName) =>
+        case Some(top @ Top(_, Ascending(_) +: _, _)) if sortHorizon.dependencies.contains(depthName) =>
           makePartialSorts.put(top, depthName)
 
         case _ => // do nothing
@@ -91,10 +91,10 @@ case object bfsDepthOrderer extends Rewriter {
     def collectSortPlans(plan: LogicalPlan, sortHorizon: SortHorizon): SortHorizon = {
       plan match {
         case sort: Sort =>
-          SortHorizon(Some(sort), lastCardinalityIncreasingPlan = None, dependencies = Set(sort.sortItems.head.id))
+          SortHorizon(Some(sort), lastCardinalityIncreasingPlan = None, dependencies = Set(sort.sortItems.head.id.name))
 
         case top: Top =>
-          SortHorizon(Some(top), lastCardinalityIncreasingPlan = None, dependencies = Set(top.sortItems.head.id))
+          SortHorizon(Some(top), lastCardinalityIncreasingPlan = None, dependencies = Set(top.sortItems.head.id.name))
 
         case _: BFSPruningVarExpand |
           _: PruningVarExpand |
@@ -106,8 +106,8 @@ case object bfsDepthOrderer extends Rewriter {
         case projection: Projection if sortHorizon.sortPlan.nonEmpty =>
           val aliases = mutable.Set.empty[String]
           projection.projectExpressions.foreach {
-            case (key, Variable(name)) if sortHorizon.dependencies.contains(key) => aliases += name
-            case _                                                               => // do nothing
+            case (key, Variable(name)) if sortHorizon.dependencies.contains(key.name) => aliases += name
+            case _                                                                    => // do nothing
           }
           sortHorizon.copy(dependencies = sortHorizon.dependencies ++ aliases)
 
@@ -123,7 +123,7 @@ case object bfsDepthOrderer extends Rewriter {
           _: NodeUniqueIndexSeek =>
           sortHorizon.lastCardinalityIncreasingPlan match {
             case Some(BFSPruningVarExpand(_, _, _, _, _, _, _, Some(depthName), _, _)) =>
-              recordSortPlanForRewriting(sortHorizon, depthName)
+              recordSortPlanForRewriting(sortHorizon, depthName.name)
             case _ => // do nothing
           }
 

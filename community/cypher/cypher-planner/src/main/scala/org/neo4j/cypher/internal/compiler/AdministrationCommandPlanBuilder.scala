@@ -133,6 +133,7 @@ import org.neo4j.cypher.internal.expressions.Parameter
 import org.neo4j.cypher.internal.expressions.PatternComprehension
 import org.neo4j.cypher.internal.expressions.PatternExpression
 import org.neo4j.cypher.internal.expressions.SubqueryExpression
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.frontend.phases.BaseState
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.CompilationPhase.PIPE_BUILDING
@@ -224,13 +225,13 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
       // SHOW USERS
       case su: ShowUsers => Some(plans.ShowUsers(
           plans.AssertAllowedDbmsActions(ShowUserAction),
-          su.defaultColumnNames,
+          su.defaultColumnNames.map(varFor),
           su.yields,
           su.returns
         ))
 
       // SHOW CURRENT USER
-      case su: ShowCurrentUser => Some(plans.ShowCurrentUser(su.defaultColumnNames, su.yields, su.returns))
+      case su: ShowCurrentUser => Some(plans.ShowCurrentUser(su.defaultColumnNames.map(varFor), su.yields, su.returns))
 
       // CREATE [OR REPLACE] USER foo [IF NOT EXISTS] WITH [PLAINTEXT | ENCRYPTED] PASSWORD password
       case c @ CreateUser(userName, isEncryptedPassword, initialPassword, userOptions, ifExistsDo) =>
@@ -332,7 +333,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           assertAllowed,
           withUsers = sr.withUsers,
           showAll = sr.showAll,
-          sr.defaultColumnNames,
+          sr.defaultColumnNames.map(varFor),
           sr.yields,
           sr.returns
         ))
@@ -737,7 +738,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case scope =>
             (scope, Some(plans.AssertAllowedDbmsActions(ShowPrivilegeAction)))
         }
-        Some(plans.ShowPrivileges(source, newScope, sp.defaultColumnNames, sp.yields, sp.returns))
+        Some(plans.ShowPrivileges(source, newScope, sp.defaultColumnNames.map(varFor), sp.yields, sp.returns))
 
       // SHOW [ALL | ROLE role | ROLES role1, role2 | USER [user] | USERS user1, user2] PRIVILEGES AS [REVOKE] COMMAND
       case sp: ShowPrivilegeCommands =>
@@ -763,17 +764,24 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
           case scope =>
             (scope, Some(plans.AssertAllowedDbmsActions(ShowPrivilegeAction)))
         }
-        Some(plans.ShowPrivilegeCommands(source, newScope, sp.asRevoke, sp.defaultColumnNames, sp.yields, sp.returns))
+        Some(plans.ShowPrivilegeCommands(
+          source,
+          newScope,
+          sp.asRevoke,
+          sp.defaultColumnNames.map(varFor),
+          sp.yields,
+          sp.returns
+        ))
 
       case c: ShowSupportedPrivilegeCommand =>
-        Some(plans.ShowSupportedPrivileges(c.defaultColumnNames, c.yields, c.returns))
+        Some(plans.ShowSupportedPrivileges(c.defaultColumnNames.map(varFor), c.yields, c.returns))
 
       // SHOW DATABASES | SHOW DEFAULT DATABASE | SHOW DATABASE foo
       case sd: ShowDatabase =>
         Some(plans.ShowDatabase(
           sd.scope,
           sd.defaultColumns.useAllColumns,
-          sd.defaultColumnNames,
+          sd.defaultColumnNames.map(varFor),
           sd.yields,
           sd.returns
         ))
@@ -1065,7 +1073,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
             _,
             showAliases.aliasName,
             showAliases.defaultColumns.useAllColumns,
-            showAliases.defaultColumnNames,
+            showAliases.defaultColumnNames.map(varFor),
             showAliases.yields,
             showAliases.returns
           ))
@@ -1095,7 +1103,7 @@ case object AdministrationCommandPlanBuilder extends Phase[PlannerContext, BaseS
         Some(plans.ShowServers(
           assertAllowed,
           showServers.defaultColumns.useAllColumns,
-          showServers.defaultColumnNames,
+          showServers.defaultColumnNames.map(varFor),
           showServers.yields,
           showServers.returns
         ))

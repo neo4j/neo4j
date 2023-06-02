@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.PathStep
 import org.neo4j.cypher.internal.expressions.PatternElement
 import org.neo4j.cypher.internal.expressions.PatternPart
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.ir.Predicate
@@ -56,7 +57,7 @@ case object planLegacyShortestRelationships {
     val variables = Set(shortestRelationship.name, Some(shortestRelationship.rel.name)).flatten
     def predicateAppliesToShortestRelationship(p: Predicate) =
       // only select predicates related to this pattern (this is code in common with normal MATCH Pattern clauses)
-      p.hasDependenciesMet(variables ++ inner.availableSymbols) &&
+      p.hasDependenciesMet(variables ++ inner.availableSymbols.map(_.name)) &&
         // And filter with predicates that explicitly depend on shortestPath variables
         (p.dependencies intersect variables).nonEmpty
 
@@ -134,7 +135,7 @@ case object planLegacyShortestRelationships {
       disallowSameNode = context.settings.errorIfShortestPathHasCommonNodesAtRuntime,
       context = context
     )
-    val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols, context, QueryGraph.empty)
+    val lhsOption = lpp.planOptional(lhsSp, lhsArgument.availableSymbols.map(_.name), context, QueryGraph.empty)
     val lhs = lpp.planApply(inner, lhsOption, context)
 
     val rhsArgument = context.staticComponents.logicalPlanProducer.planArgument(
@@ -189,7 +190,7 @@ case object planLegacyShortestRelationships {
         pattern.name,
         rhsArgument,
         from,
-        rhsArgument.availableSymbols,
+        rhsArgument.availableSymbols.map(_.name),
         context
       )
 
@@ -208,7 +209,7 @@ case object planLegacyShortestRelationships {
 
     val rhsProjMap = Map(columnName -> lengthOfPath)
     val rhsProjected = lpp.planRegularProjection(rhsFiltered, Set.empty, rhsProjMap, Some(rhsProjMap), context)
-    val sortDescription = Seq(Ascending(columnName))
+    val sortDescription = Seq(Ascending(varFor(columnName)))
     val plan =
       if (shortestRelationship.single) {
         lpp.planTop(

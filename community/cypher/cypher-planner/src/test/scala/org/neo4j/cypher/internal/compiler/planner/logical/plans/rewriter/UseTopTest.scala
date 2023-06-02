@@ -33,8 +33,8 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class UseTopTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private val leaf = newMockedLogicalPlan()
-  private val sortDescriptionX = Seq(Ascending("x"))
-  private val sortDescriptionY = Seq(Ascending("y"))
+  private val sortDescriptionX = Seq(Ascending(varFor("x")))
+  private val sortDescriptionY = Seq(Ascending(varFor("y")))
   private val sort = Sort(leaf, sortDescriptionX)
   private val partialSort = PartialSort(leaf, sortDescriptionX, sortDescriptionY)
   private val lit10 = literalInt(10)

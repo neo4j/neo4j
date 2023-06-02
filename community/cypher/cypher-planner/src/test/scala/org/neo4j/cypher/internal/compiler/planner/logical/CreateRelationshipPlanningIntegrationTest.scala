@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.CreateNode
-import org.neo4j.cypher.internal.ir.CreateRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningIntegrationTestSupport
@@ -35,9 +35,9 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
-        CreateNode("a", Set.empty, None),
-        CreateNode("b", Set.empty, None),
-        CreateRelationship("r", "a", relTypeName("R"), "b", SemanticDirection.OUTGOING, None)
+        createNode("a"),
+        createNode("b"),
+        createRelationship("r", "a", "R", "b", SemanticDirection.OUTGOING)
       )
       .argument()
       .build()
@@ -49,13 +49,13 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
-        CreateNode("a", Set.empty, None),
-        CreateNode("b", Set.empty, None),
-        CreateRelationship("r1", "a", relTypeName("R1"), "b", SemanticDirection.OUTGOING, None),
-        CreateNode("c", Set.empty, None),
-        CreateRelationship("r2", "b", relTypeName("R2"), "c", SemanticDirection.INCOMING, None),
-        CreateNode("d", Set.empty, None),
-        CreateRelationship("r3", "c", relTypeName("R3"), "d", SemanticDirection.OUTGOING, None)
+        createNode("a"),
+        createNode("b"),
+        createRelationship("r1", "a", "R1", "b", SemanticDirection.OUTGOING),
+        createNode("c"),
+        createRelationship("r2", "b", "R2", "c", SemanticDirection.INCOMING),
+        createNode("d"),
+        createRelationship("r3", "c", "R3", "d", SemanticDirection.OUTGOING)
       )
       .argument()
       .build()
@@ -67,11 +67,11 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
-        CreateNode("a", Set.empty, None),
-        CreateNode("b", Set.empty, None),
-        CreateRelationship("r1", "a", relTypeName("R1"), "b", SemanticDirection.INCOMING, None),
-        CreateNode("c", Set.empty, None),
-        CreateRelationship("r2", "b", relTypeName("R2"), "c", SemanticDirection.INCOMING, None)
+        createNode("a"),
+        createNode("b"),
+        createRelationship("r1", "a", "R1", "b", SemanticDirection.INCOMING),
+        createNode("c"),
+        createRelationship("r2", "b", "R2", "c", SemanticDirection.INCOMING)
       )
       .argument()
       .build()
@@ -83,8 +83,8 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
-        CreateNode("b", Set.empty, None),
-        CreateRelationship("r", "n", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)
+        createNode("b"),
+        createRelationship("r", "n", "T", "b", SemanticDirection.OUTGOING)
       )
       .allNodeScan("n")
       .build()
@@ -96,7 +96,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
-        CreateRelationship("r", "n", relTypeName("T"), "m", SemanticDirection.OUTGOING, None)
+        createRelationship("r", "n", "T", "m", SemanticDirection.OUTGOING)
       )
       .cartesianProduct()
       .|.allNodeScan("m")
@@ -110,7 +110,7 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
-        CreateRelationship("r", "a", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)
+        createRelationship("r", "a", "T", "b", SemanticDirection.OUTGOING)
       )
       .projection(project = Seq("n AS a", "m AS b"), discard = Set("n", "m"))
       .cartesianProduct()
@@ -127,8 +127,8 @@ class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with Logi
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
-        CreateNode("b", Set.empty, None),
-        CreateRelationship("r", "a", relTypeName("T"), "b", SemanticDirection.OUTGOING, None)
+        createNode("b"),
+        createRelationship("r", "a", "T", "b", SemanticDirection.OUTGOING)
       )
       .projection(project = Seq("n AS a"), discard = Set("n"))
       .allNodeScan("n")

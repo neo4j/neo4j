@@ -59,7 +59,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderNone)
+      DirectedRelationshipTypeScan(varFor("r"), varFor("a"), relTypeName("R"), varFor("b"), Set.empty, IndexOrderNone)
     ))
   }
 
@@ -74,7 +74,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan("r", "b", relTypeName("R"), "a", Set.empty, IndexOrderNone)
+      DirectedRelationshipTypeScan(varFor("r"), varFor("b"), relTypeName("R"), varFor("a"), Set.empty, IndexOrderNone)
     ))
   }
 
@@ -89,7 +89,7 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderNone)
+      UndirectedRelationshipTypeScan(varFor("r"), varFor("a"), relTypeName("R"), varFor("b"), Set.empty, IndexOrderNone)
     ))
   }
 
@@ -176,7 +176,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderAscending)
+      DirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("a"),
+        relTypeName("R"),
+        varFor("b"),
+        Set.empty,
+        IndexOrderAscending
+      )
     ))
   }
 
@@ -197,7 +204,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderDescending)
+      DirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("a"),
+        relTypeName("R"),
+        varFor("b"),
+        Set.empty,
+        IndexOrderDescending
+      )
     ))
   }
 
@@ -218,7 +232,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan("r", "b", relTypeName("R"), "a", Set.empty, IndexOrderAscending)
+      DirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("b"),
+        relTypeName("R"),
+        varFor("a"),
+        Set.empty,
+        IndexOrderAscending
+      )
     ))
   }
 
@@ -239,7 +260,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan("r", "b", relTypeName("R"), "a", Set.empty, IndexOrderDescending)
+      DirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("b"),
+        relTypeName("R"),
+        varFor("a"),
+        Set.empty,
+        IndexOrderDescending
+      )
     ))
   }
 
@@ -263,7 +291,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderDescending)
+      DirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("a"),
+        relTypeName("R"),
+        varFor("b"),
+        Set.empty,
+        IndexOrderDescending
+      )
     ))
   }
 
@@ -287,7 +322,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderAscending)
+      DirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("a"),
+        relTypeName("R"),
+        varFor("b"),
+        Set.empty,
+        IndexOrderAscending
+      )
     ))
   }
 
@@ -308,7 +350,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderAscending)
+      UndirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("a"),
+        relTypeName("R"),
+        varFor("b"),
+        Set.empty,
+        IndexOrderAscending
+      )
     ))
   }
 
@@ -329,7 +378,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderDescending)
+      UndirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("a"),
+        relTypeName("R"),
+        varFor("b"),
+        Set.empty,
+        IndexOrderDescending
+      )
     ))
   }
 
@@ -353,7 +409,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderDescending)
+      UndirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("a"),
+        relTypeName("R"),
+        varFor("b"),
+        Set.empty,
+        IndexOrderDescending
+      )
     ))
   }
 
@@ -377,7 +440,14 @@ class RelationshipTypeScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      UndirectedRelationshipTypeScan("r", "a", relTypeName("R"), "b", Set.empty, IndexOrderAscending)
+      UndirectedRelationshipTypeScan(
+        varFor("r"),
+        varFor("a"),
+        relTypeName("R"),
+        varFor("b"),
+        Set.empty,
+        IndexOrderAscending
+      )
     ))
   }
 

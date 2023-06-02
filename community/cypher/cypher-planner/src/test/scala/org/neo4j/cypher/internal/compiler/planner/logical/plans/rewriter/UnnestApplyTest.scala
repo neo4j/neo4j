@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningAttributesTestSupport
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.spi.PlanningAttributes.ProvidedOrders
@@ -484,7 +483,7 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningAttributesTestS
       .|.apply()
       .|.|.limit(1)
       .|.|.argument("n")
-      .|.sort(Seq(Ascending("n")))
+      .|.sort("n ASC")
       .|.expand("(m)--(n)")
       .|.argument("n")
       .nodeByLabelScan("n", "N")

@@ -132,8 +132,8 @@ case class joinSolverStep(qg: QueryGraph, IGNORE_EXPAND_SOLUTIONS_FOR_TEST: Bool
     rhs: LogicalPlan,
     argumentsToRemove: Set[String]
   ): Set[String] = {
-    val leftSymbols = lhs.availableSymbols
-    val rightSymbols = rhs.availableSymbols
+    val leftSymbols = lhs.availableSymbols.map(_.name)
+    val rightSymbols = rhs.availableSymbols.map(_.name)
     (leftSymbols intersect rightSymbols) -- argumentsToRemove
   }
 

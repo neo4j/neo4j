@@ -20,10 +20,9 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.expressions.RelTypeName
 import org.neo4j.cypher.internal.expressions.SemanticDirection
-import org.neo4j.cypher.internal.ir.CreateRelationship
 import org.neo4j.cypher.internal.ir.VarPatternLength
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
 import org.neo4j.cypher.internal.logical.plans.AntiConditionalApply
 import org.neo4j.cypher.internal.logical.plans.Apply
 import org.neo4j.cypher.internal.logical.plans.Argument
@@ -40,29 +39,29 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should rewrite Apply/Optional/Expand to OptionalExpand when lhs of expand is single row") {
-    val argument: LogicalPlan = Argument(Set("a"))
+    val argument: LogicalPlan = Argument(Set(varFor("a")))
     val rhs: LogicalPlan =
       Optional(
-        Expand(argument, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+        Expand(argument, varFor("a"), SemanticDirection.OUTGOING, Seq.empty, varFor("b"), varFor("r"))
       )
     val lhs = newMockedLogicalPlan("a")
     val input = Apply(lhs, rhs)
 
     input.endoRewrite(unnestOptional) should equal(
-      OptionalExpand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r", ExpandAll, None)
+      OptionalExpand(lhs, varFor("a"), SemanticDirection.OUTGOING, Seq.empty, varFor("b"), varFor("r"), ExpandAll, None)
     )
   }
 
   test("should not rewrite Apply/Optional/Selection/Expand to OptionalExpand when expansion is variable length") {
-    val argument: LogicalPlan = Argument(Set("a"))
+    val argument: LogicalPlan = Argument(Set(varFor("a")))
     val expand = VarExpand(
       argument,
-      "a",
+      varFor("a"),
       SemanticDirection.OUTGOING,
       SemanticDirection.OUTGOING,
       Seq.empty,
-      "b",
-      "r",
+      varFor("b"),
+      varFor("r"),
       VarPatternLength(1, None),
       ExpandAll
     )
@@ -76,17 +75,17 @@ class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport 
   }
 
   test("should not rewrite plans containing merges") {
-    val argument: LogicalPlan = Argument(Set("a"))
+    val argument: LogicalPlan = Argument(Set(varFor("a")))
     val rhs: LogicalPlan =
       Optional(
-        Expand(argument, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+        Expand(argument, varFor("a"), SemanticDirection.OUTGOING, Seq.empty, varFor("b"), varFor("r"))
       )
     val lhs = newMockedLogicalPlan("a")
     val apply = Apply(lhs, rhs)
     val mergeRel = Merge(
       Argument(),
       Seq.empty,
-      Seq(CreateRelationship("r", "a", RelTypeName("T")(pos), "b", SemanticDirection.OUTGOING, None)),
+      Seq(createRelationship("r", "a", "T", "b", SemanticDirection.OUTGOING)),
       Seq.empty,
       Seq.empty,
       Set.empty

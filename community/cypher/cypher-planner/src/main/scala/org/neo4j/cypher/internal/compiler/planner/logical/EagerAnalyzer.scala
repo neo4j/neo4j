@@ -101,8 +101,8 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
    */
   private def getLeafPlansPredicatesResolver(plan: LogicalPlan): LeafPlansPredicatesResolver = (entityName: String) => {
     val leaves: Seq[LogicalLeafPlan] = plan.leaves.collect {
-      case n: NodeLogicalLeafPlan if n.idName == entityName         => n
-      case r: RelationshipLogicalLeafPlan if r.idName == entityName => r
+      case n: NodeLogicalLeafPlan if n.idName.name == entityName         => n
+      case r: RelationshipLogicalLeafPlan if r.idName.name == entityName => r
     }
 
     leaves.map { p =>
@@ -152,17 +152,17 @@ class EagerAnalyzerImpl private (context: LogicalPlanningContext) extends EagerA
 
       // We still need to distinguish the stable leaf from the others
       val stableIdentifier = maybeStableLeaf.map {
-        case n: NodeLogicalLeafPlan         => QgWithLeafInfo.StableIdentifier(n.idName)
-        case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName)
+        case n: NodeLogicalLeafPlan         => QgWithLeafInfo.StableIdentifier(n.idName.name)
+        case r: RelationshipLogicalLeafPlan => QgWithLeafInfo.StableIdentifier(r.idName.name)
         case x => throw new InternalException(
             s"Expected NodeLogicalLeafPlan or RelationshipLogicalLeafPlan but was ${x.getClass}"
           )
       }
 
       val unstableLeafIdNames = unstableLeaves.view.flatMap {
-        case n: NodeLogicalLeafPlan         => Set(n.idName)
-        case r: RelationshipLogicalLeafPlan => Set(r.idName)
-        case a: Argument                    => a.argumentIds
+        case n: NodeLogicalLeafPlan         => Set(n.idName.name)
+        case r: RelationshipLogicalLeafPlan => Set(r.idName.name)
+        case a: Argument                    => a.argumentIds.map(_.name)
         case x => throw new InternalException(
             s"Expected NodeLogicalLeafPlan, RelationshipLogicalLeafPlan or Argument but was ${x.getClass}"
           )

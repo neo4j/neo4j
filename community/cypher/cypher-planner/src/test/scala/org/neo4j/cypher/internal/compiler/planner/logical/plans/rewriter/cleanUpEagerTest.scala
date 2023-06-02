@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.ir.NoHeaders
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.Eager
@@ -50,7 +50,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should not move eager below unwind") {
     val leaf = newMockedLogicalPlan()
     val eager = Eager(leaf)
-    val unwind = UnwindCollection(eager, "i", null)
+    val unwind = UnwindCollection(eager, varFor("i"), null)
     val topPlan = Projection(unwind, Set.empty, Map.empty)
 
     rewrite(topPlan) should equal(topPlan)
@@ -58,20 +58,20 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should move eager on top of unwind to below it") {
     val leaf = newMockedLogicalPlan()
-    val unwind = UnwindCollection(leaf, "i", null)
+    val unwind = UnwindCollection(leaf, varFor("i"), null)
     val eager = Eager(unwind)
     val topPlan = Projection(eager, Set.empty, Map.empty)
 
-    rewrite(topPlan) should equal(Projection(UnwindCollection(Eager(leaf), "i", null), Set.empty, Map.empty))
+    rewrite(topPlan) should equal(Projection(UnwindCollection(Eager(leaf), varFor("i"), null), Set.empty, Map.empty))
   }
 
   test("should move eager on top of unwind to below it repeatedly") {
     val leaf = newMockedLogicalPlan()
-    val unwind1 = UnwindCollection(leaf, "i", null)
+    val unwind1 = UnwindCollection(leaf, varFor("i"), null)
     val eager1 = Eager(unwind1)
-    val unwind2 = UnwindCollection(eager1, "i", null)
+    val unwind2 = UnwindCollection(eager1, varFor("i"), null)
     val eager2 = Eager(unwind2)
-    val unwind3 = UnwindCollection(eager2, "i", null)
+    val unwind3 = UnwindCollection(eager2, varFor("i"), null)
     val eager3 = Eager(unwind3)
     val topPlan = Projection(eager3, Set.empty, Map.empty)
 
@@ -79,11 +79,11 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Projection(
         UnwindCollection(
           UnwindCollection(
-            UnwindCollection(Eager(leaf), "i", null),
-            "i",
+            UnwindCollection(Eager(leaf), varFor("i"), null),
+            varFor("i"),
             null
           ),
-          "i",
+          varFor("i"),
           null
         ),
         Set.empty,
@@ -95,13 +95,22 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should move eager on top of load csv to below it") {
     val leaf = newMockedLogicalPlan()
     val url = literalString("file:///tmp/foo.csv")
-    val loadCSV = LoadCSV(leaf, url, "a", NoHeaders, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)
+    val loadCSV =
+      LoadCSV(leaf, url, varFor("a"), NoHeaders, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB)
     val eager = Eager(loadCSV)
     val topPlan = Projection(eager, Set.empty, Map.empty)
 
     rewrite(topPlan) should equal(
       Projection(
-        LoadCSV(Eager(leaf), url, "a", NoHeaders, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE_4MB),
+        LoadCSV(
+          Eager(leaf),
+          url,
+          varFor("a"),
+          NoHeaders,
+          None,
+          legacyCsvQuoteEscaping = false,
+          DEFAULT_BUFFER_SIZE_4MB
+        ),
         Set.empty,
         Map.empty
       )
@@ -137,7 +146,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val loadCSV = LoadCSV(
       eager,
       literalString("file:///tmp/foo.csv"),
-      "a",
+      varFor("a"),
       NoHeaders,
       None,
       legacyCsvQuoteEscaping = false,
@@ -149,7 +158,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should use exhaustive limit when moving eager on top of limit when there are updates") {
-    val leaf = Create(newMockedLogicalPlan(), Seq(CreateNode("n", Set.empty, None)))
+    val leaf = Create(newMockedLogicalPlan(), Seq(createNode("n")))
     rewrite(
       Projection(
         Limit(
@@ -173,7 +182,7 @@ class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should remove eager on top of eager aggregation") {
     val leaf = newMockedLogicalPlan()
     val aggregatingExpression = distinctFunction("count", varFor("to"))
-    val aggregation = Aggregation(leaf, Map.empty, Map("x" -> aggregatingExpression))
+    val aggregation = Aggregation(leaf, Map.empty, Map(varFor("x") -> aggregatingExpression))
     val eager = Eager(aggregation)
     val topPlan = Projection(eager, Set.empty, Map.empty)
 

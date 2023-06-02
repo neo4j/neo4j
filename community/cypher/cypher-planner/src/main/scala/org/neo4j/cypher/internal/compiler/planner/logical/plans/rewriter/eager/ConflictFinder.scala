@@ -43,13 +43,13 @@ import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.Reason
 import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
-import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.CreateOverlaps.PropertiesOverlap
 import org.neo4j.cypher.internal.ir.helpers.overlaps.DeleteOverlaps
 import org.neo4j.cypher.internal.ir.helpers.overlaps.Expressions
 import org.neo4j.cypher.internal.label_expressions.LabelExpressionLeafName
 import org.neo4j.cypher.internal.label_expressions.NodeLabels
+import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.DeleteNode
 import org.neo4j.cypher.internal.logical.plans.DeleteRelationship
 import org.neo4j.cypher.internal.logical.plans.DetachDeleteNode
@@ -61,6 +61,7 @@ import org.neo4j.cypher.internal.logical.plans.StableLeafPlan
 import org.neo4j.cypher.internal.logical.plans.TransactionApply
 import org.neo4j.cypher.internal.logical.plans.TransactionForeach
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
 import org.neo4j.cypher.internal.util.InputPosition
 import org.neo4j.cypher.internal.util.Ref
 
@@ -478,10 +479,13 @@ object ConflictFinder {
     def deletingPlansConflict =
       deletingPlan(writePlan) && deletingPlan(readPlan)
 
+    def nonConflictingReadPlan(): Boolean = readPlan.isInstanceOf[Argument]
+
     !deletingPlansConflict &&
     !conflictsWithItself &&
     !mergeConflictWithChild &&
-    conflictsWithUnstablePlan
+    conflictsWithUnstablePlan &&
+    !nonConflictingReadPlan()
   }
 
   private def isInTransactionalApply(plan: LogicalPlan, wholePlan: LogicalPlan): Boolean = {

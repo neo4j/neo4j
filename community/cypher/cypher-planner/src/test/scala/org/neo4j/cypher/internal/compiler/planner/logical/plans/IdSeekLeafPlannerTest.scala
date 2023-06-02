@@ -105,7 +105,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Set(NodeByIdSeek("n", ManySeekableArgs(listOfInt(42, 43, 43)), Set.empty))
+      Set(NodeByIdSeek(varFor("n"), ManySeekableArgs(listOfInt(42, 43, 43)), Set.empty))
     )
   }
 
@@ -184,7 +184,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Set(NodeByIdSeek("n", ManySeekableArgs(varFor("arr")), Set("arr")))
+      Set(NodeByIdSeek(varFor("n"), ManySeekableArgs(varFor("arr")), Set(varFor("arr"))))
     )
   }
 
@@ -306,7 +306,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Set(DirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42, 43, 43)), from, end, Set.empty))
+      Set(DirectedRelationshipByIdSeek(
+        varFor("r"),
+        ManySeekableArgs(listOfInt(42, 43, 43)),
+        varFor(from),
+        varFor(end),
+        Set.empty
+      ))
     )
   }
 
@@ -350,7 +356,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
 
     // then
     resultPlans should equal(
-      Set(UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42, 43, 43)), from, end, Set.empty))
+      Set(UndirectedRelationshipByIdSeek(
+        varFor("r"),
+        ManySeekableArgs(listOfInt(42, 43, 43)),
+        varFor(from),
+        varFor(end),
+        Set.empty
+      ))
     )
   }
 
@@ -410,7 +422,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     resultPlans should equal(
       Set(Selection(
         ands(in(function("type", varFor("r")), literalString("X"))),
-        UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
+        UndirectedRelationshipByIdSeek(
+          varFor("r"),
+          ManySeekableArgs(listOfInt(42)),
+          varFor(from),
+          varFor(end),
+          Set.empty
+        )
       ))
     )
   }
@@ -475,7 +493,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
         ands(
           in(function("type", varFor("r")), listOf(literalString("X"), literalString("Y")))
         ),
-        UndirectedRelationshipByIdSeek("r", ManySeekableArgs(listOfInt(42)), from, end, Set.empty)
+        UndirectedRelationshipByIdSeek(
+          varFor("r"),
+          ManySeekableArgs(listOfInt(42)),
+          varFor(from),
+          varFor(end),
+          Set.empty
+        )
       ))
     )
   }

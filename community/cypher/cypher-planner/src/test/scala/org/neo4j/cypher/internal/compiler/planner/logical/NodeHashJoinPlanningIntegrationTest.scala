@@ -23,7 +23,6 @@ import org.neo4j.configuration.GraphDatabaseSettings
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 import org.neo4j.exceptions.JoinHintException
 
@@ -108,7 +107,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
 
     plan shouldEqual cfg.subPlanBuilder()
       .leftOuterHashJoin("n1")
-      .|.sort(Seq(Ascending("n2")))
+      .|.sort("x ASC")
       .|.expandAll("(n1)-[anon_0]-(n2)")
       .|.allNodeScan("n1")
       .unwind(s"$array AS a0")
@@ -240,7 +239,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     plan should equal(planner.subPlanBuilder()
       .nodeHashJoin("a")
       .|.expand("(b)-[anon_0*1..2]-(a)", projectedDir = INCOMING)
-      .|.sort(Seq(Ascending("1")))
+      .|.sort("1 ASC")
       .|.projection("1 AS 1")
       .|.nodeByIdSeek("b", Set(), 0)
       .nodeByIdSeek("a", Set(), 0)

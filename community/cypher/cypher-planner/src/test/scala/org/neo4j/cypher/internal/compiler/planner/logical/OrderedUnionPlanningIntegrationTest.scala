@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.OrderedDistinct
 import org.neo4j.cypher.internal.logical.plans.UnionNodeByLabelsScan
@@ -64,7 +64,8 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .stripProduceResults
 
     plan should beLike {
-      case UnionNodeByLabelsScan("m", labels, _, _) if labels.map(_.name).toSet == Set("A", "B", "C") => ()
+      case UnionNodeByLabelsScan(LogicalVariable("m"), labels, _, _)
+        if labels.map(_.name).toSet == Set("A", "B", "C") => ()
     }
   }
 
@@ -214,7 +215,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .stripProduceResults
 
     plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-      .sort(Seq(Ascending("p.name")))
+      .sort("`p.name` ASC")
       .projection("p.name AS `p.name`")
       .distinct("p AS p")
       .union()
@@ -222,7 +223,7 @@ class OrderedUnionPlanningIntegrationTest extends CypherFunSuite with LogicalPla
       .nodeIndexOperator("p:Person(name < 0)", indexOrder = IndexOrderAscending, indexType = IndexType.RANGE)
       .build())
       or equal(new LogicalPlanBuilder(wholePlan = false)
-        .sort(Seq(Ascending("p.name")))
+        .sort("`p.name` ASC")
         .projection("p.name AS `p.name`")
         .distinct("p AS p")
         .union()

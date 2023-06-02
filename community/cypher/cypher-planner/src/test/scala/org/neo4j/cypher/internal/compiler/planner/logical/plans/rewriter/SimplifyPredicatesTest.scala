@@ -33,7 +33,7 @@ import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should rewrite WHERE x.prop in [1] to WHERE x.prop = 1") {
-    val argument: LogicalPlan = Argument(Set("a"))
+    val argument: LogicalPlan = Argument(Set(varFor("a")))
     val predicate = in(prop("x", "prop"), listOfInt(1))
     val cleanPredicate = propEquality("x", "prop", 1)
     val selection = Selection(Seq(predicate), argument)
@@ -44,7 +44,7 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should not rewrite WHERE x.prop in [1, 2]") {
-    val argument: LogicalPlan = Argument(Set("a"))
+    val argument: LogicalPlan = Argument(Set(varFor("a")))
     val orgPredicate = in(prop("x", "prop"), listOfInt(1, 2))
     val selection = Selection(Seq(orgPredicate), argument)
 
@@ -52,7 +52,7 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should rewrite WHERE AndedPropertyInequality(x.prop, 1) to WHERE x.prop > 42") {
-    val argument: LogicalPlan = Argument(Set("x"))
+    val argument: LogicalPlan = Argument(Set(varFor("x")))
     val predicate = propGreaterThan("x", "prop", 42)
     val complexForm = AndedPropertyInequalities(varFor("x"), prop("x", "prop"), NonEmptyList(predicate))
     val selection = Selection(Seq(complexForm), argument)
@@ -62,7 +62,7 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should rewrite WHERE AndedPropertyInequality into multiple predicates") {
-    val argument: LogicalPlan = Argument(Set("x"))
+    val argument: LogicalPlan = Argument(Set(varFor("x")))
     val predicateGT = propGreaterThan("x", "prop", 42)
     val predicateLT = propLessThan("x", "prop", 321)
     val complexForm = AndedPropertyInequalities(varFor("x"), prop("x", "prop"), NonEmptyList(predicateGT, predicateLT))
@@ -73,7 +73,7 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should rewrite WHERE x.prop in $autoList to WHERE x.prop = $autoList[0] if size is 1") {
-    val argument: LogicalPlan = Argument(Set("a"))
+    val argument: LogicalPlan = Argument(Set(varFor("a")))
 
     val autoParamList0 = autoParameter("autoList", CTList(CTInteger), Some(0))
     val autoParamList1 = autoParameter("autoList", CTList(CTInteger), Some(1))
@@ -94,7 +94,7 @@ class SimplifyPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should rewrite WHERE x.prop in $p to WHERE x.prop = $p[0] if size is 1") {
-    val argument: LogicalPlan = Argument(Set("a"))
+    val argument: LogicalPlan = Argument(Set(varFor("a")))
 
     val paramList0 = parameter("p", CTList(CTInteger), Some(0))
     val paramList1 = parameter("p", CTList(CTInteger), Some(1))

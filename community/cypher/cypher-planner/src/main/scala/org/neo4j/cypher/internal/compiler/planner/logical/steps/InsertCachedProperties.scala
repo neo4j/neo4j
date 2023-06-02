@@ -48,17 +48,6 @@ import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.Compilat
 import org.neo4j.cypher.internal.frontend.phases.Phase
 import org.neo4j.cypher.internal.frontend.phases.Transformer
 import org.neo4j.cypher.internal.frontend.phases.factories.PlanPipelineTransformerFactory
-import org.neo4j.cypher.internal.ir.RemoveLabelPattern
-import org.neo4j.cypher.internal.ir.SetLabelPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertiesPattern
-import org.neo4j.cypher.internal.ir.SetNodePropertyPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetPropertyPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesFromMapPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertiesPattern
-import org.neo4j.cypher.internal.ir.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.logical.plans.CanGetValue
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.DeleteExpression
@@ -91,6 +80,17 @@ import org.neo4j.cypher.internal.logical.plans.SetRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.plans.SetRelationshipProperty
 import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UpdatingPlan
+import org.neo4j.cypher.internal.logical.plans.set.RemoveLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetLabelPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetNodePropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetPropertyPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesFromMapPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertiesPattern
+import org.neo4j.cypher.internal.logical.plans.set.SetRelationshipPropertyPattern
 import org.neo4j.cypher.internal.util.Foldable
 import org.neo4j.cypher.internal.util.Foldable.SkipChildren
 import org.neo4j.cypher.internal.util.Foldable.TraverseChildren
@@ -343,7 +343,7 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
             // Make sure to register any renaming of variables
             case plan: ProjectingPlan =>
               val newRenamings = plan.projectExpressions.collect {
-                case (key, v: Variable) if key != v.name => (key, v.name)
+                case (key, v: Variable) if key.name != v.name => key.name -> v.name
               }
               accWithProps.addPreviousNames(newRenamings)
 
@@ -466,8 +466,8 @@ case class InsertCachedProperties(pushdownPropertyReads: Boolean)
 
   override def name: String = "insertCachedProperties"
 
-  def property(entity: String, propName: String): Property =
-    Property(Variable(entity)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
+  def property(entity: LogicalVariable, propName: String): Property =
+    Property(entity, PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE)
 }
 
 case object InsertCachedProperties extends StepSequencer.Step with PlanPipelineTransformerFactory {

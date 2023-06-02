@@ -74,7 +74,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
         PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
-      producedPlan should equal(Projection(inputPlan, Set.empty, Map("a" -> literal)))
+      producedPlan should equal(Projection(inputPlan, Set.empty, Map(varFor("a") -> literal)))
     }
   }
 
@@ -123,7 +123,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // Then
       producedPlan should equal(CartesianProduct(
         inputPlan,
-        AllNodesScan("a", Set.empty)
+        AllNodesScan(varFor("a"), Set.empty)
       ))
     }
   }
@@ -148,7 +148,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
       // Then
       producedPlan should equal(Apply(
         inputPlan,
-        AllNodesScan("a", Set.empty)
+        AllNodesScan(varFor("a"), Set.empty)
       ))
     }
   }
@@ -169,9 +169,9 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // Then
       producedPlan should equal(Projection(
-        Sort(inputPlan, Seq(Ascending("a"))),
+        Sort(inputPlan, Seq(Ascending(varFor("a")))),
         Set.empty,
-        Map("b" -> literal, "c" -> literal)
+        Map(varFor("b") -> literal, varFor("c") -> literal)
       ))
     }
   }
@@ -192,9 +192,9 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       // Then
       producedPlan should equal(Projection(
-        Sort(Projection(inputPlan, Set.empty, Map("a" -> literal)), Seq(Ascending("a"))),
+        Sort(Projection(inputPlan, Set.empty, Map(varFor("a") -> literal)), Seq(Ascending(varFor("a")))),
         Set.empty,
-        Map("b" -> literal, "c" -> literal)
+        Map(varFor("b") -> literal, varFor("c") -> literal)
       ))
     }
   }
@@ -217,7 +217,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
         PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
-      val sorted = Sort(inputPlan, Seq(Ascending("x")))
+      val sorted = Sort(inputPlan, Seq(Ascending(varFor("x"))))
       val limited = Limit(sorted, add(x, y))
       val skipped = Skip(limited, y)
       result should equal(skipped)
@@ -244,8 +244,9 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
         PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
-      val distinct = Distinct(inputPlan, groupingExpressions = projectionsMap)
-      val sorted = Sort(distinct, Seq(Ascending("m")))
+      val distinct =
+        Distinct(inputPlan, groupingExpressions = projectionsMap.map { case (key, value) => varFor(key) -> value })
+      val sorted = Sort(distinct, Seq(Ascending(varFor("m"))))
       result should equal(sorted)
     }
   }
@@ -277,8 +278,12 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
         PlanEventHorizon.planHorizonForPlan(pq, inputPlan, None, context, InterestingOrderConfig(pq.interestingOrder))
 
       // Then
-      val aggregation = Aggregation(inputPlan, grouping, aggregating)
-      val sorted = Sort(aggregation, Seq(Ascending("m"), Ascending("o")))
+      val aggregation = Aggregation(
+        inputPlan,
+        grouping.map { case (key, value) => varFor(key) -> value },
+        aggregating.map { case (key, value) => varFor(key) -> value }
+      )
+      val sorted = Sort(aggregation, Seq(Ascending(varFor("m")), Ascending(varFor("o"))))
       result should equal(sorted)
     }
   }
@@ -305,8 +310,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       cost = {
         // Cheaper to maintain sort.
-        case (lp, _, _, _) if lp.availableSymbols.contains("__sorted") => 1.0
-        case _                                                         => 10.0
+        case (lp, _, _, _) if lp.availableSymbols.contains(varFor("__sorted")) => 1.0
+        case _                                                                 => 10.0
       }
     }.withLogicalPlanningContext { (_, context) =>
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
@@ -330,8 +335,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       cost = {
         // Cheaper to sort.
-        case (lp, _, _, _) if lp.availableSymbols.contains("__sorted") => 10.0
-        case _                                                         => 1.0
+        case (lp, _, _, _) if lp.availableSymbols.contains(varFor("__sorted")) => 10.0
+        case _                                                                 => 1.0
       }
     }.withLogicalPlanningContext { (_, context) =>
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
@@ -346,7 +351,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
         PlanEventHorizon.planHorizon(pq, BestResults(bestInputPlan, Some(bestSortedInputPlan)), None, context)
 
       // Then
-      result shouldBe BestResults(Sort(bestInputPlan, Seq(Ascending("x"))), None)
+      result shouldBe BestResults(Sort(bestInputPlan, Seq(Ascending(varFor("x")))), None)
     }
   }
 
@@ -355,8 +360,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       cost = {
         // Cheaper to maintain sort.
-        case (lp, _, _, _) if lp.availableSymbols.contains("__sorted") => 1.0
-        case _                                                         => 10.0
+        case (lp, _, _, _) if lp.availableSymbols.contains(varFor("__sorted")) => 1.0
+        case _                                                                 => 10.0
       }
     }.withLogicalPlanningContext { (_, context) =>
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
@@ -384,8 +389,8 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       cost = {
         // Cheaper to sort.
-        case (lp, _, _, _) if lp.availableSymbols.contains("__sorted") => 10.0
-        case _                                                         => 1.0
+        case (lp, _, _, _) if lp.availableSymbols.contains(varFor("__sorted")) => 10.0
+        case _                                                                 => 1.0
       }
     }.withLogicalPlanningContext { (_, context) =>
       val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc(varFor("x")))
@@ -404,7 +409,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
         PlanEventHorizon.planHorizon(pq, BestResults(bestInputPlan, Some(bestSortedInputPlan)), None, context)
 
       // Then
-      result shouldBe BestResults(bestInputPlan, Some(Sort(bestInputPlan, Seq(Ascending("x")))))
+      result shouldBe BestResults(bestInputPlan, Some(Sort(bestInputPlan, Seq(Ascending(varFor("x"))))))
     }
   }
 

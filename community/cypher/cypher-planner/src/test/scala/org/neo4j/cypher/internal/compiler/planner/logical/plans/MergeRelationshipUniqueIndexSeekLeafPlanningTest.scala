@@ -146,9 +146,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
 
     // then
     plans shouldEqual Set(DirectedRelationshipUniqueIndexSeek(
-      idName = relationshipName,
-      startNode = startNodeName,
-      endNode = endNodeName,
+      idName = varFor(relationshipName),
+      startNode = varFor(startNodeName),
+      endNode = varFor(endNodeName),
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(IndexedProperty(
@@ -178,9 +178,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
 
     val lhs = DirectedRelationshipUniqueIndexSeek(
-      idName = relationshipName,
-      startNode = startNodeName,
-      endNode = endNodeName,
+      idName = varFor(relationshipName),
+      startNode = varFor(startNodeName),
+      endNode = varFor(endNodeName),
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(IndexedProperty(
@@ -195,9 +195,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     )
 
     val rhs = DirectedRelationshipUniqueIndexSeek(
-      idName = relationshipName,
-      startNode = startNodeName,
-      endNode = endNodeName,
+      idName = varFor(relationshipName),
+      startNode = varFor(startNodeName),
+      endNode = varFor(endNodeName),
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(IndexedProperty(
@@ -212,7 +212,7 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     )
 
     // then
-    plans shouldEqual Set(AssertSameRelationship(idName = relationshipName, left = lhs, right = rhs))
+    plans shouldEqual Set(AssertSameRelationship(idName = varFor(relationshipName), left = lhs, right = rhs))
   }
 
   test("plans a single index seek when querying two properties with a composite index") {
@@ -228,9 +228,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
 
     // then
     plans shouldEqual Set(DirectedRelationshipUniqueIndexSeek(
-      idName = relationshipName,
-      startNode = startNodeName,
-      endNode = endNodeName,
+      idName = varFor(relationshipName),
+      startNode = varFor(startNodeName),
+      endNode = varFor(endNodeName),
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(
@@ -265,9 +265,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     val plans = mergeRelationshipUniqueIndexSeekLeafPlanner(queryGraph, InterestingOrderConfig.empty, context)
 
     val lhs = DirectedRelationshipUniqueIndexSeek(
-      idName = relationshipName,
-      startNode = startNodeName,
-      endNode = endNodeName,
+      idName = varFor(relationshipName),
+      startNode = varFor(startNodeName),
+      endNode = varFor(endNodeName),
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(
@@ -289,9 +289,9 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     )
 
     val rhs = DirectedRelationshipUniqueIndexSeek(
-      idName = relationshipName,
-      startNode = startNodeName,
-      endNode = endNodeName,
+      idName = varFor(relationshipName),
+      startNode = varFor(startNodeName),
+      endNode = varFor(endNodeName),
       typeToken =
         RelationshipTypeToken(relationshipTypeName, config.semanticTable.resolvedRelTypeNames(relationshipTypeName)),
       properties = Seq(IndexedProperty(
@@ -306,6 +306,6 @@ class MergeRelationshipUniqueIndexSeekLeafPlanningTest
     )
 
     // then
-    plans shouldEqual Set(AssertSameRelationship(idName = relationshipName, left = lhs, right = rhs))
+    plans shouldEqual Set(AssertSameRelationship(idName = varFor(relationshipName), left = lhs, right = rhs))
   }
 }

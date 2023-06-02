@@ -136,7 +136,7 @@ case object truncateDatabaseDeeagerizer extends Rewriter {
   case object NodeLeafPlan {
 
     def unapply(v: Any): Option[String] = v match {
-      case plan: NodeLogicalLeafPlan     => Some(plan.idName)
+      case plan: NodeLogicalLeafPlan     => Some(plan.idName.name)
       case Selection(_, NodeLeafPlan(n)) => Some(n)
       case _                             => None
     }

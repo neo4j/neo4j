@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.In
 import org.neo4j.cypher.internal.expressions.IsRepeatTrailUnique
 import org.neo4j.cypher.internal.expressions.Not
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Unique
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.ir.NodeConnection
@@ -63,7 +64,7 @@ case class expandSolverStep(qg: QueryGraph, qppInnerPlans: QPPInnerPlans)
         pattern <- registry.lookup(patternId)
       } yield {
         pattern match {
-          case relationship: PatternRelationship if plan.availableSymbols.contains(relationship.name) =>
+          case relationship: PatternRelationship if plan.availableSymbols.contains(varFor(relationship.name)) =>
             Iterator(
               // we do not project endpoints for quantified path patterns
               planSingleProjectEndpoints(relationship, plan, context)
@@ -218,8 +219,8 @@ object expandSolverStep {
     context: LogicalPlanningContext
   ): LogicalPlan = {
     val (start, end) = patternRel.nodes
-    val isStartInScope = plan.availableSymbols(start)
-    val isEndInScope = plan.availableSymbols(end)
+    val isStartInScope = plan.availableSymbols(varFor(start))
+    val isEndInScope = plan.availableSymbols(varFor(end))
 
     context.staticComponents.logicalPlanProducer.planProjectEndpoints(
       plan,
@@ -251,8 +252,16 @@ object expandSolverStep {
   ): Option[LogicalPlan] = {
     val availableSymbols = sourcePlan.availableSymbols
 
-    if (availableSymbols(nodeId)) {
-      Some(produceLogicalPlan(qg, nodeConnection, sourcePlan, nodeId, availableSymbols, context, qppInnerPlans))
+    if (availableSymbols(varFor(nodeId))) {
+      Some(produceLogicalPlan(
+        qg,
+        nodeConnection,
+        sourcePlan,
+        nodeId,
+        availableSymbols.map(_.name),
+        context,
+        qppInnerPlans
+      ))
     } else {
       None
     }
@@ -387,7 +396,7 @@ object expandSolverStep {
     val groupingRelationshipNames = quantifiedPathPattern.relationshipVariableGroupings.map(_.groupName)
 
     def isBound(variable: String): Boolean = {
-      sourcePlan.availableSymbols.contains(variable)
+      sourcePlan.availableSymbols.contains(varFor(variable))
     }
 
     /**

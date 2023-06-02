@@ -19,17 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.helpers
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalLeafPlanExtension
 import org.neo4j.cypher.internal.util.attribution.IdGen
 import org.neo4j.cypher.internal.util.attribution.SameId
 
-case class FakeLeafPlan(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen)
+case class FakeLeafPlan(argumentIdStrings: Set[String] = Set.empty)(implicit idGen: IdGen)
     extends LogicalLeafPlanExtension(idGen) {
-  override val availableSymbols: Set[String] = argumentIds
+  override val argumentIds: Set[LogicalVariable] = argumentIdStrings.map(varFor)
+  override val availableSymbols: Set[LogicalVariable] = argumentIds
 
-  override def usedVariables: Set[String] = Set.empty
+  override def usedVariables: Set[LogicalVariable] = Set.empty
 
-  override def withoutArgumentIds(argsToExclude: Set[String]): LogicalLeafPlan =
-    copy(argumentIds = argumentIds -- argsToExclude)(SameId(this.id))
+  override def withoutArgumentIds(argsToExclude: Set[LogicalVariable]): LogicalLeafPlan =
+    copy(argumentIdStrings = (argumentIds -- argsToExclude).map(_.name))(SameId(this.id))
 }

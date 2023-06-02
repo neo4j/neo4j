@@ -231,29 +231,29 @@ class SelectSubQueryPredicatesTest extends CypherFunSuite with LogicalPlanningTe
     relationshipName: String,
     otherNodeName: String
   ): Selection = {
-    val argument = Argument(Set(argumentName))
+    val argument = Argument(Set(varFor(argumentName)))
 
     val expand = Expand(
       source = argument,
-      from = argumentName,
+      from = varFor(argumentName),
       dir = SemanticDirection.OUTGOING,
       types = Nil,
-      to = otherNodeName,
-      relName = relationshipName,
+      to = varFor(otherNodeName),
+      relName = varFor(relationshipName),
       mode = ExpandAll
     )
 
     val projection = Projection(
       source = expand,
       discardSymbols = Set.empty,
-      projectExpressions = Map("item" -> literalInt(1))
+      projectExpressions = Map(varFor("item") -> literalInt(1))
     )
 
     val rollUpApply = RollUpApply(
       left = inputPlan,
       right = projection,
-      collectionName = "items",
-      variableToCollect = "item"
+      collectionName = varFor("items"),
+      variableToCollect = varFor("item")
     )
 
     val rewrittenSinglePredicate = SingleIterablePredicate(

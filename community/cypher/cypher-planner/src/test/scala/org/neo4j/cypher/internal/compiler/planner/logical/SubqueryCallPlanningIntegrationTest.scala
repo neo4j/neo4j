@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlannin
 import org.neo4j.cypher.internal.ir.NoHeaders
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadWriteAccess
@@ -633,7 +632,7 @@ class SubqueryCallPlanningIntegrationTest
         .produceResults("x", "y", "ymax")
         .apply()
         .|.orderedAggregation(Seq("y AS y"), Seq("max(y) AS ymax"), Seq("y"))
-        .|.sort(Seq(Ascending("y")))
+        .|.sort("y ASC")
         .|.projection("x AS y")
         .|.argument("x")
         .projection("1 AS x")

@@ -27,10 +27,10 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipIndexSeek
 import org.neo4j.cypher.internal.logical.plans.LeftOuterHashJoin
@@ -87,7 +87,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     plan.stripProduceResults shouldBe a[CartesianProduct]
     // Sorted index should be placed on the left of the cartesian products
     plan.leftmostLeaf should beLike {
-      case NodeIndexScan(`orderedNode`, _, _, _, _, _) => ()
+      case NodeIndexScan(LogicalVariable(name), _, _, _, _, _) if name == orderedNode => ()
     }
   }
 
@@ -115,7 +115,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     plan.stripProduceResults shouldBe a[Sort]
     // Sorted index should not be placed on the left of the cartesian products
     plan.leftmostLeaf shouldNot beLike {
-      case NodeIndexScan(`orderedNode`, _, _, _, _, _) => ()
+      case NodeIndexScan(LogicalVariable(node), _, _, _, _, _) if node == orderedNode => ()
     }
   }
 
@@ -160,7 +160,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     // For Volcano the shape of the CP tree is not important.
     // They all have the same cost, as long as the label scans appear in the right order from left to right in the tree.
-    volcanoPlan.folder.findAllByClass[NodeByLabelScan].map(_.idName) shouldEqual varsAndLabels.map(_._1)
+    volcanoPlan.folder.findAllByClass[NodeByLabelScan].map(_.idName) shouldEqual varsAndLabels.map(x => varFor(x._1))
     // For Batched, a right deep tree is always equally good or better than other tree shapes.
     batchedPlan shouldEqual rightDeepPlan
   }
@@ -1042,7 +1042,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
       .leftOuterHashJoin("n", "m") // Keeps RHS order
       .|.filter("not r2 = r1")
       .|.expandAll("(m)-[r1]-(n)")
-      .|.sort(Seq(Ascending("x.prop")))
+      .|.sort("`x.prop` ASC")
       .|.projection("x.prop AS `x.prop`")
       .|.allRelationshipsScan("(m)-[r2]-(x)")
       .cartesianProduct()
@@ -1139,13 +1139,13 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
 
     val allNodesScanned = plan.folder.treeFold(Seq.empty[String]) {
-      case a: AllNodesScan => ids => TraverseChildren(ids :+ a.idName)
+      case a: AllNodesScan => ids => TraverseChildren(ids :+ a.idName.name)
     }
     val optionalExpanded = plan.folder.treeFold(Seq.empty[String]) {
-      case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to)
+      case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to.name)
     }
 
-    plan.availableSymbols should contain allElementsOf (componentVars ++ optionalMatchVars)
+    plan.availableSymbols.map(_.name) should contain allElementsOf (componentVars ++ optionalMatchVars)
     allNodesScanned should contain theSameElementsAs componentVars
     optionalExpanded should contain theSameElementsAs optionalMatchVars
   }
@@ -1165,13 +1165,13 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
     )
 
     val allNodesScanned = plan.folder.treeFold(Seq.empty[String]) {
-      case a: AllNodesScan => ids => TraverseChildren(ids :+ a.idName)
+      case a: AllNodesScan => ids => TraverseChildren(ids :+ a.idName.name)
     }
     val optionalExpanded = plan.folder.treeFold(Seq.empty[String]) {
-      case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to)
+      case o: OptionalExpand => ids => TraverseChildren(ids :+ o.to.name)
     }
 
-    plan.availableSymbols should contain allElementsOf Seq("n", "m", "x", "y")
+    plan.availableSymbols.map(_.name) should contain allElementsOf Seq("n", "m", "x", "y")
     allNodesScanned should contain theSameElementsAs Seq("n", "m", "y")
     optionalExpanded should contain theSameElementsAs Seq("x")
   }
@@ -1310,7 +1310,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val plan = planner.plan(query).stripProduceResults
     plan should equal(planner.subPlanBuilder()
-      .sort(Seq(Ascending("1")))
+      .sort("1 ASC")
       .projection("1 AS 1")
       .cartesianProduct()
       .|.allNodeScan("b")
@@ -1332,7 +1332,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val plan = planner.plan(query).stripProduceResults
     plan should equal(planner.subPlanBuilder()
-      .sort(Seq(Ascending("1")))
+      .sort("1 ASC")
       .projection("1 AS 1")
       .filter("cacheN[a.prop] > cacheN[b.prop]")
       .cartesianProduct()
@@ -1357,7 +1357,7 @@ class ConnectComponentsPlanningIntegrationTest extends CypherFunSuite with Logic
 
     val plan = planner.plan(query).stripProduceResults
     plan should equal(planner.subPlanBuilder()
-      .sort(Seq(Ascending("1")))
+      .sort("1 ASC")
       .projection("1 AS 1")
       .valueHashJoin("a.prop = b.prop")
       .|.allNodeScan("b")

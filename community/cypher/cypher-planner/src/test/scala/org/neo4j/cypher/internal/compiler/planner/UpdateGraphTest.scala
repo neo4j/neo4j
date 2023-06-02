@@ -58,8 +58,8 @@ import org.neo4j.cypher.internal.ir.UpdateGraph.LeafPlansPredicatesResolver
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ast.ListIRExpression
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabel
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setProperty
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.removeLabelIr
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setPropertyIr
 import org.neo4j.cypher.internal.util.NonEmptyList
 import org.neo4j.cypher.internal.util.Repetition
 import org.neo4j.cypher.internal.util.UpperBound
@@ -94,7 +94,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       selections =
         Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
     )
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(setProperty("a", "prop", "[]")))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(setPropertyIr("a", "prop", "[]")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe empty
   }
@@ -106,7 +106,7 @@ class UpdateGraphTest extends CypherFunSuite with AstConstructionTestSupport {
       selections =
         Selections(Set(Predicate(Set("a"), Variable("a")(pos)), Predicate(Set("a"), Labels(Variable("a")(pos))(pos))))
     )
-    val ug = QueryGraph(mutatingPatterns = IndexedSeq(removeLabel("a", "Label")))
+    val ug = QueryGraph(mutatingPatterns = IndexedSeq(removeLabelIr("a", "Label")))
 
     ug.overlaps(qgWithNoStableIdentifierAndOnlyLeaves(qg), noLeafPlanProvider) shouldBe ListSet(
       LabelReadRemoveConflict(labelName("Label"))

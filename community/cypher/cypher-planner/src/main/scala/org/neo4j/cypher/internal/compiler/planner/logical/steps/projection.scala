@@ -41,7 +41,7 @@ object projection {
     val projectionsMap = stillToSolveProjection.map { case (k, v) => (k, solver.solve(v, Some(k))) }
     val plan = solver.rewrittenPlan()
 
-    val ids = plan.availableSymbols
+    val ids = plan.availableSymbols.map(_.name)
     val projections: Seq[(String, Expression)] = projectionsMap.toIndexedSeq
 
     // The projections that are not covered yet

@@ -43,7 +43,6 @@ import org.neo4j.cypher.internal.ir.EagernessReason.ReadCreateConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.ReadDeleteConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.TypeReadSetConflict
 import org.neo4j.cypher.internal.ir.EagernessReason.UnknownPropertyReadSetConflict
-import org.neo4j.cypher.internal.ir.RemoveLabelPattern
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
@@ -59,8 +58,6 @@ import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setP
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipPropertiesFromMap
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setRelationshipProperty
-import org.neo4j.cypher.internal.logical.plans.Ascending
-import org.neo4j.cypher.internal.logical.plans.Descending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NestedPlanCollectExpression
 import org.neo4j.cypher.internal.logical.plans.NestedPlanExistsExpression
@@ -130,7 +127,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("foo")
       .projection("n.prop AS foo")
-      .sort(Seq(Ascending("n")))
+      .sort("n ASC")
       .setNodeProperty("n", "prop", "5")
       .allNodeScan("n")
     val plan = planBuilder.build()
@@ -184,7 +181,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
   test("does not support if there is a conflict between LHS and RHS of an OrderedUnion.") {
     val planBuilder = new LogicalPlanBuilder()
       .produceResults("foo")
-      .orderedUnion(Seq(Ascending("n")))
+      .orderedUnion("n ASC")
       .|.projection("n.prop AS foo")
       .|.allNodeScan("n")
       .setNodeProperty("n", "prop", "5")
@@ -3341,7 +3338,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .produceResults("d")
       .apply()
       .|.nodeByLabelScan("d", "Event")
-      .foreach("x", "[1]", Seq(RemoveLabelPattern("e", Seq(labelName("Event")))))
+      .foreach("x", "[1]", Seq(removeLabel("e", "Event")))
       .argument()
 
     val plan = planBuilder.build()
@@ -3356,7 +3353,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           LabelReadRemoveConflict(labelName("Event"), Some(Conflict(Id(3), Id(0)))),
           LabelReadRemoveConflict(labelName("Event"), Some(Conflict(Id(3), Id(2))))
         ))
-        .foreach("x", "[1]", Seq(RemoveLabelPattern("e", Seq(labelName("Event")))))
+        .foreach("x", "[1]", Seq(removeLabel("e", "Event")))
         .argument()
         .build()
     )
@@ -6470,7 +6467,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .detachDeleteNode("n")
       .apply()
       // Placed Sort on RHS of Apply. Sort is Eager, so if it was on top, we would not need an Eager.
-      .|.sort(Seq(Descending("n")))
+      .|.sort("n DESC")
       .|.nodeByLabelScan("n", "A")
       .unwind("[1,2,3] AS x")
       .argument()
@@ -6488,7 +6485,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
         ))
         .apply()
-        .|.sort(Seq(Descending("n")))
+        .|.sort("n DESC")
         .|.nodeByLabelScan("n", "A")
         .unwind("[1,2,3] AS x")
         .argument()
@@ -6501,7 +6498,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .produceResults("count")
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
-      .partialSort(Seq(Ascending("x")), Seq(Descending("n")))
+      .partialSort(Seq("x ASC"), Seq("n DESC"))
       .apply()
       .|.nodeByLabelScan("n", "A")
       .unwind("[1,2,3] AS x").newVar("x", CTInteger)
@@ -6519,7 +6516,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
         ))
-        .partialSort(Seq(Ascending("x")), Seq(Descending("n")))
+        .partialSort(Seq("x ASC"), Seq("n DESC"))
         .apply()
         .|.nodeByLabelScan("n", "A")
         .unwind("[1,2,3] AS x")
@@ -6535,7 +6532,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .detachDeleteNode("n")
       .apply()
       // Placed Top on RHS of Apply. Top is Eager, so if it was on top, we would not need an Eager.
-      .|.top(Seq(Descending("n")), 1)
+      .|.top(1, "n DESC")
       .|.nodeByLabelScan("n", "A")
       .unwind("[1,2,3] AS x")
       .argument()
@@ -6553,7 +6550,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
         ))
         .apply()
-        .|.top(Seq(Descending("n")), 1)
+        .|.top(1, "n DESC")
         .|.nodeByLabelScan("n", "A")
         .unwind("[1,2,3] AS x")
         .argument()
@@ -6568,7 +6565,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .detachDeleteNode("n")
       .apply()
       // Placed Top on RHS of Apply. Top is Eager, so if it was on top, we would not need an Eager.
-      .|.top1WithTies(Seq(Descending("n")))
+      .|.top1WithTies("n DESC")
       .|.nodeByLabelScan("n", "A")
       .unwind("[1,2,3] AS x")
       .argument()
@@ -6586,7 +6583,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
         ))
         .apply()
-        .|.top1WithTies(Seq(Descending("n")))
+        .|.top1WithTies("n DESC")
         .|.nodeByLabelScan("n", "A")
         .unwind("[1,2,3] AS x")
         .argument()
@@ -6599,7 +6596,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .produceResults("count")
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
-      .partialTop(Seq(Ascending("x")), Seq(Descending("n")), 1)
+      .partialTop(1, Seq("x ASC"), Seq("n DESC"))
       .apply()
       .|.nodeByLabelScan("n", "A")
       .unwind("[1,2,3] AS x").newVar("x", CTInteger)
@@ -6617,7 +6614,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(5))))
         ))
-        .partialTop(Seq(Ascending("x")), Seq(Descending("n")), 1)
+        .partialTop(1, Seq("x ASC"), Seq("n DESC"))
         .apply()
         .|.nodeByLabelScan("n", "A")
         .unwind("[1,2,3] AS x")
@@ -6631,7 +6628,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
       .produceResults("count")
       .aggregation(Seq.empty, Seq("count(*) AS count"))
       .detachDeleteNode("n")
-      .orderedUnion(Seq(Ascending("n")))
+      .orderedUnion("n ASC")
       .|.nodeByLabelScan("n", "B")
       .nodeByLabelScan("n", "A")
     val plan = planBuilder.build()
@@ -6647,7 +6644,7 @@ class EagerWhereNeededRewriterTest extends CypherFunSuite with LogicalPlanTestOp
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(3)))),
           ReadDeleteConflict("n", Some(Conflict(Id(2), Id(4))))
         ))
-        .orderedUnion(Seq(Ascending("n")))
+        .orderedUnion("n ASC")
         .|.nodeByLabelScan("n", "B")
         .nodeByLabelScan("n", "A")
         .build()

@@ -147,7 +147,7 @@ case class IDPQueryGraphSolver(
     context: LogicalPlanningContext
   ): LogicalPlan =
     qg.shortestRelationshipPatterns.foldLeft(kit.select(initialPlan, qg)) {
-      case (plan, sp) if sp.isFindableFrom(plan.availableSymbols) =>
+      case (plan, sp) if sp.isFindableFrom(plan.availableSymbols.map(_.name)) =>
         val shortestPath =
           if (context.settings.useLegacyShortestPath) {
             planLegacyShortestRelationships(plan, qg, sp, context)

@@ -47,7 +47,7 @@ class UnionLabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningT
 
     // then
     resultPlans should equal(Set(
-      UnionNodeByLabelsScan(idName, Seq(labelName("A"), labelName("B")), Set.empty, IndexOrderNone)
+      UnionNodeByLabelsScan(varFor(idName), Seq(labelName("A"), labelName("B")), Set.empty, IndexOrderNone)
     ))
   }
 

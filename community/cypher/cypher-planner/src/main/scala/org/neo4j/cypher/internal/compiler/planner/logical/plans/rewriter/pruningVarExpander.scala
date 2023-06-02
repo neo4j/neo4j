@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.expressions.NilPathStep
 import org.neo4j.cypher.internal.expressions.NodePathStep
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.PathStep
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Length
 import org.neo4j.cypher.internal.expressions.functions.Min
@@ -86,7 +87,9 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
   }
 
   private case class AggregatingHorizonPlan(aggregatingPlan: AggregatingPlan) extends HorizonPlan {
-    override def aggregationExpressions: Map[String, Expression] = aggregatingPlan.aggregationExpressions
+
+    override def aggregationExpressions: Map[String, Expression] =
+      aggregatingPlan.aggregationExpressions.map { case (key, value) => key.name -> value }
   }
 
   private case object SemiApplyHorizonPlan extends HorizonPlan {
@@ -163,7 +166,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
       horizonPlan != null &&
       expand.length.min <= 1 &&
       validMaxLength(expand, requireMaxLength = false) &&
-      !allDependenciesMinusMinPath(expand.relName)
+      !allDependenciesMinusMinPath(expand.relName.name)
     }
 
     /**
@@ -172,7 +175,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
     private def canReplaceWithPruning(expand: VarExpand): Boolean = {
       horizonPlan != null &&
       validMaxLength(expand, requireMaxLength = true) &&
-      !allDependencies(expand.relName)
+      !allDependencies(expand.relName.name)
     }
 
     private def replaceMinPathLength(
@@ -181,9 +184,9 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
       varExpand: VarExpand
     ): Option[Expression] = expression match {
       case minLength @ Min(length @ Length(PathExpression(step)))
-        if step.dependencies.map(_.name).contains(varExpand.relName) =>
+        if step.dependencies.contains(varExpand.relName) =>
         Some(Min(Variable(distanceName)(length.position))(minLength.position))
-      case minSize @ Min(size @ Size(variable: Variable)) if variable.name == varExpand.relName =>
+      case minSize @ Min(size @ Size(variable: Variable)) if variable == varExpand.relName =>
         Some(Min(Variable(distanceName)(size.position))(minSize.position))
       case _ =>
         None
@@ -385,7 +388,7 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
                   toId,
                   length.min == 0,
                   length.max.getOrElse(Int.MaxValue),
-                  depthName = replacementPlans.bfsPruningExpands(Ref(expand)),
+                  depthName = replacementPlans.bfsPruningExpands(Ref(expand)).map(varFor),
                   nodePredicate,
                   relationshipPredicate
                 )(SameId(expand.id))
@@ -406,12 +409,16 @@ case class pruningVarExpander(anonymousVariableNameGenerator: AnonymousVariableN
               }
 
             case aggregation: Aggregation if replacementPlans.aggregatingPlans.contains(Ref(aggregation)) =>
-              aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)))(
+              aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)).map {
+                case (key, value) => varFor(key) -> value
+              })(
                 SameId(aggregation.id)
               )
 
             case aggregation: OrderedAggregation if replacementPlans.aggregatingPlans.contains(Ref(aggregation)) =>
-              aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)))(
+              aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlans(Ref(aggregation)).map {
+                case (key, value) => varFor(key) -> value
+              })(
                 SameId(aggregation.id)
               )
           },

@@ -64,12 +64,12 @@ object leafPlanOptions extends LeafPlanFinder {
 
     leafPlanCandidatesWithSelections
       .toSeq
-      .sequentiallyGroupBy(_.availableSymbols.intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
+      .sequentiallyGroupBy(_.availableSymbols.map(_.name).intersect(queryGraph.idsWithoutOptionalMatchesOrUpdates))
       .map { case (availableSymbols, bucket) =>
         val bestPlan = pickBest(
           bucket,
           leafPlanHeuristic(context),
-          s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}"
+          s"leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'${s.name}'").mkString(", ")}"
         ).get
 
         if (interestingOrderConfig.orderToSolve.requiredOrderCandidate.nonEmpty) {
@@ -77,7 +77,7 @@ object leafPlanOptions extends LeafPlanFinder {
             bucket.flatMap(plan => SortPlanner.planIfAsSortedAsPossible(plan, interestingOrderConfig, context))
           val bestSortedPlan = pickBest(
             sortedLeaves,
-            s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'$s'").mkString(", ")}"
+            s"sorted leaf plan with available symbols ${bucket.head.availableSymbols.map(s => s"'${s.name}'").mkString(", ")}"
           )
           availableSymbols -> BestResults(bestPlan, bestSortedPlan)
         } else {
@@ -92,13 +92,13 @@ object leafPlanOptions extends LeafPlanFinder {
     @tailrec
     override def tieBreaker(plan: LogicalPlan): Int = plan match {
       case s: Selection => tieBreaker(s.source)
-      case p: NodeIndexLeafPlan if hasAggregatingProperties(p.idName, p.properties, context) =>
+      case p: NodeIndexLeafPlan if hasAggregatingProperties(p.idName.name, p.properties, context) =>
         30 + indexTypeModifier(p, p.indexType)
-      case p: RelationshipIndexLeafPlan if hasAggregatingProperties(p.idName, p.properties, context) =>
+      case p: RelationshipIndexLeafPlan if hasAggregatingProperties(p.idName.name, p.properties, context) =>
         30 + indexTypeModifier(p, p.indexType)
-      case p: NodeIndexLeafPlan if hasAccessedProperties(p.idName, p.properties, context) =>
+      case p: NodeIndexLeafPlan if hasAccessedProperties(p.idName.name, p.properties, context) =>
         20 + indexTypeModifier(p, p.indexType)
-      case p: RelationshipIndexLeafPlan if hasAccessedProperties(p.idName, p.properties, context) =>
+      case p: RelationshipIndexLeafPlan if hasAccessedProperties(p.idName.name, p.properties, context) =>
         20 + indexTypeModifier(p, p.indexType)
       case _: NodeByLabelScan      => 10
       case _: RelationshipTypeScan => 10

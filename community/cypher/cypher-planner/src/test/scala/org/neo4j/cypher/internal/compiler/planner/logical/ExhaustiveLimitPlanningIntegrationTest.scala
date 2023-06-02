@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class ExhaustiveLimitPlanningIntegrationTest
@@ -132,7 +131,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .produceResults("m")
       .limit(3)
       .expand("(m)-[r]->(o)")
-      .sort(Seq(Ascending("m")))
+      .sort("m ASC")
       .eager() // TODO: this eager is not necessary
       .create(createNode("m", "M"))
       .nodeByLabelScan("n", "N")
@@ -254,7 +253,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .skip(10)
       .limit(add(literalInt(3), literalInt(10)))
       .expand("(m)-[r]->(o)")
-      .sort(Seq(Ascending("m")))
+      .sort("m ASC")
       .eager() // TODO: this eager is not necessary
       .create(createNode("m", "M"))
       .nodeByLabelScan("n", "N")
@@ -348,7 +347,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .produceResults("b")
       .exhaustiveLimit(0)
       .projection(Seq("a AS b"), discard = Set("a"))
-      .sort(Seq(Ascending("a")))
+      .sort("a ASC")
       .create(createNode("a"))
       .argument()
       .build()
@@ -377,7 +376,7 @@ class ExhaustiveLimitPlanningIntegrationTest
       .produceResults("b")
       .limit(1)
       .projection(Seq("a AS b"), discard = Set("a"))
-      .sort(Seq(Ascending("a")))
+      .sort("a ASC")
       .create(createNode("a"))
       .argument()
       .build()

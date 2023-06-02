@@ -40,7 +40,7 @@ object distinct {
 
     val inputProvidedOrder = context.staticComponents.planningAttributes.providedOrders(plan.id)
     val OrderToLeverageWithAliases(orderToLeverage, newGroupingExpressionsMap) =
-      leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols)
+      leverageOrder(inputProvidedOrder, groupingExpressionsMap, plan.availableSymbols.map(_.name))
 
     if (orderToLeverage.isEmpty) {
       context.staticComponents.logicalPlanProducer.planDistinct(

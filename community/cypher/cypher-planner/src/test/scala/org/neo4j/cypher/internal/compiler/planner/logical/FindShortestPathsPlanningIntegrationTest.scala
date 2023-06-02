@@ -28,9 +28,7 @@ import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.expressions.SemanticDirection.BOTH
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -108,7 +106,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
     val plan = cfg.plan(query).stripProduceResults
     val expected = cfg.subPlanBuilder()
       .antiConditionalApply("p")
-      .|.top(Seq(Ascending("anon_1")), 1)
+      .|.top(1, "anon_1 ASC")
       .|.projection("length(p) AS anon_1")
       .|.filter("length(p) > 4")
       .|.projection(Map("p" -> PathExpression(NodePathStep(
@@ -147,7 +145,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       cfg.plan("MATCH (a), (b), p=shortestPath((a)-[r*]->(b)) WHERE length(p) > 1 RETURN b").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .antiConditionalApply("p")
-      .|.top(Seq(Ascending("anon_0")), 1)
+      .|.top(1, "anon_0 ASC")
       .|.projection("length(p) AS anon_0")
       .|.filter("length(p) > 1")
       .|.projection(
@@ -187,7 +185,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .antiConditionalApply("p")
-      .|.top(Seq(Ascending("anon_0")), 1)
+      .|.top(1, "anon_0 ASC")
       .|.projection("length(p) AS anon_0")
       .|.filter("length(p) > 1")
       .|.projection(Map("p" -> outgoingPathExpression("a", "rs", "b")))
@@ -230,7 +228,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .antiConditionalApply("p")
-      .|.top(Seq(Ascending("anon_0")), 1)
+      .|.top(1, "anon_0 ASC")
       .|.projection("length(p) AS anon_0")
       .|.filter("length(p) > 1")
       .|.projection(Map("p" -> outgoingPathExpression("a", "rs", "b")))
@@ -274,7 +272,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       ).stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .antiConditionalApply("p")
-      .|.top(Seq(Ascending("anon_0")), 1)
+      .|.top(1, "anon_0 ASC")
       .|.projection("length(p) AS anon_0")
       .|.filter("length(p) > 1")
       .|.projection(Map("p" -> outgoingPathExpression("a", "rs", "b")))
@@ -340,8 +338,6 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
         .build()
     }
   }
-
-  private def varFor(name: String): Variable = Variable(name)(pos)
 
   private def outgoingPathExpression(fromNode: String, rels: String, toNode: String) = {
     PathExpression(

@@ -109,7 +109,8 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       if (optionalMatches.nonEmpty) {
         // If we have optional matches left to solve - start with that
         val firstOptionalMatch = optionalMatches.head
-        val applicablePlan = plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.bestResult.availableSymbols)
+        val applicablePlan =
+          plans.find(p => firstOptionalMatch.argumentIds subsetOf p.plan.bestResult.availableSymbols.map(_.name))
 
         applicablePlan match {
           case Some(t @ PlannedComponent(solvedQg, p)) =>

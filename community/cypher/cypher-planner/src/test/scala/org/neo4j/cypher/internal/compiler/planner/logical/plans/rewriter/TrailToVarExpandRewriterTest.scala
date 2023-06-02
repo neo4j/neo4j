@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
-import TrailToVarExpandRewriterTest.`(a) ((n)-[r]-(m))+ (b)`
-import TrailToVarExpandRewriterTest.`(b) ((x)-[rr]-(y))+ (c)`
-import TrailToVarExpandRewriterTest.`reversed (a) ((n)-[r]-(m))+ (b)`
-import TrailToVarExpandRewriterTest.preserves
-import TrailToVarExpandRewriterTest.rewrite
-import TrailToVarExpandRewriterTest.rewrites
-import TrailToVarExpandRewriterTest.subPlanBuilder
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.helpers.LogicalPlanBuilder
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanTestOps
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.`(a) ((n)-[r]-(m))+ (b)`
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.`(b) ((x)-[rr]-(y))+ (c)`
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.`reversed (a) ((n)-[r]-(m))+ (b)`
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.preserves
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.rewrite
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.rewrites
+import org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter.TrailToVarExpandRewriterTest.subPlanBuilder
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters

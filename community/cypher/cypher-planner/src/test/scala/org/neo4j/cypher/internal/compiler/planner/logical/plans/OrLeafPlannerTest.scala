@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.Selections
 import org.neo4j.cypher.internal.ir.SimplePatternLength
 import org.neo4j.cypher.internal.ir.helpers.ExpressionConverters.PredicateConverter
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.IndexOrderAscending
 import org.neo4j.cypher.internal.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.logical.plans.Selection
@@ -73,7 +72,7 @@ class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 
       resultPlans shouldEqual Set(
         new LogicalPlanBuilder(wholePlan = false)
           .orderedDistinct(Seq("n"), "n AS n")
-          .orderedUnion(Seq(Ascending("n")))
+          .orderedUnion("n ASC")
           .|.nodeByLabelScan("n", "B", IndexOrderAscending)
           .nodeByLabelScan("n", "A", IndexOrderAscending)
           .build()

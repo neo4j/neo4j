@@ -21,7 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
-import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.plans.ForeachApply
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
@@ -33,7 +34,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     val plan = cfg.plan("CREATE (a)").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
-      .create(CreateNode("a", Set.empty, None))
+      .create(createNode("a"))
       .argument()
       .build()
   }
@@ -44,9 +45,9 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
-        CreateNode("a", Set.empty, None),
-        CreateNode("b", Set.empty, None),
-        CreateNode("c", Set.empty, None)
+        createNode("a"),
+        createNode("b"),
+        createNode("c")
       )
       .argument()
       .build()
@@ -58,9 +59,9 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
       .create(
-        CreateNode("a", Set.empty, None),
-        CreateNode("b", Set.empty, None),
-        CreateNode("c", Set.empty, None)
+        createNode("a"),
+        createNode("b"),
+        createNode("c")
       )
       .argument()
       .build()
@@ -70,7 +71,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     val cfg = plannerBuilder().setAllNodesCardinality(0).build()
     val plan = cfg.plan("CREATE (a) return a").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
-      .create(CreateNode("a", Set.empty, None))
+      .create(createNode("a"))
       .argument()
       .build()
   }
@@ -80,7 +81,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     val plan = cfg.plan("CREATE (a:A:B)").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
-      .create(CreateNode("a", Set(labelName("A"), labelName("B")), None))
+      .create(createNode("a", "A", "B"))
       .argument()
       .build()
   }
@@ -90,7 +91,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     val plan = cfg.plan("CREATE (a {prop: 42})").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
-      .create(CreateNode("a", Set.empty, Some(mapOfInt(("prop", 42)))))
+      .create(createNodeWithProperties("a", Seq.empty, "{prop: 42}"))
       .argument()
       .build()
   }
@@ -100,7 +101,7 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     val plan = cfg.plan("MATCH (a) CREATE (b)").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
-      .create(CreateNode("b", Set.empty, None))
+      .create(createNode("b"))
       .allNodeScan("a")
       .build()
   }
@@ -110,12 +111,12 @@ class CreateNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlann
     val plan = cfg.plan("MATCH (a) CREATE (b) WITH * MATCH (c) CREATE (d)").stripProduceResults
     plan shouldEqual cfg.subPlanBuilder()
       .emptyResult()
-      .create(CreateNode("d", Set.empty, None))
+      .create(createNode("d"))
       .eager()
       .apply()
       .|.allNodeScan("c", "a", "b")
       .eager()
-      .create(CreateNode("b", Set.empty, None))
+      .create(createNode("b"))
       .allNodeScan("a")
       .build()
   }

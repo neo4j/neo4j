@@ -43,7 +43,7 @@ case object SelectPatternPredicates extends SelectionCandidateGenerator {
   ): Iterator[SelectionCandidate] = {
     for {
       pattern <- unsolvedPredicates.iterator.filter(containsExistsSubquery)
-      if queryGraph.argumentIds.subsetOf(lhs.availableSymbols)
+      if queryGraph.argumentIds.subsetOf(lhs.availableSymbols.map(_.name))
     } yield {
       val plan = pattern match {
         case p: ExistsIRExpression =>

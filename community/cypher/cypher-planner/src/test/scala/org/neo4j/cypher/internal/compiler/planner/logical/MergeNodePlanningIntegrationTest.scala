@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical
 import org.neo4j.cypher.internal.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeWithProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setLabel
@@ -198,14 +199,14 @@ class MergeNodePlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
     plan should beLike {
       case Merge(
           AssertSameNode(
-            "n",
+            LogicalVariable("n"),
             Apply(
               RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName1, _),
-              NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName1), _, _)
+              NodeUniqueIndexSeek(LogicalVariable("n"), _, _, _, SetExtractor(argumentName1), _, _)
             ),
             Apply(
               RollUpApply(Argument(SetExtractor()), _ /* <- This is the subQuery */, collectionName2, _),
-              NodeUniqueIndexSeek("n", _, _, _, SetExtractor(argumentName2), _, _)
+              NodeUniqueIndexSeek(LogicalVariable("n"), _, _, _, SetExtractor(argumentName2), _, _)
             )
           ),
           _,

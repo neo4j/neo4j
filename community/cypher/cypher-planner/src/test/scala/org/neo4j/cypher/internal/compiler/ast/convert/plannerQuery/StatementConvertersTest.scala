@@ -65,9 +65,9 @@ import org.neo4j.cypher.internal.ir.VarPatternLength
 import org.neo4j.cypher.internal.ir.VariableGrouping
 import org.neo4j.cypher.internal.ir.ast.ExistsIRExpression
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPattern
-import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationship
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNodeIr
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createPatternIr
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createRelationshipIr
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.logical.plans.ProcedureSignature
@@ -230,7 +230,9 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("CALL unit subquery in transactions") {
     val query = buildSinglePlannerQuery("CALL { CREATE (x) } IN TRANSACTIONS RETURN 2 as y")
     query.horizon shouldEqual CallSubqueryHorizon(
-      RegularSinglePlannerQuery(queryGraph = QueryGraph.empty.addMutatingPatterns(createPattern(Seq(createNode("x"))))),
+      RegularSinglePlannerQuery(queryGraph =
+        QueryGraph.empty.addMutatingPatterns(createPatternIr(Seq(createNodeIr("x"))))
+      ),
       correlated = false,
       yielding = false,
       inTransactionsParameters = Some(inTransactionsParameters(None, None, None))
@@ -253,7 +255,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     subQuery.horizon shouldEqual CallSubqueryHorizon(
       RegularSinglePlannerQuery(queryGraph =
         QueryGraph.empty
-          .addMutatingPatterns(createPattern(Seq(createNode("x"))))
+          .addMutatingPatterns(createPatternIr(Seq(createNodeIr("x"))))
           .addArgumentId("n")
       ),
       correlated = true,
@@ -271,7 +273,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("CALL { CREATE (x) RETURN x } IN TRANSACTIONS RETURN 2 as y")
     query.horizon shouldEqual CallSubqueryHorizon(
       RegularSinglePlannerQuery(
-        queryGraph = QueryGraph.empty.addMutatingPatterns(createPattern(Seq(createNode("x")))),
+        queryGraph = QueryGraph.empty.addMutatingPatterns(createPatternIr(Seq(createNodeIr("x")))),
         horizon = RegularQueryProjection(Map("x" -> varFor("x")))
       ),
       correlated = false,
@@ -297,7 +299,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
       RegularSinglePlannerQuery(
         horizon = RegularQueryProjection(Map("x" -> varFor("x"))),
         queryGraph = QueryGraph.empty
-          .addMutatingPatterns(createPattern(Seq(createNode("x"))))
+          .addMutatingPatterns(createPatternIr(Seq(createNodeIr("x"))))
           .addArgumentId("n")
       ),
       correlated = true,
@@ -2189,7 +2191,7 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
   test("Should combine two simple create statement into one create pattern") {
     val query = buildSinglePlannerQuery("CREATE (a) CREATE (b)")
     query.queryGraph shouldBe QueryGraph(
-      mutatingPatterns = IndexedSeq(CreatePattern(Seq(createNode("a"), createNode("b"))))
+      mutatingPatterns = IndexedSeq(createPatternIr(Seq(createNodeIr("a"), createNodeIr("b"))))
     )
 
     query.tail shouldBe empty
@@ -2199,12 +2201,12 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     val query = buildSinglePlannerQuery("CREATE (a)-[r1:R {p: 1}]->(b) CREATE (c)-[r2: R {p: 1}]->(d)")
     query.queryGraph shouldBe QueryGraph(
       mutatingPatterns = IndexedSeq(CreatePattern(Seq(
-        createNode("a"),
-        createNode("b"),
-        createRelationship("r1", "a", "R", "b", properties = Some("{p: 1}")),
-        createNode("c"),
-        createNode("d"),
-        createRelationship("r2", "c", "R", "d", properties = Some("{p: 1}"))
+        createNodeIr("a"),
+        createNodeIr("b"),
+        createRelationshipIr("r1", "a", "R", "b", properties = Some("{p: 1}")),
+        createNodeIr("c"),
+        createNodeIr("d"),
+        createRelationshipIr("r2", "c", "R", "d", properties = Some("{p: 1}"))
       )))
     )
 

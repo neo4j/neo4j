@@ -122,7 +122,7 @@ case class SingleComponentPlanner(
   }
 
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
-    (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols -- qg.argumentIds).isEmpty
+    (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols.map(_.name) -- qg.argumentIds).isEmpty
 
   private def initTable(
     qg: QueryGraph,

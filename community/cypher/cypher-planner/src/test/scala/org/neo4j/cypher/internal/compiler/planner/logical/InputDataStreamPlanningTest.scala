@@ -51,14 +51,14 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
     val ast = singleQuery(input(varFor("a"), varFor("b"), varFor("c")), returnDistinct(returnItem(varFor("a"), "a")))
     new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(Distinct(
       Input(Seq("a", "b", "c")),
-      Map("a" -> varFor("a"))
+      Map(varFor("a") -> varFor("a"))
     ))
   }
 
   test("INPUT DATA STREAM a, b, c RETURN sum(a)") {
     val ast = singleQuery(input(varFor("a"), varFor("b"), varFor("c")), return_(returnItem(sum(varFor("a")), "sum(a)")))
     new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
-      Aggregation(Input(Seq("a", "b", "c")), Map.empty, Map("sum(a)" -> sum(varFor("a"))))
+      Aggregation(Input(Seq("a", "b", "c")), Map.empty, Map(varFor("sum(a)") -> sum(varFor("a"))))
     )
   }
 
@@ -87,9 +87,9 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
         Projection(
           Selection(ands(hasLabelsOrTypes("a", "Employee")), Input(Seq("a", "b", "c"))),
           Set.empty,
-          Map("name" -> prop("a", "name"))
+          Map(varFor("name") -> prop("a", "name"))
         ),
-        List(Ascending("name"))
+        List(Ascending(varFor("name")))
       )
     )
   }
@@ -101,7 +101,7 @@ class InputDataStreamPlanningTest extends CypherFunSuite with LogicalPlanningTes
     new given().getLogicalPlanForAst(createInitStateFromAst(ast))._1 should equal(
       Apply(
         Input(Seq("a", "b", "c")),
-        AllNodesScan("x", Set("a", "b", "c"))
+        AllNodesScan(varFor("x"), Set("a", "b", "c").map(varFor(_)))
       )
     )
   }

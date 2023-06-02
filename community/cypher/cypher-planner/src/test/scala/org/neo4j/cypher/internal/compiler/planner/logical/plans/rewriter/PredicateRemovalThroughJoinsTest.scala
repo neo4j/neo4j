@@ -42,7 +42,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val lhsSelection = selectionOp("a", planningAttributes, aHasLabel)
     val rhsLeaf = newMockedLogicalPlan(planningAttributes, "a")
     val rhsSelection = Selection(Seq(aHasLabel), rhsLeaf)
-    val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
+    val join = NodeHashJoin(Set(varFor("a")), lhsSelection, rhsSelection)
 
     // When
     val result = join.endoRewrite(predicateRemovalThroughJoins(
@@ -52,7 +52,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     ))
 
     // Then the Selection operator is removed from the RHS
-    result should equal(NodeHashJoin(Set("a"), lhsSelection, rhsLeaf))
+    result should equal(NodeHashJoin(Set(varFor("a")), lhsSelection, rhsLeaf))
   }
 
   test("multiple predicates on both sides - only one is common on both sides and is removed") {
@@ -62,7 +62,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val lhsSelection = selectionOp("a", planningAttributes, aHasLabel, pred)
     val rhsLeaf = newMockedLogicalPlan(planningAttributes, "a")
     val rhsSelection = Selection(Seq(aHasLabel, predEquals), rhsLeaf)
-    val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
+    val join = NodeHashJoin(Set(varFor("a")), lhsSelection, rhsSelection)
 
     // When rewritten
     val result = join.endoRewrite(predicateRemovalThroughJoins(
@@ -75,7 +75,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val newRhsSelection = Selection(Seq(predEquals), rhsLeaf)
 
     result should equal(
-      NodeHashJoin(Set("a"), lhsSelection, newRhsSelection)
+      NodeHashJoin(Set(varFor("a")), lhsSelection, newRhsSelection)
     )
   }
 
@@ -85,7 +85,7 @@ class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanni
     val lhsSelection = selectionOp("a", planningAttributes, pred)
     val rhsLeaf = newMockedLogicalPlan(planningAttributes, "a")
     val rhsSelection = Selection(Seq(pred), rhsLeaf)
-    val join = NodeHashJoin(Set("a"), lhsSelection, rhsSelection)
+    val join = NodeHashJoin(Set(varFor("a")), lhsSelection, rhsSelection)
 
     // When rewritten
     val result = join.endoRewrite(predicateRemovalThroughJoins(

@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.ir.RegularSinglePlannerQuery
 import org.neo4j.cypher.internal.ir.SinglePlannerQuery
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Limit
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.Skip
@@ -121,7 +120,7 @@ class SkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should plan limit on top of updating plan with Eager plan in between, if limit > 0") {
     val plan = new LogicalPlanBuilder(wholePlan = false)
-      .sort(Seq(Ascending("n")))
+      .sort("n ASC")
       .create(createNode("a"))
       .argument()
       .build()

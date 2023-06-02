@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.expressions.SemanticDirection.OUTGOING
 import org.neo4j.cypher.internal.expressions.SingleRelationshipPathStep
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.Predicate
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.Expand
 import org.neo4j.cypher.internal.logical.plans.Expand.ExpandInto
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
@@ -625,7 +624,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningI
     planner.plan(query) should equal(
       planner.planBuilder()
         .produceResults("a", "b", "r")
-        .sort(Seq(Ascending("a")))
+        .sort("a ASC")
         .projection("NULL AS a", "NULL AS anon_0", "NULL AS b", "NULL AS r")
         .limit(0)
         .argument()

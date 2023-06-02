@@ -38,7 +38,6 @@ import org.neo4j.cypher.internal.compiler.planner.logical.limit.LimitSelectivity
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.ir.ordering.ProvidedOrder
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.TrailParameters
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanToPlanBuilderString
 import org.neo4j.cypher.internal.planner.spi.GraphStatistics
@@ -603,7 +602,7 @@ class CardinalityCostModelTest extends CypherFunSuite with AstConstructionTestSu
   test("sort should cost the same regardless of limit selectivity") {
     val builder = new LogicalPlanBuilder(wholePlan = false)
     val plan = builder
-      .sort(Seq(Ascending("n"))).withCardinality(100)
+      .sort("n ASC").withCardinality(100)
       .allNodeScan("n").withCardinality(100)
       .build()
     val semanticTable = SemanticTable().addNode(varFor("n"))

@@ -181,14 +181,14 @@ case object PushdownPropertyReads {
           // Do _not_ pushdown past these plans
           val newVariables = plan.availableSymbols
           val outgoingVariableOptima =
-            newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
+            newVariables.map(v => (v.name, CardinalityOptimum(outgoingCardinality, plan.id, v.name))).toMap
 
           Acc(outgoingVariableOptima, outgoingReadOptima, Set.empty, Set.empty, outgoingCardinality)
 
         case p: ProjectingPlan => // except for aggregations which were already matched
           val renamings: Map[String, String] =
             p.projectExpressions.collect {
-              case (key, v: Variable) if key != v.name => (v.name, key)
+              case (key, v: Variable) if key.name != v.name => (v.name, key.name)
             }
 
           val renamedVariableOptima =
@@ -224,7 +224,7 @@ case object PushdownPropertyReads {
             )
 
           val currentVariables = plan.availableSymbols
-          val newVariables = currentVariables -- acc.variableOptima.keySet
+          val newVariables = currentVariables.map(_.name) -- acc.variableOptima.keySet
           val newVariableCardinalities = newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v)))
           val outgoingVariableOptima = newLowestCardinalities ++ newVariableCardinalities
 
@@ -236,14 +236,14 @@ case object PushdownPropertyReads {
                   // NOTE: as we pushdown before inserting cached properties
                   //       the getValue behaviour will still be CanGetValue
                   //       instead of GetValue
-                  .map(asProperty(indexPlan.idName))
+                  .map(asProperty(indexPlan.idName.name))
               case indexPlan: RelationshipIndexLeafPlan =>
                 indexPlan.properties
                   .filter(_.getValueFromIndex == CanGetValue)
                   // NOTE: as we pushdown before inserting cached properties
                   //       the getValue behaviour will still be CanGetValue
                   //       instead of GetValue
-                  .map(asProperty(indexPlan.idName))
+                  .map(asProperty(indexPlan.idName.name))
 
               case SetProperty(_, variable: LogicalVariable, propertyKey, _) =>
                 Seq(PushableProperty(variable, propertyKey))
@@ -264,10 +264,10 @@ case object PushdownPropertyReads {
                 items.map { case (p, _) => PushableProperty(idName, p) }
 
               case SetNodePropertiesFromMap(_, idName, map: MapExpression, false) =>
-                propertiesFromMap(idName, map)
+                propertiesFromMap(idName.name, map)
 
               case SetRelationshipPropertiesFromMap(_, idName, map: MapExpression, false) =>
-                propertiesFromMap(idName, map)
+                propertiesFromMap(idName.name, map)
 
               case _ => Seq.empty
             }
@@ -288,7 +288,7 @@ case object PushdownPropertyReads {
             outgoingVariableOptima.toMap,
             outgoingReadOptima,
             outgoingAvailableProperties,
-            acc.availableWholeEntities ++ maybeEntityFromPlan,
+            acc.availableWholeEntities ++ maybeEntityFromPlan.map(_.name),
             outgoingCardinality
           )
       }
@@ -305,7 +305,7 @@ case object PushdownPropertyReads {
           val newVariables = plan.availableSymbols
           val outgoingCardinality = effectiveCardinalities(plan.id)
           val outgoingVariableOptima =
-            newVariables.map(v => (v, CardinalityOptimum(outgoingCardinality, plan.id, v))).toMap
+            newVariables.map(v => (v.name, CardinalityOptimum(outgoingCardinality, plan.id, v.name))).toMap
           Acc(
             // Keep only optima of variables introduced in these plans
             outgoingVariableOptima,

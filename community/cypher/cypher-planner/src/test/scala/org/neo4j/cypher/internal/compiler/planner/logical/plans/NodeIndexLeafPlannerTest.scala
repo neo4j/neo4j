@@ -167,134 +167,134 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       resultPlans shouldEqual Set(
         // nPropInLit6Lit42
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
           ManyQueryExpression(listOf(lit6, lit42)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // nPropInLitFooLitBar
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
           ManyQueryExpression(listOf(litFoo, litBar)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
           ManyQueryExpression(listOf(litFoo, litBar)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // nPropLessThanLit6
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // nPropLessThanLitFoo
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(litFoo))))(pos)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // nPropEqualsLit42
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
           SingleQueryExpression(lit42),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // nPropEqualsLitFoo
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
           SingleQueryExpression(litFoo),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
           SingleQueryExpression(litFoo),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // nPropStartsWithLitFoo
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
           RangeQueryExpression(PrefixSeekRangeWrapper(PrefixRange(litFoo))(pos)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // nPropEqualsXProp
         NodeIndexSeek(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
           SingleQueryExpression(xProp),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // mPropEqualsXProp
         NodeIndexSeek(
-          "m",
+          varFor("m"),
           labelToken,
           Seq(IndexedProperty(propToken, CanGetValue, NODE_TYPE)),
           SingleQueryExpression(xProp),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // oFooEqualsLit6, oBarEqualsLit42
         NodeIndexSeek(
-          "o",
+          varFor("o"),
           labelToken,
           Seq(IndexedProperty(fooToken, CanGetValue, NODE_TYPE), IndexedProperty(barToken, CanGetValue, NODE_TYPE)),
           CompositeQueryExpression(Seq(SingleQueryExpression(lit6), SingleQueryExpression(lit42))),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         NodeIndexSeek(
-          "o",
+          varFor("o"),
           labelToken,
           Seq(
             IndexedProperty(aaaToken, CanGetValue, NODE_TYPE),
@@ -306,93 +306,93 @@ class NodeIndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
             RangeQueryExpression(InequalitySeekRangeWrapper(RangeLessThan(NonEmptyList(ExclusiveBound(lit6))))(pos)),
             ExistenceQueryExpression()
           )),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // nPropContainsLitFoo
         NodeIndexContainsScan(
-          "n",
+          varFor("n"),
           labelToken,
           IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
           litFoo,
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         NodeIndexContainsScan(
-          "n",
+          varFor("n"),
           labelToken,
           IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
           litFoo,
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // nPropEndsWithLitFoo
         NodeIndexEndsWithScan(
-          "n",
+          varFor("n"),
           labelToken,
           IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
           litFoo,
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         NodeIndexEndsWithScan(
-          "n",
+          varFor("n"),
           labelToken,
           IndexedProperty(propToken, DoNotGetValue, NODE_TYPE),
           litFoo,
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // ..several..
         NodeIndexScan(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         NodeIndexScan(
-          "n",
+          varFor("n"),
           labelToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.TEXT
         ),
         // oPropIsNotNull
         NodeIndexScan(
-          "o",
+          varFor("o"),
           labelToken,
           Seq(IndexedProperty(propToken, DoNotGetValue, NODE_TYPE)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // oFooEqualsLit6, oBarEqualsLit42,
         NodeIndexScan(
-          "o",
+          varFor("o"),
           labelToken,
           Seq(IndexedProperty(fooToken, DoNotGetValue, NODE_TYPE), IndexedProperty(barToken, DoNotGetValue, NODE_TYPE)),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         ),
         // oAaaEqualsLit42, oBbbLessThan6, oCccLessThan6
         NodeIndexScan(
-          "o",
+          varFor("o"),
           labelToken,
           Seq(
             IndexedProperty(aaaToken, DoNotGetValue, NODE_TYPE),
             IndexedProperty(bbbToken, DoNotGetValue, NODE_TYPE),
             IndexedProperty(cccToken, DoNotGetValue, NODE_TYPE)
           ),
-          Set("x"),
+          Set(varFor("x")),
           IndexOrderNone,
           IndexType.RANGE
         )

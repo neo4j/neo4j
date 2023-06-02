@@ -163,9 +163,9 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
   ): Seq[LogicalPlan] =
     if (
       exp1.mode == ExpandAll && exp1.to == exp2.from &&
-      matchingLabels(positivePredicate, exp1.to, exp2.to, qg) &&
-      leftPredicatesAcceptable(exp1.to, leftPredicates) &&
-      matchingIRExpression(subqueryExpression, exp1.from, exp2.to, exp1.types, exp1.dir)
+      matchingLabels(positivePredicate, exp1.to.name, exp2.to.name, qg) &&
+      leftPredicatesAcceptable(exp1.to.name, leftPredicates) &&
+      matchingIRExpression(subqueryExpression, exp1.from.name, exp2.to.name, exp1.types, exp1.dir)
     ) {
 
       val left =
@@ -175,14 +175,14 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
           exp1
 
       val argument = context.staticComponents.logicalPlanProducer.planArgument(
-        patternNodes = Set(exp2.from),
-        patternRels = Set(exp1.relName),
+        patternNodes = Set(exp2.from.name),
+        patternRels = Set(exp1.relName.name),
         other = Set.empty,
         context = context
       )
       val newExpand2 = {
-        val from = exp2.from
-        val to = exp2.to
+        val from = exp2.from.name
+        val to = exp2.to.name
         val expand2PR = qg.patternRelationships.find {
           case PatternRelationship(_, (`from`, `to`), _, _, _) => true
           case PatternRelationship(_, (`to`, `from`), _, _, _) => true
@@ -190,8 +190,8 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
         }.get
         context.staticComponents.logicalPlanProducer.planSimpleExpand(
           argument,
-          exp2.from,
-          exp2.to,
+          exp2.from.name,
+          exp2.to.name,
           expand2PR,
           ExpandAll,
           context
@@ -206,9 +206,9 @@ case object triadicSelectionFinder extends SelectionCandidateGenerator {
       Seq(context.staticComponents.logicalPlanProducer.planTriadicSelection(
         positivePredicate,
         left,
-        exp1.from,
-        exp2.from,
-        exp2.to,
+        exp1.from.name,
+        exp2.from.name,
+        exp2.to.name,
         right,
         triadicPredicate,
         context

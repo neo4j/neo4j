@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipByIdSeek
 import org.neo4j.cypher.internal.logical.plans.DirectedRelationshipTypeScan
 import org.neo4j.cypher.internal.logical.plans.FieldSignature
@@ -609,7 +610,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
       config,
       query,
       {
-        case DirectedRelationshipTypeScan("r", _, _, _, _, _) => true
+        case DirectedRelationshipTypeScan(LogicalVariable("r"), _, _, _, _, _) => true
       },
       aCardinality * rCardinality
     )
@@ -639,7 +640,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
       config,
       query,
       {
-        case DirectedRelationshipTypeScan("r", _, _, _, _, _) => true
+        case DirectedRelationshipTypeScan(LogicalVariable("r"), _, _, _, _, _) => true
       },
       rCardinality
     )
@@ -671,7 +672,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
       config,
       query,
       {
-        case DirectedRelationshipByIdSeek("r", _, _, _, _) => true
+        case DirectedRelationshipByIdSeek(LogicalVariable("r"), _, _, _, _) => true
       },
       aCardinality
     )
@@ -700,7 +701,7 @@ abstract class CardinalityIntegrationTest extends CypherFunSuite with Cardinalit
       config,
       query,
       {
-        case DirectedRelationshipByIdSeek("r", _, _, _, _) => true
+        case DirectedRelationshipByIdSeek(LogicalVariable("r"), _, _, _, _) => true
       },
       1
     )

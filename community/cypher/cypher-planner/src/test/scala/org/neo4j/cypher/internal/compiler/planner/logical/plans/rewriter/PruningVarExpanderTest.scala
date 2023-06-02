@@ -1064,7 +1064,7 @@ class PruningVarExpanderTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should handle insanely long logical plans without running out of stack") {
-    val leafPlan: LogicalPlan = Argument(Set("x"))
+    val leafPlan: LogicalPlan = Argument(Set(varFor("x")))
     var plan = leafPlan
     (1 until 10000) foreach { _ =>
       plan = Selection(Seq(trueLiteral), plan)

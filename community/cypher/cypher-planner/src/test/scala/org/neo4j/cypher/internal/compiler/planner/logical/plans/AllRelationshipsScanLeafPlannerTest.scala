@@ -52,7 +52,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedAllRelationshipsScan("r", "a", "b", Set.empty)
+      DirectedAllRelationshipsScan(varFor("r"), varFor("a"), varFor("b"), Set.empty)
     ))
   }
 
@@ -67,7 +67,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedAllRelationshipsScan("r", "b", "a", Set.empty)
+      DirectedAllRelationshipsScan(varFor("r"), varFor("b"), varFor("a"), Set.empty)
     ))
   }
 
@@ -82,7 +82,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      UndirectedAllRelationshipsScan("r", "a", "b", Set.empty)
+      UndirectedAllRelationshipsScan(varFor("r"), varFor("a"), varFor("b"), Set.empty)
     ))
   }
 
@@ -150,7 +150,7 @@ class AllRelationshipsScanLeafPlannerTest extends CypherFunSuite with LogicalPla
 
     // then
     resultPlans should equal(Set(
-      DirectedAllRelationshipsScan("r", "a", "b", Set.empty)
+      DirectedAllRelationshipsScan(varFor("r"), varFor("a"), varFor("b"), Set.empty)
     ))
   }
 

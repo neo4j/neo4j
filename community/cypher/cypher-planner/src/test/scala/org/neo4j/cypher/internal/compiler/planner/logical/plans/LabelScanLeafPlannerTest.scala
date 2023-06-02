@@ -53,7 +53,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Set(
-      NodeByLabelScan(idName, labelName("Awesome"), Set.empty, IndexOrderNone)
+      NodeByLabelScan(varFor(idName), labelName("Awesome"), Set.empty, IndexOrderNone)
     ))
   }
 
@@ -69,7 +69,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     // then
     resultPlans should equal(Set(
-      NodeByLabelScan(idName, labelName("Awesome"), Set.empty, IndexOrderNone)
+      NodeByLabelScan(varFor(idName), labelName("Awesome"), Set.empty, IndexOrderNone)
     ))
   }
 

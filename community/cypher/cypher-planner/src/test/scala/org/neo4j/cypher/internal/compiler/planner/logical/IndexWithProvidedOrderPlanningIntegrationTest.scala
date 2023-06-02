@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.expressions.Equals
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.LabelToken
 import org.neo4j.cypher.internal.expressions.LogicalProperty
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.NODE_TYPE
 import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PlannerQuery
@@ -100,8 +101,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     indexOrderCapability: IndexOrderCapability,
     sortOrder: String => ColumnOrder
   )
-  private val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, Ascending)
-  private val DESCENDING_BOTH = TestOrder(IndexOrderDescending, "DESC", BOTH, Descending)
+  private val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, c => Ascending(varFor(c)))
+  private val DESCENDING_BOTH = TestOrder(IndexOrderDescending, "DESC", BOTH, c => Descending(varFor(c)))
 
   override val pushdownPropertyReads: Boolean = false
 
@@ -116,8 +117,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-          Set("n"),
-          Map("n.prop" -> prop("n", "prop"))
+          Set(varFor("n")),
+          Map(varFor("n.prop") -> prop("n", "prop"))
         )
       )
     }
@@ -179,7 +180,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan should equal(
         planner.planBuilder()
           .produceResults("n")
-          .sort(Seq(sortOrder("n")))
+          .sortColumns(Seq(sortOrder("n")))
           .nodeByLabelScan("n", "Awesome")
           .build()
       )
@@ -223,7 +224,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan should equal(
         planner.planBuilder()
           .produceResults("n")
-          .sort(Seq(sortOrder("n")))
+          .sortColumns(Seq(sortOrder("n")))
           .distinct("n AS n")
           .union()
           .|.nodeByLabelScan("n", "B", IndexOrderNone)
@@ -272,7 +273,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan should equal(
         planner.planBuilder()
           .produceResults("n")
-          .sort(Seq(sortOrder("n")))
+          .sortColumns(Seq(sortOrder("n")))
           .filter("n:B")
           .nodeByLabelScan("n", "A", IndexOrderNone)
           .build()
@@ -314,7 +315,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan should equal(planner.subPlanBuilder()
         .produceResults("r")
-        .sort(Seq(sortOrder("r")))
+        .sortColumns(Seq(sortOrder("r")))
         .relationshipTypeScan("(n)-[r:REL]->(m)")
         .build())
     }
@@ -356,7 +357,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
       plan should equal(planner.subPlanBuilder()
         .produceResults("r")
-        .sort(Seq(sortOrder("r")))
+        .sortColumns(Seq(sortOrder("r")))
         .distinct("r AS r", "n AS n", "m AS m")
         .union()
         .|.relationshipTypeScan("(n)-[r:LER]->(m)")
@@ -440,7 +441,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("mm", "c")
-          .sort(Seq(sortOrder("c")))
+          .sortColumns(Seq(sortOrder("c")))
           .aggregation(Seq("m AS mm"), Seq("count(n) AS c"))
           .expandAll("(n)-[r]-(m)")
           .nodeByLabelScan("n", "Awesome", IndexOrderNone)
@@ -480,7 +481,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         new LogicalPlanBuilder()
           .produceResults("n")
-          .partialSort(Seq(sortOrder("n")), Seq(Ascending("foo")))
+          .partialSortColumns(Seq(sortOrder("n")), Seq(Ascending(varFor("foo"))))
           .projection("n.foo AS foo")
           .nodeByLabelScan("n", "Awesome", plannedOrder)
           .build()
@@ -518,12 +519,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should (equal(new LogicalPlanBuilder(wholePlan = false)
-        .partialSort(Seq(sortOrder("m")), Seq(Ascending("m.prop")))
+        .partialSortColumns(Seq(sortOrder("m")), Seq(Ascending(varFor("m.prop"))))
         .projection("m.prop AS `m.prop`")
         .unionNodeByLabelsScan("m", Seq("A", "B"), plannedOrder)
         .build())
         or equal(new LogicalPlanBuilder(wholePlan = false)
-          .partialSort(Seq(sortOrder("m")), Seq(Ascending("m.prop")))
+          .partialSortColumns(Seq(sortOrder("m")), Seq(Ascending(varFor("m.prop"))))
           .projection("m.prop AS `m.prop`")
           .unionNodeByLabelsScan("m", Seq("B", "A"), plannedOrder)
           .build()))
@@ -546,7 +547,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 IndexOrderNone
             ),
             Set.empty,
-            Map("n.prop" -> prop("n", "prop"))
+            Map(varFor("n.prop") -> prop("n", "prop"))
           ),
           Seq(sortOrder("n.prop"))
         )
@@ -592,13 +593,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 indexOrder = plannedOrder
               ),
               Set.empty,
-              Map("n.prop" -> prop("n", "prop"))
+              Map(varFor("n.prop") -> prop("n", "prop"))
             ),
             Set.empty,
-            Map("n.foo" -> prop("n", "foo"))
+            Map(varFor("n.foo") -> prop("n", "foo"))
           ),
           Seq(sortOrder("n.prop")),
-          Seq(Ascending("n.foo"))
+          Seq(Ascending(varFor("n.foo")))
         )
       )
     }
@@ -621,7 +622,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .partialSort(Seq(sortOrder("r.prop")), Seq(Ascending("r.foo")))
+        .partialSortColumns(Seq(sortOrder("r.prop")), Seq(Ascending(varFor("r.foo"))))
         .projection("r.foo AS `r.foo`")
         .projection("cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator(
@@ -650,7 +651,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         .stripProduceResults
 
       plan should equal(planner.subPlanBuilder()
-        .partialSort(Seq(sortOrder("r.prop")), Seq(Ascending("r.foo")))
+        .partialSortColumns(Seq(sortOrder("r.prop")), Seq(Ascending(varFor("r.foo"))))
         .projection("r.foo AS `r.foo`")
         .projection("cacheR[r.prop] AS `r.prop`")
         .relationshipIndexOperator(
@@ -679,13 +680,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 indexOrder = plannedOrder
               ),
               Set.empty,
-              Map("n.prop" -> prop("n", "prop"))
+              Map(varFor("n.prop") -> prop("n", "prop"))
             ),
             Set.empty,
-            Map("n.foo + 1" -> add(prop("n", "foo"), literalInt(1)))
+            Map(varFor("n.foo + 1") -> add(prop("n", "foo"), literalInt(1)))
           ),
           Seq(sortOrder("n.prop")),
-          Seq(Ascending("n.foo + 1"))
+          Seq(Ascending(varFor("n.foo + 1")))
         )
       )
     }
@@ -706,16 +707,16 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                   indexOrder = plannedOrder
                 ),
                 Set.empty,
-                Map("f" -> prop("n", "foo"), "p" -> prop("n", "prop"))
+                Map(varFor("f") -> prop("n", "foo"), varFor("p") -> prop("n", "prop"))
               ),
               Seq(sortOrder("p")),
-              Seq(Ascending("f"))
+              Seq(Ascending(varFor("f")))
             ),
             Set.empty,
-            Map("n.bar" -> prop("n", "bar"))
+            Map(varFor("n.bar") -> prop("n", "bar"))
           ),
-          Seq(sortOrder("p"), Ascending("f")),
-          Seq(Ascending("n.bar"))
+          Seq(sortOrder("p"), Ascending(varFor("f"))),
+          Seq(Ascending(varFor("n.bar")))
         )
       )
     }
@@ -738,17 +739,17 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 "n:Awesome(prop > 'foo')",
                 indexOrder = plannedOrder
               ),
-              Set("n"),
-              Map("nnn" -> varFor("n"))
+              Set(varFor("n")),
+              Map(varFor("nnn") -> varFor("n"))
             ),
-            "nnn",
+            varFor("nnn"),
             SemanticDirection.INCOMING,
             Seq.empty,
-            "m",
-            "r"
+            varFor("m"),
+            varFor("r")
           ),
-          Set("nnn", "r", "m"),
-          Map("nnn.prop" -> prop("nnn", "prop"))
+          Set("nnn", "r", "m").map(varFor(_)),
+          Map(varFor("nnn.prop") -> prop("nnn", "prop"))
         )
       )
     }
@@ -764,8 +765,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         Projection(
           nodeIndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-          Set("n"),
-          Map("m" -> varFor("n"))
+          Set(varFor("n")),
+          Map(varFor("m") -> varFor("n"))
         )
       )
     }
@@ -834,8 +835,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "n:Awesome(prop STARTS WITH 'foo')",
             indexOrder = plannedOrder
           ),
-          Set("n"),
-          Map("n.prop" -> prop("n", "prop"))
+          Set(varFor("n")),
+          Map(varFor("n.prop") -> prop("n", "prop"))
         )
       )
     }
@@ -877,8 +878,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "n:Awesome(prop)",
             indexOrder = plannedOrder
           ),
-          Set("n"),
-          Map("n.prop" -> prop("n", "prop"))
+          Set(varFor("n")),
+          Map(varFor("n.prop") -> prop("n", "prop"))
         )
       )
     }
@@ -1104,8 +1105,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               argumentIds = Set("a")
             )
           ),
-          Set("a", "b"),
-          Map("a.prop" -> cachedNodeProp("a", "prop"))
+          Set("a", "b").map(varFor(_)),
+          Map(varFor("a.prop") -> cachedNodeProp("a", "prop"))
         )
       )
     }
@@ -1247,7 +1248,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               )
             ),
             Set.empty,
-            Map("a.prop" -> cachedNodeProp("a", "prop"), "b.prop" -> prop("b", "prop"))
+            Map(varFor("a.prop") -> cachedNodeProp("a", "prop"), varFor("b.prop") -> prop("b", "prop"))
           ),
           Seq(sortOrder("a.prop")),
           Seq(sortOrder("b.prop"))
@@ -1267,8 +1268,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "a:A(prop > 'foo')",
             indexOrder = plannedOrder
           ),
-          Set("a"),
-          Map("theProp" -> prop("a", "prop"), "x" -> literalInt(1))
+          Set(varFor("a")),
+          Map(varFor("theProp") -> prop("a", "prop"), varFor("x") -> literalInt(1))
         )
       )
     }
@@ -1291,14 +1292,14 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "a:A(prop > 'foo')",
               indexOrder = plannedOrder
             ),
-            "a",
+            varFor("a"),
             SemanticDirection.OUTGOING,
             Seq.empty,
-            "b",
-            "r"
+            varFor("b"),
+            varFor("r")
           ),
-          Map("a.prop" -> cachedNodePropFromStore("a", "prop")),
-          Map("count(b)" -> count(varFor("b"))),
+          Map(varFor("a.prop") -> cachedNodePropFromStore("a", "prop")),
+          Map(varFor("count(b)") -> count(varFor("b"))),
           Seq(cachedNodePropFromStore("a", "prop"))
         )
       )
@@ -1326,20 +1327,20 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                   "a:A(prop > 'foo')",
                   indexOrder = plannedOrder
                 ),
-                "a",
+                varFor("a"),
                 SemanticDirection.OUTGOING,
                 Seq.empty,
-                "b",
-                "r"
+                varFor("b"),
+                varFor("r")
               ),
               Set.empty,
-              Map("a.prop" -> prop("a", "prop"))
+              Map(varFor("a.prop") -> prop("a", "prop"))
             ),
             Set.empty,
-            Map("b.prop" -> prop("b", "prop"))
+            Map(varFor("b.prop") -> prop("b", "prop"))
           ),
           Seq(sortOrder("a.prop")),
-          Seq(Ascending("b.prop"))
+          Seq(Ascending(varFor("b.prop")))
         )
       )
     }
@@ -1374,26 +1375,26 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                       "a:A(prop > 'foo')",
                       indexOrder = plannedOrder
                     ),
-                    "a",
+                    varFor("a"),
                     SemanticDirection.OUTGOING,
                     Seq.empty,
-                    "b",
-                    "r"
+                    varFor("b"),
+                    varFor("r")
                   ),
                   Set.empty,
-                  Map("a.prop" -> prop("a", "prop"))
+                  Map(varFor("a.prop") -> prop("a", "prop"))
                 ),
                 Set.empty,
-                Map("b.prop" -> prop("b", "prop"))
+                Map(varFor("b.prop") -> prop("b", "prop"))
               ),
               Seq(sortOrder("a.prop")),
-              Seq(Ascending("b.prop"))
+              Seq(Ascending(varFor("b.prop")))
             ),
-            "b",
+            varFor("b"),
             SemanticDirection.OUTGOING,
             Seq.empty,
-            "c",
-            "q"
+            varFor("c"),
+            varFor("q")
           )
         )
       )
@@ -1417,13 +1418,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               "a:A(prop > 'foo')",
               indexOrder = plannedOrder
             ),
-            "a",
+            varFor("a"),
             SemanticDirection.OUTGOING,
             Seq.empty,
-            "b",
-            "r"
+            varFor("b"),
+            varFor("r")
           ),
-          Map("a.prop" -> cachedNodePropFromStore("a", "prop")),
+          Map(varFor("a.prop") -> cachedNodePropFromStore("a", "prop")),
           Seq(cachedNodePropFromStore("a", "prop"))
         )
       )
@@ -1493,22 +1494,22 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         Projection(
           LeftOuterHashJoin(
-            Set("b"),
-            AllNodesScan("b", Set.empty),
+            Set(varFor("b")),
+            AllNodesScan(varFor("b"), Set.empty),
             Expand(
               nodeIndexSeek(
                 "a:A(prop > 'foo')",
                 indexOrder = plannedOrder
               ),
-              "a",
+              varFor("a"),
               SemanticDirection.OUTGOING,
               Seq.empty,
-              "b",
-              "r"
+              varFor("b"),
+              varFor("r")
             )
           ),
-          Set("b", "a", "r"),
-          Map("a.prop" -> prop("a", "prop"))
+          Set("b", "a", "r").map(varFor(_)),
+          Map(varFor("a.prop") -> prop("a", "prop"))
         )
       )
     }
@@ -1532,10 +1533,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               ),
               literalInt(0)
             ),
-            AllNodesScan("b", Set("a"))
+            AllNodesScan(varFor("b"), Set(varFor("a")))
           ),
-          Set("a"),
-          Map("a.prop" -> prop("a", "prop"))
+          Set(varFor("a")),
+          Map(varFor("a.prop") -> prop("a", "prop"))
         )
       )
     }
@@ -1617,8 +1618,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             "n:Awesome(prop)",
             indexOrder = plannedOrder
           ),
-          Set("n"),
-          Map("n.prop" -> prop("n", "prop"))
+          Set(varFor("n")),
+          Map(varFor("n.prop") -> prop("n", "prop"))
         )
       )
     }
@@ -1762,7 +1763,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       val expectedPlannedOrder = IndexOrderAscending
 
       val expectedPlan = new LogicalPlanBuilder(wholePlan = false)
-        .sort(Seq(sortOrder("c")))
+        .sortColumns(Seq(sortOrder("c")))
         .orderedAggregation(Seq("cache[a.prop] AS `a.prop`"), Seq("count(*) AS c"), Seq("cache[a.prop]"))
         .nodeIndexOperator(
           "a:A(prop > 0)",
@@ -1795,7 +1796,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       val expectedPlannedOrder = IndexOrderAscending
 
       plan should equal(planner.subPlanBuilder()
-        .sort(Seq(sortOrder("c")))
+        .sortColumns(Seq(sortOrder("c")))
         .orderedAggregation(Seq("cacheR[r.prop] AS `r.prop`"), Seq("count(*) AS c"), Seq("cacheR[r.prop]"))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop)]-(b)",
@@ -1826,7 +1827,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       val expectedPlannedOrder = IndexOrderAscending
 
       plan should equal(planner.subPlanBuilder()
-        .sort(Seq(sortOrder("c")))
+        .sortColumns(Seq(sortOrder("c")))
         .orderedAggregation(Seq("cacheR[r.prop] AS `r.prop`"), Seq("count(*) AS c"), Seq("cacheR[r.prop]"))
         .relationshipIndexOperator(
           "(a)-[r:REL(prop > 123)]-(b)",
@@ -1857,7 +1858,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         IndexOrderNone,
         true,
         true,
-        Seq(Descending(s"$variable.prop1")),
+        Seq(Descending(varFor(s"$variable.prop1"))),
         false,
         Seq.empty
       ),
@@ -1867,7 +1868,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         IndexOrderNone,
         true,
         false,
-        Seq(Descending(s"$variable.prop1"), Ascending(s"$variable.prop2")),
+        Seq(Descending(varFor(s"$variable.prop1")), Ascending(varFor(s"$variable.prop2"))),
         false,
         Seq.empty
       ),
@@ -1877,18 +1878,27 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         IndexOrderNone,
         true,
         false,
-        Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2")),
+        Seq(Descending(varFor(s"$variable.prop1")), Descending(varFor(s"$variable.prop2"))),
         false,
         Seq.empty
       ),
-      (s"$variable.prop1 ASC", NONE, IndexOrderNone, true, true, Seq(Ascending(s"$variable.prop1")), false, Seq.empty),
+      (
+        s"$variable.prop1 ASC",
+        NONE,
+        IndexOrderNone,
+        true,
+        true,
+        Seq(Ascending(varFor(s"$variable.prop1"))),
+        false,
+        Seq.empty
+      ),
       (
         s"$variable.prop1 ASC, $variable.prop2 ASC",
         NONE,
         IndexOrderNone,
         true,
         false,
-        Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2")),
+        Seq(Ascending(varFor(s"$variable.prop1")), Ascending(varFor(s"$variable.prop2"))),
         false,
         Seq.empty
       ),
@@ -1898,7 +1908,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         IndexOrderNone,
         true,
         false,
-        Seq(Ascending(s"$variable.prop1"), Descending(s"$variable.prop2")),
+        Seq(Ascending(varFor(s"$variable.prop1")), Descending(varFor(s"$variable.prop2"))),
         false,
         Seq.empty
       ),
@@ -1920,9 +1930,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         IndexOrderAscending,
         false,
         false,
-        Seq(Descending(s"$variable.prop2")),
+        Seq(Descending(varFor(s"$variable.prop2"))),
         true,
-        Seq(Ascending(s"$variable.prop1"))
+        Seq(Ascending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 DESC, $variable.prop2 ASC",
@@ -1930,9 +1940,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         IndexOrderDescending,
         false,
         false,
-        Seq(Ascending(s"$variable.prop2")),
+        Seq(Ascending(varFor(s"$variable.prop2"))),
         true,
-        Seq(Descending(s"$variable.prop1"))
+        Seq(Descending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 DESC, $variable.prop2 DESC",
@@ -1947,12 +1957,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
     )
 
   test("Order by index backed for composite node index on range") {
-    val projectionBoth = Map(
-      "n.prop1" -> cachedNodeProp("n", "prop1"),
-      "n.prop2" -> cachedNodeProp("n", "prop2")
+    val projectionBoth = Map[LogicalVariable, Expression](
+      varFor("n.prop1") -> cachedNodeProp("n", "prop1"),
+      varFor("n.prop2") -> cachedNodeProp("n", "prop2")
     )
-    val projectionProp1 = Map("n.prop1" -> cachedNodeProp("n", "prop1"))
-    val projectionProp2 = Map("n.prop2" -> cachedNodeProp("n", "prop2"))
+    val projectionProp1 = Map[LogicalVariable, Expression](varFor("n.prop1") -> cachedNodeProp("n", "prop1"))
+    val projectionProp2 = Map[LogicalVariable, Expression](varFor("n.prop2") -> cachedNodeProp("n", "prop2"))
 
     val expr = ands(lessThanOrEqual(cachedNodeProp("n", "prop2"), literalInt(3)))
 
@@ -1987,13 +1997,13 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             else if (shouldFullSort && sortOnOnlyOne)
               Projection(
                 Sort(Projection(Selection(expr, leafPlan), Set.empty, projectionProp1), sortItems),
-                Set("n"),
+                Set(varFor("n")),
                 projectionProp2
               )
             else if (shouldFullSort && !sortOnOnlyOne)
               Sort(Projection(Selection(expr, leafPlan), Set.empty, projectionBoth), sortItems)
             else
-              Projection(Selection(expr, leafPlan), Set("n"), projectionBoth)
+              Projection(Selection(expr, leafPlan), Set(varFor("n")), projectionBoth)
           }
         }
     }
@@ -2043,16 +2053,16 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             val planBuilderWithSorting = {
               if (shouldPartialSort)
                 planner.subPlanBuilder()
-                  .partialSort(alreadySorted, sortItems)
+                  .partialSortColumns(alreadySorted, sortItems)
                   .projection(projectionBoth)
               else if (shouldFullSort && sortOnOnlyOne)
                 planner.subPlanBuilder()
                   .projection(project = projectionProp2, discard = Set("a", "b", "r"))
-                  .sort(sortItems)
+                  .sortColumns(sortItems)
                   .projection(projectionProp1)
               else if (shouldFullSort && !sortOnOnlyOne)
                 planner.subPlanBuilder()
-                  .sort(sortItems)
+                  .sortColumns(sortItems)
                   .projection(projectionBoth)
               else
                 planner.subPlanBuilder()
@@ -2079,10 +2089,10 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
   // (orderByString, orderCapability, indexOrder, alreadySorted, toBeSorted)
   private def compositeIndexPartialOrderByTestData(variable: String) = {
-    val asc = Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
-    val ascProp3 = Seq(Ascending(s"$variable.prop3"))
-    val desc = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
-    val descProp3 = Seq(Descending(s"$variable.prop3"))
+    val asc = Seq(Ascending(varFor(s"$variable.prop1")), Ascending(varFor(s"$variable.prop2")))
+    val ascProp3 = Seq(Ascending(varFor(s"$variable.prop3")))
+    val desc = Seq(Descending(varFor(s"$variable.prop1")), Descending(varFor(s"$variable.prop2")))
+    val descProp3 = Seq(Descending(varFor(s"$variable.prop3")))
 
     Seq(
       // Both index
@@ -2117,9 +2127,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               ),
               Set.empty,
               Map(
-                "n.prop1" -> cachedNodeProp("n", "prop1"),
-                "n.prop2" -> cachedNodeProp("n", "prop2"),
-                "n.prop3" -> prop("n", "prop3")
+                varFor("n.prop1") -> cachedNodeProp("n", "prop1"),
+                varFor("n.prop2") -> cachedNodeProp("n", "prop2"),
+                varFor("n.prop3") -> prop("n", "prop3")
               )
             ),
             alreadySorted,
@@ -2155,7 +2165,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         // Then
         withClue(query) {
           plan shouldBe planner.subPlanBuilder()
-            .partialSort(alreadySorted, toBeSorted)
+            .partialSortColumns(alreadySorted, toBeSorted)
             .projection("cacheR[r.prop1] AS `r.prop1`", "cacheR[r.prop2] AS `r.prop2`", "r.prop3 AS `r.prop3`")
             .filter("cacheR[r.prop2] <= 3")
             .relationshipIndexOperator(
@@ -2173,19 +2183,19 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   private def compositeIndexOrderByMorePropsTestData(variable: String)
     : Seq[(String, IndexOrderCapability, IndexOrder, Boolean, Seq[ColumnOrder], Boolean, Seq[ColumnOrder])] = {
     val ascAll = Seq(
-      Ascending(s"$variable.prop1"),
-      Ascending(s"$variable.prop2"),
-      Ascending(s"$variable.prop3"),
-      Ascending(s"$variable.prop4")
+      Ascending(varFor(s"$variable.prop1")),
+      Ascending(varFor(s"$variable.prop2")),
+      Ascending(varFor(s"$variable.prop3")),
+      Ascending(varFor(s"$variable.prop4"))
     )
     val descAll = Seq(
-      Descending(s"$variable.prop1"),
-      Descending(s"$variable.prop2"),
-      Descending(s"$variable.prop3"),
-      Descending(s"$variable.prop4")
+      Descending(varFor(s"$variable.prop1")),
+      Descending(varFor(s"$variable.prop2")),
+      Descending(varFor(s"$variable.prop3")),
+      Descending(varFor(s"$variable.prop4"))
     )
-    val asc1_2 = Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
-    val desc1_2 = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
+    val asc1_2 = Seq(Ascending(varFor(s"$variable.prop1")), Ascending(varFor(s"$variable.prop2")))
+    val desc1_2 = Seq(Descending(varFor(s"$variable.prop1")), Descending(varFor(s"$variable.prop2")))
 
     Seq(
       (
@@ -2220,16 +2230,20 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         BOTH,
         IndexOrderAscending,
         false,
-        Seq(Descending(s"$variable.prop4")),
+        Seq(Descending(varFor(s"$variable.prop4"))),
         true,
-        Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"))
+        Seq(
+          Ascending(varFor(s"$variable.prop1")),
+          Ascending(varFor(s"$variable.prop2")),
+          Ascending(varFor(s"$variable.prop3"))
+        )
       ),
       (
         s"$variable.prop1 ASC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC",
         BOTH,
         IndexOrderAscending,
         false,
-        Seq(Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
+        Seq(Descending(varFor(s"$variable.prop3")), Ascending(varFor(s"$variable.prop4"))),
         true,
         asc1_2
       ),
@@ -2238,7 +2252,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         BOTH,
         IndexOrderAscending,
         false,
-        Seq(Descending(s"$variable.prop3"), Descending(s"$variable.prop4")),
+        Seq(Descending(varFor(s"$variable.prop3")), Descending(varFor(s"$variable.prop4"))),
         true,
         asc1_2
       ),
@@ -2247,52 +2261,72 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         BOTH,
         IndexOrderAscending,
         false,
-        Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
+        Seq(
+          Descending(varFor(s"$variable.prop2")),
+          Ascending(varFor(s"$variable.prop3")),
+          Ascending(varFor(s"$variable.prop4"))
+        ),
         true,
-        Seq(Ascending(s"$variable.prop1"))
+        Seq(Ascending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC",
         BOTH,
         IndexOrderAscending,
         false,
-        Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")),
+        Seq(
+          Descending(varFor(s"$variable.prop2")),
+          Ascending(varFor(s"$variable.prop3")),
+          Descending(varFor(s"$variable.prop4"))
+        ),
         true,
-        Seq(Ascending(s"$variable.prop1"))
+        Seq(Ascending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC",
         BOTH,
         IndexOrderAscending,
         false,
-        Seq(Descending(s"$variable.prop2"), Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
+        Seq(
+          Descending(varFor(s"$variable.prop2")),
+          Descending(varFor(s"$variable.prop3")),
+          Ascending(varFor(s"$variable.prop4"))
+        ),
         true,
-        Seq(Ascending(s"$variable.prop1"))
+        Seq(Ascending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 ASC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
         BOTH,
         IndexOrderAscending,
         false,
-        Seq(Descending(s"$variable.prop2"), Descending(s"$variable.prop3"), Descending(s"$variable.prop4")),
+        Seq(
+          Descending(varFor(s"$variable.prop2")),
+          Descending(varFor(s"$variable.prop3")),
+          Descending(varFor(s"$variable.prop4"))
+        ),
         true,
-        Seq(Ascending(s"$variable.prop1"))
+        Seq(Ascending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 ASC",
         BOTH,
         IndexOrderDescending,
         false,
-        Seq(Ascending(s"$variable.prop4")),
+        Seq(Ascending(varFor(s"$variable.prop4"))),
         true,
-        Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"), Descending(s"$variable.prop3"))
+        Seq(
+          Descending(varFor(s"$variable.prop1")),
+          Descending(varFor(s"$variable.prop2")),
+          Descending(varFor(s"$variable.prop3"))
+        )
       ),
       (
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 ASC, $variable.prop4 DESC",
         BOTH,
         IndexOrderDescending,
         false,
-        Seq(Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")),
+        Seq(Ascending(varFor(s"$variable.prop3")), Descending(varFor(s"$variable.prop4"))),
         true,
         desc1_2
       ),
@@ -2301,7 +2335,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         BOTH,
         IndexOrderDescending,
         false,
-        Seq(Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
+        Seq(Ascending(varFor(s"$variable.prop3")), Ascending(varFor(s"$variable.prop4"))),
         true,
         desc1_2
       ),
@@ -2310,36 +2344,52 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         BOTH,
         IndexOrderDescending,
         false,
-        Seq(Ascending(s"$variable.prop2"), Descending(s"$variable.prop3"), Descending(s"$variable.prop4")),
+        Seq(
+          Ascending(varFor(s"$variable.prop2")),
+          Descending(varFor(s"$variable.prop3")),
+          Descending(varFor(s"$variable.prop4"))
+        ),
         true,
-        Seq(Descending(s"$variable.prop1"))
+        Seq(Descending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 DESC, $variable.prop4 ASC",
         BOTH,
         IndexOrderDescending,
         false,
-        Seq(Ascending(s"$variable.prop2"), Descending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
+        Seq(
+          Ascending(varFor(s"$variable.prop2")),
+          Descending(varFor(s"$variable.prop3")),
+          Ascending(varFor(s"$variable.prop4"))
+        ),
         true,
-        Seq(Descending(s"$variable.prop1"))
+        Seq(Descending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 DESC",
         BOTH,
         IndexOrderDescending,
         false,
-        Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Descending(s"$variable.prop4")),
+        Seq(
+          Ascending(varFor(s"$variable.prop2")),
+          Ascending(varFor(s"$variable.prop3")),
+          Descending(varFor(s"$variable.prop4"))
+        ),
         true,
-        Seq(Descending(s"$variable.prop1"))
+        Seq(Descending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 DESC, $variable.prop2 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
         BOTH,
         IndexOrderDescending,
         false,
-        Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
+        Seq(
+          Ascending(varFor(s"$variable.prop2")),
+          Ascending(varFor(s"$variable.prop3")),
+          Ascending(varFor(s"$variable.prop4"))
+        ),
         true,
-        Seq(Descending(s"$variable.prop1"))
+        Seq(Descending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
@@ -2359,11 +2409,11 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       greaterThan(cachedNodeProp("n", "prop3"), literalString("a")),
       lessThan(cachedNodeProp("n", "prop4"), literalString("f"))
     )
-    val projectionsAll = Map(
-      "n.prop1" -> cachedNodeProp("n", "prop1"),
-      "n.prop2" -> cachedNodeProp("n", "prop2"),
-      "n.prop3" -> cachedNodeProp("n", "prop3"),
-      "n.prop4" -> cachedNodeProp("n", "prop4")
+    val projectionsAll = Map[LogicalVariable, Expression](
+      varFor("n.prop1") -> cachedNodeProp("n", "prop1"),
+      varFor("n.prop2") -> cachedNodeProp("n", "prop2"),
+      varFor("n.prop3") -> cachedNodeProp("n", "prop3"),
+      varFor("n.prop4") -> cachedNodeProp("n", "prop4")
     )
 
     compositeIndexOrderByMorePropsTestData("n").foreach {
@@ -2391,7 +2441,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           else if (partialSort)
             PartialSort(Projection(Selection(expr, leafPlan), Set.empty, projectionsAll), alreadySorted, sortItems)
           else
-            Projection(Selection(expr, leafPlan), Set("n"), projectionsAll)
+            Projection(Selection(expr, leafPlan), Set(varFor("n")), projectionsAll)
         }
     }
   }
@@ -2423,8 +2473,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
         val expectedPlan = {
           val planBuilderWithSorting =
-            if (fullSort) planner.subPlanBuilder().sort(sortItems)
-            else if (partialSort) planner.subPlanBuilder().partialSort(alreadySorted, sortItems)
+            if (fullSort) planner.subPlanBuilder().sortColumns(sortItems)
+            else if (partialSort) planner.subPlanBuilder().partialSortColumns(alreadySorted, sortItems)
             else planner.subPlanBuilder()
 
           planBuilderWithSorting
@@ -2493,8 +2543,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         true,
         projections_1_2_4,
         Map(s"$variable.prop3" -> cachedEntityProperty(variable, "prop3")),
-        Seq(Ascending(s"$variable.prop4")),
-        Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
+        Seq(Ascending(varFor(s"$variable.prop4"))),
+        Seq(Ascending(varFor(s"$variable.prop1")), Ascending(varFor(s"$variable.prop2")))
       ),
       (
         s"$variable.prop1 ASC, $variable.prop3 ASC, $variable.prop4 ASC",
@@ -2503,8 +2553,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         true,
         projections_1_3_4,
         Map(s"$variable.prop2" -> cachedEntityProperty(variable, "prop2")),
-        Seq(Ascending(s"$variable.prop3"), Ascending(s"$variable.prop4")),
-        Seq(Ascending(s"$variable.prop1"))
+        Seq(Ascending(varFor(s"$variable.prop3")), Ascending(varFor(s"$variable.prop4"))),
+        Seq(Ascending(varFor(s"$variable.prop1")))
       ),
       (
         s"$variable.prop1 DESC, $variable.prop2 DESC, $variable.prop3 DESC",
@@ -2523,8 +2573,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         true,
         projections_1_2_4,
         Map(s"$variable.prop3" -> cachedEntityProperty(variable, "prop3")),
-        Seq(Descending(s"$variable.prop4")),
-        Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
+        Seq(Descending(varFor(s"$variable.prop4"))),
+        Seq(Descending(varFor(s"$variable.prop1")), Descending(varFor(s"$variable.prop2")))
       ),
       (
         s"$variable.prop1 DESC, $variable.prop3 DESC, $variable.prop4 DESC",
@@ -2533,8 +2583,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         true,
         projections_1_3_4,
         Map(s"$variable.prop2" -> cachedEntityProperty(variable, "prop2")),
-        Seq(Descending(s"$variable.prop3"), Descending(s"$variable.prop4")),
-        Seq(Descending(s"$variable.prop1"))
+        Seq(Descending(varFor(s"$variable.prop3")), Descending(varFor(s"$variable.prop4"))),
+        Seq(Descending(varFor(s"$variable.prop1")))
       )
     )
   }
@@ -2576,12 +2626,24 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
         plan._1 should equal {
           if (sort)
             Projection(
-              PartialSort(Projection(Selection(expr, leafPlan), Set.empty, projections), alreadySorted, toSort),
-              Set("n"),
-              projectionsAfterSort
+              PartialSort(
+                Projection(
+                  Selection(expr, leafPlan),
+                  Set.empty,
+                  projections.map { case (key, value) => varFor(key) -> value }
+                ),
+                alreadySorted,
+                toSort
+              ),
+              Set(varFor("n")),
+              projectionsAfterSort.map { case (key, value) => varFor(key) -> value }
             )
           else
-            Projection(Selection(expr, leafPlan), Set("n"), projections)
+            Projection(
+              Selection(expr, leafPlan),
+              Set(varFor("n")),
+              projections.map { case (key, value) => varFor(key) -> value }
+            )
         }
     }
   }
@@ -2624,7 +2686,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             if (sort)
               planner.subPlanBuilder()
                 .projection(project = projectionsAfterSort, discard = Set("a", "b", "r"))
-                .partialSort(alreadySorted, toSort)
+                .partialSortColumns(alreadySorted, toSort)
                 .projection(projections)
             else
               planner.subPlanBuilder()
@@ -2690,16 +2752,24 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       s"$variable.prop3" -> cachedEntityProp(variable, "prop3")
     )
 
-    val asc_1 = Seq(Ascending(s"$variable.prop1"))
-    val desc_1 = Seq(Descending(s"$variable.prop1"))
-    val asc_3 = Seq(Ascending(s"$variable.prop3"))
-    val desc_3 = Seq(Descending(s"$variable.prop3"))
-    val asc_1_2 = Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
-    val desc_1_2 = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
-    val asc_2_3 = Seq(Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"))
-    val desc_2_asc_3 = Seq(Descending(s"$variable.prop2"), Ascending(s"$variable.prop3"))
-    val asc_1_2_3 = Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"), Ascending(s"$variable.prop3"))
-    val desc_1_2_3 = Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"), Descending(s"$variable.prop3"))
+    val asc_1 = Seq(Ascending(varFor(s"$variable.prop1")))
+    val desc_1 = Seq(Descending(varFor(s"$variable.prop1")))
+    val asc_3 = Seq(Ascending(varFor(s"$variable.prop3")))
+    val desc_3 = Seq(Descending(varFor(s"$variable.prop3")))
+    val asc_1_2 = Seq(Ascending(varFor(s"$variable.prop1")), Ascending(varFor(s"$variable.prop2")))
+    val desc_1_2 = Seq(Descending(varFor(s"$variable.prop1")), Descending(varFor(s"$variable.prop2")))
+    val asc_2_3 = Seq(Ascending(varFor(s"$variable.prop2")), Ascending(varFor(s"$variable.prop3")))
+    val desc_2_asc_3 = Seq(Descending(varFor(s"$variable.prop2")), Ascending(varFor(s"$variable.prop3")))
+    val asc_1_2_3 = Seq(
+      Ascending(varFor(s"$variable.prop1")),
+      Ascending(varFor(s"$variable.prop2")),
+      Ascending(varFor(s"$variable.prop3"))
+    )
+    val desc_1_2_3 = Seq(
+      Descending(varFor(s"$variable.prop1")),
+      Descending(varFor(s"$variable.prop2")),
+      Descending(varFor(s"$variable.prop3"))
+    )
 
     Seq(
       (
@@ -3156,24 +3226,36 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             if (fullSort)
               Sort(
                 Projection(
-                  Projection(Selection(selectionExpression, leafPlan), Set.empty, returnProjections),
+                  Projection(
+                    Selection(selectionExpression, leafPlan),
+                    Set.empty,
+                    returnProjections.map { case (key, value) => varFor(key) -> value }
+                  ),
                   Set.empty,
-                  sortProjections
+                  sortProjections.map { case (key, value) => varFor(key) -> value }
                 ),
                 sortItems
               )
             else if (partialSort)
               PartialSort(
                 Projection(
-                  Projection(Selection(selectionExpression, leafPlan), Set.empty, returnProjections),
+                  Projection(
+                    Selection(selectionExpression, leafPlan),
+                    Set.empty,
+                    returnProjections.map { case (key, value) => varFor(key) -> value }
+                  ),
                   Set.empty,
-                  sortProjections
+                  sortProjections.map { case (key, value) => varFor(key) -> value }
                 ),
                 alreadySorted,
                 sortItems
               )
             else
-              Projection(Selection(selectionExpression, leafPlan), Set("n"), returnProjections)
+              Projection(
+                Selection(selectionExpression, leafPlan),
+                Set(varFor("n")),
+                returnProjections.map { case (key, value) => varFor(key) -> value }
+              )
           }
         }
     }
@@ -3214,12 +3296,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             val planBuilderWithSort =
               if (fullSort)
                 planner.subPlanBuilder()
-                  .sort(sortItems)
+                  .sortColumns(sortItems)
                   .projection(sortProjections)
                   .projection(returnProjections)
               else if (partialSort)
                 planner.subPlanBuilder()
-                  .partialSort(alreadySorted, sortItems)
+                  .partialSortColumns(alreadySorted, sortItems)
                   .projection(sortProjections)
                   .projection(returnProjections)
               else
@@ -3278,9 +3360,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   test(
     "Order by index backed for composite node index with different directions and equality predicate on first property"
   ) {
-    val projection = Map(
-      "n.prop1" -> cachedNodeProp("n", "prop1"),
-      "n.prop2" -> cachedNodeProp("n", "prop2")
+    val projection = Map[LogicalVariable, Expression](
+      varFor("n.prop1") -> cachedNodeProp("n", "prop1"),
+      varFor("n.prop2") -> cachedNodeProp("n", "prop2")
     )
 
     compositeIndexOrderByDifferentDirectionsFirstPropTestData("n").foreach {
@@ -3304,7 +3386,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             if (shouldSort)
               PartialSort(Projection(leafPlan, Set.empty, projection), alreadySorted, toBeSorted)
             else
-              Projection(leafPlan, Set("n"), projection)
+              Projection(leafPlan, Set(varFor("n")), projection)
           }
         }
     }
@@ -3339,7 +3421,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           // Then
           val expectedPlan = {
             val planBuilderWithSort =
-              if (shouldSort) planner.subPlanBuilder().partialSort(alreadySorted, toBeSorted)
+              if (shouldSort) planner.subPlanBuilder().partialSortColumns(alreadySorted, toBeSorted)
               else planner.subPlanBuilder()
 
             planBuilderWithSort
@@ -3371,28 +3453,28 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       NONE,
       IndexOrderNone,
       true,
-      Seq(Descending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
+      Seq(Descending(varFor(s"$variable.prop1")), Ascending(varFor(s"$variable.prop2")))
     ),
     (
       s"$variable.prop1 DESC, $variable.prop2 DESC",
       NONE,
       IndexOrderNone,
       true,
-      Seq(Descending(s"$variable.prop1"), Descending(s"$variable.prop2"))
+      Seq(Descending(varFor(s"$variable.prop1")), Descending(varFor(s"$variable.prop2")))
     ),
     (
       s"$variable.prop1 ASC, $variable.prop2 ASC",
       NONE,
       IndexOrderNone,
       true,
-      Seq(Ascending(s"$variable.prop1"), Ascending(s"$variable.prop2"))
+      Seq(Ascending(varFor(s"$variable.prop1")), Ascending(varFor(s"$variable.prop2")))
     ),
     (
       s"$variable.prop1 ASC, $variable.prop2 DESC",
       NONE,
       IndexOrderNone,
       true,
-      Seq(Ascending(s"$variable.prop1"), Descending(s"$variable.prop2"))
+      Seq(Ascending(varFor(s"$variable.prop1")), Descending(varFor(s"$variable.prop2")))
     ),
     (s"$variable.prop1 ASC, $variable.prop2 ASC", BOTH, IndexOrderAscending, false, Seq.empty),
     (
@@ -3415,9 +3497,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   test(
     "Order by index backed for composite node index with different directions and equality predicate on second property"
   ) {
-    val projection = Map(
-      "n.prop1" -> cachedNodeProp("n", "prop1"),
-      "n.prop2" -> cachedNodeProp("n", "prop2")
+    val projection = Map[LogicalVariable, Expression](
+      varFor("n.prop1") -> cachedNodeProp("n", "prop1"),
+      varFor("n.prop2") -> cachedNodeProp("n", "prop2")
     )
 
     compositeIndexOrderByDifferentDirectionsSecondPropTestData("n").foreach {
@@ -3443,7 +3525,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             if (shouldSort)
               Sort(Projection(leafPlan, Set.empty, projection), toBeSorted)
             else
-              Projection(leafPlan, Set("n"), projection)
+              Projection(leafPlan, Set(varFor("n")), projection)
           }
         }
     }
@@ -3481,7 +3563,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             val planBuilderWithSort =
               if (shouldSort)
                 planner.subPlanBuilder()
-                  .sort(toBeSorted)
+                  .sortColumns(toBeSorted)
                   .projection(projections: _*)
               else
                 planner.subPlanBuilder()
@@ -3517,9 +3599,9 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
   test(
     "Order by index backed for composite node index with different directions and equality predicate on both properties"
   ) {
-    val projection = Map(
-      "n.prop1" -> cachedNodeProp("n", "prop1"),
-      "n.prop2" -> cachedNodeProp("n", "prop2")
+    val projection = Map[LogicalVariable, Expression](
+      varFor("n.prop1") -> cachedNodeProp("n", "prop1"),
+      varFor("n.prop2") -> cachedNodeProp("n", "prop2")
     )
 
     compositeIndexOrderByDifferentDirectionsBothPropsTestData("n").foreach {
@@ -3538,7 +3620,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
 
           plan._1 should equal(Projection(
             nodeIndexSeek("n:Label(prop1 = 42, prop2 = 3)", indexOrder = indexOrder, getValue = _ => GetValue),
-            Set("n"),
+            Set(varFor("n")),
             projection
           ))
         }
@@ -3631,7 +3713,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           Limit(
             Projection(
               NodeIndexScan(
-                "n",
+                varFor("n"),
                 LabelToken("Awesome", LabelId(0)),
                 Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
                 Set.empty,
@@ -3639,7 +3721,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
                 IndexType.RANGE
               ),
               Set.empty,
-              Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
+              Map(varFor(s"$functionName(n.prop)") -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
           )
@@ -3658,7 +3740,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan._1 should equal(
         Aggregation(
           NodeIndexScan(
-            "n",
+            varFor("n"),
             LabelToken("Awesome", LabelId(0)),
             Seq(indexedProperty("prop", 0, GetValue, NODE_TYPE)),
             Set.empty,
@@ -3666,7 +3748,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             IndexType.RANGE
           ),
           Map.empty,
-          Map(s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")))
+          Map(varFor(s"$functionName(n.prop)") -> function(functionName, cachedNodeProp("n", "prop")))
         )
       )
     }
@@ -3685,7 +3767,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Projection(
               nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
               Set.empty,
-              Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
+              Map(varFor(s"$functionName(n.prop)") -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
           )
@@ -3705,7 +3787,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Projection(
               nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
               Set.empty,
-              Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
+              Map(varFor(s"$functionName(n.prop)") -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
           )
@@ -3733,12 +3815,12 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               Projection(
                 nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
                 Set.empty,
-                Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
+                Map(varFor(s"$functionName(n.prop)") -> cachedNodeProp("n", "prop"))
               ),
               literalInt(1)
             )
           ),
-          Seq(inverseSortOrder(s"$functionName(n.prop)"))
+          Seq(inverseSortOrder(varFor(s"$functionName(n.prop)")))
         )
       )
     }
@@ -3756,7 +3838,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
               Projection(
                 nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
                 Set.empty,
-                Map(s"$functionName(n.prop)" -> cachedNodeProp("n", "prop"))
+                Map(varFor(s"$functionName(n.prop)") -> cachedNodeProp("n", "prop"))
               ),
               literalInt(1)
             )
@@ -3783,7 +3865,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
             Projection(
               nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = _ => GetValue),
               Set.empty,
-              Map("agg" -> cachedNodeProp("n", "prop"))
+              Map(varFor("agg") -> cachedNodeProp("n", "prop"))
             ),
             literalInt(1)
           )
@@ -3802,8 +3884,8 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
           nodeIndexSeek("n:Awesome(prop > 0)", indexOrder = IndexOrderNone, getValue = _ => GetValue),
           Map.empty,
           Map(
-            s"$functionName(n.prop)" -> function(functionName, cachedNodeProp("n", "prop")),
-            "count(n.prop)" -> count(cachedNodeProp("n", "prop"))
+            varFor(s"$functionName(n.prop)") -> function(functionName, cachedNodeProp("n", "prop")),
+            varFor("count(n.prop)") -> count(cachedNodeProp("n", "prop"))
           )
         )
       )
@@ -3942,7 +4024,7 @@ abstract class IndexWithProvidedOrderPlanningIntegrationTest(queryGraphSolverSet
       plan shouldEqual
         planner.planBuilder()
           .produceResults(s"`$functionName(r.prop)`")
-          .sort(Seq(inverseSortOrder(s"$functionName(r.prop)")))
+          .sortColumns(Seq(inverseSortOrder(varFor(s"$functionName(r.prop)"))))
           .optional()
           .limit(1)
           .projection(s"cacheR[r.prop] AS `$functionName(r.prop)`")

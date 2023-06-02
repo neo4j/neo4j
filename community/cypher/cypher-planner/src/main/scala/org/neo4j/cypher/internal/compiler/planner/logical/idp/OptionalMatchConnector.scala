@@ -52,7 +52,7 @@ case object OptionalMatchConnector
         optionalQg <- registry.lookup(id).toIterator
         leftGoal = Goal(goal.bitSet - id)
         leftPlan <- table(leftGoal).iterator
-        canPlan = optionalQg.argumentIds subsetOf leftPlan.availableSymbols
+        canPlan = optionalQg.argumentIds subsetOf leftPlan.availableSymbols.map(_.name)
         if canPlan
         optionalSolver <- optionalSolvers(optionalQg)
         plan <- optionalSolver.connect(leftPlan)

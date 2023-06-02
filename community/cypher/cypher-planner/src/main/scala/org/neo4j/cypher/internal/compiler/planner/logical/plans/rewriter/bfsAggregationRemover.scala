@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.expressions.Expression
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.expressions.LogicalVariable
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.expressions.functions.Min
 import org.neo4j.cypher.internal.logical.plans.AggregatingPlan
@@ -64,8 +66,8 @@ case object bfsAggregationRemover extends Rewriter {
       bfsPruningVarExpand != null &&
       !hasCardinalityIncrease &&
       aggregatingPlan.aggregationExpressions.nonEmpty &&
-      (aggregatingPlan.groupingExpressions.isEmpty || groupingDependencies.contains(bfsPruningVarExpand.from)) &&
-      aggregatingPlan.aggregationExpressions.values.exists(DistinctHorizon.isDistinct(_, bfsPruningVarExpand.to))
+      (aggregatingPlan.groupingExpressions.isEmpty || groupingDependencies.contains(bfsPruningVarExpand.from.name)) &&
+      aggregatingPlan.aggregationExpressions.values.exists(DistinctHorizon.isDistinct(_, bfsPruningVarExpand.to.name))
     }
 
     /**
@@ -95,21 +97,21 @@ case object bfsAggregationRemover extends Rewriter {
 
     def convertAggregationExpressionToProjectionExpressions: Map[String, Expression] = {
       aggregatingPlan.aggregationExpressions.map {
-        case key -> Min(variable: Variable) => key -> variable
+        case key -> Min(variable: Variable) => key.name -> variable
         case e =>
           throw new IllegalStateException(
             s"Unexpectedly encountered an aggregation expression that is not min(depth): $e"
           )
-      } ++ aggregatingPlan.groupingExpressions
+      } ++ aggregatingPlan.groupingExpressions.map { case (key, value) => key.name -> value }
     }
 
     def relaxAggregationExpressions: Map[String, Expression] = {
       aggregatingPlan.aggregationExpressions.map {
         case (key, fun @ FunctionInvocation(_, _, true, Seq(variable: Variable)))
-          if variable.name == bfsPruningVarExpand.to =>
-          key -> fun.copy(distinct = false)(fun.position)
+          if variable.name == bfsPruningVarExpand.to.name =>
+          key.name -> fun.copy(distinct = false)(fun.position)
         case k -> v =>
-          k -> v
+          k.name -> v
       }
     }
 
@@ -122,9 +124,9 @@ case object bfsAggregationRemover extends Rewriter {
      */
     private def groupingsAreSafeToRemove(bfs: BFSPruningVarExpand): Boolean = {
       val isToOnly = aggregatingPlan.groupingExpressions.size == 1 &&
-        groupingDependencies.contains(bfs.to)
+        groupingDependencies.contains(bfs.to.name)
       val isFromAndToOnly = aggregatingPlan.groupingExpressions.size == 2 &&
-        groupingDependencies.contains(bfs.from) && groupingDependencies.contains(bfs.to)
+        groupingDependencies.contains(bfs.from.name) && groupingDependencies.contains(bfs.to.name)
       aggregatingPlan.groupingExpressions.nonEmpty && (isToOnly || isFromAndToOnly)
     }
 
@@ -160,8 +162,8 @@ case object bfsAggregationRemover extends Rewriter {
         false
     }
 
-    def isMin(e: Expression, name: String = null): Boolean = e match {
-      case Min(variable: Variable) => name == null || name == variable.name
+    def isMin(e: Expression, name: LogicalVariable = null): Boolean = e match {
+      case Min(variable: Variable) => name == null || name.name == variable.name
       case _                       => false
     }
   }
@@ -193,7 +195,7 @@ case object bfsAggregationRemover extends Rewriter {
 
         case projection: Projection if !distinctHorizon.hasCardinalityIncrease =>
           val newGroupingDependencies = distinctHorizon.groupingDependencies ++ projection.projectExpressions.collect {
-            case (key, Variable(name)) if distinctHorizon.groupingDependencies.contains(key) => name
+            case (key, Variable(name)) if distinctHorizon.groupingDependencies.contains(key.name) => name
           }
           distinctHorizon.copy(groupingDependencies = newGroupingDependencies)
 
@@ -206,7 +208,7 @@ case object bfsAggregationRemover extends Rewriter {
           if (distinctHorizon.isRemovableDistinct) {
             aggregatingPlansToRemove.put(
               distinctHorizon.aggregatingPlan,
-              distinctHorizon.aggregatingPlan.groupingExpressions
+              distinctHorizon.aggregatingPlan.groupingExpressions.map { case (key, value) => key.name -> value }
             )
           } else if (distinctHorizon.isRemovableAggregation) {
             aggregatingPlansToRemove.put(
@@ -263,11 +265,17 @@ case object bfsAggregationRemover extends Rewriter {
             Projection(
               aggregation.source,
               discardSymbols = Set.empty,
-              projectExpressions = replacementPlans.aggregatingPlansToRemove(aggregation)
+              projectExpressions = replacementPlans.aggregatingPlansToRemove(aggregation).map {
+                case (key, value) => varFor(key) -> value
+              }
             )(SameId(aggregation.id))
 
           case aggregation: Aggregation if replacementPlans.aggregatingPlansToRelax.contains(aggregation) =>
-            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlansToRelax(aggregation))(
+            aggregation.copy(
+              aggregationExpressions = replacementPlans.aggregatingPlansToRelax(aggregation).map {
+                case (key, value) => varFor(key) -> value
+              }
+            )(
               SameId(aggregation.id)
             )
 
@@ -275,11 +283,17 @@ case object bfsAggregationRemover extends Rewriter {
             Projection(
               aggregation.source,
               discardSymbols = Set.empty,
-              projectExpressions = replacementPlans.aggregatingPlansToRemove(aggregation)
+              projectExpressions = replacementPlans.aggregatingPlansToRemove(aggregation).map {
+                case (key, value) => varFor(key) -> value
+              }
             )(SameId(aggregation.id))
 
           case aggregation: OrderedAggregation if replacementPlans.aggregatingPlansToRelax.contains(aggregation) =>
-            aggregation.copy(aggregationExpressions = replacementPlans.aggregatingPlansToRelax(aggregation))(
+            aggregation.copy(
+              aggregationExpressions = replacementPlans.aggregatingPlansToRelax(aggregation).map {
+                case (key, value) => varFor(key) -> value
+              }
+            )(
               SameId(aggregation.id)
             )
 

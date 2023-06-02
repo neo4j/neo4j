@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.CountStar
+import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.ir.AggregatingQueryProjection
 import org.neo4j.cypher.internal.ir.ordering.InterestingOrder
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -29,12 +31,12 @@ import org.neo4j.cypher.internal.logical.plans.Projection
 import org.neo4j.cypher.internal.util.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  private val aggregatingMap = Map("count(*)" -> CountStar()(pos))
+  private val aggregatingMap = Map[LogicalVariable, Expression](varFor("count(*)") -> CountStar()(pos))
 
   test("should introduce aggregation when needed") {
     val projection = AggregatingQueryProjection(
       groupingExpressions = Map.empty,
-      aggregationExpressions = aggregatingMap
+      aggregationExpressions = aggregatingMap.map { case (key, value) => key.name -> value }
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
@@ -67,8 +69,8 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result should equal(
       Aggregation(
         startPlan,
-        groupingMap,
-        aggregationMap
+        groupingMap.map { case (key, value) => varFor(key) -> value },
+        aggregationMap.map { case (key, value) => varFor(key) -> value }
       )
     )
   }
@@ -79,7 +81,7 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val groupingKeyMap = Map("x.prop" -> varFor("x.prop"))
     val projection = AggregatingQueryProjection(
       groupingExpressions = groupingKeyMap,
-      aggregationExpressions = aggregatingMap
+      aggregationExpressions = aggregatingMap.map { case (key, value) => key.name -> value }
     )
 
     val context = newMockedLogicalPlanningContextWithFakeAttributes(
@@ -88,13 +90,14 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val startPlan = newMockedLogicalPlan()
 
-    val projectionPlan: LogicalPlan = Projection(startPlan, Set.empty, groupingMap)
+    val projectionPlan: LogicalPlan =
+      Projection(startPlan, Set.empty, groupingMap.map { case (key, value) => varFor(key) -> value })
 
     // When
     val result = aggregation(projectionPlan, projection, InterestingOrder.empty, None, context)
     // Then
     result should equal(
-      Aggregation(projectionPlan, groupingKeyMap, aggregatingMap)
+      Aggregation(projectionPlan, groupingKeyMap.map { case (key, value) => varFor(key) -> value }, aggregatingMap)
     )
   }
 }

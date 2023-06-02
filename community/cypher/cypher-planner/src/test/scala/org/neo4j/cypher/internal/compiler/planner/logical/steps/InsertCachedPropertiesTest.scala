@@ -41,7 +41,6 @@ import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.neo4j.cypher.internal.frontend.phases.InitialState
-import org.neo4j.cypher.internal.ir.CreateNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodeProperties
 import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.setNodePropertiesFromMap
@@ -189,7 +188,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       val plan = Projection(
         indexOperator("n", "L", "prop", CanGetValue),
         Set.empty,
-        Map("x" -> nProp1)
+        Map(varFor("x") -> nProp1)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
@@ -197,7 +196,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         Projection(
           indexOperator("n", "L", "prop", GetValue),
           Set.empty,
-          Map("x" -> cachedNProp1)
+          Map(varFor("x") -> cachedNProp1)
         )
       )
       val initialType = initialTable.types(nProp1)
@@ -209,7 +208,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       val plan = Projection(
         Selection(Seq(equals(nProp1, literalInt(2))), indexOperator("n", "L", "prop", CanGetValue)),
         Set.empty,
-        Map("x" -> nProp2)
+        Map(varFor("x") -> nProp2)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
@@ -220,7 +219,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
             indexOperator("n", "L", "prop", GetValue)
           ),
           Set.empty,
-          Map("x" -> cachedNProp2)
+          Map(varFor("x") -> cachedNProp2)
         )
       )
 
@@ -258,7 +257,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       val plan = Projection(
         indexOperator("r", "L", "prop", CanGetValue),
         Set.empty,
-        Map("x" -> rProp1)
+        Map(varFor("x") -> rProp1)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
@@ -266,7 +265,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         Projection(
           indexOperator("r", "L", "prop", GetValue),
           Set.empty,
-          Map("x" -> cachedRRelProp1)
+          Map(varFor("x") -> cachedRRelProp1)
         )
       )
       val initialType = initialTable.types(rProp1)
@@ -278,7 +277,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       val plan = Projection(
         Selection(Seq(equals(rProp1, literalInt(2))), indexOperator("r", "L", "prop", CanGetValue)),
         Set.empty,
-        Map("x" -> rProp2)
+        Map(varFor("x") -> rProp2)
       )
       val (newPlan, newTable) = replace(plan, initialTable)
 
@@ -289,7 +288,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
             indexOperator("r", "L", "prop", GetValue)
           ),
           Set.empty,
-          Map("x" -> cachedRRelProp2)
+          Map(varFor("x") -> cachedRRelProp2)
         )
       )
 
@@ -331,7 +330,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan = Projection(
       nodeIndexScan("n", "L", "prop", CanGetValue),
       Set.empty,
-      Map("x" -> nProp1)
+      Map(varFor("x") -> nProp1)
     )
     val (newPlan, newTable) = replace(plan, initialTable)
 
@@ -339,7 +338,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       Projection(
         nodeIndexScan("n", "L", "prop", GetValue),
         Set.empty,
-        Map("x" -> cachedNProp1)
+        Map(varFor("x") -> cachedNProp1)
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -353,7 +352,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       Projection(
         nodeIndexScan("n", "L", "prop", CanGetValue),
         Set.empty,
-        Map("x" -> nFoo1)
+        Map(varFor("x") -> nFoo1)
       )
     )
     val (newPlan, _) = replace(plan, initialTable)
@@ -364,7 +363,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         Projection(
           nodeIndexScan("n", "L", "prop", GetValue),
           Set.empty,
-          Map("x" -> cachedNFoo1.copy(knownToAccessStore = true)(cachedNFoo1.position))
+          Map(varFor("x") -> cachedNFoo1.copy(knownToAccessStore = true)(cachedNFoo1.position))
         )
       )
     )
@@ -414,7 +413,11 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
 
     val plan = Selection(
       Seq(equals(nProp1, literalInt(1)), propWithoutSemanticType),
-      NodeHashJoin(Set("n"), nodeIndexScan("n", "L", "prop", CanGetValue), nodeIndexScan("m", "L", "prop", CanGetValue))
+      NodeHashJoin(
+        Set(varFor("n")),
+        nodeIndexScan("n", "L", "prop", CanGetValue),
+        nodeIndexScan("m", "L", "prop", CanGetValue)
+      )
     )
     val (_, newTable) = replace(plan, initialTable)
     val initialType = initialTable.types(nProp1)
@@ -426,17 +429,17 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val cp1 = cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)
 
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2))), AllNodesScan("n", Set.empty)),
+      Selection(Seq(equals(nProp1, literalInt(2))), AllNodesScan(varFor("n"), Set.empty)),
       Set.empty,
-      Map("x" -> nProp2)
+      Map(varFor("x") -> nProp2)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
-        Selection(Seq(equals(cp1, literalInt(2))), AllNodesScan("n", Set.empty)),
+        Selection(Seq(equals(cp1, literalInt(2))), AllNodesScan(varFor("n"), Set.empty)),
         Set.empty,
-        Map("x" -> cachedNProp2)
+        Map(varFor("x") -> cachedNProp2)
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -449,17 +452,17 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val cp1 = cachedNHasProp1.copy(knownToAccessStore = true)(cachedNProp1.position)
 
     val plan = Projection(
-      Selection(Seq(isNotNull(nProp1)), AllNodesScan("n", Set.empty)),
+      Selection(Seq(isNotNull(nProp1)), AllNodesScan(varFor("n"), Set.empty)),
       Set.empty,
-      Map("x" -> isNotNull(nProp2))
+      Map(varFor("x") -> isNotNull(nProp2))
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
-        Selection(Seq(isNotNull(cp1)), AllNodesScan("n", Set.empty)),
+        Selection(Seq(isNotNull(cp1)), AllNodesScan(varFor("n"), Set.empty)),
         Set.empty,
-        Map("x" -> isNotNull(cachedNHasProp2))
+        Map(varFor("x") -> isNotNull(cachedNHasProp2))
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -472,17 +475,17 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val cp1 = cachedNProp1.copy(knownToAccessStore = true)(cachedNProp1.position)
 
     val plan = Projection(
-      Selection(Seq(isNotNull(nProp1)), AllNodesScan("n", Set.empty)),
+      Selection(Seq(isNotNull(nProp1)), AllNodesScan(varFor("n"), Set.empty)),
       Set.empty,
-      Map("x" -> nProp2)
+      Map(varFor("x") -> nProp2)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
-        Selection(Seq(isNotNull(cp1)), AllNodesScan("n", Set.empty)),
+        Selection(Seq(isNotNull(cp1)), AllNodesScan(varFor("n"), Set.empty)),
         Set.empty,
-        Map("x" -> cachedNProp2)
+        Map(varFor("x") -> cachedNProp2)
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -501,17 +504,23 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val cp2 = cachedNProp2.copy(knownToAccessStore = true)(cachedNProp2.position)
 
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2)), greaterThan(nProp2, literalInt(1))), AllNodesScan("n", Set.empty)),
+      Selection(
+        Seq(equals(nProp1, literalInt(2)), greaterThan(nProp2, literalInt(1))),
+        AllNodesScan(varFor("n"), Set.empty)
+      ),
       Set.empty,
-      Map("x" -> nProp3)
+      Map(varFor("x") -> nProp3)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
-        Selection(Seq(equals(cp1, literalInt(2)), greaterThan(cp1, literalInt(1))), AllNodesScan("n", Set.empty)),
+        Selection(
+          Seq(equals(cp1, literalInt(2)), greaterThan(cp1, literalInt(1))),
+          AllNodesScan(varFor("n"), Set.empty)
+        ),
         Set.empty,
-        Map("x" -> cachedNProp3)
+        Map(varFor("x") -> cachedNProp3)
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -610,9 +619,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should not rewrite node property if there is only one usage") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nFoo1 -> CTInteger, n -> CTNode)
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2))), AllNodesScan("n", Set.empty)),
+      Selection(Seq(equals(nProp1, literalInt(2))), AllNodesScan(varFor("n"), Set.empty)),
       Set.empty,
-      Map("x" -> nFoo1)
+      Map(varFor("x") -> nFoo1)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
@@ -627,10 +636,16 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan = Projection(
       Selection(
         Seq(equals(rProp1, literalInt(2))),
-        DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
+        DirectedRelationshipByIdSeek(
+          varFor("r"),
+          SingleSeekableArg(literalInt(25)),
+          varFor("a"),
+          varFor("b"),
+          Set.empty
+        )
       ),
       Set.empty,
-      Map("x" -> rProp2)
+      Map(varFor("x") -> rProp2)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
@@ -638,10 +653,16 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       Projection(
         Selection(
           Seq(equals(cp1, literalInt(2))),
-          DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
+          DirectedRelationshipByIdSeek(
+            varFor("r"),
+            SingleSeekableArg(literalInt(25)),
+            varFor("a"),
+            varFor("b"),
+            Set.empty
+          )
         ),
         Set.empty,
-        Map("x" -> cachedRRelProp2)
+        Map(varFor("x") -> cachedRRelProp2)
       )
     )
     val initialType = initialTable.types(rProp1)
@@ -652,9 +673,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should not cache relationship property if there is only one usage") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTRelationship)
     val plan = Projection(
-      DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty),
+      DirectedRelationshipByIdSeek(varFor("r"), SingleSeekableArg(literalInt(25)), varFor("a"), varFor("b"), Set.empty),
       Set.empty,
-      Map("x" -> nProp2)
+      Map(varFor("x") -> nProp2)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
@@ -669,10 +690,16 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan = Projection(
       Selection(
         Seq(isNotNull(rProp1)),
-        DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
+        DirectedRelationshipByIdSeek(
+          varFor("r"),
+          SingleSeekableArg(literalInt(25)),
+          varFor("a"),
+          varFor("b"),
+          Set.empty
+        )
       ),
       Set.empty,
-      Map("x" -> isNotNull(rProp2))
+      Map(varFor("x") -> isNotNull(rProp2))
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
@@ -680,10 +707,16 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       Projection(
         Selection(
           Seq(isNotNull(cp1)),
-          DirectedRelationshipByIdSeek("r", SingleSeekableArg(literalInt(25)), "a", "b", Set.empty)
+          DirectedRelationshipByIdSeek(
+            varFor("r"),
+            SingleSeekableArg(literalInt(25)),
+            varFor("a"),
+            varFor("b"),
+            Set.empty
+          )
         ),
         Set.empty,
-        Map("x" -> isNotNull(cachedRRelHasProp2))
+        Map(varFor("x") -> isNotNull(cachedRRelHasProp2))
       )
     )
     val initialType = initialTable.types(rProp1)
@@ -694,9 +727,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should not do anything with map properties") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger, n -> CTMap)
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
+      Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set(varFor("n")))),
       Set.empty,
-      Map("x" -> nProp2)
+      Map(varFor("x") -> nProp2)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
@@ -707,9 +740,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
   test("should not do anything with untyped variables") {
     val initialTable = semanticTable(nProp1 -> CTInteger, nProp2 -> CTInteger)
     val plan = Projection(
-      Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
+      Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set(varFor("n")))),
       Set.empty,
-      Map("x" -> nProp2)
+      Map(varFor("x") -> nProp2)
     )
 
     val (newPlan, newTable) = replace(plan, initialTable)
@@ -723,24 +756,24 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan =
       Projection(
         Projection(
-          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
+          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set(varFor("n")))),
           Set.empty,
-          Map("x" -> n)
+          Map(varFor("x") -> n)
         ),
         Set.empty,
-        Map("xProp" -> xProp)
+        Map(varFor("xProp") -> xProp)
       )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
         Projection(
-          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set("n"))),
+          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set(varFor("n")))),
           Set.empty,
-          Map("x" -> n)
+          Map(varFor("x") -> n)
         ),
         Set.empty,
-        Map("xProp" -> cachedNProp1.copy(entityVariable = n.copy("x")(n.position))(cachedNProp1.position))
+        Map(varFor("xProp") -> cachedNProp1.copy(entityVariable = n.copy("x")(n.position))(cachedNProp1.position))
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -785,24 +818,24 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan =
       Projection(
         Projection(
-          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
+          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set(varFor("n")))),
           Set.empty,
-          Map("n" -> n)
+          Map(varFor("n") -> n)
         ),
         Set.empty,
-        Map("nProp" -> nProp2)
+        Map(varFor("nProp") -> nProp2)
       )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
         Projection(
-          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set("n"))),
+          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set(varFor("n")))),
           Set.empty,
-          Map("n" -> n)
+          Map(varFor("n") -> n)
         ),
         Set.empty,
-        Map("nProp" -> cachedNProp2)
+        Map(varFor("nProp") -> cachedNProp2)
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -815,12 +848,12 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan =
       Projection(
         Projection(
-          Argument(Set("n")),
+          Argument(Set(varFor("n"))),
           Set.empty,
-          Map("m" -> n)
+          Map(varFor("m") -> n)
         ),
         Set.empty,
-        Map("n" -> m, "p" -> nProp1)
+        Map(varFor("n") -> m, varFor("p") -> nProp1)
       )
 
     an[IllegalStateException] should be thrownBy {
@@ -832,9 +865,9 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val initialTable = semanticTable(n -> CTNode, m -> CTNode, nProp1 -> CTInteger)
     val plan =
       Projection(
-        Argument(Set("n")),
+        Argument(Set(varFor("n"))),
         Set.empty,
-        Map("m" -> n, "n" -> m, "p" -> nProp1)
+        Map(varFor("m") -> n, varFor("n") -> m, varFor("p") -> nProp1)
       )
 
     an[IllegalStateException] should be thrownBy {
@@ -847,15 +880,15 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan = Projection(
       Projection(
         Projection(
-          Argument(Set("n")),
+          Argument(Set(varFor("n"))),
           Set.empty,
-          Map("m" -> n)
+          Map(varFor("m") -> n)
         ),
         Set.empty,
-        Map("x" -> m)
+        Map(varFor("x") -> m)
       ),
       Set.empty,
-      Map("n" -> x, "p" -> nProp1)
+      Map(varFor("n") -> x, varFor("p") -> nProp1)
     )
 
     an[IllegalStateException] should be thrownBy {
@@ -872,24 +905,24 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan =
       Projection(
         Aggregation(
-          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
-          Map("n" -> n),
-          Map("count(1)" -> count(literalInt(1)))
+          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set(varFor("n")))),
+          Map(varFor("n") -> n),
+          Map(varFor("count(1)") -> count(literalInt(1)))
         ),
         Set.empty,
-        Map("nProp" -> nProp2)
+        Map(varFor("nProp") -> nProp2)
       )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
         Aggregation(
-          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set("n"))),
-          Map("n" -> n),
-          Map("count(1)" -> count(literalInt(1)))
+          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set(varFor("n")))),
+          Map(varFor("n") -> n),
+          Map(varFor("count(1)") -> count(literalInt(1)))
         ),
         Set.empty,
-        Map("nProp" -> cachedNProp2)
+        Map(varFor("nProp") -> cachedNProp2)
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -903,24 +936,24 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
     val plan =
       Projection(
         Aggregation(
-          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set("n"))),
-          Map("x" -> n),
-          Map("count(1)" -> count(literalInt(1)))
+          Selection(Seq(equals(nProp1, literalInt(2))), Argument(Set(varFor("n")))),
+          Map(varFor("x") -> n),
+          Map(varFor("count(1)") -> count(literalInt(1)))
         ),
         Set.empty,
-        Map("xProp" -> xProp)
+        Map(varFor("xProp") -> xProp)
       )
 
     val (newPlan, newTable) = replace(plan, initialTable)
     newPlan should be(
       Projection(
         Aggregation(
-          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set("n"))),
-          Map("x" -> n),
-          Map("count(1)" -> count(literalInt(1)))
+          Selection(Seq(equals(cp1, literalInt(2))), Argument(Set(varFor("n")))),
+          Map(varFor("x") -> n),
+          Map(varFor("count(1)") -> count(literalInt(1)))
         ),
         Set.empty,
-        Map("xProp" -> cachedNProp1.copy(entityVariable = n.copy("x")(n.position))(cachedNProp1.position))
+        Map(varFor("xProp") -> cachedNProp1.copy(entityVariable = n.copy("x")(n.position))(cachedNProp1.position))
       )
     )
     val initialType = initialTable.types(nProp1)
@@ -1459,7 +1492,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .produceResults("result")
       .projection("n.prop as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodeProperty("n", "prop", "coalesce(n.prop + 1, 0)"))
       )
       .projection("n.prop as oldValue")
@@ -1474,7 +1507,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       // it not worth the effort right now.
       .projection("cacheN[n.prop] as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodeProperty("n", "prop", "coalesce(n.prop + 1, 0)"))
       )
       .projection("cacheNFromStore[n.prop] as oldValue")
@@ -1489,7 +1522,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .produceResults("newValue", "newValue2", "oldValue", "oldValue2")
       .projection("n.prop as newValue", "n.prop2 as newValue2")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1"))
       )
       .projection("n.prop as oldValue", "n.prop2 as oldValue2")
@@ -1504,7 +1537,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       // it not worth the effort right now.
       .projection("cacheN[n.prop] as newValue", "cacheN[n.prop2] as newValue2")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1"))
       )
       .projection("cacheNFromStore[n.prop] as oldValue", "cacheNFromStore[n.prop2] as oldValue2")
@@ -1519,7 +1552,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .produceResults("newValue", "oldValue")
       .projection("n.prop as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodeProperty("n", "prop", "n.prop + 1"))
       )
       .projection("n.prop as oldValue")
@@ -1534,7 +1567,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       // it not worth the effort right now.
       .projection("cacheN[n.prop] as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodeProperty("n", "prop", "n.prop + 1"))
       )
       .projection("cacheNFromStore[n.prop] as oldValue")
@@ -1549,7 +1582,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .produceResults("oldValue", "oldValue2", "newValue", "newValue2")
       .projection("n.prop as newValue", "n.prop2 as newValue2")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1"))
       )
       .projection("n.prop as oldValue", "n.prop2 as oldValue2")
@@ -1564,7 +1597,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       // it not worth the effort right now.
       .projection("cacheN[n.prop] as newValue", "cacheN[n.prop2] as newValue2")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodeProperties("n", "prop" -> "n.prop + 1", "prop2" -> "n.prop2 + 1"))
       )
       .projection("cacheNFromStore[n.prop] as oldValue", "cacheNFromStore[n.prop2] as oldValue2")
@@ -1579,7 +1612,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .produceResults("newValue", "oldValue")
       .projection("n.prop as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false))
       )
       .projection("n.prop as oldValue")
@@ -1594,7 +1627,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       // it not worth the effort right now.
       .projection("cacheN[n.prop] as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodePropertiesFromMap("n", "{prop: n.prop + 1}", removeOtherProps = false))
       )
       .projection("cacheNFromStore[n.prop] as oldValue")
@@ -1609,7 +1642,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .produceResults("result")
       .projection("r.prop as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setRelationshipProperty("r", "prop", "r.prop + 1"))
       )
       .projection("r.prop as oldValue")
@@ -1641,7 +1674,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .produceResults("result")
       .projection("r.prop as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setRelationshipProperties("r", "prop" -> "r.prop + 1"))
       )
       .projection("r.prop as oldValue")
@@ -1674,7 +1707,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .produceResults("result")
       .projection("r.prop as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setRelationshipPropertiesFromMap("r", "{prop: r.prop + 1}"))
       )
       .projection("r.prop as oldValue")
@@ -1816,7 +1849,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
       .produceResults("result")
       .projection("n.prop as newValue")
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(setNodeProperty("n", "prop", "n.prop + 1"))
       )
       .projection("n.prop as oldValue")
@@ -1848,7 +1881,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         "r.prop2 as newValue4"
       )
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(
           setNodeProperty("n", "prop", "n.prop + 1"),
           setNodeProperties("n", "other" -> "n.prop2", "prop2" -> "n.prop2 + 1"),
@@ -1875,7 +1908,7 @@ class InsertCachedPropertiesTest extends CypherFunSuite with PlanMatchHelp with 
         "cacheR[r.prop2] as newValue4"
       )
       .merge(
-        nodes = Seq(CreateNode("n", Set.empty, None)),
+        nodes = Seq(createNode("n")),
         onMatch = Seq(
           setNodeProperty("n", "prop", "n.prop + 1"),
           setNodeProperties("n", "other" -> "cacheN[n.prop2]", "prop2" -> "n.prop2 + 1"),

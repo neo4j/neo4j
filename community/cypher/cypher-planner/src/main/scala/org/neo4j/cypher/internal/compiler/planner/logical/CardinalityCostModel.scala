@@ -319,7 +319,7 @@ case class CardinalityCostModel(executionModel: ExecutionModel) extends CostMode
     // Always consider AllNodesScan + Expand more expensive than RelationshipTypeScan
     case exp @ Expand(_: AllNodesScan, _, _, types, _, _, ExpandAll) if types.size == 1 =>
       val rowCost =
-        CostPerRow(1.1 * hackyRelTypeScanCost(propertyAccess, exp.relName, exp.dir != SemanticDirection.BOTH))
+        CostPerRow(1.1 * hackyRelTypeScanCost(propertyAccess, exp.relName.name, exp.dir != SemanticDirection.BOTH))
       val costForThisPlan = effectiveCardinalities.outputCardinality * rowCost
       costForThisPlan + lhsCost + rhsCost
 
@@ -435,7 +435,7 @@ object CardinalityCostModel {
 
       case plan: IntersectionNodeByLabelsScan =>
         // A workaround for cases where we might get value from an index scan instead. Using the same cost means we will use leaf plan heuristic to decide.
-        if (propertyAccess.exists(_.variableName == plan.idName)) {
+        if (propertyAccess.exists(_.variableName == plan.idName.name)) {
           INDEX_SCAN_COST_PER_ROW + STORE_LOOKUP_COST_PER_ROW
         } else {
           INDEX_SCAN_COST_PER_ROW
@@ -476,16 +476,16 @@ object CardinalityCostModel {
       case _: UndirectedAllRelationshipsScan => ALL_SCAN_COST_PER_ROW / 2
 
       case plan: DirectedRelationshipTypeScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
+        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = true)
 
       case plan: UndirectedRelationshipTypeScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
+        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = false)
 
       case plan: DirectedUnionRelationshipTypesScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = true)
+        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = true)
 
       case plan: UndirectedUnionRelationshipTypesScan =>
-        hackyRelTypeScanCost(propertyAccess, plan.idName, directed = false)
+        hackyRelTypeScanCost(propertyAccess, plan.idName.name, directed = false)
 
       case _: DirectedRelationshipIndexScan => DIRECTED_RELATIONSHIP_INDEX_SCAN_COST_PER_ROW
 

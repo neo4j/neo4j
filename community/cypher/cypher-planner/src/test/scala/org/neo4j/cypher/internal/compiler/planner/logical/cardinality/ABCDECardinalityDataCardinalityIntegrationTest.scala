@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.planner.logical.cardinality
 import org.neo4j.cypher.internal.compiler.planner.logical.PlannerDefaults.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.ExpressionSelectivityCalculator.subqueryCardinalityToExistsSelectivity
 import org.neo4j.cypher.internal.compiler.planner.logical.cardinality.assumeIndependence.NodeConnectionMultiplierCalculator.uniquenessSelectivityForNRels
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.Argument
 import org.neo4j.cypher.internal.logical.plans.Create
@@ -625,7 +626,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     expectCardinality(A * B)
     expectPlanCardinality(
       {
-        case NodeByLabelScan("b", _, _, _) => true
+        case NodeByLabelScan(LogicalVariable("b"), _, _, _) => true
       },
       A * B
     )
@@ -635,7 +636,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     expectCardinality(A * B)
     expectPlanCardinality(
       {
-        case NodeByLabelScan("b", _, _, _) => true
+        case NodeByLabelScan(LogicalVariable("b"), _, _, _) => true
       },
       A * B
     )
@@ -645,7 +646,7 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     expectCardinality(A * B * C)
     expectPlanCardinality(
       {
-        case NodeByLabelScan("c", _, _, _) => true
+        case NodeByLabelScan(LogicalVariable("c"), _, _, _) => true
       },
       A * B * C
     )
@@ -667,13 +668,13 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     expectCardinality(A * (B + C))
     expectPlanCardinality(
       {
-        case NodeByLabelScan("b", _, _, _) => true
+        case NodeByLabelScan(LogicalVariable("b"), _, _, _) => true
       },
       A * B
     )
     expectPlanCardinality(
       {
-        case NodeByLabelScan("c", _, _, _) => true
+        case NodeByLabelScan(LogicalVariable("c"), _, _, _) => true
       },
       A * C
     )
@@ -683,13 +684,13 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     expectCardinality(A * (B + C))
     expectPlanCardinality(
       {
-        case NodeByLabelScan("b", _, _, _) => true
+        case NodeByLabelScan(LogicalVariable("b"), _, _, _) => true
       },
       A * B
     )
     expectPlanCardinality(
       {
-        case NodeByLabelScan("c", _, _, _) => true
+        case NodeByLabelScan(LogicalVariable("c"), _, _, _) => true
       },
       A * C
     )
@@ -699,13 +700,13 @@ class ABCDECardinalityDataCardinalityIntegrationTest extends CypherFunSuite with
     expectCardinality(A * 2)
     expectPlanCardinality(
       {
-        case Projection(_, _, MapKeys("f")) => true
+        case Projection(_, _, MapKeys(LogicalVariable("f"))) => true
       },
       A * 2
     )
     expectPlanCardinality(
       {
-        case UnwindCollection(_, "x", _) => true
+        case UnwindCollection(_, LogicalVariable("x"), _) => true
       },
       A * 2
     )

@@ -50,7 +50,7 @@ case class predicateRemovalThroughJoins(
   private val instance: Rewriter = bottomUp(Rewriter.lift {
     case n @ NodeHashJoin(nodeIds, lhs, rhs @ Selection(Ands(rhsPredicates), rhsLeaf)) =>
       val lhsPredicates =
-        predicatesDependingOnTheJoinIds(solveds.get(lhs.id).asSinglePlannerQuery.lastQueryGraph, nodeIds)
+        predicatesDependingOnTheJoinIds(solveds.get(lhs.id).asSinglePlannerQuery.lastQueryGraph, nodeIds.map(_.name))
       val newPredicate = rhsPredicates.filterNot(lhsPredicates)
 
       if (newPredicate.isEmpty) {

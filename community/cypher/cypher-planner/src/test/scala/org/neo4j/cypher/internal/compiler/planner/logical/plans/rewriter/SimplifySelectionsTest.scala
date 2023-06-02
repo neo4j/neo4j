@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.helpers.FakeLeafPlan
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.expressions.DummyExpression
 import org.neo4j.cypher.internal.expressions.SignedDecimalIntegerLiteral
-import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Create
 import org.neo4j.cypher.internal.logical.plans.ExhaustiveLimit
 import org.neo4j.cypher.internal.logical.plans.Limit
@@ -45,7 +45,7 @@ class SimplifySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupp
   }
 
   test("should rewrite Selection(false, Create) to ExhaustiveLimit(Create, 0)") {
-    val source = Create(FakeLeafPlan(Set.empty), Seq(CreateNode("n", Set.empty, None)))
+    val source = Create(FakeLeafPlan(Set.empty), Seq(createNode("n")))
     val selection = Selection(Seq(falseLiteral), source)
 
     selection.endoRewrite(simplifySelections) should equal(

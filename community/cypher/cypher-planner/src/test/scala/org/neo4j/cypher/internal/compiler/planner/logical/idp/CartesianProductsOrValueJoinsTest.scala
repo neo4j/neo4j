@@ -73,7 +73,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     n: String,
     planningAttributes: PlanningAttributes = PlanningAttributes.newAttributes
   ): LogicalPlan = {
-    val plan = AllNodesScan(n, Set.empty)
+    val plan = AllNodesScan(varFor(n), Set.empty)
     setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, 0.0, planningAttributes)
     plan
   }
@@ -85,7 +85,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     planningAttributes: PlanningAttributes
   ): LogicalPlan = {
     val plan = NodeIndexScan(
-      n,
+      varFor(n),
       LabelToken(label, LabelId(0)),
       Seq(IndexedProperty(PropertyKeyToken("prop", PropertyKeyId(0)), DoNotGetValue, NODE_TYPE)),
       Set.empty,
@@ -102,7 +102,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
     cardinality: Double,
     planningAttributes: PlanningAttributes
   ): LogicalPlan = {
-    val plan = NodeByLabelScan(n, LabelName(label)(pos), Set.empty, IndexOrderNone)
+    val plan = NodeByLabelScan(varFor(n), LabelName(label)(pos), Set.empty, IndexOrderNone)
     setPlanningAttributes(QueryGraph(patternNodes = Set(n)), plan, cardinality, planningAttributes)
     plan
   }
@@ -205,7 +205,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       )
       val bestPlanComponents = nodesWithCardinality
         .map { case (n, c) => nodeByLabelScan(n, "FEW", c, context.staticComponents.planningAttributes) }
-        .map(plan => PlannedComponent(QueryGraph(patternNodes = plan.availableSymbols), BestResults(plan, None)))
+        .map(plan =>
+          PlannedComponent(QueryGraph(patternNodes = plan.availableSymbols.map(_.name)), BestResults(plan, None))
+        )
       val plans: Set[PlannedComponent] = bestPlanComponents + bestSortedPlanComponent
 
       val result = cartesianProductsOrValueJoins.planLotsOfCartesianProducts(
@@ -218,7 +220,7 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       )
 
       // The cost of label scans is n2 < n1 < n0 < n3. Thus, this is the order we expect in the CartesianProducts.
-      result.plan.bestResult.folder.findAllByClass[NodeByLabelScan].map(_.idName) shouldEqual Seq(
+      result.plan.bestResult.folder.findAllByClass[NodeByLabelScan].map(_.idName.name) shouldEqual Seq(
         "n2",
         "n1",
         "n0",
@@ -226,7 +228,9 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
       )
 
       // n3 needs to be on left, so that its sort order is kept. The rest should still be sorted by cost.
-      result.plan.bestResultFulfillingReq.get.folder.findAllByClass[NodeLogicalLeafPlan].map(_.idName) shouldEqual Seq(
+      result.plan.bestResultFulfillingReq.get.folder.findAllByClass[NodeLogicalLeafPlan].map(
+        _.idName.name
+      ) shouldEqual Seq(
         "n3",
         "n2",
         "n1",

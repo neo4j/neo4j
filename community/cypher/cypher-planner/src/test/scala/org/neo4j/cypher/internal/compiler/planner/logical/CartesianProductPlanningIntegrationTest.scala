@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningIntegrationTestSupport
 import org.neo4j.cypher.internal.compiler.planner.StatisticsBackedLogicalPlanningConfigurationBuilder
 import org.neo4j.cypher.internal.compiler.planner.logical.idp.cartesianProductsOrValueJoins.COMPONENT_THRESHOLD_FOR_CARTESIAN_PRODUCT
-import org.neo4j.cypher.internal.logical.plans.Ascending
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.logical.plans.NodeIndexScan
@@ -66,7 +66,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     plan shouldBe a[CartesianProduct]
     // Sorted index should be placed on the left of the cartesian products
     plan.leftmostLeaf should beLike {
-      case NodeIndexScan(`orderedNode`, _, _, _, _, _) => ()
+      case NodeIndexScan(LogicalVariable(node), _, _, _, _, _) if node == orderedNode => ()
     }
   }
 
@@ -356,7 +356,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     val plan = planner.plan(query).stripProduceResults
     plan should (equal(planner.subPlanBuilder()
-      .sort(Seq(Ascending("1")))
+      .sort("1 ASC")
       .projection("1 AS 1")
       .aggregation(Seq(), Seq("count(b) AS `count(b)`"))
       .expandInto("(a)-[anon_0*1..2]-(b)")
@@ -365,7 +365,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .nodeByIdSeek("a", Set(), 0)
       .build()) or
       equal(planner.subPlanBuilder()
-        .sort(Seq(Ascending("1")))
+        .sort("1 ASC")
         .projection("1 AS 1")
         .aggregation(Seq(), Seq("count(b) AS `count(b)`"))
         .expandInto("(a)-[anon_0*1..2]-(b)")
@@ -393,17 +393,17 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .expandInto("(a)-[anon_0*1..2]-(b)")
       .cartesianProduct()
       .|.nodeByIdSeek("b", Set(), 0)
-      .sort(Seq(Ascending("1")))
+      .sort("1 ASC")
       .projection("1 AS 1")
       .nodeByIdSeek("a", Set(), 0)
       .build()) or
       equal(planner.subPlanBuilder()
-        .sort(Seq(Ascending("1")))
+        .sort("1 ASC")
         .projection("1 AS 1")
         .expandInto("(a)-[anon_0*1..2]-(b)")
         .cartesianProduct()
         .|.nodeByIdSeek("a", Set(), 0)
-        .sort(Seq(Ascending("1")))
+        .sort("1 ASC")
         .projection("1 AS 1")
         .nodeByIdSeek("b", Set(), 0)
         .build()))
@@ -427,7 +427,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       .expandInto("(a)-[anon_0*1..2]-(b)")
       .cartesianProduct()
       .|.nodeByIdSeek("a", Set(), 0)
-      .sort(Seq(Ascending("b.prop")))
+      .sort("`b.prop` ASC")
       .projection("b.prop AS `b.prop`")
       .nodeByIdSeek("b", Set(), 0)
       .build())
@@ -447,7 +447,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     val plan = planner.plan(query).stripProduceResults
     plan should equal(planner.subPlanBuilder()
-      .sort(Seq(Ascending("1")))
+      .sort("1 ASC")
       .projection("1 AS 1")
       .cartesianProduct()
       .|.allNodeScan("b")

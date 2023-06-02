@@ -30,7 +30,6 @@ import org.neo4j.cypher.internal.expressions.SemanticDirection
 import org.neo4j.cypher.internal.ir.PatternRelationship
 import org.neo4j.cypher.internal.ir.QueryGraph
 import org.neo4j.cypher.internal.ir.SimplePatternLength
-import org.neo4j.cypher.internal.logical.plans.Ascending
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.NodeHashJoin
 import org.neo4j.cypher.internal.planner.spi.PlanContext
@@ -104,19 +103,19 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
 
   private val `sort(a)-r1->b` = planBuilder()
     .expand("(a)-[r1]->(b)")
-    .sort(Seq(Ascending("1")))
+    .sort("1 ASC")
     .fakeLeafPlan("a")
     .build()
 
   private val `sort(b)<-r1-a` = planBuilder()
     .expand("(b)<-[r1]-(a)")
-    .sort(Seq(Ascending("1")))
+    .sort("1 ASC")
     .fakeLeafPlan("b")
     .build()
 
   private val `a-r1->b = sort(b)` = planBuilder()
     .nodeHashJoin("b")
-    .|.sort(Seq(Ascending("1")))
+    .|.sort("1 ASC")
     .|.fakeLeafPlan("b")
     .expand("(a)-[r1]->(b)")
     .fakeLeafPlan("a")
@@ -125,14 +124,14 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   private val `b = sort(a)-r1->b` = planBuilder()
     .nodeHashJoin("b")
     .|.expand("(a)-[r1]->(b)")
-    .|.sort(Seq(Ascending("1")))
+    .|.sort("1 ASC")
     .|.fakeLeafPlan("a")
     .fakeLeafPlan("b")
     .build()
 
   private val `b<-r1-a = sort(a)` = planBuilder()
     .nodeHashJoin("a")
-    .|.sort(Seq(Ascending("1")))
+    .|.sort("1 ASC")
     .|.fakeLeafPlan("a")
     .expand("(b)<-[r1]-(a)")
     .fakeLeafPlan("b")
@@ -141,7 +140,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
   private val `a = sort(b)<-r1-a` = planBuilder()
     .nodeHashJoin("a")
     .|.expand("(b)<-[r1]-(a)")
-    .|.sort(Seq(Ascending("1")))
+    .|.sort("1 ASC")
     .|.fakeLeafPlan("b")
     .fakeLeafPlan("a")
     .build()
@@ -150,7 +149,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     .expandInto("(a)-[r1]->(b)")
     .cartesianProduct()
     .|.fakeLeafPlan("b")
-    .sort(Seq(Ascending("1")))
+    .sort("1 ASC")
     .fakeLeafPlan("a")
     .build()
 
@@ -158,7 +157,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     .expandInto("(a)-[r1]->(b)")
     .cartesianProduct()
     .|.fakeLeafPlan("a")
-    .sort(Seq(Ascending("1")))
+    .sort("1 ASC")
     .fakeLeafPlan("b")
     .build()
 
@@ -175,8 +174,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         qg,
         pattern,
         Map(
-          aPlan.availableSymbols -> BestResults(aPlan, None),
-          bPlan.availableSymbols -> BestResults(bPlan, None)
+          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None),
+          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, None)
         ),
         noQPPInnerPlans,
         context
@@ -208,8 +207,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
       qg,
       rel1,
       Map(
-        r1Plan.availableSymbols -> BestResults(r1Plan, None),
-        r2Plan.availableSymbols -> BestResults(r2Plan, None)
+        r1Plan.availableSymbols.map(_.name) -> BestResults(r1Plan, None),
+        r2Plan.availableSymbols.map(_.name) -> BestResults(r2Plan, None)
       ),
       noQPPInnerPlans,
       context
@@ -235,8 +234,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         qg,
         pattern,
         Map(
-          aPlan.availableSymbols -> BestResults(aPlan, None),
-          bPlan.availableSymbols -> BestResults(bPlan, None)
+          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None),
+          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, None)
         ),
         noQPPInnerPlans,
         context
@@ -268,8 +267,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         qg,
         pattern,
         Map(
-          aPlan.availableSymbols -> BestResults(aPlan, None),
-          bPlan.availableSymbols -> BestResults(bPlan, None)
+          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None),
+          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, None)
         ),
         noQPPInnerPlans,
         context
@@ -307,7 +306,7 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val logicalPlans = SingleComponentPlanner.planSinglePattern(
       qg,
       pattern,
-      Map(aPlan.availableSymbols -> BestResults(aPlan, None)),
+      Map(aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None)),
       noQPPInnerPlans,
       context
     )
@@ -329,8 +328,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         qg,
         pattern,
         Map(
-          aPlan.availableSymbols -> BestResults(aPlan, None),
-          bPlan.availableSymbols -> BestResults(bPlan, None)
+          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, None),
+          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, None)
         ),
         noQPPInnerPlans,
         context
@@ -366,14 +365,14 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
     val bPlan = newMockedLogicalPlan(context.staticComponents.planningAttributes, "b")
 
     val aPlanSort = planBuilder()
-      .sort(Seq(Ascending("1")))
+      .sort("1 ASC")
       .fakeLeafPlan("a")
       .build()
     context.staticComponents.planningAttributes.solveds.copy(aPlan.id, aPlanSort.id)
     context.staticComponents.planningAttributes.providedOrders.copy(aPlan.id, aPlanSort.id)
 
     val bPlanSort = planBuilder()
-      .sort(Seq(Ascending("1")))
+      .sort("1 ASC")
       .fakeLeafPlan("b")
       .build()
     context.staticComponents.planningAttributes.solveds.copy(bPlan.id, bPlanSort.id)
@@ -385,8 +384,8 @@ class SingleComponentPlannerTest extends CypherFunSuite with LogicalPlanningTest
         qg,
         pattern,
         Map(
-          aPlan.availableSymbols -> BestResults(aPlan, Some(aPlanSort)),
-          bPlan.availableSymbols -> BestResults(bPlan, Some(bPlanSort))
+          aPlan.availableSymbols.map(_.name) -> BestResults(aPlan, Some(aPlanSort)),
+          bPlan.availableSymbols.map(_.name) -> BestResults(bPlan, Some(bPlanSort))
         ),
         noQPPInnerPlans,
         context
