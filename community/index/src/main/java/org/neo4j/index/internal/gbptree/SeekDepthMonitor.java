@@ -28,9 +28,4 @@ class SeekDepthMonitor extends SeekCursor.MonitorAdaptor {
         reachedLeafLevel = true;
         treeDepth = depth;
     }
-
-    public void reset() {
-        reachedLeafLevel = false;
-        treeDepth = 0;
-    }
 }

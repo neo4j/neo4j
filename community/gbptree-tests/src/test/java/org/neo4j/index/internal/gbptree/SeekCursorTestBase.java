@@ -1158,14 +1158,15 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
 
         // WHEN
         try (SeekCursor<KEY, VALUE> cursor = new SeekCursor<>(
-                        this.cursor,
-                        node,
-                        layout,
-                        generationSupplier,
-                        exceptionDecorator,
-                        SeekCursor.NO_MONITOR,
-                        NULL_CONTEXT)
-                .initialize(rootInitializer(unstableGeneration), failingRootCatchup, from, to, 1, LEAF_LEVEL)) {
+                        this.cursor, node, layout, generationSupplier, exceptionDecorator, NULL_CONTEXT)
+                .initialize(
+                        rootInitializer(unstableGeneration),
+                        failingRootCatchup,
+                        from,
+                        to,
+                        1,
+                        LEAF_LEVEL,
+                        SeekCursor.NO_MONITOR)) {
             // reading a couple of keys
             assertTrue(cursor.next());
             assertEqualsKey(key(0), cursor.key());
@@ -1744,14 +1745,15 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         // when
         //noinspection EmptyTryBlock
         try (SeekCursor<KEY, VALUE> ignored = new SeekCursor<>(
-                        cursor,
-                        node,
-                        layout,
-                        generationSupplier,
-                        exceptionDecorator,
-                        SeekCursor.NO_MONITOR,
-                        NULL_CONTEXT)
-                .initialize(rootInitializer(generation - 1), rootCatchup, key(0), key(1), 1, LEAF_LEVEL)) {
+                        cursor, node, layout, generationSupplier, exceptionDecorator, NULL_CONTEXT)
+                .initialize(
+                        rootInitializer(generation - 1),
+                        rootCatchup,
+                        key(0),
+                        key(1),
+                        1,
+                        LEAF_LEVEL,
+                        SeekCursor.NO_MONITOR)) {
             // do nothing
         }
 
@@ -1799,14 +1801,15 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         KEY to = key(2L);
         //noinspection EmptyTryBlock
         try (SeekCursor<KEY, VALUE> ignored = new SeekCursor<>(
-                        cursor,
-                        node,
-                        layout,
-                        generationSupplier,
-                        exceptionDecorator,
-                        SeekCursor.NO_MONITOR,
-                        NULL_CONTEXT)
-                .initialize(rootInitializer(unstableGeneration), rootCatchup, from, to, 1, LEAF_LEVEL)) {
+                        cursor, node, layout, generationSupplier, exceptionDecorator, NULL_CONTEXT)
+                .initialize(
+                        rootInitializer(unstableGeneration),
+                        rootCatchup,
+                        from,
+                        to,
+                        1,
+                        LEAF_LEVEL,
+                        SeekCursor.NO_MONITOR)) {
             // do nothing
         }
 
@@ -1854,14 +1857,15 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
         LongSupplier firstOlderThenCurrentGenerationSupplier =
                 firstCustomThenCurrentGenerationSupplier(stableGeneration - 1, unstableGeneration - 1);
         try (SeekCursor<KEY, VALUE> seek = new SeekCursor<>(
-                        cursor,
-                        node,
-                        layout,
-                        firstOlderThenCurrentGenerationSupplier,
-                        exceptionDecorator,
-                        SeekCursor.NO_MONITOR,
-                        NULL_CONTEXT)
-                .initialize(rootInitializer(unstableGeneration), rootCatchup, from, to, 1, LEAF_LEVEL)) {
+                        cursor, node, layout, firstOlderThenCurrentGenerationSupplier, exceptionDecorator, NULL_CONTEXT)
+                .initialize(
+                        rootInitializer(unstableGeneration),
+                        rootCatchup,
+                        from,
+                        to,
+                        1,
+                        LEAF_LEVEL,
+                        SeekCursor.NO_MONITOR)) {
             while (seek.next()) {
                 seek.key();
             }
@@ -2217,21 +2221,15 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
 
     private SeekCursor<KEY, VALUE> seekCursorOnLevel(int level, long fromInclusive, long toExclusive)
             throws IOException {
-        return new SeekCursor<>(
-                        cursor,
-                        node,
-                        layout,
-                        generationSupplier,
-                        exceptionDecorator,
-                        SeekCursor.NO_MONITOR,
-                        NULL_CONTEXT)
+        return new SeekCursor<>(cursor, node, layout, generationSupplier, exceptionDecorator, NULL_CONTEXT)
                 .initialize(
                         rootInitializer(unstableGeneration),
                         failingRootCatchup,
                         key(fromInclusive),
                         key(toExclusive),
                         random.nextInt(1, DEFAULT_MAX_READ_AHEAD),
-                        level);
+                        level,
+                        SeekCursor.NO_MONITOR);
     }
 
     private SeekCursor<KEY, VALUE> seekCursor(long fromInclusive, long toExclusive) throws IOException {
@@ -2260,21 +2258,15 @@ abstract class SeekCursorTestBase<KEY, VALUE> {
             throws IOException {
         LongSupplier generationSupplier =
                 firstCustomThenCurrentGenerationSupplier(stableGeneration, unstableGeneration);
-        return new SeekCursor<>(
-                        pageCursor,
-                        node,
-                        layout,
-                        generationSupplier,
-                        exceptionDecorator,
-                        SeekCursor.NO_MONITOR,
-                        NULL_CONTEXT)
+        return new SeekCursor<>(pageCursor, node, layout, generationSupplier, exceptionDecorator, NULL_CONTEXT)
                 .initialize(
                         rootInitializer(unstableGeneration),
                         rootCatchup,
                         key(fromInclusive),
                         key(toExclusive),
                         random.nextInt(1, DEFAULT_MAX_READ_AHEAD),
-                        LEAF_LEVEL);
+                        LEAF_LEVEL,
+                        SeekCursor.NO_MONITOR);
     }
 
     /**

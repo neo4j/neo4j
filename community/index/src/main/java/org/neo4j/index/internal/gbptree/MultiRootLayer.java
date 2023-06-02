@@ -350,16 +350,14 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         var batch = dataTreeRootBatch.toArray(new Root[0]);
         dataTreeRootBatch.clear();
         return state.executor.submit(() -> {
-            var monitor = new SeekDepthMonitor();
             var low = dataLayout.newKey();
             var high = dataLayout.newKey();
             dataLayout.initializeAsLowest(low);
             dataLayout.initializeAsHighest(high);
             try (var partitionProgress = state.progress.threadLocalReporter();
-                    var seeker = support.internalAllocateSeeker(
-                            dataLayout, dataTreeNode, CursorContext.NULL_CONTEXT, monitor)) {
+                    var seeker = support.internalAllocateSeeker(dataLayout, dataTreeNode, CursorContext.NULL_CONTEXT)) {
                 for (var root : batch) {
-                    int treeDepth = depthOf(root, seeker, low, high, monitor);
+                    int treeDepth = depthOf(root, seeker, low, high);
                     new GBPTreeConsistencyChecker<>(
                                     dataTreeNode,
                                     dataLayout,
@@ -382,13 +380,12 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
     /**
      * @return depth of the tree or -1 if it cannot be decided due to tree being inconsistent.
      */
-    private int depthOf(
-            Root root, SeekCursor<DATA_KEY, DATA_VALUE> seeker, DATA_KEY low, DATA_KEY high, SeekDepthMonitor monitor)
+    private int depthOf(Root root, SeekCursor<DATA_KEY, DATA_VALUE> seeker, DATA_KEY low, DATA_KEY high)
             throws IOException {
         try {
-            monitor.reset();
-            support.initializeSeeker(seeker, () -> root, low, high, 1, LEAF_LEVEL);
-            return monitor.treeDepth;
+            var depthMonitor = new SeekDepthMonitor();
+            support.initializeSeeker(seeker, () -> root, low, high, 1, LEAF_LEVEL, depthMonitor);
+            return depthMonitor.treeDepth;
         } catch (TreeInconsistencyException e) {
             return -1;
         }
@@ -400,12 +397,13 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
         rootLayout.initializeAsLowest(low);
         rootLayout.initializeAsHighest(high);
         return support.initializeSeeker(
-                support.internalAllocateSeeker(rootLayout, rootTreeNode, cursorContext, SeekCursor.NO_MONITOR),
+                support.internalAllocateSeeker(rootLayout, rootTreeNode, cursorContext),
                 this,
                 low,
                 high,
                 DEFAULT_MAX_READ_AHEAD,
-                LEAF_LEVEL);
+                LEAF_LEVEL,
+                SeekCursor.NO_MONITOR);
     }
 
     @Override
@@ -487,13 +485,13 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
             rootMappingLatch.acquireRead();
             try (CursorContext cursorContext = contextFactory.create("Update root mapping");
                     Seeker<ROOT_KEY, RootMappingValue> seek = support.initializeSeeker(
-                            support.internalAllocateSeeker(
-                                    rootLayout, rootTreeNode, cursorContext, SeekCursor.NO_MONITOR),
+                            support.internalAllocateSeeker(rootLayout, rootTreeNode, cursorContext),
                             () -> root,
                             dataRootKey,
                             dataRootKey,
                             DEFAULT_MAX_READ_AHEAD,
-                            LEAF_LEVEL)) {
+                            LEAF_LEVEL,
+                            SeekCursor.NO_MONITOR)) {
                 if (seek.next()) {
                     Root root = seek.value().asRoot();
                     cacheReadRoot(root);
@@ -569,14 +567,20 @@ class MultiRootLayer<ROOT_KEY, DATA_KEY, DATA_VALUE> extends RootLayer<ROOT_KEY,
 
         @Override
         public Seeker<DATA_KEY, DATA_VALUE> allocateSeeker(CursorContext cursorContext) throws IOException {
-            return support.internalAllocateSeeker(dataLayout, dataTreeNode, cursorContext, SeekCursor.NO_MONITOR);
+            return support.internalAllocateSeeker(dataLayout, dataTreeNode, cursorContext);
         }
 
         @Override
         public Seeker<DATA_KEY, DATA_VALUE> seek(
                 Seeker<DATA_KEY, DATA_VALUE> seeker, DATA_KEY fromInclusive, DATA_KEY toExclusive) throws IOException {
             return support.initializeSeeker(
-                    seeker, rootMappingInteraction, fromInclusive, toExclusive, DEFAULT_MAX_READ_AHEAD, LEAF_LEVEL);
+                    seeker,
+                    rootMappingInteraction,
+                    fromInclusive,
+                    toExclusive,
+                    DEFAULT_MAX_READ_AHEAD,
+                    LEAF_LEVEL,
+                    SeekCursor.NO_MONITOR);
         }
 
         @Override

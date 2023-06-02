@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 import java.util.function.LongSupplier;
 import org.apache.commons.lang3.tuple.Pair;
 import org.neo4j.function.ThrowingAction;
+import org.neo4j.index.internal.gbptree.SeekCursor.Monitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageCursorUtil;
 import org.neo4j.io.pagecache.PagedFile;
@@ -91,11 +92,9 @@ class RootLayerSupport {
     }
 
     <K, V> SeekCursor<K, V> internalAllocateSeeker(
-            Layout<K, V> layout, TreeNode<K, V> bTreeNode, CursorContext cursorContext, SeekCursor.Monitor monitor)
-            throws IOException {
+            Layout<K, V> layout, TreeNode<K, V> bTreeNode, CursorContext cursorContext) throws IOException {
         PageCursor cursor = pagedFile.io(0L /*ignored*/, PF_SHARED_READ_LOCK, cursorContext);
-        return new SeekCursor<>(
-                cursor, bTreeNode, layout, generationSupplier, exceptionDecorator, monitor, cursorContext);
+        return new SeekCursor<>(cursor, bTreeNode, layout, generationSupplier, exceptionDecorator, cursorContext);
     }
 
     <K, V> Seeker<K, V> initializeSeeker(
@@ -104,7 +103,8 @@ class RootLayerSupport {
             K fromInclusive,
             K toExclusive,
             int readAheadLength,
-            int searchLevel)
+            int searchLevel,
+            Monitor monitor)
             throws IOException {
         return ((SeekCursor<K, V>) seeker)
                 .initialize(
@@ -113,7 +113,8 @@ class RootLayerSupport {
                         fromInclusive,
                         toExclusive,
                         readAheadLength,
-                        searchLevel);
+                        searchLevel,
+                        monitor);
     }
 
     /**
@@ -183,12 +184,13 @@ class RootLayerSupport {
             final var localFrom = layout.copyKey(fromInclusive, layout.newKey());
             final var localTo = layout.copyKey(toExclusive, layout.newKey());
             try (var seek = initializeSeeker(
-                    internalAllocateSeeker(layout, bTreeNode, cursorContext, depthMonitor),
+                    internalAllocateSeeker(layout, bTreeNode, cursorContext),
                     rootSupplier,
                     localFrom,
                     localTo,
                     DEFAULT_MAX_READ_AHEAD,
-                    searchLevel)) {
+                    searchLevel,
+                    depthMonitor)) {
                 if (depthMonitor.reachedLeafLevel) {
                     // Don't partition any further if we've reached leaf level.
                     break;
@@ -386,12 +388,12 @@ class RootLayerSupport {
             Seeker.Factory<K, V> monitoredSeeks = new Seeker.Factory<>() {
                 @Override
                 public Seeker<K, V> allocateSeeker(CursorContext cursorContext) throws IOException {
-                    return internalAllocateSeeker(layout, treeNode, cursorContext, monitor);
+                    return internalAllocateSeeker(layout, treeNode, cursorContext);
                 }
 
                 @Override
                 public Seeker<K, V> seek(Seeker<K, V> seeker, K fromInclusive, K toExclusive) throws IOException {
-                    return initializeSeeker(seeker, rootSupplier, fromInclusive, toExclusive, 1, LEAF_LEVEL);
+                    return initializeSeeker(seeker, rootSupplier, fromInclusive, toExclusive, 1, LEAF_LEVEL, monitor);
                 }
 
                 @Override

@@ -170,7 +170,7 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
 
         @Override
         public Seeker<KEY, VALUE> allocateSeeker(CursorContext cursorContext) throws IOException {
-            return support.internalAllocateSeeker(layout, treeNode, cursorContext, SeekCursor.NO_MONITOR);
+            return support.internalAllocateSeeker(layout, treeNode, cursorContext);
         }
 
         @Override
@@ -182,7 +182,8 @@ class SingleRootLayer<KEY, VALUE> extends RootLayer<SingleRoot, KEY, VALUE> {
                     fromInclusive,
                     toExclusive,
                     SeekCursor.DEFAULT_MAX_READ_AHEAD,
-                    LEAF_LEVEL);
+                    LEAF_LEVEL,
+                    SeekCursor.NO_MONITOR);
         }
 
         @Override

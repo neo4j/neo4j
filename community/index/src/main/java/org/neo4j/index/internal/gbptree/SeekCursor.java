@@ -404,7 +404,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
 
     /**
      * Whether or not this seeker has come to the end of its result set and will not attempt to continue.
-     * This will be reset to {@code false} in each {@link #initialize(RootInitializer, RootCatchup, Object, Object, int, int)}.
+     * This will be reset to {@code false} in each {@link #initialize(RootInitializer, RootCatchup, Object, Object, int, int, Monitor)}.
      */
     private boolean ended;
 
@@ -422,7 +422,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
     /**
      * Monitor for internal seek events.
      */
-    private final Monitor monitor;
+    private Monitor monitor;
 
     /**
      * Normally {@link #readHeader()} is called when {@link #concurrentWriteHappened} is {@code true}. However this flag
@@ -442,13 +442,11 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             Layout<KEY, VALUE> layout,
             LongSupplier generationSupplier,
             Consumer<Throwable> exceptionDecorator,
-            Monitor monitor,
             CursorContext cursorContext) {
         this.cursor = cursor;
         this.cursorContext = cursorContext;
         this.layout = layout;
         this.exceptionDecorator = exceptionDecorator;
-        this.monitor = monitor;
         this.generationSupplier = generationSupplier;
         this.bTreeNode = bTreeNode;
         this.prevKey = layout.newKey();
@@ -463,7 +461,8 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
             KEY fromInclusive,
             KEY toExclusive,
             int maxReadAhead,
-            int searchLevel)
+            int searchLevel,
+            Monitor monitor)
             throws IOException {
         Preconditions.checkState(!closed, "Seeker already closed");
         this.rootCatchup = rootCatchup;
@@ -484,6 +483,7 @@ class SeekCursor<KEY, VALUE> implements Seeker<KEY, VALUE> {
         this.seekForward = layout.compare(fromInclusive, toExclusive) <= 0;
         this.stride = seekForward ? 1 : -1;
         this.searchLevel = searchLevel;
+        this.monitor = monitor;
         int batchSize = exactMatch ? 1 : maxReadAhead;
         if (mutableKeys == null || batchSize > mutableKeys.length) {
             this.mutableKeys = (KEY[]) new Object[batchSize];
