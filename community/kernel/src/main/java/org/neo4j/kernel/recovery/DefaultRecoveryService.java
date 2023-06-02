@@ -28,7 +28,9 @@ import static org.neo4j.storageengine.api.TransactionIdStore.UNKNOWN_CONSENSUS_I
 
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.nio.file.Path;
 import java.time.Clock;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.memory.HeapScopedBuffer;
 import org.neo4j.io.pagecache.context.CursorContext;
 import org.neo4j.io.pagecache.context.CursorContextFactory;
@@ -44,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.log.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryWriter;
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.checkpoint.CheckpointFile;
 import org.neo4j.logging.InternalLog;
 import org.neo4j.memory.EmptyMemoryTracker;
 import org.neo4j.storageengine.api.LogVersionRepository;
@@ -173,14 +176,12 @@ public class DefaultRecoveryService implements RecoveryService {
                     lastClosedTransactionData.commitTimestamp(),
                     lastClosedTransactionData.consensusIndex());
             logVersionRepository.setCurrentLogVersion(logVersion);
-            long checkpointLogVersion = logVersionRepository.getCheckpointLogVersion();
-            if (checkpointLogVersion < 0) {
-                log.warn(
-                        "Recovery detected that checkpoint log version is invalid. "
-                                + "Resetting version to start from the beginning. Current recorded version: %d. New version: 0.",
-                        checkpointLogVersion);
-                logVersionRepository.setCheckpointLogVersion(INITIAL_LOG_VERSION);
-            }
+
+            // cleanup checkpoint log files
+            tryRemoveLegacyCheckpointFiles();
+            logVersionRepository.setCheckpointLogVersion(
+                    Math.max(INITIAL_LOG_VERSION, logFiles.getCheckpointFile().getHighestLogVersion()));
+
             return;
         }
         if (lastRecoveredBatch != null) {
@@ -211,5 +212,17 @@ public class DefaultRecoveryService implements RecoveryService {
 
         logVersionRepository.setCurrentLogVersion(positionAfterLastRecoveredTransaction.getLogVersion());
         logVersionRepository.setCheckpointLogVersion(checkpointPosition.getLogVersion());
+    }
+
+    private void tryRemoveLegacyCheckpointFiles() {
+        try {
+            CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+            Path[] detachedCheckpointFiles = checkpointFile.getDetachedCheckpointFiles();
+            for (Path obsoleteCheckpointFile : detachedCheckpointFiles) {
+                FileUtils.deleteFile(obsoleteCheckpointFile);
+            }
+        } catch (IOException e) {
+            log.error("Failed to delete legacy checkpoint files.", e);
+        }
     }
 }

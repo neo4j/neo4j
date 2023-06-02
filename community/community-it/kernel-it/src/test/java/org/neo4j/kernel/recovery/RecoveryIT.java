@@ -105,6 +105,7 @@ import org.neo4j.internal.kernel.api.RelationshipValueIndexCursor;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.CommonDatabaseStores;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.Neo4jLayout;
@@ -218,6 +219,139 @@ class RecoveryIT {
 
         // we should have only one pass over log tails during recovery
         assertEquals(1, checkpointTracer.getCheckpointOpenCounter());
+    }
+
+    @Test
+    void recoveryWithRemovedLogs() throws Exception {
+        GraphDatabaseService database = createDatabase();
+        generateSomeData(database);
+        managementService.shutdown();
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+
+        int removedFiles = 0;
+        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        Path[] files = FileUtils.listPaths(transactionLogsDirectory);
+        for (Path file : files) {
+            fileSystem.deleteFile(file);
+            removedFiles++;
+        }
+        // we removed checkpoint and tx file log
+        assertEquals(2, removedFiles);
+
+        // we start db with default config and shut it down
+        createDatabase();
+        managementService.shutdown();
+
+        // recovery is till required since log files are missing
+        assertTrue(isRecoveryRequired(databaseLayout));
+
+        // now we recover with missing log files flag
+        recoverDatabase();
+        // everything is fine now
+        assertFalse(isRecoveryRequired(databaseLayout));
+
+        GraphDatabaseAPI db = createDatabase();
+        assertEquals(
+                0,
+                db.getDependencyResolver()
+                        .resolveDependency(LogFiles.class)
+                        .getCheckpointFile()
+                        .getCurrentDetachedLogVersion());
+    }
+
+    @Test
+    void recoveryWithRemovedOnlyTransactionLogs() throws Exception {
+        GraphDatabaseService database = createDatabase();
+        generateSomeData(database);
+        managementService.shutdown();
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+
+        int removedFiles = 0;
+        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        Path[] files = FileUtils.listPaths(transactionLogsDirectory);
+        for (Path file : files) {
+            if (!file.getFileName().getFileName().toString().contains("checkpoint")) {
+                fileSystem.deleteFile(file);
+                removedFiles++;
+            }
+        }
+        // we removed only tx file log
+        assertEquals(1, removedFiles);
+
+        // we start db with default config and shut it down
+        createDatabase();
+        managementService.shutdown();
+
+        // recovery is till required since log files are missing
+        assertTrue(isRecoveryRequired(databaseLayout));
+
+        // now we recover with missing log files flag
+        recoverDatabase();
+        // everything is fine now
+        assertFalse(isRecoveryRequired(databaseLayout));
+
+        GraphDatabaseAPI db = createDatabase();
+        assertEquals(
+                0,
+                db.getDependencyResolver()
+                        .resolveDependency(LogFiles.class)
+                        .getCheckpointFile()
+                        .getCurrentDetachedLogVersion());
+    }
+
+    @Test
+    void recoveryWithRemovedOnlyTransactionLogsAndLotsOfCheckpointFiles() throws Exception {
+        GraphDatabaseAPI database = createDatabase();
+        generateSomeData(database);
+
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
+        LogFiles logFiles = dependencyResolver.resolveDependency(LogFiles.class);
+        CheckPointer checkPointer = dependencyResolver.resolveDependency(CheckPointer.class);
+        CheckpointFile checkpointFile = logFiles.getCheckpointFile();
+        for (int i = 0; i < 12; i++) {
+            checkPointer.forceCheckPoint(new SimpleTriggerInfo("test"));
+            checkpointFile.rotate();
+        }
+        managementService.shutdown();
+
+        // we did a lot of rotations and now in a range of 10-12 files
+        assertEquals(10, checkpointFile.getLowestLogVersion());
+        assertEquals(12, checkpointFile.getHighestLogVersion());
+
+        removeLastCheckpointRecordFromLastLogFile(databaseLayout, fileSystem);
+
+        int removedFiles = 0;
+        int checkpointFilesLeftOvers = 0;
+        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory();
+        for (Path file : fileSystem.listFiles(transactionLogsDirectory)) {
+            if (!file.getFileName().getFileName().toString().contains("checkpoint")) {
+                fileSystem.deleteFile(file);
+                removedFiles++;
+            } else {
+                checkpointFilesLeftOvers++;
+            }
+        }
+        // we removed only tx file log
+        assertEquals(1, removedFiles);
+
+        // before recovery we have lots of checkpoint files that point to nowhere
+        assertEquals(3, checkpointFilesLeftOvers);
+
+        // now we recover with missing log files flag and corrupted log file fine flag
+        var recoveryDbms = dbmsWithFailOnCorruptedFalse();
+        recoveryDbms.shutdown();
+
+        assertFalse(isRecoveryRequired(databaseLayout));
+
+        // restart in normal mode
+        GraphDatabaseAPI db = createDatabase();
+        // and we can see that checkpoint files sequence was also reset to 0 again
+        assertEquals(
+                0,
+                db.getDependencyResolver()
+                        .resolveDependency(LogFiles.class)
+                        .getCheckpointFile()
+                        .getCurrentDetachedLogVersion());
     }
 
     @Test
@@ -1767,6 +1901,13 @@ class RecoveryIT {
     private DatabaseManagementService forcedRecoveryManagement() {
         TestDatabaseManagementServiceBuilder serviceBuilder =
                 new TestDatabaseManagementServiceBuilder(neo4jLayout).setConfig(fail_on_missing_files, false);
+        return additionalConfiguration(serviceBuilder).build();
+    }
+
+    private DatabaseManagementService dbmsWithFailOnCorruptedFalse() {
+        TestDatabaseManagementServiceBuilder serviceBuilder = new TestDatabaseManagementServiceBuilder(neo4jLayout)
+                .setConfig(fail_on_missing_files, false)
+                .setConfig(GraphDatabaseInternalSettings.fail_on_corrupted_log_files, false);
         return additionalConfiguration(serviceBuilder).build();
     }
 
