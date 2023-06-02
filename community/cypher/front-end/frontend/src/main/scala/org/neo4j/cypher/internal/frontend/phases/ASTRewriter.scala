@@ -22,6 +22,7 @@ import org.neo4j.cypher.internal.rewriting.RewriterStep
 import org.neo4j.cypher.internal.rewriting.conditions.SemanticInfoAvailable
 import org.neo4j.cypher.internal.rewriting.rewriters.AddUniquenessPredicates
 import org.neo4j.cypher.internal.rewriting.rewriters.AddVarLengthPredicates
+import org.neo4j.cypher.internal.rewriting.rewriters.FixedLengthShortestToAllRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.LabelExpressionPredicateNormalizer
 import org.neo4j.cypher.internal.rewriting.rewriters.QuantifiedPathPatternNodeInsertRewriter
 import org.neo4j.cypher.internal.rewriting.rewriters.ReturnItemsAreAliased
@@ -80,7 +81,8 @@ object ASTRewriter {
         LabelExpressionPredicateNormalizer,
         unwrapParenthesizedPath,
         QuantifiedPathPatternNodeInsertRewriter,
-        addDependenciesToProjectionsInSubqueryExpressions
+        addDependenciesToProjectionsInSubqueryExpressions,
+        FixedLengthShortestToAllRewriter
       ),
       initialConditions = SemanticInfoAvailable ++ Set(
         ReturnItemsAreAliased,

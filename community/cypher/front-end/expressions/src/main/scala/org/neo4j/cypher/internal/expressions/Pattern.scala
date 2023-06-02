@@ -84,6 +84,7 @@ sealed abstract class PatternPart extends ASTNode {
   def element: PatternElement
 
   def isBounded: Boolean
+  def isFixedLength: Boolean
 }
 
 sealed trait NonPrefixedPatternPart extends PatternPart
@@ -93,6 +94,7 @@ case class PatternPartWithSelector(selector: Selector, part: NonPrefixedPatternP
   override def allVariables: Set[LogicalVariable] = part.allVariables
   override def element: PatternElement = part.element
   override def isBounded: Boolean = part.isBounded || selector.isBounded
+  override def isFixedLength: Boolean = part.isFixedLength
 
   def isSelective: Boolean = selector.isBounded
 
@@ -118,6 +120,8 @@ case class NamedPatternPart(variable: Variable, patternPart: AnonymousPatternPar
   override def allVariables: Set[LogicalVariable] = patternPart.allVariables + variable
 
   override def isBounded: Boolean = patternPart.isBounded
+
+  override def isFixedLength: Boolean = patternPart.isFixedLength
 }
 
 sealed trait AnonymousPatternPart extends NonPrefixedPatternPart {
@@ -127,6 +131,7 @@ sealed trait AnonymousPatternPart extends NonPrefixedPatternPart {
 case class PathPatternPart(element: PatternElement) extends AnonymousPatternPart {
   override def position: InputPosition = element.position
   override def isBounded: Boolean = element.isBounded
+  override def isFixedLength: Boolean = element.isFixedLength
 }
 
 case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(val position: InputPosition)
@@ -139,6 +144,7 @@ case class ShortestPathsPatternPart(element: PatternElement, single: Boolean)(va
       "allShortestPaths"
 
   override def isBounded: Boolean = true
+  override def isFixedLength: Boolean = false
 }
 
 object PatternPart {
@@ -198,6 +204,8 @@ case class PathConcatenation(factors: Seq[PathFactor])(val position: InputPositi
   override def variable: Option[LogicalVariable] = None
 
   override def isBounded: Boolean = factors.forall(_.isBounded)
+
+  override def isFixedLength: Boolean = factors.forall(_.isFixedLength)
 }
 
 /**
@@ -224,6 +232,12 @@ case class QuantifiedPath(
     case IntervalQuantifier(_, upper) => upper.nonEmpty
     case PlusQuantifier()             => false
     case StarQuantifier()             => false
+  }
+
+  override def isFixedLength: Boolean = quantifier match {
+    case _: FixedQuantifier                                                         => true
+    case IntervalQuantifier(Some(lower), Some(upper)) if lower.value == upper.value => true
+    case _                                                                          => false
   }
 }
 
@@ -264,6 +278,8 @@ case class ParenthesizedPath(
   override def variable: Option[LogicalVariable] = None
 
   override def isBounded: Boolean = part.isBounded
+
+  override def isFixedLength: Boolean = part.isFixedLength
 }
 
 object ParenthesizedPath {
@@ -276,6 +292,7 @@ sealed abstract class PatternElement extends ASTNode {
   def allVariables: Set[LogicalVariable]
   def variable: Option[LogicalVariable]
   def isBounded: Boolean
+  def isFixedLength: Boolean
 
   def isSingleNode = false
 }
@@ -303,6 +320,8 @@ case class RelationshipChain(
 
   override def isBounded: Boolean = relationship.isBounded && element.isBounded
 
+  override def isFixedLength: Boolean = relationship.isSingleLength && element.isFixedLength && rightNode.isFixedLength
+
   @tailrec
   final def leftNode: NodePattern = element match {
     case node: NodePattern      => node
@@ -328,6 +347,8 @@ case class NodePattern(
   override def isSingleNode = true
 
   override def isBounded: Boolean = true
+
+  override def isFixedLength: Boolean = true
 }
 
 /**

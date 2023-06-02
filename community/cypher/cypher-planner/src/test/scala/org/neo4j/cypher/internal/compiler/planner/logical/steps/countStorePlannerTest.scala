@@ -348,14 +348,21 @@ class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSuppo
     countStorePlanner(plannerQuery, context) should notBeCountPlan
   }
 
-  test("should not plan a count for node count under shortest") {
+  test("should plan a count for simple node count under ALL SHORTEST") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ALL SHORTEST (n:Label)", "n")
 
-    countStorePlanner(plannerQuery, context) should notBeCountPlan
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("n")
   }
 
-  test("should not plan a count for rel count under shortest") {
+  test("should plan a count for simple rel count under ALL SHORTEST") {
+    val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
+    val plannerQuery = producePlannerQuery("MATCH ALL SHORTEST (:Label1)-[r:X]->()", "r")
+
+    countStorePlanner(plannerQuery, context) should beCountPlanFor("r")
+  }
+
+  test("should not plan a count for rel count under ANY SHORTEST") {
     val context = newMockedLogicalPlanningContextWithFakeAttributes(mock[PlanContext])
     val plannerQuery = producePlannerQuery("MATCH ANY SHORTEST (:Label1)-[r]->()", "r")
 
