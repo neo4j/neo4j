@@ -48,7 +48,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .allNodeScan("x")
       .build()
 
@@ -62,7 +62,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -177,7 +177,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE - 1L)
+      .top(Seq(Ascending(varFor("x"))), ArrayUtil.MAX_ARRAY_SIZE - 1L)
       .allNodeScan("x")
       .build()
 
@@ -193,7 +193,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE + 1L)
+      .top(Seq(Ascending(varFor("x"))), ArrayUtil.MAX_ARRAY_SIZE + 1L)
       .allNodeScan("x")
       .build()
 
@@ -209,7 +209,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top1WithTies(Seq(Ascending("x")))
+      .top1WithTies(Seq(Ascending(varFor("x"))))
       .allNodeScan("x")
       .build()
 
@@ -223,7 +223,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), ArrayUtil.MAX_ARRAY_SIZE - 1L)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), ArrayUtil.MAX_ARRAY_SIZE - 1L)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -237,7 +237,7 @@ abstract class ProfileMemoryTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), ArrayUtil.MAX_ARRAY_SIZE + 1L)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), ArrayUtil.MAX_ARRAY_SIZE + 1L)
       .input(variables = Seq("x", "y"))
       .build()
 

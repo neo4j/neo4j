@@ -400,7 +400,7 @@ trait ExpandAllWithOtherOperatorsTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
       .apply()
-      .|.sort(Seq(Ascending("a"), Ascending("b")))
+      .|.sort(Seq(Ascending(varFor("a")), Ascending(varFor("b"))))
       .|.expandAll("(b)-[:R]->(c)")
       .|.expandAll("(a)-[:R]->(b)")
       .|.argument("a")

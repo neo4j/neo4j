@@ -283,7 +283,7 @@ abstract class OptionalTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y", "z")
-      .sort(Seq(Ascending("z"), Descending("x"), Ascending("y")))
+      .sort(Seq(Ascending(varFor("z")), Descending(varFor("x")), Ascending(varFor("y"))))
       .apply()
       .|.optional("x")
       .|.expandAll("(x)-[:NEXT]->(z)")

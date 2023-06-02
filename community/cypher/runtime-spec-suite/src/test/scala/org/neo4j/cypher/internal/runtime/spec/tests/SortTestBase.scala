@@ -41,7 +41,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .sort(Seq(Ascending("x"), Ascending("y")))
+      .sort(Seq(Ascending(varFor("x")), Ascending(varFor("y"))))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -59,7 +59,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .input(nodes = Seq("x"))
       .build()
 
@@ -76,7 +76,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
-      .sort(Seq(Descending("a"), Ascending("b"), Descending("c")))
+      .sort(Seq(Descending(varFor("a")), Ascending(varFor("b")), Descending(varFor("c"))))
       .input(variables = Seq("a", "b", "c"))
       .build()
 
@@ -96,7 +96,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
       .apply()
-      .|.sort(Seq(Ascending("b")))
+      .|.sort(Seq(Ascending(varFor("b"))))
       .|.expandAll("(a)-->(b)")
       .|.argument("a")
       .allNodeScan("a")
@@ -120,8 +120,8 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(sortItems = Seq(Ascending("x")))
-      .sort(sortItems = Seq(Descending("x")))
+      .sort(sortItems = Seq(Ascending(varFor("x"))))
+      .sort(sortItems = Seq(Descending(varFor("x"))))
       .allNodeScan("x")
       .build()
 
@@ -138,9 +138,9 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(sortItems = Seq(Descending("x")))
+      .sort(sortItems = Seq(Descending(varFor("x"))))
       .apply()
-      .|.sort(sortItems = Seq(Descending("x")))
+      .|.sort(sortItems = Seq(Descending(varFor("x"))))
       .|.allNodeScan("x")
       .input(nodes = Seq("x"))
       .build()
@@ -156,7 +156,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .sort(Seq(Descending("y")))
+      .sort(Seq(Descending(varFor("y"))))
       .apply()
       .|.expandAll("(x)--(y)")
       .|.argument()
@@ -177,10 +177,10 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y", "z")
       .apply()
       .|.apply()
-      .|.|.sort(Seq(Ascending("z")))
+      .|.|.sort(Seq(Ascending(varFor("z"))))
       .|.|.expandAll("(y)--(z)")
       .|.|.argument()
-      .|.sort(Seq(Descending("y")))
+      .|.sort(Seq(Descending(varFor("y"))))
       .|.expandAll("(x)--(y)")
       .|.argument()
       .allNodeScan("x")
@@ -197,7 +197,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("A")
-      .sort(Seq(Ascending("A")))
+      .sort(Seq(Ascending(varFor("A"))))
       .distinct("x AS A")
       .input(variables = Seq("x"))
       .build()
@@ -215,7 +215,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("A")
-      .sort(Seq(Ascending("B")))
+      .sort(Seq(Ascending(varFor("B"))))
       .projection("A AS A", "A AS B")
       .distinct("x AS A")
       .input(variables = Seq("x"))
@@ -238,7 +238,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       .produceResults("keep")
       .prober(probe2)
       .nonFuseable() // Needed because of limitation in prober
-      .sort(Seq(Ascending("keep")))
+      .sort(Seq(Ascending(varFor("keep"))))
       .prober(probe1)
       .projection(project = Seq("keep as keep"), discard = Set("discard"))
       .projection("'bla' + a as keep", "'blö' + a as discard")
@@ -273,7 +273,7 @@ abstract class SortTestBase[CONTEXT <: RuntimeContext](
       .prober(probe2)
       // We discard here but should not remove because there's no eager buffer after this point
       .projection(project = Seq("0 as hi"), discard = Set("keep"))
-      .sort(Seq(Ascending("keep")))
+      .sort(Seq(Ascending(varFor("keep"))))
       .prober(probe1)
       .projection(project = Seq("keep as keep"), discard = Set("discard"))
       .projection("'bla' + a as keep", "'blö' + a as discard")

@@ -172,7 +172,7 @@ abstract class UndirectedRelationshipByIdSeekTestBase[CONTEXT <: RuntimeContext]
       .produceResults("x")
       .apply()
       .|.limit(limit)
-      .|.sort(Seq(Ascending("r"), Ascending("x")))
+      .|.sort(Seq(Ascending(varFor("r")), Ascending(varFor("x"))))
       .|.undirectedRelationshipByIdSeek("r", "x", "y", Set("a1"), relationships.head.getId)
       .allNodeScan("a1")
       .build()

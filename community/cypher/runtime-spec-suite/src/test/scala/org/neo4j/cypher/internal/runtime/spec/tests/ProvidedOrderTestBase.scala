@@ -156,7 +156,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("y.prop AS yprop").withLeveragedOrder()
         .apply().withLeveragedOrder()
         .|.cartesianProduct().withLeveragedOrder()
-        .|.|.sort(Seq(Descending("zprop")))
+        .|.|.sort(Seq(Descending(varFor("zprop"))))
         .|.|.projection("z.prop AS zprop")
         .|.|.allNodeScan("z")
         .|.nodeIndexOperator(
@@ -430,7 +430,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("num", "name").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
-        .|.sort(Seq(Ascending("name")))
+        .|.sort(Seq(Ascending(varFor("name"))))
         .|.projection("a.name AS name")
         .|.argument("a")
         .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
@@ -467,7 +467,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("num", "name").withLeveragedOrder()
         .projection("a.num AS num")
         .apply()
-        .|.top(Seq(Ascending("name")), 1)
+        .|.top(Seq(Ascending(varFor("name"))), 1)
         .|.projection("a.name AS name")
         .|.argument("a")
         .nodeIndexOperator("a:Honey(num >= 0)", indexOrder = indexOrder, getValue = _ => GetValue).withProvidedOrder(
@@ -627,7 +627,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .projection("y.prop AS yprop").withLeveragedOrder()
         .cartesianProduct().withLeveragedOrder()
         .|.cartesianProduct().withLeveragedOrder()
-        .|.|.sort(Seq(Descending("zprop")))
+        .|.|.sort(Seq(Descending(varFor("zprop"))))
         .|.|.projection("z.prop AS zprop")
         .|.|.allNodeScan("z")
         .|.nodeIndexOperator(
@@ -659,7 +659,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x > (rand() * $sizeHint)")
       .|.argument("x")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .unwind(s"range(0, $sizeHint) AS x")
       .argument()
       .build()
@@ -872,7 +872,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x > (rand() * $sizeHint)")
       .|.argument("x")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .unwind(s"range(0, $sizeHint) AS x")
       .argument()
       .build()
@@ -891,7 +891,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x > (rand() * $sizeHint)")
       .|.argument("x")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .unwind(s"range(0, $sizeHint) AS x")
       .argument()
       .build()
@@ -1051,7 +1051,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.sort(Seq(Ascending("y")))
+      .|.sort(Seq(Ascending(varFor("y"))))
       .|.unwind("[0] AS y") // Pipeline break
       .|.filter(s"x > 0.5")
       .|.argument("x")
@@ -1070,7 +1070,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.top1WithTies(Seq(Ascending("y")))
+      .|.top1WithTies(Seq(Ascending(varFor("y"))))
       .|.unwind("[0] AS y")
       .|.filter(s"x > 0.5")
       .|.argument("x")
@@ -1089,7 +1089,7 @@ trait NonParallelProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .apply()
-      .|.top(Seq(Ascending("y")), 1)
+      .|.top(Seq(Ascending(varFor("y"))), 1)
       .|.unwind("[rand(), rand()] AS y")
       .|.filter(s"x > 0.5")
       .|.argument("x")
@@ -1243,7 +1243,7 @@ trait CartesianProductProvidedOrderTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("prop", "yprop").withLeveragedOrder()
         .projection("z.prop AS prop").withLeveragedOrder()
         .cartesianProduct().withLeveragedOrder()
-        .|.sort(Seq(Descending("yprop")))
+        .|.sort(Seq(Descending(varFor("yprop"))))
         .|.projection("y.prop AS yprop")
         .|.allNodeScan("y")
         .nodeIndexOperator(

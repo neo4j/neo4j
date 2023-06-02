@@ -1013,7 +1013,7 @@ abstract class CreateTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("n")
-      .top(Seq(Ascending("n")), 0)
+      .top(Seq(Ascending(varFor("n"))), 0)
       .create(createNode("n"))
       .argument()
       .build(readOnly = false)

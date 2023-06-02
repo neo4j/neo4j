@@ -2156,7 +2156,13 @@ trait NonFusedWriteOperatorsDbHitsTestBase[CONTEXT <: RuntimeContext] extends Wr
       .zipWithIndex
       .map {
         case (Seq(a, b), i) =>
-          createRelationship(s"r$i", a.idName, "REL", b.idName, properties = Some(propertiesString(properties)))
+          createRelationship(
+            s"r$i",
+            a.variable.name,
+            "REL",
+            b.variable.name,
+            properties = Some(propertiesString(properties))
+          )
       }
       .toSeq
     // given empty db

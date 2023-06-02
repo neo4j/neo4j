@@ -188,7 +188,7 @@ abstract class MemoryManagementDisabledTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .input(variables = Seq("x"))
       .build()
 
@@ -214,7 +214,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .input(variables = Seq("x"))
       .build()
 
@@ -232,7 +232,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -249,7 +249,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -495,7 +495,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), 10)
+      .top(Seq(Ascending(varFor("x"))), 10)
       .input(variables = Seq("x"))
       .build()
 
@@ -549,7 +549,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE - 1L)
+      .top(Seq(Ascending(varFor("x"))), ArrayUtil.MAX_ARRAY_SIZE - 1L)
       .input(variables = Seq("x"))
       .build()
 
@@ -567,7 +567,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE)
+      .top(Seq(Ascending(varFor("x"))), ArrayUtil.MAX_ARRAY_SIZE)
       .input(variables = Seq("x"))
       .build()
 
@@ -585,7 +585,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), ArrayUtil.MAX_ARRAY_SIZE + 1L)
+      .top(Seq(Ascending(varFor("x"))), ArrayUtil.MAX_ARRAY_SIZE + 1L)
       .input(variables = Seq("x"))
       .build()
 
@@ -635,7 +635,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 100000)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 100000)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -652,7 +652,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     // given
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 100000)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 100000)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -953,7 +953,7 @@ abstract class MemoryManagementTestBase[CONTEXT <: RuntimeContext](
     val aaa = "a".repeat(2048)
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("i", "aaa")
-      .sort(Seq(Descending("i")))
+      .sort(Seq(Descending(varFor("i"))))
       .unwind(s"range(1, $sizeHint) as i")
       .projection(s"'$aaa' as aaa")
       .argument()
@@ -1054,7 +1054,7 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x")
       .transactionForeach()
       .|.emptyResult()
-      .|.sort(Seq(Ascending("y")))
+      .|.sort(Seq(Ascending(varFor("y"))))
       .|.unwind("range(1, 100000000) as y")
       .|.argument()
       .unwind("[1, 2] AS x")
@@ -1101,11 +1101,11 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x")
       .transactionForeach()
       .|.emptyResult()
-      .|.sort(Seq(Ascending("y")))
+      .|.sort(Seq(Ascending(varFor("y"))))
       .|.unwind(s"range(1, $rowCount) as y")
       .|.argument()
       .limit(1)
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .unwind(s"range(1, $rowCount) as x")
       .argument()
       .build(readOnly = false)
@@ -1114,7 +1114,7 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
     {
       val checkQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
-        .sort(Seq(Ascending("x")))
+        .sort(Seq(Ascending(varFor("x"))))
         .unwind(s"range(1, ${2 * rowCount}) as x") // When doubling the rows we should consume too much
         .argument()
         .build()
@@ -1132,11 +1132,11 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("x")
         .subqueryForeach()
         .|.emptyResult()
-        .|.sort(Seq(Ascending("y")))
+        .|.sort(Seq(Ascending(varFor("y"))))
         .|.unwind(s"range(1, $rowCount) as y")
         .|.argument()
         .limit(1)
-        .sort(Seq(Ascending("x")))
+        .sort(Seq(Ascending(varFor("x"))))
         .unwind(s"range(1, $rowCount) as x")
         .argument()
         .build(readOnly = false)
@@ -1235,12 +1235,12 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
       .|.emptyResult()
       .|.distinct("y AS y")
       .|.limit(100)
-      .|.sort(Seq(Ascending("y")))
+      .|.sort(Seq(Ascending(varFor("y"))))
       .|.unwind(s"range(1, $rowCount) as y")
       .|.argument()
       .distinct("x AS x")
       .limit(100)
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .unwind(s"range(1, $rowCount) as x")
       .argument()
       .build(readOnly = false)
@@ -1251,7 +1251,7 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("x")
         .distinct("x AS x")
         .limit(100)
-        .sort(Seq(Ascending("x")))
+        .sort(Seq(Ascending(varFor("x"))))
         .unwind(s"range(1, ${2 * rowCount}) as x") // When doubling the rows we should consume too much
         .argument()
         .build()
@@ -1271,12 +1271,12 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
         .|.emptyResult()
         .|.distinct("y AS y")
         .|.limit(100)
-        .|.sort(Seq(Ascending("y")))
+        .|.sort(Seq(Ascending(varFor("y"))))
         .|.unwind(s"range(1, $rowCount) as y")
         .|.argument()
         .distinct("x AS x")
         .limit(100)
-        .sort(Seq(Ascending("x")))
+        .sort(Seq(Ascending(varFor("x"))))
         .unwind(s"range(1, $rowCount) as x")
         .argument()
         .build(readOnly = false)
@@ -1305,11 +1305,11 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
       .produceResults("x")
       .transactionApply()
       .|.limit(1)
-      .|.sort(Seq(Ascending("y")))
+      .|.sort(Seq(Ascending(varFor("y"))))
       .|.unwind(s"range(1, $rowCount) as y")
       .|.argument()
       .limit(1)
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .unwind(s"range(1, $rowCount) as x")
       .argument()
       .build(readOnly = false)
@@ -1319,7 +1319,7 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
       val checkQuery = new LogicalQueryBuilder(this)
         .produceResults("x")
         .limit(1)
-        .sort(Seq(Ascending("x")))
+        .sort(Seq(Ascending(varFor("x"))))
         .unwind(s"range(1, ${2 * rowCount}) as x") // When doubling the rows we should consume too much
         .argument()
         .build()
@@ -1337,11 +1337,11 @@ trait TransactionForeachMemoryManagementTestBase[CONTEXT <: RuntimeContext] {
         .produceResults("x")
         .apply()
         .|.limit(1)
-        .|.sort(Seq(Ascending("y")))
+        .|.sort(Seq(Ascending(varFor("y"))))
         .|.unwind(s"range(1, $rowCount) as y")
         .|.argument()
         .limit(1)
-        .sort(Seq(Ascending("x")))
+        .sort(Seq(Ascending(varFor("x"))))
         .unwind(s"range(1, $rowCount) as x")
         .argument()
         .build(readOnly = false)

@@ -209,7 +209,7 @@ abstract class AntiConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "z")
       .antiConditionalApply("x")
       .|.limit(limit)
-      .|.sort(Seq(Ascending("z")))
+      .|.sort(Seq(Ascending(varFor("z"))))
       .|.expandAll("(y)-->(z)")
       .|.nodeByLabelScan("y", "A", IndexOrderNone, "x")
       .input(variables = Seq("x"))

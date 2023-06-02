@@ -250,7 +250,7 @@ abstract class ConditionalApplyTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x")
       .conditionalApply("x")
       .|.limit(10)
-      .|.sort(Seq(Ascending("y")))
+      .|.sort(Seq(Ascending(varFor("y"))))
       .|.expandAll("(x)-->(y)")
       .|.argument()
       .nodeByLabelScan("x", "A", IndexOrderNone)

@@ -158,7 +158,7 @@ abstract class UndirectedRelationshipByElementIdSeekTestBase[CONTEXT <: RuntimeC
       .produceResults("x")
       .apply()
       .|.limit(limit)
-      .|.sort(Seq(Ascending("r"), Ascending("x")))
+      .|.sort(Seq(Ascending(varFor("r")), Ascending(varFor("x"))))
       .|.undirectedRelationshipByElementIdSeek("r", "x", "y", Set("a1"), quote(relationships.head.getElementId))
       .allNodeScan("a1")
       .build()

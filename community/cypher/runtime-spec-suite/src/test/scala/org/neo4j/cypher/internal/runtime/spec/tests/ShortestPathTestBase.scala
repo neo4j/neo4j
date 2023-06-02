@@ -538,7 +538,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
       .apply()
-      .|.top(Seq(Ascending("length(p)")), 2)
+      .|.top(Seq(Ascending(varFor("length(p)"))), 2)
       .|.projection("length(p) AS `length(p)`")
       .|.shortestPath(
         "(a)-[rs*1..]-(b)",
@@ -591,7 +591,7 @@ abstract class ShortestPathTestBase[CONTEXT <: RuntimeContext](
       .produceResults("a", "b")
       .projection("nodes(p) AS nodes")
       .apply()
-      .|.top(Seq(Ascending("length(p)")), 2)
+      .|.top(Seq(Ascending(varFor("length(p)"))), 2)
       .|.projection("length(p) AS `length(p)`")
       .|.shortestPath(
         "(a)-[rs*1..]-(b)",

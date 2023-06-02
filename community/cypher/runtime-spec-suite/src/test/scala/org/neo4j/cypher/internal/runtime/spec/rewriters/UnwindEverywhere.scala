@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.runtime.spec.rewriters
 
 import org.neo4j.cypher.internal.expressions.FunctionInvocation
 import org.neo4j.cypher.internal.expressions.FunctionName
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.UnsignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.expressions.functions.Range
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
@@ -54,7 +55,7 @@ case class UnwindEverywhere(
       val one = UnsignedDecimalIntegerLiteral("1")(pos)
       val range =
         FunctionInvocation(FunctionName(Range.name)(pos), distinct = false, args = IndexedSeq(one, one, one))(pos)
-      UnwindCollection(plan, ctx.anonymousVariableNameGenerator.nextName, range)(ctx.idGen)
+      UnwindCollection(plan, varFor(ctx.anonymousVariableNameGenerator.nextName), range)(ctx.idGen)
     }
   )
 

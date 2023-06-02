@@ -151,7 +151,7 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .sort(Seq(Ascending("y")))
+      .sort(Seq(Ascending(varFor("y"))))
       .filter("id(y) >= 0")
       .union()
       .|.expand("(z)-->(y)")
@@ -793,11 +793,11 @@ abstract class UnionTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .union()
-      .|.sort(Seq(Ascending("x")))
+      .|.sort(Seq(Ascending(varFor("x"))))
       .|.nodeByLabelScan("x", "B", IndexOrderNone)
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .nodeByLabelScan("x", "A", IndexOrderNone)
       .build()
 

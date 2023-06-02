@@ -75,7 +75,7 @@ object LogicalQueryGenerator {
             logicalPlan,
             "<<queryText>>",
             readOnly = true,
-            logicalPlan.availableSymbols.toArray,
+            logicalPlan.availableSymbols.map(_.name).toArray,
             state.semanticTable,
             effectiveCardinalities,
             providedOrders,

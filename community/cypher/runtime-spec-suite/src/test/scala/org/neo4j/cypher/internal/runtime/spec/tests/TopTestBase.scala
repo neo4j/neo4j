@@ -46,7 +46,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .top(Seq(Ascending("x"), Ascending("y")), 10)
+      .top(Seq(Ascending(varFor("x")), Ascending(varFor("y"))), 10)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -65,7 +65,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(Seq(Ascending("x")), limit)
+      .top(Seq(Ascending(varFor("x"))), limit)
       .input(nodes = Seq("x"))
       .build()
 
@@ -83,7 +83,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
-      .top(Seq(Descending("a"), Ascending("b"), Descending("c")), limit)
+      .top(Seq(Descending(varFor("a")), Ascending(varFor("b")), Descending(varFor("c"))), limit)
       .input(variables = Seq("a", "b", "c"))
       .build()
 
@@ -105,7 +105,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
       .apply()
-      .|.top(Seq(Ascending("b")), limit)
+      .|.top(Seq(Ascending(varFor("b"))), limit)
       .|.expandAll("(a)-->(b)")
       .|.argument("a")
       .allNodeScan("a")
@@ -129,7 +129,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
-      .top(Seq(Ascending("a")), limit)
+      .top(Seq(Ascending(varFor("a"))), limit)
       .input(variables = Seq("a"))
       .build()
 
@@ -147,7 +147,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
-      .top(Seq(Ascending("a")), limit)
+      .top(Seq(Ascending(varFor("a"))), limit)
       .input(variables = Seq("a"))
       .build()
 
@@ -164,7 +164,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
-      .top(Seq(Ascending("a")), limit)
+      .top(Seq(Ascending(varFor("a"))), limit)
       .input(variables = Seq("a"))
       .build()
 
@@ -182,7 +182,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
-      .top(Seq(Ascending("a")), limit)
+      .top(Seq(Ascending(varFor("a"))), limit)
       .input(variables = Seq("a"))
       .build()
 
@@ -200,7 +200,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
-      .top(Seq(Ascending("a")), limit)
+      .top(Seq(Ascending(varFor("a"))), limit)
       .input(variables = Seq("a"))
       .build()
 
@@ -220,8 +220,8 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top(sortItems = Seq(Ascending("x")), limit2)
-      .top(sortItems = Seq(Descending("x")), limit1)
+      .top(sortItems = Seq(Ascending(varFor("x"))), limit2)
+      .top(sortItems = Seq(Descending(varFor("x"))), limit1)
       .allNodeScan("x")
       .build()
 
@@ -244,9 +244,9 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .top(sortItems = Seq(Ascending("y")), limit2)
+      .top(sortItems = Seq(Ascending(varFor("y"))), limit2)
       .apply()
-      .|.top(sortItems = Seq(Descending("y")), limit1)
+      .|.top(sortItems = Seq(Descending(varFor("y"))), limit1)
       .|.expand("(x)-[:R]->(y)")
       .|.argument("x")
       .nodeByLabelScan("x", "A", IndexOrderNone)
@@ -274,7 +274,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .top(Seq(Descending("y"), Ascending("x")), limit)
+      .top(Seq(Descending(varFor("y")), Ascending(varFor("x"))), limit)
       .apply()
       .|.expandAll("(x)--(y)")
       .|.argument()
@@ -309,10 +309,10 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y", "z")
       .apply()
       .|.apply()
-      .|.|.top(Seq(Ascending("z")), limit2)
+      .|.|.top(Seq(Ascending(varFor("z"))), limit2)
       .|.|.expandAll("(y)--(z)")
       .|.|.argument()
-      .|.top(Seq(Descending("y")), limit1)
+      .|.top(Seq(Descending(varFor("y"))), limit1)
       .|.expandAll("(x)--(y)")
       .|.argument()
       .nodeByLabelScan("x", "A", IndexOrderNone)
@@ -354,7 +354,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
       .produceResults("keep")
       .prober(probe2)
       .nonFuseable() // Needed because of limitation in prober
-      .top(Seq(Ascending("keep")), limit)
+      .top(Seq(Ascending(varFor("keep"))), limit)
       .prober(probe1)
       .projection(project = Seq("keep as keep"), discard = Set("discard"))
       .projection("'bla' + a as keep", "'blö' + a as discard")
@@ -389,7 +389,7 @@ abstract class TopTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("keep")
       .prober(probe2)
-      .top(Seq(Ascending("keep")), limit)
+      .top(Seq(Ascending(varFor("keep"))), limit)
       .prober(probe1)
       .projection(project = Seq("keep as keep"), discard = Set("discard"))
       .projection("'bla' + a as keep", "'blö' + a as discard")

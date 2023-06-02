@@ -438,7 +438,7 @@ abstract class ProfileTimeTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .allNodeScan("x")
       .build()
 
@@ -623,7 +623,7 @@ trait NonParallelProfileTimeTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
       .input(variables = Seq("x", "y"))
       .build()
 

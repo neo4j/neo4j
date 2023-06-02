@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.expressions.CollectAll
 import org.neo4j.cypher.internal.expressions.MapExpression
 import org.neo4j.cypher.internal.expressions.Property
 import org.neo4j.cypher.internal.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.expressions.Variable
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.ProduceResult
@@ -66,16 +67,12 @@ case class CollectUnwindOnTop(
           val collectedRowsVar = Variable(collectedRowsName)(pos)
           val unwoundRowName = ctx.anonymousVariableNameGenerator.nextName
           val unwoundRowVar = Variable(unwoundRowName)(pos)
-          val rowMapExpr = MapExpression(
-            columns.map { c =>
-              PropertyKeyName(c)(pos) -> Variable(c)(pos)
-            }
-          )(pos)
+          val rowMapExpr = MapExpression(columns.map { c => PropertyKeyName(c.name)(pos) -> c })(pos)
           val collectExpr = CollectAll(rowMapExpr)(pos)
-          val aggregation = Aggregation(source, Map.empty, Map(collectedRowsName -> collectExpr))(ctx.idGen)
-          val unwind = UnwindCollection(aggregation, unwoundRowName, collectedRowsVar)(ctx.idGen)
+          val aggregation = Aggregation(source, Map.empty, Map(varFor(collectedRowsName) -> collectExpr))(ctx.idGen)
+          val unwind = UnwindCollection(aggregation, varFor(unwoundRowName), collectedRowsVar)(ctx.idGen)
           val projections = columns.map { c =>
-            c -> Property(unwoundRowVar, PropertyKeyName(c)(pos))(pos)
+            c -> Property(unwoundRowVar, PropertyKeyName(c.name)(pos))(pos)
           }.toMap
           val project = Projection(unwind, discardSymbols = Set.empty, projections)(ctx.idGen)
           ProduceResult(project, columns)(SameId(pr.id))

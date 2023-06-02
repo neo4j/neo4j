@@ -875,7 +875,7 @@ abstract class ProfileRowsTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
       .filter(s"x.prop >= ${sizeHint / 2}")
-      .sort(Seq(Ascending("x")))
+      .sort(Seq(Ascending(varFor("x"))))
       .allNodeScan("x")
       .build()
 
@@ -2263,7 +2263,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .partialSort(Seq(Ascending("x")), Seq(Ascending("y")))
+      .partialSort(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -2289,7 +2289,7 @@ trait NonParallelProfileRowsTestBase[CONTEXT <: RuntimeContext] {
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), limit)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), limit)
       .input(nodes = Seq("x", "y"))
       .build()
 

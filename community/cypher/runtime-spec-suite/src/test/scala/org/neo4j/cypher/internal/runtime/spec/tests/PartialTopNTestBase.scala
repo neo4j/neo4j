@@ -59,7 +59,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 0)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 0)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -75,7 +75,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 5)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 5)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -91,7 +91,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 5, 17)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 5, 17)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -108,7 +108,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -126,7 +126,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit, skip)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -143,7 +143,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -161,7 +161,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit, skip)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -180,7 +180,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -199,7 +199,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -218,7 +218,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit, skip)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -238,7 +238,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit, skip)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -258,7 +258,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit, skip)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -278,7 +278,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit, skip)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -298,7 +298,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -317,7 +317,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -335,7 +335,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 1L + Int.MaxValue)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 1L + Int.MaxValue)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -350,7 +350,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .partialTop(Seq(Ascending("x")), Seq(Ascending("y")), 5)
+      .partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), 5)
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -384,7 +384,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "x", "y")
       .apply()
-      .|.partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit)
+      .|.partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit)
       .|.projection("b.x AS x", "b.y AS y")
       .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
@@ -423,7 +423,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "x", "y")
       .apply()
-      .|.partialTop(Seq(Ascending("x")), Seq(Ascending("y")), topLimit, skip)
+      .|.partialTop(Seq(Ascending(varFor("x"))), Seq(Ascending(varFor("y"))), topLimit, skip)
       .|.projection("b.x AS x", "b.y AS y")
       .|.nodeIndexOperator("b:B(x)", indexOrder = IndexOrderAscending, argumentIds = Set("a"))
       .nodeByLabelScan("a", "A", IndexOrderNone)
@@ -451,7 +451,7 @@ abstract class PartialTopNTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
       .apply()
-      .|.partialTop(Seq(Ascending("b")), Seq(Ascending("c")), topLimit)
+      .|.partialTop(Seq(Ascending(varFor("b"))), Seq(Ascending(varFor("c"))), topLimit)
       .|.unwind("range(a, b, -1) AS c")
       .|.unwind("range(0, a) AS b")
       .|.argument("a")

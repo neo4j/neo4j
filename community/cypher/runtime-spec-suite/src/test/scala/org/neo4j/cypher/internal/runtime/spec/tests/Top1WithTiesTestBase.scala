@@ -43,7 +43,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
 
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .top1WithTies(Seq(Ascending("x"), Ascending("y")))
+      .top1WithTies(Seq(Ascending(varFor("x")), Ascending(varFor("y"))))
       .input(variables = Seq("x", "y"))
       .build()
 
@@ -61,7 +61,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top1WithTies(Seq(Ascending("x")))
+      .top1WithTies(Seq(Ascending(varFor("x"))))
       .input(nodes = Seq("x"))
       .build()
 
@@ -78,7 +78,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b", "c")
-      .top1WithTies(Seq(Descending("a"), Ascending("b"), Descending("c")))
+      .top1WithTies(Seq(Descending(varFor("a")), Ascending(varFor("b")), Descending(varFor("c"))))
       .input(variables = Seq("a", "b", "c"))
       .build()
 
@@ -99,7 +99,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a", "b")
       .apply()
-      .|.top1WithTies(Seq(Ascending("b")))
+      .|.top1WithTies(Seq(Ascending(varFor("b"))))
       .|.expandAll("(a)-->(b)")
       .|.argument("a")
       .allNodeScan("a")
@@ -122,7 +122,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("a")
-      .top1WithTies(Seq(Ascending("a")))
+      .top1WithTies(Seq(Ascending(varFor("a"))))
       .input(variables = Seq("a"))
       .build()
 
@@ -140,8 +140,8 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x")
-      .top1WithTies(sortItems = Seq(Ascending("x")))
-      .top1WithTies(sortItems = Seq(Descending("x")))
+      .top1WithTies(sortItems = Seq(Ascending(varFor("x"))))
+      .top1WithTies(sortItems = Seq(Descending(varFor("x"))))
       .allNodeScan("x")
       .build()
 
@@ -161,9 +161,9 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("y")
-      .top1WithTies(sortItems = Seq(Ascending("y")))
+      .top1WithTies(sortItems = Seq(Ascending(varFor("y"))))
       .apply()
-      .|.top1WithTies(sortItems = Seq(Descending("y")))
+      .|.top1WithTies(sortItems = Seq(Descending(varFor("y"))))
       .|.expand("(x)-[:R]->(y)")
       .|.argument("x")
       .nodeByLabelScan("x", "A", IndexOrderNone)
@@ -184,7 +184,7 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
     // when
     val logicalQuery = new LogicalQueryBuilder(this)
       .produceResults("x", "y")
-      .top1WithTies(Seq(Descending("y"), Ascending("x")))
+      .top1WithTies(Seq(Descending(varFor("y")), Ascending(varFor("x"))))
       .apply()
       .|.expandAll("(x)--(y)")
       .|.argument()
@@ -216,10 +216,10 @@ abstract class Top1WithTiesTestBase[CONTEXT <: RuntimeContext](
       .produceResults("x", "y", "z")
       .apply()
       .|.apply()
-      .|.|.top1WithTies(Seq(Ascending("z")))
+      .|.|.top1WithTies(Seq(Ascending(varFor("z"))))
       .|.|.expandAll("(y)--(z)")
       .|.|.argument()
-      .|.top1WithTies(Seq(Descending("y")))
+      .|.top1WithTies(Seq(Descending(varFor("y"))))
       .|.expandAll("(x)--(y)")
       .|.argument()
       .nodeByLabelScan("x", "A", IndexOrderNone)
