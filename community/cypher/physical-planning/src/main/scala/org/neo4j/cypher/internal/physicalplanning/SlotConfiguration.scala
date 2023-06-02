@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.physicalplanning
 import org.eclipse.collections.api.list.primitive.MutableIntList
 import org.eclipse.collections.impl.list.mutable.primitive.IntArrayList
 import org.neo4j.cypher.internal.expressions.ASTCachedProperty
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.macros.AssertMacros
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.ApplyPlanSlotKey
 import org.neo4j.cypher.internal.physicalplanning.SlotConfiguration.CachedPropertySlotKey
@@ -51,6 +52,11 @@ object SlotConfiguration {
 
   object Size {
     val zero: Size = Size(nLongs = 0, nReferences = 0)
+  }
+
+  final def isRefSlotAndNotAlias(slots: SlotConfiguration, k: LogicalVariable): Boolean = {
+    !slots.isAlias(k.name) &&
+    slots.get(k.name).forall(_.isInstanceOf[RefSlot])
   }
 
   final def isRefSlotAndNotAlias(slots: SlotConfiguration, k: String): Boolean = {
@@ -114,6 +120,10 @@ class SlotConfiguration private (
 
   def size(): SlotConfiguration.Size = SlotConfiguration.Size(numberOfLongs, numberOfReferences)
 
+  def addAlias(newKey: LogicalVariable, existingKey: String): SlotConfiguration = {
+    addAlias(newKey.name, existingKey)
+  }
+
   def addAlias(newKey: String, existingKey: String): SlotConfiguration = {
     require(!finalized)
     val slot = slots.getOrElse(
@@ -147,6 +157,7 @@ class SlotConfiguration private (
 
   def getAliasesFor(key: String): Set[String] = slotAliases.get(key).map(_.toSet).getOrElse(Set.empty)
 
+  def apply(key: LogicalVariable): Slot = slots.apply(VariableSlotKey(key.name))
   def apply(key: String): Slot = slots.apply(VariableSlotKey(key))
 
   def nameOfSlot(offset: Int, longSlot: Boolean): Option[String] = slots.collectFirst {
@@ -154,10 +165,11 @@ class SlotConfiguration private (
     case (VariableSlotKey(name), RefSlot(o, _, _)) if !longSlot && o == offset && !isAlias(name) => name
   }
 
-  def filterSlots[U](f: ((SlotKey, Slot)) => Boolean): Iterable[Slot] = {
+  def filterSlots(f: ((SlotKey, Slot)) => Boolean): Iterable[Slot] = {
     slots.filter(f).values
   }
 
+  def get(key: LogicalVariable): Option[Slot] = slots.get(VariableSlotKey(key.name))
   def get(key: String): Option[Slot] = slots.get(VariableSlotKey(key))
 
   def add(key: String, slot: Slot): Unit = {
@@ -228,6 +240,10 @@ class SlotConfiguration private (
     }
   }
 
+  def newLong(key: LogicalVariable, nullable: Boolean, typ: CypherType): SlotConfiguration = {
+    newLong(key.name, nullable, typ)
+  }
+
   def newLong(key: String, nullable: Boolean, typ: CypherType): SlotConfiguration = {
     AssertMacros.checkOnlyWhenAssertionsAreEnabled(
       typ == CTNode || typ == CTRelationship,
@@ -279,6 +295,10 @@ class SlotConfiguration private (
     slots.put(OuterNestedApplyPlanSlotKey(applyPlanId), LongSlot(numberOfLongs, nullable = false, CTAny))
     numberOfLongs += 1
     this
+  }
+
+  def newReference(key: LogicalVariable, nullable: Boolean, typ: CypherType): SlotConfiguration = {
+    newReference(key.name, nullable, typ)
   }
 
   def newReference(key: String, nullable: Boolean, typ: CypherType): SlotConfiguration = {
@@ -342,11 +362,15 @@ class SlotConfiguration private (
     this
   }
 
+  def getReferenceOffsetFor(variable: LogicalVariable): Int = getReferenceOffsetFor(variable.name)
+
   def getReferenceOffsetFor(name: String): Int = slots.get(VariableSlotKey(name)) match {
     case Some(s: RefSlot) => s.offset
     case Some(s) => throw new InternalException(s"Uh oh... There was no reference slot for `$name`. It was a $s")
     case _       => throw new InternalException(s"Uh oh... There was no slot for `$name`")
   }
+
+  def getLongOffsetFor(variable: LogicalVariable): Int = getLongOffsetFor(variable.name)
 
   def getLongOffsetFor(name: String): Int = slots.get(VariableSlotKey(name)) match {
     case Some(s: LongSlot) => s.offset
@@ -531,7 +555,7 @@ class SlotConfiguration private (
     cachedPropertyOffsets.forEach(offset => onOffset(offset))
   }
 
-  def foreachCachedSlot[U](onCachedProperty: ((ASTCachedProperty.RuntimeKey, RefSlot)) => Unit): Unit = {
+  def foreachCachedSlot(onCachedProperty: ((ASTCachedProperty.RuntimeKey, RefSlot)) => Unit): Unit = {
     slots.iterator.foreach {
       case (CachedPropertySlotKey(key), slot: RefSlot) => onCachedProperty(key -> slot)
       case _                                           => // do nothing
@@ -554,10 +578,10 @@ class SlotConfiguration private (
     Objects.hash(slots, numberOfLongs, numberOfReferences, markedDiscarded)
   }
 
-  override def toString(): String = s"SlotConfiguration${System.identityHashCode(this)}(" +
+  override def toString: String = s"SlotConfiguration${System.identityHashCode(this)}(" +
     s"longs=$numberOfLongs, " +
     s"refs=$numberOfReferences, " +
-    s"discarded=${discardedRefSlotOffsets.mkString(",")}, " +
+    s"discarded=${discardedRefSlotOffsets().mkString(",")}, " +
     s"markedDiscarded=${markedDiscarded.mkString(",")}, " +
     s"slots=$slots)"
 
@@ -591,7 +615,7 @@ class SlotConfiguration private (
    * Marks that a slot can be discarded in next copy.
    */
   def markDiscarded(key: String): Unit = {
-    // We only discard ref slots that are not an alias and has ano liases
+    // We only discard ref slots that are not an alias and has ano aliases
     if (slotAliases.get(key).exists(_.isEmpty)) {
       get(key) match {
         case Some(RefSlot(offset, _, _)) => markedDiscarded += offset
@@ -599,6 +623,8 @@ class SlotConfiguration private (
       }
     }
   }
+
+  def markDiscarded(key: LogicalVariable): Unit = markDiscarded(key.name)
 
   private def markNotDiscarded(slot: Slot): Unit = {
     if (!slot.isLongSlot && markedDiscarded.contains(slot.offset)) {

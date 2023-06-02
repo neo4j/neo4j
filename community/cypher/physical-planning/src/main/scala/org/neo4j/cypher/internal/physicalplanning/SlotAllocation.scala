@@ -33,10 +33,10 @@ import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.expressions.Null
 import org.neo4j.cypher.internal.expressions.PathExpression
 import org.neo4j.cypher.internal.expressions.RelationshipChain
-import org.neo4j.cypher.internal.ir.CreatePattern
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable
+import org.neo4j.cypher.internal.expressions.UnPositionedVariable.varFor
 import org.neo4j.cypher.internal.ir.HasHeaders
 import org.neo4j.cypher.internal.ir.NoHeaders
-import org.neo4j.cypher.internal.ir.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.logical.plans.AbstractSelectOrSemiApply
 import org.neo4j.cypher.internal.logical.plans.AbstractSemiApply
 import org.neo4j.cypher.internal.logical.plans.Aggregation
@@ -143,6 +143,8 @@ import org.neo4j.cypher.internal.logical.plans.Union
 import org.neo4j.cypher.internal.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.logical.plans.ValueHashJoin
 import org.neo4j.cypher.internal.logical.plans.VarExpand
+import org.neo4j.cypher.internal.logical.plans.set.CreatePattern
+import org.neo4j.cypher.internal.logical.plans.shortest.ShortestRelationshipPattern
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ApplyPlans
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.ArgumentSizes
 import org.neo4j.cypher.internal.physicalplanning.PhysicalPlanningAttributes.NestedPlanArgumentConfigurations
@@ -237,8 +239,7 @@ object SlotAllocation {
 
   final val LOAD_CSV_METADATA_KEY: String = "csv"
 
-  final val TRAIL_STATE_METADATA_KEY = "trailState"
-
+  final val TRAIL_STATE_METADATA_KEY: String = "trailState"
 }
 
 /**
@@ -668,7 +669,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         slots.newReference(leaf.idName, false, CTInteger)
 
       case leaf: CommandLogicalPlan =>
-        for (v <- leaf.availableSymbols ++ leaf.defaultColumns.map(_.name))
+        for (v <- leaf.availableSymbols.map(_.name) ++ leaf.defaultColumns.map(_.name))
           slots.newReference(v, false, CTAny)
 
       case Input(nodes, relationships, variables, nullableInput) =>
@@ -758,10 +759,10 @@ class SingleQuerySlotAllocator private[physicalplanning] (
 
       case p: ProjectingPlan =>
         p.projectExpressions foreach {
-          case (key, internal.expressions.Variable(ident)) if key == ident =>
+          case (key, internal.expressions.Variable(ident)) if key.name == ident =>
           // it's already there. no need to add a new slot for it
 
-          case (newKey, internal.expressions.Variable(ident)) if newKey != ident =>
+          case (newKey, internal.expressions.Variable(ident)) if newKey.name != ident =>
             slots.addAlias(newKey, ident)
 
           case (key, _: PathExpression) =>
@@ -797,9 +798,9 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         expand.depthName.foreach(name => slots.newReference(name, nullable, CTInteger))
 
       case c: Create =>
-        c.nodes.foreach(n => slots.newLong(n.idName, nullable = false, CTNode))
+        c.nodes.foreach(n => slots.newLong(n.variable, nullable = false, CTNode))
         c.relationships.foreach(r =>
-          slots.newLong(r.idName, nullable = config.lenientCreateRelationship, CTRelationship)
+          slots.newLong(r.variable, nullable = config.lenientCreateRelationship, CTRelationship)
         )
 
       case _: EmptyResult |
@@ -863,14 +864,14 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         recordArgument(lp)
 
       case sp: FindShortestPaths =>
-        val rel = sp.shortestRelationship.expr.element match {
+        val rel = sp.pattern.expr.element match {
           case internal.expressions.RelationshipChain(_, relationshipPattern, _) =>
             relationshipPattern
           case _ =>
             throw new IllegalStateException("This should be caught during semantic checking")
         }
 
-        val pathName = sp.shortestRelationship.name.get // Should always be given anonymous name
+        val pathName = sp.pattern.name.get // Should always be given anonymous name
         val relsName = rel.variable.get.name // Should always be given anonymous name
 
         slots.newReference(pathName, nullable, CTPath)
@@ -884,8 +885,8 @@ class SingleQuerySlotAllocator private[physicalplanning] (
       case Foreach(_, variableName, listExpression, mutations) =>
         mutations.foreach {
           case c: CreatePattern =>
-            c.nodes.foreach(n => slots.newLong(n.idName, false, CTNode))
-            c.relationships.foreach(r => slots.newLong(r.idName, false, CTRelationship))
+            c.nodes.foreach(n => slots.newLong(n.variable, false, CTNode))
+            c.relationships.foreach(r => slots.newLong(r.variable, false, CTRelationship))
           case _ =>
         }
         val typeGetter = semanticTable.typeFor(listExpression)
@@ -983,7 +984,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         lhs.foreachSlotAndAliasesOrdered {
           case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
             // If the column is one of the join columns there is no need to add it again
-            if (!nodes(key)) {
+            if (!nodes.contains(varFor(key))) {
               result.add(key, slot.asNullable)
             }
             aliases.foreach(alias => result.addAlias(alias, key))
@@ -1011,7 +1012,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         rhs.foreachSlotAndAliasesOrdered {
           case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
             // If the column is one of the join columns there is no need to add it again
-            if (!nodes(key)) {
+            if (!nodes(varFor(key))) {
               result.add(key, slot.asNullable)
             }
             aliases.foreach(alias => result.addAlias(alias, key))
@@ -1039,7 +1040,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
         rhs.foreachSlotAndAliasesOrdered {
           case SlotWithKeyAndAliases(VariableSlotKey(key), slot, aliases) =>
             // If the column is one of the join columns there is no need to add it again
-            if (!nodes(key)) {
+            if (!nodes(varFor(key))) {
               result.add(key, slot)
             }
             aliases.foreach(alias => result.addAlias(alias, key))
@@ -1185,9 +1186,10 @@ class SingleQuerySlotAllocator private[physicalplanning] (
           // We need to make slots for variables inside the CALL {...} nullable,
           // e.g. in CALL { CREATE p: Person(age : ...) RETURN p }, that's p,
           // because we want to see a NULL if one of the transactions failed
-          t.right.availableSymbols.foreach { symbol =>
-            rhs.get(symbol).foreach { slot =>
-              rhs.replaceExistingSlot(symbol, slot, slot.asNullable)
+          val nullableVars = t.right.availableSymbols.map(_.name) -- t.left.availableSymbols.map(_.name)
+          nullableVars.foreach { name =>
+            rhs.get(name).foreach { slot =>
+              rhs.replaceExistingSlot(name, slot, slot.asNullable)
             }
           }
         }
@@ -1237,7 +1239,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
     }
 
   private def addGroupingSlots(
-    groupingExpressions: Map[String, Expression],
+    groupingExpressions: Map[LogicalVariable, Expression],
     incoming: SlotConfiguration,
     outgoing: SlotConfiguration
   ): Unit = {
@@ -1263,7 +1265,7 @@ class SingleQuerySlotAllocator private[physicalplanning] (
   ) = {
     val maybePathName = shortestRelationshipPattern.name
     val part = shortestRelationshipPattern.expr
-    val pathName = maybePathName.getOrElse(anonymousVariableNameGenerator.nextName)
+    val pathName = maybePathName.getOrElse(varFor(anonymousVariableNameGenerator.nextName))
     val rel = part.element match {
       case RelationshipChain(_, relationshipPattern, _) =>
         relationshipPattern

@@ -20,10 +20,14 @@
 package org.neo4j.cypher.internal.physicalplanning.ast
 
 import org.neo4j.cypher.internal.expressions.Expression
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.util.InputPosition
 
-case class TrailRelationshipUniqueness(trailStateMetadataSlotKey: String, trailId: Int, innerRelationship: String)
-    extends Expression {
+case class TrailRelationshipUniqueness(
+  trailStateMetadataSlotKey: String,
+  trailId: Int,
+  innerRelationship: LogicalVariable
+) extends Expression {
 
   override def isConstantForQuery: Boolean = false
 

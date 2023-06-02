@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.physicalplanning
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.IndexedProperty
 
 object SlottedIndexedProperty {
 
-  def apply(node: String, property: IndexedProperty, slots: SlotConfiguration): SlottedIndexedProperty = {
+  def apply(node: LogicalVariable, property: IndexedProperty, slots: SlotConfiguration): SlottedIndexedProperty = {
     val maybeOffset =
       if (property.shouldGetValue) {
         Some(slots.getCachedPropertyOffsetFor(property.asCachedProperty(node)))

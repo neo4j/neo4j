@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.compiler.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.expressions.SemanticDirection.INCOMING
 import org.neo4j.cypher.internal.ir.CreateNode
+import org.neo4j.cypher.internal.logical.builder.AbstractLogicalPlanBuilder.createNode
 import org.neo4j.cypher.internal.logical.plans.Aggregation
 import org.neo4j.cypher.internal.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.logical.plans.Apply
@@ -53,7 +54,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
 
   test("zero size argument for single all nodes scan") {
     // given
-    val plan = AllNodesScan("x", Set.empty)
+    val plan = AllNodesScan(varFor("x"), Set.empty)
 
     // when
     val arguments = SlotAllocation.allocateSlots(
@@ -72,8 +73,8 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
 
   test("zero size argument for only leaf operator") {
     // given
-    val leaf = AllNodesScan("x", Set.empty)
-    val expand = Expand(leaf, "x", INCOMING, Seq.empty, "z", "r", ExpandAll)
+    val leaf = AllNodesScan(varFor("x"), Set.empty)
+    val expand = Expand(leaf, varFor("x"), INCOMING, Seq.empty, varFor("z"), varFor("r"), ExpandAll)
 
     // when
     val arguments = SlotAllocation.allocateSlots(
@@ -343,7 +344,7 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val lhs = pipe(leaf1, 1, 2, "lhsLong", "lhsRef")
     val leaf2 = leaf()
     val rhs = pipe(leaf2, 2, 2, "rhsLong", "rhsRef")
-    val distinct = Distinct(rhs, Map("rhsLong0" -> varFor("rhsLong0"), "rhsRef1" -> varFor("rhsRef1")))
+    val distinct = Distinct(rhs, Map(varFor("rhsLong0") -> varFor("rhsLong0"), varFor("rhsRef1") -> varFor("rhsRef1")))
     val plan = applyRight(lhs, distinct)
 
     // when
@@ -382,7 +383,8 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     val lhs = pipe(leaf1, 1, 2, "lhsLong", "lhsRef")
     val leaf2 = leaf()
     val rhs = pipe(leaf2, 2, 2, "rhsLong", "rhsRef")
-    val aggregation = Aggregation(rhs, Map("rhsLong0" -> varFor("rhsLong0")), Map("rhsRef1" -> varFor("rhsRef1")))
+    val aggregation =
+      Aggregation(rhs, Map(varFor("rhsLong0") -> varFor("rhsLong0")), Map(varFor("rhsRef1") -> varFor("rhsRef1")))
     val plan = applyRight(lhs, aggregation)
 
     // when
@@ -419,11 +421,11 @@ class SlotAllocationArgumentsTest extends CypherFunSuite with LogicalPlanningTes
     var curr: LogicalPlan =
       Create(
         source,
-        (0 until nLongs).map(i => CreateNode(longPrefix + i, Set.empty, None))
+        (0 until nLongs).map(i => createNode(longPrefix + i))
       )
 
     for (i <- 0 until nRefs) {
-      curr = UnwindCollection(curr, refPrefix + i, listOfInt(1))
+      curr = UnwindCollection(curr, varFor(refPrefix + i), listOfInt(1))
     }
     curr
   }

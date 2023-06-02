@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.physicalplanning
 
+import org.neo4j.cypher.internal.expressions.LogicalVariable
 import org.neo4j.cypher.internal.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.logical.plans.LogicalPlanExtension
 import org.neo4j.cypher.internal.util.attribution.SequentialIdGen
@@ -163,7 +164,7 @@ class TreeBuilderTest extends CypherFunSuite {
   case class StringPlan(str: String, override val lhs: Option[StringPlan], override val rhs: Option[StringPlan])
       extends LogicalPlanExtension(idGen) {
 
-    override def availableSymbols: Set[String] = ???
+    override def availableSymbols: Set[LogicalVariable] = ???
   }
 
   sealed trait CallBack

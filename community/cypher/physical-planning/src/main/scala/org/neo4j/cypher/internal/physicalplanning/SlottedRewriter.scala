@@ -123,6 +123,7 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
   }
 
   def apply(in: LogicalPlan, slotConfigurations: SlotConfigurations, trailPlans: TrailPlans): LogicalPlan = {
+
     val rewritePlanWithSlots = topDown(Rewriter.lift {
       /*
       Projection means executing expressions and writing the result to a row. Since any expression of Variable-type
@@ -181,14 +182,16 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
     })
 
     // Rewrite plan and note which logical plans are rewritten to something else
-    val resultPlan = in.endoRewrite(rewritePlanWithSlots)
+    val resultPlan = in
+      .endoRewrite(VariableRefRewriter)
+      .endoRewrite(rewritePlanWithSlots)
+      .endoRewrite(PostSlottedRewriter)
 
-    // Verify that we could rewrite all instances of Variable (only under -ea)
     checkOnlyWhenAssertionsAreEnabled(!resultPlan.folder.findAllByClass[Variable].exists(v =>
       throw new CantCompileQueryException(s"Failed to rewrite away $v\n$resultPlan")
     ))
 
-    resultPlan.endoRewrite(PostSlottedRewriter)
+    resultPlan
   }
 
   private def rewriteCreator(
@@ -323,7 +326,9 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
                 throw new CantCompileQueryException("Unknown type for `" + k + "` in the slot configuration")
             }
           case _ =>
-            throw new CantCompileQueryException("Did not find `" + k + "` in the slot configuration")
+            throw new CantCompileQueryException(
+              s"Did not find `$k` in the slot configuration of ${thisPlan.getClass.getSimpleName} (${thisPlan.id})"
+            )
         }
 
       case idFunction: FunctionInvocation if idFunction.function == expressions.functions.Id =>
@@ -507,12 +512,12 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
         } else
           e
 
-      case IsRepeatTrailUnique(Variable(name)) =>
+      case IsRepeatTrailUnique(innerRel: Variable) =>
         val trailId: Id = trailPlans.getOrElse(
           thisPlan.id,
           throw new InternalException("Expected IsRepeatTrailUnique to be under Trail")
         )
-        ast.TrailRelationshipUniqueness(SlotAllocation.TRAIL_STATE_METADATA_KEY, trailId.x, name)
+        ast.TrailRelationshipUniqueness(SlotAllocation.TRAIL_STATE_METADATA_KEY, trailId.x, innerRel)
     }
     topDown(rewriter = innerRewriter, stopper = stopAtOtherLogicalPlans(thisPlan))
   }
@@ -701,6 +706,9 @@ class SlottedRewriter(tokenContext: ReadTokenContext) {
     // Do not traverse into slotted runtime variables or properties
     case _: RuntimeVariable | _: RuntimeProperty =>
       true
+
+    // NestedPlanGetByNameExpression can't be rewritten because slot is not known
+    case _: NestedPlanGetByNameExpression => true
 
     case _ =>
       false
