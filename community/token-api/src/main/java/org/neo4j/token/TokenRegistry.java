@@ -62,6 +62,9 @@ public class TokenRegistry {
         Registries reg = this.registries;
         if (reg.idToToken.containsKey(token.id())) {
             NamedToken existingToken = reg.idToToken.get(token.id());
+            if (token.equals(existingToken)) {
+                return; // Adding the same token twice is okay
+            }
             throw new NonUniqueTokenException(tokenType, token, existingToken);
         }
 

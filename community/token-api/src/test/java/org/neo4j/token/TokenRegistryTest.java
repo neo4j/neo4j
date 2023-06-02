@@ -308,4 +308,16 @@ class TokenRegistryTest {
         // This mustn't throw:
         registry.put(new NamedToken(INBOUND1_TYPE, 2));
     }
+
+    @Test
+    void puttingTwoIdenticalPublicTokensShouldBeIgnored() {
+        registry.put(new NamedToken(INBOUND1_TYPE, 1));
+        registry.put(new NamedToken(INBOUND1_TYPE, 1));
+    }
+
+    @Test
+    void puttingTwoIdenticalInternalTokensShouldBeIgnored() {
+        registry.put(new NamedToken(INBOUND1_TYPE, 1, true));
+        registry.put(new NamedToken(INBOUND1_TYPE, 1, true));
+    }
 }
